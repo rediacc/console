@@ -73,6 +73,8 @@ import {
 
 const { Text } = Typography
 
+type NestedFieldDefinition = React.ComponentProps<typeof NestedObjectEditor>['fieldDefinition']
+
 // Base64 utility functions for fields with format: "base64"
 const decodeBase64 = (value: string): string => {
   try {
@@ -398,7 +400,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   
   // Helper for JSON field validation and handling
   const getJsonFieldProps = (isArray = false) => {
-    const validator = (_rule: any, value: any) => {
+    const validator = (_rule: unknown, value: unknown) => {
       if (!value) {
         return Promise.resolve()
       }
@@ -1099,7 +1101,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             rules={rules}
           >
             <NestedObjectEditor
-              fieldDefinition={field as any}
+              fieldDefinition={field as NestedFieldDefinition}
               title={fieldLabel}
               description={fieldDescription}
               data-testid={`vault-editor-field-${fieldName}`}
@@ -1370,7 +1372,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                           // Validate form before testing connection
                           try {
                             await form.validateFields()
-                          } catch (errorInfo) {
+                          } catch {
                             message.error(t('vaultEditor.pleaseFixErrors'))
                             return
                           }

@@ -76,7 +76,7 @@ export interface UnifiedResourceModalProps {
   creationContext?: 'credentials-only' | 'normal'
 }
 
-type ResourceFormValues = Record<string, any>
+type ResourceFormValues = Record<string, unknown>
 
 type ExistingResourceData = Partial<Machine> &
   Partial<Repo> &
@@ -134,6 +134,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // State for sub-modals
   const vaultModal = useDialogState<void>()
   const functionModal = useDialogState<void>()
+  const { isOpen: isFunctionModalOpen, open: openFunctionModal } = functionModal
   
   // State for test connection (for machines)
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false)
@@ -189,14 +190,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   }, [open, resourceType, mode, uiMode, existingData, teamFilter])
 
   // Schema mapping
-  const SCHEMA_MAP = {
-    machine: uiMode === 'simple' ? z.object({
-      machineName: z.string().min(1, 'Machine name is required'),
-      teamName: z.string().optional(),
-      regionName: z.string().optional(),
-      bridgeName: z.string().optional(),
-      machineVault: z.string().optional().default('{}'),
-    }) : createMachineSchema,
+  const schemaMap = useMemo(() => ({
+    machine: uiMode === 'simple'
+      ? z.object({
+          machineName: z.string().min(1, 'Machine name is required'),
+          teamName: z.string().optional(),
+          regionName: z.string().optional(),
+          bridgeName: z.string().optional(),
+          machineVault: z.string().optional().default('{}'),
+        })
+      : createMachineSchema,
     repo: createRepoSchema,
     storage: createStorageSchema,
     team: createTeamSchema,
@@ -207,9 +210,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     image: createImageSchema,
     snapshot: createSnapshotSchema,
     clone: createCloneSchema
-  }
+  }), [uiMode])
 
-  const getSchema = () => {
+  const getSchema = useCallback(() => {
     if (mode === 'edit') {
       return z.object({
         [`${resourceType}Name`]: z.string().min(1, `${resourceType} name is required`),
@@ -227,8 +230,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       })
     }
 
-    return SCHEMA_MAP[resourceType as keyof typeof SCHEMA_MAP] || z.object({})
-  }
+    return schemaMap[resourceType as keyof typeof schemaMap] || z.object({})
+  }, [creationContext, mode, resourceType, schemaMap])
 
   // Default values factory
   const getDefaultValues = (): ResourceFormValues => {
@@ -288,15 +291,17 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     return finalDefaults
   }
 
-  const schema = useMemo(() => getSchema(), [resourceType, mode, uiMode, creationContext])
+  const schema = useMemo(() => getSchema(), [getSchema])
 
   const form = useForm<ResourceFormValues>({
-    resolver: zodResolver(schema) as unknown as Resolver<ResourceFormValues, any, ResourceFormValues>,
+    resolver: zodResolver(schema) as unknown as Resolver<ResourceFormValues, Record<string, unknown>, ResourceFormValues>,
     defaultValues: getDefaultValues(),
   })
 
-  const getFormValue = (field: string): string | undefined =>
-    form.getValues(field as keyof ResourceFormValues) as string | undefined
+  const getFormValue = useCallback((field: string): string | undefined => {
+    const rawValue = form.getValues(field as keyof ResourceFormValues)
+    return typeof rawValue === 'string' ? rawValue : undefined
+  }, [form])
 
   // Get filtered bridges based on selected region - moved inside getFormFields to avoid unnecessary re-renders
   const getFilteredBridges = useCallback(
@@ -318,9 +323,13 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   useEffect(() => {
     if (resourceType === 'machine') {
       const subscription = form.watch((value, { name }) => {
-        if (name === 'regionName' && value.regionName) {
-          const currentBridge = form.getValues('bridgeName')
-          const filteredBridges = getFilteredBridges(value.regionName)
+        if (name === 'regionName') {
+          const regionValue = typeof value.regionName === 'string' ? value.regionName : null
+          if (!regionValue) {
+            return
+          }
+          const currentBridge = getFormValue('bridgeName')
+          const filteredBridges = getFilteredBridges(regionValue)
 
           // If bridge feature is disabled, auto-select first available bridge
           if (featureFlags.isEnabled('disableBridge')) {
@@ -337,7 +346,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       })
       return () => subscription.unsubscribe()
     }
-  }, [form, resourceType, getFilteredBridges])
+  }, [form, resourceType, getFilteredBridges, getFormValue])
 
   // Set default values when modal opens
   useEffect(() => {
@@ -455,7 +464,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   })
 
   const createBridgeField = (): FormFieldConfig => {
-    const currentRegion = form.getValues('regionName')
+    const currentRegion = getFormValue('regionName') ?? null
     const bridgeOptions = getFilteredBridges(currentRegion)
     return {
       name: 'bridgeName',
@@ -845,20 +854,39 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const getModalSubtitle = () => {
     if (!(mode === 'create' && resourceType === 'machine')) return ''
 
-    const formTeam = form.getValues('teamName')
+    const formTeam = getFormValue('teamName')
     if (formTeam) return formTeam
 
     if (existingData?.teamName) return existingData.teamName
 
     // Simple mode always shows "Private Team"
-    if (uiMode === 'simple') return 'Private Team'
+    if (!isExpertMode) return 'Private Team'
 
     // Expert mode: show team filter if available
     if (teamFilter) {
       return Array.isArray(teamFilter) ? teamFilter[0] : teamFilter
     }
 
-    return ''
+    return isExpertMode ? '' : 'Private Team'
+  }
+
+  const resolveTeamName = () => {
+    const formTeam = getFormValue('teamName')
+    if (formTeam) return formTeam
+    if (existingData?.teamName) return existingData.teamName
+    if (teamFilter) {
+      const filterValue = Array.isArray(teamFilter) ? teamFilter[0] : teamFilter
+      if (typeof filterValue === 'string' && filterValue) {
+        return filterValue
+      }
+    }
+    return 'Private Team'
+  }
+
+  const resolveBridgeName = () => {
+    const formBridge = getFormValue('bridgeName')
+    if (formBridge) return formBridge
+    return 'Global Bridges'
   }
 
   const renderModalTitle = () => {
@@ -885,9 +913,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const handleSubmit = async (data: ResourceFormValues) => {
     // Validate machine creation - check if SSH password is present without SSH key configured
     if (mode === 'create' && resourceType === 'machine') {
-      const vaultData = data.machineVault ? JSON.parse(data.machineVault) : {}
+      const vaultString = typeof data.machineVault === 'string' ? data.machineVault : ''
+      const vaultData: Record<string, unknown> = vaultString ? JSON.parse(vaultString) : {}
+      const sshPassword = vaultData.ssh_password
+      const sshKeyConfigured = vaultData.ssh_key_configured
       // Only block if password exists AND SSH key is not configured
-      if (vaultData.ssh_password && !vaultData.ssh_key_configured) {
+      if (typeof sshPassword === 'string' && sshPassword && !sshKeyConfigured) {
         message.error(t('machines:validation.sshPasswordNotAllowed'))
         return
       }
@@ -972,10 +1003,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Without it, each call to functionModal.open() triggers a state change, causing re-render,
   // which triggers this effect again, leading to "Maximum update depth exceeded" error.
   useEffect(() => {
-    if (open && mode === 'create' && existingData && showFunctions && !functionModal.isOpen) {
-      functionModal.open()
+    if (open && mode === 'create' && existingData && showFunctions && !isFunctionModalOpen) {
+      openFunctionModal()
     }
-  }, [open, mode, existingData, showFunctions, functionModal.isOpen, functionModal.open])
+  }, [open, mode, existingData, showFunctions, isFunctionModalOpen, openFunctionModal])
 
   // If we're in vault mode, show the vault editor directly
   if (mode === 'vault' && existingData && onUpdateVault) {
@@ -1194,8 +1225,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           onImportExportRef={(handlers) => {
             importExportHandlers.current = handlers
           }}
-          teamName={form.getValues('teamName') || (existingData?.teamName) || (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) || 'Private Team'}
-          bridgeName={form.getValues('bridgeName') || 'Global Bridges'}
+          teamName={resolveTeamName()}
+          bridgeName={resolveBridgeName()}
           onTestConnectionStateChange={setTestConnectionSuccess}
           isModalOpen={open}
           beforeVaultContent={undefined}

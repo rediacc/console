@@ -29,7 +29,7 @@ export type RootState = {
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) => {
-    const middleware = getDefaultMiddleware({
+    const defaultMiddleware = getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: ['auth/setToken', 'machineAssignment/validateSelectedMachines/fulfilled'],
         ignoredPaths: [
@@ -37,14 +37,16 @@ export const store = configureStore({
           'machineAssignment.operationHistory'
         ],
       },
-    }).concat(
-      telemetryMiddleware as Middleware,
-      machineAssignmentMiddleware as Middleware,
-      machineSelectionPersistenceMiddleware as Middleware,
-      import.meta.env.DEV ? (machineAssignmentLoggingMiddleware as Middleware) : ([] as unknown as Middleware)
-    ).filter(Boolean) as any
+    })
 
-    return middleware
+    const extraMiddleware = [
+      telemetryMiddleware,
+      machineAssignmentMiddleware,
+      machineSelectionPersistenceMiddleware,
+      import.meta.env.DEV ? machineAssignmentLoggingMiddleware : null
+    ].filter((mw): mw is Middleware => mw !== null)
+
+    return defaultMiddleware.concat(...extraMiddleware)
   },
 })
 

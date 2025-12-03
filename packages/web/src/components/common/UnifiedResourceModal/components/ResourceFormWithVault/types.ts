@@ -20,7 +20,7 @@ export interface FormFieldOption {
 }
 
 export type FormFieldConfig<TFieldValues extends FieldValues = FieldValues> = {
-  name: string
+  name: ControllerProps<TFieldValues>['name']
   label: string
   type?: 'text' | 'select' | 'password' | 'email' | 'number' | 'size'
   placeholder?: string
@@ -44,13 +44,13 @@ export interface ResourceFormWithVaultProps<T extends FieldValues = FieldValues>
   fields: Array<FormFieldConfig<T>>
   onSubmit: (data: T) => void | Promise<void>
   entityType: string
-  vaultFieldName: string
+  vaultFieldName: ControllerProps<T>['name']
   layout?: ResourceFormLayout
   showDefaultsAlert?: boolean
   defaultsContent?: ReactNode
   hideImportExport?: boolean
   onImportExportRef?: (handlers: ImportExportHandlers) => void
-  initialVaultData?: Record<string, any>
+  initialVaultData?: Record<string, unknown>
   teamName?: string
   bridgeName?: string
   onTestConnectionStateChange?: (success: boolean) => void

@@ -8,7 +8,7 @@ import { api } from '../client'
 type Operation = 'create' | 'update' | 'delete' | 'assign' | 'remove'
 
 interface MutationFactoryConfig<TData> {
-  request: (data: TData) => Promise<any>
+  request: (data: TData) => Promise<unknown>
   operation: Operation
   resourceKey: string
   translationKey: string
@@ -20,7 +20,7 @@ interface MutationFactoryConfig<TData> {
  * Factory function for creating distributed storage mutations
  * Reduces boilerplate by standardizing error handling, cache invalidation, and success messages
  */
-export function createDistributedStorageMutation<TData extends Record<string, any>>(
+export function createDistributedStorageMutation<TData extends object>(
   config: MutationFactoryConfig<TData>
 ) {
   return () => {
@@ -37,7 +37,7 @@ export function createDistributedStorageMutation<TData extends Record<string, an
       mutationFn: async (data: TData) => {
         await config.request(data)
       },
-      onSuccess: (_: any, variables: TData) => {
+      onSuccess: (_result: unknown, variables: TData) => {
         // Invalidate primary keys
         const keys = config.getInvalidateKeys(variables)
         keys.forEach(key => queryClient.invalidateQueries({ queryKey: key }))

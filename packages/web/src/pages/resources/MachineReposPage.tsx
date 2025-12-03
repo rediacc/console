@@ -65,14 +65,24 @@ interface ContainerData {
   pids: string
 }
 
+type MachineReposLocationState = {
+  machine?: Machine
+} | null
+
+type RepoRowData = {
+  name: string
+  repoTag?: string
+  originalGuid?: string
+}
+
 const MachineReposPage: React.FC = () => {
   const { machineName } = useParams<{ machineName: string }>()
   const navigate = useNavigate()
-  const location = useLocation()
+  const location = useLocation<MachineReposLocationState>()
   const { t } = useTranslation(['resources', 'machines', 'common'])
 
   // State for machine data - can come from route state or API
-  const routeState = location.state as { machine?: Machine } | null
+  const routeState = location.state
   const [machine, setMachine] = useState<Machine | null>(
     routeState?.machine || null
   )
@@ -167,8 +177,7 @@ const MachineReposPage: React.FC = () => {
     fileBrowserModal.open(machine)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleUnifiedModalSubmit = async (data: any) => {
+  const handleUnifiedModalSubmit = async (data: Parameters<typeof createRepo>[0]) => {
     const result = await createRepo(data)
 
     if (result.success) {
@@ -184,7 +193,7 @@ const MachineReposPage: React.FC = () => {
     }
   }
 
-  const handleRepoClick = (repoRow: any) => {
+  const handleRepoClick = (repoRow: RepoRowData) => {
     // Map Repo data to Repo type
     const mappedRepo: Repo = {
       repoName: repoRow.name,
@@ -206,7 +215,7 @@ const MachineReposPage: React.FC = () => {
     setIsPanelCollapsed(false)
   }
 
-  const handleContainerClick = (container: any) => {
+  const handleContainerClick = (container: ContainerData) => {
     setSelectedResource(container)
     setIsPanelCollapsed(false)
   }

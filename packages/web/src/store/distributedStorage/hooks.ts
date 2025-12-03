@@ -32,6 +32,7 @@ import {
 } from './machineAssignmentSelectors'
 import type { Machine, MachineAssignmentType } from '@/types'
 import type { BulkOperationProgress, BulkOperationResult } from '@/features/distributed-storage'
+import type { MachineAssignmentState } from './machineAssignmentSlice'
 
 // Hook for machine selection management
 export const useMachineSelection = (machines: Machine[] = []) => {
@@ -132,6 +133,9 @@ export const useBulkOperationState = () => {
 export const useMachineFilters = () => {
   const dispatch = useAppDispatch()
   const activeFilters = useAppSelector(selectActiveFilters)
+
+  type MachineFilterKey = keyof MachineAssignmentState['activeFilters']
+  type MachineFilterValue = MachineAssignmentState['activeFilters'][MachineFilterKey]
   
   const setFilters = useCallback((filters: {
     assignmentType?: MachineAssignmentType
@@ -142,8 +146,8 @@ export const useMachineFilters = () => {
   }, [dispatch])
   
   const updateSingleFilter = useCallback((
-    key: keyof typeof activeFilters,
-    value: any
+    key: MachineFilterKey,
+    value: MachineFilterValue | undefined
   ) => {
     dispatch(updateFilter({ key, value }))
   }, [dispatch])

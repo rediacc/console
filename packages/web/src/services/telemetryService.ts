@@ -11,6 +11,7 @@ import { registerInstrumentations } from '@opentelemetry/instrumentation'
 import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web'
 import { ZoneContextManager } from '@opentelemetry/context-zone'
 import { trace, context, propagation } from '@opentelemetry/api'
+import type { Span } from '@opentelemetry/api'
 import { CompositePropagator, W3CTraceContextPropagator, W3CBaggagePropagator } from '@opentelemetry/core'
 
 interface TelemetryConfig {
@@ -41,6 +42,34 @@ interface WebVitalsMetric {
   id: string
 }
 
+type TelemetryDetailValue = string | number | boolean | null | undefined
+type TelemetryContext = Record<string, TelemetryDetailValue>
+
+interface LayoutShiftEntry extends PerformanceEntry {
+  value: number
+  hadRecentInput?: boolean
+}
+
+interface ExtendedPerformance extends Performance {
+  memory?: {
+    jsHeapSizeLimit: number
+    usedJSHeapSize: number
+    totalJSHeapSize: number
+  }
+  navigation?: PerformanceNavigation
+  timing?: PerformanceTiming
+}
+
+interface NavigatorConnection {
+  effectiveType?: string
+  downlink?: number
+  rtt?: number
+}
+
+interface WindowNavigation {
+  type?: string
+}
+
 class TelemetryService {
   private provider: WebTracerProvider | null = null
   private isInitialized = false
@@ -51,7 +80,6 @@ class TelemetryService {
 
   async initialize(config: TelemetryConfig): Promise<void> {
     if (this.isInitialized) {
-      console.debug('TelemetryService is already initialized (this is normal in React.StrictMode)')
       return
     }
 
@@ -59,7 +87,7 @@ class TelemetryService {
 
     // Check if telemetry should be enabled
     if (!this.shouldEnableTelemetry()) {
-      console.log('Telemetry disabled - development mode or user consent not granted')
+      console.warn('Telemetry disabled - development mode or user consent not granted')
       return
     }
 
@@ -180,7 +208,7 @@ class TelemetryService {
         'browser.supports_observer_api': 'PerformanceObserver' in window,
       })
 
-      console.log('🔍 Telemetry initialized successfully with OpenTelemetry SDK 2.0')
+      // Initialization completed successfully
     } catch (error) {
       console.error('Failed to initialize telemetry:', error)
     }
@@ -265,7 +293,7 @@ class TelemetryService {
     })
   }
 
-  trackUserAction(action: string, target?: string, details: Record<string, any> = {}): void {
+  trackUserAction(action: string, target?: string, details: TelemetryContext = {}): void {
     this.trackEvent('user.action', {
       'user.action.type': action,
       'user.action.target': target || 'unknown',
@@ -288,7 +316,7 @@ class TelemetryService {
     })
   }
 
-  trackError(error: Error, context: Record<string, any> = {}): void {
+  trackError(error: Error, context: TelemetryContext = {}): void {
     this.trackEvent('error.occurred', {
       'error.type': error.constructor.name,
       'error.message': error.message,
@@ -421,7 +449,7 @@ class TelemetryService {
     if (typeof window !== 'undefined' && 'web-vitals' in window) {
       // This would be imported from web-vitals package
       // import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals'
-      console.log('Web Vitals tracking enabled - implement with web-vitals package')
+      console.warn('Web Vitals tracking enabled - implement with web-vitals package')
     } else {
       // Fallback to manual performance observer
       this.setupManualWebVitals()
@@ -433,9 +461,10 @@ class TelemetryService {
       // Cumulative Layout Shift
       const clsObserver = new PerformanceObserver((list) => {
         let clsValue = 0
-        list.getEntries().forEach((entry: any) => {
-          if (!entry.hadRecentInput) {
-            clsValue += entry.value
+        list.getEntries().forEach((entry) => {
+          const layoutEntry = entry as LayoutShiftEntry
+          if (!layoutEntry.hadRecentInput) {
+            clsValue += layoutEntry.value
           }
         })
         if (clsValue > 0) {
@@ -451,8 +480,8 @@ class TelemetryService {
       try {
         clsObserver.observe({ entryTypes: ['layout-shift'] })
         this.webVitalsObserver = clsObserver
-      } catch (e) {
-        console.warn('Layout shift observation not supported')
+      } catch (error) {
+        console.warn('Layout shift observation not supported', error)
       }
     }
   }
@@ -478,20 +507,21 @@ class TelemetryService {
     const attributes: Record<string, number | string> = {}
 
     try {
-      if ('performance' in window && (performance as any).memory) {
-        const memory = (performance as any).memory
-        attributes['browser.memory.used'] = memory.usedJSHeapSize || 0
-        attributes['browser.memory.total'] = memory.totalJSHeapSize || 0
-        attributes['browser.memory.limit'] = memory.jsHeapSizeLimit || 0
+      if ('performance' in window) {
+        const perf = performance as ExtendedPerformance
+        if (perf.memory) {
+          attributes['browser.memory.used'] = perf.memory.usedJSHeapSize || 0
+          attributes['browser.memory.total'] = perf.memory.totalJSHeapSize || 0
+          attributes['browser.memory.limit'] = perf.memory.jsHeapSizeLimit || 0
+        }
       }
 
-      if ('connection' in navigator) {
-        const conn = (navigator as any).connection
-        if (conn) {
-          attributes['network.effective_type'] = conn.effectiveType || 'unknown'
-          attributes['network.downlink'] = conn.downlink || 0
-          attributes['network.rtt'] = conn.rtt || 0
-        }
+      const navigatorWithConnection = navigator as Navigator & { connection?: NavigatorConnection }
+      const connection = navigatorWithConnection.connection
+      if (connection) {
+        attributes['network.effective_type'] = connection.effectiveType || 'unknown'
+        attributes['network.downlink'] = connection.downlink || 0
+        attributes['network.rtt'] = connection.rtt || 0
       }
     } catch (error) {
       console.warn('Failed to get performance attributes:', error)
@@ -518,11 +548,17 @@ class TelemetryService {
 
   private getNavigationType(): string {
     try {
-      if ('navigation' in window && (window.navigation as any)?.type) {
-        return (window.navigation as any).type
+      const navigation = (window as Window & { navigation?: WindowNavigation }).navigation
+      if (navigation?.type) {
+        return String(navigation.type)
       }
-      if ('performance' in window && (performance as any).navigation) {
-        const type = (performance as any).navigation.type
+      if ('performance' in window) {
+        const perf = performance as ExtendedPerformance
+        const legacyNavigation = perf.navigation
+        if (!legacyNavigation) {
+          return 'unknown'
+        }
+        const type = legacyNavigation.type
         switch (type) {
           case 0: return 'navigate'
           case 1: return 'reload'
@@ -538,9 +574,12 @@ class TelemetryService {
 
   private getPageLoadTime(): number {
     try {
-      if ('performance' in window && (performance as any).timing) {
-        const timing = (performance as any).timing
-        return timing.loadEventEnd - timing.navigationStart
+      if ('performance' in window) {
+        const perf = performance as ExtendedPerformance
+        if (perf.timing) {
+          const timing = perf.timing
+          return timing.loadEventEnd - timing.navigationStart
+        }
       }
     } catch (error) {
       console.warn('Failed to get page load time:', error)
@@ -563,7 +602,7 @@ class TelemetryService {
 
   // Unused helper methods kept for potential future use (prefixed with _ to indicate intentionally unused)
   // @ts-expect-error - Intentionally unused, kept for potential future use
-  private _enrichRequestSpan(span: any, request: any): void {
+  private _enrichRequestSpan(span: Span, request: unknown): void {
     if (!this.userContext) return
 
     // Add user context to requests
@@ -572,25 +611,31 @@ class TelemetryService {
     // Add request details
     if (typeof request === 'string') {
       span.setAttributes({ 'http.url': request })
-    } else if (request?.url) {
-      span.setAttributes({ 'http.url': request.url })
-      if (request.method) {
-        span.setAttributes({ 'http.method': request.method })
+    } else if (request && typeof request === 'object') {
+      const requestLike = request as { url?: string; method?: string }
+      if (requestLike.url) {
+        span.setAttributes({ 'http.url': requestLike.url })
+      }
+      if (requestLike.method) {
+        span.setAttributes({ 'http.method': requestLike.method })
       }
     }
   }
 
   // @ts-expect-error - Intentionally unused, kept for potential future use
-  private _enrichResponseSpan(span: any, response: any): void {
-    if (response?.status) {
-      span.setAttributes({
-        'http.status_code': response.status,
-        'http.success': response.status >= 200 && response.status < 400,
-      })
-    }
+  private _enrichResponseSpan(span: Span, response: unknown): void {
+    if (response && typeof response === 'object') {
+      const responseLike = response as { status?: number; ok?: boolean }
+      if (typeof responseLike.status === 'number') {
+        span.setAttributes({
+          'http.status_code': responseLike.status,
+          'http.success': responseLike.status >= 200 && responseLike.status < 400,
+        })
+      }
 
-    if (response?.ok === false) {
-      span.setStatus({ code: 2, message: `HTTP ${response.status}` })
+      if (responseLike.ok === false && typeof responseLike.status === 'number') {
+        span.setStatus({ code: 2, message: `HTTP ${responseLike.status}` })
+      }
     }
   }
 }

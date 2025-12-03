@@ -1,10 +1,10 @@
-import type { Machine } from '@/types'
+import type { Machine, MachineAssignmentType } from '@/types'
 
 export interface ValidationResult {
   isValid: boolean
   errors: ValidationError[]
   warnings: ValidationWarning[]
-  context?: Record<string, any>
+  context?: Record<string, unknown>
 }
 
 export interface ValidationError {
@@ -12,8 +12,8 @@ export interface ValidationError {
   message: string
   field?: string
   severity?: 'error' | 'warning'
-  context?: Record<string, any>
-  metadata?: Record<string, any>
+  context?: Record<string, unknown>
+  metadata?: Record<string, unknown>
 }
 
 export interface ValidationWarning {
@@ -64,7 +64,7 @@ export interface ExclusivityValidation {
   conflictType?: 'cluster' | 'image' | 'clone'
   conflictResource?: string
   canOverride: boolean
-  assignmentType?: string
+  assignmentType?: MachineAssignmentType
   resourceName?: string
   machineName?: string
 }

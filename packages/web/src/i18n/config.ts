@@ -33,7 +33,9 @@ const initialResources = {
     distributedStorage: enDistributedStorage,
     organization: enOrganization,
   }
-};
+} as const;
+
+type LanguageResources = Partial<typeof initialResources.en>;
 
 // Lazy load function for other languages
 const loadLanguageResources = async (lng: string) => {
@@ -43,7 +45,7 @@ const loadLanguageResources = async (lng: string) => {
 
   try {
     // Dynamic imports for other languages
-    const resources: any = {};
+    const resources: LanguageResources = {};
     
     switch (lng) {
       case 'es':
@@ -164,7 +166,7 @@ const loadLanguageResources = async (lng: string) => {
     Object.keys(resources).forEach(ns => {
       i18n.addResourceBundle(lng, ns, resources[ns]);
     });
-  } catch (error) {
+  } catch {
     // Failed to load language resources
   }
 };

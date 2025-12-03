@@ -14,7 +14,9 @@ import trTR from 'antd/locale/tr_TR';
 import ruRU from 'antd/locale/ru_RU';
 import { ProvidersContainer } from './styles'
 
-const antdLocales = {
+type AntdLocale = typeof enUS;
+
+const antdLocales: Record<string, AntdLocale> = {
   en: enUS,
   es: esES,
   fr: frFR,
@@ -32,7 +34,7 @@ interface AppProvidersProps {
 
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   const { i18n } = useTranslation();
-  const currentLocale = antdLocales[i18n.language as keyof typeof antdLocales] || enUS;
+  const currentLocale: AntdLocale = antdLocales[i18n.language] || enUS;
 
   return (
     <ThemeProvider>
@@ -45,7 +47,7 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
 
 interface AppProvidersContentProps {
   children: React.ReactNode;
-  currentLocale: any;
+  currentLocale: AntdLocale;
   language: string;
 }
 

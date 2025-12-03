@@ -82,8 +82,9 @@ export const useManagedQueueItem = () => {
         // Success message removed - queue item created silently
       }
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to create queue item')
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to create queue item'
+      showMessage('error', message)
     },
   })
 
@@ -96,7 +97,7 @@ export const useManagedQueueItem = () => {
     clearCompleted: () => queueService.clearCompleted(),
     getQueuePosition: (id: string) => queueService.getQueuePosition(id),
     getQueueItem: (queueId: string) => queueService.getQueueItem(queueId),
-    subscribeToQueueItem: (queueId: string, callback: (item: any) => void) => 
+    subscribeToQueueItem: (queueId: string, callback: (item: QueueItem | undefined) => void) =>
       queueService.subscribeToQueueItem(queueId, callback)
   }
 }

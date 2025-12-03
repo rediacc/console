@@ -29,6 +29,7 @@ import {
   useDeleteDistributedStorageCluster,
   useDeleteDistributedStoragePool,
 } from '@/api/queries/distributedStorageMutations'
+import type { DistributedStorageCluster, DistributedStoragePool } from '@/api/queries/distributedStorage'
 import { PageCard, PrimaryIconButton, SecondaryIconButton } from '@/styles/primitives'
 import {
   PageWrapper,
@@ -47,6 +48,36 @@ interface DistributedStoragePageProps {
   view?: DistributedStorageView
 }
 
+type ModalData =
+  | (Partial<DistributedStorageCluster> & Record<string, unknown>)
+  | (Partial<DistributedStoragePool> & Record<string, unknown>)
+
+interface ClusterFormValues extends Record<string, unknown> {
+  clusterName: string
+  clusterVault: string
+  vaultVersion?: number
+}
+
+interface PoolFormValues extends Record<string, unknown> {
+  teamName: string
+  clusterName: string
+  poolName: string
+  poolVault: string
+  vaultVersion?: number
+}
+
+type ModalFormValues = ClusterFormValues | PoolFormValues
+
+const isPoolFormValues = (values: ModalFormValues): values is PoolFormValues => {
+  return 'poolName' in values
+}
+
+const isPoolEntity = (
+  data: DistributedStorageCluster | DistributedStoragePool
+): data is DistributedStoragePool => {
+  return 'poolName' in data
+}
+
 const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 'clusters' }) => {
   const { t } = useTranslation(['distributedStorage', 'common'])
 
@@ -57,7 +88,7 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
     open: boolean
     type: 'cluster' | 'pool'
     mode: 'create' | 'edit' | 'vault'
-    data?: Record<string, any>
+    data?: ModalData
   }>({ open: false, type: 'cluster', mode: 'create' })
 
   const planCode = companyData?.activeSubscription?.planCode
@@ -110,7 +141,7 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
   const openModal = (
     type: 'cluster' | 'pool',
     mode: 'create' | 'edit' | 'vault',
-    data?: Record<string, any>,
+    data?: ModalData,
   ) => {
     setModalState({
       open: true,
@@ -129,17 +160,17 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
     })
   }
 
-  const handleModalSubmit = async (data: Record<string, any>) => {
+  const handleModalSubmit = async (data: ModalFormValues) => {
     try {
       const { type, mode } = modalState
 
       if (mode === 'create') {
-        if (type === 'cluster') {
+        if (type === 'cluster' && !isPoolFormValues(data)) {
           await createClusterMutation.mutateAsync({
             clusterName: data.clusterName,
             clusterVault: data.clusterVault,
           })
-        } else if (type === 'pool') {
+        } else if (type === 'pool' && isPoolFormValues(data)) {
           await createPoolMutation.mutateAsync({
             teamName: data.teamName,
             clusterName: data.clusterName,
@@ -148,13 +179,13 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
           })
         }
       } else if (mode === 'edit' || mode === 'vault') {
-        if (type === 'cluster') {
+        if (type === 'cluster' && !isPoolFormValues(data)) {
           await updateClusterVaultMutation.mutateAsync({
             clusterName: data.clusterName,
             clusterVault: data.clusterVault,
             vaultVersion: data.vaultVersion,
           })
-        } else if (type === 'pool') {
+        } else if (type === 'pool' && isPoolFormValues(data)) {
           await updatePoolVaultMutation.mutateAsync({
             poolName: data.poolName,
             teamName: data.teamName,
@@ -170,13 +201,16 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
     }
   }
 
-  const handleDelete = async (type: 'cluster' | 'pool', data: Record<string, any>) => {
+  const handleDelete = async (
+    type: 'cluster' | 'pool',
+    data: DistributedStorageCluster | DistributedStoragePool
+  ) => {
     try {
-      if (type === 'cluster') {
+      if (type === 'cluster' && !isPoolEntity(data)) {
         await deleteClusterMutation.mutateAsync({
           clusterName: data.clusterName,
         })
-      } else if (type === 'pool') {
+      } else if (type === 'pool' && isPoolEntity(data)) {
         await deletePoolMutation.mutateAsync({
           poolName: data.poolName,
           teamName: data.teamName,
@@ -187,7 +221,7 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
     }
   }
 
-  const handleFunctionSubmit = async (_functionData: Record<string, any>) => {
+  const handleFunctionSubmit = async (_functionData: unknown) => {
     showMessage('info', 'Function execution coming soon')
     closeModal()
   }

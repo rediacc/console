@@ -1,12 +1,10 @@
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth'
-import { parseFirst, responseExtractors } from '@rediacc/shared/api'
 import type { ApiResponse } from '@rediacc/shared/types'
 import { nodeStorageAdapter } from '../adapters/storage.js'
 import { nodeCryptoProvider } from '../adapters/crypto.js'
 import { apiClient, api } from './api.js'
 import { EXIT_CODES } from '../types/index.js'
 import { askPassword } from '../utils/prompt.js'
-import type { AuthResponse } from '../types/api-responses.js'
 
 const STORAGE_KEYS = {
   TOKEN: 'token',

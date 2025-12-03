@@ -269,7 +269,6 @@ export const useTableStyles = () => {
 }
 
 export const useNavigationStyles = () => {
-  const { theme } = useTheme()
   const baseStyles = useComponentStyles()
   
   return useMemo(() => ({
@@ -313,5 +312,5 @@ export const useNavigationStyles = () => {
       margin: `0 ${spacing('XS')}px`,
       color: 'var(--color-text-tertiary)',
     },
-  }), [theme, baseStyles])
+  }), [baseStyles])
 }

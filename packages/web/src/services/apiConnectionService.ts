@@ -69,7 +69,7 @@ class ApiConnectionService {
       const response = await axios.get(`${apiUrl}/health`, { timeout: 3000 })
       return response.data?.ciMode === true
     } catch (error) {
-      console.debug('Could not fetch CI mode status:', error)
+      console.warn('Could not fetch CI mode status:', error)
       return false
     }
   }
@@ -84,7 +84,7 @@ class ApiConnectionService {
       return this.selectedEndpoint
     }
 
-    console.log(`[API Connection] Build type: ${this.buildType}`)
+    console.warn(`[API Connection] Build type: ${this.buildType}`)
 
     // Check if user has manually selected an endpoint (takes precedence)
     const userSelectedEndpoint = endpointService.getSelectedEndpoint()
@@ -95,7 +95,7 @@ class ApiConnectionService {
         isAvailable: true
       }
       this.healthCheckPerformed = true
-      console.log(`[API Connection] Using user-selected endpoint: ${userSelectedEndpoint.name} (${userSelectedEndpoint.url})`)
+      console.warn(`[API Connection] Using user-selected endpoint: ${userSelectedEndpoint.name} (${userSelectedEndpoint.url})`)
       return this.selectedEndpoint
     }
 
@@ -108,7 +108,7 @@ class ApiConnectionService {
         isAvailable: true
       }
       this.healthCheckPerformed = true
-      console.log('[API Connection] Using production endpoint (same domain /api)')
+      console.warn('[API Connection] Using production endpoint (same domain /api)')
       return this.selectedEndpoint
     }
 
@@ -117,7 +117,7 @@ class ApiConnectionService {
     const localhostUrl = this.getLocalhostUrl()
     const sandboxUrl = this.getSandboxUrl()
 
-    console.log('[API Connection] DEBUG mode: Checking localhost availability...')
+    console.warn('[API Connection] DEBUG mode: Checking localhost availability...')
     const localhostAvailable = await this.checkEndpointHealth(localhostUrl)
 
     if (localhostAvailable) {
@@ -126,17 +126,17 @@ class ApiConnectionService {
         type: 'localhost',
         isAvailable: true
       }
-      console.log('[API Connection] ✓ Using localhost endpoint')
+      console.warn('[API Connection] Using localhost endpoint')
     } else {
       // Sandbox fallback ONLY in DEBUG mode for open-source developers
-      console.warn('[API Connection] ⚠️  NOTICE: Localhost unavailable, using sandbox environment')
-      console.warn('[API Connection] ⚠️  This is only suitable for development/testing, not production')
+      console.warn('[API Connection] NOTICE: Localhost unavailable, using sandbox environment')
+      console.warn('[API Connection] This is only suitable for development/testing, not production')
       this.selectedEndpoint = {
         url: sandboxUrl,
         type: 'sandbox',
         isAvailable: true
       }
-      console.log('[API Connection] ✓ Using sandbox endpoint (DEBUG mode fallback)')
+      console.warn('[API Connection] Using sandbox endpoint (DEBUG mode fallback)')
     }
 
     this.healthCheckPerformed = true

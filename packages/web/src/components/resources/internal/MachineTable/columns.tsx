@@ -103,7 +103,7 @@ export const buildMachineTableColumns = ({
         const diffMinutes = (new Date().getTime() - statusTime.getTime()) / 60000
         return diffMinutes <= 3 ? 0 : 1
       }),
-      renderValue: (_: string, record: Machine) => {
+      renderValue: (_value: unknown, record: Machine) => {
         if (!record.vaultStatusTime) return 'unknown'
         const statusTime = new Date(record.vaultStatusTime + 'Z')
         const diffMinutes = (new Date().getTime() - statusTime.getTime()) / 60000

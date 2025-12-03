@@ -32,7 +32,7 @@ export function registerShortcuts(program: Command): void {
         }
 
         // Create the queue item
-        const result = await createAction(createOptions, program)
+        const result = await createAction(createOptions)
 
         // Watch if requested and we have a taskId
         if (options.watch && result.taskId) {

@@ -175,8 +175,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       // Move to verification step
       setCurrentStep(1)
       showMessage('success', t('auth:registration.registrationSuccess'))
-    } catch (error: any) {
-      const errorMessage = error.message || t('auth:registration.registrationFailed')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error
+        ? error.message
+        : t('auth:registration.registrationFailed')
       setError(errorMessage)
       showMessage('error', errorMessage)
 
@@ -234,8 +236,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
       // Close modal immediately after success
       handleClose()
-    } catch (error: any) {
-      const errorMessage = error.message || t('auth:registration.activationFailed')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error
+        ? error.message
+        : t('auth:registration.activationFailed')
       setError(errorMessage)
       showMessage('error', errorMessage)
     } finally {

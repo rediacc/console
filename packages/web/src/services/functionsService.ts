@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import functionDefinitions from '@rediacc/shared/queue-vault/data/definitions';
 
 // Base function definition without translatable content
@@ -98,7 +99,7 @@ export function useLocalizedFunctions() {
 }
 
 // Export function to get raw function data with translations
-export function getFunctionsWithTranslations(t: any) {
+export function getFunctionsWithTranslations(t: TFunction) {
   const categories = Object.fromEntries(
     FUNCTION_CATEGORIES.map(category => [
       category,

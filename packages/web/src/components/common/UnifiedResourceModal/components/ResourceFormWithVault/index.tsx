@@ -6,6 +6,7 @@ import {
   forwardRef,
 } from 'react'
 import { message, Form, Row, Col } from 'antd'
+import type { FieldValues } from 'react-hook-form'
 import type { UploadFile } from 'antd/es/upload/interface'
 import { useTranslation } from 'react-i18next'
 import { useTheme as useStyledTheme } from 'styled-components'
@@ -25,7 +26,7 @@ import { ImportExportControls } from './components/ImportExportControls'
 import { DefaultsBanner } from './components/DefaultsBanner'
 import { FieldRenderer } from './components/FieldRenderer'
 
-const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormWithVaultProps<any>>(
+const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormWithVaultProps>(
   function ResourceFormWithVault(
     {
       form,
@@ -54,7 +55,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const { t } = useTranslation('common')
     const theme = useStyledTheme()
     const rowGutter: [number, number] = [theme.spacing.SM, theme.spacing.SM]
-    const [vaultData, setVaultData] = useState<Record<string, any>>(initialVaultData)
+    const [vaultData, setVaultData] = useState<Record<string, unknown>>(initialVaultData)
     const [isVaultValid, setIsVaultValid] = useState(true)
     const [showVaultValidationErrors, setShowVaultValidationErrors] = useState(false)
     const importExportHandlers = useRef<ImportExportHandlers | null>(null)
@@ -67,10 +68,10 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     } = form
 
     useEffect(() => {
-      setValue(vaultFieldName as any, JSON.stringify(vaultData))
+      setValue(vaultFieldName, JSON.stringify(vaultData))
     }, [vaultData, setValue, vaultFieldName])
 
-    const handleFormSubmit = async (formData: any) => {
+    const handleFormSubmit = async (formData: FieldValues) => {
       const shouldSkipVaultValidation =
         entityType === 'REPOSITORY' && (creationContext === 'credentials-only' || isEditMode)
 
@@ -86,12 +87,12 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
           [vaultFieldName]: JSON.stringify(vaultData),
         }
         await onSubmit(dataWithVault)
-      } catch (error) {
+      } catch {
         // handled upstream
       }
     }
 
-    const handleVaultChange = (data: Record<string, any>) => {
+    const handleVaultChange = (data: Record<string, unknown>) => {
       setVaultData(data)
     }
 
@@ -135,16 +136,8 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
               if (field.hidden) return null
 
               const fieldName = field.name
-              const fieldError =
-                errors && typeof errors === 'object' && fieldName in errors
-                  ? (errors as Record<string, any>)[fieldName]
-                  : undefined
-
-              const isTouched =
-                touchedFields &&
-                typeof touchedFields === 'object' &&
-                fieldName in touchedFields &&
-                (touchedFields as Record<string, any>)[fieldName]
+              const fieldError = errors?.[fieldName]
+              const isTouched = touchedFields?.[fieldName]
 
               const showError = Boolean(fieldError && (isTouched || submitCount > 0 || isSubmitted))
               const errorMessage = showError ? (fieldError?.message as string) : undefined

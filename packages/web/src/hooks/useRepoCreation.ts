@@ -17,7 +17,6 @@ interface RepoCreationData {
   repoVault?: string
   tmpl?: string
   keep_open?: boolean
-  [key: string]: any
 }
 
 interface RepoCreationResult {
@@ -102,9 +101,9 @@ export function useRepoCreation(
           }
 
           // Build queue vault for the "new" function
-          const params: any = {
+          const params: Record<string, string> = {
             repo: repoGuid,
-            size: size
+            size
           }
 
           // Add template parameter if provided
@@ -150,7 +149,7 @@ export function useRepoCreation(
             taskId: response?.taskId,
             machineName: machineData.value
           }
-        } catch (error) {
+        } catch {
           showMessage('warning', t('repos.repoCreatedButQueueFailed'))
           return {
             success: true, // Repo was created, just queue failed

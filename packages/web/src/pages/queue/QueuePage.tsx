@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback } from 'react'
 import { Typography, Space, Modal, Tag, Tabs, Tooltip, Dropdown } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay'
 import { renderTimestamp, renderBoolean } from '@/components/common/columns'
 import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, ExclamationCircleOutlined, GlobalOutlined, ReloadOutlined, ExportOutlined, HistoryOutlined, SearchOutlined, CloseCircleOutlined, PlayCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
@@ -38,6 +39,8 @@ import {
   formatAge,
   STALE_TASK_CONSTANTS
 } from '@/core'
+import type { QueueItem } from '@rediacc/shared/types'
+import type { ParsedError } from '@rediacc/shared/error-parser'
 import { renderQueueStatus, renderPriority } from '@/utils/queueRenderers'
 import { PageWrapper } from '@/components/ui'
 import {
@@ -85,6 +88,22 @@ const QueuePage: React.FC = () => {
 
   // Queue trace modal
   const queueTrace = useQueueTraceModal()
+  const dateRangeValue: [Dayjs | null, Dayjs | null] | undefined = filters.dateRange ?? undefined
+
+  const handleDateRangeChange = useCallback((
+    dates: [Dayjs | null, Dayjs | null] | null,
+    _dateStrings?: [string, string]
+  ) => {
+    setFilter('dateRange', dates)
+  }, [setFilter])
+
+  const handleStatusFilterChange = useCallback((
+    values: Array<string | number>,
+    _options: unknown
+  ) => {
+    const normalized = values.map((value) => String(value))
+    setFilter('statusFilter', normalized)
+  }, [setFilter])
 
   // Combine filter state into API query format
   const queryFilters = useMemo((): QueueFilters => ({
@@ -109,7 +128,7 @@ const QueuePage: React.FC = () => {
   const { data: dropdownData } = useDropdownData()
   const cancelQueueItemMutation = useCancelQueueItem()
 
-  const statistics = (queueData?.statistics ?? ({} as Partial<QueueStatistics>))
+  const statistics = queueData?.statistics ?? ({} as Partial<QueueStatistics>)
   const totalCount = statistics.totalCount ?? queueData?.items?.length ?? 0
   const activeCount = (statistics.pendingCount ?? 0) + (statistics.assignedCount ?? 0) + (statistics.processingCount ?? 0)
   const failedCount = statistics.failedCount ?? 0
@@ -117,7 +136,7 @@ const QueuePage: React.FC = () => {
   const completedCount = statistics.completedCount ?? 0
   const cancelledCount = statistics.cancelledCount ?? 0
 
-  const items = queueData?.items || []
+  const items: QueueItem[] = queueData?.items ?? []
   const activeItems = filterActiveItems(items)
   const completedItems = filterCompletedItems(items)
   const cancelledItems = filterCancelledItems(items)
@@ -215,7 +234,7 @@ const QueuePage: React.FC = () => {
 
   // Handle export functionality
   const handleExport = (format: 'csv' | 'json') => {
-    const dataToExport = queueData?.items || []
+    const dataToExport: QueueItem[] = queueData?.items || []
     const timestamp = dayjs().format('YYYY-MM-DD_HH-mm-ss')
     const filename = `queue_export_${timestamp}.${format}`
     
@@ -224,7 +243,7 @@ const QueuePage: React.FC = () => {
       const headers = ['Task ID', 'Status', 'Priority', 'Age (minutes)', 'Team', 'Machine', 'Region', 'Bridge', 'Has Response', 'Retry Count', 'Created By', 'Created']
       const csvContent = [
         headers.join(','),
-        ...dataToExport.map((item: any) => [
+        ...dataToExport.map((item) => [
           item.taskId,
           item.healthStatus,
           item.priorityLabel || '',
@@ -282,7 +301,7 @@ const QueuePage: React.FC = () => {
   }
 
 
-  const queueColumns = [
+  const queueColumns: ColumnsType<QueueItem> = [
     {
       title: 'Task ID',
       dataIndex: 'taskId',
@@ -295,14 +314,14 @@ const QueuePage: React.FC = () => {
       dataIndex: 'healthStatus',
       key: 'healthStatus',
       width: 120,
-      render: (healthStatus: string, record: any) => renderQueueStatus(healthStatus, record)
+      render: (healthStatus: string, record: QueueItem) => renderQueueStatus(healthStatus, record)
     },
     {
       title: 'Priority',
       dataIndex: 'priorityLabel',
       key: 'priority',
       width: 140,
-      render: (priorityLabel: string | undefined, record: any) => {
+      render: (priorityLabel: string | undefined, record: QueueItem) => {
         const tooltipContent = (
           <div>
             <div style={{ marginBottom: 4 }}><strong>{priorityLabel}</strong></div>
@@ -315,7 +334,7 @@ const QueuePage: React.FC = () => {
         )
         return renderPriority(priorityLabel, record.priority, tooltipContent) || <Text type="secondary">-</Text>
       },
-      sorter: (a: any, b: any) => (a.priority || 3) - (b.priority || 3),
+      sorter: (a, b) => (a.priority ?? 3) - (b.priority ?? 3),
     },
     {
       title: 'Age',
@@ -323,7 +342,7 @@ const QueuePage: React.FC = () => {
       key: 'ageInMinutes',
       width: 100,
       render: (minutes: number) => formatAge(minutes),
-      sorter: (a: any, b: any) => a.ageInMinutes - b.ageInMinutes,
+      sorter: (a, b) => a.ageInMinutes - b.ageInMinutes,
     },
     {
       title: 'Team',
@@ -375,7 +394,7 @@ const QueuePage: React.FC = () => {
       dataIndex: 'retryCount',
       key: 'retryCount',
       width: 280,
-      render: (retryCount: number | undefined, record: any) => {
+      render: (retryCount: number | undefined, record: QueueItem) => {
         if (!retryCount && retryCount !== 0) return <Text type="secondary">-</Text>
 
         const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT
@@ -391,7 +410,7 @@ const QueuePage: React.FC = () => {
             {allErrors.length > 0 && (
               <Tooltip title={
                 <div>
-                  {allErrors.map((error: any, index: number) => (
+                  {allErrors.map((error: ParsedError, index: number) => (
                     <div key={index} style={{ marginBottom: index < allErrors.length - 1 ? 4 : 0 }}>
                       {error.severity && <strong>[{error.severity}]</strong>} {error.message}
                     </div>
@@ -444,7 +463,7 @@ const QueuePage: React.FC = () => {
           </Space>
         )
       },
-      sorter: (a: any, b: any) => (a.retryCount || 0) - (b.retryCount || 0),
+      sorter: (a, b) => (a.retryCount ?? 0) - (b.retryCount ?? 0),
     },
     {
       title: 'Created By',
@@ -458,7 +477,7 @@ const QueuePage: React.FC = () => {
       dataIndex: 'ageInMinutes',
       key: 'age',
       width: 100,
-      render: (ageInMinutes: number, record: any) => {
+      render: (ageInMinutes: number, record: QueueItem) => {
         const hours = Math.floor(ageInMinutes / 60)
         const minutes = ageInMinutes % 60
         
@@ -470,16 +489,16 @@ const QueuePage: React.FC = () => {
         }
         
         // Color coding based on age and status
-        let color = undefined
-        if (record.status === 'PENDING' && hours >= 6) {
-          color = 'orange' // Warning for old pending items
-        } else if (record.status === 'PENDING' && hours >= 12) {
-          color = 'red' // Critical for very old pending items
+        let color: string | undefined
+        if (record.status === 'PENDING' && hours >= 12) {
+          color = 'red'
+        } else if (record.status === 'PENDING' && hours >= 6) {
+          color = 'orange'
         }
         
         return <Text style={{ color }}>{ageText}</Text>
       },
-      sorter: (a: any, b: any) => a.ageInMinutes - b.ageInMinutes,
+      sorter: (a, b) => a.ageInMinutes - b.ageInMinutes,
     },
     {
       title: 'Created',
@@ -487,13 +506,13 @@ const QueuePage: React.FC = () => {
       key: 'createdTime',
       width: 180,
       render: (date: string) => renderTimestamp(date),
-      sorter: (a: any, b: any) => new Date(a.createdTime).getTime() - new Date(b.createdTime).getTime(),
+      sorter: (a, b) => new Date(a.createdTime).getTime() - new Date(b.createdTime).getTime(),
     },
     {
       title: 'Actions',
       key: 'actions',
       width: 180,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: QueueItem) => (
         <Space size="small">
           <Tooltip title="Trace">
             <IconButton
@@ -549,9 +568,9 @@ const QueuePage: React.FC = () => {
               $minWidth={150}
               placeholder="Machine"
               value={filters.machineName || undefined}
-              onChange={(value) => setFilter('machineName', (value as string) || '')}
+              onChange={(value) => setFilter('machineName', typeof value === 'string' ? value : '')}
               allowClear
-              options={(dropdownData?.machines || []).map((machine: string) => ({ label: machine, value: machine }))}
+              options={(dropdownData?.machines || []).map((machine) => ({ label: machine, value: machine }))}
               data-testid="queue-filter-machine"
             />
             <FilterSelect
@@ -559,7 +578,7 @@ const QueuePage: React.FC = () => {
               $minWidth={130}
               placeholder="Region"
               value={filters.regionName || undefined}
-              onChange={(value) => setFilter('regionName', (value as string) || '')}
+              onChange={(value) => setFilter('regionName', typeof value === 'string' ? value : '')}
               allowClear
               options={dropdownData?.regions || []}
               data-testid="queue-filter-region"
@@ -569,15 +588,15 @@ const QueuePage: React.FC = () => {
               $minWidth={130}
               placeholder="Bridge"
               value={filters.bridgeName || undefined}
-              onChange={(value) => setFilter('bridgeName', (value as string) || '')}
+              onChange={(value) => setFilter('bridgeName', typeof value === 'string' ? value : '')}
               allowClear
               options={dropdownData?.bridges || []}
               data-testid="queue-filter-bridge"
             />
             <FilterRangePicker
               size="small"
-              value={filters.dateRange as any}
-              onChange={(dates) => setFilter('dateRange', dates as [Dayjs | null, Dayjs | null] | null)}
+              value={dateRangeValue}
+              onChange={handleDateRangeChange}
               allowClear
               placeholder={[t('queue:filters.dateFrom'), t('queue:filters.dateTo')]}
               data-testid="queue-filter-date"
@@ -588,7 +607,7 @@ const QueuePage: React.FC = () => {
               $minWidth={160}
               placeholder="Status"
               value={filters.statusFilter}
-              onChange={(values) => setFilter('statusFilter', values as string[])}
+              onChange={handleStatusFilterChange}
               options={[
                 { label: t('queue:statusPending'), value: 'PENDING' },
                 { label: t('queue:statusActive'), value: 'ACTIVE' },

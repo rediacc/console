@@ -1,11 +1,11 @@
 import { api } from '@/api/client'
 import type { Machine } from '@/types'
 
-export interface BatchRequest<T> {
-  items: T[]
+export interface BatchRequest<TItem, TResult = unknown> {
+  items: TItem[]
   batchSize?: number
   onProgress?: (progress: BatchProgress) => void
-  onBatchComplete?: (batchIndex: number, results: any[]) => void
+  onBatchComplete?: (batchIndex: number, results: TResult[]) => void
 }
 
 export interface BatchProgress {
@@ -45,7 +45,7 @@ export class BatchApiService {
    * Execute API requests in batches with retry logic
    */
   static async executeBatch<TInput, TOutput>(
-    request: BatchRequest<TInput>,
+    request: BatchRequest<TInput, TOutput>,
     apiCall: (batch: TInput[]) => Promise<TOutput[]>,
     retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG
   ): Promise<BatchResult<TInput>> {

@@ -62,7 +62,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
       const values = await generators[fieldType]()
       setGeneratedValues(values)
       message.success(t('fieldGenerator.generationSuccess'))
-    } catch (error) {
+    } catch {
       message.error(t('fieldGenerator.generationError'))
     } finally {
       setGenerating(false)
@@ -87,22 +87,27 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
       .catch(() => message.error(t('fieldGenerator.copyError')))
   }
 
-  const keyTypeOptions = [
+  const keyTypeOptions: ReadonlyArray<{ value: 'rsa' | 'ed25519'; label: string; disabled?: boolean }> = [
     { value: 'rsa', label: 'RSA' },
     { value: 'ed25519', label: `Ed25519 ${t('fieldGenerator.comingSoon')}`, disabled: true }
   ]
   
-  const keySizeOptions = [
+  const keySizeOptions: ReadonlyArray<{ value: 2048 | 4096; label: string; disabled?: boolean }> = [
     { value: 2048, label: '2048 bits' },
     { value: 4096, label: `4096 bits (${t('fieldGenerator.moreSecure')})` }
   ]
 
-  const renderRadioGroup = (label: string, value: any, options: any[], onChange: (val: any) => void) => (
+  const renderRadioGroup = <T extends string | number>(
+    label: string,
+    value: T,
+    options: ReadonlyArray<{ value: T; label: string; disabled?: boolean }>,
+    onChange: (val: T) => void
+  ) => (
     <div>
       <OptionLabel>{label}</OptionLabel>
       <OptionGroup
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value as T)}
         data-testid={`vault-editor-radio-${label.toLowerCase().replace(/\s+/g, '-')}`}
       >
         {options.map(opt => (
@@ -119,17 +124,20 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     </div>
   )
 
+  const currentKeyType: 'rsa' | 'ed25519' = keyOptions.keyType ?? 'rsa'
+  const currentKeySize: 2048 | 4096 = keyOptions.keySize ?? 2048
+
   const renderSSHKeyOptions = () => (
     <OptionsStack direction="vertical">
       {renderRadioGroup(
         t('fieldGenerator.keyType'), 
-        keyOptions.keyType, 
+        currentKeyType, 
         keyTypeOptions,
         (val) => setKeyOptions({ ...keyOptions, keyType: val })
       )}
-      {keyOptions.keyType === 'rsa' && renderRadioGroup(
+      {currentKeyType === 'rsa' && renderRadioGroup(
         t('fieldGenerator.keySize'),
-        keyOptions.keySize,
+        currentKeySize,
         keySizeOptions,
         (val) => setKeyOptions({ ...keyOptions, keySize: val })
       )}

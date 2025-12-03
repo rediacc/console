@@ -328,6 +328,7 @@ export interface CompanyVaultRecord extends Record<string, unknown> {
   entityIdentifier?: string
   vaultContent?: string
   vaultVersion?: number
+  vaultType?: string
 }
 
 export interface CompanyVaultCollections {

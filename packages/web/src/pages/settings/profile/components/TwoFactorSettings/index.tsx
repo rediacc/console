@@ -85,8 +85,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       enableModal.close()
       setShowVerification(true)
       passwordForm.resetFields()
-    } catch (error: any) {
-      if (error.message?.includes('already enabled')) {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message?.includes('already enabled')) {
         enableModal.close()
         passwordForm.resetFields()
       }
@@ -104,7 +104,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       setShowVerification(false)
       setShowSuccess(true)
       verificationForm.resetFields()
-    } catch (_error) {
+    } catch {
       // handled via mutation notifications
     }
   }
@@ -117,7 +117,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       })
       disableModal.close()
       disableForm.resetFields()
-    } catch (_error) {
+    } catch {
       // handled via mutation notifications
     }
   }

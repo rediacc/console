@@ -21,4 +21,4 @@ const StyledTableBase = styled(AntTable)<{ $removeMargins?: boolean }>`
   `}
 `
 
-export const StyledTable = StyledTableBase as ComponentType<TableProps<any> & { $removeMargins?: boolean }>
+export const StyledTable = StyledTableBase as ComponentType<TableProps<unknown> & { $removeMargins?: boolean }>

@@ -1,7 +1,9 @@
 ﻿import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Alert, Tag, Space, Typography, Button, Tooltip, Modal, Input } from 'antd'
+import type { TableProps } from 'antd'
 import type { MenuProps } from 'antd'
+import { isAxiosError } from 'axios'
 import { useTableStyles } from '@/hooks/useComponentStyles'
 import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, SaveOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, CaretDownOutlined, CaretRightOutlined, FolderOutlined, EyeOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -10,6 +12,7 @@ import * as S from './styles'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueAction } from '@/hooks/useQueueAction'
 import { Machine } from '@/types'
+import type { Repo as TeamRepo } from '@rediacc/shared/types'
 import { useTeams } from '@/api/queries/teams'
 import { useRepos, useCreateRepo, useDeleteRepo, usePromoteRepoToGrand, useUpdateRepoName } from '@/api/queries/repos'
 import { useMachines } from '@/api/queries/machines'
@@ -38,6 +41,9 @@ import {
 } from '@/core'
 
 const { Text } = Typography
+
+const RepoTableComponent = S.StyledTable as React.ComponentType<TableProps<RepoTableRow>>
+const SystemTableComponent = S.StyledTable as React.ComponentType<TableProps<Container>>
 
 interface Repo {
   name: string
@@ -72,6 +78,14 @@ const getRepoDisplayName = (repo: Repo): string => {
   return `${repo.name}:${repo.repoTag || 'latest'}`
 }
 
+const getAxiosErrorMessage = (error: unknown, fallback: string) => {
+  if (isAxiosError(error)) {
+    const responseMessage = (error.response?.data as { message?: string } | undefined)?.message
+    return responseMessage || error.message || fallback
+  }
+  return fallback
+}
+
 // Data structure for grouped repos
 interface GroupedRepo {
   name: string                    // Repo name (e.g., "webapp")
@@ -93,7 +107,7 @@ interface RepoTableRow extends Repo {
 }
 
 // Helper to group repos by name
-const groupReposByName = (repos: Repo[], teamRepos: any[]): GroupedRepo[] => {
+const groupReposByName = (repos: Repo[], teamRepos: TeamRepo[]): GroupedRepo[] => {
   // Group by name
   const grouped = repos.reduce((acc, repo) => {
     if (!acc[repo.name]) {
@@ -144,7 +158,25 @@ interface Container {
   ports?: string
   created?: string
   port_mappings?: PortMapping[]
-  [key: string]: any // eslint-disable-line @typescript-eslint/no-explicit-any -- Allow additional properties from API
+  Repo?: string
+  [key: string]: unknown
+}
+
+interface RepoService {
+  Repo?: string
+  service_name?: string
+  unit_file?: string
+  [key: string]: unknown
+}
+
+interface RepoServicesState {
+  services: RepoService[]
+  error: string | null
+}
+
+interface RepoContainersState {
+  containers: Container[]
+  error: string | null
 }
 
 interface SystemInfo {
@@ -187,7 +219,7 @@ interface MachineRepoTableProps {
   onContainerClick?: (container: Container) => void
   highlightedContainer?: Container | null
   isLoading?: boolean
-  onRefreshMachines?: () => Promise<any>
+  onRefreshMachines?: () => Promise<void>
   refreshKey?: number // Used to trigger re-rendering when parent wants to force refresh
   onQueueItemCreated?: (taskId: string, machineName: string) => void // Callback to open parent's QueueItemTraceModal with machine context
 }
@@ -200,15 +232,15 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const tableStyles = useTableStyles()
   const [_repos, setRepos] = useState<Repo[]>([])
-  const [systemContainers] = useState<any[]>([])
+  const [systemContainers] = useState<Container[]>([])
   const [_systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null)
   const functionModal = useDialogState<void>()
   const [selectedFunction, setSelectedFunction] = useState<string | null>(null)
-  const [_servicesData, setServicesData] = useState<Record<string, any>>({})
-  const [containersData, setContainersData] = useState<Record<string, any>>({})
+  const [_servicesData, setServicesData] = useState<Record<string, RepoServicesState>>({})
+  const [containersData, setContainersData] = useState<Record<string, RepoContainersState>>({})
   const [createdRepoName, setCreatedRepoName] = useState<string | null>(null)
   const [createdRepoTag, setCreatedRepoTag] = useState<string | null>(null)
   const [groupedRepos, setGroupedRepos] = useState<GroupedRepo[]>([])
@@ -343,21 +375,21 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
                 // Process containers and services if included
                 if (result.containers && Array.isArray(result.containers)) {
                   // Group containers by Repo
-                  const containersMap: Record<string, any> = {}
+                  const containersMap: Record<string, RepoContainersState> = {}
                   
                   // Initialize empty containers for all repos
                   mappedRepos.forEach((repo: Repo) => {
                     containersMap[repo.name] = { containers: [], error: null }
                   })
                   
-                  result.containers.forEach((container: any) => {
+                  result.containers.forEach((container: Container) => {
                     // Check if container has a Repo field
                     if (container.Repo) {
                       const repoGuid = container.Repo
                       // Find the mapped Repo that corresponds to this GUID
                       const mappedRepo = mappedRepos.find((repo: Repo) => {
                         // Find the original Repo with this GUID
-                        const originalRepo = result.repos.find((r: any) => r.name === repoGuid)
+                        const originalRepo = result.repos.find((r: Repo) => r.name === repoGuid)
                         if (!originalRepo) return false
                         // Match by mount path or other unique properties
                         return repo.mount_path === originalRepo.mount_path ||
@@ -374,7 +406,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
                 
                 if (result.services && Array.isArray(result.services)) {
                   // Group services by Repo
-                  const servicesMap: Record<string, any> = {}
+                  const servicesMap: Record<string, RepoServicesState> = {}
                   
                   // Initialize empty services for all repos
                   mappedRepos.forEach((repo: Repo) => {
@@ -382,14 +414,14 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
                   })
                   
                   // Add services to their respective repos
-                  result.services.forEach((service: any) => {
+                  result.services.forEach((service: RepoService) => {
                     // Check if service has a Repo field (newer format)
                     if (service.Repo) {
                       const repoGuid = service.Repo
                       // Find the mapped Repo that corresponds to this GUID
                       const mappedRepo = mappedRepos.find((repo: Repo) => {
                         // Find the original Repo with this GUID
-                        const originalRepo = result.repos.find((r: any) => r.name === repoGuid)
+                        const originalRepo = result.repos.find((r: Repo) => r.name === repoGuid)
                         if (!originalRepo) return false
                         // Match by mount path or other unique properties
                         return repo.mount_path === originalRepo.mount_path || 
@@ -408,7 +440,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
                         const repoGuid = guidMatch[1]
                         // Find the mapped Repo
                         const mappedRepo = mappedRepos.find((repo: Repo) => {
-                          const originalRepo = result.repos.find((r: any) => r.name === repoGuid)
+                        const originalRepo = result.repos.find((r: Repo) => r.name === repoGuid)
                           if (!originalRepo) return false
                           return repo.mount_path === originalRepo.mount_path || 
                                  repo.image_path === originalRepo.image_path
@@ -428,7 +460,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
               
               setLoading(false)
             }
-          } catch (err) {
+          } catch {
             setError('Failed to parse Repo data')
             setLoading(false)
           }
@@ -485,7 +517,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
     ) || RepoData.vaultContent
 
     // Build params with option if provided
-    const params: Record<string, any> = {
+    const params: Record<string, unknown> = {
       repo: RepoData.repoGuid,
       grand: RepoData.grandGuid || ''
     }
@@ -576,7 +608,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
 
         // Build params for push function
         const state = Repo.mounted ? 'online' : 'offline'
-        const params: Record<string, any> = {
+        const params: Record<string, unknown> = {
           repo: RepoData.repoGuid,
           dest: newRepo.repoGuid,
           destinationType: 'machine',
@@ -614,7 +646,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
           throw new Error(result.error || 'Failed to fork Repo')
         }
 
-      } catch (createError) {
+      } catch {
         // If we already created the Repo but failed to start the fork, clean it up
         if (createdRepoName && createdRepoTag) {
           try {
@@ -623,7 +655,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
               repoName: createdRepoName,
               repoTag: createdRepoTag
             })
-          } catch (deleteError) {
+          } catch {
             // Failed to cleanup Repo after error
           }
         }
@@ -631,7 +663,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
         return
       }
 
-    } catch (error) {
+    } catch {
       showMessage('error', t('resources:repos.failedToForkRepo'))
     }
   }
@@ -671,7 +703,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
           ) || '{}'
 
           // Step 1: Queue the physical deletion via repo_rm
-          const params: Record<string, any> = {
+          const params: Record<string, unknown> = {
             repo: context.repoGuid,
             grand: context.grandGuid
           }
@@ -705,7 +737,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
                   repoTag: Repo.repoTag || 'latest'
                 })
                 showMessage('success', t('resources:repos.deleteForkSuccess'))
-              } catch (credError) {
+              } catch {
                 showMessage('warning', t('resources:repos.deleteCloneCredentialFailed'))
               }
             } else if (result.isQueued) {
@@ -715,7 +747,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
             showMessage('error', result.error || t('resources:repos.deleteCloneFailed'))
           }
 
-        } catch (error) {
+        } catch {
           showMessage('error', t('resources:repos.deleteCloneFailed'))
         }
       }
@@ -778,7 +810,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
         })
           showMessage('success', t('resources:repos.promoteSuccess', { name: Repo.name }))
         } catch (error: unknown) {
-          const errorMessage = (error as any)?.response?.data?.message || t('resources:repos.promoteFailed')
+          const errorMessage = getAxiosErrorMessage(error, t('resources:repos.promoteFailed'))
           showMessage('error', errorMessage)
         }
       }
@@ -843,7 +875,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
             onActionComplete()
           }
         } catch (error: unknown) {
-          const errorMessage = (error as any)?.response?.data?.message || t('resources:repos.renameFailed')
+          const errorMessage = getAxiosErrorMessage(error, t('resources:repos.renameFailed'))
           showMessage('error', errorMessage)
           return Promise.reject()
         }
@@ -947,7 +979,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
           ) || '{}'
 
           // Step 1: Queue the physical deletion via repo_rm
-          const params: Record<string, any> = {
+          const params: Record<string, unknown> = {
             repo: context.repoGuid,
             grand: context.repoGuid // Grand points to itself
           }
@@ -981,7 +1013,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
                   repoTag: Repo.repoTag || 'latest'
                 })
                 showMessage('success', t('resources:repos.deleteGrandSuccess'))
-              } catch (credError) {
+              } catch {
                 showMessage('warning', t('resources:repos.deleteGrandCredentialFailed'))
               }
             } else if (result.isQueued) {
@@ -992,7 +1024,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
             return Promise.reject()
           }
 
-        } catch (error) {
+        } catch {
           showMessage('error', t('resources:repos.deleteGrandFailed'))
           return Promise.reject()
         }
@@ -1003,7 +1035,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
 
   const handleFunctionSubmit = async (functionData: {
     function: QueueFunction
-    params: Record<string, any>
+    params: Record<string, unknown>
     priority: number
     description: string
   }) => {
@@ -1043,7 +1075,8 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
           : [functionData.params.machines]
 
         // Validate destination filename before processing
-        const destFilename = functionData.params.dest?.trim()
+        const destinationParam = functionData.params.dest
+        const destFilename = typeof destinationParam === 'string' ? destinationParam.trim() : ''
 
         if (!destFilename) {
           showMessage('error', 'Destination filename is required')
@@ -1075,7 +1108,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
           if (!newRepo || !newRepo.repoGuid) {
             throw new Error('Could not find newly created Repo')
           }
-        } catch (createError) {
+        } catch {
           showMessage('error', t('resources:repos.failedToCreateRepo'))
           functionModal.close()
           setSelectedRepo(null)
@@ -1124,7 +1157,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
             if (result.success && result.taskId) {
               createdTaskIds.push(result.taskId)
             }
-          } catch (error) {
+          } catch {
             showMessage('error', t('resources:repos.failedToDeployTo', { machine: targetMachine }))
           }
         }
@@ -1212,7 +1245,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
             if (result.success && result.taskId) {
               createdTaskIds.push(result.taskId)
             }
-          } catch (error) {
+          } catch {
             showMessage('error', t('resources:repos.failedToBackupTo', { storage: targetStorage }))
           }
         }
@@ -1895,7 +1928,12 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
                     repo={row.name}
                     teamName={machine.teamName}
                     userEmail={userEmail}
-                    pluginContainers={containersData[row.name]?.containers || []}
+                    pluginContainers={(containersData[row.name]?.containers || []).map((container) => ({
+                      ...container,
+                      name: container.name ?? '',
+                      image: container.image ?? '',
+                      status: container.status ?? container.state ?? '',
+                    }))}
                   />
                 ),
               },
@@ -2017,7 +2055,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
       })()}
 
       {/* Repo Table */}
-      <S.StyledTable
+      <RepoTableComponent
         columns={columns}
         dataSource={getTableDataSource()}
         rowKey={(record: RepoTableRow) => record.key || `${record.name}-${record.repoTag || 'latest'}`}
@@ -2103,12 +2141,12 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
       />
       
       {/* System Containers Section */}
-      {systemContainers.length > 0 && !hideSystemInfo && (
+        {systemContainers.length > 0 && !hideSystemInfo && (
         <S.SystemContainersWrapper data-testid="machine-repo-list-system-containers">
           <S.SystemContainersTitle as={Typography.Title} level={5} data-testid="machine-repo-list-system-containers-title">
             {t('resources:repos.systemContainers')}
           </S.SystemContainersTitle>
-          <S.StyledTable
+          <SystemTableComponent
             columns={systemContainerColumns}
             dataSource={systemContainers}
             rowKey="id"

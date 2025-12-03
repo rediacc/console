@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { lightTheme, darkTheme } from '@/styles/styledTheme';
 import { telemetryService } from '@/services/telemetryService';
@@ -21,6 +21,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const savedTheme = localStorage.getItem('theme');
     return (savedTheme as Theme) || 'light';
   });
+  const initialTheme = useRef(theme);
 
   // Track initial theme selection on mount
   useEffect(() => {
@@ -28,10 +29,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const savedTheme = localStorage.getItem('theme');
 
     telemetryService.trackEvent('user.theme_initialized', {
-      'theme.current': theme,
+      'theme.current': initialTheme.current,
       'theme.was_saved': !!savedTheme,
       'theme.system_preference': isSystemDark ? 'dark' : 'light',
-      'theme.matches_system': theme === (isSystemDark ? 'dark' : 'light'),
+      'theme.matches_system': initialTheme.current === (isSystemDark ? 'dark' : 'light'),
       'accessibility.prefers_dark': isSystemDark
     });
   }, []); // Only run on mount

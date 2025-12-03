@@ -40,7 +40,6 @@ export const useDebouncedMachineValidation = (
           ...prev,
           [machine.machineName]: result
         }))
-        return result
       } finally {
         setIsValidating(false)
       }
@@ -77,7 +76,6 @@ export const useDebouncedMachineValidation = (
         })
 
         setValidationResults(newResults)
-        return result
       } finally {
         setIsValidating(false)
       }

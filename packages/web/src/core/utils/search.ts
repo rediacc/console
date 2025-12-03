@@ -23,7 +23,7 @@ export function caseInsensitiveSearch(
  * @param fields - Array of field names to search
  * @returns True if search text is found in any field
  */
-export function searchInFields<T extends Record<string, any>>(
+export function searchInFields<T extends object>(
   item: T,
   searchText: string,
   fields: (keyof T)[]
@@ -44,7 +44,7 @@ export function searchInFields<T extends Record<string, any>>(
  * @param fields - Array of field names to search
  * @returns Filtered array containing only items that match the search
  */
-export function multiFieldSearch<T extends Record<string, any>>(
+export function multiFieldSearch<T extends object>(
   items: T[],
   searchText: string,
   fields: (keyof T)[]
@@ -59,7 +59,7 @@ export function multiFieldSearch<T extends Record<string, any>>(
  * @param fields - Array of field names to search
  * @returns A predicate function that can be used with Array.filter
  */
-export function createSearchPredicate<T extends Record<string, any>>(
+export function createSearchPredicate<T extends object>(
   searchText: string,
   fields: (keyof T)[]
 ): (item: T) => boolean {

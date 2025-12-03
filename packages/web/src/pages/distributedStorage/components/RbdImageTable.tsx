@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { Key } from 'react'
 import { Table, Button, Space, Tag, Tooltip, message } from 'antd'
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
 import {
@@ -19,7 +20,7 @@ import {
   CloudServerOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import type { MenuProps } from 'antd'
+import type { MenuProps, TableProps } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import {
   useDistributedStorageRbdImages,
@@ -47,16 +48,24 @@ interface RbdImageTableProps {
   teamFilter: string | string[]
 }
 
+interface RbdImageModalState {
+  open: boolean
+  mode: 'create' | 'edit' | 'vault'
+  data?: (DistributedStorageRbdImage & { vaultContent?: string | null })
+}
+
+interface ImageFormValues extends Record<string, unknown> {
+  imageName: string
+  machineName: string
+  imageVault: string
+}
+
 const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   const { t } = useTranslation('distributedStorage')
   const tableStyles = useTableStyles()
   const componentStyles = useComponentStyles()
   const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable()
-  const [modalState, setModalState] = useState<{
-    open: boolean
-    mode: 'create' | 'edit' | 'vault'
-    data?: Record<string, any>
-  }>({ open: false, mode: 'create' })
+  const [modalState, setModalState] = useState<RbdImageModalState>({ open: false, mode: 'create' })
   const queueTrace = useQueueTraceModal()
   const reassignMachineModal = useDialogState<DistributedStorageRbdImage>()
   const managedQueueMutation = useManagedQueueItem()
@@ -69,6 +78,9 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   
   // Fetch available machines for the team
   const { data: availableMachines = [] } = useAvailableMachinesForClone(pool.teamName, modalState.open && modalState.mode === 'create')
+  const getRowProps: TableProps<DistributedStorageRbdImage>['onRow'] = (record) => ({
+    'data-testid': `rbd-image-row-${record.imageName}`,
+  })
   
   const handleCreate = () => {
     setModalState({ open: true, mode: 'create' })
@@ -125,7 +137,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       if (taskId) {
         handleQueueItemCreated(taskId)
       }
-    } catch (error) {
+    } catch {
       message.error(t('queue.createError'))
     }
   }
@@ -335,13 +347,11 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           size="small"
           pagination={false}
           data-testid="rbd-image-table"
-          onRow={(record) => ({
-            'data-testid': `rbd-image-row-${record.imageName}`,
-          } as any)}
+          onRow={getRowProps}
           expandable={{
             expandedRowRender,
             expandedRowKeys,
-            onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
+            onExpandedRowsChange: (keys: Key[]) => setExpandedRowKeys(keys.map(String)),
             expandIcon: ({ expanded, onExpand, record }) => (
               <Button
                 size="small"
@@ -374,7 +384,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           vaultContent: modalState.data?.vaultContent || modalState.data?.imageVault
         }}
         teamFilter={pool.teamName}
-        onSubmit={async (data: any) => {
+        onSubmit={async (data: ImageFormValues) => {
           if (modalState.mode === 'create') {
             await createImageMutation.mutateAsync({
               poolName: pool.poolName,

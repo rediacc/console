@@ -15,6 +15,7 @@ import {
 import { ModalSize } from '@/types/modal';
 import { ContentSpace, SourceLabel, SourceContainer, SourceSelect, SearchInput, FolderIcon, FileIcon } from './styles';
 import type { ColumnsType } from 'antd/es/table/interface';
+import type { TableProps } from 'antd';
 import {
   FolderOutlined,
   FileOutlined,
@@ -62,6 +63,40 @@ interface RemoteFileBrowserModalProps {
   onClose?: () => void;
   onQueueItemCreated?: (taskId: string, machineName: string) => void;
 }
+
+type AdditionalVaultData = Record<string, unknown>;
+
+interface RcloneEntry {
+  name?: string;
+  Name?: string;
+  size?: number | string;
+  Size?: number | string;
+  isDirectory?: boolean;
+  IsDir?: boolean;
+  permissions?: string;
+  date?: string;
+  time?: string;
+  ModTime?: string;
+  Path?: string;
+  MimeType?: string;
+}
+
+const getStringValue = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined;
+
+const getNumberValue = (value: unknown): number => {
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = parseInt(value, 10);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+const getBooleanValue = (value: unknown): boolean =>
+  typeof value === 'boolean' ? value : false;
 
 export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   open,
@@ -147,11 +182,8 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
 
   const loadFiles = async () => {
     if (!selectedSource) {
-      console.log('No source selected, skipping file load');
       return;
     }
-
-    console.log('Loading files from:', selectedSource, 'path:', currentPath);
     setLoading(true);
     try {
       // Find the source details from storage or machines
@@ -159,13 +191,11 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       const isStorageSource = sourceDetails?.type === 'storage';
       
       // Get vault data for the source
-      const additionalVaultData: Record<string, any> = {};
+      const additionalVaultData: AdditionalVaultData = {};
       
       // For list function, we always need the current machine's vault data
       // because the command runs on the current machine
       const currentMachine = machinesData?.find(m => m.machineName === machineName);
-      console.log('Current machine data:', currentMachine);
-      console.log('Machine vault content:', currentMachine?.vaultContent);
       
       if (currentMachine && currentMachine.vaultContent) {
         additionalVaultData.machineVault = currentMachine.vaultContent;
@@ -173,7 +203,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       
       // Get team vault data (contains SSH keys)
       const currentTeam = teamsData?.find(t => t.teamName === teamName);
-      console.log('Current team data:', currentTeam);
       if (currentTeam && currentTeam.vaultContent) {
         additionalVaultData.teamVault = currentTeam.vaultContent;
       }
@@ -211,19 +240,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         }
       }
 
-      console.log('Building vault with data:', {
-        teamName,
-        machineName,
-        bridgeName,
-        functionName: 'list',
-        params: {
-          from: selectedSource,
-          path: currentPath || '',
-          format: 'json'
-        },
-        additionalVaultData
-      });
-      
       const vault = await buildQueueVault({
         teamName,
         machineName,
@@ -238,8 +254,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         addedVia: 'file-browser',
         ...additionalVaultData
       });
-
-      console.log('Creating queue item with vault:', vault);
       const result = await createQueueItem({
         teamName,
         machineName,
@@ -248,7 +262,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         priority: 4
       });
 
-      console.log('Queue result:', result);
       const taskId = result.taskId || result.queueId;
       if (!taskId) {
         throw new Error('Failed to create queue item - no taskId returned');
@@ -256,10 +269,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
 
       // Only wait for completion if it's not queued (priority > 1)
       if (!result.isQueued) {
-        console.log('Waiting for task completion:', taskId);
         const completionResult = await waitForQueueItemCompletion(taskId, 30000);
-        
-        console.log('Completion result:', completionResult);
         if (completionResult.success) {
           // Parse the result based on the format
         let fileList: RemoteFile[] = [];
@@ -272,7 +282,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           
           // If there's no response data, the operation completed but returned no data
           if (!commandResult && !completionResult.responseData) {
-            console.log('No response data received');
+            console.warn('Remote file browser received no response data');
             setFiles([]);
             return;
           }
@@ -282,7 +292,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
             try {
               const parsed = JSON.parse(commandResult);
               dataToProcess = parsed.command_output || '';
-            } catch (e) {
+            } catch {
               dataToProcess = commandResult;
             }
           }
@@ -291,13 +301,11 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           if (typeof dataToProcess === 'string') {
             // First check if it starts with debug output
             if (dataToProcess.includes('DEBUG:')) {
-              console.log('Raw data with debug output:', dataToProcess);
               // Find the JSON array after all the debug output
               const jsonStartIndex = dataToProcess.lastIndexOf('[');
               const jsonEndIndex = dataToProcess.lastIndexOf(']');
               if (jsonStartIndex !== -1 && jsonEndIndex !== -1 && jsonStartIndex < jsonEndIndex) {
                 const jsonString = dataToProcess.substring(jsonStartIndex, jsonEndIndex + 1);
-                console.log('Extracted JSON after debug:', jsonString);
                 dataToProcess = jsonString;
               }
             } else if (dataToProcess.includes('[')) {
@@ -306,7 +314,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
               const jsonEndIndex = dataToProcess.lastIndexOf(']');
               if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
                 const jsonString = dataToProcess.substring(jsonStartIndex, jsonEndIndex + 1);
-                console.log('Extracted JSON:', jsonString);
                 
                 // Clean up the JSON string - remove escaped quotes and newlines
                 const cleanedJson = jsonString
@@ -320,71 +327,86 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           
           // First try to parse as JSON
           const parsedData = typeof dataToProcess === 'string' ? JSON.parse(dataToProcess) : dataToProcess;
-          console.log('Parsed data:', parsedData);
           
           if (Array.isArray(parsedData)) {
             // Direct array format (SSH ls output or rclone lsjson)
-            fileList = parsedData.map((file: any) => {
-              const fileName = file.name || file.Name || '';
+            fileList = parsedData.map((file: RcloneEntry) => {
+              const fileName =
+                getStringValue(file.name) ??
+                getStringValue(file.Name) ??
+                '';
               const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
               const isGuid = guidPattern.test(fileName);
 
               let displayName = fileName;
               let repoInfo = null;
 
-              if (isGuid && !file.isDirectory && !(file.IsDir)) {
+              const isDirectoryFlag =
+                getBooleanValue(file.isDirectory) ||
+                getBooleanValue(file.IsDir) ||
+                Boolean(getStringValue(file.permissions)?.startsWith('d'));
+
+              if (isGuid && !isDirectoryFlag) {
                 repoInfo = mapGuidToRepo(fileName);
                 displayName = repoInfo.displayName;
               }
 
               return {
                 name: displayName,
-                originalGuid: isGuid && !file.isDirectory && !(file.IsDir) ? fileName : undefined,
+                originalGuid: isGuid && !isDirectoryFlag ? fileName : undefined,
                 repoName: repoInfo?.repoName,
                 repoTag: repoInfo?.repoTag,
                 isUnmapped: repoInfo?.isUnmapped || false,
-                size: parseInt(file.size || file.Size || '0'),
-                isDirectory: file.isDirectory !== undefined ? file.isDirectory : (file.permissions?.startsWith('d') || file.IsDir || false),
-                modTime: file.date ? `${file.date} ${file.time}` : file.ModTime,
-                path: file.Path || (currentPath ? `${currentPath}/${file.name || file.Name}` : file.name || file.Name)
+                size: getNumberValue(file.size ?? file.Size ?? 0),
+                isDirectory: isDirectoryFlag,
+                modTime: file.date && file.time ? `${file.date} ${file.time}` : getStringValue(file.ModTime),
+                path:
+                  getStringValue(file.Path) ||
+                  (currentPath && fileName ? `${currentPath}/${fileName}` : fileName),
               };
             });
           } else if (parsedData.entries) {
             // rclone lsjson format with entries wrapper
-            fileList = parsedData.entries.map((file: any) => {
-              const fileName = file.Name;
+            const entries = Array.isArray((parsedData as { entries?: RcloneEntry[] }).entries)
+              ? (parsedData as { entries?: RcloneEntry[] }).entries!
+              : [];
+            fileList = entries.map((file) => {
+              const fileName = getStringValue(file.Name) || '';
               const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
               const isGuid = guidPattern.test(fileName);
 
               let displayName = fileName;
               let repoInfo = null;
 
-              if (isGuid && !file.IsDir) {
+              const isDirectoryFlag = getBooleanValue(file.IsDir);
+              if (isGuid && !isDirectoryFlag) {
                 repoInfo = mapGuidToRepo(fileName);
                 displayName = repoInfo.displayName;
               }
 
               return {
                 name: displayName,
-                originalGuid: isGuid && !file.IsDir ? fileName : undefined,
+                originalGuid: isGuid && !isDirectoryFlag ? fileName : undefined,
                 repoName: repoInfo?.repoName,
                 repoTag: repoInfo?.repoTag,
                 isUnmapped: repoInfo?.isUnmapped || false,
-                size: file.Size || 0,
-                isDirectory: file.IsDir || false,
-                modTime: file.ModTime,
-                mimeType: file.MimeType,
-                path: file.Path || (currentPath ? `${currentPath}/${file.Name}` : file.Name)
+                size: getNumberValue(file.Size),
+                isDirectory: isDirectoryFlag,
+                modTime: getStringValue(file.ModTime),
+                mimeType: getStringValue(file.MimeType),
+                path:
+                  getStringValue(file.Path) ||
+                  (currentPath && fileName ? `${currentPath}/${fileName}` : fileName),
               };
             });
           }
         } catch (parseError) {
-          console.log('Parsing as plain text format:', parseError);
-          console.log('Data that failed to parse:', dataToProcess);
+          console.warn('Parsing remote file data as plain text format failed:', parseError);
+          console.warn('Data that failed to parse:', dataToProcess);
           
           // Check if this looks like rclone JSON output that's malformed
           if (typeof dataToProcess === 'string' && dataToProcess.includes('"Path":') && dataToProcess.includes('"Name":')) {
-            console.log('Detected malformed rclone JSON output');
+            console.warn('Detected malformed rclone JSON output');
             // Try to extract individual JSON objects
             const jsonObjects = dataToProcess.match(/\{[^}]+\}/g);
             if (jsonObjects) {
@@ -399,7 +421,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                     mimeType: file.MimeType,
                     path: file.Path || (currentPath ? `${currentPath}/${file.Name}` : file.Name)
                   };
-                } catch (e) {
+                } catch {
                   return null;
                 }
               }).filter(f => f !== null) as RemoteFile[];
@@ -448,18 +470,14 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         }
       } else {
         // Item is queued, we can't get immediate results
-        console.log('List operation queued with ID:', taskId);
+        console.warn('List operation queued with ID:', taskId);
         showMessage('info', 'File listing has been queued. Please try again in a moment.');
         setFiles([]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading files:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response
-      });
-      showMessage('error', error.message || t('resources:remoteFiles.loadError'));
+      const errorMessage = error instanceof Error ? error.message : t('resources:remoteFiles.loadError');
+      showMessage('error', errorMessage);
       setFiles([]);
     } finally {
       setLoading(false);
@@ -489,7 +507,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       // Direct pull implementation
       const file = selectedFileObject;
         // Get vault data - same pattern as list function
-        const additionalVaultData: Record<string, any> = {};
+        const additionalVaultData: AdditionalVaultData = {};
         
         // Find the source details from storage or machines
         const sourceDetails = storageSources.find(s => s.value === selectedSource);
@@ -667,6 +685,10 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
     },
   ];
 
+  const getRowProps: TableProps<RemoteFile>['onRow'] = (record) => ({
+    'data-testid': `file-browser-row-${record.name}`,
+  });
+
   // Breadcrumb items
   const breadcrumbItems = useMemo(() => {
     const items = [
@@ -840,9 +862,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
               }}
               scroll={{ y: 400 }}
               data-testid="file-browser-table"
-              onRow={(record) => ({
-                'data-testid': `file-browser-row-${record.name}`,
-              } as any)}
+              onRow={getRowProps}
             />
           )}
         </LoadingWrapper>

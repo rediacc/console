@@ -1,4 +1,4 @@
-import type { Machine } from '@/types'
+import type { Machine, MachineAssignmentType } from '@/types'
 import {
   MachineValidationService
 } from '../services'
@@ -26,9 +26,36 @@ import {
   ValidationError,
   ConflictError,
   WorkflowEvent,
-  WorkflowEventData,
-  WorkflowEventHandler
+  WorkflowEventHandler,
+  WorkflowEventPayloadMap,
+  WorkflowEventEnvelope
 } from './types'
+
+const normalizeAssignmentType = (type?: string): MachineAssignmentType => {
+  if (!type) {
+    return 'AVAILABLE'
+  }
+  const normalized = type.toUpperCase()
+  if (normalized === 'CLUSTER' || normalized === 'IMAGE' || normalized === 'CLONE') {
+    return normalized as MachineAssignmentType
+  }
+  return 'AVAILABLE'
+}
+
+const mapToValidationTarget = (
+  type: MachineAssignmentType,
+): 'cluster' | 'image' | 'clone' => {
+  switch (type) {
+    case 'CLUSTER':
+      return 'cluster'
+    case 'IMAGE':
+      return 'image'
+    case 'CLONE':
+      return 'clone'
+    default:
+      return 'cluster'
+  }
+}
 
 export class MachineAssignmentController {
   private assignmentHook: ReturnType<typeof useMachineAssignment>
@@ -55,13 +82,22 @@ export class MachineAssignmentController {
   /**
    * Emit workflow event
    */
-  private emit(event: WorkflowEvent, workflowId: string, data?: any) {
-    const eventData: WorkflowEventData = {
-      event,
-      workflowId,
-      timestamp: new Date(),
-      data
+  private emit<TEvent extends WorkflowEvent>(
+    event: TEvent,
+    workflowId: string,
+    ...payload: WorkflowEventPayloadMap[TEvent] extends undefined ? [] : [WorkflowEventPayloadMap[TEvent]]
+  ) {
+    type EventEnvelope = WorkflowEventEnvelope<TEvent>
+    const baseEvent = { event, workflowId, timestamp: new Date() }
+
+    if (payload.length === 0) {
+      const eventData = baseEvent as EventEnvelope
+      this.eventHandlers.forEach(handler => handler(eventData))
+      return
     }
+
+    const [data] = payload
+    const eventData = { ...baseEvent, data } as EventEnvelope
     this.eventHandlers.forEach(handler => handler(eventData))
   }
   
@@ -103,7 +139,7 @@ export class MachineAssignmentController {
                 currentAssignment: {
                   machineId: machine,
                   machineName: machine,
-                  assignmentType: conflict.assignmentType as any,
+                  assignmentType: normalizeAssignmentType(conflict.assignmentType),
                   resourceName: conflict.resourceName
                 },
                 requestedAssignment: clusterName,
@@ -480,13 +516,13 @@ export class MachineAssignmentController {
   ): Promise<AssignmentWorkflowResult> {
     const validationResults = MachineValidationService.validateBulkAssignment(
       context.machines,
-      context.targetType
+      mapToValidationTarget(context.targetType)
     )
     
     if (!validationResults.allValid) {
       throw new ValidationError(
         'Validation failed',
-        [validationResults as any],
+        [validationResults],
         validationResults.invalidMachines.map(m => m.machineName)
       )
     }

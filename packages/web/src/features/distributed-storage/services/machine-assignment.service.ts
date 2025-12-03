@@ -11,6 +11,11 @@ import type {
 import { MachineValidationService } from './machine-validation.service'
 import type { ValidationContext } from '../models/machine-validation.model'
 
+interface AssignmentOperationResult {
+  success: boolean
+  machineName: string
+}
+
 export class MachineAssignmentService {
   /**
    * Get the assignment type for a machine
@@ -165,13 +170,13 @@ export class MachineAssignmentService {
    */
   static getAssignmentConflicts(
     machines: Machine[],
-    targetType: string,
+    targetType: 'cluster' | 'image' | 'clone',
     targetResource: string
   ): AssignmentConflict[] {
     const conflicts: AssignmentConflict[] = []
 
     machines.forEach(machine => {
-      const canAssign = this.canAssignMachine(machine, targetType as any)
+      const canAssign = this.canAssignMachine(machine, targetType)
       
       if (!canAssign) {
         const currentAssignment: MachineAssignment = {
@@ -252,7 +257,7 @@ export class MachineAssignmentService {
    */
   static processAssignmentResults(
     _requestedMachines: string[],
-    actualResults: any[],
+    actualResults: AssignmentOperationResult[],
     conflicts: AssignmentConflict[]
   ): AssignmentResult {
     const assignedMachines: string[] = []

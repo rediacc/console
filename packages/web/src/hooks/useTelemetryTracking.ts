@@ -1,6 +1,13 @@
 import { useCallback } from 'react'
 import { useTelemetry, useInteractionTracking } from '@/components/common/TelemetryProvider'
 
+type TelemetryAttributes = Record<string, string | number | boolean | null | undefined>
+
+const mapAttributes = (prefix: string, details?: TelemetryAttributes) =>
+  Object.fromEntries(
+    Object.entries(details ?? {}).map(([key, value]) => [`${prefix}.${key}`, String(value)])
+  )
+
 /**
  * Custom hook for common telemetry tracking patterns
  * Provides convenient methods for tracking user interactions across the app
@@ -31,12 +38,10 @@ export const useTelemetryTracking = () => {
   }, [trackResourceAction])
 
   // Queue operations tracking
-  const trackQueueAction = useCallback((action: string, details?: Record<string, any>) => {
+  const trackQueueAction = useCallback((action: string, details?: TelemetryAttributes) => {
     trackEvent('queue.action', {
       'queue.action': action,
-      ...Object.fromEntries(
-        Object.entries(details || {}).map(([key, value]) => [`queue.${key}`, String(value)])
-      ),
+      ...mapAttributes('queue', details),
     })
   }, [trackEvent])
 
@@ -115,22 +120,18 @@ export const useTelemetryTracking = () => {
     })
   }, [trackEvent])
 
-  const trackSecurityAction = useCallback((action: string, details?: Record<string, any>) => {
+  const trackSecurityAction = useCallback((action: string, details?: TelemetryAttributes) => {
     trackEvent('security.action', {
       'security.action': action,
-      ...Object.fromEntries(
-        Object.entries(details || {}).map(([key, value]) => [`security.${key}`, String(value)])
-      ),
+      ...mapAttributes('security', details),
     })
   }, [trackEvent])
 
   // Distributed storage tracking
-  const trackStorageOperation = useCallback((operation: string, details?: Record<string, any>) => {
+  const trackStorageOperation = useCallback((operation: string, details?: TelemetryAttributes) => {
     trackEvent('storage.operation', {
       'storage.operation': operation,
-      ...Object.fromEntries(
-        Object.entries(details || {}).map(([key, value]) => [`storage.${key}`, String(value)])
-      ),
+      ...mapAttributes('storage', details),
     })
   }, [trackEvent])
 
@@ -140,7 +141,7 @@ export const useTelemetryTracking = () => {
     action?: string
     resourceType?: string
     resourceName?: string
-    additionalContext?: Record<string, any>
+    additionalContext?: TelemetryAttributes
   }) => {
     trackError(error, {
       component: context.component || 'unknown',

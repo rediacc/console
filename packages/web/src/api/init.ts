@@ -16,7 +16,7 @@ export async function initializeApiClient() {
     // Log the selected endpoint for debugging
     const endpointInfo = apiConnectionService.getEndpointInfo()
     if (endpointInfo) {
-      console.log(`[API] Connected to: ${endpointInfo.label} (${endpointInfo.url})`)
+      console.warn(`[API] Connected to: ${endpointInfo.label} (${endpointInfo.url})`)
     }
   } catch (error) {
     console.error('[API] Initialization failed:', error)

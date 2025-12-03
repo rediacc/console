@@ -5,6 +5,7 @@ import { contextService } from '../services/context.js'
 import { outputService } from '../services/output.js'
 import { withSpinner } from '../utils/spinner.js'
 import { handleError } from '../utils/errors.js'
+import type { CompanyVaultRecord } from '@rediacc/shared/types'
 import type { OutputFormat } from '../types/index.js'
 export function registerRepoCommands(program: Command): void {
   const repo = program
@@ -199,7 +200,9 @@ export function registerRepoCommands(program: Command): void {
           'Vault fetched'
         )
 
-        const repoVault = vaultsResponse.vaults.find((v: any) => v.vaultType === 'Repository')
+        const repoVault = vaultsResponse.vaults.find(
+          (vault: CompanyVaultRecord & { vaultType?: string }) => vault.vaultType === 'Repository'
+        )
         const format = program.opts().output as OutputFormat
 
         if (repoVault) {

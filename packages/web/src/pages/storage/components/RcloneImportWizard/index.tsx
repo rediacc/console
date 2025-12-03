@@ -24,10 +24,15 @@ import LoadingWrapper from '@/components/common/LoadingWrapper'
 const { Step } = Steps
 const { Text, Paragraph } = Typography
 
+type RcloneConfigFields = {
+  [key: string]: string | number | boolean | Record<string, unknown> | undefined
+  type?: string
+}
+
 interface RcloneConfig {
   name: string
   type: string
-  config: Record<string, any>
+  config: RcloneConfigFields
 }
 
 interface ImportStatus {
@@ -211,7 +216,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
     const configs: RcloneConfig[] = []
     const lines = content.split('\n')
     let currentSection: string | null = null
-    let currentConfig: Record<string, any> = {}
+    let currentConfig: RcloneConfigFields = {}
 
     for (const line of lines) {
       const trimmedLine = line.trim()
@@ -245,7 +250,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
           
           // Try to parse JSON values (for complex objects like tokens)
           try {
-            currentConfig[key] = JSON.parse(value)
+            currentConfig[key] = JSON.parse(value) as Record<string, unknown>
           } catch {
             // If not JSON, store as string
             currentConfig[key] = value
@@ -267,7 +272,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   }
 
   // Map rclone config to our storage provider format
-  const mapRcloneToStorageProvider = (rcloneConfig: RcloneConfig): Record<string, any> | null => {
+  const mapRcloneToStorageProvider = (rcloneConfig: RcloneConfig): Record<string, unknown> | null => {
     const { type, config } = rcloneConfig
     
     // Map rclone type to our provider type
@@ -293,7 +298,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
 
     // Storage vault should contain all fields directly at top level
     // matching the format used in data.json
-    const storageVault: Record<string, any> = {}
+    const storageVault: Record<string, unknown> = {}
 
     // Process all config fields
     Object.entries(config).forEach(([key, value]) => {
@@ -302,7 +307,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
         storageVault.provider = provider
       } else {
         // Parse JSON strings if needed
-        let processedValue = value
+        let processedValue: string | number | boolean | Record<string, unknown> | undefined = value
         if (typeof value === 'string') {
           // Check if it's a JSON string that needs to be parsed
           if ((key === 'token' || key.endsWith('_token')) && value.startsWith('{')) {
@@ -355,7 +360,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       
       setCurrentStep(1)
       return false
-    } catch (error) {
+    } catch {
       setParsingError(t('resources:storage.import.parseError'))
       return false
     }
@@ -404,13 +409,16 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
           }
           return newStatuses
         })
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error
+          ? error.message
+          : t('resources:storage.import.importError')
         setImportStatuses(prev => {
           const newStatuses = [...prev]
           newStatuses[statusIndex] = {
             ...newStatuses[statusIndex],
             status: 'error',
-            message: error.message || t('resources:storage.import.importError')
+            message: errorMessage
           }
           return newStatuses
         })

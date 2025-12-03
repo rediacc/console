@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Alert, Space, Typography, Radio, Tooltip, Statistic, Row, Col, Select } from 'antd'
 import { 
   FullscreenOutlined, 
@@ -20,6 +20,7 @@ import { useTheme } from '@/context/ThemeContext'
 import * as d3 from 'd3'
 import { SectionCard, IconButton, CompactIconButton } from '@/styles/primitives'
 import LoadingWrapper from '@/components/common/LoadingWrapper'
+import type { CompanyDataGraph, CompanyGraphNode, CompanyGraphRelationship } from '@rediacc/shared/types'
 import {
   PageWrapper,
   ContentStack,
@@ -44,19 +45,24 @@ import {
 
 const { Text } = Typography
 
-interface GraphNode extends d3.SimulationNodeDatum {
-  nodeType: string
-  nodeId: string
-  name: string
-  label: string
-  hierarchyLevel: string
-  [key: string]: any
+interface GraphNode extends CompanyGraphNode, d3.SimulationNodeDatum {
+  memberCount?: number
+  machineCount?: number
+  queueCount?: number
+  regionName?: string
+  parentTeam?: string
+  parentRegion?: string
+  parentBridge?: string
+  parentStorage?: string
+  children?: GraphNode[]
 }
 
-interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
-  relationshipType: string
-  label: string
+interface GraphLink extends CompanyGraphRelationship, d3.SimulationLinkDatum<GraphNode> {
+  source: GraphNode
+  target: GraphNode
 }
+
+type HierarchyGraphNode = GraphNode & { children?: HierarchyGraphNode[] }
 
 const ArchitecturePage: React.FC = () => {
   const { t } = useTranslation('system')
@@ -84,21 +90,21 @@ const ArchitecturePage: React.FC = () => {
   ]
 
   // Convert the nested node structure to a flat array with filtering
-  const flattenNodes = (nodes: any, filterTypes: string[]): GraphNode[] => {
+  const flattenNodes = (nodes: CompanyDataGraph['nodes'], filterTypes: string[]): GraphNode[] => {
     const flatNodes: GraphNode[] = []
     
     // Process each node type
     Object.entries(nodes).forEach(([type, nodeArray]) => {
       if (Array.isArray(nodeArray) && nodeArray.length > 0) {
-        nodeArray.forEach((node: any) => {
+        nodeArray.forEach((node) => {
           // Ensure nodeType is set correctly - some nodes already have it
           const nodeType = node.nodeType || type.slice(0, -1) // Use existing nodeType or derive from key
           
           // Only include if the node type is in the filter
           if (filterTypes.includes(nodeType)) {
-            const nodeWithType = {
-              ...node,
-              nodeType: nodeType,
+            const nodeWithType: GraphNode = {
+              ...(node as GraphNode),
+              nodeType,
             }
             flatNodes.push(nodeWithType)
           }
@@ -109,15 +115,22 @@ const ArchitecturePage: React.FC = () => {
     return flatNodes
   }
 
+  const toHierarchyNode = (node: GraphNode): HierarchyGraphNode => ({
+    ...node,
+  })
+
   // Convert relationships to links
-  const flattenRelationships = (relationships: any, nodes: GraphNode[]): GraphLink[] => {
+  const flattenRelationships = (
+    relationships: CompanyDataGraph['relationships'],
+    nodes: GraphNode[]
+  ): GraphLink[] => {
     const links: GraphLink[] = []
     const nodeMap = new Map(nodes.map(n => [n.nodeId, n]))
     
     // Process each relationship type
     Object.entries(relationships).forEach(([, relArray]) => {
       if (Array.isArray(relArray)) {
-        relArray.forEach((rel: any) => {
+        relArray.forEach((rel) => {
           const source = nodeMap.get(rel.source)
           const target = nodeMap.get(rel.target)
           if (source && target) {
@@ -151,7 +164,7 @@ const ArchitecturePage: React.FC = () => {
   }
 
   // Get color for node type
-  const getNodeColor = (nodeType: string) => {
+  const getNodeColor = useCallback((nodeType: string) => {
     const lightColors: Record<string, string> = {
       company: '#e0e0e0',
       user: '#d6d6d6',
@@ -176,7 +189,7 @@ const ArchitecturePage: React.FC = () => {
     
     const colors = theme === 'dark' ? darkColors : lightColors
     return colors[nodeType] || (theme === 'dark' ? '#6a7788' : '#cccccc')
-  }
+  }, [theme])
 
   // Render D3 visualization
   useEffect(() => {
@@ -253,16 +266,14 @@ const ArchitecturePage: React.FC = () => {
         d.y = height / 2 + (Math.random() - 0.5) * 100
       })
       
-      // Create a copy of links for the simulation
-      const simulationLinks = links.map(d => ({
-        source: (d.source as GraphNode).nodeId,
-        target: (d.target as GraphNode).nodeId,
-        relationshipType: d.relationshipType,
-        label: d.label
-      }))
+      const simulationLinks = links.map(link => ({ ...link }))
       
-      const simulation = d3.forceSimulation(nodes)
-        .force('link', d3.forceLink(simulationLinks).id((d: any) => d.nodeId).distance(150))
+      const linkForce = d3.forceLink<GraphNode, GraphLink>(simulationLinks)
+        .id((d) => d.nodeId)
+        .distance(150)
+
+      const simulation = d3.forceSimulation<GraphNode>(nodes)
+        .force('link', linkForce)
         .force('charge', d3.forceManyBody().strength(-500))
         .force('center', d3.forceCenter(width / 2, height / 2))
         .force('collision', d3.forceCollide().radius(40))
@@ -271,7 +282,7 @@ const ArchitecturePage: React.FC = () => {
 
       // Create links
       const link = g.append('g')
-        .selectAll('line')
+        .selectAll<SVGLineElement, GraphLink>('line')
         .data(simulationLinks)
         .join('line')
         .attr('stroke', '#cccccc')
@@ -281,11 +292,11 @@ const ArchitecturePage: React.FC = () => {
 
       // Create nodes
       const node = g.append('g')
-        .selectAll('g')
+        .selectAll<SVGGElement, GraphNode>('g')
         .data(nodes)
         .join('g')
 
-      node.call(d3.drag<SVGGElement, GraphNode, GraphNode>()
+      node.call(d3.drag<SVGGElement, GraphNode>()
         .on('start', (event, d) => {
           if (!event.active) simulation.alphaTarget(0.3).restart()
           d.fx = d.x
@@ -299,7 +310,7 @@ const ArchitecturePage: React.FC = () => {
           if (!event.active) simulation.alphaTarget(0)
           d.fx = null
           d.fy = null
-        }) as any
+        })
       )
 
       // Add circles for nodes
@@ -310,13 +321,13 @@ const ArchitecturePage: React.FC = () => {
         .attr('stroke-width', 2)
         .style('cursor', 'pointer')
         .style('transition', 'all 0.2s ease')
-        .on('mouseenter', function(_event, _d) {
+        .on('mouseenter', function() {
           d3.select(this)
             .attr('r', 24)
             .attr('stroke-width', 3)
             .style('filter', 'brightness(1.1)')
         })
-        .on('mouseleave', function(_event, _d) {
+        .on('mouseleave', function() {
           d3.select(this)
             .attr('r', 20)
             .attr('stroke-width', 2)
@@ -357,12 +368,12 @@ const ArchitecturePage: React.FC = () => {
 
       simulation.on('tick', () => {
         link
-          .attr('x1', (d: any) => d.source.x || 0)
-          .attr('y1', (d: any) => d.source.y || 0)
-          .attr('x2', (d: any) => d.target.x || 0)
-          .attr('y2', (d: any) => d.target.y || 0)
+          .attr('x1', (d) => d.source.x ?? 0)
+          .attr('y1', (d) => d.source.y ?? 0)
+          .attr('x2', (d) => d.target.x ?? 0)
+          .attr('y2', (d) => d.target.y ?? 0)
 
-        node.attr('transform', (d) => `translate(${d.x || 0},${d.y || 0})`)
+        node.attr('transform', (d) => `translate(${d.x ?? 0},${d.y ?? 0})`)
       })
       
       // Run the simulation
@@ -374,9 +385,9 @@ const ArchitecturePage: React.FC = () => {
       if (!companyNode) return
 
       // Build hierarchy data structure
-      const hierarchyData = {
+      const hierarchyData: HierarchyGraphNode = {
         ...companyNode,
-        children: [] as any[],
+        children: [],
       }
 
       // Get all node types
@@ -389,8 +400,8 @@ const ArchitecturePage: React.FC = () => {
       const storages = nodes.filter(n => n.nodeType === 'storage')
 
       // Build teams branch with their related nodes
-      const teamsBranch = teams.map(team => {
-        const teamChildren = []
+      const teamsBranch: HierarchyGraphNode[] = teams.map(team => {
+        const teamChildren: HierarchyGraphNode[] = []
         
         // Add users that belong to this team based on relationships
         const teamUsers = users.filter(user => 
@@ -399,41 +410,49 @@ const ArchitecturePage: React.FC = () => {
             link.target === team &&
             link.relationshipType === 'memberOf'
           )
-        )
+        ).map(toHierarchyNode)
         teamChildren.push(...teamUsers)
         
         // Add machines for this team (if any)
-        const teamMachines = machines.filter(m => m.parentTeam === team.nodeId)
+        const teamMachines = machines
+          .filter(m => m.parentTeam === team.nodeId)
+          .map(toHierarchyNode)
         teamChildren.push(...teamMachines)
         
         // Add repos for this team (if any)
-        const teamRepos = repos.filter(r => r.parentTeam === team.nodeId)
+        const teamRepos = repos
+          .filter(r => r.parentTeam === team.nodeId)
+          .map(toHierarchyNode)
         teamChildren.push(...teamRepos)
 
         // Add storages for this team (if any)
-        const teamStorages = storages.filter(s => s.parentTeam === team.nodeId)
+        const teamStorages = storages
+          .filter(s => s.parentTeam === team.nodeId)
+          .map(toHierarchyNode)
         teamChildren.push(...teamStorages)
         
         return {
           ...team,
-          children: teamChildren.length > 0 ? teamChildren : [],
-        }
+          children: teamChildren.length > 0 ? teamChildren : undefined,
+        } as HierarchyGraphNode
       })
 
       // Build regions branch with bridges
-      const regionsBranch = regions.map(region => {
+      const regionsBranch: HierarchyGraphNode[] = regions.map(region => {
         const regionBridges = bridges.filter(b => b.parentRegion === region.nodeId)
         
         // For each bridge, find its machines
-        const bridgesWithMachines = regionBridges.map(bridge => ({
+        const bridgesWithMachines: HierarchyGraphNode[] = regionBridges.map(bridge => ({
           ...bridge,
-          children: machines.filter(m => m.parentBridge === bridge.nodeId),
+          children: machines
+            .filter(m => m.parentBridge === bridge.nodeId)
+            .map(toHierarchyNode),
         }))
         
         return {
           ...region,
-          children: bridgesWithMachines,
-        }
+          children: bridgesWithMachines.length > 0 ? bridgesWithMachines : undefined,
+        } as HierarchyGraphNode
       })
 
       // Combine all branches
@@ -445,42 +464,45 @@ const ArchitecturePage: React.FC = () => {
           nodeId: 'placeholder', 
           name: 'No child nodes', 
           nodeType: 'placeholder',
+          label: 'placeholder',
           hierarchyLevel: 'level1'
-        }]
+        } as HierarchyGraphNode]
       }
 
-      const root = d3.hierarchy(hierarchyData)
-      const treeLayout = d3.tree<any>().size([width - 100, height - 100])
+      const root = d3.hierarchy<HierarchyGraphNode>(hierarchyData)
+      const treeLayout = d3.tree<HierarchyGraphNode>().size([width - 100, height - 100])
       const treeData = treeLayout(root)
+
+      const linkGenerator = d3
+        .linkVertical<d3.HierarchyPointLink<HierarchyGraphNode>, d3.HierarchyPointNode<HierarchyGraphNode>>()
+        .x((d) => d.x + 50)
+        .y((d) => d.y + 50)
 
       // Draw links
       g.append('g')
-        .selectAll('path')
+        .selectAll<SVGPathElement, d3.HierarchyPointLink<HierarchyGraphNode>>('path')
         .data(treeData.links())
         .join('path')
-        .attr('d', d3.linkVertical<any, any>()
-          .x((d: any) => d.x + 50)
-          .y((d: any) => d.y + 50) as any
-        )
+        .attr('d', (d) => linkGenerator(d) ?? '')
         .attr('fill', 'none')
         .attr('stroke', '#cccccc')
         .attr('stroke-width', 2)
 
       // Draw nodes
       const node = g.append('g')
-        .selectAll('g')
+        .selectAll<SVGGElement, d3.HierarchyPointNode<HierarchyGraphNode>>('g')
         .data(treeData.descendants())
         .join('g')
         .attr('transform', (d) => `translate(${d.x + 50},${d.y + 50})`)
 
       node.append('circle')
         .attr('r', 20)
-        .attr('fill', (d: any) => d.data.nodeType === 'placeholder' ? '#ccc' : getNodeColor(d.data.nodeType))
+        .attr('fill', (d) => d.data.nodeType === 'placeholder' ? '#ccc' : getNodeColor(d.data.nodeType))
         .attr('stroke', '#333')
         .attr('stroke-width', 2)
-        .style('cursor', (d: any) => d.data.nodeType === 'placeholder' ? 'default' : 'pointer')
+        .style('cursor', (d) => d.data.nodeType === 'placeholder' ? 'default' : 'pointer')
         .style('transition', 'all 0.2s ease')
-        .on('mouseenter', function(_event, d: any) {
+        .on('mouseenter', function(_event, d) {
           if (d.data.nodeType !== 'placeholder') {
             d3.select(this)
               .attr('r', 24)
@@ -488,7 +510,7 @@ const ArchitecturePage: React.FC = () => {
               .style('filter', 'brightness(1.1)')
           }
         })
-        .on('mouseleave', function(_event, d: any) {
+        .on('mouseleave', function(_event, d) {
           if (d.data.nodeType !== 'placeholder') {
             d3.select(this)
               .attr('r', 20)
@@ -501,7 +523,7 @@ const ArchitecturePage: React.FC = () => {
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .style('font-size', '16px')
-        .text((d: any) => d.data.nodeType === 'placeholder' ? '?' : getNodeIcon(d.data.nodeType))
+        .text((d) => d.data.nodeType === 'placeholder' ? '?' : getNodeIcon(d.data.nodeType))
 
       node.append('text')
         .attr('dy', 35)
@@ -510,11 +532,11 @@ const ArchitecturePage: React.FC = () => {
         .style('fill', theme === 'dark' ? '#e8e8e8' : '#1a1a1a')
         .style('font-weight', '500')
         .style('text-shadow', theme === 'dark' ? '1px 1px 2px rgba(0,0,0,0.8)' : '1px 1px 2px rgba(255,255,255,0.8)')
-        .text((d: any) => d.data.name)
+        .text((d) => d.data.name)
         
       // Add tooltips
       node.append('title')
-        .text((d: any) => {
+        .text((d) => {
           if (d.data.nodeType === 'placeholder') return 'No child nodes available'
           const details = [`Type: ${d.data.nodeType}`, `Name: ${d.data.name}`]
           if (d.data.nodeType === 'team' && d.data.memberCount !== undefined) {
@@ -553,23 +575,23 @@ const ArchitecturePage: React.FC = () => {
 
       // Draw links
       g.append('g')
-        .selectAll('line')
+        .selectAll<SVGLineElement, GraphLink>('line')
         .data(links)
         .join('line')
-        .attr('x1', (d: any) => d.source.x)
-        .attr('y1', (d: any) => d.source.y)
-        .attr('x2', (d: any) => d.target.x)
-        .attr('y2', (d: any) => d.target.y)
+        .attr('x1', (d) => d.source.x ?? 0)
+        .attr('y1', (d) => d.source.y ?? 0)
+        .attr('x2', (d) => d.target.x ?? 0)
+        .attr('y2', (d) => d.target.y ?? 0)
         .attr('stroke', '#cccccc')
         .attr('stroke-opacity', 0.6)
         .attr('stroke-width', 2)
 
       // Draw nodes
       const node = g.append('g')
-        .selectAll('g')
+        .selectAll<SVGGElement, GraphNode>('g')
         .data(nodes)
         .join('g')
-        .attr('transform', (d) => `translate(${d.x},${d.y})`)
+        .attr('transform', (d) => `translate(${d.x ?? 0},${d.y ?? 0})`)
 
       node.append('circle')
         .attr('r', 20)
@@ -621,10 +643,9 @@ const ArchitecturePage: React.FC = () => {
         const scale = Math.max(0.5, Math.min(2, 0.9 / Math.max(fullWidth / width, fullHeight / height)))
         const translate = [width / 2 - scale * midX, height / 2 - scale * midY]
 
-        svg.call(
-          zoom.transform as any,
-          d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
-        )
+        svg.call((selection) => {
+          zoom.transform(selection, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale))
+        })
       }
     }, viewMode === 'force' ? 1000 : 100) // Wait longer for force simulation
     
@@ -633,7 +654,7 @@ const ArchitecturePage: React.FC = () => {
       setIsVisualizationLoading(false)
     }, viewMode === 'force' ? 1100 : 200)
 
-  }, [data, viewMode, isFullscreen, selectedEntityTypes, t])
+  }, [data, viewMode, isFullscreen, selectedEntityTypes, t, theme, getNodeColor])
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return

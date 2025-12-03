@@ -4,11 +4,17 @@ import { contextService } from '../services/context.js'
 import { outputService } from '../services/output.js'
 import { withSpinner } from './spinner.js'
 import { handleError } from './errors.js'
+import type { CompanyVaultRecord } from '@rediacc/shared/types'
 import type { OutputFormat } from '../types/index.js'
 
 /**
  * Configuration for a standard resource CRUD command set
  */
+interface ParentContextOptions extends Record<string, unknown> {
+  team?: string
+  region?: string
+}
+
 export interface ResourceCommandConfig {
   /** Resource name in singular form (e.g., 'machine', 'team', 'bridge') */
   resourceName: string
@@ -20,10 +26,10 @@ export interface ResourceCommandConfig {
   parentOption: 'team' | 'region' | 'none'
   /** API operations */
   operations: {
-    list: (params?: Record<string, unknown>) => Promise<any>
-    create: (payload: Record<string, unknown>) => Promise<any>
-    rename: (payload: Record<string, unknown>) => Promise<any>
-    delete: (payload: Record<string, unknown>) => Promise<any>
+    list: (params?: Record<string, unknown>) => Promise<unknown>
+    create: (payload: Record<string, unknown>) => Promise<unknown>
+    rename: (payload: Record<string, unknown>) => Promise<unknown>
+    delete: (payload: Record<string, unknown>) => Promise<unknown>
   }
   /** Optional: Additional options for create command */
   createOptions?: Array<{
@@ -32,15 +38,15 @@ export interface ResourceCommandConfig {
     required?: boolean
   }>
   /** Optional: Transform create payload before sending */
-  transformCreatePayload?: (name: string, opts: any) => Record<string, any>
+  transformCreatePayload?: (name: string, opts: ParentContextOptions & Record<string, unknown>) => Record<string, unknown>
   /** Optional: Vault command configuration */
   vaultConfig?: {
-    fetch: (params: Record<string, unknown>) => Promise<any>
+    fetch: (params: Record<string, unknown>) => Promise<{ vaults: Array<CompanyVaultRecord & { vaultType?: string }> }>
     vaultType: string
   }
   /** Optional: Vault update command configuration */
   vaultUpdateConfig?: {
-    update: (payload: Record<string, unknown>) => Promise<any>
+    update: (payload: Record<string, unknown>) => Promise<unknown>
     vaultFieldName: string
   }
 }
@@ -49,7 +55,7 @@ export interface ResourceCommandConfig {
  * Create a parent context validation check
  */
 function createParentCheck(parentOption: 'team' | 'region' | 'none') {
-  return (opts: any): boolean => {
+  return (opts: ParentContextOptions): boolean => {
     if (parentOption === 'none') {
       return true
     }
@@ -140,7 +146,7 @@ export function createResourceCommands(
 
         const response = await withSpinner(
           `Fetching ${resourceNamePlural}...`,
-          () => config.operations.list(params),
+          () => operations.list(params),
           `${resourceNamePlural.charAt(0).toUpperCase() + resourceNamePlural.slice(1)} fetched`
         )
 
@@ -191,7 +197,7 @@ export function createResourceCommands(
         }
       }
 
-      let payload: Record<string, any>
+      let payload: Record<string, unknown>
       if (transformCreatePayload) {
         payload = transformCreatePayload(name, opts)
       } else if (hasParent) {
@@ -205,7 +211,7 @@ export function createResourceCommands(
 
       await withSpinner(
         `Creating ${resourceName} "${name}"...`,
-        () => config.operations.create(payload),
+        () => operations.create(payload),
         `${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} "${name}" created`
       )
     } catch (error) {
@@ -234,7 +240,7 @@ export function createResourceCommands(
         const currentField = `current${nameField.charAt(0).toUpperCase() + nameField.slice(1)}`
         const newField = `new${nameField.charAt(0).toUpperCase() + nameField.slice(1)}`
 
-        const payload: Record<string, any> = {
+        const payload: Record<string, unknown> = {
           [currentField]: oldName,
           [newField]: newName
         }
@@ -245,7 +251,7 @@ export function createResourceCommands(
 
         await withSpinner(
           `Renaming ${resourceName} "${oldName}" to "${newName}"...`,
-          () => config.operations.rename(payload),
+          () => operations.rename(payload),
           `${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} renamed to "${newName}"`
         )
       } catch (error) {
@@ -282,7 +288,7 @@ export function createResourceCommands(
           }
         }
 
-        const payload: Record<string, any> = { [nameField]: name }
+        const payload: Record<string, unknown> = { [nameField]: name }
 
         if (hasParent) {
           payload[parentOption === 'team' ? 'teamName' : 'regionName'] = parentOption === 'team' ? opts.team : opts.region
@@ -290,7 +296,7 @@ export function createResourceCommands(
 
         await withSpinner(
           `Deleting ${resourceName} "${name}"...`,
-          () => config.operations.delete(payload),
+          () => operations.delete(payload),
           `${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} "${name}" deleted`
         )
       } catch (error) {
@@ -323,7 +329,7 @@ export function createResourceCommands(
               process.exit(1)
             }
 
-            const params: Record<string, any> = {
+            const params: Record<string, unknown> = {
               [nameField]: resourceItemName
             }
 
@@ -337,12 +343,12 @@ export function createResourceCommands(
               'Vault fetched'
             )
 
-            const vaultsArray = Array.isArray(response)
-              ? response
-              : Array.isArray((response as { vaults?: unknown[] })?.vaults)
-                ? (response as { vaults: unknown[] }).vaults
+            const vaultsArray: Array<CompanyVaultRecord & { vaultType?: string }> = Array.isArray(response)
+              ? (response as Array<CompanyVaultRecord & { vaultType?: string }>)
+              : Array.isArray((response as { vaults?: Array<CompanyVaultRecord & { vaultType?: string }> })?.vaults)
+                ? (response as { vaults: Array<CompanyVaultRecord & { vaultType?: string }> }).vaults
                 : []
-            const targetVault = vaultsArray.find((v: any) => v.vaultType === vaultConfig.vaultType)
+            const targetVault = vaultsArray.find((v) => v.vaultType === vaultConfig.vaultType)
             const format = program.opts().output as OutputFormat
 
             if (targetVault) {
@@ -406,7 +412,7 @@ export function createResourceCommands(
             process.exit(1)
           }
 
-          const payload: Record<string, any> = {
+          const payload: Record<string, unknown> = {
             [nameField]: resourceItemName,
             [config.vaultUpdateConfig!.vaultFieldName]: vaultData,
             vaultVersion: options.vaultVersion
@@ -440,7 +446,7 @@ export function addStatusCommand(
     resourceName: string
     nameField: string
     parentOption: 'team' | 'region'
-    fetch: (params: Record<string, unknown>) => Promise<any>
+    fetch: (params: Record<string, unknown>) => Promise<unknown>
   }
 ): void {
   const { resourceName, nameField, parentOption, fetch } = config
@@ -471,12 +477,12 @@ export function addStatusCommand(
           'Status fetched'
         )
 
-        const items = Array.isArray(response)
-          ? response
-          : Array.isArray((response as { items?: unknown[] })?.items)
-            ? (response as { items: unknown[] }).items
+        const items: Record<string, unknown>[] = Array.isArray(response)
+          ? (response as Record<string, unknown>[])
+          : Array.isArray((response as { items?: Record<string, unknown>[] })?.items)
+            ? (response as { items: Record<string, unknown>[] }).items
             : []
-        const item = items.find((i: any) => i[nameField] === name)
+        const item = items.find((i) => i[nameField] === name)
         const format = resourceCommand.parent?.opts().output as OutputFormat
 
         if (item) {
@@ -501,7 +507,7 @@ export function addAssignCommand(
     targetName: string
     targetField: string
     parentOption: 'team' | 'region'
-    perform: (payload: Record<string, unknown>) => Promise<any>
+    perform: (payload: Record<string, unknown>) => Promise<unknown>
   }
 ): void {
   const { resourceName, nameField, targetName, targetField, parentOption, perform } = config

@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
  * @param value - The value to escape
  * @returns Escaped string suitable for CSV
  */
-export function escapeCSVValue(value: any): string {
+export function escapeCSVValue(value: unknown): string {
   if (value == null) return '';
   const str = String(value);
   // Escape double quotes and wrap in quotes if contains special chars
@@ -25,7 +25,7 @@ export function escapeCSVValue(value: any): string {
  * @param rows - Array of row arrays
  * @returns CSV formatted string
  */
-export function buildCSVContent(headers: string[], rows: any[][]): string {
+export function buildCSVContent(headers: string[], rows: Array<Array<unknown>>): string {
   const headerRow = headers.join(',');
   const dataRows = rows.map(row => row.map(escapeCSVValue).join(','));
   return [headerRow, ...dataRows].join('\n');
@@ -37,9 +37,9 @@ export function buildCSVContent(headers: string[], rows: any[][]): string {
  * @param columns - Array of column definitions with key and optional header
  * @returns CSV formatted string
  */
-export function buildCSVFromObjects<T extends Record<string, any>>(
+export function buildCSVFromObjects<T extends Record<string, unknown>>(
   data: T[],
-  columns: Array<{ key: keyof T; header?: string; formatter?: (value: any) => string }>
+  columns: Array<{ key: keyof T; header?: string; formatter?: (value: T[keyof T]) => string }>
 ): string {
   const headers = columns.map(col => col.header || String(col.key));
   const rows = data.map(item =>
@@ -84,7 +84,7 @@ export function downloadCSV(content: string, filename: string): void {
  * @param filename - Filename (without extension)
  * @param pretty - Whether to pretty-print the JSON (default: true)
  */
-export function downloadJSON(data: any, filename: string, pretty: boolean = true): void {
+export function downloadJSON(data: unknown, filename: string, pretty: boolean = true): void {
   const content = pretty ? JSON.stringify(data, null, 2) : JSON.stringify(data);
   downloadFile(content, `${filename}.json`, 'application/json');
 }

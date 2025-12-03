@@ -24,6 +24,7 @@ import {
   formatDuration,
   formatDurationFull
 } from '@/core'
+import type { QueueTraceLog, QueuePositionEntry } from '@rediacc/shared/types'
 
 dayjs.extend(relativeTime)
 
@@ -32,7 +33,7 @@ const { Panel } = Collapse
 const { Step } = Steps
 
 // Helper function to extract timestamp from trace logs for specific action
-const getTimelineTimestamp = (traceLogs: any[], action: string, fallbackAction?: string): string | null => {
+const getTimelineTimestamp = (traceLogs: QueueTraceLog[], action: string, fallbackAction?: string): string | null => {
   if (!traceLogs || traceLogs.length === 0) return null
   
   // Try primary action first
@@ -77,7 +78,7 @@ const ConsoleOutput: React.FC<ConsoleOutputProps> = ({ content, theme, consoleOu
 
   return (
     <ConsoleOutputContainer 
-      ref={consoleOutputRef as any}
+      ref={consoleOutputRef}
       data-testid="queue-trace-console-output"
       $theme={theme}
     >
@@ -1104,7 +1105,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                   mode="left" 
                   className="queue-trace-timeline" 
                   data-testid="queue-trace-timeline"
-                  items={traceData.traceLogs.map((log: any) => {
+                  items={traceData.traceLogs.map((log: QueueTraceLog) => {
                     const action = normalizeProperty(log, 'action', 'Action')
                     const timestamp = normalizeProperty(log, 'timestamp', 'Timestamp')
                     const details = normalizeProperty(log, 'details', 'Details') || ''
@@ -1377,8 +1378,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                     <Card size="small" title="Tasks Before This One">
                       <div style={{ maxHeight: 200, overflow: 'auto' }}>
                         {traceData.queuePosition
-                          .filter((p: any) => p.relativePosition === 'Before')
-                          .map((item: any, index: number) => (
+                          .filter((position: QueuePositionEntry) => position.relativePosition === 'Before')
+                          .map((item, index) => (
                             <div key={index} style={{ marginBottom: 8 }}>
                               <Space>
                                 <Text code style={{ fontSize: '11px' }}>{item.taskId}</Text>
@@ -1392,7 +1393,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                             </div>
                           ))
                         }
-                        {traceData.queuePosition.filter((p: any) => p.relativePosition === 'Before').length === 0 && (
+                        {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'Before').length === 0 && (
                           <Empty description="No tasks ahead" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                         )}
                       </div>
@@ -1402,8 +1403,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                     <Card size="small" title="Tasks After This One">
                       <div style={{ maxHeight: 200, overflow: 'auto' }}>
                         {traceData.queuePosition
-                          .filter((p: any) => p.relativePosition === 'After')
-                          .map((item: any, index: number) => (
+                          .filter((position: QueuePositionEntry) => position.relativePosition === 'After')
+                          .map((item, index) => (
                             <div key={index} style={{ marginBottom: 8 }}>
                               <Space>
                                 <Text code style={{ fontSize: '11px' }}>{item.taskId}</Text>
@@ -1417,7 +1418,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                             </div>
                           ))
                         }
-                        {traceData.queuePosition.filter((p: any) => p.relativePosition === 'After').length === 0 && (
+                        {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'After').length === 0 && (
                           <Empty description="No tasks behind" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                         )}
                       </div>
@@ -1426,8 +1427,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                 </Row>
                 <div style={{ marginTop: 16, textAlign: 'center' }}>
                   <Text type="secondary">
-                    Total: {traceData.queuePosition.filter((p: any) => p.relativePosition === 'Before').length} tasks ahead, 
-                    {traceData.queuePosition.filter((p: any) => p.relativePosition === 'After').length} tasks behind
+                    Total: {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'Before').length} tasks ahead, 
+                    {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'After').length} tasks behind
                   </Text>
                 </div>
               </Panel>

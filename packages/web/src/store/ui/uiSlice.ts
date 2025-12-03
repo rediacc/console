@@ -4,7 +4,7 @@ interface UIState {
   sidebarCollapsed: boolean
   activeView: string
   selectedResource: string | null
-  filters: Record<string, any>
+  filters: UIFilters
   uiMode: 'simple' | 'expert'
   modals: {
     vaultConfig: {
@@ -26,6 +26,9 @@ const getStoredUiMode = (): 'simple' | 'expert' => {
 const persistUiMode = (mode: 'simple' | 'expert'): void => {
   localStorage.setItem(UI_MODE_KEY, mode)
 }
+
+type UIFilterValue = string | number | boolean | undefined
+type UIFilters = Record<string, UIFilterValue>
 
 const initialState: UIState = {
   sidebarCollapsed: false,
@@ -53,7 +56,7 @@ const uiSlice = createSlice({
     setSelectedResource: (state, action: PayloadAction<string | null>) => {
       state.selectedResource = action.payload
     },
-    setFilters: (state, action: PayloadAction<Record<string, any>>) => {
+    setFilters: (state, action: PayloadAction<UIFilters>) => {
       state.filters = action.payload
     },
     openVaultModal: (state, action: PayloadAction<{ resourceType: string; resourceId: string }>) => {

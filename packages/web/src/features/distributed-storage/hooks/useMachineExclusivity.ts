@@ -6,7 +6,7 @@ import {
   type MachineAssignmentValidation,
   type AvailableMachine
 } from '@/api/queries/distributedStorage'
-import type { Machine } from '@/types'
+import type { Machine, MachineAssignmentType } from '@/types'
 import type { ValidationResult, ExclusivityValidation } from '../models/machine-validation.model'
 import { useTranslation } from 'react-i18next'
 import { MachineValidationService } from '../services'
@@ -25,6 +25,14 @@ export interface ValidationCache {
 }
 
 const CACHE_DURATION = 30000 // 30 seconds
+
+const parseAssignmentType = (value: string): MachineAssignmentType => {
+  const normalized = value.toUpperCase()
+  if (normalized === 'CLUSTER' || normalized === 'IMAGE' || normalized === 'CLONE') {
+    return normalized as MachineAssignmentType
+  }
+  return 'AVAILABLE'
+}
 
 export const useMachineExclusivity = (teamName?: string) => {
   const { t: _t } = useTranslation(['machines', 'distributedStorage'])
@@ -132,7 +140,7 @@ export const useMachineExclusivity = (teamName?: string) => {
                 const match = validation.error.match(/assigned to (\w+): (.+)/)
                 if (match) {
                   conflicts[validation.machineName] = {
-                    assignmentType: match[1] as any,
+                    assignmentType: parseAssignmentType(match[1]),
                     resourceName: match[2],
                     machineName: validation.machineName,
                     isExclusive: true,

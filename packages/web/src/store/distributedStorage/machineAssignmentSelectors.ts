@@ -1,7 +1,34 @@
 import { createSelector } from '@reduxjs/toolkit'
 import type { RootState } from '@/store/store'
-import type { Machine } from '@/types'
+import type { Machine, MachineAssignmentType } from '@/types'
 import { MachineAssignmentService } from '@/features/distributed-storage'
+import type { ValidationResult } from '@/features/distributed-storage'
+import type { OperationHistoryEntry } from './machineAssignmentSlice'
+
+type OperationResult = OperationHistoryEntry['result']
+type OperationType = OperationHistoryEntry['type']
+
+interface OperationStatistics {
+  total: number
+  success: number
+  partial: number
+  failed: number
+  byType: Record<OperationType, number>
+}
+
+interface MachinesBySelectionStatus {
+  selected: Machine[]
+  unselected: Machine[]
+}
+
+interface MachineSelectionSummary {
+  count: number
+  validated: number
+  valid: number
+  invalid: number
+  byAssignmentType: Record<MachineAssignmentType, number>
+  byTeam: Record<string, number>
+}
 
 // Base selectors
 export const selectMachineAssignmentState = (state: RootState) => 
@@ -121,13 +148,14 @@ export const selectFilteredMachines = createSelector(
 // Get validation results for selected machines
 export const selectSelectedMachineValidations = createSelector(
   [selectSelectedMachines, selectAssignmentValidation],
-  (selectedMachines, validations) => {
-    return selectedMachines.reduce((acc: any, machineName: string) => {
-      if (validations[machineName]) {
-        acc[machineName] = validations[machineName]
+  (selectedMachines, validations): Record<string, ValidationResult> => {
+    return selectedMachines.reduce<Record<string, ValidationResult>>((acc, machineName) => {
+      const validation = validations[machineName]
+      if (validation) {
+        acc[machineName] = validation
       }
       return acc
-    }, {} as Record<string, typeof validations[string]>)
+    }, {})
   }
 )
 
@@ -135,25 +163,27 @@ export const selectSelectedMachineValidations = createSelector(
 export const selectAreAllSelectedMachinesValid = createSelector(
   [selectSelectedMachineValidations],
   (validations) => {
-    const validationResults = Object.values(validations)
+    const validationResults: ValidationResult[] = Object.values(validations)
     if (validationResults.length === 0) return false
-    return validationResults.every((result: any) => result.isValid)
+    return validationResults.every((result) => result.isValid)
   }
 )
 
 // Get recent successful operations
 export const selectRecentSuccessfulOperations = createSelector(
   [selectOperationHistory],
-  (history) => history.filter((op: any) => op.result === 'success').slice(0, 5)
+  (history): OperationHistoryEntry[] => history
+    .filter((op) => op.result === 'success')
+    .slice(0, 5)
 )
 
 // Get operation statistics
 export const selectOperationStatistics = createSelector(
   [selectOperationHistory],
-  (history) => {
-    const stats = {
+  (history): OperationStatistics => {
+    const stats: OperationStatistics = {
       total: history.length,
-      successful: 0,
+      success: 0,
       partial: 0,
       failed: 0,
       byType: {
@@ -163,11 +193,11 @@ export const selectOperationStatistics = createSelector(
       }
     }
     
-    history.forEach((op: any) => {
-      const result = op.result as 'successful' | 'partial' | 'failed'
-      const opType = op.type as 'assign' | 'remove' | 'migrate'
-      stats[result]++
-      stats.byType[opType]++
+    history.forEach((op) => {
+      const resultKey: OperationResult = op.result
+      const typeKey: OperationType = op.type
+      stats[resultKey]++
+      stats.byType[typeKey]++
     })
     
     return stats
@@ -186,12 +216,12 @@ export const selectMachinesBySelectionStatus = createSelector(
     (_: RootState, machines: Machine[]) => machines,
     selectSelectedMachines
   ],
-  (machines, selectedMachines) => {
+  (machines, selectedMachines): MachinesBySelectionStatus => {
     const selectedSet = new Set(selectedMachines)
     
     return {
-      selected: machines.filter((m: any) => selectedSet.has(m.machineName)),
-      unselected: machines.filter((m: any) => !selectedSet.has(m.machineName))
+      selected: machines.filter((machine) => selectedSet.has(machine.machineName)),
+      unselected: machines.filter((machine) => !selectedSet.has(machine.machineName))
     }
   }
 )
@@ -203,16 +233,17 @@ export const selectSelectionSummary = createSelector(
     selectSelectedMachineValidations,
     (_: RootState, machines: Machine[]) => machines
   ],
-  (selectedMachines, validations, allMachines) => {
-    const selectedMachineObjects = allMachines.filter((m: any) => 
-      selectedMachines.includes(m.machineName)
+  (selectedMachines, validations, allMachines): MachineSelectionSummary => {
+    const selectedMachineObjects = allMachines.filter((machine) => 
+      selectedMachines.includes(machine.machineName)
     )
     
-    const summary = {
+    const validationEntries: ValidationResult[] = Object.values(validations)
+    const summary: MachineSelectionSummary = {
       count: selectedMachines.length,
-      validated: Object.keys(validations).length,
-      valid: Object.values(validations).filter((v: any) => v.isValid).length,
-      invalid: Object.values(validations).filter((v: any) => !v.isValid).length,
+      validated: validationEntries.length,
+      valid: validationEntries.filter((value) => value.isValid).length,
+      invalid: validationEntries.filter((value) => !value.isValid).length,
       byAssignmentType: {
         AVAILABLE: 0,
         CLUSTER: 0,
@@ -222,11 +253,11 @@ export const selectSelectionSummary = createSelector(
       byTeam: {} as Record<string, number>
     }
     
-    selectedMachineObjects.forEach((machine: any) => {
+    selectedMachineObjects.forEach((machine) => {
       const assignmentType = MachineAssignmentService.getMachineAssignmentType(machine)
       summary.byAssignmentType[assignmentType]++
       
-      const team = machine.teamName
+      const team = machine.teamName ?? 'unassigned'
       summary.byTeam[team] = (summary.byTeam[team] || 0) + 1
     })
     

@@ -1,10 +1,13 @@
 import React from 'react'
 import { Tag, Button } from 'antd'
 import styled from 'styled-components'
+import type { Dayjs } from 'dayjs'
+
+type FilterTagValue = string | string[] | boolean | [Dayjs | null, Dayjs | null] | null
 
 export interface FilterTagConfig {
   key: string
-  value: string | string[] | boolean | [any, any] | null
+  value: FilterTagValue
   label: string
   color?: string
 }
@@ -29,6 +32,21 @@ const ClearButton = styled(Button)`
   padding: 0 4px;
   height: auto;
 `
+
+const isStringArray = (value: FilterTagValue): value is string[] =>
+  Array.isArray(value) && value.every(item => typeof item === 'string')
+
+const hasFormatFunction = (value: unknown): value is Dayjs =>
+  typeof value === 'object' &&
+  value !== null &&
+  'format' in value &&
+  typeof (value as Dayjs).format === 'function'
+
+const isDateRangeValue = (value: FilterTagValue): value is [Dayjs | null, Dayjs | null] =>
+  Array.isArray(value) &&
+  value.length === 2 &&
+  (value[0] === null || hasFormatFunction(value[0])) &&
+  (value[1] === null || hasFormatFunction(value[1]))
 
 /**
  * Reusable component for displaying active filter tags with close functionality.
@@ -63,8 +81,8 @@ const FilterTagDisplay: React.FC<FilterTagDisplayProps> = ({
     const { key, value, label, color = 'blue' } = filter
 
     // Handle array values (e.g., multiple status selections)
-    if (Array.isArray(value) && typeof value[0] !== 'object') {
-      return (value as string[]).map(item => (
+    if (isStringArray(value)) {
+      return value.map(item => (
         <Tag
           key={`${key}-${item}`}
           closable
@@ -77,7 +95,7 @@ const FilterTagDisplay: React.FC<FilterTagDisplayProps> = ({
     }
 
     // Handle date range (array with date objects)
-    if (Array.isArray(value) && value.length === 2 && value[0]?.format) {
+    if (isDateRangeValue(value)) {
       return (
         <Tag
           key={key}

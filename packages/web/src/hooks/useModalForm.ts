@@ -7,9 +7,9 @@ import type { UseDialogStateReturn } from './useDialogState'
 /**
  * Options for useModalForm hook
  */
-export interface UseModalFormOptions<T> {
+export interface UseModalFormOptions<T extends Record<string, unknown>> {
   /** Initial form values */
-  initialValues?: T
+  initialValues?: FormValues<T>
   /** Whether to reset form on modal close (default: true) */
   resetOnClose?: boolean
 }
@@ -17,7 +17,7 @@ export interface UseModalFormOptions<T> {
 /**
  * Return type for useModalForm hook
  */
-export interface UseModalFormReturn<T = any> {
+export interface UseModalFormReturn<T extends Record<string, unknown> = Record<string, unknown>> {
   /** Ant Design form instance */
   form: FormInstance<T>
   /** Whether the modal is open */
@@ -67,7 +67,7 @@ export interface UseModalFormReturn<T = any> {
  * })
  * // Then explicitly call closeAndReset when needed
  */
-export function useModalForm<T = any>(
+export function useModalForm<T extends Record<string, unknown> = Record<string, unknown>>(
   options: UseModalFormOptions<T> = {}
 ): UseModalFormReturn<T> {
   const { initialValues, resetOnClose = true } = options
@@ -76,7 +76,7 @@ export function useModalForm<T = any>(
 
   const reset = useCallback(() => {
     if (initialValues) {
-      form.setFieldsValue(initialValues as any)
+      form.setFieldsValue(initialValues)
     } else {
       form.resetFields()
     }
@@ -105,3 +105,4 @@ export function useModalForm<T = any>(
     dialogState,
   }
 }
+type FormValues<T extends Record<string, unknown>> = Parameters<FormInstance<T>['setFieldsValue']>[0]

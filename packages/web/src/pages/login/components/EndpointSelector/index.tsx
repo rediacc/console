@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Modal, Form, Input, Space, Button } from 'antd';
 import { ApiOutlined, PlusOutlined, DeleteOutlined, LoadingOutlined } from '@/utils/optimizedIcons';
 import { endpointService, Endpoint } from '@/services/endpointService';
@@ -47,6 +47,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
   const customModal = useDialogState<void>();
   const [customForm] = Form.useForm();
   const [healthStatus, setHealthStatus] = useState<Record<string, EndpointHealth>>({});
+  const healthStatusRef = useRef(healthStatus);
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
 
   const HEALTH_CACHE_DURATION = 10000; // 10 seconds
@@ -76,17 +77,21 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
     }
   };
 
+  useEffect(() => {
+    healthStatusRef.current = healthStatus;
+  }, [healthStatus]);
+
   /**
    * Check health for all endpoints
    */
-  const checkAllEndpointsHealth = async (endpointsList: Endpoint[]): Promise<Record<string, EndpointHealth>> => {
+  const checkAllEndpointsHealth = useCallback(async (endpointsList: Endpoint[]): Promise<Record<string, EndpointHealth>> => {
     setIsCheckingHealth(true);
     const healthChecks: Record<string, EndpointHealth> = {};
 
     // Check health for each endpoint in parallel
     const promises = endpointsList.map(async (endpoint) => {
       // Check if cached health is still valid
-      const cached = healthStatus[endpoint.id];
+      const cached = healthStatusRef.current[endpoint.id];
       if (cached && Date.now() - cached.lastChecked < HEALTH_CACHE_DURATION) {
         healthChecks[endpoint.id] = cached;
         return;
@@ -109,7 +114,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
     setIsCheckingHealth(false);
 
     return healthChecks;
-  };
+  }, []);
 
   useEffect(() => {
     const fetchEndpointsAndSelection = async () => {
@@ -163,12 +168,12 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
           if (healthyLocalhostEndpoint) {
             selected = healthyLocalhostEndpoint;
             endpointService.setSelectedEndpoint(healthyLocalhostEndpoint);
-            console.log(`[EndpointSelector] Auto-selected healthy localhost endpoint: ${healthyLocalhostEndpoint.url}`);
+            console.warn(`[EndpointSelector] Auto-selected healthy localhost endpoint: ${healthyLocalhostEndpoint.url}`);
           } else if (localhostEndpoints.length > 0) {
             // Fallback to first localhost if none are healthy (user can still try)
             selected = localhostEndpoints[0];
             endpointService.setSelectedEndpoint(localhostEndpoints[0]);
-            console.log(`[EndpointSelector] No healthy localhost found, using first: ${localhostEndpoints[0].url}`);
+            console.warn(`[EndpointSelector] No healthy localhost found, using first: ${localhostEndpoints[0].url}`);
           }
         } else if (!selected) {
           // For non-localhost domains, if no saved selection exists, check and auto-select dynamic endpoint
@@ -179,9 +184,9 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
             if (health.isHealthy) {
               selected = dynamicEndpoint;
               endpointService.setSelectedEndpoint(dynamicEndpoint);
-              console.log(`[EndpointSelector] Auto-selected healthy dynamic endpoint: ${dynamicEndpoint.url}`);
+              console.warn(`[EndpointSelector] Auto-selected healthy dynamic endpoint: ${dynamicEndpoint.url}`);
             } else {
-              console.log(`[EndpointSelector] Dynamic endpoint is not healthy, skipping auto-selection`);
+              console.warn(`[EndpointSelector] Dynamic endpoint is not healthy, skipping auto-selection`);
             }
           }
         }
@@ -199,7 +204,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
         // If we have a selected endpoint, update the API client immediately
         if (selected) {
           apiClient.updateApiUrl(selected.url);
-          console.log(`[EndpointSelector] Applied endpoint: ${selected.name} (${selected.url})`);
+          console.warn(`[EndpointSelector] Applied endpoint: ${selected.name} (${selected.url})`);
         }
 
         // Notify parent about health check completion
@@ -215,10 +220,13 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
     };
 
     fetchEndpointsAndSelection();
-  }, [onHealthCheckComplete]);
+  }, [onHealthCheckComplete, checkAllEndpointsHealth]);
 
   const handleEndpointChange = async (value: unknown) => {
-    const endpointValue = value as string;
+    if (typeof value !== 'string') {
+      return;
+    }
+    const endpointValue = value;
     if (endpointValue === '__add_custom__') {
       customModal.open();
       return;
@@ -255,8 +263,9 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
       showMessage('success', `Added and selected ${newEndpoint.name}`);
       customModal.close();
       customForm.resetFields();
-    } catch (error: any) {
-      showMessage('error', error.message || 'Failed to add custom endpoint');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add custom endpoint';
+      showMessage('error', errorMessage);
     }
   };
 

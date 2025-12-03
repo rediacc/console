@@ -5,7 +5,7 @@ import type {
 import type {
   AssignmentConflict
 } from '../models'
-import type { ValidationResult as BaseValidationResult } from '../models/machine-validation.model'
+import type { ValidationResult as BaseValidationResult, BulkValidationResult } from '../models/machine-validation.model'
 
 // Re-export ValidationResult from model
 export type ValidationResult = BaseValidationResult
@@ -24,7 +24,7 @@ export interface WorkflowResult {
   completedSteps: string[]
   failedStep?: string
   error?: Error
-  data?: any
+  data?: unknown
 }
 
 // Assignment workflow types
@@ -107,7 +107,7 @@ export interface OperationProgress {
   currentStepName: string
   startTime: Date
   estimatedCompletion?: Date
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 }
 
 export interface ProgressCallback {
@@ -179,12 +179,43 @@ export enum WorkflowEvent {
   ROLLBACK_COMPLETED = 'ROLLBACK_COMPLETED'
 }
 
-export interface WorkflowEventData {
-  event: WorkflowEvent
-  workflowId: string
-  timestamp: Date
-  data?: any
+export type WorkflowEventPayloadMap = {
+  [WorkflowEvent.STARTED]:
+    | { totalMachines: number; targetType: 'cluster' | 'image' | 'clone'; targetResource: string }
+    | { machineNames: string[]; clusterName: string }
+    | { imageName: string; currentMachineName: string; newMachineName: string }
+  [WorkflowEvent.STEP_COMPLETED]: { step: string }
+  [WorkflowEvent.STEP_FAILED]: { step: string; error: string }
+  [WorkflowEvent.VALIDATION_COMPLETED]:
+    | { valid: number; invalid: number }
+    | { available: string[]; unavailable: string[] }
+  [WorkflowEvent.CONFLICT_DETECTED]: AssignmentConflict[]
+  [WorkflowEvent.PROGRESS_UPDATE]:
+    | { step: string; description: string }
+    | { message: string; percentage: number; completed: number; total: number }
+  [WorkflowEvent.COMPLETED]: AssignmentWorkflowResult | BulkOperationWorkflowResult
+  [WorkflowEvent.FAILED]: { error: unknown }
+  [WorkflowEvent.ROLLBACK_STARTED]: undefined
+  [WorkflowEvent.ROLLBACK_COMPLETED]: undefined
 }
+
+export type WorkflowEventEnvelope<TEvent extends WorkflowEvent> =
+  TEvent extends WorkflowEvent
+    ? WorkflowEventPayloadMap[TEvent] extends undefined
+      ? {
+          event: TEvent
+          workflowId: string
+          timestamp: Date
+        }
+      : {
+          event: TEvent
+          workflowId: string
+          timestamp: Date
+          data: WorkflowEventPayloadMap[TEvent]
+        }
+    : never
+
+export type WorkflowEventData = WorkflowEventEnvelope<WorkflowEvent>
 
 export type WorkflowEventHandler = (event: WorkflowEventData) => void
 
@@ -194,7 +225,7 @@ export class WorkflowError extends Error {
     message: string,
     public step?: string,
     public recoverable?: boolean,
-    public data?: any
+    public data?: unknown
   ) {
     super(message)
     this.name = 'WorkflowError'
@@ -204,7 +235,7 @@ export class WorkflowError extends Error {
 export class ValidationError extends Error {
   constructor(
     message: string,
-    public validationResults?: ValidationResult[],
+    public validationResults?: Array<ValidationResult | BulkValidationResult>,
     public machines?: string[]
   ) {
     super(message)

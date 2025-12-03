@@ -9,11 +9,69 @@ import { useTableStyles } from '@/hooks/useComponentStyles'
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator'
 import styles from './VirtualMachineTable.module.css'
 
-// Cast to any to support both react-window v1.x and v2.x APIs
-const List = ReactWindowList as any
+type ScrollAlign = 'auto' | 'smart' | 'center' | 'end' | 'start'
 
-type VirtualizedList = any
-type ListChildProps<T = any> = { index: number; style: React.CSSProperties; data: T }
+interface VirtualizedListHandle {
+  scrollToItem: (index: number, align?: ScrollAlign) => void
+}
+
+type ListChildProps<T> = {
+  index: number
+  style: React.CSSProperties
+  data: T
+}
+
+type OnItemsRendered = (info: {
+  overscanStartIndex: number
+  overscanStopIndex: number
+  visibleStartIndex: number
+  visibleStopIndex: number
+}) => void
+
+type BaseListProps = Record<string, unknown>
+const BaseListComponent = ReactWindowList as unknown as React.ComponentType<BaseListProps>
+
+interface VirtualListProps {
+  height: number
+  width: number | string
+  itemCount: number
+  itemSize: number
+  overscanCount?: number
+  onItemsRendered?: OnItemsRendered
+  itemData: VirtualMachineListRowProps
+  children: React.ComponentType<ListChildProps<VirtualMachineListRowProps>>
+  'data-testid'?: string
+}
+
+const List = React.forwardRef<VirtualizedListHandle, VirtualListProps>((props, ref) => {
+  const { children, ...rest } = props
+  return (
+    <BaseListComponent
+      {...rest}
+      ref={ref as React.Ref<unknown>}
+    >
+      {children as unknown}
+    </BaseListComponent>
+  )
+})
+List.displayName = 'VirtualMachineList'
+
+type InfiniteLoaderComponentProps = {
+  isItemLoaded: (index: number) => boolean
+  itemCount: number
+  loadMoreItems: (startIndex: number, stopIndex: number) => Promise<void> | void
+  children: (props: { onItemsRendered: OnItemsRendered; ref: (instance: VirtualizedListHandle | null) => void }) => React.ReactNode
+}
+
+const infiniteLoaderModule = InfiniteLoaderModule as unknown as {
+  InfiniteLoader?: React.ComponentType<InfiniteLoaderComponentProps>
+  default?: React.ComponentType<InfiniteLoaderComponentProps>
+}
+
+const InfiniteLoader =
+  infiniteLoaderModule.InfiniteLoader ??
+  infiniteLoaderModule.default ??
+  (() => null)
 
 interface VirtualMachineTableProps {
   machines: Machine[]
@@ -116,8 +174,8 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   onRowClick,
   renderActions
 }) => {
-  const listRef = useRef<VirtualizedList | null>(null)
-  const setListRef = useCallback((instance: VirtualizedList | null) => {
+  const listRef = useRef<VirtualizedListHandle | null>(null)
+  const setListRef = useCallback((instance: VirtualizedListHandle | null) => {
     listRef.current = instance
   }, [])
   const { selectedMachines } = useMachineSelection()
@@ -139,11 +197,11 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   }, [loadMore, loading])
 
   // Render a single row
-const RowComponent = useCallback(({
+  const RowComponent = useCallback<React.ComponentType<ListChildProps<VirtualMachineListRowProps>>>(({
     index,
     style,
     data
-  }: ListChildProps<VirtualMachineListRowProps>) => {
+  }) => {
     const {
       machines: rowMachines,
       isItemLoaded: rowIsItemLoaded,
@@ -223,15 +281,14 @@ const RowComponent = useCallback(({
   const content = useMemo(() => {
     if (loadMore && hasMore) {
       // Use InfiniteLoader to lazily fetch additional rows as the user scrolls
-      const InfiniteLoader = (InfiniteLoaderModule as any).InfiniteLoader
       return (
         <InfiniteLoader
-          isRowLoaded={isItemLoaded}
-          rowCount={itemCount}
-          loadMoreRows={loadMoreItems}
+          isItemLoaded={isItemLoaded}
+          itemCount={itemCount}
+          loadMoreItems={() => loadMoreItems()}
         >
-          {({ onItemsRendered, ref }: { onItemsRendered: any; ref: (instance: VirtualizedList | null) => void }) => {
-            const combinedRef = (instance: VirtualizedList | null) => {
+          {({ onItemsRendered, ref }: { onItemsRendered: OnItemsRendered; ref: (instance: VirtualizedListHandle | null) => void }) => {
+            const combinedRef = (instance: VirtualizedListHandle | null) => {
               setListRef(instance)
               ref(instance)
             }

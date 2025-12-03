@@ -4,24 +4,26 @@ import { minifyJSON } from '@/utils/json'
 import { createErrorHandler } from '@/utils/mutationUtils'
 import i18n from '@/i18n/config'
 import { api } from '@/api/client'
-import type { QueueTrace } from '@rediacc/shared/types'
+import type { QueueTrace, QueueListResult } from '@rediacc/shared/types'
+
+export interface QueueFunctionParameter {
+  type: string
+  required?: boolean
+  default?: unknown
+  help?: string
+  label?: string
+  format?: string
+  units?: string[]
+  options?: string[]
+  ui?: string
+  checkboxOptions?: Array<{ value: string; label: string }>
+}
 
 export interface QueueFunction {
   name: string
   description: string
   category: string
-  params: Record<string, {
-    type: string
-    required?: boolean
-    default?: any
-    help?: string
-    label?: string
-    format?: string
-    units?: string[]
-    options?: string[]
-    ui?: string
-    checkboxOptions?: Array<{ value: string; label: string }>
-  }>
+  params: Record<string, QueueFunctionParameter>
 }
 
 // Queue functions will be loaded via the functionsService instead
@@ -49,7 +51,7 @@ export interface QueueFilters {
 
 // Get queue items with advanced filtering
 export const useQueueItems = (filters: QueueFilters = {}) => {
-  return useQuery({
+  return useQuery<QueueListResult>({
     queryKey: ['queue-items', filters],
     queryFn: async () => {
       const { teamName, ...rest } = filters

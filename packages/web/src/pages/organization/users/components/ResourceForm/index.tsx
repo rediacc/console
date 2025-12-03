@@ -32,7 +32,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
       case 'select':
         return (
           <Controller
-            name={field.name as any}
+            name={field.name}
             control={control}
             render={({ field: controllerField }) => (
               <FieldSelect
@@ -54,7 +54,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
       case 'password':
         return (
           <Controller
-            name={field.name as any}
+            name={field.name}
             control={control}
             render={({ field: controllerField }) => (
               <PasswordInput
@@ -71,7 +71,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
       default:
         return (
           <Controller
-            name={field.name as any}
+            name={field.name}
             control={control}
             render={({ field: controllerField }) => (
               <TextInput

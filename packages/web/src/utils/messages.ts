@@ -92,7 +92,7 @@ function displayToast(type: MessageType, content: string): void {
 interface ToastConfig {
   handler?: (message: string) => void
   isCustom: boolean
-  options?: any
+  options?: Record<string, unknown>
 }
 
 const TOAST_STYLES = {

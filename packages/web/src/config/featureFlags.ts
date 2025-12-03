@@ -364,7 +364,7 @@ class FeatureFlags {
     this.isDevelopment = endpointInfo?.type === 'localhost'
 
     if (import.meta.env.DEV) {
-      console.log('[FeatureFlags] Development state updated:', {
+      console.warn('[FeatureFlags] Development state updated:', {
         isDevelopment: this.isDevelopment,
         endpointType: endpointInfo?.type,
         buildType: import.meta.env.VITE_BUILD_TYPE,
@@ -406,7 +406,7 @@ class FeatureFlags {
       this.isLocalhostModeActive = !this.isLocalhostModeActive
 
       if (import.meta.env.DEV) {
-        console.log(`[LocalhostMode] Localhost mode ${this.isLocalhostModeActive ? 'enabled' : 'disabled'}`)
+        console.warn(`[LocalhostMode] Localhost mode ${this.isLocalhostModeActive ? 'enabled' : 'disabled'}`)
       }
 
       this.notifyListeners()
@@ -416,7 +416,7 @@ class FeatureFlags {
       this.isPowerModeActive = !this.isPowerModeActive
 
       if (import.meta.env.DEV) {
-        console.log(`[PowerMode] Global power mode ${this.isPowerModeActive ? 'enabled' : 'disabled'}`)
+        console.warn(`[PowerMode] Global power mode ${this.isPowerModeActive ? 'enabled' : 'disabled'}`)
       }
 
       this.notifyListeners()
@@ -431,7 +431,7 @@ class FeatureFlags {
     this.isPowerModeActive = true
 
     if (import.meta.env.DEV) {
-      console.log('[PowerMode] Global power mode enabled')
+      console.warn('[PowerMode] Global power mode enabled')
     }
 
     this.notifyListeners()

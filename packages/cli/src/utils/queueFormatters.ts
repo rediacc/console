@@ -4,7 +4,7 @@
  */
 
 import chalk from 'chalk'
-import type { ErrorSeverity, ParsedError } from '@rediacc/shared/error-parser'
+import type { ErrorSeverity } from '@rediacc/shared/error-parser'
 import { parseFailureReason, formatError as formatErrorShared, formatErrors, getSeverityLevel } from '@rediacc/shared/error-parser'
 import { STALE_TASK_CONSTANTS } from '@rediacc/shared/queue'
 

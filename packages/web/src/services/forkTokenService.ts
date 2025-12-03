@@ -89,7 +89,7 @@ class ForkTokenService {
       }
 
       return forkTokenInfo.token
-    } catch (error) {
+    } catch {
       // Clean up corrupted token data
       secureStorage.removeItem(storageKey)
       return null
@@ -121,10 +121,9 @@ class ForkTokenService {
 
     if (existingTokenInfoStr) {
       try {
-        const existingTokenInfo: ForkTokenInfo = JSON.parse(existingTokenInfoStr)
-        console.log(`Clearing existing fork token for action: ${action}, token: ${existingTokenInfo.token.substring(0, 8)}...`)
-      } catch (error) {
-        console.log(`Clearing corrupted fork token data for action: ${action}`)
+        JSON.parse(existingTokenInfoStr)
+      } catch {
+        // Ignore corrupted data; removal handled below
       }
 
       // Remove the old token
@@ -133,7 +132,6 @@ class ForkTokenService {
 
     // Create new fork token
     const newToken = await this.createForkToken(action, expirationHours)
-    console.log(`Created fresh fork token for action: ${action}, token: ${newToken.substring(0, 8)}...`)
 
     return newToken
   }
@@ -167,7 +165,7 @@ class ForkTokenService {
               secureStorage.removeItem(key)
             }
           }
-        } catch (error) {
+        } catch {
           // Remove corrupted entries
           secureStorage.removeItem(key)
         }

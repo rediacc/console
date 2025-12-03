@@ -1,4 +1,5 @@
 import { Middleware } from '@reduxjs/toolkit'
+import type { AnyAction } from '@reduxjs/toolkit'
 import { clearStaleValidations } from './machineAssignmentSlice'
 
 // Configuration
@@ -20,7 +21,7 @@ export const machineAssignmentMiddleware: Middleware =
       })
     }
     
-    return (next) => (action: any) => {
+    return (next) => (action: AnyAction) => {
       const result = next(action)
       
       // Handle specific actions
@@ -41,7 +42,6 @@ export const machineAssignmentMiddleware: Middleware =
           
         case 'machineAssignment/startBulkOperation':
           // Could add analytics tracking here
-          console.log('Bulk operation started:', action.payload)
           break
           
         case 'machineAssignment/setSelectedMachines':
@@ -57,7 +57,7 @@ export const machineAssignmentMiddleware: Middleware =
 
 // Middleware for persisting selection across page refreshes (optional)
 export const machineSelectionPersistenceMiddleware: Middleware =
-  (store) => (next) => (action: any) => {
+  (store) => (next) => (action: AnyAction) => {
     const result = next(action)
     
     // Persist selection to sessionStorage
@@ -73,7 +73,7 @@ export const machineSelectionPersistenceMiddleware: Middleware =
       
       try {
         sessionStorage.setItem('machineSelection', JSON.stringify(selectedMachines))
-      } catch (error) {
+      } catch (error: unknown) {
         console.warn('Failed to persist machine selection:', error)
       }
     }
@@ -83,22 +83,18 @@ export const machineSelectionPersistenceMiddleware: Middleware =
 
 // Middleware for logging operations (development only)
 export const machineAssignmentLoggingMiddleware: Middleware =
-  (store) => (next) => (action: any) => {
-    if (import.meta.env.DEV) {
-      if (action.type?.startsWith('machineAssignment/')) {
-        console.group(`🔧 Machine Assignment: ${action.type}`)
-        console.log('Action:', action)
-        console.log('State before:', store.getState().machineAssignment)
-      }
+  (store) => (next) => (action: AnyAction) => {
+    if (import.meta.env.DEV && action.type?.startsWith('machineAssignment/')) {
+      console.warn(`Machine Assignment action: ${action.type}`, {
+        action,
+        stateBefore: store.getState().machineAssignment,
+      })
     }
     
     const result = next(action)
     
-    if (import.meta.env.DEV) {
-      if (action.type?.startsWith('machineAssignment/')) {
-        console.log('State after:', store.getState().machineAssignment)
-        console.groupEnd()
-      }
+    if (import.meta.env.DEV && action.type?.startsWith('machineAssignment/')) {
+      console.warn('Machine Assignment state after:', store.getState().machineAssignment)
     }
     
     return result
@@ -111,7 +107,7 @@ export const restorePersistedSelection = () => {
     if (persisted) {
       return JSON.parse(persisted) as string[]
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.warn('Failed to restore machine selection:', error)
   }
   return null
@@ -123,6 +119,7 @@ import { MachineValidationService } from '@/features/distributed-storage'
 import type { Machine } from '@/types'
 import { setMultipleValidationResults } from './machineAssignmentSlice'
 import type { RootState } from '@/store/store'
+import type { BulkValidationResult, ValidationResult } from '@/features/distributed-storage'
 
 export const validateSelectedMachines = createAsyncThunk<
   void,
@@ -143,27 +140,27 @@ export const validateSelectedMachines = createAsyncThunk<
     )
     
     // Perform validation
-    const validationResult = MachineValidationService.validateBulkAssignment(
+    const validationResult: BulkValidationResult = MachineValidationService.validateBulkAssignment(
       machinesToValidate,
       targetType
     )
     
     // Convert to validation results format
-    const results = machinesToValidate.map(machine => {
+    const results = machinesToValidate.map(({ machineName }) => {
       const isValid = validationResult.validMachines.some(
-        vm => vm.machineName === machine.machineName
+        vm => vm.machineName === machineName
       )
       
-      const errors = (validationResult as any).errors?.[machine.machineName] || []
-      const warnings = (validationResult as any).warnings?.[machine.machineName] || []
+      const errors = validationResult.errors[machineName] || []
+      const warnings = validationResult.warnings[machineName] || []
       
       return {
-        machineName: machine.machineName,
+        machineName,
         result: {
           isValid,
           errors,
           warnings
-        }
+        } as ValidationResult
       }
     })
     

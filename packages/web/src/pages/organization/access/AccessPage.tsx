@@ -170,7 +170,7 @@ const AccessPage: React.FC = () => {
       title: tSystem('tables.permissionGroups.actions'),
       key: 'actions',
       width: 360,
-      render: (_: any, record: PermissionGroup) => (
+      render: (_: unknown, record: PermissionGroup) => (
         <Space>
           <Tooltip title={tSystem('actions.permissions')}>
             <Button
@@ -247,8 +247,8 @@ const AccessPage: React.FC = () => {
         </AccessListHeader>
       }
       loading={permissionsLoading}
-      data={permissionGroups as any}
-      columns={permissionColumns as any}
+      data={permissionGroups}
+      columns={permissionColumns}
       rowKey="permissionGroupName"
       searchPlaceholder={t('access.permissions.searchPlaceholder', { defaultValue: 'Search permission groups...' })}
       data-testid="system-permission-group-table"

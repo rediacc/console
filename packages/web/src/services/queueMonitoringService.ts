@@ -2,9 +2,7 @@ import { showTranslatedMessage } from '@/utils/messages'
 import { api } from '@/api/client'
 import { isPermanentFailure, STALE_TASK_CONSTANTS } from '@rediacc/shared/queue'
 import type { QueueItem, QueueTrace } from '@rediacc/shared/types'
-
-// Declare chrome as optional global for extension context detection
-declare const chrome: any
+import { isAxiosError } from 'axios'
 
 interface MonitoredTask {
   taskId: string
@@ -16,6 +14,17 @@ interface MonitoredTask {
   startTime: number
   checkInterval: number // milliseconds
   lastCheckTime: number
+}
+
+interface ChromeAPI {
+  runtime?: {
+    id?: string
+  }
+}
+
+interface QueueMonitoringDebug {
+  getTasks: () => Array<[string, MonitoredTask]>
+  checkTask: (taskId: string) => void
 }
 
 class QueueMonitoringService {
@@ -44,10 +53,13 @@ class QueueMonitoringService {
   }
 
   private isExtensionContext(): boolean {
+    if (typeof window === 'undefined') {
+      return false
+    }
+
     try {
-      return typeof chrome !== 'undefined' && 
-             chrome.runtime !== undefined && 
-             chrome.runtime.id !== undefined
+      const chromeApi = (window as Window & { chrome?: ChromeAPI }).chrome
+      return chromeApi?.runtime?.id !== undefined
     } catch {
       return false
     }
@@ -81,7 +93,7 @@ class QueueMonitoringService {
           }
         })
       }
-    } catch (error) {
+    } catch {
       // Failed to load monitored tasks from storage
     }
   }
@@ -94,7 +106,7 @@ class QueueMonitoringService {
     try {
       const tasks = Array.from(this.monitoredTasks.values())
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tasks))
-    } catch (error) {
+    } catch {
       // Failed to save monitored tasks to storage
     }
   }
@@ -193,8 +205,8 @@ class QueueMonitoringService {
               setTimeout(() => reject(new Error('Chrome extension timeout')), 8000)
             )
           ])) as QueueTrace
-        } catch (extensionError: any) {
-          if (extensionError.message === 'Chrome extension timeout') {
+        } catch (extensionError: unknown) {
+          if (extensionError instanceof Error && extensionError.message === 'Chrome extension timeout') {
             return // Skip this check to avoid blocking
           }
           throw extensionError
@@ -415,11 +427,11 @@ class QueueMonitoringService {
         this.saveToStorage()
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Failed to check queue task
       
       // If we get a 404, the task might have been deleted
-      if (error.response?.status === 404) {
+      if (isAxiosError(error) && error.response?.status === 404) {
         showTranslatedMessage('error', 'queue:monitoring.taskNotFound', { 
           taskId: task.taskId
         })
@@ -465,7 +477,8 @@ export const queueMonitoringService = QueueMonitoringService.getInstance()
 
 // Expose debug methods on window for debugging
 if (typeof window !== 'undefined') {
-  (window as any).queueMonitoringDebug = {
+  const debugWindow = window as Window & { queueMonitoringDebug?: QueueMonitoringDebug }
+  debugWindow.queueMonitoringDebug = {
     getTasks: () => Array.from(queueMonitoringService['monitoredTasks'].entries()),
     checkTask: (taskId: string) => {
       const task = queueMonitoringService['monitoredTasks'].get(taskId)

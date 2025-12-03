@@ -166,7 +166,7 @@ const CompanyPage: React.FC = () => {
             totalVaults: allVaults.length,
             vaultTypes: Object.keys(vaultsByType).map((type) => ({
               type,
-              count: (vaultsByType as any)[type]?.length || 0,
+              count: vaultsByType[type]?.length || 0,
             })),
           },
         }
@@ -249,7 +249,12 @@ const CompanyPage: React.FC = () => {
         return
       }
 
-      const vaultUpdates: any[] = []
+      const vaultUpdates: Array<{
+        credential: string
+        name: string
+        content: string
+        version: number
+      }> = []
       const newPassword = masterPasswordOperation === 'remove' ? '' : values.password!
 
       for (const vault of vaultsResult.data.allVaults) {
@@ -278,7 +283,7 @@ const CompanyPage: React.FC = () => {
               content: finalContent,
               version: vault.version || 1,
             })
-          } catch (error) {
+          } catch {
             showMessage('error', `Failed to process vault ${vault.vaultName}`)
           }
         }

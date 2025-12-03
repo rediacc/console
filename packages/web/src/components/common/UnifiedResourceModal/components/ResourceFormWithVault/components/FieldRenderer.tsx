@@ -1,6 +1,6 @@
 import { Input } from 'antd'
 import { Controller, Control } from 'react-hook-form'
-import type { ControllerProps, FieldValues } from 'react-hook-form'
+import type { FieldValues } from 'react-hook-form'
 import type { FormFieldConfig } from '../types'
 import {
   SizeInputGroup,
@@ -22,9 +22,9 @@ export const FieldRenderer = <T extends FieldValues>({
     case 'select':
       return (
         <Controller
-          name={field.name as any}
+          name={field.name}
           control={control}
-          rules={field.rules as ControllerProps<T>['rules']}
+          rules={field.rules}
           render={({ field: controllerField }) => (
             <FullWidthSelect
               {...controllerField}
@@ -42,9 +42,9 @@ export const FieldRenderer = <T extends FieldValues>({
     case 'password':
       return (
         <Controller
-          name={field.name as any}
+          name={field.name}
           control={control}
-          rules={field.rules as ControllerProps<T>['rules']}
+          rules={field.rules}
           render={({ field: controllerField }) => (
             <Input.Password
               {...controllerField}
@@ -60,9 +60,9 @@ export const FieldRenderer = <T extends FieldValues>({
       const defaultUnit = units[0] === 'percentage' ? '%' : units[0]
       return (
         <Controller
-          name={field.name as any}
+          name={field.name}
           control={control}
-          rules={field.rules as ControllerProps<T>['rules']}
+          rules={field.rules}
           render={({ field: controllerField }) => {
             const rawValue = controllerField.value
             const currentValue =
@@ -154,9 +154,9 @@ export const FieldRenderer = <T extends FieldValues>({
     default:
       return (
         <Controller
-          name={field.name as any}
+          name={field.name}
           control={control}
-          rules={field.rules as ControllerProps<T>['rules']}
+          rules={field.rules}
           render={({ field: controllerField }) => (
             <Input
               {...controllerField}

@@ -62,30 +62,31 @@ export class MachineValidationService {
    */
   static validateExclusivityRule(
     machine: Machine,
-    targetType: 'cluster' | 'image' | 'clone'
+    targetType: DistributedStorageResource['type']
   ): ValidationResult {
     const errors: ValidationError[] = []
     const warnings: ValidationWarning[] = []
 
     const exclusivity = this.checkMachineExclusivity(machine)
+    const normalizedTargetType = this.normalizeTargetType(targetType)
 
     if (exclusivity.isExclusive) {
       // Cluster and Image assignments are mutually exclusive
-      if ((targetType === 'cluster' || targetType === 'image') && exclusivity.conflictType) {
+      if ((normalizedTargetType === 'cluster' || normalizedTargetType === 'image') && exclusivity.conflictType) {
         errors.push({
           code: 'EXCLUSIVITY_VIOLATION',
           message: `Machine is already assigned to ${exclusivity.conflictType}: ${exclusivity.conflictResource}`,
           field: 'assignmentType',
           context: {
             currentType: exclusivity.conflictType,
-            requestedType: targetType,
+            requestedType: normalizedTargetType,
             conflictResource: exclusivity.conflictResource
           }
         })
       }
 
       // Clones can coexist with other assignments but show warning
-      if (targetType === 'clone' && exclusivity.conflictType) {
+      if (normalizedTargetType === 'clone' && exclusivity.conflictType) {
         warnings.push({
           code: 'CLONE_ASSIGNMENT_WARNING',
           message: `Machine is also assigned to ${exclusivity.conflictType}: ${exclusivity.conflictResource}`,
@@ -119,7 +120,7 @@ export class MachineValidationService {
     warnings.push(...availabilityResult.warnings)
 
     // Validate exclusivity
-    const exclusivityResult = this.validateExclusivityRule(machine, targetResource.type as any)
+    const exclusivityResult = this.validateExclusivityRule(machine, targetResource.type)
     errors.push(...exclusivityResult.errors)
     warnings.push(...exclusivityResult.warnings)
 
@@ -162,10 +163,10 @@ export class MachineValidationService {
    */
   static validateSingleMachine(
     machine: Machine,
-    targetType: string,
+    targetType: DistributedStorageResource['type'],
     _context?: ValidationContext
   ): ValidationResult {
-    const result = this.validateExclusivityRule(machine, targetType as any)
+    const result = this.validateExclusivityRule(machine, targetType)
     const availabilityResult = this.validateMachineAvailability(machine)
 
     // Combine all errors and warnings
@@ -188,7 +189,7 @@ export class MachineValidationService {
    */
   static validateBulkAssignment(
     machines: Machine[],
-    targetType: string,
+    targetType: DistributedStorageResource['type'],
     context?: ValidationContext
   ): BulkValidationResult {
     const validMachines: Machine[] = []
@@ -198,7 +199,7 @@ export class MachineValidationService {
     let criticalErrors = false
 
     machines.forEach(machine => {
-      const result = this.validateExclusivityRule(machine, targetType as any)
+      const result = this.validateExclusivityRule(machine, targetType)
       
       if (result.isValid && result.warnings.length === 0) {
         validMachines.push(machine)
@@ -238,7 +239,7 @@ export class MachineValidationService {
     // Collect all warnings
     const allWarnings: ValidationWarning[] = []
     machines.forEach(machine => {
-      const result = this.validateExclusivityRule(machine, targetType as any)
+      const result = this.validateExclusivityRule(machine, targetType)
       allWarnings.push(...result.warnings)
     })
 
@@ -251,7 +252,7 @@ export class MachineValidationService {
     // Convert warnings to Record<string, ValidationWarning[]> format
     const warningsByMachine: Record<string, ValidationWarning[]> = {}
     machines.forEach(machine => {
-      const result = this.validateExclusivityRule(machine, targetType as any)
+      const result = this.validateExclusivityRule(machine, targetType)
       if (result.warnings.length > 0) {
         warningsByMachine[machine.machineName] = result.warnings
       }
@@ -273,7 +274,7 @@ export class MachineValidationService {
    */
   static getInvalidMachines(
     machines: Machine[],
-    targetType: string
+    targetType: DistributedStorageResource['type']
   ): InvalidMachine[] {
     const result = this.validateBulkAssignment(machines, targetType)
     return result.invalidMachines
@@ -284,12 +285,10 @@ export class MachineValidationService {
    */
   static generateValidationSummary(results: ValidationResult[]): ValidationSummary {
     const errorTypes = new Map<string, number>()
-    let totalErrors = 0
     let warningCount = 0
     let criticalErrors = false
 
     results.forEach(result => {
-      totalErrors += result.errors.length
       warningCount += result.warnings.length
 
       result.errors.forEach(error => {
@@ -331,6 +330,24 @@ export class MachineValidationService {
   static canAssignMultipleClones(_machine: Machine): boolean {
     // Clones don't have exclusivity restrictions
     return true
+  }
+
+  /**
+   * Normalize resource types to the assignment categories used by validation
+   */
+  private static normalizeTargetType(
+    targetType: DistributedStorageResource['type']
+  ): 'cluster' | 'image' | 'clone' {
+    switch (targetType) {
+      case 'pool':
+        return 'cluster'
+      case 'snapshot':
+        return 'image'
+      case 'clone':
+        return 'clone'
+      default:
+        return targetType
+    }
   }
 
   /**

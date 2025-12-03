@@ -26,7 +26,9 @@ type ColumnDataIndex<T> = Extract<keyof T, string | number> | string
 /**
  * Team name column - used across machines, credentials, storage, etc.
  */
-export const teamNameColumn: ColumnFactory<any> = (options = {}) => ({
+export const teamNameColumn = <T extends { teamName?: string }>(
+  options: Parameters<ColumnFactory<T>>[0] = {}
+): ColumnsType<T>[number] => ({
   title: options.title || 'Team',
   dataIndex: 'teamName',
   key: 'teamName',
@@ -40,7 +42,9 @@ export const teamNameColumn: ColumnFactory<any> = (options = {}) => ({
 /**
  * Bridge name column
  */
-export const bridgeNameColumn: ColumnFactory<any> = (options = {}) => ({
+export const bridgeNameColumn = <T extends { bridgeName?: string }>(
+  options: Parameters<ColumnFactory<T>>[0] = {}
+): ColumnsType<T>[number] => ({
   title: options.title || 'Bridge',
   dataIndex: 'bridgeName',
   key: 'bridgeName',
@@ -54,7 +58,9 @@ export const bridgeNameColumn: ColumnFactory<any> = (options = {}) => ({
 /**
  * Machine name column
  */
-export const machineNameColumn: ColumnFactory<any> = (options = {}) => ({
+export const machineNameColumn = <T extends { machineName?: string }>(
+  options: Parameters<ColumnFactory<T>>[0] = {}
+): ColumnsType<T>[number] => ({
   title: options.title || 'Machine',
   dataIndex: 'machineName',
   key: 'machineName',
@@ -68,7 +74,9 @@ export const machineNameColumn: ColumnFactory<any> = (options = {}) => ({
 /**
  * Status column with optional badge rendering
  */
-export const statusColumn: ColumnFactory<any> = (options = {}) => ({
+export const statusColumn = <T extends { status?: string }>(
+  options: Parameters<ColumnFactory<T>>[0] = {}
+): ColumnsType<T>[number] => ({
   title: options.title || 'Status',
   dataIndex: 'status',
   key: 'status',
@@ -82,7 +90,9 @@ export const statusColumn: ColumnFactory<any> = (options = {}) => ({
 /**
  * Created date column
  */
-export const createdDateColumn: ColumnFactory<any> = (options = {}) => ({
+export const createdDateColumn = <T extends { createdDate?: string | number | Date }>(
+  options: Parameters<ColumnFactory<T>>[0] = {}
+): ColumnsType<T>[number] => ({
   title: options.title || 'Created',
   dataIndex: 'createdDate',
   key: 'createdDate',
@@ -98,7 +108,9 @@ export const createdDateColumn: ColumnFactory<any> = (options = {}) => ({
 /**
  * Updated date column
  */
-export const updatedDateColumn: ColumnFactory<any> = (options = {}) => ({
+export const updatedDateColumn = <T extends { updatedDate?: string | number | Date }>(
+  options: Parameters<ColumnFactory<T>>[0] = {}
+): ColumnsType<T>[number] => ({
   title: options.title || 'Updated',
   dataIndex: 'updatedDate',
   key: 'updatedDate',
@@ -129,7 +141,9 @@ export const actionsColumn = <T,>(
 /**
  * Numeric count column (e.g., repo count, machine count)
  */
-export const countColumn: ColumnFactory<any> = (options = {}) => ({
+export const countColumn = <T extends { count?: number }>(
+  options: Parameters<ColumnFactory<T>>[0] = {}
+): ColumnsType<T>[number] => ({
   title: options.title || 'Count',
   dataIndex: 'count',
   key: 'count',
@@ -144,7 +158,9 @@ export const countColumn: ColumnFactory<any> = (options = {}) => ({
 /**
  * Priority column
  */
-export const priorityColumn: ColumnFactory<any> = (options = {}) => ({
+export const priorityColumn = <T extends { priority?: number }>(
+  options: Parameters<ColumnFactory<T>>[0] = {}
+): ColumnsType<T>[number] => ({
   title: options.title || 'Priority',
   dataIndex: 'priority',
   key: 'priority',
@@ -165,9 +181,9 @@ export function createResourceColumns<T extends { teamName?: string; createdDate
 ): ColumnsType<T> {
   return [
     nameColumn,
-    teamNameColumn() as ColumnsType<T>[number],
+    teamNameColumn<T>(),
     ...additionalColumns,
-    createdDateColumn() as ColumnsType<T>[number]
+    createdDateColumn<T>()
   ]
 }
 
@@ -276,7 +292,7 @@ export interface StatusColumnOptions<T> {
   defaultConfig?: StatusConfig
   sorter?: boolean | ColumnsType<T>[number]['sorter']
   align?: 'left' | 'center' | 'right'
-  renderValue?: (value: any, record: T) => string
+  renderValue?: (value: unknown, record: T) => string
 }
 
 /**
@@ -308,11 +324,22 @@ export const createStatusColumn = <T,>(options: StatusColumnOptions<T>): Columns
     width: options.width ?? 100,
     align: options.align ?? 'center',
     sorter,
-    render: (value: any, record: T) => {
+    render: (value: unknown, record: T) => {
       const statusValue = options.renderValue ? options.renderValue(value, record) : value
-      return renderStatus(statusValue)
+      return renderStatus(String(statusValue ?? ''))
     },
   }
+}
+
+const toTimestamp = (value: unknown): number => {
+  if (value instanceof Date) {
+    return value.getTime()
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? 0 : date.getTime()
+  }
+  return 0
 }
 
 export interface DateColumnOptions<T> {
@@ -339,7 +366,7 @@ export const createDateColumn = <T,>(options: DateColumnOptions<T>): ColumnsType
     sorter = (a: T, b: T) => {
       const aValue = (a as Record<string, unknown>)[dataKey]
       const bValue = (b as Record<string, unknown>)[dataKey]
-      return new Date(aValue as any || 0).getTime() - new Date(bValue as any || 0).getTime()
+      return toTimestamp(aValue) - toTimestamp(bValue)
     }
   } else if (options.sorter === false) {
     sorter = undefined

@@ -5,7 +5,7 @@ import type {
 } from 'react-hook-form'
 
 export type FormFieldConfig<TFieldValues extends FieldValues = FieldValues> = {
-  name: string
+  name: ControllerProps<TFieldValues>['name']
   label: string
   type?: 'text' | 'select' | 'password' | 'email' | 'number'
   placeholder?: string

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { Form, Button, Typography, Alert, Tooltip, Modal } from 'antd'
+import type { FormInstance } from 'antd/es/form'
 import { UserOutlined, LockOutlined, KeyOutlined, InfoCircleOutlined, SafetyCertificateOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { loginSuccess } from '@/store/auth/authSlice'
@@ -77,7 +78,7 @@ interface ProtocolHandlerResult {
 const handleProtocolState = (
   protocolState: VaultProtocolState,
   t: (key: string) => string,
-  form: any,
+  form: FormInstance<LoginForm>,
   setError: (error: string) => void,
   setVaultProtocolState: (state: VaultProtocolState) => void
 ): ProtocolHandlerResult => {
@@ -174,12 +175,6 @@ const LoginPage: React.FC = () => {
               activationCode: '111111' // Fixed code for CI/TEST mode
             }
 
-            console.log('🚀 Quick Registration Mode (CI/TEST Only)', {
-              email: randomData.email,
-              company: randomData.companyName,
-              message: 'Using verification code: 111111'
-            })
-
             setQuickRegistrationData(randomData)
             setIsQuickRegistration(true)
             setShowRegistration(true)
@@ -234,8 +229,6 @@ const LoginPage: React.FC = () => {
         showMessage('info', message)
 
         // Console log for debugging
-        const mode = onLocalhost ? 'Localhost mode' : 'Power mode'
-        console.log(`[${onLocalhost ? 'LocalhostMode' : 'PowerMode'}] ${mode} ${newState ? 'enabled' : 'disabled'} via Ctrl+Shift+E`)
       }
     }
 
@@ -256,15 +249,6 @@ const LoginPage: React.FC = () => {
   const handleHealthCheckComplete = (hasHealthyEndpoint: boolean) => {
     const buildType = featureFlags.getBuildType()
     const powerModeEnabled = featureFlags.isPowerModeEnabled()
-
-    console.log('[LoginPage] Health check complete:', {
-      buildType,
-      hasHealthyEndpoint,
-      powerModeEnabled,
-      currentVisibility: {
-        endpoint: endpointSelectorVisible
-      }
-    })
 
     // Determine visibility based on build type and health status
     if (buildType === 'DEBUG') {
@@ -390,15 +374,18 @@ const LoginPage: React.FC = () => {
       })
 
       navigate('/machines')
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error
+        ? error.message
+        : t('login.errors.invalidCredentials')
       // Track login failure
       trackUserAction('login_failure', 'login_form', {
         email_domain: values.email.split('@')[1] || 'unknown',
-        error_message: error.message || 'unknown_error',
+        error_message: errorMessage || 'unknown_error',
         has_master_password: !!values.masterPassword
       })
 
-      setError(error.message || t('login.errors.invalidCredentials'))
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -461,7 +448,7 @@ const LoginPage: React.FC = () => {
         setShowTFAModal(false)
         navigate('/machines')
       }
-    } catch (error: any) {
+    } catch {
       // Error is handled by the mutation
       // No need to clear token - it's managed by interceptor
     }
@@ -746,7 +733,6 @@ const LoginPage: React.FC = () => {
         onRegistrationComplete={async (credentials) => {
           // Auto-login after quick registration
           if (isQuickRegistration) {
-            console.log('🔐 Auto-login after quick registration...')
             setShowRegistration(false)
             
             // Perform login with the registration credentials

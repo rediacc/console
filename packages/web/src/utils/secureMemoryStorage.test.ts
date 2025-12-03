@@ -3,6 +3,8 @@
  * Run this test in the browser console to verify functionality
  */
 
+/* eslint-disable no-console */
+import type { SecureMemoryStorage } from '@/core/utils/crypto'
 import { secureStorage } from './secureMemoryStorage'
 
 export async function testSecureStorage() {
@@ -72,7 +74,7 @@ export async function testSecureStorage() {
     await secureStorage.setItem('tamper_test', 'original data')
     
     // Try to manually tamper with the encrypted data
-    const storage = (secureStorage as any).storage
+    const storage = (secureStorage as SecureMemoryStorage & { storage: Map<string, string> }).storage
     const encryptedData = storage.get('tamper_test')
     if (encryptedData) {
       // Tamper with the ciphertext
@@ -100,6 +102,12 @@ export async function testSecureStorage() {
 }
 
 // Export for browser console testing
+declare global {
+  interface Window {
+    testSecureStorage?: typeof testSecureStorage
+  }
+}
+
 if (typeof window !== 'undefined') {
-  (window as any).testSecureStorage = testSecureStorage
+  window.testSecureStorage = testSecureStorage
 }

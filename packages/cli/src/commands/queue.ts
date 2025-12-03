@@ -16,7 +16,7 @@ import {
 } from '../utils/queueFormatters.js'
 import type { OutputFormat } from '../types/index.js'
 import type { QueueItemResponse } from '../types/api-responses.js'
-import type { QueueItem, QueueTrace } from '@rediacc/shared/types'
+import type { QueueTrace } from '@rediacc/shared/types'
 
 // Exported action handlers for reuse in shortcuts
 
@@ -86,8 +86,7 @@ export interface TraceActionOptions {
 }
 
 export async function createAction(
-  options: CreateActionOptions,
-  program: Command
+  options: CreateActionOptions
 ): Promise<{ taskId?: string }> {
   await authService.requireAuth()
   const opts = await contextService.applyDefaults(options)
@@ -172,7 +171,7 @@ export async function traceAction(
 
           if (!success && summary.lastFailureReason) {
             outputService.error('\nError Details:')
-            console.log(formatError(summary.lastFailureReason, true))
+            outputService.error(formatError(summary.lastFailureReason, true))
           }
 
           printTrace(summary, program)
@@ -192,14 +191,13 @@ export async function traceAction(
     )
 
     const summary = mapTraceToQueueItem(trace)
-    const format = program.opts().output as OutputFormat
 
     if (summary) {
       // Show formatted error if task failed
       if (summary.status === 'FAILED' && summary.lastFailureReason) {
         outputService.error('\nError Details:')
-        console.log(formatError(summary.lastFailureReason, true))
-        console.log('') // Empty line for spacing
+        outputService.error(formatError(summary.lastFailureReason, true))
+        outputService.info('') // Empty line for spacing
       }
 
       // Output trace using helper function
@@ -309,7 +307,7 @@ export function registerQueueCommands(program: Command): void {
     }, [])
     .action(async (options) => {
       try {
-        await createAction(options, program)
+        await createAction(options)
       } catch (error) {
         handleError(error)
       }

@@ -8,11 +8,11 @@ import i18n from '@/i18n/config'
 import { createErrorHandler } from '@/utils/mutationUtils'
 import { api } from '@/api/client'
 import type {
-  CompanyVaultCollections,
   CompanyImportResult,
   CompanyBlockUserRequestsResult,
   CompanyVaultUpdateResult,
   CompanyExportData,
+  CompanyVaultRecord,
 } from '@rediacc/shared/types'
 
 // Get company vault configuration
@@ -79,10 +79,10 @@ export const useCompanyVaults = () => {
     queryKey: ['company-all-vaults'],
     queryFn: async () => {
       const { vaults, bridgesWithRequestToken } = await api.company.getAllVaults()
-      const allVaults = vaults as CompanyVaultCollections['vaults']
+      const allVaults = vaults
 
       // Dynamically organize vaults by entity type
-      const vaultsByType: Record<string, any[]> = {}
+      const vaultsByType: Record<string, CompanyVaultRecord[]> = {}
       
       allVaults.forEach((vault) => {
         const entityType = vault.entityType
@@ -93,7 +93,7 @@ export const useCompanyVaults = () => {
           if (!vaultsByType[key]) {
             vaultsByType[key] = []
           }
-          vaultsByType[key].push(vault)
+          vaultsByType[key]!.push(vault)
         }
       })
       
@@ -113,7 +113,7 @@ export const useUpdateCompanyVaults = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (vaultUpdates: any[]) => {
+    mutationFn: async (vaultUpdates: Array<Record<string, unknown>>) => {
       return api.company.updateAllVaults(JSON.stringify(vaultUpdates))
     },
     onSuccess: (data: CompanyVaultUpdateResult) => {
@@ -132,9 +132,10 @@ export const useUpdateCompanyVaults = () => {
       // Invalidate all queries to refresh data
       queryClient.invalidateQueries()
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       // Show the actual error message from the API response
-      const errorMessage = error?.message || i18n.t('system:dangerZone.updateMasterPassword.error.updateFailed')
+      const errorMessage =
+        error instanceof Error ? error.message : i18n.t('system:dangerZone.updateMasterPassword.error.updateFailed')
       showMessage('error', errorMessage)
     }
   })

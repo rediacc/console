@@ -16,6 +16,7 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import type { Repo } from '@/api/queries/repos'
+import type { Machine } from '@/types'
 import { useMachines } from '@/api/queries/machines'
 import { abbreviatePath } from '@/utils/pathUtils'
 import {
@@ -100,12 +101,15 @@ interface ServiceData {
   main_pid?: number
   uptime_human?: string
   restarts?: number
+  repo?: string
+  service_name?: string
+  unit_file?: string
 }
 
 interface RepoPanelData {
-  machine: any
+  machine: Machine
   repoData: RepoVaultData
-  systemData?: any
+  systemData?: Record<string, unknown>
   services: ServiceData[]
 }
 
@@ -158,7 +162,7 @@ export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
               const servicesForRepo: ServiceData[] = []
 
               if (Array.isArray(result.services)) {
-                result.services.forEach((service: any) => {
+                result.services.forEach((service: ServiceData) => {
                   if (service.repo === repoData.name || service.repo === repo.repoGuid) {
                     servicesForRepo.push(service)
                     return

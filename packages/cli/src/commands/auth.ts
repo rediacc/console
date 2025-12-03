@@ -4,7 +4,7 @@ import { api } from '../services/api.js'
 import { outputService } from '../services/output.js'
 import { askText, askPassword, askConfirm } from '../utils/prompt.js'
 import { withSpinner } from '../utils/spinner.js'
-import { handleError, exitWithSuccess } from '../utils/errors.js'
+import { handleError } from '../utils/errors.js'
 import type { OutputFormat } from '../types/index.js'
 export function registerAuthCommands(program: Command): void {
   const auth = program

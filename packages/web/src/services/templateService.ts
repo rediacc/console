@@ -120,7 +120,7 @@ class TemplateService {
   /**
    * Fetch detailed data for a specific template
    */
-  async fetchTemplateData(template: { id?: string; name: string; download_url?: string }): Promise<any> {
+  async fetchTemplateData(template: { id?: string; name: string; download_url?: string }): Promise<Record<string, unknown>> {
     try {
       const url = this.getTemplateDataUrl(template)
       // Use simple CORS request (no preflight needed)
@@ -135,7 +135,7 @@ class TemplateService {
         throw new Error(`Failed to fetch template data: ${response.status} ${response.statusText}`)
       }
 
-      return await response.json()
+      return await response.json() as Record<string, unknown>
     } catch (error) {
       console.error('Failed to fetch template data:', error)
       throw error

@@ -55,6 +55,16 @@ import { ModalHeader, ModalTitle, ModalSubtitle } from '@/styles/primitives'
 type FunctionParamValue = string | number | string[] | undefined
 type FunctionParams = Record<string, FunctionParamValue>
 
+const toFunctionParamValue = (value: unknown): FunctionParamValue | undefined => {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return value
+  }
+  if (Array.isArray(value) && value.every((item) => typeof item === 'string')) {
+    return value as string[]
+  }
+  return undefined
+}
+
 const { Text, Paragraph } = Typography
 const QUICK_TASK_NAMES = ['ping', 'hello', 'ssh_test', 'health_check']
 
@@ -149,7 +159,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
         }
       } else if (paramInfo.format === 'size' && paramInfo.units) {
         // Initialize with default values for size parameters
-        if (paramInfo.default) {
+        if (typeof paramInfo.default === 'string') {
           const match = paramInfo.default.match(/^(\d+)([%GT]?)$/)
           if (match) {
             const [, value, unit] = match
@@ -164,17 +174,26 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
         }
       } else if (paramInfo.options && paramInfo.options.length > 0) {
         // Initialize dropdown parameters with default value
-        defaultInitialParams[paramName] = paramInfo.default || paramInfo.options[0]
-      } else if (paramInfo.default) {
+        const defaultValue = toFunctionParamValue(paramInfo.default) ?? paramInfo.options[0]
+        defaultInitialParams[paramName] = defaultValue
+      } else {
         // Initialize other parameters with default value
-        defaultInitialParams[paramName] = paramInfo.default
+        const defaultValue = toFunctionParamValue(paramInfo.default)
+        if (typeof defaultValue !== 'undefined') {
+          defaultInitialParams[paramName] = defaultValue
+        }
       }
 
       // Special handling for destination-dropdown: set current machine as default
       if (paramInfo.ui === 'destination-dropdown' && currentMachineName) {
         // Check if there's a destinationType parameter with value 'machine'
         const destinationTypeParam = func.params['destinationType']
-        if (destinationTypeParam && (defaultInitialParams['destinationType'] === 'machine' || destinationTypeParam.default === 'machine')) {
+        const destinationDefault =
+          typeof destinationTypeParam?.default === 'string' ? destinationTypeParam.default : undefined
+        if (
+          destinationTypeParam &&
+          (defaultInitialParams['destinationType'] === 'machine' || destinationDefault === 'machine')
+        ) {
           defaultInitialParams[paramName] = currentMachineName
         }
       }

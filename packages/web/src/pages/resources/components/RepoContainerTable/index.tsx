@@ -45,7 +45,7 @@ interface Container {
   net_io?: string
   block_io?: string
   pids?: string
-  [key: string]: any // eslint-disable-line @typescript-eslint/no-explicit-any -- Allow additional properties from API
+  [key: string]: unknown
 }
 
 // Repo interface from vaultStatus (runtime data)
@@ -78,6 +78,17 @@ interface RepoContainerTableProps {
   highlightedContainer?: Container | null
   onQueueItemCreated?: (taskId: string, machineName: string) => void
   refreshKey?: number
+}
+
+interface VaultStatusRepo {
+  name?: string
+  mount_path?: string
+  image_path?: string
+}
+
+interface VaultStatusResult {
+  repos?: VaultStatusRepo[]
+  containers?: Container[]
 }
 
 export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
@@ -141,7 +152,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         }
 
         if (parsed.status === 'completed' && parsed.rawResult) {
-          const result = JSON.parse(parsed.rawResult)
+          const result = JSON.parse(parsed.rawResult) as VaultStatusResult
 
           if (result && result.containers && Array.isArray(result.containers)) {
             // Filter containers that belong to this repo
@@ -156,7 +167,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
               }
 
               // Find the repo in vaultStatus with this GUID
-              const vaultRepo = result.repos?.find((r: any) => r.name === containerRepoGuid)
+              const vaultRepo = result.repos?.find((r) => r.name === containerRepoGuid)
               if (!vaultRepo) {
                 return false
               }
@@ -186,14 +197,15 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         }
 
         setLoading(false)
-      } catch (err: any) {
-        setError(err.message || t('resources:repos.errorLoadingContainers'))
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : t('resources:repos.errorLoadingContainers')
+        setError(errorMessage)
         setLoading(false)
       }
     }
 
     parseContainers()
-  }, [machine.vaultStatus, repo.name, refreshKey, t])
+  }, [machine.vaultStatus, repo.image_path, repo.mount_path, repo.name, refreshKey, t])
 
   // Handle container actions
   const handleContainerAction = async (container: Container, functionName: string) => {

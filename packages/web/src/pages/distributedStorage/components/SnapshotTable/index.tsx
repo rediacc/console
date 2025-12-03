@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import type { Key } from 'react'
 import { Table, Tooltip, message } from 'antd'
 import {
   PlusOutlined,
@@ -37,14 +38,21 @@ interface SnapshotTableProps {
   teamFilter: string | string[]
 }
 
+interface SnapshotModalState {
+  open: boolean
+  mode: 'create' | 'edit' | 'vault'
+  data?: (DistributedStorageRbdSnapshot & { vaultContent?: string | null })
+}
+
+interface SnapshotFormValues extends Record<string, unknown> {
+  snapshotName: string
+  snapshotVault: string
+}
+
 const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }) => {
   const { t } = useTranslation('distributedStorage')
   const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable()
-  const [modalState, setModalState] = useState<{
-    open: boolean
-    mode: 'create' | 'edit' | 'vault'
-    data?: Record<string, any>
-  }>({ open: false, mode: 'create' })
+  const [modalState, setModalState] = useState<SnapshotModalState>({ open: false, mode: 'create' })
   const queueTrace = useQueueTraceModal()
   const managedQueueMutation = useManagedQueueItem()
   const { buildQueueVault } = useQueueVaultBuilder()
@@ -118,7 +126,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         if (response.taskId) {
           handleQueueItemCreated(response.taskId)
         }
-      } catch (error) {
+      } catch {
         message.error(t('queue.createError'))
       }
     },
@@ -258,7 +266,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
             expandable={{
               expandedRowRender,
               expandedRowKeys,
-              onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
+              onExpandedRowsChange: (keys: Key[]) => setExpandedRowKeys(keys.map(String)),
               expandIcon: ({ onExpand, record }) => (
                 <ExpandButton
                   size="small"
@@ -287,7 +295,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
           vaultContent: modalState.data?.vaultContent || modalState.data?.snapshotVault,
         }}
         teamFilter={pool.teamName}
-        onSubmit={async (data: any) => {
+        onSubmit={async (data: SnapshotFormValues) => {
           if (modalState.mode === 'create') {
             await createSnapshotMutation.mutateAsync({
               imageName: image.imageName,

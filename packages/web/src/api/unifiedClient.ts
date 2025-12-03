@@ -1,7 +1,7 @@
 import { apiClient as webApiClient } from './client'
 
 class UnifiedApiClient {
-  async post<T = any>(endpoint: string, data?: any) {
+  async post<T = unknown>(endpoint: string, data?: unknown) {
     return webApiClient.post<T>(endpoint, data)
   }
 
@@ -15,7 +15,7 @@ class UnifiedApiClient {
     _machine: string,
     _repo: string,
     _localPath: string,
-    _options: any = {}
+    _options: Record<string, unknown> = {}
   ) {
     throw new Error('File sync is not available in web mode')
   }
@@ -46,7 +46,7 @@ class UnifiedApiClient {
     return false
   }
 
-  async getSystemInfo(): Promise<any | null> {
+  async getSystemInfo(): Promise<Record<string, unknown> | null> {
     return null
   }
 
@@ -54,7 +54,7 @@ class UnifiedApiClient {
     _action: 'list' | 'connect' | 'connections',
     _machine: string,
     _repo: string,
-    _options: any = {}
+    _options: Record<string, unknown> = {}
   ) {
     throw new Error('Plugin commands are not available in web mode')
   }

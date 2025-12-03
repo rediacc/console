@@ -1,4 +1,5 @@
-import { Middleware } from '@reduxjs/toolkit'
+import { Middleware, AnyAction } from '@reduxjs/toolkit'
+import type { RootState } from '@/store/store'
 import { telemetryService } from '@/services/telemetryService'
 
 // Actions to track for business intelligence
@@ -46,10 +47,18 @@ interface TelemetryMiddlewareOptions {
   debugMode?: boolean
 }
 
-export const createTelemetryMiddleware = (options: TelemetryMiddlewareOptions = {}): Middleware => {
+type TelemetryEventPayload = Record<string, string | number | boolean>
+
+interface TelemetryWindow extends Window {
+  sessionStartTime?: number
+}
+
+export const createTelemetryMiddleware = (
+  options: TelemetryMiddlewareOptions = {}
+): Middleware<{}, RootState> => {
   const { enabled = true, debugMode = false } = options
 
-  return (store) => (next) => (action: any) => {
+  return (store) => (next) => (action: AnyAction) => {
     if (!enabled) {
       return next(action)
     }
@@ -94,7 +103,7 @@ export const createTelemetryMiddleware = (options: TelemetryMiddlewareOptions = 
         trackBusinessActions(action, stateBefore, stateAfter)
 
         if (debugMode) {
-          console.log('Telemetry tracked action:', action.type, {
+          console.warn('Telemetry tracked action:', action.type, {
             duration,
             hasPayload: !!action.payload
           })
@@ -125,7 +134,7 @@ function shouldTrackAction(actionType: string): boolean {
          TRACKED_ACTIONS.includes(actionType)
 }
 
-function trackFeatureUsage(action: any): void {
+function trackFeatureUsage(action: AnyAction): void {
   telemetryService.trackEvent('feature.usage', {
     'feature.name': extractFeatureName(action.type),
     'feature.action': action.type,
@@ -134,8 +143,8 @@ function trackFeatureUsage(action: any): void {
   })
 }
 
-function trackUserPreferences(action: any, stateBefore: any, stateAfter: any): void {
-  const preferences: Record<string, any> = {}
+function trackUserPreferences(action: AnyAction, stateBefore: RootState, stateAfter: RootState): void {
+  const preferences: Record<string, string> = {}
 
   if (action.type === 'ui/setTheme') {
     preferences['ui.theme'] = stateAfter.ui?.theme || 'unknown'
@@ -154,8 +163,8 @@ function trackUserPreferences(action: any, stateBefore: any, stateAfter: any): v
   })
 }
 
-function trackWorkflowProgression(action: any, stateAfter: any): void {
-  let workflowData: Record<string, any> = {
+function trackWorkflowProgression(action: AnyAction, stateAfter: RootState): void {
+  let workflowData: TelemetryEventPayload = {
     'workflow.action': action.type,
     'workflow.timestamp': Date.now()
   }
@@ -191,7 +200,7 @@ function trackWorkflowProgression(action: any, stateAfter: any): void {
   telemetryService.trackEvent('workflow.progression', workflowData)
 }
 
-function trackBusinessActions(action: any, stateBefore: any, stateAfter: any): void {
+function trackBusinessActions(action: AnyAction, stateBefore: RootState, stateAfter: RootState): void {
   switch (action.type) {
     case 'auth/loginSuccess':
       telemetryService.trackEvent('business.user_session_start', {
@@ -202,7 +211,8 @@ function trackBusinessActions(action: any, stateBefore: any, stateAfter: any): v
       break
 
     case 'auth/logout': {
-      const sessionDuration = Date.now() - ((window as any).sessionStartTime || Date.now())
+      const sessionStartTime = (window as TelemetryWindow).sessionStartTime ?? Date.now()
+      const sessionDuration = Date.now() - sessionStartTime
       telemetryService.trackEvent('business.user_session_end', {
         'session.duration_ms': sessionDuration,
         'session.company': stateBefore.auth?.company || 'unknown'
@@ -234,7 +244,7 @@ function extractFeatureName(actionType: string): string {
   return parts[0] || 'unknown'
 }
 
-function getNotificationCount(state: any): number {
+function getNotificationCount(state: RootState): number {
   return state.notifications?.notifications?.length || 0
 }
 

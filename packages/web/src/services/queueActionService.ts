@@ -7,6 +7,7 @@ export interface QueueActionParams {
   functionName: string
   params: Record<string, unknown>
   priority: number
+  description?: string
   addedVia: string
   machineVault: string
   repoGuid?: string

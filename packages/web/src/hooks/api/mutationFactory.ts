@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import { showMessage } from '@/utils/messages'
 import { minifyJSON } from '@/utils/json'
 import { telemetryService } from '@/services/telemetryService'
@@ -47,11 +48,14 @@ export const createMutation = <TVariables, TResult = unknown, TTransformed = TVa
         return response
       } catch (error) {
         const duration = performance.now() - startTime
+        const errorType = isAxiosError(error) && error.response
+          ? error.response.status
+          : 'network_error'
         telemetryService.trackEvent('data.mutation_error', {
           'mutation.operation': operationName,
           'mutation.duration_ms': duration,
-          'mutation.error': (error as Error).message || 'unknown_error',
-          'mutation.error_type': (error as any)?.response?.status || 'network_error',
+          'mutation.error': error instanceof Error ? error.message : 'unknown_error',
+          'mutation.error_type': errorType,
         })
         throw error
       }
@@ -70,8 +74,9 @@ export const createMutation = <TVariables, TResult = unknown, TTransformed = TVa
       keys.forEach(key => queryClient.invalidateQueries({ queryKey: [key] }))
       showMessage('success', config.successMessage(variables))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || config.errorMessage || 'Operation failed')
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : undefined
+      showMessage('error', message || config.errorMessage || 'Operation failed')
     },
     meta: {
       telemetry: {
@@ -81,7 +86,7 @@ export const createMutation = <TVariables, TResult = unknown, TTransformed = TVa
   })
 }
 
-export const createResourceMutation = <T extends Record<string, any>>(
+export const createResourceMutation = <T extends Record<string, unknown>>(
   resourceType: string,
   operation: 'create' | 'update' | 'delete',
   request: (variables: T) => Promise<unknown>,
@@ -103,8 +108,9 @@ export const createResourceMutation = <T extends Record<string, any>>(
   return () => {
     const mutation = baseMutation()
     const originalMutate = mutation.mutate
+    type MutateOptionsType = Parameters<typeof originalMutate>[1]
 
-    mutation.mutate = (variables: T, options?: any) => {
+    mutation.mutate = (variables: T, options?: MutateOptionsType) => {
       telemetryService.trackEvent('business.resource_operation', {
         'resource.type': resourceType.toLowerCase(),
         'resource.operation': operation,
@@ -115,22 +121,22 @@ export const createResourceMutation = <T extends Record<string, any>>(
 
       return originalMutate(variables, {
         ...options,
-        onSuccess: (data: any, vars: T, context: any) => {
+        onSuccess: (data, vars, context, mutationResult) => {
           telemetryService.trackEvent('business.resource_operation_success', {
             'resource.type': resourceType.toLowerCase(),
             'resource.operation': operation,
             'resource.name': (vars[nameField] as string) || 'unknown',
           })
-          options?.onSuccess?.(data, vars, context)
+          options?.onSuccess?.(data, vars, context, mutationResult)
         },
-        onError: (error: any, vars: T, context: any) => {
+        onError: (error, vars, context, mutationResult) => {
           telemetryService.trackEvent('business.resource_operation_error', {
             'resource.type': resourceType.toLowerCase(),
             'resource.operation': operation,
             'resource.name': (vars[nameField] as string) || 'unknown',
-            'resource.error': error.message || 'unknown_error',
+            'resource.error': error instanceof Error ? error.message : 'unknown_error',
           })
-          options?.onError?.(error, vars, context)
+          options?.onError?.(error, vars, context, mutationResult)
         },
       })
     }
@@ -139,7 +145,7 @@ export const createResourceMutation = <T extends Record<string, any>>(
   }
 }
 
-export const createVaultUpdateMutation = <T extends Record<string, any>>(
+export const createVaultUpdateMutation = <T extends Record<string, unknown>>(
   resourceType: string,
   request: (data: T) => Promise<unknown>,
   nameField: keyof T,

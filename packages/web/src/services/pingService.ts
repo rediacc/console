@@ -5,6 +5,7 @@ import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import type { Machine } from '@/types'
 import { useTeams } from '@/api/queries/teams'
 import { waitForQueueItemCompletion, type QueueItemCompletionResult } from './helloService'
+import type { Team } from '@rediacc/shared/types'
 
 export interface PingFunctionParams {
   teamName: string
@@ -24,6 +25,31 @@ export interface PingFunctionResult {
   error?: string
 }
 
+type QueueItemMutation =
+  | Pick<ReturnType<typeof useCreateQueueItem>, 'mutateAsync' | 'isPending'>
+  | Pick<ReturnType<typeof useManagedQueueItem>, 'mutateAsync' | 'isPending'>
+
+type BuildQueueVaultFn = ReturnType<typeof useQueueVaultBuilder>['buildQueueVault']
+
+interface QueueCreationResponse {
+  taskId?: string
+  isQueued?: boolean
+}
+
+const isQueueCreationResponse = (value: unknown): value is QueueCreationResponse => {
+  if (typeof value !== 'object' || value === null) {
+    return false
+  }
+  const candidate = value as Partial<QueueCreationResponse>
+  const hasValidTaskId = candidate.taskId === undefined || typeof candidate.taskId === 'string'
+  const hasValidQueued = candidate.isQueued === undefined || typeof candidate.isQueued === 'boolean'
+  return hasValidTaskId && hasValidQueued
+}
+
+const normalizeQueueCreationResponse = (value: unknown): QueueCreationResponse => {
+  return isQueueCreationResponse(value) ? value : {}
+}
+
 /**
  * Custom hook that provides a standardized way to call the ping function
  * This encapsulates the logic for building the queue vault and creating queue items
@@ -33,7 +59,7 @@ export function usePingFunction(options?: { useManaged?: boolean }) {
   // Always call both hooks unconditionally
   const managedMutation = useManagedQueueItem()
   const regularMutation = useCreateQueueItem()
-  const createQueueItemMutation = options?.useManaged ? managedMutation : regularMutation
+  const createQueueItemMutation: QueueItemMutation = options?.useManaged ? managedMutation : regularMutation
   const { data: teams } = useTeams()
 
   const executePing = useCallback(async (params: PingFunctionParams): Promise<PingFunctionResult> => {
@@ -46,10 +72,11 @@ export function usePingFunction(options?: { useManaged?: boolean }) {
         taskId: response?.taskId,
         success: !!response?.taskId || !!response?.isQueued
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to execute ping function'
       return {
         success: false,
-        error: error.message || 'Failed to execute ping function'
+        error: message
       }
     }
   }, [buildQueueVault, createQueueItemMutation, teams])
@@ -131,7 +158,7 @@ export function usePingFunction(options?: { useManaged?: boolean }) {
 }
 
 // Helper functions
-function getTeamVault(params: PingFunctionParams, teams: any[] | undefined): string {
+function getTeamVault(params: PingFunctionParams, teams: Team[] | undefined): string {
   if (params.teamVault && params.teamVault !== '{}') {
     return params.teamVault
   }
@@ -143,7 +170,7 @@ function getTeamVault(params: PingFunctionParams, teams: any[] | undefined): str
 async function buildPingQueueVault(
   params: PingFunctionParams,
   teamVault: string,
-  buildQueueVault: any
+  buildQueueVault: BuildQueueVaultFn
 ): Promise<string> {
   const DEFAULT_PRIORITY = 4
   const DEFAULT_DESCRIPTION = 'Ping connectivity test'
@@ -168,15 +195,17 @@ async function buildPingQueueVault(
 async function createPingQueueItem(
   params: PingFunctionParams,
   queueVault: string,
-  createQueueItemMutation: any
-): Promise<any> {
+  createQueueItemMutation: QueueItemMutation
+): Promise<QueueCreationResponse> {
   const DEFAULT_PRIORITY = 4
   
-  return createQueueItemMutation.mutateAsync({
+  const response = await createQueueItemMutation.mutateAsync({
     teamName: params.teamName,
     machineName: params.machineName,
     bridgeName: params.bridgeName,
     queueVault,
     priority: params.priority || DEFAULT_PRIORITY
   })
+
+  return normalizeQueueCreationResponse(response)
 }

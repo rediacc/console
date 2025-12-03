@@ -15,12 +15,10 @@
  * const result = normalizeProperty(apiResponse, 'taskId', 'TaskId', 'task_id')
  * // Returns the value if any of those properties exist
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function normalizeProperty<T extends Record<string, any>>(
+export function normalizeProperty<T extends Record<string, unknown>>(
   obj: T | null | undefined,
   ...propertyNames: string[]
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any {
+): unknown {
   if (!obj) return null
 
   for (const prop of propertyNames) {

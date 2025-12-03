@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react'
 import { ResourceType } from '@/components/common/UnifiedResourceModal'
 
-export interface UnifiedModalState<T = any> {
+export interface UnifiedModalState<T = Record<string, unknown>> {
   open: boolean
   resourceType: ResourceType
   mode: 'create' | 'edit' | 'vault'
-  data?: T | null
+  data?: Partial<T> | null
   preselectedFunction?: string
   creationContext?: 'credentials-only' | 'normal'
 }
@@ -15,14 +15,14 @@ export interface UseUnifiedModalReturn<T> {
   currentResource: T | null
   openModal: (
     mode: 'create' | 'edit' | 'vault',
-    data?: T | null,
+    data?: Partial<T> | null,
     preselectedFunction?: string
   ) => void
   closeModal: () => void
   setCurrentResource: (resource: T | null) => void
 }
 
-export function useUnifiedModal<T = any>(
+export function useUnifiedModal<T extends Record<string, unknown> = Record<string, unknown>>(
   resourceType: ResourceType,
   initialCreationContext?: 'credentials-only' | 'normal'
 ): UseUnifiedModalReturn<T> {
@@ -38,7 +38,7 @@ export function useUnifiedModal<T = any>(
   const openModal = useCallback(
     (
       mode: 'create' | 'edit' | 'vault',
-      data?: T | null,
+      data?: Partial<T> | null,
       preselectedFunction?: string
     ) => {
       setModalState({
@@ -49,8 +49,10 @@ export function useUnifiedModal<T = any>(
         preselectedFunction,
         creationContext: initialCreationContext
       })
-      if (data) {
-        setCurrentResource(data)
+      if (data && mode !== 'create') {
+        setCurrentResource(data as T)
+      } else if (mode === 'create') {
+        setCurrentResource(null)
       }
     },
     [resourceType, initialCreationContext]

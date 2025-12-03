@@ -1,12 +1,6 @@
 import { Command } from 'commander'
-import { authService } from '../services/auth.js'
 import { api } from '../services/api.js'
-import { contextService } from '../services/context.js'
-import { outputService } from '../services/output.js'
-import { withSpinner } from '../utils/spinner.js'
-import { handleError } from '../utils/errors.js'
 import { createResourceCommands, addStatusCommand, addAssignCommand } from '../utils/commandFactory.js'
-import type { OutputFormat } from '../types/index.js'
 export function registerMachineCommands(program: Command): void {
   // Create standard CRUD commands using factory
   const machine = createResourceCommands(program, {

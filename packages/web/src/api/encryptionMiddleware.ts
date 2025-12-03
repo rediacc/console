@@ -10,10 +10,10 @@ import { showMessage } from '../utils/messages'
 /**
  * Encrypts vault fields in request data before sending
  */
-export async function encryptRequestData(data: any): Promise<any> {
+export async function encryptRequestData<T>(data: T): Promise<T> {
   const masterPassword = await masterPasswordService.getMasterPassword()
   
-  if (!masterPassword || !data) {
+  if (!masterPassword || data === undefined || data === null) {
     return data
   }
 
@@ -28,10 +28,10 @@ export async function encryptRequestData(data: any): Promise<any> {
 /**
  * Decrypts vault fields in response data after receiving
  */
-export async function decryptResponseData(data: any): Promise<any> {
+export async function decryptResponseData<T>(data: T): Promise<T> {
   const masterPassword = await masterPasswordService.getMasterPassword()
   
-  if (!masterPassword || !data) {
+  if (!masterPassword || data === undefined || data === null) {
     return data
   }
 

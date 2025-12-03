@@ -1,4 +1,11 @@
-import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig, AxiosRequestConfig } from 'axios'
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+  AxiosRequestConfig,
+  isAxiosError,
+} from 'axios'
 import type { ApiResponse } from '@rediacc/shared/types'
 import { normalizeResponse, createApiServices } from '@rediacc/shared/api'
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api'
@@ -28,8 +35,7 @@ let API_BASE_URL = ''
 
 class ApiClient implements SharedApiClient {
   private client: AxiosInstance
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private requestQueue: Promise<any> = Promise.resolve()
+  private requestQueue: Promise<void> = Promise.resolve()
 
   private readonly HTTP_UNAUTHORIZED = 401
   private readonly HTTP_SERVER_ERROR = 500
@@ -111,7 +117,7 @@ class ApiClient implements SharedApiClient {
 
         return response
       },
-      (error) => {
+      (error: AxiosError<ApiResponse>) => {
         const startTime = error.config?.metadata?.startTime || 0
         const duration = performance.now() - startTime
 
@@ -166,36 +172,34 @@ class ApiClient implements SharedApiClient {
     return response.data
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async makeRequest<T = any>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, data || {}, config))
+  private async makeRequest<T>(endpoint: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+    const payload = data ?? {}
+    return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, payload, config))
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get = <T = any>(endpoint: string, params?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
+  get = <T>(endpoint: string, params?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, params, config)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  post = <T = any>(endpoint: string, data: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
+  post = <T>(endpoint: string, data: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, data, config)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  put = <T = any>(endpoint: string, data: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
+  put = <T>(endpoint: string, data: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, data, config)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  delete = <T = any>(endpoint: string, data: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
+  delete = <T>(endpoint: string, data: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, data, config)
 
   private async queueRequest<T>(request: () => Promise<AxiosResponse<ApiResponse<T>>>): Promise<ApiResponse<T>> {
-    const executeRequest = async () => {
-      // Token locking is now handled by tokenService/tokenLockManager
-      // No need for explicit waitForTokenUpdate - locks handle synchronization
-      return (await request()).data
-    }
+    const nextRequest = this.requestQueue
+      .catch(() => undefined)
+      .then(async () => (await request()).data)
 
-    this.requestQueue = this.requestQueue.then(executeRequest).catch(executeRequest)
-    return this.requestQueue
+    this.requestQueue = nextRequest.then(
+      () => undefined,
+      () => undefined
+    )
+
+    return nextRequest
   }
 
   private async handleResponseDecryption(responseData: ApiResponse): Promise<ApiResponse> {
@@ -207,19 +211,36 @@ class ApiClient implements SharedApiClient {
     }
   }
 
-  private extractErrorMessage(error: any): string {
-    const { response, errors, message } = error
-    return [
-      response?.data?.errors?.join('; '),
-      response?.data?.message,
-      response?.data?.resultSets?.[0]?.data?.[0]?.message,
-      errors?.join('; '),
-      message,
-    ].find(Boolean) || 'Request failed'
+  private extractErrorMessage(error: unknown): string {
+    if (typeof error === 'string') {
+      return error
+    }
+
+    if (this.isApiResponse(error)) {
+      return error.errors?.join('; ') || error.message || 'Request failed'
+    }
+
+    if (isAxiosError<ApiResponse>(error)) {
+      const responseErrors = error.response?.data?.errors?.join('; ')
+      const responseMessage = error.response?.data?.message
+      const nestedMessageEntry = error.response?.data?.resultSets?.[0]?.data?.[0] as { message?: string } | undefined
+      const nestedMessage = nestedMessageEntry?.message
+      const additionalErrors = (error as { errors?: string[] }).errors?.join('; ')
+      return responseErrors || responseMessage || nestedMessage || additionalErrors || error.message || 'Request failed'
+    }
+
+    if (error instanceof Error) {
+      return error.message
+    }
+
+    return 'Request failed'
   }
   
-  private isUnauthorizedError(error: any): boolean {
-    return error.failure === this.HTTP_UNAUTHORIZED || error.response?.status === this.HTTP_UNAUTHORIZED
+  private isUnauthorizedError(error: ApiResponse | AxiosError<ApiResponse>): boolean {
+    if (this.isApiResponse(error)) {
+      return error.failure === this.HTTP_UNAUTHORIZED
+    }
+    return error.response?.status === this.HTTP_UNAUTHORIZED
   }
   
   private handleUnauthorizedError(): void {
@@ -257,20 +278,26 @@ class ApiClient implements SharedApiClient {
     await tokenService.updateToken(newToken)
   }
 
-  private handleResponseError(error: any): Promise<never> {
+  private handleResponseError(error: AxiosError<ApiResponse>): Promise<never> {
+    const responseStatus = error.response?.status
+    const isNetworkError = Boolean(error.request && !error.response)
     const errorHandlers = {
       [this.isUnauthorizedError(error) ? 'unauthorized' : '']: () => this.handleUnauthorizedError(),
-      [error.response?.status >= this.HTTP_SERVER_ERROR ? 'server' : '']: () => 
+      [responseStatus !== undefined && responseStatus >= this.HTTP_SERVER_ERROR ? 'server' : '']: () =>
         showMessage('error', 'Server error. Please try again later.'),
-      [error.request && !error.response ? 'network' : '']: () => 
-        showMessage('error', 'Network error. Please check your connection.')
+      [isNetworkError ? 'network' : '']: () =>
+        showMessage('error', 'Network error. Please check your connection.'),
     }
     
     Object.entries(errorHandlers).forEach(([key, handler]) => key && handler())
     
-    const customError = new Error(this.extractErrorMessage(error))
-    ;(customError as any).response = error.response
+    const customError: Error & { response?: unknown } = new Error(this.extractErrorMessage(error))
+    customError.response = error.response
     return Promise.reject(customError)
+  }
+
+  private isApiResponse(value: unknown): value is ApiResponse {
+    return typeof value === 'object' && value !== null && 'failure' in value && 'resultSets' in value
   }
 
 }

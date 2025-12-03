@@ -11,7 +11,6 @@ const SandboxWarning: React.FC = () => {
   useEffect(() => {
     const loadInstanceName = async () => {
       const name = await configService.getInstanceName()
-      console.log('SandboxWarning: Instance name loaded:', name)
       // Show warning only for sandbox instances
       setIsVisible(name.toLowerCase() === 'sandbox')
     }

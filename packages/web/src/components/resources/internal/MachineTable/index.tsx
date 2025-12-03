@@ -35,6 +35,7 @@ import { RemoveFromClusterModal } from '@/pages/distributedStorage/components/Re
 import { ViewAssignmentStatusModal } from '@/pages/distributedStorage/components/ViewAssignmentStatusModal';
 import { featureFlags } from '@/config/featureFlags';
 import { getMachineRepos as coreGetMachineRepos } from '@/core';
+import type { DeployedRepo } from '@/core/services/machine';
 import { buildMachineTableColumns } from './columns';
 import type { MachineFunctionAction } from './columns';
 import {
@@ -140,13 +141,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Parse machine vault status to get repo information
   // Uses core vault-status parser with repo name resolution
-  const getMachineRepos = (machine: Machine) => {
+  const getMachineRepos = useCallback((machine: Machine): DeployedRepo[] => {
     return coreGetMachineRepos(machine, repos.map(r => ({
       repoGuid: r.repoGuid,
       repoName: r.repoName,
       grandGuid: r.grandGuid
     })));
-  };
+  }, [repos]);
 
   const handleDelete = useCallback((machine: Machine) => {
     if (onDeleteMachine) {
@@ -422,7 +423,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           return;
         }
         // Add machine to each repo it has
-        machineRepos.forEach((repo: any) => {
+        machineRepos.forEach((repo) => {
           const repoKey = repo.name;
           if (!result[repoKey]) result[repoKey] = [];
           if (!result[repoKey].find(m => m.machineName === machine.machineName)) {
@@ -436,10 +437,10 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           key = 'No Repos';
         } else {
           // Priority-based status assignment
-          const hasInaccessible = machineRepos.some((r: any) => !r.accessible);
-          const hasRunning = machineRepos.some((r: any) => r.mounted && r.docker_running);
-          const hasStopped = machineRepos.some((r: any) => r.mounted && !r.docker_running);
-          const hasUnmounted = machineRepos.some((r: any) => !r.mounted);
+          const hasInaccessible = machineRepos.some((r) => !r.accessible);
+          const hasRunning = machineRepos.some((r) => r.mounted && r.docker_running);
+          const hasStopped = machineRepos.some((r) => r.mounted && !r.docker_running);
+          const hasUnmounted = machineRepos.some((r) => !r.mounted);
           
           if (hasInaccessible) {
             key = 'Inaccessible';
@@ -458,7 +459,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         const machineRepos = getMachineRepos(machine);
         if (machineRepos.length === 0) return;
 
-        machineRepos.forEach((repo: any) => {
+        machineRepos.forEach((repo) => {
           let grandKey = 'No Grand Repo';
           if (repo.grandGuid) {
             const grandRepo = repos.find(r => r.repoGuid === repo.grandGuid);

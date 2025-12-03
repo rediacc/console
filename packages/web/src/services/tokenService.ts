@@ -128,7 +128,7 @@ class TokenService {
       // Import dynamically to avoid circular dependencies
       const { forkTokenService } = await import('./forkTokenService')
       forkTokenService.clearAllForkTokens()
-    } catch (error) {
+    } catch {
       // Silently fail - fork token cleanup is not critical for logout
     }
   }

@@ -175,7 +175,7 @@ const UsersPage: React.FC = () => {
       title: tSystem('tables.users.actions'),
       key: 'actions',
       width: 300,
-      render: (_: any, record: User) => (
+      render: (_: unknown, record: User) => (
         <Space>
           <Tooltip title={tSystem('actions.permissions')}>
             <Button

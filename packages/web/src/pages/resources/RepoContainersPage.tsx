@@ -84,15 +84,24 @@ interface ContainerData {
   pids: string
 }
 
+type RepoContainersLocationState = {
+  machine?: Machine
+  repo?: Repo
+} | null
+
+const isRepoData = (value: unknown): value is Repo => {
+  return typeof value === 'object' && value !== null && 'name' in value
+}
+
 const RepoContainersPage: React.FC = () => {
   const { machineName, repoName } = useParams<{ machineName: string; repoName: string }>()
   const navigate = useNavigate()
-  const location = useLocation()
+  const location = useLocation<RepoContainersLocationState>()
   const { t } = useTranslation(['resources', 'machines', 'common'])
 
   // Extract machine and repo from navigation state
-  const machine = (location.state as any)?.machine as Machine | undefined
-  const repo = (location.state as any)?.repo as Repo | undefined
+  const machine = location.state?.machine
+  const repo = location.state?.repo
 
   const [selectedContainer, setSelectedContainer] = useState<ContainerData | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -118,9 +127,10 @@ const RepoContainersPage: React.FC = () => {
         }
         const result = JSON.parse(cleanedResult)
 
-        if (result?.repos && Array.isArray(result.repos)) {
-          // Find repo by name
-          return result.repos.find((r: any) => r.name === repoName)
+        if (Array.isArray(result?.repos)) {
+          return result.repos.find(
+            (candidate): candidate is Repo => isRepoData(candidate) && candidate.name === repoName
+          ) || null
         }
       }
     } catch (err) {
@@ -158,8 +168,8 @@ const RepoContainersPage: React.FC = () => {
     navigate('/machines')
   }
 
-  const handleContainerClick = (container: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-    setSelectedContainer(container as ContainerData)
+  const handleContainerClick = (container: ContainerData) => {
+    setSelectedContainer(container)
     setIsPanelCollapsed(false)
   }
 
@@ -309,7 +319,7 @@ const RepoContainersPage: React.FC = () => {
               key={`${actualMachine.machineName}-${actualRepoName}-${refreshKey}`}
               refreshKey={refreshKey}
               onContainerClick={handleContainerClick}
-              highlightedContainer={selectedContainer as any}
+              highlightedContainer={selectedContainer}
               onQueueItemCreated={(taskId, machineName) => {
                 queueTrace.open(taskId, machineName)
               }}

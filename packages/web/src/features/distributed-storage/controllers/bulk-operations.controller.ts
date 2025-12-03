@@ -23,8 +23,9 @@ import {
   MigrationResult,
   ValidationError,
   WorkflowEvent,
-  WorkflowEventData,
-  WorkflowEventHandler
+  WorkflowEventHandler,
+  WorkflowEventPayloadMap,
+  WorkflowEventEnvelope
 } from './types'
 
 export class BulkOperationsController {
@@ -55,13 +56,22 @@ export class BulkOperationsController {
   /**
    * Emit workflow event
    */
-  private emit(event: WorkflowEvent, workflowId: string, data?: any) {
-    const eventData: WorkflowEventData = {
-      event,
-      workflowId,
-      timestamp: new Date(),
-      data
+  private emit<TEvent extends WorkflowEvent>(
+    event: TEvent,
+    workflowId: string,
+    ...payload: WorkflowEventPayloadMap[TEvent] extends undefined ? [] : [WorkflowEventPayloadMap[TEvent]]
+  ) {
+    type EventEnvelope = WorkflowEventEnvelope<TEvent>
+    const baseEvent = { event, workflowId, timestamp: new Date() }
+
+    if (payload.length === 0) {
+      const eventData = baseEvent as EventEnvelope
+      this.eventHandlers.forEach(handler => handler(eventData))
+      return
     }
+
+    const [data] = payload
+    const eventData = { ...baseEvent, data } as EventEnvelope
     this.eventHandlers.forEach(handler => handler(eventData))
   }
   
@@ -110,7 +120,7 @@ export class BulkOperationsController {
             if (options.stopOnFirstError) {
               throw new ValidationError(
                 `${invalidCount} machines failed validation`,
-                [validationResult as any],
+                [validationResult],
                 validationResult.invalidMachines.map(m => m.machineName)
               )
             }
@@ -664,7 +674,8 @@ export class BulkOperationsController {
               try {
                 await this.assignmentHook.assignToCluster([machine], plan.sourceResource)
               } catch (rollbackError) {
-                result.errors[machine] += ' (rollback failed)'
+                const rollbackMessage = rollbackError instanceof Error ? rollbackError.message : 'unknown error'
+                result.errors[machine] += ` (rollback failed: ${rollbackMessage})`
               }
             }
           } else {

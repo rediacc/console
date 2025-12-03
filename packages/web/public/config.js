@@ -39,11 +39,11 @@ window.REDIACC_CONFIG = {
 
 // Log configuration in development mode
 if (window.REDIACC_CONFIG.enableDebug === 'true') {
-  console.log('Rediacc Configuration:', window.REDIACC_CONFIG);
-  console.log('Build Type:', window.REDIACC_CONFIG.buildType || 'Not specified');
+  console.warn('Rediacc Configuration:', window.REDIACC_CONFIG);
+  console.warn('Build Type:', window.REDIACC_CONFIG.buildType || 'Not specified');
   
   // Warn about sandbox usage in open-source deployments
   if (window.REDIACC_CONFIG.buildType === 'DEBUG' && window.REDIACC_CONFIG.enableSandboxFallback === 'true') {
-    console.log('Note: Console will fallback to sandbox if local backend is unavailable');
+    console.warn('Note: Console will fallback to sandbox if local backend is unavailable');
   }
 }

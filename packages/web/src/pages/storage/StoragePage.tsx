@@ -43,6 +43,7 @@ import {
 import { confirmDelete } from '@/utils/confirmations'
 import { showMessage } from '@/utils/messages'
 import { QueueFunction } from '@/api/queries/queue'
+import type { QueueActionParams } from '@/services/queueActionService'
 import {
   PageWrapper,
   SectionStack,
@@ -52,6 +53,26 @@ import {
   ListSubtitle,
 } from '@/components/ui'
 import { featureFlags } from '@/config/featureFlags'
+
+interface StorageFormValues extends Record<string, unknown> {
+  storageName: string
+  teamName: string
+  storageVault?: string
+}
+
+interface StorageFunctionParams {
+  sourceType?: string
+  from?: string
+  [key: string]: string | number | boolean | undefined
+}
+
+interface StorageFunctionData {
+  function: QueueFunction
+  params: StorageFunctionParams
+  priority: number
+  description: string
+  selectedMachine?: string
+}
 
 const StoragePage: React.FC = () => {
   const { t } = useTranslation(['resources', 'common'])
@@ -115,7 +136,7 @@ const StoragePage: React.FC = () => {
           deleteStorageMutation.mutateAsync({
             teamName: storage.teamName,
             storageName: storage.storageName,
-          } as any),
+          }),
         onSuccess: () => refetchStorage(),
       })
     },
@@ -123,7 +144,7 @@ const StoragePage: React.FC = () => {
   )
 
   const handleUnifiedModalSubmit = useCallback(
-    async (data: any) => {
+    async (data: StorageFormValues) => {
       await execute(
         async () => {
           if (unifiedModalState.mode === 'create') {
@@ -133,21 +154,21 @@ const StoragePage: React.FC = () => {
             const newName = data.storageName
 
             if (newName && newName !== currentName) {
-              await updateStorageNameMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                currentStorageName: currentName,
-                newStorageName: newName,
-              } as any)
+            await updateStorageNameMutation.mutateAsync({
+              teamName: currentResource.teamName,
+              currentStorageName: currentName,
+              newStorageName: newName,
+            })
             }
 
             const vaultData = data.storageVault
             if (vaultData && vaultData !== currentResource.vaultContent) {
-              await updateStorageVaultMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                storageName: newName || currentName,
-                storageVault: vaultData,
-                vaultVersion: currentResource.vaultVersion + 1,
-              } as any)
+            await updateStorageVaultMutation.mutateAsync({
+              teamName: currentResource.teamName,
+              storageName: newName || currentName,
+              storageVault: vaultData,
+              vaultVersion: currentResource.vaultVersion + 1,
+            })
             }
           }
           closeUnifiedModal()
@@ -178,7 +199,7 @@ const StoragePage: React.FC = () => {
             storageName: currentResource.storageName,
             storageVault: vault,
             vaultVersion: version,
-          } as any)
+          })
           refetchStorage()
           closeUnifiedModal()
         },
@@ -189,13 +210,7 @@ const StoragePage: React.FC = () => {
   )
 
   const handleStorageFunctionSelected = useCallback(
-    async (functionData: {
-      function: QueueFunction
-      params: Record<string, any>
-      priority: number
-      description: string
-      selectedMachine?: string
-    }) => {
+    async (functionData: StorageFunctionData) => {
       if (!currentResource) return
 
       if (!functionData.selectedMachine) {
@@ -220,7 +235,7 @@ const StoragePage: React.FC = () => {
           machine.machineName === machineEntry.value && machine.teamName === currentResource.teamName
       )
 
-      const queuePayload: any = {
+      const queuePayload: QueueActionParams = {
         teamName: currentResource.teamName,
         machineName: machineEntry.value,
         bridgeName: machineEntry.bridgeName,
@@ -238,18 +253,21 @@ const StoragePage: React.FC = () => {
 
       // Handle pull function source vaults
       if (functionData.function.name === 'pull') {
-        if (functionData.params.sourceType === 'machine' && functionData.params.from) {
+        const sourceType = functionData.params.sourceType
+        const sourceIdentifier = functionData.params.from
+
+        if (sourceType === 'machine' && typeof sourceIdentifier === 'string') {
           const sourceMachine = machines.find(
-            (machine) => machine.machineName === functionData.params.from
+            (machine) => machine.machineName === sourceIdentifier
           )
           if (sourceMachine?.vaultContent) {
             queuePayload.sourceMachineVault = sourceMachine.vaultContent
           }
         }
 
-        if (functionData.params.sourceType === 'storage' && functionData.params.from) {
+        if (sourceType === 'storage' && typeof sourceIdentifier === 'string') {
           const sourceStorage = storages.find(
-            (storage) => storage.storageName === functionData.params.from
+            (storage) => storage.storageName === sourceIdentifier
           )
           if (sourceStorage?.vaultContent) {
             queuePayload.sourceStorageVault = sourceStorage.vaultContent
@@ -278,6 +296,8 @@ const StoragePage: React.FC = () => {
     createStorageMutation.isPending || updateStorageNameMutation.isPending || isExecuting
 
   const isUpdatingVault = updateStorageVaultMutation.isPending
+
+  const modalExistingData = unifiedModalState.data ?? currentResource ?? undefined
 
   const storageColumns = useMemo(
     () => [
@@ -489,7 +509,7 @@ const StoragePage: React.FC = () => {
         onCancel={closeUnifiedModal}
         resourceType="storage"
         mode={unifiedModalState.mode}
-        existingData={(unifiedModalState.data || currentResource) as any}
+        existingData={modalExistingData}
         teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}

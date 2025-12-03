@@ -53,6 +53,10 @@ export interface VSCodeParams {
   windowParams?: WindowParams  // Optional: window customization
 }
 
+interface ProtocolWindow extends Window {
+  signalProtocolLaunch?: () => void
+}
+
 class ProtocolUrlService {
   private readonly PROTOCOL_SCHEME = 'rediacc'
 
@@ -284,8 +288,9 @@ class ProtocolUrlService {
       
       try {
         // Signal that we're about to launch a protocol URL to prevent token wipe
-        if (typeof (window as any).signalProtocolLaunch === 'function') {
-          (window as any).signalProtocolLaunch();
+        const protocolWindow = window as ProtocolWindow
+        if (typeof protocolWindow.signalProtocolLaunch === 'function') {
+          protocolWindow.signalProtocolLaunch()
         }
 
         // Use window.open with _self to replace current tab behavior
@@ -356,7 +361,7 @@ class ProtocolUrlService {
           confidence: 'medium'
         }
       }
-    } catch (error) {
+    } catch {
       // Continue to next method
     }
 
@@ -391,7 +396,7 @@ class ProtocolUrlService {
             resolved = true
             try {
               testWindow.close()
-            } catch (e) {
+            } catch {
               // Ignore close errors
             }
             resolve({
@@ -432,13 +437,13 @@ class ProtocolUrlService {
                     confidence: 'high'
                   })
                 }
-              } catch (e) {
+              } catch {
                 // Cross-origin error means protocol handler likely worked
                 resolved = true
                 clearTimeout(timeout)
                 try {
                   testWindow.close()
-                } catch (closeError) {
+                } catch {
                   // Ignore close errors
                 }
                 resolve({
@@ -455,7 +460,7 @@ class ProtocolUrlService {
           clearTimeout(timeout)
           try {
             testWindow.close()
-          } catch (e) {
+          } catch {
             // Ignore close errors
           }
           resolve({

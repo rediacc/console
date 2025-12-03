@@ -7,23 +7,32 @@ import { minifyJSON } from '@/utils/json'
  * Hook to build queue vault data with all required context
  * This combines vault data from various entities based on function requirements
  */
+type QueueVaultBuilderParams = Omit<QueueRequestContext, 'companyVault' | 'companyCredential'> & {
+  repoVault?: QueueRequestContext['repositoryVault']
+  destinationRepoVault?: QueueRequestContext['destinationRepositoryVault']
+  sourceRepoVault?: QueueRequestContext['sourceRepositoryVault']
+  allRepoCredentials?: Record<string, string>
+}
+
+const parseVaultContent = (vault?: QueueRequestContext['teamVault']): Record<string, unknown> => {
+  if (!vault || vault === '-') {
+    return {}
+  }
+
+  if (typeof vault === 'string') {
+    try {
+      return JSON.parse(vault)
+    } catch {
+      return {}
+    }
+  }
+
+  return vault
+}
+
 export function useQueueVaultBuilder() {
   const buildQueueVault = useCallback(async (
-    context: Omit<QueueRequestContext, 'companyVault'> & {
-      // Allow passing vault data directly from components that already have it
-      teamVault?: any
-      machineVault?: any
-      repoVault?: any
-      bridgeVault?: any
-      storageVault?: any
-      destinationMachineVault?: any
-      destinationStorageVault?: any
-      sourceMachineVault?: any
-      sourceStorageVault?: any
-      allRepoCredentials?: Record<string, string>
-      additionalStorageData?: Record<string, any>
-      additionalMachineData?: Record<string, any>
-    }
+    context: QueueVaultBuilderParams
   ): Promise<string> => {
     // Fetch company vault directly from API to ensure we have the latest data
     const companyVaultData = await api.company.getVault()
@@ -32,38 +41,58 @@ export function useQueueVaultBuilder() {
       throw new Error('Unable to fetch company vault configuration. Please ensure company vault is properly configured.')
     }
 
-    // Parse vault content (it's stored as JSON string in the API response)
-    const parseVault = (vaultContent: string | undefined) => {
-      if (!vaultContent || vaultContent === '-') return {}
-      try {
-        return JSON.parse(vaultContent)
-      } catch (e) {
-        return {}
-      }
-    }
+    const {
+      repoVault,
+      destinationRepoVault,
+      sourceRepoVault,
+      allRepoCredentials,
+      repositoryVault,
+      destinationRepositoryVault,
+      sourceRepositoryVault,
+      allRepositoryCredentials,
+      ...baseContext
+    } = context
 
-    // Build vault data object using passed vault data or empty objects
-    const vaults: any = {
-      teamVault: context.teamVault ? parseVault(context.teamVault) : {},
-      machineVault: context.machineVault ? parseVault(context.machineVault) : {},
-      repoVault: context.repoVault ? parseVault(context.repoVault) : {},
-      bridgeVault: context.bridgeVault ? parseVault(context.bridgeVault) : {},
-      storageVault: context.storageVault ? parseVault(context.storageVault) : {},
-      companyVault: parseVault(companyVaultData.vault),
-      destinationMachineVault: context.destinationMachineVault ? parseVault(context.destinationMachineVault) : {},
-      destinationStorageVault: context.destinationStorageVault ? parseVault(context.destinationStorageVault) : {},
-      sourceMachineVault: context.sourceMachineVault ? parseVault(context.sourceMachineVault) : {},
-      sourceStorageVault: context.sourceStorageVault ? parseVault(context.sourceStorageVault) : {}
+    const effectiveRepositoryVault = repoVault ?? repositoryVault
+    const effectiveDestinationRepoVault = destinationRepoVault ?? destinationRepositoryVault
+    const effectiveSourceRepoVault = sourceRepoVault ?? sourceRepositoryVault
+    const repositoryCredentials = allRepoCredentials ?? allRepositoryCredentials
+
+    const parsedVaults: Partial<Pick<
+      QueueRequestContext,
+      | 'teamVault'
+      | 'machineVault'
+      | 'repositoryVault'
+      | 'bridgeVault'
+      | 'storageVault'
+      | 'companyVault'
+      | 'destinationMachineVault'
+      | 'destinationStorageVault'
+      | 'destinationRepositoryVault'
+      | 'sourceMachineVault'
+      | 'sourceStorageVault'
+      | 'sourceRepositoryVault'
+    >> = {
+      teamVault: baseContext.teamVault ? parseVaultContent(baseContext.teamVault) : undefined,
+      machineVault: baseContext.machineVault ? parseVaultContent(baseContext.machineVault) : undefined,
+      repositoryVault: effectiveRepositoryVault ? parseVaultContent(effectiveRepositoryVault) : undefined,
+      bridgeVault: baseContext.bridgeVault ? parseVaultContent(baseContext.bridgeVault) : undefined,
+      storageVault: baseContext.storageVault ? parseVaultContent(baseContext.storageVault) : undefined,
+      companyVault: parseVaultContent(companyVaultData.vault),
+      destinationMachineVault: baseContext.destinationMachineVault ? parseVaultContent(baseContext.destinationMachineVault) : undefined,
+      destinationStorageVault: baseContext.destinationStorageVault ? parseVaultContent(baseContext.destinationStorageVault) : undefined,
+      destinationRepositoryVault: effectiveDestinationRepoVault ? parseVaultContent(effectiveDestinationRepoVault) : undefined,
+      sourceMachineVault: baseContext.sourceMachineVault ? parseVaultContent(baseContext.sourceMachineVault) : undefined,
+      sourceStorageVault: baseContext.sourceStorageVault ? parseVaultContent(baseContext.sourceStorageVault) : undefined,
+      sourceRepositoryVault: effectiveSourceRepoVault ? parseVaultContent(effectiveSourceRepoVault) : undefined
     }
     
     // Build complete context with vault data
     const fullContext: QueueRequestContext = {
-      ...context,
-      ...vaults,
+      ...baseContext,
+      ...parsedVaults,
       companyCredential: companyVaultData.companyCredential ?? undefined,
-      allRepoCredentials: context.allRepoCredentials,
-      additionalStorageData: context.additionalStorageData,
-      additionalMachineData: context.additionalMachineData
+      allRepositoryCredentials: repositoryCredentials,
     }
 
     // Use the service to build the vault
@@ -80,7 +109,7 @@ export function useQueueVaultBuilder() {
 export function useSimpleQueueVault() {
   const buildSimpleVault = useCallback((data: {
     function: string
-    params: Record<string, any>
+    params: Record<string, unknown>
   }) => {
     return minifyJSON(JSON.stringify({
       function: data.function,

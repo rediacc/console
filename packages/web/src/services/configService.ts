@@ -23,7 +23,7 @@ interface AppConfig {
   csrfEnabled?: boolean
   httpsOnly?: boolean
   templatesUrl?: string
-  customConfig?: any
+  customConfig?: Record<string, unknown>
 }
 
 class ConfigService {
@@ -56,7 +56,9 @@ class ConfigService {
         csrfEnabled: rConfig.csrfEnabled === 'true',
         httpsOnly: rConfig.httpsOnly === 'true',
         templatesUrl: rConfig.templatesUrl || undefined,
-        customConfig: rConfig.customConfig ? JSON.parse(rConfig.customConfig) : undefined
+        customConfig: rConfig.customConfig
+          ? (JSON.parse(rConfig.customConfig) as Record<string, unknown>)
+          : undefined
       }
     } catch (error) {
       console.error('Failed to parse REDIACC_CONFIG:', error)
@@ -93,7 +95,7 @@ class ConfigService {
 
     // Log configuration source in debug mode
     if (this.config.enableDebug || this.config.buildType === 'DEBUG') {
-      console.log('Configuration loaded:', {
+      console.warn('Configuration loaded:', {
         source: runtimeConfig ? 'Runtime (web server)' : 'Build-time (Vite)',
         endpoint: selectedEndpoint,
         config: this.config

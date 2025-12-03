@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Button, Tooltip, Space, Tag, Card, Row, Col, Table, Modal, Alert, Typography, Popconfirm, Result, Empty, Form, Checkbox } from 'antd'
 import {
   EnvironmentOutlined,
@@ -20,6 +20,7 @@ import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState'
 import { ModalSize } from '@/types/modal'
 import { featureFlags } from '@/config/featureFlags'
+import type { ColumnsType } from 'antd/es/table'
 import {
   useRegions,
   useCreateRegion,
@@ -78,14 +79,16 @@ const InfrastructurePage: React.FC = () => {
     open: boolean
     resourceType: 'region' | 'bridge'
     mode: 'create' | 'edit'
-    data?: any
+    data?: Partial<Region> | Partial<Bridge> | null
   }>({ open: false, resourceType: 'region', mode: 'create' })
 
   const { data: regions, isLoading: regionsLoading } = useRegions(true)
-  const regionsList: Region[] = regions || []
+  const regionsList: Region[] = useMemo(() => regions || [], [regions])
 
-  const { data: bridges, isLoading: bridgesLoading } = useBridges(selectedRegion || undefined)
-  const bridgesList: Bridge[] = bridges || []
+  const effectiveRegion = selectedRegion ?? regionsList[0]?.regionName ?? null
+
+  const { data: bridges, isLoading: bridgesLoading } = useBridges(effectiveRegion || undefined)
+  const bridgesList: Bridge[] = useMemo(() => bridges || [], [bridges])
 
   const createRegionMutation = useCreateRegion()
   const updateRegionNameMutation = useUpdateRegionName()
@@ -98,14 +101,7 @@ const InfrastructurePage: React.FC = () => {
   const updateBridgeVaultMutation = useUpdateBridgeVault()
   const resetBridgeAuthMutation = useResetBridgeAuthorization()
 
-  useEffect(() => {
-    if (regionsList.length > 0 && !selectedRegion) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedRegion(regionsList[0].regionName)
-    }
-  }, [regionsList, selectedRegion])
-
-  const openUnifiedModal = (resourceType: 'region' | 'bridge', mode: 'create' | 'edit', data?: any) => {
+  const openUnifiedModal = (resourceType: 'region' | 'bridge', mode: 'create' | 'edit', data?: Partial<Region> | Partial<Bridge> | null) => {
     setUnifiedModalState({ open: true, resourceType, mode, data })
   }
 
@@ -113,7 +109,16 @@ const InfrastructurePage: React.FC = () => {
     setUnifiedModalState({ open: false, resourceType: 'region', mode: 'create', data: null })
   }
 
-  const handleUnifiedModalSubmit = async (data: any) => {
+  type UnifiedFormData = {
+    regionName?: string
+    bridgeName?: string
+    regionVault?: string
+    bridgeVault?: string
+    vaultVersion?: number
+    [key: string]: unknown
+  }
+
+  const handleUnifiedModalSubmit = async (data: UnifiedFormData) => {
     try {
       switch (unifiedModalState.resourceType) {
         case 'region':
@@ -226,7 +231,7 @@ const InfrastructurePage: React.FC = () => {
     }
   }
 
-  const regionColumns = [
+  const regionColumns: ColumnsType<Region> = [
     {
       title: t('regions.regionName'),
       dataIndex: 'regionName',
@@ -253,7 +258,7 @@ const InfrastructurePage: React.FC = () => {
                 <span>{count}</span>
               </Space>
             ),
-          },
+          } as ColumnsType<Region>[number],
         ]
       : []),
     ...(featureFlags.isEnabled('vaultVersionColumns')
@@ -325,7 +330,7 @@ const InfrastructurePage: React.FC = () => {
     },
   ]
 
-  const bridgeColumns = [
+  const bridgeColumns: ColumnsType<Bridge> = [
     {
       title: t('bridges.bridgeName'),
       dataIndex: 'bridgeName',
@@ -335,7 +340,7 @@ const InfrastructurePage: React.FC = () => {
         <Space>
           <ApiOutlined />
           <strong>{text}</strong>
-          {(record.hasAccess as number) === 1 && (
+          {Number(record.hasAccess || 0) === 1 && (
             <Tag color="green" icon={<CheckCircleOutlined />}>
               {t('bridges.access')}
             </Tag>
@@ -521,8 +526,8 @@ const InfrastructurePage: React.FC = () => {
                   </ListTitleRow>
                 }
                 loading={regionsLoading}
-                data={regionsList as any}
-                columns={regionColumns as any}
+                data={regionsList}
+                columns={regionColumns}
                 rowKey="regionName"
                 searchPlaceholder={t('regions.searchRegions')}
                 data-testid="system-region-table"
@@ -539,14 +544,17 @@ const InfrastructurePage: React.FC = () => {
                 }
                 rowSelection={{
                   type: 'radio',
-                  selectedRowKeys: selectedRegion ? [selectedRegion] : [],
-                  onChange: (selectedRowKeys) => setSelectedRegion((selectedRowKeys[0] as string) || null),
+                  selectedRowKeys: effectiveRegion ? [effectiveRegion] : [],
+                  onChange: (selectedRowKeys) => {
+                    const [first] = selectedRowKeys
+                    setSelectedRegion(typeof first === 'string' ? first : null)
+                  },
                 }}
-                onRow={(record) => ({
-                  onClick: () => setSelectedRegion((record as any).regionName),
+                onRow={(record: Region) => ({
+                  onClick: () => setSelectedRegion(record.regionName),
                   className: [
                     'clickable-row',
-                    selectedRegion === (record as any).regionName ? 'selected-row' : '',
+                    effectiveRegion === record.regionName ? 'selected-row' : '',
                   ]
                     .filter(Boolean)
                     .join(' '),
@@ -561,20 +569,20 @@ const InfrastructurePage: React.FC = () => {
                 <CardHeaderRow>
                   <div>
                     <CardTitle level={4}>
-                      {selectedRegion
-                        ? t('regions.bridgesInRegion', { region: selectedRegion })
+                      {effectiveRegion
+                        ? t('regions.bridgesInRegion', { region: effectiveRegion })
                         : t('bridges.title')}
                     </CardTitle>
-                    {!selectedRegion && (
+                    {!effectiveRegion && (
                       <SecondaryText>{t('regions.selectRegionToView')}</SecondaryText>
                     )}
                   </div>
-                  {selectedRegion && (
+                  {effectiveRegion && (
                     <Tooltip title={t('bridges.createBridge')}>
                       <Button
                         type="primary"
                         icon={<PlusOutlined />}
-                        onClick={() => openUnifiedModal('bridge', 'create', { regionName: selectedRegion })}
+                        onClick={() => openUnifiedModal('bridge', 'create', { regionName: effectiveRegion })}
                         data-testid="system-create-bridge-button"
                         aria-label={t('bridges.createBridge')}
                       />
@@ -582,7 +590,7 @@ const InfrastructurePage: React.FC = () => {
                   )}
                 </CardHeaderRow>
 
-                {!selectedRegion ? (
+                {!effectiveRegion ? (
                   <PaddedEmpty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('regions.selectRegionPrompt')} />
                 ) : (
                   <LoadingWrapper

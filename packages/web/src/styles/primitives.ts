@@ -16,11 +16,14 @@ import {
   Empty,
   Alert,
 } from 'antd'
+import type { TableProps } from 'antd'
+import type { ComponentType } from 'react'
 import type { StyledTheme } from '@/styles/styledTheme'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
 import { RightOutlined } from '@/utils/optimizedIcons'
 
 const { Title, Text } = Typography
+const GenericTable = Table as ComponentType<TableProps<unknown>>
 
 export type StatusVariant = 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'processing'
 export type TagVariant =
@@ -717,7 +720,7 @@ export const ContentSection = styled.div`
   min-height: 400px;
 `
 
-export const DataTable = styled(Table as any)<{ $isLoading?: boolean }>`
+export const DataTable = styled(GenericTable)<{ $isLoading?: boolean }>`
   .ant-spin-nested-loading {
     opacity: ${(props) => (props.$isLoading ? 0.65 : 1)};
     transition: ${({ theme }) => theme.transitions.DEFAULT};
@@ -1235,7 +1238,7 @@ export const AlertCard = styled(Alert)<{ $variant?: AlertVariant }>`
   }
 `
 
-export const BaseTable = styled(Table as any)<{ $isInteractive?: boolean }>`
+export const BaseTable = styled(GenericTable)<{ $isInteractive?: boolean }>`
   border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   overflow: hidden;

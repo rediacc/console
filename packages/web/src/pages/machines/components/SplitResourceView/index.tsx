@@ -6,7 +6,7 @@ import { usePanelWidth } from '@/hooks/usePanelWidth'
 import { DETAIL_PANEL } from '@/constants/layout'
 import { Backdrop, LeftPanel, SplitViewContainer } from './styles'
 
-interface ContainerData {
+export interface ContainerData {
   id: string
   name: string
   image: string

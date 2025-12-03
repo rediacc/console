@@ -6,7 +6,7 @@ export function minifyJSON(json: string): string {
   }
 }
 
-export function objectToMinifiedJSON(obj: any): string {
+export function objectToMinifiedJSON(obj: unknown): string {
   try {
     return JSON.stringify(obj)
   } catch {

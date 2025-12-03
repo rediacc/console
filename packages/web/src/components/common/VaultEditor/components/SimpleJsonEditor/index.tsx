@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { EditorContainer, EditorTextarea, ErrorBanner } from './styles';
 
 interface SimpleJsonEditorProps {
@@ -63,7 +63,7 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
     onChange?.(newValue);
   };
 
-  const formatJson = () => {
+  const formatJson = useCallback(() => {
     if (!internalValue.trim()) return;
 
     try {
@@ -75,14 +75,14 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
     } catch (e) {
       setError((e as Error).message);
     }
-  };
+  }, [internalValue, onChange]);
 
   // Pass format function to parent
   useEffect(() => {
     if (onFormatReady) {
       onFormatReady(formatJson);
     }
-  }, [onFormatReady]);
+  }, [onFormatReady, formatJson]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Tab') {

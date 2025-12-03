@@ -7,6 +7,12 @@ import type {
 import type { MachineAssignmentType } from '@/types'
 
 // Types
+export interface OperationHistoryDetails {
+  successful: number
+  failed: number
+  errorMessage?: string
+}
+
 export interface OperationHistoryEntry {
   id: string
   timestamp: Date
@@ -15,7 +21,7 @@ export interface OperationHistoryEntry {
   targetResource: string
   machineCount: number
   result: 'success' | 'partial' | 'failed'
-  details?: any
+  details?: OperationHistoryDetails
 }
 
 export interface CurrentOperation {
@@ -50,6 +56,9 @@ export interface MachineAssignmentState {
   }
   expandedGroups: string[]
 }
+
+type ActiveFilterKey = keyof MachineAssignmentState['activeFilters']
+type ActiveFilterValue = MachineAssignmentState['activeFilters'][ActiveFilterKey]
 
 const initialState: MachineAssignmentState = {
   selectedMachines: [],
@@ -230,8 +239,8 @@ const machineAssignmentSlice = createSlice({
     },
     
     updateFilter: (state, action: PayloadAction<{
-      key: keyof MachineAssignmentState['activeFilters']
-      value: any
+      key: ActiveFilterKey
+      value: ActiveFilterValue | undefined
     }>) => {
       const { key, value } = action.payload
       if (value === undefined || value === '') {

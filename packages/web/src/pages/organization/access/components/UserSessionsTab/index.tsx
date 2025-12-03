@@ -56,7 +56,7 @@ const UserSessionsTab: React.FC = () => {
       if (session.userEmail === user?.email) {
         message.warning(t('userSessions.selfTerminateWarning'))
       }
-    } catch (error) {
+    } catch {
       // noop
     }
   }
