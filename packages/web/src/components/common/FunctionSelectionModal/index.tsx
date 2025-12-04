@@ -539,7 +539,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                         showIcon
                         message="Push Operation Details"
                         description={
-                          <Space direction="vertical" size="small">
+                          <Space orientation="vertical" size="small">
                             <div>
                               <Text strong>Destination Filename: </Text>
                               <Text code>{functionParams.dest}</Text>
@@ -579,7 +579,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           showIcon
                           message={t('functions:onlinePushWarningTitle')}
                           description={
-                            <Space direction="vertical" size="small">
+                            <Space orientation="vertical" size="small">
                               <AlertBodyText>
                                 {t('functions:onlinePushWarningMessage')}
                               </AlertBodyText>
@@ -1070,7 +1070,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 
     {/* Template Preview Modal */}
     <TemplatePreviewModal
-      visible={showTemplateDetails}
+      open={showTemplateDetails}
       template={null}
       templateName={templateToView}
       onClose={() => {

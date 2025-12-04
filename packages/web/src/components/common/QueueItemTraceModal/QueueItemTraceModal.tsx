@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Row, Col, Tabs, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip, Segmented } from 'antd'
+import type { CollapseProps } from 'antd'
 import { ReloadOutlined, HistoryOutlined, FileTextOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CodeOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons'
 import { useQueueItemTrace, useRetryFailedQueueItem, useCancelQueueItem } from '@/api/queries/queue'
 import dayjs from 'dayjs'
@@ -29,8 +30,6 @@ import type { QueueTraceLog, QueuePositionEntry } from '@rediacc/shared/types'
 dayjs.extend(relativeTime)
 
 const { Text, Title } = Typography
-const { Panel } = Collapse
-const { Step } = Steps
 
 // Helper function to extract timestamp from trace logs for specific action
 const getTimelineTimestamp = (traceLogs: QueueTraceLog[], action: string, fallbackAction?: string): string | null => {
@@ -671,7 +670,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                 marginBottom: spacing('MD')
               }}
             >
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              <Space orientation="vertical" size="large" style={{ width: '100%' }}>
                 {/* Status Summary */}
                 <div style={{ textAlign: 'center' }}>
                   <Space size="large">
@@ -691,46 +690,50 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                   current={getCurrentStep()}
                   status={getCurrentStep() === -1 ? 'error' : undefined}
                   size="small"
-                >
-                  <Step title="Assigned" description={traceData.queueDetails.assignedTime ? formatTimestampAsIs(traceData.queueDetails.assignedTime, 'time') : 'Waiting'} />
-                  <Step title="Processing" description={
-                    (() => {
-                      const currentStep = getCurrentStep()
-                      const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
-                      const processingTimestamp = getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_PROCESSING', 'QUEUE_ITEM_RESPONSE_UPDATED')
+                  items={[
+                    {
+                      title: 'Assigned',
+                      description: traceData.queueDetails.assignedTime ? formatTimestampAsIs(traceData.queueDetails.assignedTime, 'time') : 'Waiting'
+                    },
+                    {
+                      title: 'Processing',
+                      description: (() => {
+                        const currentStep = getCurrentStep()
+                        const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
+                        const processingTimestamp = getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_PROCESSING', 'QUEUE_ITEM_RESPONSE_UPDATED')
 
-                      // If currently processing
-                      if (status === 'PROCESSING') {
-                        return processingTimestamp || 'In Progress'
-                      }
+                        // If currently processing
+                        if (status === 'PROCESSING') {
+                          return processingTimestamp || 'In Progress'
+                        }
 
-                      // If cancelling
-                      if (status === 'CANCELLING') {
-                        return 'Cancelling...'
-                      }
+                        // If cancelling
+                        if (status === 'CANCELLING') {
+                          return 'Cancelling...'
+                        }
 
-                      // If we've reached or passed processing stage (step 1 or higher)
-                      if (currentStep >= 1) {
-                        return processingTimestamp || 'Processed'
-                      }
+                        // If we've reached or passed processing stage (step 1 or higher)
+                        if (currentStep >= 1) {
+                          return processingTimestamp || 'Processed'
+                        }
 
-                      // Haven't reached processing yet
-                      return ''
-                    })()
-                  } />
-                  <Step
-                    title="Completed"
-                    description={
-                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ?
-                        `Done${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED') : ''}` :
-                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' ?
-                        `Failed${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED') : ''}` :
-                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ?
-                        `Cancelled${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED') : ''}` :
-                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' ? 'Cancelling' : ''
+                        // Haven't reached processing yet
+                        return ''
+                      })()
+                    },
+                    {
+                      title: 'Completed',
+                      description:
+                        normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ?
+                          `Done${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED') : ''}` :
+                        normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' ?
+                          `Failed${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED') : ''}` :
+                        normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ?
+                          `Cancelled${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED') : ''}` :
+                        normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' ? 'Cancelling' : ''
                     }
-                  />
-                </Steps>
+                  ]}
+                />
 
                 {/* Progress Message - Shows current operation being performed (hidden when completed) */}
                 {progressMessage &&
@@ -811,708 +814,710 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
               onChange={(keys) => setIsSimpleConsoleExpanded(keys.includes('console'))}
               style={{ marginTop: spacing('MD') }}
               expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
-            >
-              <Panel
-                header={
-                  <Space>
-                    <CodeOutlined />
-                    <Text>Response (Console)</Text>
-                    {traceData?.queueDetails?.status === 'PROCESSING' && (
-                      <Tag icon={<SyncOutlined spin />} color="processing">
-                        Live Output
-                      </Tag>
-                    )}
-                  </Space>
+              items={[
+                {
+                  key: 'console',
+                  label: (
+                    <Space>
+                      <CodeOutlined />
+                      <Text>Response (Console)</Text>
+                      {traceData?.queueDetails?.status === 'PROCESSING' && (
+                        <Tag icon={<SyncOutlined spin />} color="processing">
+                          Live Output
+                        </Tag>
+                      )}
+                    </Space>
+                  ),
+                  children: (
+                    <ConsoleOutput
+                      content={accumulatedOutput
+                        .replace(/\\r\\n/g, '\n')
+                        .replace(/\\n/g, '\n')
+                        .replace(/\\r/g, '\r')}
+                      theme={theme}
+                      consoleOutputRef={consoleOutputRef}
+                      isEmpty={!traceData?.responseVaultContent?.hasContent}
+                    />
+                  )
                 }
-                key="console"
-              >
-                <ConsoleOutput
-                  content={accumulatedOutput
-                    .replace(/\\r\\n/g, '\n')
-                    .replace(/\\n/g, '\n')
-                    .replace(/\\r/g, '\r')}
-                  theme={theme}
-                  consoleOutputRef={consoleOutputRef}
-                  isEmpty={!traceData?.responseVaultContent?.hasContent}
-                />
-              </Panel>
-            </Collapse>
+              ]}
+            />
           )}
 
           {/* Detailed View with All 7 Result Sets */}
           {!simpleMode && (
             <div style={{ marginTop: spacing('MD') }}>
-              <Collapse 
+              <Collapse
               data-testid="queue-trace-collapse"
               className="queue-trace-collapse"
               activeKey={activeKeys}
               onChange={setActiveKeys}
               expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
-            >
-            {/* Overview Panel - Combines key information from multiple result sets */}
-            {traceData.queueDetails && (
-              <Panel 
-                data-testid="queue-trace-panel-overview"
-                header={
-                  <Space>
-                    <DashboardOutlined />
-                    <span>Task Overview</span>
-                    <Tag color={getSimplifiedStatus().color}>{getSimplifiedStatus().status}</Tag>
-                    {isTaskStale() && <Tag color="warning" icon={<WarningOutlined />}>Stale</Tag>}
-                  </Space>
-                } 
-                key="overview"
-                extra={
-                  traceData.queueDetails.canBeCancelled && 
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'COMPLETED' &&
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLED' &&
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLING' &&
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'FAILED' && (
-                    <Tooltip title="This task can be cancelled">
-                      <Badge status="processing" text="Cancellable" />
-                    </Tooltip>
+              items={[
+                /* Overview Panel - Combines key information from multiple result sets */
+                traceData.queueDetails ? {
+                  key: 'overview',
+                  label: (
+                    <Space>
+                      <DashboardOutlined />
+                      <span>Task Overview</span>
+                      <Tag color={getSimplifiedStatus().color}>{getSimplifiedStatus().status}</Tag>
+                      {isTaskStale() && <Tag color="warning" icon={<WarningOutlined />}>Stale</Tag>}
+                    </Space>
+                  ),
+                  extra: traceData.queueDetails.canBeCancelled &&
+                    normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'COMPLETED' &&
+                    normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLED' &&
+                    normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLING' &&
+                    normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'FAILED' ? (
+                      <Tooltip title="This task can be cancelled">
+                        <Badge status="processing" text="Cancellable" />
+                      </Tooltip>
+                    ) : undefined,
+                  children: (
+                    <Row gutter={[24, 16]}>
+                      {/* Left Column - Task Details */}
+                      <Col xs={24} lg={12}>
+                        <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
+                          <Card size="small" title="Task Information" data-testid="queue-trace-task-info">
+                            <Descriptions column={1} size="small">
+                              <Descriptions.Item label="Task ID">
+                                <Text code>{normalizeProperty(traceData.queueDetails, 'taskId', 'TaskId')}</Text>
+                              </Descriptions.Item>
+                              <Descriptions.Item label="Created By">
+                                <Space>
+                                  <UserOutlined />
+                                  <Text>{normalizeProperty(traceData.queueDetails, 'createdBy', 'CreatedBy') || 'System'}</Text>
+                                </Space>
+                              </Descriptions.Item>
+                              <Descriptions.Item label="Retry Status">
+                                <Space>
+                                  <RetweetOutlined />
+                                  <Tag color={
+                                    normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') === 0 ? 'green' :
+                                    normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') < 2 ? 'orange' : 'red'
+                                  }>
+                                    {normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0} / 2 retries
+                                  </Tag>
+                                  {normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed') && (
+                                    <Tag color="error">Permanently Failed</Tag>
+                                  )}
+                                </Space>
+                              </Descriptions.Item>
+                              <Descriptions.Item label="Priority">
+                                <Space>
+                                  {getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).icon}
+                                  <Tag color={getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).color}>
+                                    {getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).label}
+                                  </Tag>
+                                </Space>
+                              </Descriptions.Item>
+                            </Descriptions>
+                          </Card>
+
+                          <Card size="small" title="Processing Information" data-testid="queue-trace-processing-info">
+                            <Descriptions column={1} size="small">
+                              <Descriptions.Item label="Machine">
+                                <Space>
+                                  <TeamOutlined />
+                                  <Text>{traceData.queueDetails.machineName}</Text>
+                                </Space>
+                              </Descriptions.Item>
+                              <Descriptions.Item label="Team">
+                                <Text>{traceData.queueDetails.teamName}</Text>
+                              </Descriptions.Item>
+                              <Descriptions.Item label="Bridge">
+                                <Text>{traceData.queueDetails.bridgeName}</Text>
+                              </Descriptions.Item>
+                              <Descriptions.Item label="Region">
+                                <Text>{traceData.queueDetails.regionName}</Text>
+                              </Descriptions.Item>
+                            </Descriptions>
+                          </Card>
+
+                          <Row gutter={[16, 16]}>
+                            <Col span={8}>
+                              <Statistic
+                                title={t('queue:statistics.totalDuration')}
+                                value={totalDurationSeconds < 60 ? totalDurationSeconds : Math.floor(totalDurationSeconds / 60)}
+                                suffix={totalDurationSeconds < 60 ? 'sec' : 'min'}
+                                prefix={<ClockCircleOutlined />}
+                              />
+                            </Col>
+                            <Col span={8}>
+                              <Statistic
+                                title={t('queue:statistics.processing')}
+                                value={processingDurationSeconds ? (processingDurationSeconds < 60 ? processingDurationSeconds : Math.floor(processingDurationSeconds / 60)) : 0}
+                                suffix={processingDurationSeconds && processingDurationSeconds < 60 ? 'sec' : 'min'}
+                                prefix={<SyncOutlined />}
+                              />
+                            </Col>
+                            <Col span={8}>
+                              <Statistic
+                                title={t('queue:statistics.timeSinceAssigned')}
+                                value={traceData.queueDetails.assignedTime ? dayjs().diff(dayjs(traceData.queueDetails.assignedTime), 'minute') : 'N/A'}
+                                suffix={traceData.queueDetails.assignedTime ? 'min' : ''}
+                                prefix={<HourglassOutlined />}
+                                valueStyle={{ color: isTaskStale() ? 'var(--color-error)' : undefined }}
+                              />
+                            </Col>
+                          </Row>
+                        </Space>
+                      </Col>
+
+                      {/* Right Column - Response Console */}
+                      <Col xs={24} lg={12}>
+                        <Collapse
+                          data-testid="queue-trace-detailed-console-collapse"
+                          activeKey={isDetailedConsoleExpanded ? ['console'] : []}
+                          onChange={(keys) => setIsDetailedConsoleExpanded(keys.includes('console'))}
+                          expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
+                          items={[
+                            {
+                              key: 'console',
+                              label: (
+                                <Space>
+                                  <CodeOutlined />
+                                  <Text>Response (Console)</Text>
+                                  {traceData.queueDetails?.status === 'PROCESSING' && (
+                                    <Tag icon={<SyncOutlined spin />} color="processing">
+                                      Live Output
+                                    </Tag>
+                                  )}
+                                </Space>
+                              ),
+                              children: (
+                                <ConsoleOutput
+                                  content={accumulatedOutput
+                                    .replace(/\\r\\n/g, '\n')
+                                    .replace(/\\n/g, '\n')
+                                    .replace(/\\r/g, '\r')}
+                                  theme={theme}
+                                  consoleOutputRef={consoleOutputRef}
+                                  isEmpty={!traceData.responseVaultContent?.hasContent}
+                                />
+                              )
+                            }
+                          ]}
+                        />
+                      </Col>
+                    </Row>
                   )
-                }
-              >
-                <Row gutter={[24, 16]}>
-                  {/* Left Column - Task Details */}
-                  <Col xs={24} lg={12}>
-                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                      <Card size="small" title="Task Information" data-testid="queue-trace-task-info">
-                        <Descriptions column={1} size="small">
-                          <Descriptions.Item label="Task ID">
-                            <Text code>{normalizeProperty(traceData.queueDetails, 'taskId', 'TaskId')}</Text>
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Created By">
-                            <Space>
-                              <UserOutlined />
-                              <Text>{normalizeProperty(traceData.queueDetails, 'createdBy', 'CreatedBy') || 'System'}</Text>
-                            </Space>
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Retry Status">
-                            <Space>
-                              <RetweetOutlined />
-                              <Tag color={
-                                normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') === 0 ? 'green' :
-                                normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') < 2 ? 'orange' : 'red'
-                              }>
-                                {normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0} / 2 retries
-                              </Tag>
-                              {normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed') && (
-                                <Tag color="error">Permanently Failed</Tag>
-                              )}
-                            </Space>
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Priority">
-                            <Space>
-                              {getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).icon}
-                              <Tag color={getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).color}>
-                                {getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).label}
-                              </Tag>
-                            </Space>
-                          </Descriptions.Item>
-                        </Descriptions>
-                      </Card>
+                } : null,
 
-                      <Card size="small" title="Processing Information" data-testid="queue-trace-processing-info">
-                        <Descriptions column={1} size="small">
-                          <Descriptions.Item label="Machine">
-                            <Space>
-                              <TeamOutlined />
-                              <Text>{traceData.queueDetails.machineName}</Text>
-                            </Space>
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Team">
-                            <Text>{traceData.queueDetails.teamName}</Text>
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Bridge">
-                            <Text>{traceData.queueDetails.bridgeName}</Text>
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Region">
-                            <Text>{traceData.queueDetails.regionName}</Text>
-                          </Descriptions.Item>
-                        </Descriptions>
-                      </Card>
+                /* Result Set 1: Queue Item Details */
+                traceData.queueDetails ? {
+                  key: 'details',
+                  label: (
+                    <Space>
+                      <FileTextOutlined />
+                      <span>Queue Item Details</span>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 1)</Text>
+                    </Space>
+                  ),
+                  children: (
+                    <Descriptions column={2} size="small">
+                      <Descriptions.Item label="Task ID">
+                        <Text code>{normalizeProperty(traceData.queueDetails, 'taskId', 'TaskId')}</Text>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Status">
+                        <Tag color={
+                          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ? 'success' :
+                          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ? 'error' :
+                          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' ? 'warning' :
+                          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' ? 'error' :
+                          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING' ? 'processing' :
+                          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ? 'blue' :
+                          'default'
+                        }>
+                          {normalizeProperty(traceData.queueDetails, 'status', 'Status')}
+                        </Tag>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Priority">
+                        {traceData.queueDetails.priorityLabel || '-'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Machine">
+                        {traceData.queueDetails.machineName}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Team">
+                        {traceData.queueDetails.teamName}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Bridge">
+                        {traceData.queueDetails.bridgeName}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Region">
+                        {traceData.queueDetails.regionName}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Created">
+                        {formatTimestampAsIs(traceData.queueDetails.createdTime, 'datetime')}
+                      </Descriptions.Item>
+                      {traceData.queueDetails.assignedTime && (
+                        <Descriptions.Item label="Assigned">
+                          {formatTimestampAsIs(traceData.queueDetails.assignedTime, 'datetime')}
+                        </Descriptions.Item>
+                      )}
+                      {traceData.queueDetails.lastRetryAt && (
+                        <Descriptions.Item label="Last Retry">
+                          {formatTimestampAsIs(traceData.queueDetails.lastRetryAt, 'datetime')}
+                        </Descriptions.Item>
+                      )}
+                      <Descriptions.Item label="Total Duration">
+                        {formatDurationFull(totalDurationSeconds)}
+                      </Descriptions.Item>
+                      {processingDurationSeconds > 0 && (
+                        <Descriptions.Item label="Processing Duration">
+                          {formatDurationFull(processingDurationSeconds)}
+                        </Descriptions.Item>
+                      )}
+                      <Descriptions.Item label="Created By">
+                        {normalizeProperty(traceData.queueDetails, 'createdBy', 'CreatedBy') || '-'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Retry Count">
+                        <Tag color={
+                          normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') === 0 ? 'green' :
+                          normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') < 3 ? 'orange' : 'red'
+                        }>
+                          {normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0}/2
+                        </Tag>
+                      </Descriptions.Item>
+                      {normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') && (
+                        <Descriptions.Item label="Last Failure Reason" span={2}>
+                          <Text type="warning">{normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason')}</Text>
+                        </Descriptions.Item>
+                      )}
+                    </Descriptions>
+                  )
+                } : null,
 
+                /* Result Set 4: Processing Timeline (Audit Log) */
+                traceData.traceLogs && traceData.traceLogs.length > 0 ? {
+                  key: 'timeline',
+                  label: (
+                    <Space>
+                      <HistoryOutlined />
+                      <span>Processing Timeline</span>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 4 - Audit Log)</Text>
+                    </Space>
+                  ),
+                  children: (
+                    <Timeline
+                      mode="left"
+                      className="queue-trace-timeline"
+                      data-testid="queue-trace-timeline"
+                      items={traceData.traceLogs.map((log: QueueTraceLog) => {
+                        const action = normalizeProperty(log, 'action', 'Action')
+                        const timestamp = normalizeProperty(log, 'timestamp', 'Timestamp')
+                        const details = normalizeProperty(log, 'details', 'Details') || ''
+                        const actionByUser = normalizeProperty(log, 'actionByUser', 'ActionByUser') || ''
+
+                        // Determine timeline item color based on action type
+                        // Using grayscale system - only 'red' for actual errors
+                        let color = 'gray'
+                        if (action === 'QUEUE_ITEM_CANCELLED') color = 'red'
+                        else if (action === 'QUEUE_ITEM_FAILED') color = 'red'
+                        else if (action.includes('ERROR') || action.includes('FAILED')) color = 'red'
+
+                        return {
+                          color,
+                          children: (
+                            <Space orientation="vertical" size={0}>
+                              <Text strong>{action.replace('QUEUE_ITEM_', '').replace(/_/g, ' ')}</Text>
+                              <Text type="secondary">{formatTimestampAsIs(timestamp, 'datetime')}</Text>
+                              {details && <Text>{details}</Text>}
+                              {actionByUser && <Text type="secondary">By: {actionByUser}</Text>}
+                            </Space>
+                          )
+                        }
+                      })}
+                    />
+                  )
+                } : null,
+
+                /* Result Sets 2 & 3: Request and Response Vault Content */
+                (traceData.vaultContent || traceData.responseVaultContent) ? {
+                  key: 'vault',
+                  label: (
+                    <Space>
+                      <FileTextOutlined />
+                      <span>Vault Content</span>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>(Result Sets 2 & 3)</Text>
+                    </Space>
+                  ),
+                  children: (
+                    <Tabs
+                      data-testid="queue-trace-vault-tabs"
+                      items={[
+                        {
+                          key: 'request',
+                          label: (
+                            <Space>
+                              <FileTextOutlined />
+                              Request Vault
+                            </Space>
+                          ),
+                          children: traceData.vaultContent && traceData.vaultContent.hasContent ? (
+                            (() => {
+                              try {
+                                const content = typeof traceData.vaultContent.vaultContent === 'string'
+                                  ? JSON.parse(traceData.vaultContent.vaultContent)
+                                  : traceData.vaultContent.vaultContent || {}
+                                return (
+                                  <SimpleJsonEditor
+                                    value={JSON.stringify(content, null, 2)}
+                                    readOnly={true}
+                                    height="300px"
+                                  />
+                                )
+                              } catch {
+                                // Failed to parse request vault content
+                                return <Empty description="Invalid request vault content format" />
+                              }
+                            })()
+                          ) : (
+                            <Empty description="No request vault content" />
+                          ),
+                        },
+                        ...(traceData.responseVaultContent && traceData.responseVaultContent.hasContent ? [{
+                          key: 'response',
+                          label: (
+                            <Space>
+                              <FileTextOutlined />
+                              Response Vault
+                            </Space>
+                          ),
+                          children: (
+                            (() => {
+                              try {
+                                const content = typeof traceData.responseVaultContent.vaultContent === 'string'
+                                  ? JSON.parse(traceData.responseVaultContent.vaultContent)
+                                  : traceData.responseVaultContent.vaultContent || {}
+
+                                // Check if this is an SSH test result with kernel compatibility data
+                                if (content.result && typeof content.result === 'string') {
+                                  try {
+                                    const result = JSON.parse(content.result)
+                                    if (result.status === 'success' && result.kernel_compatibility) {
+                                      const compatibility = result.kernel_compatibility
+                                      const osInfo = compatibility.os_info || {}
+                                      const status = compatibility.compatibility_status || 'unknown'
+
+                                      const statusConfig = {
+                                        compatible: { type: 'success' as const, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+                                        warning: { type: 'warning' as const, icon: <WarningOutlined />, color: 'var(--color-warning)' },
+                                        incompatible: { type: 'error' as const, icon: <ExclamationCircleOutlined />, color: 'var(--color-error)' },
+                                        unknown: { type: 'info' as const, icon: <QuestionCircleOutlined />, color: 'var(--color-info)' }
+                                      }
+
+                                      const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown
+
+                                      return (
+                                        <Space orientation="vertical" style={{ width: '100%' }}>
+                                          {/* SSH Test Result Summary */}
+                                          <Card size="small" title="SSH Test Result" style={{ marginBottom: 16 }}>
+                                            <Descriptions column={2} size="small">
+                                              <Descriptions.Item label="Status">
+                                                <Tag color="success">{result.status}</Tag>
+                                              </Descriptions.Item>
+                                              <Descriptions.Item label="Machine">
+                                                {result.machine || 'N/A'}
+                                              </Descriptions.Item>
+                                              <Descriptions.Item label="IP Address">
+                                                {result.ip}
+                                              </Descriptions.Item>
+                                              <Descriptions.Item label="User">
+                                                {result.user}
+                                              </Descriptions.Item>
+                                              <Descriptions.Item label="Auth Method">
+                                                <Tag>{result.auth_method}</Tag>
+                                              </Descriptions.Item>
+                                              <Descriptions.Item label="SSH Key">
+                                                {result.ssh_key_configured ? (
+                                                  <Tag color="success">Configured</Tag>
+                                                ) : (
+                                                  <Tag color="warning">Not Configured</Tag>
+                                                )}
+                                              </Descriptions.Item>
+                                            </Descriptions>
+                                          </Card>
+
+                                          {/* System Information */}
+                                          <Card size="small" title="System Information" style={{ marginBottom: 16 }}>
+                                            <Descriptions column={1} size="small">
+                                              <Descriptions.Item label="Operating System">
+                                                {osInfo.pretty_name || 'Unknown'}
+                                              </Descriptions.Item>
+                                              <Descriptions.Item label="Kernel Version">
+                                                <Text code>{compatibility.kernel_version || 'Unknown'}</Text>
+                                              </Descriptions.Item>
+                                              <Descriptions.Item label="OS ID">
+                                                {osInfo.id || 'Unknown'}
+                                              </Descriptions.Item>
+                                              <Descriptions.Item label="Version">
+                                                {osInfo.version_id || 'Unknown'}
+                                              </Descriptions.Item>
+                                              <Descriptions.Item label="BTRFS Support">
+                                                {compatibility.btrfs_available ? (
+                                                  <Tag color="success">Available</Tag>
+                                                ) : (
+                                                  <Tag color="warning">Not Available</Tag>
+                                                )}
+                                              </Descriptions.Item>
+                                              <Descriptions.Item label="Sudo Support">
+                                                {(() => {
+                                                  const sudoStatus = compatibility.sudo_available || 'unknown'
+                                                  if (sudoStatus === 'available') {
+                                                    return <Tag color="success">Available</Tag>
+                                                  } else if (sudoStatus === 'password_required') {
+                                                    return <Tag color="warning">Password Required</Tag>
+                                                  } else if (sudoStatus === 'not_installed') {
+                                                    return <Tag color="error">Not Installed</Tag>
+                                                  } else {
+                                                    return <Tag color="default">Unknown</Tag>
+                                                  }
+                                                })()}
+                                              </Descriptions.Item>
+                                            </Descriptions>
+                                          </Card>
+
+                                          {/* Compatibility Status */}
+                                          <Alert
+                                            data-testid="queue-trace-ssh-compatibility-alert"
+                                            type={config.type}
+                                            icon={config.icon}
+                                            message={
+                                              <Space>
+                                                <Text strong>Compatibility Status:</Text>
+                                                <Text style={{ color: config.color, textTransform: 'capitalize' }}>
+                                                  {status}
+                                                </Text>
+                                              </Space>
+                                            }
+                                            description={
+                                              <>
+                                                {compatibility.compatibility_issues && compatibility.compatibility_issues.length > 0 && (
+                                                  <div style={{ marginTop: 8 }}>
+                                                    <Text strong>Known Issues:</Text>
+                                                    <ul style={{ marginTop: 4, marginBottom: 8 }}>
+                                                      {compatibility.compatibility_issues.map((issue: string, index: number) => (
+                                                        <li key={index}>{issue}</li>
+                                                      ))}
+                                                    </ul>
+                                                  </div>
+                                                )}
+                                                {compatibility.recommendations && compatibility.recommendations.length > 0 && (
+                                                  <div>
+                                                    <Text strong>Recommendations:</Text>
+                                                    <ul style={{ marginTop: 4, marginBottom: 0 }}>
+                                                      {compatibility.recommendations.map((rec: string, index: number) => (
+                                                        <li key={index}>{rec}</li>
+                                                      ))}
+                                                    </ul>
+                                                  </div>
+                                                )}
+                                              </>
+                                            }
+                                            showIcon
+                                          />
+
+                                          {/* Raw JSON fallback */}
+                                          <Collapse
+                                            style={{ marginTop: 16 }}
+                                            items={[
+                                              {
+                                                key: 'raw',
+                                                label: 'Raw Response Data',
+                                                children: (
+                                                  <SimpleJsonEditor
+                                                    value={JSON.stringify(result, null, 2)}
+                                                    readOnly={true}
+                                                    height="200px"
+                                                  />
+                                                )
+                                              }
+                                            ]}
+                                          />
+                                        </Space>
+                                      )
+                                    }
+                                  } catch {
+                                    // Fall through to default JSON display
+                                  }
+                                }
+
+                                // Default JSON display for non-SSH test results
+                                return (
+                                  <SimpleJsonEditor
+                                    value={JSON.stringify(content, null, 2)}
+                                    readOnly={true}
+                                    height="300px"
+                                  />
+                                )
+                              } catch {
+                                // Failed to parse response vault content
+                                return <Empty description="Invalid response vault content format" />
+                              }
+                            })()
+                          ),
+                        }] : []),
+                      ]}
+                    />
+                  )
+                } : null,
+
+                /* Result Set 5: Related Queue Items */
+                traceData.queuePosition && traceData.queuePosition.length > 0 ? {
+                  key: 'related',
+                  label: (
+                    <Space>
+                      <TeamOutlined />
+                      <span>Related Queue Items</span>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 5 - Nearby Tasks)</Text>
+                    </Space>
+                  ),
+                  children: (
+                    <>
                       <Row gutter={[16, 16]}>
-                        <Col span={8}>
-                          <Statistic
-                            title={t('queue:statistics.totalDuration')}
-                            value={totalDurationSeconds < 60 ? totalDurationSeconds : Math.floor(totalDurationSeconds / 60)}
-                            suffix={totalDurationSeconds < 60 ? 'sec' : 'min'}
-                            prefix={<ClockCircleOutlined />}
-                          />
+                        <Col span={12}>
+                          <Card size="small" title="Tasks Before This One">
+                            <div style={{ maxHeight: 200, overflow: 'auto' }}>
+                              {traceData.queuePosition
+                                .filter((position: QueuePositionEntry) => position.relativePosition === 'Before')
+                                .map((item, index) => (
+                                  <div key={index} style={{ marginBottom: 8 }}>
+                                    <Space>
+                                      <Text code style={{ fontSize: '11px' }}>{item.taskId}</Text>
+                                      <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'} style={{ fontSize: '11px' }}>
+                                        {item.status}
+                                      </Tag>
+                                      <Text type="secondary" style={{ fontSize: '11px' }}>
+                                        {dayjs(item.createdTime).fromNow()}
+                                      </Text>
+                                    </Space>
+                                  </div>
+                                ))
+                              }
+                              {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'Before').length === 0 && (
+                                <Empty description="No tasks ahead" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                              )}
+                            </div>
+                          </Card>
                         </Col>
-                        <Col span={8}>
-                          <Statistic
-                            title={t('queue:statistics.processing')}
-                            value={processingDurationSeconds ? (processingDurationSeconds < 60 ? processingDurationSeconds : Math.floor(processingDurationSeconds / 60)) : 0}
-                            suffix={processingDurationSeconds && processingDurationSeconds < 60 ? 'sec' : 'min'}
-                            prefix={<SyncOutlined />}
-                          />
-                        </Col>
-                        <Col span={8}>
-                          <Statistic
-                            title={t('queue:statistics.timeSinceAssigned')}
-                            value={traceData.queueDetails.assignedTime ? dayjs().diff(dayjs(traceData.queueDetails.assignedTime), 'minute') : 'N/A'}
-                            suffix={traceData.queueDetails.assignedTime ? 'min' : ''}
-                            prefix={<HourglassOutlined />}
-                            valueStyle={{ color: isTaskStale() ? 'var(--color-error)' : undefined }}
-                          />
+                        <Col span={12}>
+                          <Card size="small" title="Tasks After This One">
+                            <div style={{ maxHeight: 200, overflow: 'auto' }}>
+                              {traceData.queuePosition
+                                .filter((position: QueuePositionEntry) => position.relativePosition === 'After')
+                                .map((item, index) => (
+                                  <div key={index} style={{ marginBottom: 8 }}>
+                                    <Space>
+                                      <Text code style={{ fontSize: '11px' }}>{item.taskId}</Text>
+                                      <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'} style={{ fontSize: '11px' }}>
+                                        {item.status}
+                                      </Tag>
+                                      <Text type="secondary" style={{ fontSize: '11px' }}>
+                                        {dayjs(item.createdTime).fromNow()}
+                                      </Text>
+                                    </Space>
+                                  </div>
+                                ))
+                              }
+                              {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'After').length === 0 && (
+                                <Empty description="No tasks behind" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                              )}
+                            </div>
+                          </Card>
                         </Col>
                       </Row>
-                    </Space>
-                  </Col>
+                      <div style={{ marginTop: 16, textAlign: 'center' }}>
+                        <Text type="secondary">
+                          Total: {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'Before').length} tasks ahead,
+                          {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'After').length} tasks behind
+                        </Text>
+                      </div>
+                    </>
+                  )
+                } : null,
 
-                  {/* Right Column - Response Console */}
-                  <Col xs={24} lg={12}>
-                    <Collapse
-                      data-testid="queue-trace-detailed-console-collapse"
-                      activeKey={isDetailedConsoleExpanded ? ['console'] : []}
-                      onChange={(keys) => setIsDetailedConsoleExpanded(keys.includes('console'))}
-                      expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
-                    >
-                      <Panel
-                        header={
-                          <Space>
-                            <CodeOutlined />
-                            <Text>Response (Console)</Text>
-                            {traceData.queueDetails?.status === 'PROCESSING' && (
-                              <Tag icon={<SyncOutlined spin />} color="processing">
-                                Live Output
-                              </Tag>
+                /* Result Set 6: Performance Metrics */
+                traceData.machineStats ? {
+                  key: 'performance',
+                  label: (
+                    <Space>
+                      <DashboardOutlined />
+                      <span>Performance Metrics</span>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 6 - Machine Stats)</Text>
+                    </Space>
+                  ),
+                  children: (
+                    <>
+                      <Row gutter={16}>
+                        <Col span={8}>
+                          <Card>
+                            <Statistic
+                              title="Current Queue Depth"
+                              value={traceData.machineStats.currentQueueDepth}
+                              prefix={<HourglassOutlined />}
+                              suffix="tasks"
+                              valueStyle={{ color: traceData.machineStats.currentQueueDepth > 50 ? 'var(--color-error)' : 'var(--color-text-primary)' }}
+                            />
+                            <Progress
+                              percent={Math.min(100, (traceData.machineStats.currentQueueDepth / 100) * 100)}
+                              showInfo={false}
+                              status={traceData.machineStats.currentQueueDepth > 50 ? 'exception' : 'normal'}
+                            />
+                          </Card>
+                        </Col>
+                        <Col span={8}>
+                          <Card>
+                            <Statistic
+                              title="Active Processing Count"
+                              value={traceData.machineStats.activeProcessingCount}
+                              prefix={<SyncOutlined spin />}
+                              suffix="tasks"
+                            />
+                            <Text type="secondary">Currently being processed on this machine</Text>
+                          </Card>
+                        </Col>
+                        <Col span={8}>
+                          <Card>
+                            <Statistic
+                              title="Processing Capacity"
+                              value={`${traceData.machineStats.activeProcessingCount}/${traceData.machineStats.maxConcurrentTasks || 'N/A'}`}
+                              prefix={<DashboardOutlined />}
+                              valueStyle={{ color: traceData.machineStats.activeProcessingCount >= (traceData.machineStats.maxConcurrentTasks || 0) ? 'var(--color-error)' : 'var(--color-text-primary)' }}
+                            />
+                            <Progress
+                              percent={traceData.machineStats.maxConcurrentTasks ? Math.min(100, (traceData.machineStats.activeProcessingCount / traceData.machineStats.maxConcurrentTasks) * 100) : 0}
+                              showInfo={false}
+                              status={traceData.machineStats.activeProcessingCount >= (traceData.machineStats.maxConcurrentTasks || 0) ? 'exception' : 'normal'}
+                            />
+                          </Card>
+                        </Col>
+                      </Row>
+                      <Divider />
+                      <Alert
+                        data-testid="queue-trace-performance-alert"
+                        message="Performance Analysis"
+                        description={
+                          <Space orientation="vertical">
+                            {traceData.machineStats.currentQueueDepth > 50 && (
+                              <Text>⚠️ High queue depth detected. Tasks may experience delays.</Text>
+                            )}
+                            {traceData.machineStats.activeProcessingCount >= (traceData.machineStats.maxConcurrentTasks || 0) && (
+                              <Text>⚠️ Machine at full capacity. New tasks will wait in queue.</Text>
+                            )}
+                            {traceData.machineStats.currentQueueDepth === 0 && traceData.machineStats.activeProcessingCount === 0 && (
+                              <Text>✅ Machine is idle and ready to process tasks immediately.</Text>
                             )}
                           </Space>
                         }
-                        key="console"
-                      >
-                        <ConsoleOutput
-                          content={accumulatedOutput
-                            .replace(/\\r\\n/g, '\n')
-                            .replace(/\\n/g, '\n')
-                            .replace(/\\r/g, '\r')}
-                          theme={theme}
-                          consoleOutputRef={consoleOutputRef}
-                          isEmpty={!traceData.responseVaultContent?.hasContent}
-                        />
-                      </Panel>
-                    </Collapse>
-                  </Col>
-                </Row>
-              </Panel>
-            )}
-
-            {/* Result Set 1: Queue Item Details */}
-            {traceData.queueDetails && (
-              <Panel 
-                data-testid="queue-trace-panel-details"
-                header={
-                  <Space>
-                    <FileTextOutlined />
-                    <span>Queue Item Details</span>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 1)</Text>
-                  </Space>
-                } 
-                key="details"
-              >
-                <Descriptions column={2} size="small">
-                <Descriptions.Item label="Task ID">
-                  <Text code>{normalizeProperty(traceData.queueDetails, 'taskId', 'TaskId')}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Status">
-                  <Tag color={
-                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ? 'success' :
-                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ? 'error' :
-                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' ? 'warning' :
-                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' ? 'error' :
-                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING' ? 'processing' :
-                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ? 'blue' :
-                    'default'
-                  }>
-                    {normalizeProperty(traceData.queueDetails, 'status', 'Status')}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Priority">
-                  {traceData.queueDetails.priorityLabel || '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label="Machine">
-                  {traceData.queueDetails.machineName}
-                </Descriptions.Item>
-                <Descriptions.Item label="Team">
-                  {traceData.queueDetails.teamName}
-                </Descriptions.Item>
-                <Descriptions.Item label="Bridge">
-                  {traceData.queueDetails.bridgeName}
-                </Descriptions.Item>
-                <Descriptions.Item label="Region">
-                  {traceData.queueDetails.regionName}
-                </Descriptions.Item>
-                <Descriptions.Item label="Created">
-                  {formatTimestampAsIs(traceData.queueDetails.createdTime, 'datetime')}
-                </Descriptions.Item>
-                {traceData.queueDetails.assignedTime && (
-                  <Descriptions.Item label="Assigned">
-                    {formatTimestampAsIs(traceData.queueDetails.assignedTime, 'datetime')}
-                  </Descriptions.Item>
-                )}
-                {traceData.queueDetails.lastRetryAt && (
-                  <Descriptions.Item label="Last Retry">
-                    {formatTimestampAsIs(traceData.queueDetails.lastRetryAt, 'datetime')}
-                  </Descriptions.Item>
-                )}
-                <Descriptions.Item label="Total Duration">
-                  {formatDurationFull(totalDurationSeconds)}
-                </Descriptions.Item>
-                {processingDurationSeconds > 0 && (
-                  <Descriptions.Item label="Processing Duration">
-                    {formatDurationFull(processingDurationSeconds)}
-                  </Descriptions.Item>
-                )}
-                <Descriptions.Item label="Created By">
-                  {normalizeProperty(traceData.queueDetails, 'createdBy', 'CreatedBy') || '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label="Retry Count">
-                  <Tag color={
-                    normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') === 0 ? 'green' :
-                    normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') < 3 ? 'orange' : 'red'
-                  }>
-                    {normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0}/2
-                  </Tag>
-                </Descriptions.Item>
-                {normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') && (
-                  <Descriptions.Item label="Last Failure Reason" span={2}>
-                    <Text type="warning">{normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason')}</Text>
-                  </Descriptions.Item>
-                )}
-              </Descriptions>
-              </Panel>
-            )}
-
-            {/* Result Set 4: Processing Timeline (Audit Log) */}
-            {traceData.traceLogs && traceData.traceLogs.length > 0 && (
-              <Panel 
-                data-testid="queue-trace-panel-timeline"
-                header={
-                  <Space>
-                    <HistoryOutlined />
-                    <span>Processing Timeline</span>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 4 - Audit Log)</Text>
-                  </Space>
-                } 
-                key="timeline"
-              >
-                <Timeline 
-                  mode="left" 
-                  className="queue-trace-timeline" 
-                  data-testid="queue-trace-timeline"
-                  items={traceData.traceLogs.map((log: QueueTraceLog) => {
-                    const action = normalizeProperty(log, 'action', 'Action')
-                    const timestamp = normalizeProperty(log, 'timestamp', 'Timestamp')
-                    const details = normalizeProperty(log, 'details', 'Details') || ''
-                    const actionByUser = normalizeProperty(log, 'actionByUser', 'ActionByUser') || ''
-
-                    // Determine timeline item color based on action type
-                    // Using grayscale system - only 'red' for actual errors
-                    let color = 'gray'
-                    if (action === 'QUEUE_ITEM_CANCELLED') color = 'red'
-                    else if (action === 'QUEUE_ITEM_FAILED') color = 'red'
-                    else if (action.includes('ERROR') || action.includes('FAILED')) color = 'red'
-
-                    return {
-                      color,
-                      children: (
-                        <Space direction="vertical" size={0}>
-                          <Text strong>{action.replace('QUEUE_ITEM_', '').replace(/_/g, ' ')}</Text>
-                          <Text type="secondary">{formatTimestampAsIs(timestamp, 'datetime')}</Text>
-                          {details && <Text>{details}</Text>}
-                          {actionByUser && <Text type="secondary">By: {actionByUser}</Text>}
-                        </Space>
-                      )
-                    }
-                  })}
-                />
-              </Panel>
-            )}
-
-            {/* Result Sets 2 & 3: Request and Response Vault Content */}
-            {(traceData.vaultContent || traceData.responseVaultContent) && (
-              <Panel 
-                data-testid="queue-trace-panel-vault"
-                header={
-                  <Space>
-                    <FileTextOutlined />
-                    <span>Vault Content</span>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>(Result Sets 2 & 3)</Text>
-                  </Space>
-                } 
-                key="vault"
-              >
-                <Tabs
-                data-testid="queue-trace-vault-tabs"
-                items={[
-                  {
-                    key: 'request',
-                    label: (
-                      <Space>
-                        <FileTextOutlined />
-                        Request Vault
-                      </Space>
-                    ),
-                    children: traceData.vaultContent && traceData.vaultContent.hasContent ? (
-                      (() => {
-                        try {
-                          const content = typeof traceData.vaultContent.vaultContent === 'string' 
-                            ? JSON.parse(traceData.vaultContent.vaultContent) 
-                            : traceData.vaultContent.vaultContent || {}
-                          return (
-                            <SimpleJsonEditor
-                              value={JSON.stringify(content, null, 2)}
-                              readOnly={true}
-                              height="300px"
-                            />
-                          )
-                        } catch {
-                          // Failed to parse request vault content
-                          return <Empty description="Invalid request vault content format" />
-                        }
-                      })()
-                    ) : (
-                      <Empty description="No request vault content" />
-                    ),
-                  },
-                  ...(traceData.responseVaultContent && traceData.responseVaultContent.hasContent ? [{
-                    key: 'response',
-                    label: (
-                      <Space>
-                        <FileTextOutlined />
-                        Response Vault
-                      </Space>
-                    ),
-                    children: (
-                      (() => {
-                        try {
-                          const content = typeof traceData.responseVaultContent.vaultContent === 'string' 
-                            ? JSON.parse(traceData.responseVaultContent.vaultContent) 
-                            : traceData.responseVaultContent.vaultContent || {}
-                          
-                          // Check if this is an SSH test result with kernel compatibility data
-                          if (content.result && typeof content.result === 'string') {
-                            try {
-                              const result = JSON.parse(content.result)
-                              if (result.status === 'success' && result.kernel_compatibility) {
-                                const compatibility = result.kernel_compatibility
-                                const osInfo = compatibility.os_info || {}
-                                const status = compatibility.compatibility_status || 'unknown'
-                                
-                                const statusConfig = {
-                                  compatible: { type: 'success' as const, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
-                                  warning: { type: 'warning' as const, icon: <WarningOutlined />, color: 'var(--color-warning)' },
-                                  incompatible: { type: 'error' as const, icon: <ExclamationCircleOutlined />, color: 'var(--color-error)' },
-                                  unknown: { type: 'info' as const, icon: <QuestionCircleOutlined />, color: 'var(--color-info)' }
-                                }
-                                
-                                const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown
-                                
-                                return (
-                                  <Space direction="vertical" style={{ width: '100%' }}>
-                                    {/* SSH Test Result Summary */}
-                                    <Card size="small" title="SSH Test Result" style={{ marginBottom: 16 }}>
-                                      <Descriptions column={2} size="small">
-                                        <Descriptions.Item label="Status">
-                                          <Tag color="success">{result.status}</Tag>
-                                        </Descriptions.Item>
-                                        <Descriptions.Item label="Machine">
-                                          {result.machine || 'N/A'}
-                                        </Descriptions.Item>
-                                        <Descriptions.Item label="IP Address">
-                                          {result.ip}
-                                        </Descriptions.Item>
-                                        <Descriptions.Item label="User">
-                                          {result.user}
-                                        </Descriptions.Item>
-                                        <Descriptions.Item label="Auth Method">
-                                          <Tag>{result.auth_method}</Tag>
-                                        </Descriptions.Item>
-                                        <Descriptions.Item label="SSH Key">
-                                          {result.ssh_key_configured ? (
-                                            <Tag color="success">Configured</Tag>
-                                          ) : (
-                                            <Tag color="warning">Not Configured</Tag>
-                                          )}
-                                        </Descriptions.Item>
-                                      </Descriptions>
-                                    </Card>
-                                    
-                                    {/* System Information */}
-                                    <Card size="small" title="System Information" style={{ marginBottom: 16 }}>
-                                      <Descriptions column={1} size="small">
-                                        <Descriptions.Item label="Operating System">
-                                          {osInfo.pretty_name || 'Unknown'}
-                                        </Descriptions.Item>
-                                        <Descriptions.Item label="Kernel Version">
-                                          <Text code>{compatibility.kernel_version || 'Unknown'}</Text>
-                                        </Descriptions.Item>
-                                        <Descriptions.Item label="OS ID">
-                                          {osInfo.id || 'Unknown'}
-                                        </Descriptions.Item>
-                                        <Descriptions.Item label="Version">
-                                          {osInfo.version_id || 'Unknown'}
-                                        </Descriptions.Item>
-                                        <Descriptions.Item label="BTRFS Support">
-                                          {compatibility.btrfs_available ? (
-                                            <Tag color="success">Available</Tag>
-                                          ) : (
-                                            <Tag color="warning">Not Available</Tag>
-                                          )}
-                                        </Descriptions.Item>
-                                        <Descriptions.Item label="Sudo Support">
-                                          {(() => {
-                                            const sudoStatus = compatibility.sudo_available || 'unknown'
-                                            if (sudoStatus === 'available') {
-                                              return <Tag color="success">Available</Tag>
-                                            } else if (sudoStatus === 'password_required') {
-                                              return <Tag color="warning">Password Required</Tag>
-                                            } else if (sudoStatus === 'not_installed') {
-                                              return <Tag color="error">Not Installed</Tag>
-                                            } else {
-                                              return <Tag color="default">Unknown</Tag>
-                                            }
-                                          })()}
-                                        </Descriptions.Item>
-                                      </Descriptions>
-                                    </Card>
-                                    
-                                    {/* Compatibility Status */}
-                                    <Alert
-                                      data-testid="queue-trace-ssh-compatibility-alert"
-                                      type={config.type}
-                                      icon={config.icon}
-                                      message={
-                                        <Space>
-                                          <Text strong>Compatibility Status:</Text>
-                                          <Text style={{ color: config.color, textTransform: 'capitalize' }}>
-                                            {status}
-                                          </Text>
-                                        </Space>
-                                      }
-                                      description={
-                                        <>
-                                          {compatibility.compatibility_issues && compatibility.compatibility_issues.length > 0 && (
-                                            <div style={{ marginTop: 8 }}>
-                                              <Text strong>Known Issues:</Text>
-                                              <ul style={{ marginTop: 4, marginBottom: 8 }}>
-                                                {compatibility.compatibility_issues.map((issue: string, index: number) => (
-                                                  <li key={index}>{issue}</li>
-                                                ))}
-                                              </ul>
-                                            </div>
-                                          )}
-                                          {compatibility.recommendations && compatibility.recommendations.length > 0 && (
-                                            <div>
-                                              <Text strong>Recommendations:</Text>
-                                              <ul style={{ marginTop: 4, marginBottom: 0 }}>
-                                                {compatibility.recommendations.map((rec: string, index: number) => (
-                                                  <li key={index}>{rec}</li>
-                                                ))}
-                                              </ul>
-                                            </div>
-                                          )}
-                                        </>
-                                      }
-                                      showIcon
-                                    />
-                                    
-                                    {/* Raw JSON fallback */}
-                                    <Collapse style={{ marginTop: 16 }}>
-                                      <Collapse.Panel header="Raw Response Data" key="raw">
-                                        <SimpleJsonEditor
-                                          value={JSON.stringify(result, null, 2)}
-                                          readOnly={true}
-                                          height="200px"
-                                        />
-                                      </Collapse.Panel>
-                                    </Collapse>
-                                  </Space>
-                                )
-                              }
-                            } catch {
-                              // Fall through to default JSON display
-                            }
-                          }
-                          
-                          // Default JSON display for non-SSH test results
-                          return (
-                            <SimpleJsonEditor
-                              value={JSON.stringify(content, null, 2)}
-                              readOnly={true}
-                              height="300px"
-                            />
-                          )
-                        } catch {
-                          // Failed to parse response vault content
-                          return <Empty description="Invalid response vault content format" />
-                        }
-                      })()
-                    ),
-                  }] : []),
-                ]}
-              />
-              </Panel>
-            )}
-
-            {/* Result Set 5: Related Queue Items */}
-            {traceData.queuePosition && traceData.queuePosition.length > 0 && (
-              <Panel 
-                data-testid="queue-trace-panel-related"
-                header={
-                  <Space>
-                    <TeamOutlined />
-                    <span>Related Queue Items</span>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 5 - Nearby Tasks)</Text>
-                  </Space>
-                } 
-                key="related"
-              >
-                <Row gutter={[16, 16]}>
-                  <Col span={12}>
-                    <Card size="small" title="Tasks Before This One">
-                      <div style={{ maxHeight: 200, overflow: 'auto' }}>
-                        {traceData.queuePosition
-                          .filter((position: QueuePositionEntry) => position.relativePosition === 'Before')
-                          .map((item, index) => (
-                            <div key={index} style={{ marginBottom: 8 }}>
-                              <Space>
-                                <Text code style={{ fontSize: '11px' }}>{item.taskId}</Text>
-                                <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'} style={{ fontSize: '11px' }}>
-                                  {item.status}
-                                </Tag>
-                                <Text type="secondary" style={{ fontSize: '11px' }}>
-                                  {dayjs(item.createdTime).fromNow()}
-                                </Text>
-                              </Space>
-                            </div>
-                          ))
-                        }
-                        {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'Before').length === 0 && (
-                          <Empty description="No tasks ahead" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                        )}
-                      </div>
-                    </Card>
-                  </Col>
-                  <Col span={12}>
-                    <Card size="small" title="Tasks After This One">
-                      <div style={{ maxHeight: 200, overflow: 'auto' }}>
-                        {traceData.queuePosition
-                          .filter((position: QueuePositionEntry) => position.relativePosition === 'After')
-                          .map((item, index) => (
-                            <div key={index} style={{ marginBottom: 8 }}>
-                              <Space>
-                                <Text code style={{ fontSize: '11px' }}>{item.taskId}</Text>
-                                <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'} style={{ fontSize: '11px' }}>
-                                  {item.status}
-                                </Tag>
-                                <Text type="secondary" style={{ fontSize: '11px' }}>
-                                  {dayjs(item.createdTime).fromNow()}
-                                </Text>
-                              </Space>
-                            </div>
-                          ))
-                        }
-                        {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'After').length === 0 && (
-                          <Empty description="No tasks behind" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                        )}
-                      </div>
-                    </Card>
-                  </Col>
-                </Row>
-                <div style={{ marginTop: 16, textAlign: 'center' }}>
-                  <Text type="secondary">
-                    Total: {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'Before').length} tasks ahead, 
-                    {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'After').length} tasks behind
-                  </Text>
-                </div>
-              </Panel>
-            )}
-
-            {/* Result Set 6: Performance Metrics */}
-            {traceData.machineStats && (
-              <Panel 
-                data-testid="queue-trace-panel-performance"
-                header={
-                  <Space>
-                    <DashboardOutlined />
-                    <span>Performance Metrics</span>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 6 - Machine Stats)</Text>
-                  </Space>
-                } 
-                key="performance"
-              >
-                <Row gutter={16}>
-                  <Col span={8}>
-                    <Card>
-                      <Statistic
-                        title="Current Queue Depth"
-                        value={traceData.machineStats.currentQueueDepth}
-                        prefix={<HourglassOutlined />}
-                        suffix="tasks"
-                        valueStyle={{ color: traceData.machineStats.currentQueueDepth > 50 ? 'var(--color-error)' : 'var(--color-text-primary)' }}
+                        type={traceData.machineStats.currentQueueDepth > 50 ? 'warning' : 'info'}
                       />
-                      <Progress
-                        percent={Math.min(100, (traceData.machineStats.currentQueueDepth / 100) * 100)}
-                        showInfo={false}
-                        status={traceData.machineStats.currentQueueDepth > 50 ? 'exception' : 'normal'}
-                      />
-                    </Card>
-                  </Col>
-                  <Col span={8}>
-                    <Card>
-                      <Statistic
-                        title="Active Processing Count"
-                        value={traceData.machineStats.activeProcessingCount}
-                        prefix={<SyncOutlined spin />}
-                        suffix="tasks"
-                      />
-                      <Text type="secondary">Currently being processed on this machine</Text>
-                    </Card>
-                  </Col>
-                  <Col span={8}>
-                    <Card>
-                      <Statistic
-                        title="Processing Capacity"
-                        value={`${traceData.machineStats.activeProcessingCount}/${traceData.machineStats.maxConcurrentTasks || 'N/A'}`}
-                        prefix={<DashboardOutlined />}
-                        valueStyle={{ color: traceData.machineStats.activeProcessingCount >= (traceData.machineStats.maxConcurrentTasks || 0) ? 'var(--color-error)' : 'var(--color-text-primary)' }}
-                      />
-                      <Progress
-                        percent={traceData.machineStats.maxConcurrentTasks ? Math.min(100, (traceData.machineStats.activeProcessingCount / traceData.machineStats.maxConcurrentTasks) * 100) : 0}
-                        showInfo={false}
-                        status={traceData.machineStats.activeProcessingCount >= (traceData.machineStats.maxConcurrentTasks || 0) ? 'exception' : 'normal'}
-                      />
-                    </Card>
-                  </Col>
-                </Row>
-                <Divider />
-                <Alert
-                  data-testid="queue-trace-performance-alert"
-                  message="Performance Analysis"
-                  description={
-                    <Space direction="vertical">
-                      {traceData.machineStats.currentQueueDepth > 50 && (
-                        <Text>⚠️ High queue depth detected. Tasks may experience delays.</Text>
-                      )}
-                      {traceData.machineStats.activeProcessingCount >= (traceData.machineStats.maxConcurrentTasks || 0) && (
-                        <Text>⚠️ Machine at full capacity. New tasks will wait in queue.</Text>
-                      )}
-                      {traceData.machineStats.currentQueueDepth === 0 && traceData.machineStats.activeProcessingCount === 0 && (
-                        <Text>✅ Machine is idle and ready to process tasks immediately.</Text>
-                      )}
-                    </Space>
-                  }
-                  type={traceData.machineStats.currentQueueDepth > 50 ? 'warning' : 'info'}
-                />
-              </Panel>
-            )}
-              </Collapse>
+                    </>
+                  )
+                } : null,
+              ].filter(Boolean) as CollapseProps['items']}
+            />
             </div>
           )}
         </div>

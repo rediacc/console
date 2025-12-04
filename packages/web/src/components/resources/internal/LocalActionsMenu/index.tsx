@@ -249,14 +249,14 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       </Dropdown>
 
       <PipInstallationModal
-        visible={installModal.isOpen}
+        open={installModal.isOpen}
         onClose={installModal.close}
         errorType={installModal.state.data ?? 'not-installed'}
       />
 
       {!isContainerMenu && (
         <LocalCommandModal
-          visible={commandModal.isOpen}
+          open={commandModal.isOpen}
           onClose={commandModal.close}
           machine={machine}
           repo={repo}

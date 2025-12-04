@@ -1272,7 +1272,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
               : undefined
           }
           defaultsContent={
-            <Space direction="vertical" size={0}>
+            <Space orientation="vertical" size={0}>
               <Text>{t('general.team')}: Private Team</Text>
               {resourceType === 'machine' && (
                 <>
@@ -1326,7 +1326,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
       {/* Template Preview Modal */}
       <TemplatePreviewModal
-        visible={showTemplateDetails}
+        open={showTemplateDetails}
         template={null}
         templateName={templateToView}
         onClose={() => {

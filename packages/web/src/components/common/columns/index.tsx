@@ -198,7 +198,7 @@ export interface ActionMenuItem<T> {
 export interface ActionColumnOptions<T> {
   title?: React.ReactNode
   width?: number
-  fixed?: 'left' | 'right'
+  fixed?: 'start' | 'end'
   buttonIcon?: React.ReactNode
   buttonLabel?: React.ReactNode
   onView?: (record: T) => void

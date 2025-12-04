@@ -26,18 +26,18 @@ const focusStyles = css`
 `
 
 const scrollbarStyles = css`
-  scrollbar-color: #4a4a4a #1a1a1a;
+  scrollbar-color: var(--color-secondary) var(--color-primary);
 
   &::-webkit-scrollbar {
-    background-color: #1a1a1a;
+    background-color: var(--color-primary);
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: #4a4a4a;
+    background-color: var(--color-secondary);
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background-color: #5a5a5a;
+    background-color: var(--color-accent);
   }
 `
 

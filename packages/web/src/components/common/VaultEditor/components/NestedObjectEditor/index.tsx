@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Input, Switch, Popconfirm, Empty, Row, Col, Collapse } from 'antd'
+import { Input, Switch, Popconfirm, Empty, Row, Col } from 'antd'
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -39,7 +39,6 @@ import {
   NumericInput,
 } from './styles'
 
-const { Panel } = Collapse
 
 type NestedEntryValue = unknown
 type NestedRecord = Record<string, NestedEntryValue>
@@ -452,62 +451,51 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
             data-testid={
               dataTestId ? `${dataTestId}-collapse` : 'vault-editor-nested-collapse'
             }
-          >
-            {entries.map((entry, index) => (
-              <Panel
-                key={entry.key}
-                data-testid={
-                  dataTestId
-                    ? `${dataTestId}-panel-${entry.key}`
-                    : `vault-editor-nested-panel-${entry.key}`
-                }
-                header={
-                  <EntryHeader>
-                    <KeyTag color="processing">{entry.key}</KeyTag>
-                    {isRecordLike(entry.value) && (
-                      <TypeTag color="success">{t('nestedObjectEditor.Object')}</TypeTag>
-                    )}
-                    {Array.isArray(entry.value) && (
-                      <TypeTag color="warning">{t('nestedObjectEditor.Array')}</TypeTag>
-                    )}
-                    {typeof entry.value === 'boolean' && (
-                      <TypeTag color={entry.value ? 'success' : 'default'}>
-                        {entry.value
-                          ? t('nestedObjectEditor.True')
-                          : t('nestedObjectEditor.False')}
-                      </TypeTag>
-                    )}
-                  </EntryHeader>
-                }
-                extra={
-                  !readOnly && (
-                    <PanelActions onClick={(event) => event.stopPropagation()}>
-                      <Popconfirm
-                        title={t('nestedObjectEditor.Delete this entry?')}
-                        onConfirm={() => handleDeleteEntry(index)}
-                        okText={t('nestedObjectEditor.Yes')}
-                        cancelText={t('nestedObjectEditor.No')}
-                      >
-                        <PanelDeleteButton
-                          type="text"
-                          danger
-                          icon={<DeleteOutlined />}
-                          size="small"
-                          data-testid={
-                            dataTestId
-                              ? `${dataTestId}-delete-${entry.key}`
-                              : `vault-editor-nested-delete-${entry.key}`
-                          }
-                        />
-                      </Popconfirm>
-                    </PanelActions>
-                  )
-                }
-              >
-                {renderEntryValue(entry, index)}
-              </Panel>
-            ))}
-          </CollapseWrapper>
+            items={entries.map((entry, index) => ({
+              key: entry.key,
+              label: (
+                <EntryHeader>
+                  <KeyTag color="processing">{entry.key}</KeyTag>
+                  {isRecordLike(entry.value) && (
+                    <TypeTag color="success">{t('nestedObjectEditor.Object')}</TypeTag>
+                  )}
+                  {Array.isArray(entry.value) && (
+                    <TypeTag color="warning">{t('nestedObjectEditor.Array')}</TypeTag>
+                  )}
+                  {typeof entry.value === 'boolean' && (
+                    <TypeTag color={entry.value ? 'success' : 'default'}>
+                      {entry.value
+                        ? t('nestedObjectEditor.True')
+                        : t('nestedObjectEditor.False')}
+                    </TypeTag>
+                  )}
+                </EntryHeader>
+              ),
+              extra: !readOnly ? (
+                <PanelActions onClick={(event) => event.stopPropagation()}>
+                  <Popconfirm
+                    title={t('nestedObjectEditor.Delete this entry?')}
+                    onConfirm={() => handleDeleteEntry(index)}
+                    okText={t('nestedObjectEditor.Yes')}
+                    cancelText={t('nestedObjectEditor.No')}
+                  >
+                    <PanelDeleteButton
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      size="small"
+                      data-testid={
+                        dataTestId
+                          ? `${dataTestId}-delete-${entry.key}`
+                          : `vault-editor-nested-delete-${entry.key}`
+                      }
+                    />
+                  </Popconfirm>
+                </PanelActions>
+              ) : undefined,
+              children: renderEntryValue(entry, index)
+            }))}
+          />
         )}
 
         {showRawJson && (

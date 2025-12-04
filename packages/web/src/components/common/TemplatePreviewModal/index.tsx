@@ -89,7 +89,7 @@ interface TemplateDetails {
 }
 
 interface TemplatePreviewModalProps {
-  visible: boolean
+  open: boolean
   template: Template | null
   templateName?: string | null // For backward compatibility with TemplateDetailsModal
   onClose: () => void
@@ -102,7 +102,7 @@ type CodeRendererProps = ComponentPropsWithoutRef<'code'> & {
 }
 
 const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
-  visible,
+  open,
   template,
   templateName,
   onClose,
@@ -202,7 +202,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     fetchTemplateDetails()
     setActiveTab('overview')
     setSelectedFileIndex(0)
-  }, [visible, template, templateName, context])
+  }, [open, template, templateName, context])
 
   useEffect(() => {
     setIconFailed(false)
@@ -299,7 +299,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             <FeatureCard
               title={<CardTitle>{t('marketplace:features')}</CardTitle>}
             >
-              <FeatureList direction="vertical" size="small">
+              <FeatureList orientation="vertical" size="small">
                 {effectiveTemplate.tags?.map((tag) => (
                   <FeatureItem key={tag} size="small">
                     <SuccessIcon>
@@ -506,7 +506,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           </div>
         </TitleStack>
       }
-      open={visible}
+      open={open}
       onCancel={onClose}
       className={ModalSize.ExtraLarge}
       footer={[

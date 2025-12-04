@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Tabs, Form, Input, Checkbox, Button, Typography, message, Radio } from 'antd'
+import { Form, Input, Checkbox, Button, Typography, message, Radio } from 'antd'
 import type { CheckboxChangeEvent } from 'antd/es/checkbox'
 import type { RadioChangeEvent } from 'antd/es/radio'
 import {
@@ -33,13 +33,12 @@ import {
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator'
 
 const { Text } = Typography
-const { TabPane } = Tabs
 
 type CommandTab = 'vscode' | 'terminal' | 'desktop'
 type OperatingSystem = 'unix' | 'windows'
 
 interface LocalCommandModalProps {
-  visible: boolean
+  open: boolean
   onClose: () => void
   machine: string
   repo?: string
@@ -48,7 +47,7 @@ interface LocalCommandModalProps {
 }
 
 export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
-  visible,
+  open,
   onClose,
   machine,
   repo,
@@ -65,17 +64,17 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   const [tokenError, setTokenError] = useState('')
 
   useEffect(() => {
-    if (visible) {
+    if (open) {
       const { protocol, host } = window.location
       setApiUrl(`${protocol}//${host}/api`)
     }
-  }, [visible])
+  }, [open])
 
   useEffect(() => {
-    if (!visible) {
+    if (!open) {
       setTokenError('')
     }
-  }, [visible])
+  }, [open])
 
   const buildProtocolUrl = (token: string, action: string, params?: Record<string, string>) => {
     const team = 'Default'
@@ -217,7 +216,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   return (
     <StyledModal
       title={t('resources:localCommandBuilder.title')}
-      open={visible}
+      open={open}
       onCancel={onClose}
       footer={null}
     >
@@ -254,39 +253,56 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         )}
       </SettingsForm>
 
-      <TabsWrapper activeKey={activeTab} onChange={(key) => setActiveTab(key as CommandTab)}>
-        <TabPane tab={t('resources:localCommandBuilder.vscodeTab')} key="vscode" icon={<FileTextOutlined />}>
-          <Form layout="vertical">
-            <Form.Item help={t('resources:localCommandBuilder.vscodeHelp')}>
-              <Text type="secondary">{t('resources:localCommandBuilder.vscodeDescription')}</Text>
-            </Form.Item>
-          </Form>
-        </TabPane>
-
-        <TabPane tab={t('resources:localCommandBuilder.terminalTab')} key="terminal" icon={<CodeOutlined />}>
-          <Form layout="vertical">
-            <Form.Item
-              label={t('resources:localCommandBuilder.command')}
-              help={t('resources:localCommandBuilder.commandHelp')}
-            >
-              <Input
-                placeholder="docker ps"
-                value={termCommand}
-                onChange={handleTermCommandChange}
-                autoComplete="off"
-              />
-            </Form.Item>
-          </Form>
-        </TabPane>
-
-        <TabPane tab={t('resources:localCommandBuilder.desktopTab')} key="desktop" icon={<DesktopOutlined />}>
-          <Form layout="vertical">
-            <Form.Item help={t('resources:localCommandBuilder.desktopHelp')}>
-              <Text type="secondary">{t('resources:localCommandBuilder.desktopDescription')}</Text>
-            </Form.Item>
-          </Form>
-        </TabPane>
-      </TabsWrapper>
+      <TabsWrapper
+        activeKey={activeTab}
+        onChange={(key) => setActiveTab(key as CommandTab)}
+        items={[
+          {
+            key: 'vscode',
+            label: t('resources:localCommandBuilder.vscodeTab'),
+            icon: <FileTextOutlined />,
+            children: (
+              <Form layout="vertical">
+                <Form.Item help={t('resources:localCommandBuilder.vscodeHelp')}>
+                  <Text type="secondary">{t('resources:localCommandBuilder.vscodeDescription')}</Text>
+                </Form.Item>
+              </Form>
+            )
+          },
+          {
+            key: 'terminal',
+            label: t('resources:localCommandBuilder.terminalTab'),
+            icon: <CodeOutlined />,
+            children: (
+              <Form layout="vertical">
+                <Form.Item
+                  label={t('resources:localCommandBuilder.command')}
+                  help={t('resources:localCommandBuilder.commandHelp')}
+                >
+                  <Input
+                    placeholder="docker ps"
+                    value={termCommand}
+                    onChange={handleTermCommandChange}
+                    autoComplete="off"
+                  />
+                </Form.Item>
+              </Form>
+            )
+          },
+          {
+            key: 'desktop',
+            label: t('resources:localCommandBuilder.desktopTab'),
+            icon: <DesktopOutlined />,
+            children: (
+              <Form layout="vertical">
+                <Form.Item help={t('resources:localCommandBuilder.desktopHelp')}>
+                  <Text type="secondary">{t('resources:localCommandBuilder.desktopDescription')}</Text>
+                </Form.Item>
+              </Form>
+            )
+          }
+        ]}
+      />
 
       <CommandPreview>
         <PreviewHeader>

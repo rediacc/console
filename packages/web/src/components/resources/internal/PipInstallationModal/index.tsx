@@ -27,10 +27,9 @@ import { ModalSize } from '@/types/modal'
 import { CommandContainer, CommandDescription, CommandBox, CommandCode, CopyButton, ContentSpace, NotesList } from './styles'
 
 const { Text, Title } = Typography
-const { Panel } = Collapse
 
 interface PipInstallationModalProps {
-  visible: boolean
+  open: boolean
   onClose: () => void
   errorType?: 'not-installed' | 'protocol-not-registered' | 'permission-denied'
 }
@@ -84,7 +83,7 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({ command, description, s
 }
 
 export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
-  visible,
+  open,
   onClose,
   errorType = 'not-installed'
 }) => {
@@ -128,7 +127,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   }
 
   const renderQuickInstall = () => (
-    <ContentSpace direction="vertical" size="large">
+    <ContentSpace orientation="vertical" size="large">
       <Alert
         message={t('resources:pipInstall.quickInstallTitle')}
         description={t('resources:pipInstall.quickInstallDesc')}
@@ -202,45 +201,56 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   )
 
   const renderAdvancedOptions = () => (
-    <Collapse defaultActiveKey={[]} data-testid="pip-install-advanced-collapse">
-      <Panel 
-        header={t('resources:pipInstall.virtualEnvironment')} 
-        key="venv"
-        extra={<Tag color="green">{t('resources:pipInstall.recommended')}</Tag>}
-      >
-        <ContentSpace direction="vertical">
-          <Text>{virtualEnvInstructions.description}</Text>
-          {virtualEnvInstructions.commands.map((cmd, index) => (
-            <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
-          ))}
-        </ContentSpace>
-      </Panel>
-
-      <Panel header={t('resources:pipInstall.specificVersion')} key="version">
-        <ContentSpace direction="vertical">
-          <Text>{t('resources:pipInstall.versionDesc')}</Text>
-          <CommandDisplay command="pip install rediacc==1.0.0" />
-          <CommandDisplay command="pip install rediacc>=1.0.0,<2.0.0" />
-          <CommandDisplay 
-            command="pip install --upgrade rediacc" 
-            description={t('resources:pipInstall.upgradeDesc')}
-          />
-        </ContentSpace>
-      </Panel>
-
-      <Panel header={t('resources:pipInstall.uninstall')} key="uninstall">
-        <ContentSpace direction="vertical">
-          <Text>{uninstallInstructions.description}</Text>
-          {uninstallInstructions.commands.map((cmd, index) => (
-            <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
-          ))}
-        </ContentSpace>
-      </Panel>
-    </Collapse>
+    <Collapse
+      defaultActiveKey={[]}
+      data-testid="pip-install-advanced-collapse"
+      items={[
+        {
+          key: 'venv',
+          label: t('resources:pipInstall.virtualEnvironment'),
+          extra: <Tag color="green">{t('resources:pipInstall.recommended')}</Tag>,
+          children: (
+            <ContentSpace orientation="vertical">
+              <Text>{virtualEnvInstructions.description}</Text>
+              {virtualEnvInstructions.commands.map((cmd, index) => (
+                <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
+              ))}
+            </ContentSpace>
+          )
+        },
+        {
+          key: 'version',
+          label: t('resources:pipInstall.specificVersion'),
+          children: (
+            <ContentSpace orientation="vertical">
+              <Text>{t('resources:pipInstall.versionDesc')}</Text>
+              <CommandDisplay command="pip install rediacc==1.0.0" />
+              <CommandDisplay command="pip install rediacc>=1.0.0,<2.0.0" />
+              <CommandDisplay
+                command="pip install --upgrade rediacc"
+                description={t('resources:pipInstall.upgradeDesc')}
+              />
+            </ContentSpace>
+          )
+        },
+        {
+          key: 'uninstall',
+          label: t('resources:pipInstall.uninstall'),
+          children: (
+            <ContentSpace orientation="vertical">
+              <Text>{uninstallInstructions.description}</Text>
+              {uninstallInstructions.commands.map((cmd, index) => (
+                <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
+              ))}
+            </ContentSpace>
+          )
+        }
+      ]}
+    />
   )
 
   const renderTroubleshooting = () => (
-    <ContentSpace direction="vertical" size="large">
+    <ContentSpace orientation="vertical" size="large">
       <Alert
         message={t('resources:pipInstall.commonIssues')}
         type="info"
@@ -248,65 +258,64 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         data-testid="pip-install-issues-alert"
       />
 
-      <Collapse defaultActiveKey={['pip-not-found']} data-testid="pip-install-troubleshooting-collapse">
-        <Panel 
-          header={t('resources:pipInstall.pipNotFound')} 
-          key="pip-not-found"
-          extra={<Tag color="red">{t('resources:pipInstall.error')}</Tag>}
-        >
-          {(() => {
-            const troubleshooting = pipInstallationService.getTroubleshootingCommands('pip-not-found')
-            return (
-              <ContentSpace direction="vertical">
-                <Text>{troubleshooting.description}</Text>
-                {troubleshooting.commands.map((cmd, index) => (
-                  <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
-                ))}
-              </ContentSpace>
-            )
-          })()}
-        </Panel>
-
-        <Panel 
-          header={t('resources:pipInstall.permissionDenied')} 
-          key="permission"
-          extra={<Tag color="orange">{t('resources:pipInstall.warning')}</Tag>}
-        >
-          {(() => {
-            const troubleshooting = pipInstallationService.getTroubleshootingCommands('permission-denied')
-            return (
-              <ContentSpace direction="vertical">
-                <Text>{troubleshooting.description}</Text>
-                {troubleshooting.commands.map((cmd, index) => (
-                  <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
-                ))}
-              </ContentSpace>
-            )
-          })()}
-        </Panel>
-
-        <Panel 
-          header={t('resources:pipInstall.pythonVersion')} 
-          key="python-version"
-        >
-          {(() => {
-            const troubleshooting = pipInstallationService.getTroubleshootingCommands('python-version')
-            return (
-              <ContentSpace direction="vertical">
-                <Text>{troubleshooting.description}</Text>
-                {troubleshooting.commands.map((cmd, index) => (
-                  <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
-                ))}
-              </ContentSpace>
-            )
-          })()}
-        </Panel>
-      </Collapse>
+      <Collapse
+        defaultActiveKey={['pip-not-found']}
+        data-testid="pip-install-troubleshooting-collapse"
+        items={[
+          {
+            key: 'pip-not-found',
+            label: t('resources:pipInstall.pipNotFound'),
+            extra: <Tag color="red">{t('resources:pipInstall.error')}</Tag>,
+            children: (() => {
+              const troubleshooting = pipInstallationService.getTroubleshootingCommands('pip-not-found')
+              return (
+                <ContentSpace orientation="vertical">
+                  <Text>{troubleshooting.description}</Text>
+                  {troubleshooting.commands.map((cmd, index) => (
+                    <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
+                  ))}
+                </ContentSpace>
+              )
+            })()
+          },
+          {
+            key: 'permission',
+            label: t('resources:pipInstall.permissionDenied'),
+            extra: <Tag color="orange">{t('resources:pipInstall.warning')}</Tag>,
+            children: (() => {
+              const troubleshooting = pipInstallationService.getTroubleshootingCommands('permission-denied')
+              return (
+                <ContentSpace orientation="vertical">
+                  <Text>{troubleshooting.description}</Text>
+                  {troubleshooting.commands.map((cmd, index) => (
+                    <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
+                  ))}
+                </ContentSpace>
+              )
+            })()
+          },
+          {
+            key: 'python-version',
+            label: t('resources:pipInstall.pythonVersion'),
+            children: (() => {
+              const troubleshooting = pipInstallationService.getTroubleshootingCommands('python-version')
+              return (
+                <ContentSpace orientation="vertical">
+                  <Text>{troubleshooting.description}</Text>
+                  {troubleshooting.commands.map((cmd, index) => (
+                    <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
+                  ))}
+                </ContentSpace>
+              )
+            })()
+          }
+        ]}
+      />
 
       <Alert
         message={t('resources:pipInstall.stillNeedHelp')}
         description={
-          <ContentSpace direction="vertical">
+          <ContentSpace orientation="vertical">
             <Text>
               {t('resources:pipInstall.checkDocs')}: {' '}
               <a 
@@ -356,7 +365,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           {getModalTitle()}
         </Space>
       }
-      open={visible}
+      open={open}
       onCancel={onClose}
       footer={[
         <Button 
