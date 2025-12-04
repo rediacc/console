@@ -34,15 +34,25 @@ export function createReposService(client: ApiClient) {
     },
 
     create: async (teamName: string, repoName: string, options: CreateRepoOptions = {}): Promise<Repo | null> => {
-      const response = await client.post<Repo>(endpoints.repos.createRepo, {
+      const payload: Record<string, unknown> = {
         teamName,
         repoName,
-        repoTag: options.repoTag,
         repoVault: options.repoVault,
-        parentRepoName: options.parentRepoName,
-        parentRepoTag: options.parentRepoTag,
-        repoGuid: options.repoGuid,
-      })
+      }
+      // Only include optional params if they have non-empty values
+      if (options.repoTag) {
+        payload.repoTag = options.repoTag
+      }
+      if (options.parentRepoName && options.parentRepoName.trim() !== '') {
+        payload.parentRepoName = options.parentRepoName
+      }
+      if (options.parentRepoTag && options.parentRepoTag.trim() !== '') {
+        payload.parentRepoTag = options.parentRepoTag
+      }
+      if (options.repoGuid && options.repoGuid.trim() !== '') {
+        payload.repoGuid = options.repoGuid
+      }
+      const response = await client.post<Repo>(endpoints.repos.createRepo, payload)
 
       return parseFirst(response, {
         extractor: responseExtractors.primaryOrSecondary,
@@ -58,12 +68,21 @@ export function createReposService(client: ApiClient) {
       })
     },
 
-    delete: async (teamName: string, repoName: string, repoTag?: string): Promise<void> => {
-      await client.post(endpoints.repos.deleteRepo, {
+    renameTag: async (teamName: string, repoName: string, currentTag: string, newTag: string): Promise<void> => {
+      await client.post(endpoints.repos.updateRepoTag, {
         teamName,
         repoName,
-        repoTag,
+        currentTag,
+        newTag,
       })
+    },
+
+    delete: async (teamName: string, repoName: string, repoTag?: string): Promise<void> => {
+      const payload: Record<string, unknown> = { teamName, repoName }
+      if (repoTag) {
+        payload.repoTag = repoTag
+      }
+      await client.post(endpoints.repos.deleteRepo, payload)
     },
 
     updateVault: async (teamName: string, repoName: string, vault: string, vaultVersion: number): Promise<void> => {

@@ -93,6 +93,7 @@ export const endpoints = {
     getTeamRepos: '/GetTeamRepositories',
     createRepo: '/CreateRepository',
     updateRepoName: '/UpdateRepositoryName',
+    updateRepoTag: '/UpdateRepositoryTag',
     updateRepoVault: '/UpdateRepositoryVault',
     deleteRepo: '/DeleteRepository',
     promoteRepoToGrand: '/PromoteRepositoryToGrand',

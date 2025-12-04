@@ -58,6 +58,21 @@ export const useUpdateRepoName = createMutation<{
   operationName: 'repos.rename',
 })
 
+// Update repo tag
+export const useUpdateRepoTag = createMutation<{
+  teamName: string
+  repoName: string
+  currentTag: string
+  newTag: string
+}>({
+  request: ({ teamName, repoName, currentTag, newTag }) =>
+    api.repos.renameTag(teamName, repoName, currentTag, newTag),
+  invalidateKeys: ['repos', 'machines'],
+  successMessage: (vars) => `Tag renamed to "${vars.newTag}"`,
+  errorMessage: 'Failed to update tag',
+  operationName: 'repos.renameTag',
+})
+
 // Update repo vault
 export const useUpdateRepoVault = createMutation<{
   teamName: string
