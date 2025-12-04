@@ -674,7 +674,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       // Validate initial data after form is initialized
       // Use setTimeout to ensure form fields are registered
       setTimeout(() => {
-        if (!(isEditMode && entityType === 'REPOSITORY')) {
+        if (!(isEditMode && entityType === 'REPO')) {
           // Validate silently without showing errors
           form.validateFields(undefined, { validateOnly: true })
             .then(() => {
@@ -1210,7 +1210,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     // Check if this field can be generated
     const isGeneratable = 
       (fieldName === 'SSH_PRIVATE_KEY' || fieldName === 'SSH_PUBLIC_KEY') ||
-      (fieldName === 'credential' && entityType === 'REPOSITORY')
+      (fieldName === 'credential' && entityType === 'REPO')
 
     const handleFieldGeneration = (values: Record<string, string>) => {
       // For SSH keys, we need to update both private and public keys
@@ -1320,9 +1320,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   .map((fieldName) => {
                     const field = fields[fieldName as keyof typeof fields]
                     if (!field) return null
-                    const isRequired = !(isEditMode && entityType === 'REPOSITORY' && fieldName === 'credential')
-                    // credential field should be full width for REPOSITORY
-                    const colSpan = (entityType === 'REPOSITORY' && fieldName === 'credential') ? 24 : 12
+                    const isRequired = !(isEditMode && entityType === 'REPO' && fieldName === 'credential')
+                    // credential field should be full width for REPO
+                    const colSpan = (entityType === 'REPO' && fieldName === 'credential') ? 24 : 12
                     return (
                       <Col key={fieldName} xs={24} md={colSpan}>
                         {renderField(fieldName, field as FieldDefinition, isRequired)}

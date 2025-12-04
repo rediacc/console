@@ -116,8 +116,8 @@ export function parseVaultStatus(vaultStatusJson: string | undefined | null): Pa
     const result = JSON.parse(cleanedResult)
 
     const repos: DeployedRepo[] = []
-    if (result?.repos && Array.isArray(result.repos)) {
-      repos.push(...result.repos)
+    if (result?.repositories && Array.isArray(result.repositories)) {
+      repos.push(...result.repositories)
     }
 
     return {

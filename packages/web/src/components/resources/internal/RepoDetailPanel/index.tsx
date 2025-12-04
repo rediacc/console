@@ -153,8 +153,8 @@ export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
 
           const result = JSON.parse(cleanedResult.trim())
 
-          if (Array.isArray(result.repos)) {
-            const repoData = result.repos.find((r: RepoVaultData) => {
+          if (Array.isArray(result.repositories)) {
+            const repoData = result.repositories.find((r: RepoVaultData) => {
               return r.name === repo.repoName || r.name === repo.repoGuid
             })
 

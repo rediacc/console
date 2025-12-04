@@ -39,8 +39,8 @@
         }
       }
     },
-    "REPOSITORY": {
-      "descriptionKey": "fields.REPOSITORY.description",
+    "REPO": {
+      "descriptionKey": "fields.REPO.description",
       "required": ["credential"],
       "optional": [],
       "fields": {

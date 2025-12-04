@@ -422,6 +422,36 @@
         }
       }
     },
+    "fork": {
+      "name": "fork",
+      "category": "repository",
+      "showInMenu": true,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "tag": {
+          "type": "string",
+          "required": true,
+          "placeholder": "e.g., 2025-01-09-14-30-00"
+        },
+        "state": {
+          "type": "string",
+          "options": ["online", "offline"],
+          "ui": "dropdown"
+        },
+        "grand": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
     "deploy": {
       "name": "deploy",
       "category": "backup",
@@ -436,10 +466,10 @@
           "type": "string",
           "required": true
         },
-        "dest": {
+        "tag": {
           "type": "string",
           "required": true,
-          "placeholder": "deployment-filename"
+          "placeholder": "e.g., 2025-01-09-14-30-00"
         },
         "machines": {
           "type": "array",

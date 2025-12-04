@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { usePanelWidth } from '@/hooks/usePanelWidth'
 import { DETAIL_PANEL } from '@/constants/layout'
 import { useMachines } from '@/api/queries/machines'
+import { useRepos } from '@/api/queries/repos'
 import { RepoContainerTable } from '@/pages/resources/components/RepoContainerTable'
 import { Machine } from '@/types'
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel'
@@ -111,11 +112,18 @@ const RepoContainersPage: React.FC = () => {
   const { data: machines, isLoading: machinesLoading, refetch: refetchMachines } = useMachines()
   const actualMachine = machine || machines?.find(m => m.machineName === machineName)
 
+  // Fetch repos to get the repoGuid from friendly name
+  const { data: teamRepos = [], isLoading: reposLoading } = useRepos(actualMachine?.teamName ? [actualMachine.teamName] : undefined)
+
   // Reconstruct repo from vaultStatus if not provided via state
   const actualRepo = useMemo(() => {
     if (repo) return repo
 
     if (!actualMachine?.vaultStatus || !repoName) return null
+
+    // First, find the repoGuid from the API data using the friendly name
+    const repoCredential = teamRepos.find(r => r.repoName === repoName)
+    const repoGuidToFind = repoCredential?.repoGuid
 
     try {
       const vaultStatusData = JSON.parse(actualMachine.vaultStatus)
@@ -127,9 +135,11 @@ const RepoContainersPage: React.FC = () => {
         }
         const result = JSON.parse(cleanedResult)
 
-        if (Array.isArray(result?.repos)) {
-          return result.repos.find(
-            (candidate): candidate is Repo => isRepoData(candidate) && candidate.name === repoName
+        if (Array.isArray(result?.repositories)) {
+          // Search by GUID if we have it, otherwise try by name as fallback
+          return result.repositories.find(
+            (candidate): candidate is Repo => isRepoData(candidate) &&
+              (repoGuidToFind ? candidate.name === repoGuidToFind : candidate.name === repoName)
           ) || null
         }
       }
@@ -138,7 +148,7 @@ const RepoContainersPage: React.FC = () => {
     }
 
     return null
-  }, [repo, actualMachine?.vaultStatus, repoName])
+  }, [repo, actualMachine?.vaultStatus, repoName, teamRepos])
 
   // Panel width management
   const panelWidth = usePanelWidth()
@@ -180,7 +190,7 @@ const RepoContainersPage: React.FC = () => {
   }
 
   // Loading state
-  if (machinesLoading) {
+  if (machinesLoading || reposLoading) {
     return (
       <PageWrapper>
         <FullHeightCard>

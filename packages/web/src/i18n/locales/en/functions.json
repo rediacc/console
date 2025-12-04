@@ -35,8 +35,26 @@
   "descriptionPlaceholder": "Add a custom description for this queue item",
   "functions": {
     "fork": {
-      "description": "Fork repository with timestamp-based tag",
-      "name": "fork"
+      "description": "Create a local copy of the repository with a new tag",
+      "name": "fork",
+      "params": {
+        "repo": {
+          "help": "Repository to fork",
+          "label": "Repository"
+        },
+        "tag": {
+          "help": "Tag for the forked repository (timestamp format recommended)",
+          "label": "Tag"
+        },
+        "state": {
+          "help": "Current state of the repository",
+          "label": "State"
+        },
+        "grand": {
+          "help": "Grand repository reference",
+          "label": "Grand Repository"
+        }
+      }
     },
     "container_inspect": {
       "description": "Inspect Docker container details",
@@ -158,9 +176,21 @@
       "description": "Deploy repository to multiple machines",
       "name": "deploy",
       "params": {
+        "repo": {
+          "help": "Repository to deploy",
+          "label": "Repository"
+        },
+        "tag": {
+          "help": "Tag for the deployed repository (timestamp format recommended)",
+          "label": "Tag"
+        },
         "machines": {
           "help": "Select one or more target machines for deployment",
           "label": "Target Machines"
+        },
+        "state": {
+          "help": "Current state of the repository",
+          "label": "State"
         },
         "option": {
           "help": "Options (e.g., override)",
@@ -169,6 +199,10 @@
         "checkpoint": {
           "help": "Enable hot deploy mode with checkpoint (requires CRIU, zero downtime for online repos)",
           "label": "Enable Checkpoint"
+        },
+        "grand": {
+          "help": "Grand repository reference",
+          "label": "Grand Repository"
         }
       }
     },

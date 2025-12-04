@@ -1,20 +1,38 @@
-import { defineConfig } from 'vite'
+import { defineConfig, Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import path from 'path'
 
+// Custom plugin to resolve @rediacc/shared to source files in dev mode
+// This runs before other resolution, ensuring source files are used
+function sharedSourcePlugin(isDev: boolean): Plugin {
+  const sharedSrcPath = path.resolve(__dirname, '../shared/src')
+
+  return {
+    name: 'resolve-shared-source',
+    enforce: 'pre', // Run before other plugins
+    resolveId(source) {
+      if (!isDev) return null // Only in dev mode
+
+      if (source === '@rediacc/shared') {
+        return path.join(sharedSrcPath, 'index.ts')
+      }
+      if (source.startsWith('@rediacc/shared/')) {
+        const subpath = source.replace('@rediacc/shared/', '')
+        // Try with /index.ts first, then .ts
+        return path.join(sharedSrcPath, subpath, 'index.ts')
+      }
+      return null
+    }
+  }
+}
+
 export default defineConfig(({ mode }) => {
-  // In dev mode, resolve @rediacc/shared to source files (no build required)
-  // In production, use the built dist/ via normal module resolution
-  const sharedAlias = mode === 'development' ? [
-    {
-      find: /^@rediacc\/shared(?:\/(.*))?$/,
-      replacement: path.resolve(__dirname, '../shared/src/$1'),
-    },
-  ] : []
+  const isDev = mode === 'development'
 
   return {
     plugins: [
+      sharedSourcePlugin(isDev), // Must be first to intercept @rediacc/shared
       react(),
       tsconfigPaths({ root: '../..' })  // Resolve tsconfig paths from monorepo root
     ],
@@ -25,7 +43,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: [
         { find: '@', replacement: path.resolve(__dirname, './src') },
-        ...sharedAlias,
       ],
     },
   server: {

@@ -167,7 +167,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
               }
 
               // Find the repo in vaultStatus with this GUID
-              const vaultRepo = result.repos?.find((r) => r.name === containerRepoGuid)
+              const vaultRepo = result.repositories?.find((r) => r.name === containerRepoGuid)
               if (!vaultRepo) {
                 return false
               }

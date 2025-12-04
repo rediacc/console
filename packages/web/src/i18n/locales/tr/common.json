@@ -390,7 +390,7 @@
           "label": "Bölge Adı"
         }
       },
-      "REPOSITORY": {
+      "REPO": {
         "credential": {
           "description": "Depo erişim şifresi (32 karakter, alfanümerik + özel karakterler)",
           "label": "Erişim Şifresi"

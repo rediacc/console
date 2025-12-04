@@ -99,7 +99,11 @@ export function createCompanyService(client: ApiClient) {
     },
 
     importData: async (data: string, mergeMode?: string): Promise<CompanyImportResult> => {
-      const response = await client.post(endpoints.company.importCompanyData, { data, mergeMode })
+      const payload: Record<string, unknown> = { data }
+      if (mergeMode) {
+        payload.mergeMode = mergeMode
+      }
+      const response = await client.post(endpoints.company.importCompanyData, payload)
       const row = getRowByIndex<CompanyImportResult>(response, 0)
       return {
         importedCount: row?.importedCount ?? 0,
@@ -166,22 +170,26 @@ export function createCompanyService(client: ApiClient) {
       passwordHash: string,
       captchaToken?: string,
       languagePreference: string = 'en'
-    ) =>
-      client.post(
+    ) => {
+      const payload: Record<string, unknown> = {
+        companyName,
+        userEmailAddress: userEmail,
+        languagePreference,
+      }
+      if (captchaToken && captchaToken.trim() !== '') {
+        payload.captchaToken = captchaToken
+      }
+      return client.post(
         endpoints.company.createCompany,
-        {
-          companyName,
-          captchaToken,
-          userEmailAddress: userEmail,
-          languagePreference,
-        },
+        payload,
         {
           headers: {
             'Rediacc-UserEmail': userEmail,
             'Rediacc-UserHash': passwordHash,
           },
         }
-      ),
+      )
+    },
   }
 }
 

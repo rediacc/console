@@ -393,7 +393,7 @@
           "label": "区域名称"
         }
       },
-      "REPOSITORY": {
+      "REPO": {
         "credential": {
           "description": "仓库访问密码（32个字符，字母数字+特殊字符）",
           "label": "访问密码"

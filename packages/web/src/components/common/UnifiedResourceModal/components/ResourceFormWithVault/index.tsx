@@ -73,7 +73,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
     const handleFormSubmit = async (formData: FieldValues) => {
       const shouldSkipVaultValidation =
-        entityType === 'REPOSITORY' && (creationContext === 'credentials-only' || isEditMode)
+        entityType === 'REPO' && (creationContext === 'credentials-only' || isEditMode)
 
       if (!isVaultValid && !shouldSkipVaultValidation) {
         setShowVaultValidationErrors(true)

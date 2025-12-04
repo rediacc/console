@@ -90,11 +90,14 @@ export function createAuthService(client: ApiClient) {
     logout: () => client.post(endpoints.users.deleteUserRequest, {}),
 
     forkSession: async (sessionName: string, options: ForkSessionOptions = {}): Promise<ForkSessionCredentials> => {
-      const response = await client.post(endpoints.auth.forkAuthenticationRequest, {
-        sessionName,
-        forkedPermissionsName: options.permissionsName,
-        expiresInHours: options.expiresInHours,
-      })
+      const payload: Record<string, unknown> = { sessionName }
+      if (options.permissionsName && options.permissionsName.trim() !== '') {
+        payload.forkedPermissionsName = options.permissionsName
+      }
+      if (options.expiresInHours !== undefined) {
+        payload.expiresInHours = options.expiresInHours
+      }
+      const response = await client.post(endpoints.auth.forkAuthenticationRequest, payload)
 
       const credentialsSet =
         response.resultSets?.find((set) => set.resultSetName === 'Credentials') ??

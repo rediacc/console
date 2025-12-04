@@ -84,14 +84,14 @@ export function createQueueService(client: ApiClient) {
     },
 
     updateResponse: async (taskId: string, responseVault: string, vaultVersion?: number): Promise<void> => {
-      await client.post(endpoints.queue.updateQueueItemResponse, {
-        taskId,
-        responseVault,
-        vaultVersion,
-      })
+      const payload: Record<string, unknown> = { taskId, responseVault }
+      if (vaultVersion !== undefined) {
+        payload.vaultVersion = vaultVersion
+      }
+      await client.post(endpoints.queue.updateQueueItemResponse, payload)
     },
 
-    complete: async (taskId: string, finalVault?: string, finalStatus?: string): Promise<void> => {
+    complete: async (taskId: string, finalVault: string, finalStatus: string): Promise<void> => {
       await client.post(endpoints.queue.updateQueueItemToCompleted, {
         taskId,
         finalVault,
@@ -152,6 +152,9 @@ function parseQueueList(response: ApiResponse<QueueItem | QueueStatistics>): Que
 }
 
 function parseQueueTrace(response: ApiResponse): QueueTrace {
+  // Result set indices (index 0 is NextRequestToken from validation):
+  // 0: NextRequestToken, 1: QUEUE_ITEM_DETAILS, 2: REQUEST_VAULT, 3: RESPONSE_VAULT,
+  // 4: AUDIT_USER (traceLogs), 5: RELATED_QUEUE_ITEMS, 6: QUEUE_COUNT
   const summary = getRowByIndex<QueueTraceSummary>(response, 0)
   const queueDetails = getRowByIndex<QueueItem>(response, 1)
   const vaultContent = parseVaultSnapshot(getRowByIndex<QueueVaultSnapshot>(response, 2))
