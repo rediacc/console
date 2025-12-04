@@ -200,7 +200,7 @@ export const HeaderSection = styled.div<HeaderSectionProps>`
 /**
  * Content stack using antd Space
  */
-export const ContentStack = styled(Space).attrs({ direction: 'vertical', size: 'large' })`
+export const ContentStack = styled(Space).attrs({ orientation: 'vertical', size: 'large' })`
   width: 100%;
 `
 

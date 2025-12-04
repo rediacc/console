@@ -458,7 +458,7 @@ const LoginPage: React.FC = () => {
     <>
       <SandboxWarning />
       <LoginContainer>
-          <FullWidthStack direction="vertical" size={spacing('XL')}>
+          <FullWidthStack orientation="vertical" size={spacing('XL')}>
             <LogoContainer>
               <img
                 src={theme === 'dark' ? logoWhite : logoBlack}
@@ -660,7 +660,7 @@ const LoginPage: React.FC = () => {
         footer={null}
         className={ModalSize.Medium}
       >
-        <FullWidthStack direction="vertical" size={spacing('MD')}>
+        <FullWidthStack orientation="vertical" size={spacing('MD')}>
           <Alert
             message={t('login.twoFactorAuth.required')}
             description={t('login.twoFactorAuth.description')}

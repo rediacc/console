@@ -122,7 +122,7 @@ const UserSessionsTab: React.FC = () => {
   const actionsColumn = createActionColumn<UserRequest>({
     title: t('userSessions.columns.actions'),
     width: 140,
-    fixed: 'right',
+    fixed: 'end',
     renderActions: (record) => (
       <Popconfirm
         title={<StatTitle>{t('userSessions.confirmTerminate')}</StatTitle>}

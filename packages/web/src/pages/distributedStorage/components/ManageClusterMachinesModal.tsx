@@ -198,7 +198,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     }
     
     return (
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="large" style={{ width: '100%' }}>
         <div>
           <p>{t('machines:selectMachines')}</p>
           <AvailableMachinesSelector
@@ -240,7 +240,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     }
     
     return (
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="large" style={{ width: '100%' }}>
         {selectedRemoveMachines.length > 0 && (
           <div>
             <Tag color="orange">

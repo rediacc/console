@@ -317,7 +317,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         }
 
         return (
-          <Space direction="vertical" size={0}>
+          <Space orientation="vertical" size={0}>
             {record.port_mappings.slice(0, 2).map((pm, idx) => (
               <Text key={idx} style={{ fontSize: 12 }}>
                 {pm.host}:{pm.host_port} â†’ {pm.container_port}/{pm.protocol}
@@ -335,7 +335,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
     createActionColumn<Container>({
       title: t('common:table.actions'),
       width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
-      fixed: 'right',
+      fixed: 'end',
       renderActions: (container) => {
         const menuItems: MenuProps['items'] = []
 

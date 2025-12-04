@@ -7,7 +7,7 @@ const { Text } = Typography
 
 export const PageWrapper = PageContainer
 
-export const ContentStack = styled(Space).attrs({ direction: 'vertical', size: 'large' })`
+export const ContentStack = styled(Space).attrs({ orientation: 'vertical', size: 'large' })`
   width: 100%;
 `
 
@@ -125,7 +125,7 @@ export const InlineStack = styled.div`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `
 
-export const StatList = styled(Space).attrs({ direction: 'vertical', size: 'middle' })`
+export const StatList = styled(Space).attrs({ orientation: 'vertical', size: 'middle' })`
   width: 100%;
 `
 

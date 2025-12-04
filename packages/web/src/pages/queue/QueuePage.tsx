@@ -405,7 +405,7 @@ const QueuePage: React.FC = () => {
         const { allErrors, primaryError } = parseFailureReason(record.lastFailureReason)
 
         return (
-          <Space direction="vertical" size={2} style={{ width: '100%' }}>
+          <Space orientation="vertical" size={2} style={{ width: '100%' }}>
             {/* Error messages with severity badges */}
             {allErrors.length > 0 && (
               <Tooltip title={
@@ -547,7 +547,7 @@ const QueuePage: React.FC = () => {
     <PageWrapper data-testid="queue-page-container">
       {contextHolder}
       <FiltersCard size="small" data-testid="queue-filters-card">
-        <FiltersGrid direction="vertical">
+        <FiltersGrid orientation="vertical">
           <Space size={8} wrap>
             <FilterSelect
               size="small"
@@ -712,19 +712,18 @@ const QueuePage: React.FC = () => {
         activeKey={activeTab}
         onChange={setActiveTab}
         data-testid="queue-tabs"
-      >
-            <Tabs.TabPane 
-              tab={
-                <Tooltip title={t('queue:tabs.active.tooltip')}>
-                  <TabLabel data-testid="queue-tab-active">
-                    {t('queue:tabs.active.title')}
-                    <TabCount count={activeItems.length} $color="#5a5a5a" />
-                  </TabLabel>
-                </Tooltip>
-              } 
-              key="active"
-              data-testid="queue-tabpane-active"
-            >
+        items={[
+          {
+            key: 'active',
+            label: (
+              <Tooltip title={t('queue:tabs.active.tooltip')}>
+                <TabLabel data-testid="queue-tab-active">
+                  {t('queue:tabs.active.title')}
+                  <TabCount count={activeItems.length} $color="#5a5a5a" />
+                </TabLabel>
+              </Tooltip>
+            ),
+            children: (
               <ResourceListView
                 loading={isLoading || isRefetching}
                 data={activeItems}
@@ -741,20 +740,19 @@ const QueuePage: React.FC = () => {
                   position: ['bottomRight'],
                 }}
               />
-            </Tabs.TabPane>
-            
-            <Tabs.TabPane 
-              tab={
-                <Tooltip title={t('queue:tabs.completed.tooltip')}>
-                  <TabLabel data-testid="queue-tab-completed">
-                    {t('queue:tabs.completed.title')}
-                    <TabCount count={completedCount || completedItems.length} showZero $color="#4a4a4a" />
-                  </TabLabel>
-                </Tooltip>
-              } 
-              key="completed"
-              data-testid="queue-tabpane-completed"
-            >
+            )
+          },
+          {
+            key: 'completed',
+            label: (
+              <Tooltip title={t('queue:tabs.completed.tooltip')}>
+                <TabLabel data-testid="queue-tab-completed">
+                  {t('queue:tabs.completed.title')}
+                  <TabCount count={completedCount || completedItems.length} showZero $color="#4a4a4a" />
+                </TabLabel>
+              </Tooltip>
+            ),
+            children: (
               <ResourceListView
                 loading={isLoading || isRefetching}
                 data={completedItems}
@@ -771,20 +769,19 @@ const QueuePage: React.FC = () => {
                   position: ['bottomRight'],
                 }}
               />
-            </Tabs.TabPane>
-            
-            <Tabs.TabPane 
-              tab={
-                <Tooltip title={t('queue:tabs.cancelled.tooltip')}>
-                  <TabLabel data-testid="queue-tab-cancelled">
-                    {t('queue:tabs.cancelled.title')}
-                    <TabCount count={cancelledCount || cancelledItems.length} showZero $color="#6a6a6a" />
-                  </TabLabel>
-                </Tooltip>
-              } 
-              key="cancelled"
-              data-testid="queue-tabpane-cancelled"
-            >
+            )
+          },
+          {
+            key: 'cancelled',
+            label: (
+              <Tooltip title={t('queue:tabs.cancelled.tooltip')}>
+                <TabLabel data-testid="queue-tab-cancelled">
+                  {t('queue:tabs.cancelled.title')}
+                  <TabCount count={cancelledCount || cancelledItems.length} showZero $color="#6a6a6a" />
+                </TabLabel>
+              </Tooltip>
+            ),
+            children: (
               <ResourceListView
                 loading={isLoading || isRefetching}
                 data={cancelledItems}
@@ -801,20 +798,19 @@ const QueuePage: React.FC = () => {
                   position: ['bottomRight'],
                 }}
               />
-            </Tabs.TabPane>
-            
-            <Tabs.TabPane 
-              tab={
-                <Tooltip title={t('queue:tabs.failed.tooltip')}>
-                  <TabLabel data-testid="queue-tab-failed">
-                    {t('queue:tabs.failed.title')}
-                    <TabCount count={failedCount || failedItems.length} showZero $color="#ff4d4f" />
-                  </TabLabel>
-                </Tooltip>
-              } 
-              key="failed"
-              data-testid="queue-tabpane-failed"
-            >
+            )
+          },
+          {
+            key: 'failed',
+            label: (
+              <Tooltip title={t('queue:tabs.failed.tooltip')}>
+                <TabLabel data-testid="queue-tab-failed">
+                  {t('queue:tabs.failed.title')}
+                  <TabCount count={failedCount || failedItems.length} showZero $color="#ff4d4f" />
+                </TabLabel>
+              </Tooltip>
+            ),
+            children: (
               <ResourceListView
                 loading={isLoading || isRefetching}
                 data={failedItems}
@@ -831,8 +827,10 @@ const QueuePage: React.FC = () => {
                   position: ['bottomRight'],
                 }}
               />
-            </Tabs.TabPane>
-      </Tabs>
+            )
+          }
+        ]}
+      />
 
       <QueueItemTraceModal
         taskId={queueTrace.state.taskId}

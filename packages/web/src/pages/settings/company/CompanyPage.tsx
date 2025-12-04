@@ -366,7 +366,7 @@ const CompanyPage: React.FC = () => {
               <DangerStack>
                 <Row gutter={[16, 16]} align="middle">
                   <Col xs={24} lg={16}>
-                    <Space direction="vertical" size={8}>
+                    <Space orientation="vertical" size={8}>
                       <CardTitle level={5}>{tSystem('dangerZone.blockUserRequests.title')}</CardTitle>
                       <CardDescription>{tSystem('dangerZone.blockUserRequests.description')}</CardDescription>
                     </Space>
@@ -425,7 +425,7 @@ const CompanyPage: React.FC = () => {
 
                 <Row gutter={[16, 16]} align="middle">
                   <Col xs={24} lg={16}>
-                    <Space direction="vertical" size={8}>
+                    <Space orientation="vertical" size={8}>
                       <CardTitle level={5}>{tSystem('dangerZone.exportVaults.title')}</CardTitle>
                       <CardDescription>{tSystem('dangerZone.exportVaults.description')}</CardDescription>
                     </Space>
@@ -450,7 +450,7 @@ const CompanyPage: React.FC = () => {
 
                 <Row gutter={[16, 16]} align="middle">
                   <Col xs={24} lg={16}>
-                    <Space direction="vertical" size={8}>
+                    <Space orientation="vertical" size={8}>
                       <CardTitle level={5}>{tSystem('dangerZone.exportData.title')}</CardTitle>
                       <CardDescription>{tSystem('dangerZone.exportData.description')}</CardDescription>
                     </Space>
@@ -475,7 +475,7 @@ const CompanyPage: React.FC = () => {
 
                 <Row gutter={[16, 16]} align="middle">
                   <Col xs={24} lg={16}>
-                    <Space direction="vertical" size={8}>
+                    <Space orientation="vertical" size={8}>
                       <CardTitle level={5}>{tSystem('dangerZone.importData.title')}</CardTitle>
                       <CardDescription>{tSystem('dangerZone.importData.description')}</CardDescription>
                     </Space>
@@ -500,7 +500,7 @@ const CompanyPage: React.FC = () => {
 
                 <Row gutter={[16, 16]} align="middle">
                   <Col xs={24} lg={16}>
-                    <Space direction="vertical" size={8}>
+                    <Space orientation="vertical" size={8}>
                       <CardTitle level={5}>{tSystem('dangerZone.updateMasterPassword.title')}</CardTitle>
                       <CardDescription>{tSystem('dangerZone.updateMasterPassword.description')}</CardDescription>
                       <RequirementsList>
@@ -570,7 +570,7 @@ const CompanyPage: React.FC = () => {
                   masterPasswordForm.resetFields(['password', 'confirmPassword'])
                 }}
               >
-                <Space direction="vertical">
+                <Space orientation="vertical">
                   <Radio value="update">{tSystem('dangerZone.updateMasterPassword.modal.operationUpdate')}</Radio>
                   <Radio value="remove">{tSystem('dangerZone.updateMasterPassword.modal.operationRemove')}</Radio>
                 </Space>
@@ -586,7 +586,7 @@ const CompanyPage: React.FC = () => {
               </>
             }
             description={
-              <Space direction="vertical" size={8}>
+              <Space orientation="vertical" size={8}>
                 <Typography.Text>
                   {tSystem(
                     `dangerZone.updateMasterPassword.modal.warningDescription${
@@ -804,9 +804,9 @@ const CompanyPage: React.FC = () => {
 
           <Form.Item label={tSystem('dangerZone.importData.modal.importMode')}>
             <Radio.Group value={importMode} onChange={(e) => setImportMode(e.target.value)}>
-              <Space direction="vertical">
+              <Space orientation="vertical">
                 <Radio value="skip">
-                  <Space direction="vertical" size={0}>
+                  <Space orientation="vertical" size={0}>
                     <Typography.Text strong>
                       {tSystem('dangerZone.importData.modal.modeSkip')}
                     </Typography.Text>
@@ -814,7 +814,7 @@ const CompanyPage: React.FC = () => {
                   </Space>
                 </Radio>
                 <Radio value="override">
-                  <Space direction="vertical" size={0}>
+                  <Space orientation="vertical" size={0}>
                     <Typography.Text strong>
                       {tSystem('dangerZone.importData.modal.modeOverride')}
                     </Typography.Text>

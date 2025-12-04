@@ -32,8 +32,6 @@ import {
   StepsWrapper,
 } from './styles'
 
-
-const { Step } = StepsWrapper
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
 const isCaptchaEnabled = !!turnstileSiteKey 
 
@@ -406,7 +404,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       requiredMark={false}
       data-testid="registration-verification-form"
     >
-      <VerticalStack direction="vertical">
+      <VerticalStack orientation="vertical">
         <Alert
           message={t('auth:registration.verificationRequired')}
           description={t('auth:registration.verificationDescription')}
@@ -485,12 +483,17 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       destroyOnHidden
       data-testid="registration-modal"
     >
-      <VerticalStack direction="vertical">
-        <StepsWrapper current={currentStep} size="small" data-testid="registration-steps">
-          <Step title={t('auth:registration.steps.register')} icon={<UserOutlined />} data-testid="registration-step-register" />
-          <Step title={t('auth:registration.steps.verify')} icon={<SafetyCertificateOutlined />} data-testid="registration-step-verify" />
-          <Step title={t('auth:registration.steps.complete')} icon={<CheckCircleOutlined />} data-testid="registration-step-complete" />
-        </StepsWrapper>
+      <VerticalStack orientation="vertical">
+        <StepsWrapper
+          current={currentStep}
+          size="small"
+          data-testid="registration-steps"
+          items={[
+            { title: t('auth:registration.steps.register'), icon: <UserOutlined /> },
+            { title: t('auth:registration.steps.verify'), icon: <SafetyCertificateOutlined /> },
+            { title: t('auth:registration.steps.complete'), icon: <CheckCircleOutlined /> }
+          ]}
+        />
 
         {error && (
           <Alert

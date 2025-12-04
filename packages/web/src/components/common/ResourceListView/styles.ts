@@ -73,7 +73,7 @@ export const SearchInput = styled(Input.Search)`
 `
 
 export const EmptyDescriptionStack = styled(Space).attrs({
-  direction: 'vertical',
+  orientation: 'vertical',
   align: 'center',
   size: 'middle' as const,
 })`

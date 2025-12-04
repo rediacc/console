@@ -53,7 +53,7 @@ export const getTeamColumns = ({
       width: 140,
       responsive: ['xs'],
       render: (_, record: Team) => (
-        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+        <Space orientation="vertical" size={4} style={{ width: '100%' }}>
           <Tooltip title={`${record.memberCount} ${tSystem('tables.teams.members')}`}>
             <Space size="small">
               <Badge count={record.memberCount} showZero size="small">

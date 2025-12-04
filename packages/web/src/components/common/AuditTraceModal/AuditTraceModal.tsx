@@ -219,7 +219,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       width: 200,
       sorter: createDateSorter<AuditTraceRecord>('timestamp'),
       render: (timestamp: string, record: AuditTraceRecord, index: number) => (
-        <Space direction="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
+        <Space orientation="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
           <Text>{formatTimestampAsIs(timestamp, 'datetime')}</Text>
           <Text type="secondary" style={{ fontSize: 12 }}>
             {record.timeAgo}
@@ -244,7 +244,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
   //           color={getActionColor(record.actionType)}
   //           data-testid={`audit-trace-timeline-item-${index}`}
   //         >
-  //           <Space direction="vertical" size={0}>
+  //           <Space orientation="vertical" size={0}>
   //             <Space>
   //               <Text strong>{record.actionType}</Text>
   //               <Text type="secondary">{record.timeAgo}</Text>

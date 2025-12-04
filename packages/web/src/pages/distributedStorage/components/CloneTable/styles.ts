@@ -103,7 +103,7 @@ export const MachineListWrapper = styled.div`
 `
 
 export const MachineListStack = styled(Space).attrs({
-  direction: 'vertical',
+  orientation: 'vertical',
   size: 'middle',
 })`
   width: 100%;

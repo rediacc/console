@@ -754,7 +754,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         </Tooltip>,
       ]}
     >
-      <ContentSpace direction="vertical" size="middle">
+      <ContentSpace orientation="vertical" size="middle">
         {/* Source selector with label */}
         <div data-testid="file-browser-source-container">
           <SourceLabel data-testid="file-browser-source-label">

@@ -4,11 +4,11 @@ import { PageContainer, SectionHeaderRow } from '@/styles/primitives'
 
 export const PageWrapper = PageContainer
 
-export const ContentStack = styled(Space).attrs({ direction: 'vertical', size: 'large' })`
+export const ContentStack = styled(Space).attrs({ orientation: 'vertical', size: 'large' })`
   width: 100%;
 `
 
-export const HeaderStack = styled(Space).attrs({ direction: 'vertical', size: 'middle' })`
+export const HeaderStack = styled(Space).attrs({ orientation: 'vertical', size: 'middle' })`
   width: 100%;
 `
 

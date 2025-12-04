@@ -171,7 +171,7 @@ const AuditPage = () => {
       <ContentStack>
         {/* Filters */}
         <FilterCard data-testid="audit-filter-card">
-          <Space direction="vertical" size="large">
+          <Space orientation="vertical" size="large">
           <Row gutter={[24, 16]}>
             <Col xs={24} sm={24} md={8}>
               <FilterField>
@@ -312,7 +312,7 @@ const AuditPage = () => {
             emptyText: (
               <Empty
                 description={
-                  <Space direction="vertical" align="center">
+                  <Space orientation="vertical" align="center">
                     <Text type="secondary">
                       {isError
                         ? t('system:audit.errors.unableToLoad')

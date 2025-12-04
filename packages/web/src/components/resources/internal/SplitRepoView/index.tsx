@@ -142,7 +142,7 @@ const repoGuidColumn = createTruncatedColumn<Repo>({
     createActionColumn<Repo>({
       title: t('common:table.actions'),
       width: 200,
-      fixed: 'right',
+      fixed: 'end',
       renderActions: (record) => {
         const menuItems: MenuProps['items'] = []
 

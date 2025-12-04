@@ -21,7 +21,6 @@ import {
 } from './styles'
 import LoadingWrapper from '@/components/common/LoadingWrapper'
 
-const { Step } = Steps
 const { Text, Paragraph } = Typography
 
 type RcloneConfigFields = {
@@ -541,7 +540,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       render: (status: ImportStatus['status'], record) => {
         if (currentStep < 2) return null
         return (
-          <Space direction="vertical" size="small">
+          <Space orientation="vertical" size="small">
             {statusColumn.render?.(status, record, 0) as React.ReactNode}
             {record.message && <StatusMessage>{record.message}</StatusMessage>}
           </Space>
@@ -638,11 +637,15 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       }
     >
       <StepsContainer>
-        <Steps current={currentStep} data-testid="rclone-wizard-steps">
-          <Step title={t('resources:storage.import.step1')} />
-          <Step title={t('resources:storage.import.step2')} />
-          <Step title={t('resources:storage.import.step3')} />
-        </Steps>
+        <Steps
+          current={currentStep}
+          data-testid="rclone-wizard-steps"
+          items={[
+            { title: t('resources:storage.import.step1') },
+            { title: t('resources:storage.import.step2') },
+            { title: t('resources:storage.import.step3') }
+          ]}
+        />
       </StepsContainer>
 
       {renderStepContent()}

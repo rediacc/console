@@ -1399,7 +1399,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
         // If we have structured port mappings, use them
         if (portMappings && Array.isArray(portMappings) && portMappings.length > 0) {
           return (
-            <Space direction="vertical" size={0}>
+            <Space orientation="vertical" size={0}>
               {portMappings.map((mapping, index) => (
                 <Text key={index} style={{ fontSize: 12 }}>
                   {mapping.host_port ? (
@@ -1508,7 +1508,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
     createActionColumn<RepoTableRow>({
       title: t('common:table.actions'),
       width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
-      fixed: 'right',
+      fixed: 'end',
       renderActions: (record) => {
         const RepoData = teamRepos.find(
           (r) => r.repoName === record.name && r.repoTag === record.repoTag
@@ -1841,7 +1841,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
       {/* Machine Name Title when in grouped view */}
       {hideSystemInfo && (
         <S.MachineHeader data-testid="machine-repo-list-machine-header">
-          <Space direction="vertical" size={4}>
+          <Space orientation="vertical" size={4}>
             <Space>
               <S.MachineIcon as={DesktopOutlined} />
               <S.MachineTitle as={Typography.Title} level={4} data-testid="machine-repo-list-machine-name">
@@ -1968,7 +1968,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
         data-testid="machine-repo-list-function-modal"
         subtitle={
           selectedRepo && (
-            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+            <Space orientation="vertical" size="small" style={{ width: '100%' }}>
               <Space>
                 <Text>{t('resources:repos.Repo')}:</Text>
                 <Tag color="#8FBC8F">{selectedRepo.name}</Tag>

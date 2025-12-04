@@ -153,7 +153,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   return (
     <SelectorContainer>
-      <HeaderStack direction="vertical" size="middle">
+      <HeaderStack orientation="vertical" size="middle">
         <HelperRow>
           <HelperText>
             {multiple
@@ -238,7 +238,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   </SelectionIndicator>
                 )}
                 
-                <CardStack direction="vertical" size="small">
+                <CardStack orientation="vertical" size="small">
                   <TemplateIconWrapper>
                     <TemplateIconComponent />
                   </TemplateIconWrapper>
@@ -288,7 +288,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               </SelectionIndicator>
             )}
             
-            <CardStack direction="vertical" size="small">
+            <CardStack orientation="vertical" size="small">
               <TemplateIconWrapper $muted>
                 <AppstoreOutlined />
               </TemplateIconWrapper>

@@ -128,7 +128,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   const currentKeySize: 2048 | 4096 = keyOptions.keySize ?? 2048
 
   const renderSSHKeyOptions = () => (
-    <OptionsStack direction="vertical">
+    <OptionsStack orientation="vertical">
       {renderRadioGroup(
         t('fieldGenerator.keyType'), 
         currentKeyType, 
@@ -145,7 +145,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   )
 
   const renderGeneratedValues = () => (
-    <OptionsStack direction="vertical">
+    <OptionsStack orientation="vertical">
       {Object.entries(generatedValues).map(([field, value]) => (
         <GeneratedValueCard key={field}>
           <ValueHeader>

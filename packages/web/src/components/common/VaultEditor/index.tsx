@@ -1354,7 +1354,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                         />
                       }
                     >
-                      <FullWidthStack direction="vertical" size="small">
+                      <FullWidthStack orientation="vertical" size="small">
                         {!testConnectionSuccess && (
                           <InlineInfoAlert
                             message={t('vaultEditor.testConnection.required')}
@@ -1473,7 +1473,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                         const sudoConfigValue = sudoConfig[sudoStatus] || { color: 'default', text: t('vaultEditor.systemCompatibility.unknown') }
 
                         return (
-                          <FullWidthStack direction="vertical">
+                          <FullWidthStack orientation="vertical">
                             <Descriptions bordered size="small" column={1}>
                               <Descriptions.Item label={t('vaultEditor.systemCompatibility.operatingSystem')}>
                                 {osInfo.pretty_name || t('vaultEditor.systemCompatibility.unknown')}
@@ -1637,7 +1637,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               </Divider>
               <TipsAlert
                 message={
-                  <FullWidthStack direction="vertical">
+                  <FullWidthStack orientation="vertical">
                     {[1, 2, 3, 4].map((index) => {
                       const tip = t(`storageProviders:storageProviders.${selectedProvider}.tips.${index - 1}`, { defaultValue: '' })
                       return tip ? (

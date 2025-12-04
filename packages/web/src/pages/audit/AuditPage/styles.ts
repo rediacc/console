@@ -7,11 +7,11 @@ const { Text } = Typography
 
 export const PageWrapper = PageContainer
 
-export const ContentStack = styled(Space).attrs({ direction: 'vertical', size: 'large' })`
+export const ContentStack = styled(Space).attrs({ orientation: 'vertical', size: 'large' })`
   width: 100%;
 `
 
-export const FilterField = styled(Space).attrs({ direction: 'vertical', size: 'small' })`
+export const FilterField = styled(Space).attrs({ orientation: 'vertical', size: 'small' })`
   width: 100%;
 `
 
