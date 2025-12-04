@@ -203,7 +203,11 @@ export function registerCompanyCommands(program: Command): void {
 
         const { promises: fs } = await import('node:fs')
         const content = await fs.readFile(path, 'utf-8')
-        JSON.parse(content)
+        try {
+          JSON.parse(content)
+        } catch {
+          throw new Error('The provided file does not contain valid JSON.')
+        }
 
         await withSpinner(
           'Importing company data...',

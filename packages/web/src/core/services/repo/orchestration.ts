@@ -122,7 +122,7 @@ export function prepareForkDeletion(
     repoGuid: repoData.repoGuid,
     grandGuid: repoData.grandGuid || undefined,
     parentName: parent?.repoName,
-    repoNetworkId: (repoData as any).repoNetworkId,
+    repoNetworkId: repoData.repoNetworkId,
     repoTag: repoData.repoTag
   }
 }
@@ -172,7 +172,7 @@ export function prepareGrandDeletion(
       errorCode: 'HAS_CHILD_CLONES',
       repoGuid: repoData.repoGuid,
       childClones: validation.childClones,
-      repoNetworkId: (repoData as any).repoNetworkId,
+      repoNetworkId: repoData.repoNetworkId,
       repoTag: repoData.repoTag
     }
   }
@@ -181,7 +181,7 @@ export function prepareGrandDeletion(
     status: 'ready',
     repoGuid: repoData.repoGuid,
     childClones: [],
-    repoNetworkId: (repoData as any).repoNetworkId,
+    repoNetworkId: repoData.repoNetworkId,
     repoTag: repoData.repoTag
   }
 }
@@ -274,8 +274,8 @@ export function prepareBackup(
     canBackupToStorage: storageValidation.canBackup,
     canBackupToMachine: true, // Always allowed
     storageBlockReason: storageValidation.reason,
-    repoNetworkId: (repoData as any).repoNetworkId,
-    repoNetworkMode: (repoData as any).repoNetworkMode,
+    repoNetworkId: repoData.repoNetworkId,
+    repoNetworkMode: repoData.repoNetworkMode,
     repoTag: repoData.repoTag
   }
 }
@@ -315,10 +315,10 @@ export function prepareForkCreation(
     status: 'ready',
     repoGuid: repoData.repoGuid,
     grandGuid,
-    repoNetworkId: (repoData as any).repoNetworkId,
-    repoNetworkMode: (repoData as any).repoNetworkMode,
+    repoNetworkId: repoData.repoNetworkId,
+    repoNetworkMode: repoData.repoNetworkMode,
     repoTag: repoData.repoTag,
-    mounted: (repoData as any).mounted
+    mounted: repoData.mounted
   }
 }
 
@@ -332,7 +332,7 @@ export function prepareForkCreation(
 export function getGrandVaultForOperation(
   repoGuid: string,
   grandGuid: string | undefined,
-  allRepos: any[]
+  allRepos: RepoWithRelations[]
 ): string | undefined {
   // If has a grand, use the grand's vault
   if (grandGuid && grandGuid !== repoGuid) {

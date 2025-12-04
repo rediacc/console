@@ -15,7 +15,7 @@ export type RepoWithRelations = {
   grandGuid?: string | null
   repoTag?: string | null
   teamName?: string
-  repoLoopbackIP?: string | null
+  repoNetworkId?: number | null
   repoNetworkMode?: string | null
   mounted?: boolean
   vaultContent?: string

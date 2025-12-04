@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo } from 'react'
 import { Alert, Button, Modal, Space, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -47,6 +47,7 @@ import {
 } from '@/hooks'
 import { showMessage } from '@/utils/messages'
 import { QueueFunction } from '@/api/queries/queue'
+import type { QueueActionParams } from '@/services/queueActionService'
 import {
   PageWrapper,
   SectionStack,
@@ -64,6 +65,14 @@ interface CredentialsLocationState {
   selectedMachine?: string
   selectedTemplate?: string
 }
+
+type RepoFormValues = {
+  repoName?: string
+  repoVault?: string
+  [key: string]: unknown
+}
+
+type RepoModalData = Partial<Repo> & Record<string, unknown>
 
 const CredentialsPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common'])
@@ -220,10 +229,10 @@ const CredentialsPage: React.FC = () => {
           await deleteRepoMutation.mutateAsync({
             teamName: repo.teamName,
             repoName: repo.repoName
-          } as any)
+          })
               showMessage('success', t('repos.deleteSuccess'))
               refetchRepos()
-            } catch (error) {
+            } catch {
               showMessage('error', t('repos.deleteError'))
             }
           }
@@ -245,10 +254,10 @@ const CredentialsPage: React.FC = () => {
             await deleteRepoMutation.mutateAsync({
               teamName: repo.teamName,
               repoName: repo.repoName
-            } as any)
+            })
             showMessage('success', t('repos.deleteSuccess'))
             refetchRepos()
-          } catch (error) {
+          } catch {
             showMessage('error', t('repos.deleteError'))
           }
         }
@@ -258,7 +267,7 @@ const CredentialsPage: React.FC = () => {
   )
 
   const handleUnifiedModalSubmit = useCallback(
-    async (data: any) => {
+    async (data: RepoFormValues) => {
       await execute(
         async () => {
           if (unifiedModalState.mode === 'create') {
@@ -284,7 +293,7 @@ const CredentialsPage: React.FC = () => {
                 teamName: currentResource.teamName,
                 currentRepoName: currentName,
                 newRepoName: newName
-              } as any)
+              })
             }
 
             const vaultData = data.repoVault
@@ -294,7 +303,7 @@ const CredentialsPage: React.FC = () => {
                 repoName: newName || currentName,
                 repoVault: vaultData,
                 vaultVersion: currentResource.vaultVersion + 1
-              } as any)
+              })
             }
 
             closeUnifiedModal()
@@ -328,7 +337,7 @@ const CredentialsPage: React.FC = () => {
             repoName: currentResource.repoName,
             repoVault: vault,
             vaultVersion: version
-          } as any)
+          })
           refetchRepos()
           closeUnifiedModal()
         },
@@ -341,7 +350,7 @@ const CredentialsPage: React.FC = () => {
   const handleRepoFunctionSelected = useCallback(
     async (functionData: {
       function: QueueFunction
-      params: Record<string, any>
+      params: Record<string, unknown>
       priority: number
       description: string
       selectedMachine?: string
@@ -365,7 +374,7 @@ const CredentialsPage: React.FC = () => {
           (machine) => machine.machineName === machineEntry.value && machine.teamName === currentResource.teamName
         )
 
-        const queuePayload: any = {
+        const queuePayload: QueueActionParams = {
           teamName: currentResource.teamName,
           machineName: machineEntry.value,
           bridgeName: machineEntry.bridgeName,
@@ -412,7 +421,7 @@ const CredentialsPage: React.FC = () => {
         } else {
           showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'))
         }
-      } catch (error) {
+      } catch {
         showMessage('error', t('resources:errors.failedToCreateQueueItem'))
       }
     },
@@ -431,21 +440,22 @@ const CredentialsPage: React.FC = () => {
     const state = location.state as CredentialsLocationState | null
     if (state?.createRepo) {
       if (state.selectedTeam) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setSelectedTeams([state.selectedTeam])
       }
 
       setTimeout(() => {
-        openUnifiedModal('create', {
+        const modalData: RepoModalData = {
           teamName: state.selectedTeam,
           machineName: state.selectedMachine,
           preselectedTemplate: state.selectedTemplate
-        } as any, 'credentials-only')
+        }
+        openUnifiedModal('create', modalData, 'credentials-only')
       }, 100)
 
       navigate(location.pathname, { replace: true })
     }
-  }, [location, navigate, openUnifiedModal])
+  }, [location, navigate, openUnifiedModal, setSelectedTeams])
 
   const repoColumns = useMemo(
     () => [
@@ -637,7 +647,7 @@ const CredentialsPage: React.FC = () => {
         onCancel={closeUnifiedModal}
         resourceType="repo"
         mode={unifiedModalState.mode}
-        existingData={(unifiedModalState.data || currentResource) as any}
+        existingData={(unifiedModalState.data || currentResource) as RepoModalData | undefined}
         teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
         creationContext={unifiedModalState.creationContext}
         onSubmit={handleUnifiedModalSubmit}

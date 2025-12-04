@@ -1,4 +1,4 @@
-﻿import { Command } from 'commander'
+import { Command } from 'commander'
 import { authService } from '../services/auth.js'
 import { api } from '../services/api.js'
 import { contextService } from '../services/context.js'

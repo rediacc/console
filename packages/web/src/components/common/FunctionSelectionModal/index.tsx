@@ -506,7 +506,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           <FunctionItemHeader>
                             <Text strong>{func.name}</Text>
                             {isQuickTask && (
-                              <QuickTaskTag>âš¡ {t('functions:quickTaskBadge')}</QuickTaskTag>
+                              <QuickTaskTag>⚡ {t('functions:quickTaskBadge')}</QuickTaskTag>
                             )}
                           </FunctionItemHeader>
                           <FunctionDescriptionText type="secondary">
@@ -549,9 +549,9 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 <Text strong>Repo Lineage: </Text>
                                 <Space>
                                   <LineageTag $variant="parent">{additionalContext.parentRepo}</LineageTag>
-                                  <LineageSeparator>â†’</LineageSeparator>
+                                  <LineageSeparator>→</LineageSeparator>
                                   <LineageTag $variant="source">{additionalContext.sourceRepo}</LineageTag>
-                                  <LineageSeparator>â†’</LineageSeparator>
+                                  <LineageSeparator>→</LineageSeparator>
                                   <LineageTag $variant="destination">{functionParams.dest}</LineageTag>
                                 </Space>
                               </div>
