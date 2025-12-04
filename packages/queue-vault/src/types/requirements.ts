@@ -5,7 +5,7 @@ export interface QueueRequestContext {
   machineName?: string | null
   bridgeName?: string
   repositoryGuid?: string
-  repositoryLoopbackIp?: string
+  repositoryNetworkId?: number
   repositoryNetworkMode?: string
   repositoryTag?: string
   storageName?: string
