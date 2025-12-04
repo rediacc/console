@@ -11,7 +11,7 @@ export interface Repository {
   vaultContent?: string
   grandGuid?: string         // Top-most parent repository GUID
   parentGuid?: string        // Immediate parent repository GUID
-  repoLoopbackIp?: string    // Repository loopback IP address (127.11.0.0 to 127.255.255.255)
+  repoNetworkId?: number     // Repository network ID (integer, 2816-16777215)
   repoNetworkMode?: string   // Docker network mode: bridge, host, none, overlay, ipvlan, macvlan
   repoTag?: string           // Docker image tag (e.g., latest, v1.0, dev)
 }
@@ -31,7 +31,7 @@ export const useRepositories = createResourceQuery<Repository>({
       vaultContent: 'vaultContent',
       grandGuid: 'grandGuid',
       parentGuid: 'parentGuid',
-      repoLoopbackIp: 'repoLoopbackIP',
+      repoNetworkId: 'repoNetworkId',
       repoNetworkMode: 'repoNetworkMode',
       repoTag: 'repoTag'
     })(item)

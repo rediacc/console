@@ -28,7 +28,7 @@ export interface ForkDeletionContext extends OperationContext {
   repositoryGuid?: string
   grandGuid?: string
   parentName?: string
-  repoLoopbackIp?: string
+  repoNetworkId?: number
   repoTag?: string | null
 }
 
@@ -38,7 +38,7 @@ export interface ForkDeletionContext extends OperationContext {
 export interface GrandDeletionContext extends OperationContext {
   repositoryGuid?: string
   childClones: ChildClone[]
-  repoLoopbackIp?: string
+  repoNetworkId?: number
   repoTag?: string | null
 }
 
@@ -60,7 +60,7 @@ export interface BackupContext extends OperationContext {
   canBackupToStorage: boolean
   canBackupToMachine: boolean
   storageBlockReason?: string
-  repoLoopbackIp?: string
+  repoNetworkId?: number
   repoNetworkMode?: string
   repoTag?: string | null
 }
@@ -71,7 +71,7 @@ export interface BackupContext extends OperationContext {
 export interface ForkCreationContext extends OperationContext {
   repositoryGuid?: string
   grandGuid?: string
-  repoLoopbackIp?: string
+  repoNetworkId?: number
   repoNetworkMode?: string
   repoTag?: string | null
   mounted?: boolean
@@ -122,7 +122,7 @@ export function prepareForkDeletion(
     repositoryGuid: repoData.repositoryGuid,
     grandGuid: repoData.grandGuid || undefined,
     parentName: parent?.repositoryName,
-    repoLoopbackIp: (repoData as any).repoLoopbackIp,
+    repoNetworkId: (repoData as any).repoNetworkId,
     repoTag: repoData.repoTag
   }
 }
@@ -172,7 +172,7 @@ export function prepareGrandDeletion(
       errorCode: 'HAS_CHILD_CLONES',
       repositoryGuid: repoData.repositoryGuid,
       childClones: validation.childClones,
-      repoLoopbackIp: (repoData as any).repoLoopbackIp,
+      repoNetworkId: (repoData as any).repoNetworkId,
       repoTag: repoData.repoTag
     }
   }
@@ -181,7 +181,7 @@ export function prepareGrandDeletion(
     status: 'ready',
     repositoryGuid: repoData.repositoryGuid,
     childClones: [],
-    repoLoopbackIp: (repoData as any).repoLoopbackIp,
+    repoNetworkId: (repoData as any).repoNetworkId,
     repoTag: repoData.repoTag
   }
 }
@@ -274,7 +274,7 @@ export function prepareBackup(
     canBackupToStorage: storageValidation.canBackup,
     canBackupToMachine: true, // Always allowed
     storageBlockReason: storageValidation.reason,
-    repoLoopbackIp: (repoData as any).repoLoopbackIp,
+    repoNetworkId: (repoData as any).repoNetworkId,
     repoNetworkMode: (repoData as any).repoNetworkMode,
     repoTag: repoData.repoTag
   }
@@ -315,7 +315,7 @@ export function prepareForkCreation(
     status: 'ready',
     repositoryGuid: repoData.repositoryGuid,
     grandGuid,
-    repoLoopbackIp: (repoData as any).repoLoopbackIp,
+    repoNetworkId: (repoData as any).repoNetworkId,
     repoNetworkMode: (repoData as any).repoNetworkMode,
     repoTag: repoData.repoTag,
     mounted: (repoData as any).mounted

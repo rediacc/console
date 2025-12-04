@@ -52,7 +52,7 @@ export class CliQueueService {
       storageVault: vaults.storageVault,
       bridgeVault: vaults.bridgeVault,
       repositoryGuid: context.params.repo as string | undefined,
-      repositoryLoopbackIp: (vaults.repositoryVault as { repoLoopbackIp?: string })?.repoLoopbackIp,
+      repositoryNetworkId: (vaults.repositoryVault as { repoNetworkId?: number })?.repoNetworkId,
       repositoryNetworkMode: (vaults.repositoryVault as { networkMode?: string })?.networkMode,
       storageName: (context.params.to || context.params.from) as string | undefined,
     }
@@ -135,15 +135,15 @@ export class CliQueueService {
         const reposResponse = await apiClient.get('/GetTeamRepositories', {
           teamName: context.teamName,
         })
-        const repos = reposResponse.resultSets?.[0]?.data as Array<{ repoGuid: string; vaultContent?: string; repoLoopbackIP?: string; repoNetworkMode?: string }> | undefined
+        const repos = reposResponse.resultSets?.[0]?.data as Array<{ repoGuid: string; vaultContent?: string; repoNetworkId?: number; repoNetworkMode?: string }> | undefined
         const repo = repos?.find(r => r.repoGuid === repoGuid)
         if (repo?.vaultContent) {
           const repoVault = typeof repo.vaultContent === 'string'
             ? JSON.parse(repo.vaultContent)
             : repo.vaultContent
-          // Add loopback IP and network mode to vault data
-          if (repo.repoLoopbackIP) {
-            repoVault.repoLoopbackIp = repo.repoLoopbackIP
+          // Add network ID and network mode to vault data
+          if (repo.repoNetworkId !== undefined) {
+            repoVault.repoNetworkId = repo.repoNetworkId
           }
           if (repo.repoNetworkMode) {
             repoVault.networkMode = repo.repoNetworkMode

@@ -155,9 +155,9 @@ export class QueueVaultBuilder {
         }
       }
 
-      // Add REPO_LOOPBACK_IP if repository loopback IP is provided
-      if (requirements.repository && context.repositoryLoopbackIp) {
-        queueVaultData.contextData.REPO_LOOPBACK_IP = context.repositoryLoopbackIp
+      // Add REPO_NETWORK_ID if repository network ID is provided
+      if (requirements.repository && context.repositoryNetworkId !== undefined) {
+        queueVaultData.contextData.REPO_NETWORK_ID = context.repositoryNetworkId
       }
 
       // Add REPO_NETWORK_MODE if repository network mode is provided

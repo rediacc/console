@@ -506,7 +506,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
       machineVault: machine.vaultContent || '{}',
       repositoryGuid: repositoryData.repositoryGuid,
       repositoryVault: grandRepositoryVault,
-      repositoryLoopbackIp: repositoryData.repoLoopbackIp,
+      repositoryNetworkId: repositoryData.repoNetworkId,
       repositoryNetworkMode: repositoryData.repoNetworkMode,
       repositoryTag: repositoryData.repoTag
     })
@@ -596,7 +596,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
           machineVault: machine.vaultContent || '{}',
           repositoryGuid: repositoryData.repositoryGuid,
           repositoryVault: grandRepositoryVault,
-          repositoryLoopbackIp: newRepo.repoLoopbackIp,
+          repositoryNetworkId: newRepo.repoNetworkId,
           repositoryNetworkMode: newRepo.repoNetworkMode,
           repositoryTag: newRepo.repoTag
         })
@@ -687,7 +687,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
             machineVault: machine.vaultContent || '{}',
             repositoryGuid: context.repositoryGuid,
             repositoryVault: grandRepositoryVault,
-            repositoryLoopbackIp: context.repoLoopbackIp
+            repositoryNetworkId: context.repoNetworkId
           })
 
           if (result.success) {
@@ -963,7 +963,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
             machineVault: machine.vaultContent || '{}',
             repositoryGuid: context.repositoryGuid,
             repositoryVault: grandRepositoryVault,
-            repositoryLoopbackIp: context.repoLoopbackIp
+            repositoryNetworkId: context.repoNetworkId
           })
 
           if (result.success) {
@@ -1116,7 +1116,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
               destinationMachineVault: destinationMachine.vaultContent || '{}',
               repositoryGuid,
               repositoryVault,
-              repositoryLoopbackIp: newRepo.repoLoopbackIp,
+              repositoryNetworkId: newRepo.repoNetworkId,
               repositoryNetworkMode: newRepo.repoNetworkMode,
               repositoryTag: newRepo.repoTag
             })
@@ -1204,7 +1204,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
               destinationStorageVault: destinationStorage.vaultContent || '{}',
               repositoryGuid,
               repositoryVault,
-              repositoryLoopbackIp: repositoryData.repoLoopbackIp,
+              repositoryNetworkId: repositoryData.repoNetworkId,
               repositoryNetworkMode: repositoryData.repoNetworkMode,
               repositoryTag: repositoryData.repoTag
             })
@@ -1261,7 +1261,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
         machineVault: machine.vaultContent || '{}',
         repositoryGuid,
         repositoryVault,
-        repositoryLoopbackIp: repositoryData.repoLoopbackIp,
+        repositoryNetworkId: repositoryData.repoNetworkId,
         repositoryNetworkMode: repositoryData.repoNetworkMode,
         repositoryTag: repositoryData.repoTag
       })

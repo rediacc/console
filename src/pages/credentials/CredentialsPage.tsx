@@ -377,7 +377,7 @@ const CredentialsPage: React.FC = () => {
           teamVault: teams.find((team) => team.teamName === currentResource.teamName)?.vaultContent || '{}',
           repositoryGuid: currentResource.repositoryGuid,
           repositoryVault: currentResource.vaultContent || '{}',
-          repositoryLoopbackIp: currentResource.repoLoopbackIp,
+          repositoryNetworkId: currentResource.repoNetworkId,
           repositoryNetworkMode: currentResource.repoNetworkMode,
           repositoryTag: currentResource.repoTag,
           machineVault: selectedMachine?.vaultContent || '{}'

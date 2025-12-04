@@ -211,7 +211,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
       machineVault: machine.vaultContent || '{}',
       repositoryGuid: repositoryData?.repositoryGuid,
       repositoryVault: grandRepositoryVault,
-      repositoryLoopbackIp: repositoryData?.repoLoopbackIp,
+      repositoryNetworkId: repositoryData?.repoNetworkId,
       repositoryNetworkMode: repositoryData?.repoNetworkMode,
       repositoryTag: repositoryData?.repoTag
     })

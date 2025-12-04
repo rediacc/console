@@ -28,7 +28,7 @@ export interface VaultContextData extends VaultData {
   MACHINES?: Record<string, MachineContextData>
   STORAGE_SYSTEMS?: Record<string, StorageSystemContextData>
   REPO_CREDENTIALS?: Record<string, string>
-  REPO_LOOPBACK_IP?: string
+  REPO_NETWORK_ID?: number
   REPO_NETWORK_MODE?: string
   REPO_TAG?: string
   PLUGINS?: VaultData

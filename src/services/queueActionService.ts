@@ -11,7 +11,7 @@ export interface QueueActionParams {
   machineVault: string
   repositoryGuid?: string
   repositoryVault?: string
-  repositoryLoopbackIp?: string
+  repositoryNetworkId?: number
   repositoryNetworkMode?: string
   repositoryTag?: string
   storageName?: string
@@ -59,7 +59,7 @@ export class QueueActionService {
       machineVault: params.machineVault,
       repositoryGuid: params.repositoryGuid,
       repositoryVault: params.repositoryVault,
-      repositoryLoopbackIp: params.repositoryLoopbackIp,
+      repositoryNetworkId: params.repositoryNetworkId,
       repositoryNetworkMode: params.repositoryNetworkMode,
       repositoryTag: params.repositoryTag,
       storageName: params.storageName,
