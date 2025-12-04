@@ -135,7 +135,7 @@ export function useRepositoryCreation(
             machineVault: fullMachine?.vaultContent || '{}',
             repositoryVault: repositoryVault,
             repositoryGuid: repositoryGuid,
-            repositoryLoopbackIp: createdRepo?.repoLoopbackIP,
+            repositoryNetworkId: createdRepo?.repoNetworkId,
             repositoryNetworkMode: createdRepo?.repoNetworkMode,
             repositoryTag: createdRepo?.repoTag
           })

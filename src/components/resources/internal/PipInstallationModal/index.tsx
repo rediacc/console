@@ -321,7 +321,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
             <Text>
               {t('resources:pipInstall.reportIssue')}: {' '}
               <a 
-                href="https://github.com/rediacc/cli/issues" 
+                href="https://github.com/rediacc/desktop/issues" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 data-testid="pip-install-github-link"
