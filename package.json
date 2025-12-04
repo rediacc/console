@@ -14,6 +14,7 @@
     "build:cli": "npm run build -w @rediacc/cli",
     "build:web": "npm run build -w @rediacc/web",
     "dev": "npm run dev -w @rediacc/web",
+    "dev:parity": "npm run build:packages && npm run dev -w @rediacc/web",
     "lint": "eslint .",
     "typecheck": "tsc -b packages/shared packages/cli",
     "clean": "npm run clean -w @rediacc/shared && npm run clean -w @rediacc/cli"

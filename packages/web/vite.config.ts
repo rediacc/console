@@ -1,18 +1,33 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tsconfigPaths from 'vite-tsconfig-paths'
 import path from 'path'
 
-export default defineConfig(({ mode }) => ({
-  plugins: [react()],
-  // Use environment variable for base path configuration
-  // Local development: defaults to '/console/' (works with middleware at localhost:7322/console/)
-  // Production (GitHub Pages): set VITE_BASE_PATH=/ (works at console.rediacc.com/)
-  base: process.env.VITE_BASE_PATH || '/console/',
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+export default defineConfig(({ mode }) => {
+  // In dev mode, resolve @rediacc/shared to source files (no build required)
+  // In production, use the built dist/ via normal module resolution
+  const sharedAlias = mode === 'development' ? [
+    {
+      find: /^@rediacc\/shared(?:\/(.*))?$/,
+      replacement: path.resolve(__dirname, '../shared/src/$1'),
     },
-  },
+  ] : []
+
+  return {
+    plugins: [
+      react(),
+      tsconfigPaths({ root: '../..' })  // Resolve tsconfig paths from monorepo root
+    ],
+    // Use environment variable for base path configuration
+    // Local development: defaults to '/console/' (works with middleware at localhost:7322/console/)
+    // Production (GitHub Pages): set VITE_BASE_PATH=/ (works at console.rediacc.com/)
+    base: process.env.VITE_BASE_PATH || '/console/',
+    resolve: {
+      alias: [
+        { find: '@', replacement: path.resolve(__dirname, './src') },
+        ...sharedAlias,
+      ],
+    },
   server: {
     port: 3000,
     headers: {
@@ -62,6 +77,7 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'antd', '@ant-design/icons'],
+    exclude: ['@rediacc/shared'],  // Let vite-tsconfig-paths resolve from source
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(mode),
@@ -70,4 +86,5 @@ export default defineConfig(({ mode }) => ({
     'import.meta.env.VITE_SANDBOX_API_URL': JSON.stringify(process.env.SANDBOX_API_URL || 'https://sandbox.rediacc.com/api'),
     'import.meta.env.VITE_TURNSTILE_SITE_KEY': JSON.stringify(process.env.VITE_TURNSTILE_SITE_KEY || ''),
   },
-}))
+  }
+})
