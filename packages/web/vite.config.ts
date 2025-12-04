@@ -78,7 +78,7 @@ export default defineConfig(({ mode }) => {
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-antd': ['antd'],
-          'vendor-charts': ['@ant-design/charts', 'd3'],
+          'vendor-charts': ['d3'],
           'vendor-state': ['@reduxjs/toolkit', 'react-redux', '@tanstack/react-query'],
           'vendor-utils': ['axios', 'date-fns', 'zod'],
           'vendor-i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
