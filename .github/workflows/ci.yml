@@ -306,12 +306,12 @@ jobs:
           cache: 'npm'
 
       - name: Run npm audit
-        run: npm audit --audit-level=moderate || true
+        run: npm audit --audit-level=moderate
 
       - name: Check for vulnerable dependencies
         run: |
           echo "Checking for known vulnerabilities..."
-          npm audit --json > audit-report.json || true
+          npm audit --json > audit-report.json
           cat audit-report.json
 
       - name: Upload audit report
