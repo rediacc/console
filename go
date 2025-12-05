@@ -628,9 +628,9 @@ function release() {
   # Get version from package.json
   VERSION=$(node -p "require('./package.json').version")
   
-  # Copy built files
+  # Copy built files from workspace package
   echo "Copying build files to bin..."
-  cp -r "$ROOT_DIR/dist/"* "$BIN_DIR/"
+  cp -r "$ROOT_DIR/packages/web/dist/"* "$BIN_DIR/"
   
   # Create version info file
   echo "{
