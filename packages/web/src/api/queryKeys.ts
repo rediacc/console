@@ -171,4 +171,4 @@ export const QUERY_KEYS = {
 export type QueryKeys = typeof QUERY_KEYS;
 
 // Helper type to extract the return type of query key functions
-export type QueryKey<T extends (...args: any[]) => any> = ReturnType<T>;
+export type QueryKey<T extends (...args: unknown[]) => unknown> = ReturnType<T>;
