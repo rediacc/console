@@ -45,21 +45,19 @@ const STATUS_TONES = {
   neutral: 'var(--color-border-secondary)',
 } as const;
 
-export {
-  DetailPanelSurface as PanelWrapper,
-  DetailPanelHeader as StickyHeader,
-  DetailPanelHeaderRow as HeaderRow,
-  DetailPanelTitleGroup as HeaderTitleGroup,
-  DetailPanelTitle as PanelTitle,
-  DetailPanelCollapseButton as CollapseButton,
-  DetailPanelTagGroup as TagRow,
-  DetailPanelBody as ContentWrapper,
-  DetailPanelFieldRow as InlineField,
-  DetailPanelFieldLabel as LabelText,
-  DetailPanelFieldValue as ValueText,
-  DetailPanelFieldMonospaceValue as MonospaceValue,
-  DetailPanelSectionCard as SectionCard,
-};
+export const PanelWrapper = DetailPanelSurface
+export const StickyHeader = DetailPanelHeader
+export const HeaderRow = DetailPanelHeaderRow
+export const HeaderTitleGroup = DetailPanelTitleGroup
+export const PanelTitle = DetailPanelTitle
+export const CollapseButton = DetailPanelCollapseButton
+export const TagRow = DetailPanelTagGroup
+export const ContentWrapper = DetailPanelBody
+export const InlineField = DetailPanelFieldRow
+export const LabelText = DetailPanelFieldLabel
+export const ValueText = DetailPanelFieldValue
+export const MonospaceValue = DetailPanelFieldMonospaceValue
+export const SectionCard = DetailPanelSectionCard
 
 export const HeaderIcon = styled(FolderOutlined)`
   font-size: ${({ theme }) => theme.fontSize.XXXXL}px;
