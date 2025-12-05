@@ -39,7 +39,7 @@ interface VaultEditorModalProps {
   loading?: boolean;
 }
 
-const VERSION_HINT_BULLET = '\u2022';
+const VERSION_HINT_BULLET = '•';
 
 const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   open,
@@ -235,3 +235,4 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
 };
 
 export default VaultEditorModal;
+
