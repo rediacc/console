@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Table, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { ColumnsType } from 'antd/es/table';
@@ -7,7 +7,7 @@ import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { ManageClusterMachinesModal } from '../ManageClusterMachinesModal';
 import { buildClusterColumns } from './columns';
 import { ClusterMachines } from './components/ClusterMachines';
-import { useTraceModal, useExpandableTable } from '@/hooks';
+import { useTraceModal, useExpandableTable, useDialogState } from '@/hooks';
 import { TableContainer, CreateClusterButton } from './styles';
 import { confirmAction } from '@/utils/confirmations';
 import { EmptyStatePanel } from '@/styles/primitives';
