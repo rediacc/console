@@ -63,7 +63,13 @@ const UsersPage: React.FC = () => {
   const assignUserPermissionsMutation = useAssignUserPermissions();
   const { data: permissionGroups = [] } = usePermissionGroupsQuery();
 
-  const userFormFields = [
+  const userFormFields: Array<{
+    name: keyof CreateUserForm;
+    label: string;
+    type: 'text' | 'select' | 'password' | 'email' | 'number';
+    placeholder: string;
+    required: boolean;
+  }> = [
     {
       name: 'newUserEmail',
       label: t('users.form.emailLabel', { defaultValue: 'Email' }),

@@ -194,7 +194,6 @@ async function buildPingQueueVault(
   buildQueueVault: BuildQueueVaultFn
 ): Promise<string> {
   const DEFAULT_PRIORITY = 4;
-  const DEFAULT_DESCRIPTION = 'Ping connectivity test';
   const DEFAULT_ADDED_VIA = 'ping-service';
   const DEFAULT_VAULT = '{}';
 
@@ -205,7 +204,6 @@ async function buildPingQueueVault(
     functionName: 'ping',
     params: {},
     priority: params.priority || DEFAULT_PRIORITY,
-    description: params.description || DEFAULT_DESCRIPTION,
     addedVia: params.addedVia || DEFAULT_ADDED_VIA,
     machineVault: params.machineVault || DEFAULT_VAULT,
     teamVault: teamVault,

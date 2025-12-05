@@ -42,9 +42,9 @@ export const useComponentStyles = () => {
       buttonGhost: createButtonStyle('ghost'),
 
       // Typography (matching style-guide.md)
-      heading1: createTypographyStyle('H1', 'BOLD', 'TIGHT'),
-      heading2: createTypographyStyle('H2', 'SEMIBOLD', 'TIGHT'),
-      heading3: createTypographyStyle('H3', 'SEMIBOLD', 'NORMAL'),
+      heading1: createTypographyStyle('XXXXXXL', 'SEMIBOLD', 'TIGHT'),
+      heading2: createTypographyStyle('XL', 'SEMIBOLD', 'TIGHT'),
+      heading3: createTypographyStyle('LG', 'SEMIBOLD', 'NORMAL'),
       heading4: createTypographyStyle('H4', 'SEMIBOLD', 'NORMAL'),
       heading5: createTypographyStyle('H5', 'MEDIUM', 'NORMAL'),
       heading6: createTypographyStyle('BASE', 'MEDIUM', 'NORMAL'),

@@ -265,7 +265,8 @@ const machineAssignmentSlice = createSlice({
       if (value === undefined || value === '') {
         delete state.activeFilters[key];
       } else {
-        state.activeFilters[key] = value;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        state.activeFilters[key] = value as any;
       }
     },
 

@@ -1,7 +1,7 @@
 import styled, { css } from 'styled-components';
 import { Table as AntTable, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import type { ComponentType } from 'react';
+import React from 'react';
 
 const { Title } = Typography;
 
@@ -50,9 +50,9 @@ const StyledTableBase = styled(AntTable)<{ $removeMargins?: boolean }>`
   }
 `;
 
-export const StyledTable = StyledTableBase as ComponentType<
-  TableProps<unknown> & { $removeMargins?: boolean }
->;
+export const StyledTable = StyledTableBase as <T = unknown>(
+  props: TableProps<T> & { $removeMargins?: boolean }
+) => React.ReactElement;
 
 export const SectionTitle = styled(Title)`
   && {

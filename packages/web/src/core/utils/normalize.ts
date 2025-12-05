@@ -15,15 +15,16 @@
  * const result = normalizeProperty(apiResponse, 'taskId', 'TaskId', 'task_id')
  * // Returns the value if any of those properties exist
  */
-export function normalizeProperty<T extends Record<string, unknown>>(
+export function normalizeProperty<T extends object>(
   obj: T | null | undefined,
   ...propertyNames: string[]
 ): unknown {
   if (!obj) return null;
 
+  const record = obj as Record<string, unknown>;
   for (const prop of propertyNames) {
-    if (obj[prop] !== undefined && obj[prop] !== null) {
-      return obj[prop];
+    if (record[prop] !== undefined && record[prop] !== null) {
+      return record[prop];
     }
   }
 
@@ -68,7 +69,7 @@ export function normalizePropertyAs<T, R = unknown>(
  *   retryCount: ['retryCount', 'RetryCount', 'retry_count']
  * })
  */
-export function normalizeProperties<T extends Record<string, unknown>>(
+export function normalizeProperties<T extends object>(
   obj: T | null | undefined,
   propertyMap: Record<string, string[]>
 ): Record<string, unknown> {
@@ -88,7 +89,7 @@ export function normalizeProperties<T extends Record<string, unknown>>(
  * @param propertyNames - Array of possible property names to check
  * @returns String value or empty string if not found
  */
-export function normalizeToString<T extends Record<string, unknown>>(
+export function normalizeToString<T extends object>(
   obj: T | null | undefined,
   ...propertyNames: string[]
 ): string {
@@ -105,7 +106,7 @@ export function normalizeToString<T extends Record<string, unknown>>(
  * @param propertyNames - Array of possible property names to check
  * @returns Number value or default if not found
  */
-export function normalizeToNumber<T extends Record<string, unknown>>(
+export function normalizeToNumber<T extends object>(
   obj: T | null | undefined,
   defaultValue: number,
   ...propertyNames: string[]
@@ -123,7 +124,7 @@ export function normalizeToNumber<T extends Record<string, unknown>>(
  * @param propertyNames - Array of possible property names to check
  * @returns Boolean value (false if not found)
  */
-export function normalizeToBoolean<T extends Record<string, unknown>>(
+export function normalizeToBoolean<T extends object>(
   obj: T | null | undefined,
   ...propertyNames: string[]
 ): boolean {
@@ -138,14 +139,15 @@ export function normalizeToBoolean<T extends Record<string, unknown>>(
  * @param propertyNames - Array of property names to check for
  * @returns True if any property exists and is not null/undefined
  */
-export function hasProperty<T extends Record<string, unknown>>(
+export function hasProperty<T extends object>(
   obj: T | null | undefined,
   ...propertyNames: string[]
 ): boolean {
   if (!obj) return false;
 
+  const record = obj as Record<string, unknown>;
   for (const prop of propertyNames) {
-    if (obj[prop] !== undefined && obj[prop] !== null) {
+    if (record[prop] !== undefined && record[prop] !== null) {
       return true;
     }
   }

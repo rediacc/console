@@ -170,7 +170,7 @@ const CompanyPage: React.FC = () => {
             totalVaults: allVaults.length,
             vaultTypes: Object.keys(vaultsByType).map((type) => ({
               type,
-              count: vaultsByType[type]?.length || 0,
+              count: (vaultsByType as Record<string, unknown[]>)[type]?.length || 0,
             })),
           },
         };
@@ -289,10 +289,10 @@ const CompanyPage: React.FC = () => {
             }
 
             vaultUpdates.push({
-              credential: vault.credential,
-              name: vault.vaultName,
-              content: finalContent,
-              version: vault.version || 1,
+              credential: vault.credential as string,
+              name: vault.vaultName as string,
+              content: finalContent as string,
+              version: (vault.version as number) || 1,
             });
           } catch {
             showMessage('error', `Failed to process vault ${vault.vaultName}`);

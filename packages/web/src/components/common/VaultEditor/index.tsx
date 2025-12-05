@@ -29,7 +29,13 @@ import { SimpleJsonEditor } from './components/SimpleJsonEditor';
 import { NestedObjectEditor } from './components/NestedObjectEditor';
 import type { UploadFile } from 'antd/es/upload/interface';
 import type { Rule } from 'antd/es/form';
-import type { ValidateErrorEntity } from 'rc-field-form/lib/interface';
+
+// Type for form validation error entity
+interface ValidateErrorEntity<T = unknown> {
+  values: T;
+  errorFields: { name: (string | number)[]; errors: string[] }[];
+  outOfDate: boolean;
+}
 import { useTranslation } from 'react-i18next';
 import vaultDefinitions from '@/data/vaults.json';
 import storageProviders from '@/data/storageProviders.json';
@@ -1872,7 +1878,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 )}
 
                 {/* Provider-specific tips */}
-                <Divider orientation="left">
+                <Divider>
                   <Space>
                     <TipsDividerIcon />
                     <Text strong>

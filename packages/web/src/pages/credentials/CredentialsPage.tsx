@@ -75,6 +75,7 @@ interface CredentialsLocationState {
 type RepoFormValues = {
   repoName?: string;
   repoVault?: string;
+  teamName?: string;
   [key: string]: unknown;
 };
 
@@ -94,7 +95,7 @@ const CredentialsPage: React.FC = () => {
     currentResource,
     openModal: openUnifiedModal,
     closeModal: closeUnifiedModal,
-  } = useUnifiedModal<Repo>('repo');
+  } = useUnifiedModal<Repo & Record<string, unknown>>('repo');
   const {
     page: repoPage,
     pageSize: repoPageSize,
@@ -283,7 +284,8 @@ const CredentialsPage: React.FC = () => {
       await execute(
         async () => {
           if (unifiedModalState.mode === 'create') {
-            const result = await createRepoWithQueue(data);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const result = await createRepoWithQueue(data as any);
 
             if (result.success) {
               closeUnifiedModal();
@@ -535,7 +537,7 @@ const CredentialsPage: React.FC = () => {
               type: 'edit',
               icon: <EditOutlined />,
               tooltip: 'common:actions.edit',
-              onClick: (r: Repo) => openUnifiedModal('edit', r),
+              onClick: (r: Repo) => openUnifiedModal('edit', r as Repo & Record<string, unknown>),
               variant: 'primary',
             },
             {

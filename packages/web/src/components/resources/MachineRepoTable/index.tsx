@@ -36,7 +36,7 @@ import { useDialogState } from '@/hooks/useDialogState';
 import * as S from './styles';
 import { type QueueFunction } from '@/api/queries/queue';
 import { useQueueAction } from '@/hooks/useQueueAction';
-import { Machine } from '@/types';
+import { Machine, PluginContainer } from '@/types';
 import type { Repo as TeamRepo } from '@rediacc/shared/types';
 import { useTeams } from '@/api/queries/teams';
 import {
@@ -50,8 +50,10 @@ import {
 import { useMachines } from '@/api/queries/machines';
 import { useStorage } from '@/api/queries/storage';
 import type { ColumnsType } from 'antd/es/table';
-import type { MenuInfo } from 'rc-menu/lib/interface';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
+
+// Type for menu item click event
+type MenuClickEvent = { key: string; domEvent: React.MouseEvent | React.KeyboardEvent };
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { LocalActionsMenu } from '../internal/LocalActionsMenu';
 import { showMessage } from '@/utils/messages';
@@ -309,8 +311,8 @@ interface MachineRepoTableProps {
   onCreateRepo?: (machine: Machine, repoGuid: string) => void;
   onRepoClick?: (Repo: Repo) => void;
   highlightedRepo?: Repo | null;
-  onContainerClick?: (container: Container) => void;
-  highlightedContainer?: Container | null;
+  onContainerClick?: (container: Container | PluginContainer) => void;
+  highlightedContainer?: Container | PluginContainer | null;
   isLoading?: boolean;
   onRefreshMachines?: () => Promise<void>;
   refreshKey?: number; // Used to trigger re-rendering when parent wants to force refresh
@@ -1739,7 +1741,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           key: 'up',
           label: t('functions:functions.up.name'),
           icon: <PlayCircleOutlined />,
-          onClick: (info: MenuInfo) => {
+          onClick: (info: MenuClickEvent) => {
             info.domEvent.stopPropagation();
             handleQuickAction(record, 'up', 4, 'mount');
           },
@@ -1750,7 +1752,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             key: 'down',
             label: t('functions:functions.down.name'),
             icon: <PauseCircleOutlined />,
-            onClick: (info: MenuInfo) => {
+            onClick: (info: MenuClickEvent) => {
               info.domEvent.stopPropagation();
               handleQuickAction(record, 'down', 4, 'unmount');
             },
@@ -1762,7 +1764,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             key: 'validate',
             label: t('functions:functions.validate.name'),
             icon: <CheckCircleOutlined />,
-            onClick: (info: MenuInfo) => {
+            onClick: (info: MenuClickEvent) => {
               info.domEvent.stopPropagation();
               handleRunFunction(record, 'validate');
             },
@@ -1773,7 +1775,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           key: 'fork',
           label: t('functions:functions.fork.name'),
           icon: <CopyOutlined />,
-          onClick: (info: MenuInfo) => {
+          onClick: (info: MenuClickEvent) => {
             info.domEvent.stopPropagation();
             handleRunFunction(record, 'fork');
           },
@@ -1783,7 +1785,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           key: 'deploy',
           label: t('functions:functions.deploy.name'),
           icon: <CloudUploadOutlined />,
-          onClick: (info: MenuInfo) => {
+          onClick: (info: MenuClickEvent) => {
             info.domEvent.stopPropagation();
             handleRunFunction(record, 'deploy');
           },
@@ -1794,7 +1796,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           key: 'backup',
           label: t('functions:functions.backup.name'),
           icon: <SaveOutlined />,
-          onClick: (info: MenuInfo) => {
+          onClick: (info: MenuClickEvent) => {
             info.domEvent.stopPropagation();
             handleRunFunction(record, 'backup');
           },
@@ -1806,7 +1808,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           key: 'apply_template',
           label: t('functions:functions.apply_template.name'),
           icon: <AppstoreOutlined />,
-          onClick: (info: MenuInfo) => {
+          onClick: (info: MenuClickEvent) => {
             info.domEvent.stopPropagation();
             handleRunFunction(record, 'apply_template');
           },
@@ -1819,7 +1821,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             key: 'mount',
             label: t('resources:repos.mount'),
             icon: <DatabaseOutlined />,
-            onClick: (info: MenuInfo) => {
+            onClick: (info: MenuClickEvent) => {
               info.domEvent.stopPropagation();
               handleQuickAction(record, 'mount', 4);
             },
@@ -1829,7 +1831,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             key: 'unmount',
             label: t('resources:repos.unmount'),
             icon: <DisconnectOutlined />,
-            onClick: (info: MenuInfo) => {
+            onClick: (info: MenuClickEvent) => {
               info.domEvent.stopPropagation();
               handleQuickAction(record, 'unmount', 4);
             },
@@ -1841,7 +1843,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             key: 'resize',
             label: t('functions:functions.resize.name'),
             icon: <ShrinkOutlined />,
-            onClick: (info: MenuInfo) => {
+            onClick: (info: MenuClickEvent) => {
               info.domEvent.stopPropagation();
               handleRunFunction(record, 'resize');
             },
@@ -1853,7 +1855,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             key: 'expand',
             label: t('functions:functions.expand.name'),
             icon: <ExpandOutlined />,
-            onClick: (info: MenuInfo) => {
+            onClick: (info: MenuClickEvent) => {
               info.domEvent.stopPropagation();
               handleRunFunction(record, 'expand');
             },
@@ -1868,7 +1870,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           key: 'experimental',
           label: t('machines:experimental'),
           icon: <FunctionOutlined />,
-          onClick: (info: MenuInfo) => {
+          onClick: (info: MenuClickEvent) => {
             info.domEvent.stopPropagation();
             handleRunFunction(record);
           },
@@ -1888,7 +1890,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             key: 'promote-to-grand',
             label: t('resources:repos.promoteToGrand'),
             icon: <RiseOutlined />,
-            onClick: (info: MenuInfo) => {
+            onClick: (info: MenuClickEvent) => {
               info.domEvent.stopPropagation();
               handlePromoteToGrand(record);
             },
@@ -1897,7 +1899,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             key: 'delete-fork',
             label: t('resources:repos.deleteFork'),
             icon: <DeleteOutlined />,
-            onClick: (info: MenuInfo) => {
+            onClick: (info: MenuClickEvent) => {
               info.domEvent.stopPropagation();
               handleDeleteFork(record);
             },
@@ -1913,7 +1915,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           key: 'rename',
           label: t('resources:repos.rename'),
           icon: <EditOutlined />,
-          onClick: (info: MenuInfo) => {
+          onClick: (info: MenuClickEvent) => {
             info.domEvent.stopPropagation();
             handleRenameRepo(record);
           },
@@ -1924,7 +1926,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             key: 'delete-grand',
             label: t('resources:repos.deleteGrand'),
             icon: <DeleteOutlined />,
-            onClick: (info: MenuInfo) => {
+            onClick: (info: MenuClickEvent) => {
               info.domEvent.stopPropagation();
               handleDeleteGrandRepo(record);
             },
@@ -1999,6 +2001,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             record={actionRecord}
             idField="actionId"
             t={t}
+            reserveSpace
           />
         );
       },

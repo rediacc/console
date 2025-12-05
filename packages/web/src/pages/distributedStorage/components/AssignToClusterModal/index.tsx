@@ -11,7 +11,7 @@ import {
   useUpdateMachineClusterAssignment,
 } from '@/api/queries/distributedStorageMutations';
 import { showMessage } from '@/utils/messages';
-import { Select } from 'antd';
+import { Select, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ModalSize } from '@/types/modal';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
@@ -222,6 +222,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
               showIcon
             />
             <MachinesTable
+              as={Table<Machine>}
               columns={bulkColumns}
               dataSource={targetMachines}
               rowKey="machineName"

@@ -405,7 +405,7 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
 
   return (
     <SectionBlock>
-      <SectionDivider orientation="left">
+      <SectionDivider orientationMargin="left">
         <IconWrapper $color="var(--color-info)">
           <InfoCircleOutlined />
         </IconWrapper>
@@ -490,7 +490,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
 
   return (
     <SectionBlock>
-      <SectionDivider orientation="left">
+      <SectionDivider orientationMargin="left">
         <IconWrapper $color="var(--color-info)">
           <WifiOutlined />
         </IconWrapper>
@@ -578,7 +578,7 @@ interface BlockDevicesSectionProps extends SectionProps {
 
 const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t }) => (
   <SectionBlock>
-    <SectionDivider orientation="left">
+    <SectionDivider orientationMargin="left">
       <IconWrapper $color="var(--color-warning)">
         <HddOutlined />
       </IconWrapper>
@@ -649,7 +649,7 @@ interface SystemContainersSectionProps extends SectionProps {
 
 const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ containers, t }) => (
   <SectionBlock>
-    <SectionDivider orientation="left">
+    <SectionDivider orientationMargin="left">
       <IconWrapper $color="var(--color-secondary)">
         <ContainerOutlined />
       </IconWrapper>

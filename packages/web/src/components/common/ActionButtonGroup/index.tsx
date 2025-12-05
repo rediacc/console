@@ -81,6 +81,8 @@ export interface ActionButtonGroupProps<T> {
   t?: TFunction;
   /** Gap between buttons */
   gap?: 'XS' | 'SM' | 'MD';
+  /** Reserve space for hidden buttons to maintain consistent alignment across rows */
+  reserveSpace?: boolean;
 }
 
 // =============================================================================
@@ -91,6 +93,15 @@ const Container = styled.div<{ $gap: 'XS' | 'SM' | 'MD' }>`
   display: inline-flex;
   align-items: center;
   gap: ${({ $gap, theme }) => theme.spacing[$gap]}px;
+`;
+
+/**
+ * Placeholder element that reserves space for hidden buttons
+ */
+const ButtonPlaceholder = styled.div`
+  width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+  min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+  flex-shrink: 0;
 `;
 
 // =============================================================================
@@ -126,6 +137,15 @@ function isCustomConfig<T>(config: ActionButtonConfig<T>): config is CustomButto
   return config.type === 'custom' && 'render' in config;
 }
 
+/**
+ * Check if a button is visible for a given record
+ */
+function isButtonVisible<T>(btn: ActionButtonConfig<T>, record: T): boolean {
+  if (btn.visible === undefined) return true;
+  if (typeof btn.visible === 'boolean') return btn.visible;
+  return btn.visible(record);
+}
+
 export function ActionButtonGroup<T>({
   buttons,
   record,
@@ -133,23 +153,31 @@ export function ActionButtonGroup<T>({
   testIdPrefix = '',
   t,
   gap = 'SM',
+  reserveSpace = false,
 }: ActionButtonGroupProps<T>): React.ReactElement {
   // Type-safe access to record ID field
   const recordValue = record[idField];
   const recordId = String(recordValue !== null && recordValue !== undefined ? recordValue : '');
   const prefix = testIdPrefix ? `${testIdPrefix}-` : '';
 
-  const visibleButtons = buttons.filter((btn) => {
-    if (btn.visible === undefined) return true;
-    if (typeof btn.visible === 'boolean') return btn.visible;
-    return btn.visible(record);
-  });
-
   const getTooltipText = (text: string) => (t ? t(text) : text);
+
+  // When reserveSpace is enabled, iterate over all buttons and render placeholders for hidden ones
+  // Otherwise, filter to only visible buttons (original behavior)
+  const buttonsToRender = reserveSpace
+    ? buttons
+    : buttons.filter((btn) => isButtonVisible(btn, record));
 
   return (
     <Container $gap={gap}>
-      {visibleButtons.map((config, index) => {
+      {buttonsToRender.map((config, index) => {
+        const isVisible = isButtonVisible(config, record);
+
+        // If reserveSpace is enabled and button is not visible, render a placeholder
+        if (reserveSpace && !isVisible) {
+          return <ButtonPlaceholder key={`placeholder-${index}`} />;
+        }
+
         // Handle custom render slot
         if (isCustomConfig(config)) {
           return <React.Fragment key={`custom-${index}`}>{config.render(record)}</React.Fragment>;

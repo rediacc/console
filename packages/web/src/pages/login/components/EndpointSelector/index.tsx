@@ -47,7 +47,7 @@ interface EndpointSelectorProps {
   onHealthCheckComplete?: (hasHealthyEndpoint: boolean) => void;
 }
 
-const HEALTH_INDICATOR_SYMBOL = '\ï';
+const HEALTH_INDICATOR_SYMBOL = '‚óè';
 
 const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComplete }) => {
   const [modal, contextHolder] = Modal.useModal();
@@ -493,4 +493,3 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 };
 
 export default EndpointSelector;
-

@@ -14,7 +14,7 @@ import { DETAIL_PANEL } from '@/constants/layout';
 import { useMachines } from '@/api/queries/machines';
 import { useRepos } from '@/api/queries/repos';
 import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
-import { Machine, Repo } from '@/types';
+import { Machine, Repo, PluginContainer } from '@/types';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
@@ -84,7 +84,7 @@ type RepoRowData = {
 const MachineReposPage: React.FC = () => {
   const { machineName } = useParams<{ machineName: string }>();
   const navigate = useNavigate();
-  const location = useLocation<MachineReposLocationState>();
+  const location = useLocation() as { state?: MachineReposLocationState };
   const { t } = useTranslation(['resources', 'machines', 'common']);
 
   // State for machine data - can come from route state or API
@@ -95,7 +95,9 @@ const MachineReposPage: React.FC = () => {
   const panelWidth = usePanelWidth();
 
   // State for selected resource (Repo or container) and panel
-  const [selectedResource, setSelectedResource] = useState<Repo | ContainerData | null>(null);
+  const [selectedResource, setSelectedResource] = useState<
+    Repo | ContainerData | PluginContainer | null
+  >(null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
   const [splitWidth, setSplitWidth] = useState(panelWidth);
   const [backdropVisible, setBackdropVisible] = useState(false);
@@ -217,8 +219,13 @@ const MachineReposPage: React.FC = () => {
     setIsPanelCollapsed(false);
   };
 
-  const handleContainerClick = (container: ContainerData) => {
-    setSelectedResource(container);
+  const handleContainerClick = (
+    container:
+      | PluginContainer
+      | ContainerData
+      | { id: string; name: string; state: string; [key: string]: unknown }
+  ) => {
+    setSelectedResource(container as PluginContainer | ContainerData);
     setIsPanelCollapsed(false);
   };
 
@@ -452,7 +459,8 @@ const MachineReposPage: React.FC = () => {
         existingData={unifiedModalState.data}
         teamFilter={machine?.teamName ? [machine.teamName] : undefined}
         creationContext={unifiedModalState.creationContext}
-        onSubmit={handleUnifiedModalSubmit}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onSubmit={handleUnifiedModalSubmit as any}
       />
     </PageWrapper>
   );

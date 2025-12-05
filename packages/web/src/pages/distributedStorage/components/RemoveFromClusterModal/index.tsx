@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Table } from 'antd';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import type { Machine } from '@/types';
@@ -161,6 +162,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
           />
 
           <MachinesTable
+            as={Table<Machine>}
             columns={columns}
             dataSource={machinesWithClusters}
             rowKey="machineName"

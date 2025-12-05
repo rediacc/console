@@ -101,7 +101,7 @@ const StoragePage: React.FC = () => {
     openModal: openUnifiedModal,
     closeModal: closeUnifiedModal,
     setCurrentResource,
-  } = useUnifiedModal<Storage>('storage');
+  } = useUnifiedModal<Storage & Record<string, unknown>>('storage');
   const {
     page: storagePage,
     pageSize: storagePageSize,
@@ -373,7 +373,8 @@ const StoragePage: React.FC = () => {
               type: 'edit',
               icon: <EditOutlined />,
               tooltip: 'common:actions.edit',
-              onClick: (r: Storage) => openUnifiedModal('edit', r),
+              onClick: (r: Storage) =>
+                openUnifiedModal('edit', r as Storage & Record<string, unknown>),
               variant: 'primary',
             },
             {
@@ -381,8 +382,8 @@ const StoragePage: React.FC = () => {
               icon: <FunctionOutlined />,
               tooltip: 'common:actions.runFunction',
               onClick: (r: Storage) => {
-                setCurrentResource(r);
-                openUnifiedModal('create', r);
+                setCurrentResource(r as Storage & Record<string, unknown>);
+                openUnifiedModal('create', r as Storage & Record<string, unknown>);
               },
               variant: 'primary',
             },
@@ -543,10 +544,11 @@ const StoragePage: React.FC = () => {
         mode={unifiedModalState.mode}
         existingData={modalExistingData}
         teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
-        onSubmit={handleUnifiedModalSubmit}
+        onSubmit={handleUnifiedModalSubmit as (data: Record<string, unknown>) => Promise<void>}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         onFunctionSubmit={
-          unifiedModalState.mode === 'create' ? undefined : handleStorageFunctionSelected
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          unifiedModalState.mode === 'create' ? undefined : (handleStorageFunctionSelected as any)
         }
         isSubmitting={isSubmitting}
         isUpdatingVault={isUpdatingVault}

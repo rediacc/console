@@ -336,7 +336,6 @@ async function buildHelloQueueVault(
   buildQueueVault: BuildQueueVaultFn
 ): Promise<string> {
   const DEFAULT_PRIORITY = 4;
-  const DEFAULT_DESCRIPTION = 'Hello function call';
   const DEFAULT_ADDED_VIA = 'hello-service';
   const DEFAULT_VAULT = '{}';
 
@@ -347,7 +346,6 @@ async function buildHelloQueueVault(
     functionName: 'hello',
     params: {},
     priority: params.priority || DEFAULT_PRIORITY,
-    description: params.description || DEFAULT_DESCRIPTION,
     addedVia: params.addedVia || DEFAULT_ADDED_VIA,
     machineVault: params.machineVault || DEFAULT_VAULT,
     teamVault: teamVault,

@@ -45,22 +45,22 @@ const STATUS_TONES = {
   neutral: 'var(--color-border-secondary)',
 } as const;
 
-export const PanelWrapper = DetailPanelSurface
-export const StickyHeader = DetailPanelHeader
-export const HeaderRow = DetailPanelHeaderRow
-export const HeaderTitleGroup = DetailPanelTitleGroup
-export const PanelTitle = DetailPanelTitle
-export const CollapseButton = DetailPanelCollapseButton
-export const TagRow = DetailPanelTagGroup
-export const ContentWrapper = DetailPanelBody
-export const InlineField = DetailPanelFieldRow
-export const LabelText = DetailPanelFieldLabel
-export const ValueText = DetailPanelFieldValue
-export const MonospaceValue = DetailPanelFieldMonospaceValue
-export const SectionCard = DetailPanelSectionCard
+export const PanelWrapper = DetailPanelSurface;
+export const StickyHeader = DetailPanelHeader;
+export const HeaderRow = DetailPanelHeaderRow;
+export const HeaderTitleGroup = DetailPanelTitleGroup;
+export const PanelTitle = DetailPanelTitle;
+export const CollapseButton = DetailPanelCollapseButton;
+export const TagRow = DetailPanelTagGroup;
+export const ContentWrapper = DetailPanelBody;
+export const InlineField = DetailPanelFieldRow;
+export const LabelText = DetailPanelFieldLabel;
+export const ValueText = DetailPanelFieldValue;
+export const MonospaceValue = DetailPanelFieldMonospaceValue;
+export const SectionCard = DetailPanelSectionCard;
 
 export const HeaderIcon = styled(FolderOutlined)`
-  font-size: ${({ theme }) => theme.fontSize.XXXXL}px;
+  font-size: ${({ theme }) => theme.fontSize.XXXXXXL}px;
   color: var(--color-success);
 `;
 
@@ -82,9 +82,7 @@ export const EmptyState = styled(Empty)`
   margin-top: ${({ theme }) => theme.spacing.XXXL}px;
 `;
 
-export const SectionDivider = styled(DetailPanelDivider).attrs({
-  orientation: 'left',
-})`
+export const SectionDivider = styled(DetailPanelDivider)`
   && {
     margin: ${({ theme }) => `${theme.spacing.XL}px 0`};
   }

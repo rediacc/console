@@ -140,7 +140,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     loadedTemplate || template || (templateName ? { name: templateName, readme: '' } : null);
 
   useEffect(() => {
-    if (!visible) {
+    if (!open) {
       // Reset state when modal is closed
       setTemplateDetails(null);
       setLoadedTemplate(null);
@@ -185,7 +185,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 
         // Fetch the detailed template data (files, etc.)
         const data = await templateService.fetchTemplateData(baseTemplate);
-        setTemplateDetails(data);
+        setTemplateDetails(data as unknown as TemplateDetails);
       } catch (error) {
         // Failed to fetch template details
         console.error('Failed to fetch template details:', error);

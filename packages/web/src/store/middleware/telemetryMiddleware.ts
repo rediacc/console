@@ -1,4 +1,4 @@
-import { Middleware, AnyAction } from '@reduxjs/toolkit';
+import type { Middleware, UnknownAction } from '@reduxjs/toolkit';
 import type { RootState } from '@/store/store';
 import { telemetryService } from '@/services/telemetryService';
 
@@ -55,7 +55,8 @@ export const createTelemetryMiddleware = (
 ): Middleware<{}, RootState> => {
   const { enabled = true, debugMode = false } = options;
 
-  return (store) => (next) => (action: AnyAction) => {
+  return (store) => (next) => (action) => {
+    const typedAction = action as UnknownAction & { payload?: unknown };
     if (!enabled) {
       return next(action);
     }
@@ -70,39 +71,39 @@ export const createTelemetryMiddleware = (
     const duration = performance.now() - startTime;
 
     // Skip actions that are too frequent or not business-relevant
-    if (shouldTrackAction(action.type)) {
+    if (shouldTrackAction(typedAction.type)) {
       try {
         // Track basic action execution
         telemetryService.trackEvent('redux.action_dispatched', {
-          'action.type': action.type,
+          'typedAction.type': typedAction.type,
           'action.duration_ms': duration,
-          'action.has_payload': !!action.payload,
+          'action.has_payload': !!typedAction.payload,
           'redux.state_size': JSON.stringify(stateAfter).length,
           'page.url': window.location.pathname,
         });
 
         // Track feature usage
-        if (FEATURE_USAGE_ACTIONS.includes(action.type)) {
-          trackFeatureUsage(action);
+        if (FEATURE_USAGE_ACTIONS.includes(typedAction.type)) {
+          trackFeatureUsage(action as UnknownAction);
         }
 
         // Track user preferences
-        if (PREFERENCE_ACTIONS.includes(action.type)) {
-          trackUserPreferences(action, stateBefore, stateAfter);
+        if (PREFERENCE_ACTIONS.includes(typedAction.type)) {
+          trackUserPreferences(action as UnknownAction, stateBefore, stateAfter);
         }
 
         // Track workflow progression
-        if (WORKFLOW_ACTIONS.includes(action.type)) {
-          trackWorkflowProgression(action, stateAfter);
+        if (WORKFLOW_ACTIONS.includes(typedAction.type)) {
+          trackWorkflowProgression(action as UnknownAction, stateAfter);
         }
 
         // Track specific business actions
-        trackBusinessActions(action, stateBefore, stateAfter);
+        trackBusinessActions(action as UnknownAction, stateBefore, stateAfter);
 
         if (debugMode) {
-          console.warn('Telemetry tracked action:', action.type, {
+          console.warn('Telemetry tracked action:', typedAction.type, {
             duration,
-            hasPayload: !!action.payload,
+            hasPayload: !!typedAction.payload,
           });
         }
       } catch (error) {
@@ -132,24 +133,26 @@ function shouldTrackAction(actionType: string): boolean {
   );
 }
 
-function trackFeatureUsage(action: AnyAction): void {
+function trackFeatureUsage(action: UnknownAction): void {
+  const actionWithPayload = action as UnknownAction & { payload?: unknown };
   telemetryService.trackEvent('feature.usage', {
     'feature.name': extractFeatureName(action.type),
     'feature.action': action.type,
-    'feature.has_data': !!action.payload,
+    'feature.has_data': !!actionWithPayload.payload,
     'usage.timestamp': Date.now(),
   });
 }
 
 function trackUserPreferences(
-  action: AnyAction,
+  action: UnknownAction,
   stateBefore: RootState,
   stateAfter: RootState
 ): void {
   const preferences: Record<string, string> = {};
 
   if (action.type === 'ui/setTheme') {
-    preferences['ui.theme'] = stateAfter.ui?.theme || 'unknown';
+    const actionWithPayload = action as UnknownAction & { payload?: string };
+    preferences['ui.theme'] = actionWithPayload.payload || 'unknown';
   }
 
   if (action.type === 'ui/toggleUiMode') {
@@ -165,7 +168,7 @@ function trackUserPreferences(
   });
 }
 
-function trackWorkflowProgression(action: AnyAction, stateAfter: RootState): void {
+function trackWorkflowProgression(action: UnknownAction, stateAfter: RootState): void {
   let workflowData: TelemetryEventPayload = {
     'workflow.action': action.type,
     'workflow.timestamp': Date.now(),
@@ -203,15 +206,16 @@ function trackWorkflowProgression(action: AnyAction, stateAfter: RootState): voi
 }
 
 function trackBusinessActions(
-  action: AnyAction,
+  action: UnknownAction,
   stateBefore: RootState,
   stateAfter: RootState
 ): void {
+  const typedAction = action as UnknownAction & { payload?: Record<string, unknown> };
   switch (action.type) {
     case 'auth/loginSuccess':
       telemetryService.trackEvent('business.user_session_start', {
-        'session.company': action.payload?.company || 'unknown',
-        'session.has_encryption': !!action.payload?.companyEncryptionEnabled,
+        'session.company': String(typedAction.payload?.company ?? 'unknown'),
+        'session.has_encryption': !!typedAction.payload?.companyEncryptionEnabled,
         'auth.method': 'standard',
       });
       break;
@@ -228,16 +232,16 @@ function trackBusinessActions(
 
     case 'notifications/addNotification':
       telemetryService.trackEvent('business.notification_created', {
-        'notification.type': action.payload?.type || 'unknown',
-        'notification.has_title': !!action.payload?.title,
+        'notification.type': String(typedAction.payload?.type ?? 'unknown'),
+        'notification.has_title': !!typedAction.payload?.title,
         'ux.notification_frequency': getNotificationCount(stateAfter),
       });
       break;
 
     case 'machineAssignment/assignMachine':
       telemetryService.trackEvent('business.machine_assignment', {
-        'machine.id': action.payload?.id || 'unknown',
-        'assignment.pool_type': action.payload?.poolType || 'unknown',
+        'machine.id': String(typedAction.payload?.id ?? 'unknown'),
+        'assignment.pool_type': String(typedAction.payload?.poolType ?? 'unknown'),
         'assignment.total_assigned': stateAfter.machineAssignment?.selectedMachines?.length || 0,
       });
       break;

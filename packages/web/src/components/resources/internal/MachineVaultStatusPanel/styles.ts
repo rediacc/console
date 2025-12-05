@@ -107,9 +107,7 @@ export const EmptyState = styled(Empty)`
   margin-top: ${({ theme }) => theme.spacing.XXXL}px;
 `;
 
-export const SectionDivider = styled(DetailPanelDivider).attrs({
-  orientation: 'left',
-})`
+export const SectionDivider = styled(DetailPanelDivider)`
   && {
     margin: ${({ theme }) => `${theme.spacing.XL}px 0`};
   }

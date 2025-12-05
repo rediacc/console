@@ -15,6 +15,7 @@ import enStorageProviders from './locales/en/storageProviders.json';
 import enFunctions from './locales/en/functions.json';
 import enDistributedStorage from './locales/en/distributedStorage.json';
 import enOrganization from './locales/en/organization.json';
+import enMarketplace from './locales/en/marketplace.json';
 
 export const defaultNS = 'common';
 
@@ -32,10 +33,13 @@ const initialResources = {
     functions: enFunctions,
     distributedStorage: enDistributedStorage,
     organization: enOrganization,
+    marketplace: enMarketplace,
   },
-} as const;
+};
 
-type LanguageResources = Partial<typeof initialResources.en>;
+// Type for language resources - loose type for dynamic loading since translations
+// may have different structures between languages during development
+type LanguageResources = Record<string, Record<string, unknown>>;
 
 // Lazy load function for other languages
 const loadLanguageResources = async (lng: string) => {
@@ -210,6 +214,8 @@ i18n
       'storageProviders',
       'functions',
       'distributedStorage',
+      'marketplace',
+      'organization',
     ],
     defaultNS,
     resources: initialResources,

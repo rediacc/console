@@ -703,9 +703,11 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
     },
   ];
 
-  const getRowProps: TableProps<RemoteFile>['onRow'] = (record) => ({
-    'data-testid': `file-browser-row-${record.name}`,
-  });
+  const getRowProps: TableProps<RemoteFile>['onRow'] = (record) => {
+    return {
+      'data-testid': `file-browser-row-${record.name}`,
+    } as React.HTMLAttributes<HTMLElement>;
+  };
 
   // Breadcrumb items
   const breadcrumbItems = useMemo(() => {

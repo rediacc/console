@@ -221,14 +221,14 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     });
 
     const columns: ColumnsType<CloneMachine> = [machineColumn, bridgeColumn];
-    const rowSelection: TableRowSelection<CloneMachine> = {
+    const rowSelection = {
       selectedRowKeys: removingMachines,
-      onChange: (keys) => setRemovingMachines(keys as string[]),
-      getCheckboxProps: (record) =>
+      onChange: (keys: React.Key[]) => setRemovingMachines(keys as string[]),
+      getCheckboxProps: (record: CloneMachine) =>
         ({
           'data-testid': `assign-clone-machine-checkbox-${record.machineName}`,
         }) as Record<string, unknown>,
-    };
+    } as TableRowSelection<CloneMachine>;
 
     return (
       <ManageTabContainer>
@@ -239,8 +239,10 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
         />
 
         <MachinesTable
-          rowSelection={rowSelection}
-          columns={columns}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          rowSelection={rowSelection as any}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          columns={columns as any}
           dataSource={assignedMachines}
           rowKey="machineName"
           size="small"

@@ -356,13 +356,15 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           />
 
           <StyledTable
-            columns={columns}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            columns={columns as any}
             dataSource={testResults}
             rowKey="machineName"
             pagination={false}
             scroll={{ y: 400 }}
             loading={machines.length === 0}
-            rowClassName={(record: TestResult) => `status-${record.status}`}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            rowClassName={(record: any) => `status-${record.status}`}
             data-testid="connectivity-results-table"
           />
 

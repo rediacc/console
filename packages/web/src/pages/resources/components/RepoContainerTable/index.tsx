@@ -24,7 +24,7 @@ import * as S from './styles';
 
 import { useQueueAction } from '@/hooks/useQueueAction';
 
-import { Machine } from '@/types';
+import { Machine, PluginContainer } from '@/types';
 
 import { useRepos } from '@/api/queries/repos';
 
@@ -154,9 +154,9 @@ interface RepoContainerTableProps {
 
   repo: Repo;
 
-  onContainerClick?: (container: Container) => void;
+  onContainerClick?: (container: Container | PluginContainer) => void;
 
-  highlightedContainer?: Container | null;
+  highlightedContainer?: Container | PluginContainer | null;
 
   onQueueItemCreated?: (taskId: string, machineName: string) => void;
 
@@ -317,7 +317,9 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
 
               // Find the repo in vaultStatus with this GUID
 
-              const vaultRepo = result.repositories?.find((r) => r.name === containerRepoGuid);
+              const vaultRepo = result.repos?.find(
+                (r: VaultStatusRepo) => r.name === containerRepoGuid
+              );
 
               if (!vaultRepo) {
                 return false;
@@ -569,12 +571,14 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         return (
           <Space orientation="vertical" size={0}>
             {record.port_mappings.slice(0, 2).map((pm, idx) => (
-              <CaptionText key={idx}>\1</CaptionText>
+              <CaptionText key={idx}>
+                {pm.host_port}:{pm.container_port}/{pm.protocol}
+              </CaptionText>
             ))}
 
             {record.port_mappings.length > 2 && (
               <CaptionText $muted $size={11}>
-                \1
+                +{record.port_mappings.length - 2} more
               </CaptionText>
             )}
           </Space>
@@ -750,7 +754,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
 
       {containers.length > 0 ? (
         <S.ContainersSection data-testid="regular-containers-section">
-          <S.StyledTable
+          <S.StyledTable<Container>
             columns={containerColumns}
             dataSource={containers}
             rowKey="id"
@@ -775,7 +779,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         <S.PluginContainersSection data-testid="plugin-containers-section">
           <S.SectionTitle level={5}>{t('resources:containers.pluginContainers')}</S.SectionTitle>
 
-          <S.StyledTable
+          <S.StyledTable<Container>
             columns={containerColumns}
             dataSource={pluginContainers}
             rowKey="id"

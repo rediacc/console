@@ -118,8 +118,8 @@ export function prepareForkDeletion(
     repoGuid: repoData.repoGuid,
     grandGuid: repoData.grandGuid || undefined,
     parentName: parent?.repoName,
-    repoNetworkId: repoData.repoNetworkId,
-    repoTag: repoData.repoTag,
+    repoNetworkId: repoData.repoNetworkId ?? undefined,
+    repoTag: repoData.repoTag ?? undefined,
   };
 }
 
@@ -167,8 +167,8 @@ export function prepareGrandDeletion(
       errorCode: 'HAS_CHILD_CLONES',
       repoGuid: repoData.repoGuid,
       childClones: validation.childClones,
-      repoNetworkId: repoData.repoNetworkId,
-      repoTag: repoData.repoTag,
+      repoNetworkId: repoData.repoNetworkId ?? undefined,
+      repoTag: repoData.repoTag ?? undefined,
     };
   }
 
@@ -176,8 +176,8 @@ export function prepareGrandDeletion(
     status: 'ready',
     repoGuid: repoData.repoGuid,
     childClones: [],
-    repoNetworkId: repoData.repoNetworkId,
-    repoTag: repoData.repoTag,
+    repoNetworkId: repoData.repoNetworkId ?? undefined,
+    repoTag: repoData.repoTag ?? undefined,
   };
 }
 
@@ -267,9 +267,9 @@ export function prepareBackup(
     canBackupToStorage: storageValidation.canBackup,
     canBackupToMachine: true, // Always allowed
     storageBlockReason: storageValidation.reason,
-    repoNetworkId: repoData.repoNetworkId,
-    repoNetworkMode: repoData.repoNetworkMode,
-    repoTag: repoData.repoTag,
+    repoNetworkId: repoData.repoNetworkId ?? undefined,
+    repoNetworkMode: repoData.repoNetworkMode ?? undefined,
+    repoTag: repoData.repoTag ?? undefined,
   };
 }
 
@@ -307,9 +307,9 @@ export function prepareForkCreation(
     status: 'ready',
     repoGuid: repoData.repoGuid,
     grandGuid,
-    repoNetworkId: repoData.repoNetworkId,
-    repoNetworkMode: repoData.repoNetworkMode,
-    repoTag: repoData.repoTag,
+    repoNetworkId: repoData.repoNetworkId ?? undefined,
+    repoNetworkMode: repoData.repoNetworkMode ?? undefined,
+    repoTag: repoData.repoTag ?? undefined,
     mounted: repoData.mounted,
   };
 }

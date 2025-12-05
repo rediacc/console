@@ -148,42 +148,50 @@ const InfrastructurePage: React.FC = () => {
       switch (unifiedModalState.resourceType) {
         case 'region':
           if (unifiedModalState.mode === 'create') {
-            await createRegionMutation.mutateAsync(data);
+            await createRegionMutation.mutateAsync({
+              regionName: data.regionName as string,
+              regionVault: data.regionVault,
+            });
           } else if (unifiedModalState.data) {
-            if (data.regionName !== unifiedModalState.data.regionName) {
+            if (data.regionName && data.regionName !== unifiedModalState.data.regionName) {
               await updateRegionNameMutation.mutateAsync({
-                currentRegionName: unifiedModalState.data.regionName,
+                currentRegionName: unifiedModalState.data.regionName as string,
                 newRegionName: data.regionName,
               });
             }
             const vaultData = data.regionVault;
             if (vaultData && vaultData !== unifiedModalState.data.vaultContent) {
               await updateRegionVaultMutation.mutateAsync({
-                regionName: data.regionName || unifiedModalState.data.regionName,
+                regionName: (data.regionName || unifiedModalState.data.regionName) as string,
                 regionVault: vaultData,
-                vaultVersion: unifiedModalState.data.vaultVersion + 1,
+                vaultVersion: (unifiedModalState.data.vaultVersion ?? 0) + 1,
               });
             }
           }
           break;
         case 'bridge':
           if (unifiedModalState.mode === 'create') {
-            await createBridgeMutation.mutateAsync(data);
+            await createBridgeMutation.mutateAsync({
+              regionName: data.regionName as string,
+              bridgeName: data.bridgeName as string,
+              bridgeVault: data.bridgeVault,
+            });
           } else if (unifiedModalState.data) {
-            if (data.bridgeName !== unifiedModalState.data.bridgeName) {
+            const bridgeData = unifiedModalState.data as Partial<Bridge>;
+            if (data.bridgeName && data.bridgeName !== bridgeData.bridgeName) {
               await updateBridgeNameMutation.mutateAsync({
-                regionName: unifiedModalState.data.regionName,
-                currentBridgeName: unifiedModalState.data.bridgeName,
+                regionName: bridgeData.regionName as string,
+                currentBridgeName: bridgeData.bridgeName as string,
                 newBridgeName: data.bridgeName,
               });
             }
             const vaultData = data.bridgeVault;
-            if (vaultData && vaultData !== unifiedModalState.data.vaultContent) {
+            if (vaultData && vaultData !== bridgeData.vaultContent) {
               await updateBridgeVaultMutation.mutateAsync({
-                regionName: data.regionName || unifiedModalState.data.regionName,
-                bridgeName: data.bridgeName || unifiedModalState.data.bridgeName,
+                regionName: (data.regionName || bridgeData.regionName) as string,
+                bridgeName: (data.bridgeName || bridgeData.bridgeName) as string,
                 bridgeVault: vaultData,
-                vaultVersion: unifiedModalState.data.vaultVersion + 1,
+                vaultVersion: (bridgeData.vaultVersion ?? 0) + 1,
               });
             }
           }
@@ -201,14 +209,15 @@ const InfrastructurePage: React.FC = () => {
     try {
       if (unifiedModalState.resourceType === 'region') {
         await updateRegionVaultMutation.mutateAsync({
-          regionName: unifiedModalState.data.regionName,
+          regionName: unifiedModalState.data.regionName as string,
           regionVault: vault,
           vaultVersion: version,
         });
       } else {
+        const bridgeData = unifiedModalState.data as Partial<Bridge>;
         await updateBridgeVaultMutation.mutateAsync({
-          regionName: unifiedModalState.data.regionName,
-          bridgeName: unifiedModalState.data.bridgeName,
+          regionName: bridgeData.regionName as string,
+          bridgeName: bridgeData.bridgeName as string,
           bridgeVault: vault,
           vaultVersion: version,
         });
@@ -753,7 +762,7 @@ const InfrastructurePage: React.FC = () => {
         onCancel={closeUnifiedModal}
         resourceType={unifiedModalState.resourceType}
         mode={unifiedModalState.mode}
-        existingData={unifiedModalState.data}
+        existingData={unifiedModalState.data as Partial<Region> | Partial<Bridge> | undefined}
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         isSubmitting={

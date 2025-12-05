@@ -20,7 +20,7 @@ import {
   CloudServerOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import type { MenuProps, TableProps } from 'antd';
+import type { MenuProps } from 'antd';
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles';
 import {
   useDistributedStorageRbdImages,
@@ -51,7 +51,7 @@ interface RbdImageTableProps {
 interface RbdImageModalState {
   open: boolean;
   mode: 'create' | 'edit' | 'vault';
-  data?: DistributedStorageRbdImage & { vaultContent?: string | null };
+  data?: DistributedStorageRbdImage & { vaultContent?: string | null; vaultVersion?: number };
 }
 
 interface ImageFormValues extends Record<string, unknown> {
@@ -81,7 +81,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     pool.teamName,
     modalState.open && modalState.mode === 'create'
   );
-  const getRowProps: TableProps<DistributedStorageRbdImage>['onRow'] = (record) => ({
+  const getRowProps = (record: DistributedStorageRbdImage): Record<string, unknown> => ({
     'data-testid': `rbd-image-row-${record.imageName}`,
   });
 
@@ -373,7 +373,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           expandable={{
             expandedRowRender,
             expandedRowKeys,
-            onExpandedRowsChange: (keys: Key[]) => setExpandedRowKeys(keys.map(String)),
+            onExpandedRowsChange: (keys: readonly Key[]) => setExpandedRowKeys(keys.map(String)),
             expandIcon: ({ expanded, onExpand, record }) => (
               <Button
                 size="small"
@@ -406,20 +406,21 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           vaultContent: modalState.data?.vaultContent || modalState.data?.imageVault,
         }}
         teamFilter={pool.teamName}
-        onSubmit={async (data: ImageFormValues) => {
+        onSubmit={async (data) => {
+          const imageData = data as ImageFormValues;
           if (modalState.mode === 'create') {
             await createImageMutation.mutateAsync({
               poolName: pool.poolName,
               teamName: pool.teamName,
-              imageName: data.imageName,
-              machineName: data.machineName,
-              imageVault: data.imageVault,
+              imageName: imageData.imageName,
+              machineName: imageData.machineName,
+              imageVault: imageData.imageVault,
             });
           } else if (modalState.mode === 'edit') {
             await updateImageVaultMutation.mutateAsync({
               poolName: pool.poolName,
               teamName: pool.teamName,
-              poolVault: data.imageVault,
+              poolVault: imageData.imageVault,
               vaultVersion: modalState.data?.vaultVersion || 0,
             });
           }

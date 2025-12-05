@@ -21,11 +21,7 @@ import * as d3 from 'd3';
 import { SectionCard, IconButton, CompactIconButton } from '@/styles/primitives';
 import { getArchitecturePalette } from './architectureTheme';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import type {
-  CompanyDataGraph,
-  CompanyGraphNode,
-  CompanyGraphRelationship,
-} from '@rediacc/shared/types';
+import type { CompanyDataGraph, CompanyGraphNode } from '@rediacc/shared/types';
 import {
   PageWrapper,
   ContentStack,
@@ -62,9 +58,11 @@ interface GraphNode extends CompanyGraphNode, d3.SimulationNodeDatum {
   children?: GraphNode[];
 }
 
-interface GraphLink extends CompanyGraphRelationship, d3.SimulationLinkDatum<GraphNode> {
+interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
   source: GraphNode;
   target: GraphNode;
+  relationshipType: string;
+  label: string;
 }
 
 type HierarchyGraphNode = GraphNode & { children?: HierarchyGraphNode[] };

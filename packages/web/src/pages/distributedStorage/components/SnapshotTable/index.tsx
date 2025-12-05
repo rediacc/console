@@ -41,7 +41,7 @@ interface SnapshotTableProps {
 interface SnapshotModalState {
   open: boolean;
   mode: 'create' | 'edit' | 'vault';
-  data?: DistributedStorageRbdSnapshot & { vaultContent?: string | null };
+  data?: DistributedStorageRbdSnapshot & { vaultContent?: string | null; vaultVersion?: number };
 }
 
 interface SnapshotFormValues extends Record<string, unknown> {
@@ -272,7 +272,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
             expandable={{
               expandedRowRender,
               expandedRowKeys,
-              onExpandedRowsChange: (keys: Key[]) => setExpandedRowKeys(keys.map(String)),
+              onExpandedRowsChange: (keys: readonly Key[]) => setExpandedRowKeys(keys.map(String)),
               expandIcon: ({ onExpand, record }) => (
                 <ExpandButton
                   size="small"
@@ -301,20 +301,21 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
           vaultContent: modalState.data?.vaultContent || modalState.data?.snapshotVault,
         }}
         teamFilter={pool.teamName}
-        onSubmit={async (data: SnapshotFormValues) => {
+        onSubmit={async (data) => {
+          const snapshotData = data as SnapshotFormValues;
           if (modalState.mode === 'create') {
             await createSnapshotMutation.mutateAsync({
               imageName: image.imageName,
               poolName: pool.poolName,
               teamName: pool.teamName,
-              snapshotName: data.snapshotName,
-              snapshotVault: data.snapshotVault,
+              snapshotName: snapshotData.snapshotName,
+              snapshotVault: snapshotData.snapshotVault,
             });
           } else if (modalState.mode === 'edit') {
             await updateVaultMutation.mutateAsync({
               poolName: pool.poolName,
               teamName: pool.teamName,
-              poolVault: data.snapshotVault,
+              poolVault: snapshotData.snapshotVault,
               vaultVersion: modalState.data?.vaultVersion || 0,
             });
           }

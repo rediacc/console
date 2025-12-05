@@ -767,7 +767,8 @@ const QueuePage: React.FC = () => {
               $minWidth={160}
               placeholder="Status"
               value={filters.statusFilter}
-              onChange={handleStatusFilterChange}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              onChange={handleStatusFilterChange as any}
               options={[
                 { label: t('queue:statusPending'), value: 'PENDING' },
                 { label: t('queue:statusActive'), value: 'ACTIVE' },

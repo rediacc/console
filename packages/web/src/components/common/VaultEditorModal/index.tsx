@@ -235,4 +235,3 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
 };
 
 export default VaultEditorModal;
-

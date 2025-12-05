@@ -37,7 +37,7 @@ export const StatusIcon = styled(StyledIcon).attrs<{
   $size?: number;
 }>(({ $tone = 'primary', $size }) => ({
   as: SafetyCertificateOutlined,
-  $size: $size ?? DESIGN_TOKENS.FONT_SIZE.XXXXL,
+  $size: $size ?? DESIGN_TOKENS.FONT_SIZE.XXXXXXL,
   $color: ICON_TONES[$tone],
 }))``;
 
@@ -74,7 +74,7 @@ export const CenteredCodeInput = styled(Input)`
   && {
     text-align: center;
     font-size: ${({ theme }) => theme.fontSize.XL}px;
-    letter-spacing: ${DESIGN_TOKENS.LETTER_SPACING.WIDER};
+    letter-spacing: ${DESIGN_TOKENS.LETTER_SPACING.WIDE};
   }
 `;
 

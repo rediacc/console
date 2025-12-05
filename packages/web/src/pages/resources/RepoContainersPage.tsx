@@ -8,7 +8,7 @@ import { DETAIL_PANEL } from '@/constants/layout';
 import { useMachines } from '@/api/queries/machines';
 import { useRepos } from '@/api/queries/repos';
 import { RepoContainerTable } from '@/pages/resources/components/RepoContainerTable';
-import { Machine } from '@/types';
+import { Machine, PluginContainer } from '@/types';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { useQueueTraceModal } from '@/hooks/useDialogState';
@@ -57,34 +57,6 @@ interface Repo {
   originalGuid?: string;
 }
 
-interface ContainerData {
-  id: string;
-  name: string;
-  image: string;
-  command: string;
-  created: string;
-  status: string;
-  state: string;
-  ports: string;
-  port_mappings?: Array<{
-    host?: string;
-    host_port?: string;
-    container_port: string;
-    protocol: string;
-  }>;
-  labels: string;
-  mounts: string;
-  networks: string;
-  size: string;
-  repo: string;
-  cpu_percent: string;
-  memory_usage: string;
-  memory_percent: string;
-  net_io: string;
-  block_io: string;
-  pids: string;
-}
-
 type RepoContainersLocationState = {
   machine?: Machine;
   repo?: Repo;
@@ -97,14 +69,14 @@ const isRepoData = (value: unknown): value is Repo => {
 const RepoContainersPage: React.FC = () => {
   const { machineName, repoName } = useParams<{ machineName: string; repoName: string }>();
   const navigate = useNavigate();
-  const location = useLocation<RepoContainersLocationState>();
+  const location = useLocation() as { state?: RepoContainersLocationState };
   const { t } = useTranslation(['resources', 'machines', 'common']);
 
   // Extract machine and repo from navigation state
   const machine = location.state?.machine;
   const repo = location.state?.repo;
 
-  const [selectedContainer, setSelectedContainer] = useState<ContainerData | null>(null);
+  const [selectedContainer, setSelectedContainer] = useState<PluginContainer | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const queueTrace = useQueueTraceModal();
 
@@ -141,7 +113,7 @@ const RepoContainersPage: React.FC = () => {
           // Search by GUID if we have it, otherwise try by name as fallback
           return (
             result.repositories.find(
-              (candidate): candidate is Repo =>
+              (candidate: unknown): candidate is Repo =>
                 isRepoData(candidate) &&
                 (repoGuidToFind ? candidate.name === repoGuidToFind : candidate.name === repoName)
             ) || null
@@ -183,8 +155,10 @@ const RepoContainersPage: React.FC = () => {
     navigate('/machines');
   };
 
-  const handleContainerClick = (container: ContainerData) => {
-    setSelectedContainer(container);
+  const handleContainerClick = (
+    container: PluginContainer | { id: string; name: string; state: string; [key: string]: unknown }
+  ) => {
+    setSelectedContainer(container as PluginContainer);
     setIsPanelCollapsed(false);
   };
 

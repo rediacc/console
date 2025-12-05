@@ -2,7 +2,9 @@
 import { Repo } from '@/api/queries/repos';
 import { Space, Dropdown, Tooltip, Tag } from 'antd';
 import type { MenuProps } from 'antd';
-import type { MenuInfo } from 'rc-menu/lib/interface';
+
+// Type for menu item click event
+type MenuClickEvent = { key: string; domEvent: React.MouseEvent | React.KeyboardEvent };
 import {
   FolderOutlined,
   CloudUploadOutlined,
@@ -147,7 +149,7 @@ export const SplitRepoView: React.FC<SplitRepoViewProps> = ({
             key: 'edit',
             label: t('common:actions.edit'),
             icon: <EditOutlined />,
-            onClick: (e: MenuInfo) => {
+            onClick: (e: MenuClickEvent) => {
               e.domEvent.stopPropagation();
               onEditRepo(record);
             },
@@ -159,7 +161,7 @@ export const SplitRepoView: React.FC<SplitRepoViewProps> = ({
             key: 'vault',
             label: t('resources:repos.manageVault'),
             icon: <KeyOutlined />,
-            onClick: (e: MenuInfo) => {
+            onClick: (e: MenuClickEvent) => {
               e.domEvent.stopPropagation();
               onVaultRepo(record);
             },
@@ -172,7 +174,7 @@ export const SplitRepoView: React.FC<SplitRepoViewProps> = ({
             label: t('common:actions.delete'),
             icon: <DeleteOutlined />,
             danger: true,
-            onClick: (e: MenuInfo) => {
+            onClick: (e: MenuClickEvent) => {
               e.domEvent.stopPropagation();
               onDeleteRepo(record);
             },

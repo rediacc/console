@@ -1,30 +1,43 @@
-import { Middleware } from '@reduxjs/toolkit';
-import type { AnyAction } from '@reduxjs/toolkit';
+import type { Middleware, UnknownAction } from '@reduxjs/toolkit';
 import { clearStaleValidations } from './machineAssignmentSlice';
+import type { RootState, AppDispatch } from '@/store/store';
 
 // Configuration
 const VALIDATION_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const VALIDATION_CLEANUP_INTERVAL = 60 * 1000; // Check every minute
 
+// Type for our middleware store API
+interface MiddlewareStore {
+  getState: () => RootState;
+  dispatch: AppDispatch;
+}
+
+// Track initialization state
+let middlewareInitialized = false;
+
 // Middleware for managing side effects
-export const machineAssignmentMiddleware: Middleware = (store) => {
-  // Set up periodic validation cache cleanup
-  const validationCleanupInterval = setInterval(() => {
-    store.dispatch(clearStaleValidations(VALIDATION_CACHE_DURATION));
-  }, VALIDATION_CLEANUP_INTERVAL);
+export const machineAssignmentMiddleware: Middleware =
+  (store: MiddlewareStore) => (next) => (action) => {
+    // Set up periodic validation cache cleanup (only once)
+    if (!middlewareInitialized) {
+      middlewareInitialized = true;
+      const validationCleanupInterval = setInterval(() => {
+        store.dispatch(clearStaleValidations(VALIDATION_CACHE_DURATION));
+      }, VALIDATION_CLEANUP_INTERVAL);
 
-  // Clean up on unload
-  if (typeof window !== 'undefined') {
-    window.addEventListener('beforeunload', () => {
-      clearInterval(validationCleanupInterval);
-    });
-  }
+      // Clean up on unload
+      if (typeof window !== 'undefined') {
+        window.addEventListener('beforeunload', () => {
+          clearInterval(validationCleanupInterval);
+        });
+      }
+    }
 
-  return (next) => (action: AnyAction) => {
     const result = next(action);
+    const typedAction = action as UnknownAction;
 
     // Handle specific actions
-    switch (action.type) {
+    switch (typedAction.type) {
       case 'machineAssignment/completeBulkOperation': {
         // Clear validations for machines that were part of the operation
         const state = store.getState();
@@ -52,20 +65,20 @@ export const machineAssignmentMiddleware: Middleware = (store) => {
 
     return result;
   };
-};
 
 // Middleware for persisting selection across page refreshes (optional)
 export const machineSelectionPersistenceMiddleware: Middleware =
-  (store) => (next) => (action: AnyAction) => {
+  (store: MiddlewareStore) => (next) => (action) => {
     const result = next(action);
+    const typedAction = action as UnknownAction;
 
     // Persist selection to sessionStorage
     if (
-      action.type === 'machineAssignment/setSelectedMachines' ||
-      action.type === 'machineAssignment/addSelectedMachines' ||
-      action.type === 'machineAssignment/removeSelectedMachines' ||
-      action.type === 'machineAssignment/clearSelection' ||
-      action.type === 'machineAssignment/toggleMachineSelection'
+      typedAction.type === 'machineAssignment/setSelectedMachines' ||
+      typedAction.type === 'machineAssignment/addSelectedMachines' ||
+      typedAction.type === 'machineAssignment/removeSelectedMachines' ||
+      typedAction.type === 'machineAssignment/clearSelection' ||
+      typedAction.type === 'machineAssignment/toggleMachineSelection'
     ) {
       const state = store.getState();
       const selectedMachines = state.machineAssignment.selectedMachines;
@@ -82,9 +95,10 @@ export const machineSelectionPersistenceMiddleware: Middleware =
 
 // Middleware for logging operations (development only)
 export const machineAssignmentLoggingMiddleware: Middleware =
-  (store) => (next) => (action: AnyAction) => {
-    if (import.meta.env.DEV && action.type?.startsWith('machineAssignment/')) {
-      console.warn(`Machine Assignment action: ${action.type}`, {
+  (store: MiddlewareStore) => (next) => (action) => {
+    const typedAction = action as UnknownAction;
+    if (import.meta.env.DEV && String(typedAction.type).startsWith('machineAssignment/')) {
+      console.warn(`Machine Assignment action: ${typedAction.type}`, {
         action,
         stateBefore: store.getState().machineAssignment,
       });
@@ -92,7 +106,7 @@ export const machineAssignmentLoggingMiddleware: Middleware =
 
     const result = next(action);
 
-    if (import.meta.env.DEV && action.type?.startsWith('machineAssignment/')) {
+    if (import.meta.env.DEV && String(typedAction.type).startsWith('machineAssignment/')) {
       console.warn('Machine Assignment state after:', store.getState().machineAssignment);
     }
 
@@ -117,7 +131,6 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { MachineValidationService } from '@/features/distributed-storage';
 import type { Machine } from '@/types';
 import { setMultipleValidationResults } from './machineAssignmentSlice';
-import type { RootState } from '@/store/store';
 import type { BulkValidationResult, ValidationResult } from '@/features/distributed-storage';
 
 export const validateSelectedMachines = createAsyncThunk<

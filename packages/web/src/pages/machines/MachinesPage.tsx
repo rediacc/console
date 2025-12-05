@@ -41,13 +41,6 @@ import {
   ContentSection,
 } from '@/styles/primitives';
 
-type MachinesLocationState = {
-  createRepo?: boolean;
-  selectedTeam?: string;
-  selectedMachine?: string;
-  selectedTemplate?: string;
-} | null;
-
 interface MachineFormValues extends Record<string, unknown> {
   teamName: string;
   machineName: string;
@@ -73,7 +66,7 @@ interface MachineFunctionData {
 const MachinesPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common']);
   const [modal, contextHolder] = Modal.useModal();
-  const location = useLocation<MachinesLocationState>();
+  const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
 
@@ -84,7 +77,7 @@ const MachinesPage: React.FC = () => {
     currentResource,
     openModal: openUnifiedModal,
     closeModal: closeUnifiedModal,
-  } = useUnifiedModal<Machine>('machine');
+  } = useUnifiedModal<Machine & Record<string, unknown>>('machine');
 
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [selectedRepoFromMachine, setSelectedRepoFromMachine] = useState<Repo | null>(null);
@@ -532,8 +525,12 @@ const MachinesPage: React.FC = () => {
                   showFilters
                   showActions
                   onCreateMachine={() => openUnifiedModal('create')}
-                  onEditMachine={(machine) => openUnifiedModal('edit', machine)}
-                  onVaultMachine={(machine) => openUnifiedModal('vault', machine)}
+                  onEditMachine={(machine) =>
+                    openUnifiedModal('edit', machine as Machine & Record<string, unknown>)
+                  }
+                  onVaultMachine={(machine) =>
+                    openUnifiedModal('vault', machine as Machine & Record<string, unknown>)
+                  }
                   onFunctionsMachine={(machine, functionName) => {
                     // WARNING: Do not change this pattern!
                     // - Specific functions (functionName defined): Queue directly with defaults, NO modal
@@ -543,7 +540,7 @@ const MachinesPage: React.FC = () => {
                     if (functionName) {
                       handleDirectFunctionQueue(machine, functionName);
                     } else {
-                      openUnifiedModal('create', machine);
+                      openUnifiedModal('create', machine as Machine & Record<string, unknown>);
                     }
                   }}
                   onDeleteMachine={handleDeleteMachine}
@@ -574,9 +571,15 @@ const MachinesPage: React.FC = () => {
         existingData={modalExistingData}
         teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
         preselectedFunction={unifiedModalState.preselectedFunction}
-        onSubmit={handleUnifiedModalSubmit}
+        onSubmit={async (data) => {
+          const machineData = data as MachineFormValues;
+          await handleUnifiedModalSubmit(machineData);
+        }}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
-        onFunctionSubmit={handleMachineFunctionSelected}
+        onFunctionSubmit={(functionData) => {
+          const machineFunctionData = functionData as MachineFunctionData;
+          return handleMachineFunctionSelected(machineFunctionData);
+        }}
         isSubmitting={isSubmitting}
         isUpdatingVault={isUpdatingVault}
         functionCategories={['machine', 'backup']}

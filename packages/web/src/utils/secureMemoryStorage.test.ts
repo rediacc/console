@@ -4,7 +4,6 @@
  */
 
 /* eslint-disable no-console */
-import type { SecureMemoryStorage } from '@/core/utils/crypto';
 import { secureStorage } from './secureMemoryStorage';
 
 export async function testSecureStorage() {
@@ -78,9 +77,8 @@ export async function testSecureStorage() {
     await secureStorage.setItem('tamper_test', 'original data');
 
     // Try to manually tamper with the encrypted data
-    const storage = (secureStorage as SecureMemoryStorage & { storage: Map<string, string> })
-      .storage;
-    const encryptedData = storage.get('tamper_test');
+    const storage = (secureStorage as unknown as { storage: Map<string, unknown> }).storage;
+    const encryptedData = storage.get('tamper_test') as { ciphertext: string } | undefined;
     if (encryptedData) {
       // Tamper with the ciphertext
       const tamperedData = {

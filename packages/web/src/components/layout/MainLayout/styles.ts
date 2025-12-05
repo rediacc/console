@@ -105,7 +105,7 @@ export const TransitionOverlay = styled.div`
 `;
 
 export const TransitionIcon = styled.div`
-  font-size: ${DESIGN_TOKENS.FONT_SIZE.XXXXL}px;
+  font-size: ${DESIGN_TOKENS.FONT_SIZE.XXXXXXL}px;
   color: var(--color-primary);
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;

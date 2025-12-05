@@ -58,7 +58,7 @@ interface LayoutShiftEntry extends PerformanceEntry {
   hadRecentInput?: boolean;
 }
 
-interface ExtendedPerformance extends Performance {
+interface ExtendedPerformance {
   memory?: {
     jsHeapSizeLimit: number;
     usedJSHeapSize: number;

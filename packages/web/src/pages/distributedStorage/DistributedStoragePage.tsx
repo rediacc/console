@@ -180,14 +180,14 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
           await updateClusterVaultMutation.mutateAsync({
             clusterName: data.clusterName,
             clusterVault: data.clusterVault,
-            vaultVersion: data.vaultVersion,
+            vaultVersion: data.vaultVersion ?? 0,
           });
         } else if (type === 'pool' && isPoolFormValues(data)) {
           await updatePoolVaultMutation.mutateAsync({
             poolName: data.poolName,
             teamName: data.teamName,
             poolVault: data.poolVault,
-            vaultVersion: data.vaultVersion,
+            vaultVersion: data.vaultVersion ?? 0,
           });
         }
       }
@@ -267,10 +267,10 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
           clusters={clusters}
           loading={clustersLoading}
           onCreateCluster={() => openModal('cluster', 'create')}
-          onEditCluster={(cluster) => openModal('cluster', 'edit', cluster)}
+          onEditCluster={(cluster) => openModal('cluster', 'edit', cluster as ModalData)}
           onDeleteCluster={(cluster) => handleDelete('cluster', cluster)}
           onRunFunction={(cluster) =>
-            openModal('cluster', 'create', { ...cluster, isFunction: true })
+            openModal('cluster', 'create', { ...cluster, isFunction: true } as ModalData)
           }
         />
       );
@@ -283,9 +283,11 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
           clusters={clusters}
           loading={poolsLoading}
           onCreatePool={() => openModal('pool', 'create')}
-          onEditPool={(pool) => openModal('pool', 'edit', pool)}
+          onEditPool={(pool) => openModal('pool', 'edit', pool as ModalData)}
           onDeletePool={(pool) => handleDelete('pool', pool)}
-          onRunFunction={(pool) => openModal('pool', 'create', { ...pool, isFunction: true })}
+          onRunFunction={(pool) =>
+            openModal('pool', 'create', { ...pool, isFunction: true } as ModalData)
+          }
         />
       );
     }
@@ -374,24 +376,26 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
               teamName: primaryTeam,
               clusters: clusters,
               pools: pools,
-              vaultContent:
-                modalState.data?.vaultContent || modalState.data?.[`${modalState.type}Vault`],
+              vaultContent: (modalState.data?.vaultContent ||
+                modalState.data?.[`${modalState.type}Vault`] ||
+                undefined) as string | undefined,
             }}
             teamFilter={primaryTeam}
-            onSubmit={handleModalSubmit}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onSubmit={handleModalSubmit as any}
             onFunctionSubmit={handleFunctionSubmit}
             onUpdateVault={async (vault: string, version: number) => {
               const data = modalState.data || {};
               if (modalState.type === 'cluster') {
                 await updateClusterVaultMutation.mutateAsync({
-                  clusterName: data.clusterName,
+                  clusterName: data.clusterName as string,
                   clusterVault: vault,
                   vaultVersion: version,
                 });
               } else if (modalState.type === 'pool' && primaryTeam) {
                 await updatePoolVaultMutation.mutateAsync({
                   teamName: primaryTeam,
-                  poolName: data.poolName,
+                  poolName: data.poolName as string,
                   poolVault: vault,
                   vaultVersion: version,
                 });
@@ -412,14 +416,14 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
             defaultParams={
               modalState.data?.isFunction
                 ? modalState.type === 'cluster'
-                  ? { cluster_name: modalState.data.clusterName }
+                  ? { cluster_name: modalState.data.clusterName as string }
                   : {
-                      cluster_name: modalState.data.clusterName,
-                      pool_name: modalState.data.poolName,
+                      cluster_name: modalState.data.clusterName as string,
+                      pool_name: modalState.data.poolName as string,
                     }
-                : {}
+                : undefined
             }
-            preselectedFunction={modalState.data?.preselectedFunction}
+            preselectedFunction={modalState.data?.preselectedFunction as string | undefined}
           />
 
           <QueueItemTraceModal

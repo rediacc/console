@@ -90,7 +90,9 @@ import {
   StatusText,
 } from './styles';
 import {
-  normalizeProperty,
+  normalizeToString,
+  normalizeToNumber,
+  normalizeToBoolean,
   extractMostRecentProgress,
   extractProgressMessage,
   formatDuration,
@@ -111,15 +113,15 @@ const getTimelineTimestamp = (
   if (!traceLogs || traceLogs.length === 0) return null;
 
   // Try primary action first
-  let log = traceLogs.find((log) => normalizeProperty(log, 'action', 'Action') === action);
+  let log = traceLogs.find((log) => normalizeToString(log, 'action', 'Action') === action);
 
   // If not found and fallback provided, try fallback action
   if (!log && fallbackAction) {
-    log = traceLogs.find((log) => normalizeProperty(log, 'action', 'Action') === fallbackAction);
+    log = traceLogs.find((log) => normalizeToString(log, 'action', 'Action') === fallbackAction);
   }
 
   if (log) {
-    const timestamp = normalizeProperty(log, 'timestamp', 'Timestamp');
+    const timestamp = normalizeToString(log, 'timestamp', 'Timestamp');
     return timestamp ? formatTimestampAsIs(timestamp, 'time') : null;
   }
 
@@ -334,7 +336,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   // Monitor status changes and notify parent component
   useEffect(() => {
     if (traceData?.queueDetails && taskId && onTaskStatusChange) {
-      const status = normalizeProperty(traceData.queueDetails, 'status', 'Status');
+      const status = normalizeToString(traceData.queueDetails, 'status', 'Status');
       if (status === 'FAILED' || status === 'COMPLETED' || status === 'CANCELLED') {
         onTaskStatusChange(status, taskId);
       }
@@ -370,15 +372,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   const handleClose = () => {
     // If task is still active and monitoring is enabled, remind user
     if (taskId && isMonitoring && traceData?.queueDetails) {
-      const status = normalizeProperty(traceData.queueDetails, 'status', 'Status');
-      const retryCount = normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0;
-      const permanentlyFailed = normalizeProperty(
+      const status = normalizeToString(traceData.queueDetails, 'status', 'Status');
+      const retryCount = normalizeToNumber(traceData.queueDetails, 0, 'retryCount', 'RetryCount');
+      const permanentlyFailed = normalizeToBoolean(
         traceData.queueDetails,
         'permanentlyFailed',
         'PermanentlyFailed'
       );
 
-      const lastFailureReason = normalizeProperty(
+      const lastFailureReason = normalizeToString(
         traceData.queueDetails,
         'lastFailureReason',
         'LastFailureReason'
@@ -400,9 +402,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   // Helper function to get simplified status
   const getSimplifiedStatus = () => {
     if (!traceData?.queueDetails) return { status: 'unknown', color: 'default', icon: null };
-    const status = normalizeProperty(traceData.queueDetails, 'status', 'Status');
-    const retryCount = normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0;
-    const lastFailureReason = normalizeProperty(
+    const status = normalizeToString(traceData.queueDetails, 'status', 'Status');
+    const retryCount = normalizeToNumber(traceData.queueDetails, 0, 'retryCount', 'RetryCount');
+    const lastFailureReason = normalizeToString(
       traceData.queueDetails,
       'lastFailureReason',
       'LastFailureReason'
@@ -439,15 +441,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   const getTaskStaleness = () => {
     if (!traceData?.queueDetails) return 'none';
     const lastAssigned =
-      normalizeProperty(traceData.queueDetails, 'lastAssigned', 'LastAssigned') ||
-      normalizeProperty(traceData.queueDetails, 'assignedTime', 'AssignedTime');
-    const lastRetryAt = normalizeProperty(traceData.queueDetails, 'lastRetryAt', 'LastRetryAt');
-    const lastResponseAt = normalizeProperty(
+      normalizeToString(traceData.queueDetails, 'lastAssigned', 'LastAssigned') ||
+      normalizeToString(traceData.queueDetails, 'assignedTime', 'AssignedTime');
+    const lastRetryAt = normalizeToString(traceData.queueDetails, 'lastRetryAt', 'LastRetryAt');
+    const lastResponseAt = normalizeToString(
       traceData.queueDetails,
       'lastResponseAt',
       'LastResponseAt'
     );
-    const status = normalizeProperty(traceData.queueDetails, 'status', 'Status');
+    const status = normalizeToString(traceData.queueDetails, 'status', 'Status');
 
     // Only check staleness for active processing tasks
     if (
@@ -488,9 +490,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   // Helper function to check if task is old pending (6+ hours)
   const isStalePending = () => {
     if (!traceData?.queueDetails) return false;
-    const status = normalizeProperty(traceData.queueDetails, 'status', 'Status');
-    const healthStatus = normalizeProperty(traceData.queueDetails, 'healthStatus', 'HealthStatus');
-    const createdTime = normalizeProperty(traceData.queueDetails, 'createdTime', 'CreatedTime');
+    const status = normalizeToString(traceData.queueDetails, 'status', 'Status');
+    const healthStatus = normalizeToString(traceData.queueDetails, 'healthStatus', 'HealthStatus');
+    const createdTime = normalizeToString(traceData.queueDetails, 'createdTime', 'CreatedTime');
 
     if (healthStatus === 'STALE_PENDING') return true;
 
@@ -524,7 +526,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   // Get current step for Steps component (3 steps: Assigned, Processing, Completed)
   const getCurrentStep = () => {
     if (!traceData?.queueDetails) return 0;
-    const status = normalizeProperty(traceData.queueDetails, 'status', 'Status');
+    const status = normalizeToString(traceData.queueDetails, 'status', 'Status');
 
     switch (status) {
       case 'COMPLETED':
@@ -579,9 +581,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
         // Style and text vary based on staleness level
         traceData?.queueDetails &&
         traceData.queueDetails.canBeCancelled &&
-        (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
-          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
-          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING') ? (
+        (normalizeToString(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
+          normalizeToString(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
+          normalizeToString(traceData.queueDetails, 'status', 'Status') === 'PROCESSING') ? (
           <ActionButton
             key="cancel"
             data-testid="queue-trace-cancel-button"
@@ -603,9 +605,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
         ) : null,
         // Show Retry button only for failed tasks that haven't reached max retries
         traceData?.queueDetails &&
-        normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' &&
-        (normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0) < 2 &&
-        !normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed') ? (
+        normalizeToString(traceData.queueDetails, 'status', 'Status') === 'FAILED' &&
+        normalizeToNumber(traceData.queueDetails, 0, 'retryCount', 'RetryCount') < 2 &&
+        !normalizeToBoolean(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed') ? (
           <Button
             key="retry"
             data-testid="queue-trace-retry-button"
@@ -669,9 +671,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
               icon={<WarningOutlined />}
               action={
                 traceData?.queueDetails?.canBeCancelled &&
-                (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') ===
+                (normalizeToString(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
+                  normalizeToString(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
+                  normalizeToString(traceData.queueDetails, 'status', 'Status') ===
                     'PROCESSING') ? (
                   <Button
                     danger
@@ -697,9 +699,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
               icon={<ExclamationCircleOutlined />}
               action={
                 traceData?.queueDetails?.canBeCancelled &&
-                (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') ===
+                (normalizeToString(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
+                  normalizeToString(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
+                  normalizeToString(traceData.queueDetails, 'status', 'Status') ===
                     'PROCESSING') ? (
                   <ActionButton
                     $bold
@@ -731,7 +733,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
 
           {/* Cancelling Status Alert */}
           {traceData.queueDetails &&
-            normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' && (
+            normalizeToString(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' && (
               <SpacedAlert
                 data-testid="queue-trace-alert-cancelling"
                 message="Task Being Cancelled"
@@ -744,36 +746,37 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
 
           {/* Failure Reason Alert */}
           {traceData.queueDetails &&
-            normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') &&
-            normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLING' && (
+            normalizeToString(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') &&
+            normalizeToString(traceData.queueDetails, 'status', 'Status') !== 'CANCELLING' && (
               <SpacedAlert
                 data-testid="queue-trace-alert-failure"
                 message={
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' &&
-                  normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') > 0
-                    ? normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') >= 2
+                  normalizeToString(traceData.queueDetails, 'status', 'Status') === 'PENDING' &&
+                  normalizeToNumber(traceData.queueDetails, 0, 'retryCount', 'RetryCount') > 0
+                    ? normalizeToNumber(traceData.queueDetails, 0, 'retryCount', 'RetryCount') >= 2
                       ? 'Task Failed - Max Retries Reached'
                       : 'Task Failed - Retrying'
                     : 'Task Failed'
                 }
-                description={normalizeProperty(
+                description={normalizeToString(
                   traceData.queueDetails,
                   'lastFailureReason',
                   'LastFailureReason'
                 )}
                 type={
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' &&
-                  normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') > 0
-                    ? normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') >= 2
+                  normalizeToString(traceData.queueDetails, 'status', 'Status') === 'PENDING' &&
+                  normalizeToNumber(traceData.queueDetails, 0, 'retryCount', 'RetryCount') > 0
+                    ? normalizeToNumber(traceData.queueDetails, 0, 'retryCount', 'RetryCount') >= 2
                       ? 'error'
                       : 'warning'
                     : 'error'
                 }
                 showIcon
                 icon={
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' &&
-                  normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') > 0 ? (
-                    normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') >= 2 ? (
+                  normalizeToString(traceData.queueDetails, 'status', 'Status') === 'PENDING' &&
+                  normalizeToNumber(traceData.queueDetails, 0, 'retryCount', 'RetryCount') > 0 ? (
+                    normalizeToNumber(traceData.queueDetails, 0, 'retryCount', 'RetryCount') >=
+                    2 ? (
                       <CloseCircleOutlined />
                     ) : (
                       <RetweetOutlined />
@@ -817,7 +820,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                       title: 'Processing',
                       description: (() => {
                         const currentStep = getCurrentStep();
-                        const status = normalizeProperty(
+                        const status = normalizeToString(
                           traceData.queueDetails,
                           'status',
                           'Status'
@@ -850,16 +853,16 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                     {
                       title: 'Completed',
                       description:
-                        normalizeProperty(traceData.queueDetails, 'status', 'Status') ===
+                        normalizeToString(traceData.queueDetails, 'status', 'Status') ===
                         'COMPLETED'
                           ? `Done${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED') : ''}`
-                          : normalizeProperty(traceData.queueDetails, 'status', 'Status') ===
+                          : normalizeToString(traceData.queueDetails, 'status', 'Status') ===
                               'FAILED'
                             ? `Failed${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED') : ''}`
-                            : normalizeProperty(traceData.queueDetails, 'status', 'Status') ===
+                            : normalizeToString(traceData.queueDetails, 'status', 'Status') ===
                                 'CANCELLED'
                               ? `Cancelled${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED') : ''}`
-                              : normalizeProperty(traceData.queueDetails, 'status', 'Status') ===
+                              : normalizeToString(traceData.queueDetails, 'status', 'Status') ===
                                   'CANCELLING'
                                 ? 'Cancelling'
                                 : '',
@@ -869,9 +872,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
 
                 {/* Progress Message - Shows current operation being performed (hidden when completed) */}
                 {progressMessage &&
-                  normalizeProperty(traceData?.queueDetails, 'status', 'Status') !== 'COMPLETED' &&
-                  normalizeProperty(traceData?.queueDetails, 'status', 'Status') !== 'FAILED' &&
-                  normalizeProperty(traceData?.queueDetails, 'status', 'Status') !==
+                  normalizeToString(traceData?.queueDetails, 'status', 'Status') !== 'COMPLETED' &&
+                  normalizeToString(traceData?.queueDetails, 'status', 'Status') !== 'FAILED' &&
+                  normalizeToString(traceData?.queueDetails, 'status', 'Status') !==
                     'CANCELLED' && (
                     <NoteWrapper>
                       <ItalicCaption type="secondary">{progressMessage}</ItalicCaption>
@@ -930,18 +933,18 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                           <Tag
                             color={
                               getPriorityInfo(
-                                normalizeProperty(traceData.queueDetails, 'priority', 'Priority')
+                                normalizeToNumber(traceData.queueDetails, 0, 'priority', 'Priority')
                               ).color
                             }
                           >
                             {
                               getPriorityInfo(
-                                normalizeProperty(traceData.queueDetails, 'priority', 'Priority')
+                                normalizeToNumber(traceData.queueDetails, 0, 'priority', 'Priority')
                               ).icon
                             }
                             {
                               getPriorityInfo(
-                                normalizeProperty(traceData.queueDetails, 'priority', 'Priority')
+                                normalizeToNumber(traceData.queueDetails, 0, 'priority', 'Priority')
                               ).label
                             }
                           </Tag>
@@ -1024,13 +1027,13 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                           ),
                           extra:
                             traceData.queueDetails.canBeCancelled &&
-                            normalizeProperty(traceData.queueDetails, 'status', 'Status') !==
+                            normalizeToString(traceData.queueDetails, 'status', 'Status') !==
                               'COMPLETED' &&
-                            normalizeProperty(traceData.queueDetails, 'status', 'Status') !==
+                            normalizeToString(traceData.queueDetails, 'status', 'Status') !==
                               'CANCELLED' &&
-                            normalizeProperty(traceData.queueDetails, 'status', 'Status') !==
+                            normalizeToString(traceData.queueDetails, 'status', 'Status') !==
                               'CANCELLING' &&
-                            normalizeProperty(traceData.queueDetails, 'status', 'Status') !==
+                            normalizeToString(traceData.queueDetails, 'status', 'Status') !==
                               'FAILED' ? (
                               <Tooltip title="This task can be cancelled">
                                 <Badge status="processing" text="Cancellable" />
@@ -1049,7 +1052,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                     <Descriptions column={1} size="small">
                                       <Descriptions.Item label="Task ID">
                                         <Text code>
-                                          {normalizeProperty(
+                                          {normalizeToString(
                                             traceData.queueDetails,
                                             'taskId',
                                             'TaskId'
@@ -1060,7 +1063,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                         <Space>
                                           <UserOutlined />
                                           <Text>
-                                            {normalizeProperty(
+                                            {normalizeToString(
                                               traceData.queueDetails,
                                               'createdBy',
                                               'CreatedBy'
@@ -1073,14 +1076,16 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                           <RetweetOutlined />
                                           <Tag
                                             color={
-                                              normalizeProperty(
+                                              normalizeToNumber(
                                                 traceData.queueDetails,
+                                                0,
                                                 'retryCount',
                                                 'RetryCount'
                                               ) === 0
                                                 ? 'green'
-                                                : normalizeProperty(
+                                                : normalizeToNumber(
                                                       traceData.queueDetails,
+                                                      0,
                                                       'retryCount',
                                                       'RetryCount'
                                                     ) < 2
@@ -1088,14 +1093,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                   : 'red'
                                             }
                                           >
-                                            {normalizeProperty(
+                                            {normalizeToNumber(
                                               traceData.queueDetails,
+                                              0,
                                               'retryCount',
                                               'RetryCount'
-                                            ) || 0}{' '}
+                                            )}{' '}
                                             / 2 retries
                                           </Tag>
-                                          {normalizeProperty(
+                                          {normalizeToBoolean(
                                             traceData.queueDetails,
                                             'permanentlyFailed',
                                             'PermanentlyFailed'
@@ -1106,8 +1112,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                         <Space>
                                           {
                                             getPriorityInfo(
-                                              normalizeProperty(
+                                              normalizeToNumber(
                                                 traceData.queueDetails,
+                                                0,
                                                 'priority',
                                                 'Priority'
                                               )
@@ -1116,8 +1123,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                           <Tag
                                             color={
                                               getPriorityInfo(
-                                                normalizeProperty(
+                                                normalizeToNumber(
                                                   traceData.queueDetails,
+                                                  0,
                                                   'priority',
                                                   'Priority'
                                                 )
@@ -1126,8 +1134,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                           >
                                             {
                                               getPriorityInfo(
-                                                normalizeProperty(
+                                                normalizeToNumber(
                                                   traceData.queueDetails,
+                                                  0,
                                                   'priority',
                                                   'Priority'
                                                 )
@@ -1277,43 +1286,43 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Descriptions column={2} size="small">
                               <Descriptions.Item label="Task ID">
                                 <Text code>
-                                  {normalizeProperty(traceData.queueDetails, 'taskId', 'TaskId')}
+                                  {normalizeToString(traceData.queueDetails, 'taskId', 'TaskId')}
                                 </Text>
                               </Descriptions.Item>
                               <Descriptions.Item label="Status">
                                 <Tag
                                   color={
-                                    normalizeProperty(
+                                    normalizeToString(
                                       traceData.queueDetails,
                                       'status',
                                       'Status'
                                     ) === 'COMPLETED'
                                       ? 'success'
-                                      : normalizeProperty(
+                                      : normalizeToString(
                                             traceData.queueDetails,
                                             'status',
                                             'Status'
                                           ) === 'CANCELLED'
                                         ? 'error'
-                                        : normalizeProperty(
+                                        : normalizeToString(
                                               traceData.queueDetails,
                                               'status',
                                               'Status'
                                             ) === 'CANCELLING'
                                           ? 'warning'
-                                          : normalizeProperty(
+                                          : normalizeToString(
                                                 traceData.queueDetails,
                                                 'status',
                                                 'Status'
                                               ) === 'FAILED'
                                             ? 'error'
-                                            : normalizeProperty(
+                                            : normalizeToString(
                                                   traceData.queueDetails,
                                                   'status',
                                                   'Status'
                                                 ) === 'PROCESSING'
                                               ? 'processing'
-                                              : normalizeProperty(
+                                              : normalizeToString(
                                                     traceData.queueDetails,
                                                     'status',
                                                     'Status'
@@ -1322,7 +1331,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                 : 'default'
                                   }
                                 >
-                                  {normalizeProperty(traceData.queueDetails, 'status', 'Status')}
+                                  {normalizeToString(traceData.queueDetails, 'status', 'Status')}
                                 </Tag>
                               </Descriptions.Item>
                               <Descriptions.Item label="Priority">
@@ -1371,7 +1380,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                 </Descriptions.Item>
                               )}
                               <Descriptions.Item label="Created By">
-                                {normalizeProperty(
+                                {normalizeToString(
                                   traceData.queueDetails,
                                   'createdBy',
                                   'CreatedBy'
@@ -1380,14 +1389,16 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                               <Descriptions.Item label="Retry Count">
                                 <Tag
                                   color={
-                                    normalizeProperty(
+                                    normalizeToNumber(
                                       traceData.queueDetails,
+                                      0,
                                       'retryCount',
                                       'RetryCount'
                                     ) === 0
                                       ? 'green'
-                                      : normalizeProperty(
+                                      : normalizeToNumber(
                                             traceData.queueDetails,
+                                            0,
                                             'retryCount',
                                             'RetryCount'
                                           ) < 3
@@ -1395,22 +1406,23 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                         : 'red'
                                   }
                                 >
-                                  {normalizeProperty(
+                                  {normalizeToNumber(
                                     traceData.queueDetails,
+                                    0,
                                     'retryCount',
                                     'RetryCount'
-                                  ) || 0}
+                                  )}
                                   /2
                                 </Tag>
                               </Descriptions.Item>
-                              {normalizeProperty(
+                              {normalizeToString(
                                 traceData.queueDetails,
                                 'lastFailureReason',
                                 'LastFailureReason'
                               ) && (
                                 <Descriptions.Item label="Last Failure Reason" span={2}>
                                   <Text type="warning">
-                                    {normalizeProperty(
+                                    {normalizeToString(
                                       traceData.queueDetails,
                                       'lastFailureReason',
                                       'LastFailureReason'
@@ -1440,11 +1452,14 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                               className="queue-trace-timeline"
                               data-testid="queue-trace-timeline"
                               items={traceData.traceLogs.map((log: QueueTraceLog) => {
-                                const action = normalizeProperty(log, 'action', 'Action');
-                                const timestamp = normalizeProperty(log, 'timestamp', 'Timestamp');
-                                const details = normalizeProperty(log, 'details', 'Details') || '';
-                                const actionByUser =
-                                  normalizeProperty(log, 'actionByUser', 'ActionByUser') || '';
+                                const action = normalizeToString(log, 'action', 'Action');
+                                const timestamp = normalizeToString(log, 'timestamp', 'Timestamp');
+                                const details = normalizeToString(log, 'details', 'Details');
+                                const actionByUser = normalizeToString(
+                                  log,
+                                  'actionByUser',
+                                  'ActionByUser'
+                                );
 
                                 // Determine timeline item color based on action type
                                 // Using grayscale system - only 'red' for actual errors

@@ -9,7 +9,7 @@ import {
 import { MachineVaultStatusPanel } from '../internal/MachineVaultStatusPanel';
 import { RepoDetailPanel } from '../internal/RepoDetailPanel';
 import { ContainerDetailPanel } from '../internal/ContainerDetailPanel';
-import type { Machine, Repo } from '@/types';
+import type { Machine, Repo, PluginContainer } from '@/types';
 import {
   CollapsedIcon,
   CollapsedPanel,
@@ -52,7 +52,7 @@ type ResourceType = 'machine' | 'repo' | 'container';
 
 interface UnifiedDetailPanelProps {
   type: ResourceType;
-  data: Machine | Repo | ContainerData | null;
+  data: Machine | Repo | ContainerData | PluginContainer | null;
   visible: boolean;
   onClose: () => void;
   splitWidth: number;

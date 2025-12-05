@@ -1,4 +1,5 @@
 import React from 'react';
+import { Table } from 'antd';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import type { Machine } from '@/types';
@@ -136,6 +137,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
       </SummaryRow>
 
       <MachinesTable
+        as={Table<Machine>}
         columns={columns}
         dataSource={targetMachines}
         rowKey="machineName"
