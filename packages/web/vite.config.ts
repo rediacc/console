@@ -2,6 +2,7 @@ import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'path';
+import fs from 'fs';
 
 // Custom plugin to resolve @rediacc/shared to source files in dev mode
 // This runs before other resolution, ensuring source files are used
@@ -19,8 +20,18 @@ function sharedSourcePlugin(isDev: boolean): Plugin {
       }
       if (source.startsWith('@rediacc/shared/')) {
         const subpath = source.replace('@rediacc/shared/', '');
-        // Try with /index.ts first, then .ts
-        return path.join(sharedSrcPath, subpath, 'index.ts');
+        // Try direct .ts file first, then /index.ts for directories
+        const directPath = path.join(sharedSrcPath, `${subpath}.ts`);
+        const indexPath = path.join(sharedSrcPath, subpath, 'index.ts');
+
+        if (fs.existsSync(directPath)) {
+          return directPath;
+        }
+        if (fs.existsSync(indexPath)) {
+          return indexPath;
+        }
+        // Fallback to direct path (will show proper error if missing)
+        return directPath;
       }
       return null;
     },
