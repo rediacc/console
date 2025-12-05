@@ -11,7 +11,7 @@ import { Typography } from 'antd';
 const { Title } = Typography;
 
 export const DangerSection = styled.section`
-  margin-top: ${({ theme }) => theme.spacing['6']}px;
+  margin-top: ${({ theme }) => theme.spacing.XXXL}px;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.LG}px;

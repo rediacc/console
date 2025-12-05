@@ -35,7 +35,7 @@ export const ActionsRow = styled.div`
 
 export const CreateButton = styled(Button)`
   && {
-    min-width: ${({ theme }) => theme.spacing['6']}px;
+    min-width: ${({ theme }) => theme.spacing.XXXL}px;
     min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
     display: inline-flex;
     align-items: center;
@@ -151,7 +151,7 @@ export const EmptyState = styled(EmptyStateWrapper)`
 
 export const AssignButton = styled(Button)`
   && {
-    min-width: ${({ theme }) => theme.spacing['6']}px;
+    min-width: ${({ theme }) => theme.spacing.XXXL}px;
   }
 `;
 

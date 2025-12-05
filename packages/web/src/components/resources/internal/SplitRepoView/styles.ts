@@ -88,8 +88,8 @@ export const RepoTable = styled(Table<Repo>)`
     cursor: pointer;
   }
 
-  .ant-table-tbody > tr.is-selected td {
-    background-color: ${({ theme }) => theme.colors.primaryBg} !important;
+  .ant-table-tbody > tr.is-selected > td {
+    background-color: ${({ theme }) => theme.colors.primaryBg};
   }
 `;
 

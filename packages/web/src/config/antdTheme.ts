@@ -99,10 +99,13 @@ export const colorTokens = {
 /**
  * Shared Design Tokens (theme-independent)
  */
+const RADIUS = { SM: 4, MD: 6, LG: 8, XL: 12 } as const;
+const CONTROL_HEIGHT = { SM: 32, MD: 44, LG: 48 } as const;
+
 const sharedTokens = {
-  borderRadius: 6,
-  borderRadiusLG: 8,
-  borderRadiusSM: 4,
+  borderRadius: RADIUS.MD,
+  borderRadiusLG: RADIUS.LG,
+  borderRadiusSM: RADIUS.SM,
   fontSize: 14,
   fontSizeHeading1: 38,
   fontSizeHeading2: 30,
@@ -121,8 +124,8 @@ const sharedTokens = {
 };
 
 const baseControlTokens = {
-  controlHeight: 44,
-  borderRadius: 6,
+  controlHeight: CONTROL_HEIGHT.MD,
+  borderRadius: RADIUS.MD,
 };
 
 const paddedControlTokens = {
@@ -142,7 +145,7 @@ const createButtonTokens = (
   primaryColor: string,
   primaryShadow: string
 ) => ({
-  borderRadius: 6,
+  borderRadius: RADIUS.MD,
   paddingContentHorizontal: 16,
   paddingContentVertical: 8,
   primaryShadow,
@@ -167,14 +170,14 @@ const createButtonTokens = (
 });
 
 const createDropdownTokens = (theme: typeof themeColors.light, hoverBg: string) => ({
-  borderRadiusLG: 8,
+  borderRadiusLG: RADIUS.LG,
   controlItemBgHover: hoverBg,
   controlItemBgActive: theme.bgSelected,
   boxShadowSecondary: theme.shadowMd,
 });
 
 const createPaginationTokens = (theme: typeof themeColors.light) => ({
-  borderRadius: 6,
+  borderRadius: RADIUS.MD,
   itemSize: 32,
   itemBg: theme.bgPrimary,
   itemLinkBg: theme.bgPrimary,
@@ -212,8 +215,8 @@ const createMenuTokens = (
   itemDisabledColor: theme.textMuted,
   horizontalItemHoverBg: 'transparent',
   iconSize: 16,
-  itemHeight: 44,
-  itemBorderRadius: 6,
+  itemHeight: CONTROL_HEIGHT.MD,
+  itemBorderRadius: RADIUS.MD,
 });
 
 /**
@@ -230,7 +233,7 @@ const createComponentConfig = (isDark: boolean) => {
   return {
     Input: {
       ...paddedControlTokens,
-      controlHeightLG: 48,
+      controlHeightLG: CONTROL_HEIGHT.LG,
       colorBorder: theme.borderPrimary,
       colorBgContainer: theme.bgPrimary,
       errorActiveShadow: `0 0 0 1px ${brandColors.error}`,
@@ -243,7 +246,7 @@ const createComponentConfig = (isDark: boolean) => {
     Select: {
       ...baseControlTokens,
       selectHeight: baseControlTokens.controlHeight,
-      controlHeightSM: 32,
+      controlHeightSM: CONTROL_HEIGHT.SM,
       colorBorder: theme.borderPrimary,
       colorBgContainer: theme.bgPrimary,
       optionSelectedBg: theme.bgSelected,
@@ -263,14 +266,14 @@ const createComponentConfig = (isDark: boolean) => {
     },
     Button: createButtonTokens(theme, primaryColor, primaryShadow),
     Card: {
-      borderRadiusLG: 8,
+      borderRadiusLG: RADIUS.LG,
       boxShadowTertiary: theme.shadowSm,
       headerBg: 'transparent',
       headerFontSize: 16,
       headerFontSizeSM: 14,
     },
     Table: {
-      borderRadius: 6,
+      borderRadius: RADIUS.MD,
       headerBg: theme.bgSecondary,
       headerColor: theme.textPrimary,
       rowHoverBg: primaryBgHover,
@@ -284,7 +287,7 @@ const createComponentConfig = (isDark: boolean) => {
       cellPaddingInline: 16,
     },
     Modal: {
-      borderRadiusLG: 12,
+      borderRadiusLG: RADIUS.XL,
       boxShadow: theme.shadowLg,
       headerBg: theme.bgPrimary,
       contentBg: theme.bgPrimary,
@@ -306,7 +309,7 @@ const createComponentConfig = (isDark: boolean) => {
       motionDurationMid: '0.2s',
     },
     Drawer: {
-      borderRadiusLG: 12,
+      borderRadiusLG: RADIUS.XL,
       footerPaddingBlock: 16,
       footerPaddingInline: 24,
     },
@@ -322,7 +325,7 @@ const createComponentConfig = (isDark: boolean) => {
       innerMaxMargin: 24,
     },
     Checkbox: {
-      borderRadiusSM: 4,
+      borderRadiusSM: RADIUS.SM,
       controlInteractiveSize: 18,
     },
     Radio: {
@@ -346,7 +349,7 @@ const createComponentConfig = (isDark: boolean) => {
       inlineItemMarginBottom: 8,
     },
     Alert: {
-      borderRadiusLG: 8,
+      borderRadiusLG: RADIUS.LG,
       withDescriptionPadding: 16,
     },
     Badge: {
@@ -355,24 +358,24 @@ const createComponentConfig = (isDark: boolean) => {
       textFontWeight: 600,
     },
     Tag: {
-      borderRadiusSM: 4,
+      borderRadiusSM: RADIUS.SM,
       defaultBg: theme.bgSecondary,
       defaultColor: theme.textPrimary,
     },
     Tooltip: {
-      borderRadius: 6,
+      borderRadius: RADIUS.MD,
       colorBgSpotlight: theme.tooltipBg,
     },
     Popover: {
-      borderRadiusLG: 8,
+      borderRadiusLG: RADIUS.LG,
       boxShadowSecondary: theme.shadowMd,
     },
     Message: {
       contentBg: theme.bgPrimary,
-      borderRadiusLG: 8,
+      borderRadiusLG: RADIUS.LG,
     },
     Notification: {
-      borderRadiusLG: 8,
+      borderRadiusLG: RADIUS.LG,
       width: 384,
     },
     Typography: {
@@ -419,7 +422,7 @@ const createComponentConfig = (isDark: boolean) => {
       itemActiveBg: theme.bgActive,
       trackBg: theme.bgTertiary,
       trackPadding: '2px',
-      borderRadius: 6,
+      borderRadius: RADIUS.MD,
     },
     Layout: {
       headerBg: theme.bgSecondary,

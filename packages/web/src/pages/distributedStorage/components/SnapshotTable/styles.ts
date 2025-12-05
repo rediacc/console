@@ -38,7 +38,7 @@ export const CreateButton = styled(Button)`
     align-items: center;
     justify-content: center;
     min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-    min-width: ${({ theme }) => theme.spacing['6']}px;
+    min-width: ${({ theme }) => theme.spacing.XXXL}px;
   }
 `;
 

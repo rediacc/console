@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Select, Typography } from 'antd';
+import { Typography } from 'antd';
 import {
   BaseModal,
   HelperText as PrimitiveHelperText,
@@ -7,6 +7,7 @@ import {
   StyledIcon,
   AlertCard,
 } from '@/styles/primitives';
+import { ModalSelect } from '@/components/common/styled';
 import { ModalSize } from '@/types/modal';
 import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons';
 
@@ -75,25 +76,7 @@ export const MachineIcon = styled(StyledIcon).attrs(({ theme }) => ({
   $color: theme.colors.primary,
 }))``;
 
-export const StyledSelect = styled(Select)`
-  && {
-    width: 100%;
-
-    .ant-select-selector {
-      min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
-      border-radius: ${({ theme }) => theme.borderRadius.MD}px !important;
-      border-color: ${({ theme }) => theme.colors.inputBorder} !important;
-      background-color: ${({ theme }) => theme.colors.inputBg};
-      padding: 0 ${({ theme }) => theme.spacing.SM}px;
-      transition: ${({ theme }) => theme.transitions.DEFAULT};
-    }
-
-    &.ant-select-focused .ant-select-selector {
-      border-color: ${({ theme }) => theme.colors.primary} !important;
-      box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary};
-    }
-  }
-`;
+export const StyledSelect = ModalSelect;
 
 export const SelectLabel = styled(FormLabel)`
   && {

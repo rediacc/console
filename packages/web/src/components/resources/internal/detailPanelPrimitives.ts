@@ -35,7 +35,7 @@ const BaseStickyHeader = styled.div`
   z-index: 2;
   background-color: ${({ theme }) => theme.colors.bgPrimary};
   border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  padding: ${({ theme }) => `${theme.spacing['1.5']}px ${theme.spacing.PAGE_CARD_PADDING}px`};
+  padding: ${({ theme }) => `${theme.spacing.SM_LG}px ${theme.spacing.PAGE_CARD_PADDING}px`};
 `;
 
 const BaseContent = styled.div`

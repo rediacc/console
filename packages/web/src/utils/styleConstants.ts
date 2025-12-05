@@ -1,25 +1,15 @@
 export const DESIGN_TOKENS = {
   SPACING: {
-    '0.5': 4,
-    '1': 8,
-    '1.5': 12,
-    '2': 16,
-    '2.5': 20,
-    '3': 24,
-    '4': 32,
-    '5': 40,
-    '6': 48,
-    '8': 64,
-    '10': 80,
-    '12': 96,
-    XS: 4,
-    SM: 8,
-    MD: 16,
-    LG: 24,
-    XL: 32,
-    XXL: 40,
-    XXXL: 48,
-    XXXXXL: 64,
+    // Core scale (4px base)
+    XS: 4,       // Extra small
+    SM: 8,       // Small
+    SM_LG: 12,   // Small-Large (between SM and MD)
+    MD: 16,      // Medium
+    LG: 24,      // Large
+    XL: 32,      // Extra large
+    XXL: 40,     // 2x Extra large
+    XXXL: 48,    // 3x Extra large
+    // Semantic aliases
     PAGE_CONTAINER: 16,
     PAGE_SECTION_GAP: 16,
     PAGE_CARD_PADDING: 16,
@@ -142,7 +132,7 @@ export const createModalStyle = (width?: number) => ({
   borderRadius: DESIGN_TOKENS.BORDER_RADIUS.XL, // Modals: 12px border radius
   boxShadow: DESIGN_TOKENS.SHADOWS.MODAL,
   border: 'none',
-  padding: DESIGN_TOKENS.SPACING['4'], // 32px padding as per style guide
+  padding: DESIGN_TOKENS.SPACING.XL, // 32px padding as per style guide
 });
 
 export const createInputStyle = (_height?: number) => ({

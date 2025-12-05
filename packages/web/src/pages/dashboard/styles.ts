@@ -2,20 +2,23 @@ import styled from 'styled-components';
 import { Card, Space, Typography, Badge, Progress, List, Timeline } from 'antd';
 import { Link as RouterLink } from 'react-router-dom';
 import { PageContainer } from '@/styles/primitives';
+import {
+  ContentStack,
+  CenteredState,
+  FlexBetween,
+  InlineStack,
+  StatRow,
+  StatLabel as BaseStatLabel,
+  StatValue as BaseStatValue,
+  Divider,
+} from '@/components/common/styled';
 
 const { Text } = Typography;
 
 export const PageWrapper = PageContainer;
 
-export const ContentStack = styled(Space).attrs({ orientation: 'vertical', size: 'large' })`
-  width: 100%;
-`;
-
-export const CenteredState = styled.div`
-  width: 100%;
-  text-align: center;
-  padding: ${({ theme }) => theme.spacing.LG}px 0;
-`;
+// Re-export from common/styled
+export { ContentStack, CenteredState, FlexBetween, InlineStack, StatRow, Divider };
 
 export const DashboardCard = styled(Card)`
   width: 100%;
@@ -111,55 +114,13 @@ export const LicenseHeader = styled.div`
   gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const FlexBetween = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
-
-export const InlineStack = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
-
 export const StatList = styled(Space).attrs({ orientation: 'vertical', size: 'middle' })`
   width: 100%;
 `;
 
-export const StatRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-`;
-
-export const StatLabel = styled(Text)`
-  && {
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
-
-export const StatValue = styled(Text)<{ $variant?: 'default' | 'success' | 'warning' | 'error' }>`
-  && {
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-    font-size: ${({ theme }) => theme.fontSize.LG}px;
-    color: ${({ theme, $variant }) => {
-      switch ($variant) {
-        case 'success':
-          return theme.colors.success;
-        case 'warning':
-          return theme.colors.warning;
-        case 'error':
-          return theme.colors.error;
-        default:
-          return theme.colors.textPrimary;
-      }
-    }};
-  }
-`;
+// Use base components from common/styled with dashboard-specific variants
+export const StatLabel = BaseStatLabel;
+export const StatValue = BaseStatValue;
 
 export const InlineLink = styled(RouterLink)`
   color: ${({ theme }) => theme.colors.primary};
@@ -212,9 +173,11 @@ export const BorderlessList = styled(List)`
 `;
 
 export const BorderlessListItem = styled(AntListItem)`
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  border: none !important;
+  && {
+    padding-left: 0;
+    padding-right: 0;
+    border: none;
+  }
 `;
 
 export const AuditMeta = styled(Text)`
@@ -225,14 +188,6 @@ export const AuditMeta = styled(Text)`
 `;
 
 export { EmptyStateWrapper as EmptyState } from '@/styles/primitives';
-
-export const Divider = styled.hr`
-  border: none;
-  height: 1px;
-  width: 100%;
-  background-color: ${({ theme }) => theme.colors.borderSecondary};
-  margin: ${({ theme }) => theme.spacing.MD}px 0;
-`;
 
 export const SectionFooter = styled.div`
   display: flex;

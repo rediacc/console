@@ -243,7 +243,7 @@ export const GlobalStyles = createGlobalStyle`
     justify-content: center;
     align-items: center;
     min-height: 200px;
-    padding: ${({ theme }) => theme.spacing['4']}px;
+    padding: ${({ theme }) => theme.spacing.XL}px;
   }
 
   .skeleton-shimmer {

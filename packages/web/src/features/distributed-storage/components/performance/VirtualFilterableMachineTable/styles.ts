@@ -46,7 +46,7 @@ export const RefreshButton = styled(Button)`
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: ${({ theme }) => theme.spacing['6']}px;
+    min-width: ${({ theme }) => theme.spacing.XXXL}px;
     min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
   }
 `;

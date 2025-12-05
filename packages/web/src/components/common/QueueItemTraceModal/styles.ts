@@ -17,8 +17,10 @@ const fadeIn = keyframes`
 
 // Styled Modal - clean and simple
 export const StyledModal = styled(Modal)`
-  max-width: 1200px;
-  width: 1200px !important;
+  &.ant-modal {
+    max-width: 1200px;
+    width: 1200px;
+  }
   
   .ant-modal-content {
     animation: ${fadeIn} 0.3s ease-in-out;

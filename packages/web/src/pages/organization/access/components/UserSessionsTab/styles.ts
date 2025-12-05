@@ -57,8 +57,8 @@ export const RefreshButton = styled(Button)`
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: ${({ theme }) => theme.spacing['5']}px;
-    min-height: ${({ theme }) => theme.spacing['5']}px;
+    min-width: ${({ theme }) => theme.spacing.XXL}px;
+    min-height: ${({ theme }) => theme.spacing.XXL}px;
     font-size: ${({ theme }) => theme.fontSize.BASE}px;
   }
 `;

@@ -1,12 +1,12 @@
 import styled from 'styled-components';
 import { Space, Typography } from 'antd';
 import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
+import { ContentStack, CenteredState, ActionsRow } from '@/components/common/styled';
 
 export const PageWrapper = PageContainer;
 
-export const ContentStack = styled(Space).attrs({ orientation: 'vertical', size: 'large' })`
-  width: 100%;
-`;
+// Re-export from common/styled
+export { ContentStack };
 
 export const HeaderStack = styled(Space).attrs({ orientation: 'vertical', size: 'middle' })`
   width: 100%;
@@ -14,12 +14,7 @@ export const HeaderStack = styled(Space).attrs({ orientation: 'vertical', size: 
 
 export const HeaderRow = SectionHeaderRow;
 
-export const ActionGroup = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  align-items: center;
-`;
+export const ActionGroup = ActionsRow;
 
 export const FiltersRow = styled.div`
   display: flex;
@@ -107,10 +102,7 @@ export const SectionTitleText = styled(Title)`
   }
 `;
 
-export const CenteredState = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => theme.spacing['6']}px;
-`;
+export { CenteredState };
 
 export const CenteredMessage = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;

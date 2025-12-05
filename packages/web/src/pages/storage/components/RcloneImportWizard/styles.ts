@@ -9,7 +9,7 @@ export const WizardModal = styled(Modal).attrs({
   width: DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_XL,
 })`
   && {
-    max-width: calc(100vw - ${DESIGN_TOKENS.SPACING['4']}px);
+    max-width: calc(100vw - ${DESIGN_TOKENS.SPACING.XL}px);
   }
 
   .ant-modal-content {

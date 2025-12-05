@@ -399,11 +399,11 @@ export const TabCount = styled(Badge)<{ $color?: string }>`
 // ============================================
 
 export const PaddedEmpty = styled(Empty)`
-  padding: ${({ theme }) => theme.spacing['5']}px 0;
+  padding: ${({ theme }) => theme.spacing.XXL}px 0;
 `;
 
 export const EmptyStateWrapper = styled.div`
-  padding: ${({ theme }) => theme.spacing['5']}px 0;
+  padding: ${({ theme }) => theme.spacing.XXL}px 0;
   text-align: center;
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
@@ -702,15 +702,15 @@ export const IconButton = styled(Button)`
 `;
 
 export const CompactIconButton = styled(IconButton)`
-  width: ${({ theme }) => theme.spacing['5']}px;
-  height: ${({ theme }) => theme.spacing['5']}px;
-  min-width: ${({ theme }) => theme.spacing['5']}px;
-  min-height: ${({ theme }) => theme.spacing['5']}px;
+  width: ${({ theme }) => theme.spacing.XXL}px;
+  height: ${({ theme }) => theme.spacing.XXL}px;
+  min-width: ${({ theme }) => theme.spacing.XXL}px;
+  min-height: ${({ theme }) => theme.spacing.XXL}px;
 `;
 
 export const PrimaryIconButton = styled(Button)`
-  min-width: ${({ theme }) => theme.spacing['6']}px;
-  min-height: ${({ theme }) => theme.spacing['6']}px;
+  min-width: ${({ theme }) => theme.spacing.XXXL}px;
+  min-height: ${({ theme }) => theme.spacing.XXXL}px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -728,8 +728,8 @@ export const PrimaryIconButton = styled(Button)`
 `;
 
 export const SecondaryIconButton = styled(Button)`
-  min-width: ${({ theme }) => theme.spacing['6']}px;
-  min-height: ${({ theme }) => theme.spacing['6']}px;
+  min-width: ${({ theme }) => theme.spacing.XXXL}px;
+  min-height: ${({ theme }) => theme.spacing.XXXL}px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -738,8 +738,8 @@ export const SecondaryIconButton = styled(Button)`
 `;
 
 export const CompactButton = styled(Button)`
-  min-width: ${({ theme }) => theme.spacing['5']}px;
-  min-height: ${({ theme }) => theme.spacing['5']}px;
+  min-width: ${({ theme }) => theme.spacing.XXL}px;
+  min-height: ${({ theme }) => theme.spacing.XXL}px;
 `;
 
 export const BaseModal = styled(Modal)`

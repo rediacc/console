@@ -5,14 +5,14 @@ export const LoginContainer = styled.div`
   width: 100%;
   max-width: ${({ theme }) => theme.dimensions.CARD_WIDTH_LG}px;
   margin: 0 auto;
-  padding: ${({ theme }) => theme.spacing['3']}px;
+  padding: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 export const LogoContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  height: ${({ theme }) => theme.spacing.XXXXXL}px;
+  height: ${({ theme }) => theme.dimensions.HEADER_HEIGHT}px;
   margin-top: ${({ theme }) => theme.spacing.MD}px;
   
   img {

@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { Typography } from 'antd';
 import { PageContainer, SectionStack, SectionHeaderRow } from '@/styles/primitives';
+import { ActionsRow } from '@/components/common/styled';
 
 const { Title } = Typography;
 
@@ -34,9 +35,7 @@ export const TeamSelectorWrapper = styled.div`
   }
 `;
 
-export const ActionGroup = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.SM}px;
+export const ActionGroup = styled(ActionsRow)`
   flex-shrink: 0;
 `;
 

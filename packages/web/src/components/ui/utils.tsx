@@ -72,7 +72,7 @@ export const RightAlign = styled.div`
 export const CenteredState = styled.div`
   width: 100%;
   text-align: center;
-  padding: ${({ theme }) => theme.spacing['6']}px 0;
+  padding: ${({ theme }) => theme.spacing.XXXL}px 0;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.SM}px;
@@ -94,7 +94,7 @@ export const ErrorWrapper = styled.div`
 export const PaddedEmpty = PrimitivePaddedEmpty;
 
 export const RegionsSection = styled.section`
-  margin-top: ${({ theme }) => theme.spacing['6']}px;
+  margin-top: ${({ theme }) => theme.spacing.XXXL}px;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.LG}px;

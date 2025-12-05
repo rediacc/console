@@ -6,7 +6,7 @@
  */
 
 import styled from 'styled-components';
-import { Space, Typography, Table } from 'antd';
+import { Select, Space, Typography, Table } from 'antd';
 import type { TableProps } from 'antd';
 import type { ComponentType } from 'react';
 import { IconButton } from '@/styles/primitives';
@@ -289,6 +289,44 @@ export const StatusDot = styled.span<{ $variant?: StatusVariant }>`
     return theme.colors[colorKey];
   }};
   flex-shrink: 0;
+`;
+
+// =============================================================================
+// FORM COMPONENTS
+// =============================================================================
+
+export interface ModalSelectProps {
+  /** Use smaller height variant */
+  $compact?: boolean;
+}
+
+/**
+ * Styled Select for use in modals with proper theming
+ *
+ * @example
+ * <ModalSelect $compact>
+ *   <Select.Option value="1">Option 1</Select.Option>
+ * </ModalSelect>
+ */
+export const ModalSelect = styled(Select)<ModalSelectProps>`
+  &.ant-select {
+    width: 100%;
+
+    .ant-select-selector {
+      min-height: ${({ $compact, theme }) =>
+        $compact ? theme.dimensions.INPUT_HEIGHT_SM : theme.dimensions.INPUT_HEIGHT}px;
+      border-radius: ${({ theme }) => theme.borderRadius.MD}px;
+      background-color: ${({ theme }) => theme.colors.inputBg};
+      border-color: ${({ theme }) => theme.colors.inputBorder};
+      padding: 0 ${({ theme }) => theme.spacing.SM}px;
+      transition: ${({ theme }) => theme.transitions.DEFAULT};
+    }
+
+    &.ant-select-focused .ant-select-selector {
+      border-color: ${({ theme }) => theme.colors.primary};
+      box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary};
+    }
+  }
 `;
 
 // =============================================================================

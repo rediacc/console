@@ -14,11 +14,11 @@ export const LanguageButton = styled(IconButton)`
 `;
 
 export const LanguageSelect = styled(Select)`
-  && {
+  &.ant-select {
     width: 140px;
 
     .ant-select-selector {
-      border-radius: ${({ theme }) => theme.borderRadius.MD}px !important;
+      border-radius: ${({ theme }) => theme.borderRadius.MD}px;
       min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
       color: ${({ theme }) => theme.colors.textPrimary};
     }

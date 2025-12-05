@@ -115,11 +115,13 @@ export const TeamListStyled = styled(List)`
 `;
 
 export const TeamListItem = styled(List.Item)`
-  padding: ${({ theme }) => theme.spacing.SM}px !important;
-  background: ${({ theme }) => theme.colors.bgPrimary};
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-  border: 1px solid var(--color-border-secondary);
-  box-shadow: ${({ theme }) => theme.shadows.CARD};
+  &.ant-list-item {
+    padding: ${({ theme }) => theme.spacing.SM}px;
+    background: ${({ theme }) => theme.colors.bgPrimary};
+    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
+    border: 1px solid var(--color-border-secondary);
+    box-shadow: ${({ theme }) => theme.shadows.CARD};
+  }
 `;
 
 export const TeamListContent = styled.div`

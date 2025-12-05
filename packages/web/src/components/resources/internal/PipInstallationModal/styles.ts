@@ -9,7 +9,7 @@ export const CommandContainer = styled.div`
 
 export const CommandDescription = styled(Text)`
   display: block;
-  margin-bottom: ${({ theme }) => theme.spacing['0.5']}px;
+  margin-bottom: ${({ theme }) => theme.spacing.XS}px;
 `;
 
 export const CommandBox = styled.div`
@@ -23,16 +23,18 @@ export const CommandBox = styled.div`
 `;
 
 export const CommandCode = styled(Text)<{ $isComment?: boolean; $isCommand?: boolean }>`
-  background: transparent !important;
-  border: none !important;
-  color: ${({ $isComment, $isCommand, theme }) =>
-    $isComment
-      ? theme.colors.textTertiary
-      : $isCommand
-        ? theme.colors.primary
-        : theme.colors.textPrimary} !important;
-  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-  font-size: ${({ theme }) => theme.fontSize.SM}px;
+  && {
+    background: transparent;
+    border: none;
+    color: ${({ $isComment, $isCommand, theme }) =>
+      $isComment
+        ? theme.colors.textTertiary
+        : $isCommand
+          ? theme.colors.primary
+          : theme.colors.textPrimary};
+    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+    font-size: ${({ theme }) => theme.fontSize.SM}px;
+  }
 `;
 
 export const CopyButton = styled(Button)`

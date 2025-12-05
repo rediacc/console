@@ -2,14 +2,14 @@ import styled from 'styled-components';
 import { Space, Typography, Button } from 'antd';
 import { FilterOutlined } from '@/utils/optimizedIcons';
 import { PageContainer } from '@/styles/primitives';
+import { ContentStack } from '@/components/common/styled';
 
 const { Text } = Typography;
 
 export const PageWrapper = PageContainer;
 
-export const ContentStack = styled(Space).attrs({ orientation: 'vertical', size: 'large' })`
-  width: 100%;
-`;
+// Re-export from common/styled
+export { ContentStack };
 
 export const FilterField = styled(Space).attrs({ orientation: 'vertical', size: 'small' })`
   width: 100%;
@@ -31,7 +31,7 @@ export const PlaceholderLabel = styled(FilterLabel)`
 
 export const ActionButtonFull = styled(Button)`
   width: 100%;
-  min-height: ${({ theme }) => theme.spacing['6']}px;
+  min-height: ${({ theme }) => theme.spacing.XXXL}px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { Card, Breadcrumb, Typography } from 'antd';
 import { PageContainer, SectionStack, SectionHeaderRow } from '@/styles/primitives';
+import { ActionsRow, CenteredState as BaseCenteredState } from '@/components/common/styled';
 
 export const PageWrapper = styled(PageContainer)`
   height: 100%;
@@ -50,12 +51,7 @@ export const TagRow = styled.div`
   gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const ActionsRow = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-`;
+export { ActionsRow };
 
 export const SplitLayout = styled.div`
   display: flex;
@@ -85,11 +81,7 @@ export const DetailBackdrop = styled.div<{ $right: number; $visible: boolean }>`
   pointer-events: ${({ $visible }) => ($visible ? 'auto' : 'none')};
 `;
 
-export const CenteredState = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => theme.spacing['6']}px 0;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const CenteredState = BaseCenteredState;
 
 export const ErrorWrapper = styled.div`
   max-width: 480px;
