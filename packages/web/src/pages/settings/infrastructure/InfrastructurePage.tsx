@@ -1,0 +1,835 @@
+import React, { useState, useMemo } from 'react';
+import {
+  Button,
+  Tooltip,
+  Space,
+  Tag,
+  Card,
+  Row,
+  Col,
+  Table,
+  Modal,
+  Alert,
+  Typography,
+  Popconfirm,
+  Result,
+  Empty,
+  Form,
+  Checkbox,
+} from 'antd';
+import {
+  EnvironmentOutlined,
+  ApiOutlined,
+  EditOutlined,
+  HistoryOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+  KeyOutlined,
+  SyncOutlined,
+  DesktopOutlined,
+  CloudServerOutlined,
+  CheckCircleOutlined,
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import ResourceListView from '@/components/common/ResourceListView';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import { ModalSize } from '@/types/modal';
+import { featureFlags } from '@/config/featureFlags';
+import type { ColumnsType } from 'antd/es/table';
+import {
+  useRegions,
+  useCreateRegion,
+  useUpdateRegionName,
+  useDeleteRegion,
+  useUpdateRegionVault,
+  Region,
+} from '@/api/queries/regions';
+import {
+  useBridges,
+  useCreateBridge,
+  useUpdateBridgeName,
+  useDeleteBridge,
+  useUpdateBridgeVault,
+  useResetBridgeAuthorization,
+  Bridge,
+} from '@/api/queries/bridges';
+import {
+  PageWrapper,
+  SectionStack,
+  SectionHeading,
+  RegionsListWrapper,
+  ListTitleRow,
+  ListTitle,
+  ListSubtitle,
+  CardHeaderRow,
+  CardTitle,
+  SecondaryText,
+  PaddedEmpty,
+  ModalStack,
+  ModalStackLarge,
+  ErrorWrapper,
+} from '@/components/ui';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import {
+  ModalAlert,
+  TokenCopyRow,
+  FullWidthInput,
+  ACTIONS_COLUMN_WIDTH,
+} from '@/pages/system/styles';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { createSorter } from '@/core';
+
+const InfrastructurePage: React.FC = () => {
+  const { t } = useTranslation('resources');
+  const { t: tSystem } = useTranslation('system');
+  const { t: tCommon } = useTranslation('common');
+  const uiMode = useSelector((state: RootState) => state.ui.uiMode);
+
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const bridgeCredentialsModal = useDialogState<Bridge>();
+  const resetAuthModal = useDialogState<{
+    bridgeName: string;
+    regionName: string;
+    isCloudManaged: boolean;
+  }>();
+  const auditTrace = useTraceModal();
+  const [unifiedModalState, setUnifiedModalState] = useState<{
+    open: boolean;
+    resourceType: 'region' | 'bridge';
+    mode: 'create' | 'edit';
+    data?: Partial<Region> | Partial<Bridge> | null;
+  }>({ open: false, resourceType: 'region', mode: 'create' });
+
+  const { data: regions, isLoading: regionsLoading } = useRegions(true);
+  const regionsList: Region[] = useMemo(() => regions || [], [regions]);
+
+  const effectiveRegion = selectedRegion ?? regionsList[0]?.regionName ?? null;
+
+  const { data: bridges, isLoading: bridgesLoading } = useBridges(effectiveRegion || undefined);
+  const bridgesList: Bridge[] = useMemo(() => bridges || [], [bridges]);
+
+  const createRegionMutation = useCreateRegion();
+  const updateRegionNameMutation = useUpdateRegionName();
+  const deleteRegionMutation = useDeleteRegion();
+  const updateRegionVaultMutation = useUpdateRegionVault();
+
+  const createBridgeMutation = useCreateBridge();
+  const updateBridgeNameMutation = useUpdateBridgeName();
+  const deleteBridgeMutation = useDeleteBridge();
+  const updateBridgeVaultMutation = useUpdateBridgeVault();
+  const resetBridgeAuthMutation = useResetBridgeAuthorization();
+
+  const openUnifiedModal = (
+    resourceType: 'region' | 'bridge',
+    mode: 'create' | 'edit',
+    data?: Partial<Region> | Partial<Bridge> | null
+  ) => {
+    setUnifiedModalState({ open: true, resourceType, mode, data });
+  };
+
+  const closeUnifiedModal = () => {
+    setUnifiedModalState({ open: false, resourceType: 'region', mode: 'create', data: null });
+  };
+
+  type UnifiedFormData = {
+    regionName?: string;
+    bridgeName?: string;
+    regionVault?: string;
+    bridgeVault?: string;
+    vaultVersion?: number;
+    [key: string]: unknown;
+  };
+
+  const handleUnifiedModalSubmit = async (data: UnifiedFormData) => {
+    try {
+      switch (unifiedModalState.resourceType) {
+        case 'region':
+          if (unifiedModalState.mode === 'create') {
+            await createRegionMutation.mutateAsync({
+              regionName: data.regionName as string,
+              regionVault: data.regionVault,
+            });
+          } else if (unifiedModalState.data) {
+            if (data.regionName && data.regionName !== unifiedModalState.data.regionName) {
+              await updateRegionNameMutation.mutateAsync({
+                currentRegionName: unifiedModalState.data.regionName as string,
+                newRegionName: data.regionName,
+              });
+            }
+            const vaultData = data.regionVault;
+            if (vaultData && vaultData !== unifiedModalState.data.vaultContent) {
+              await updateRegionVaultMutation.mutateAsync({
+                regionName: (data.regionName || unifiedModalState.data.regionName) as string,
+                regionVault: vaultData,
+                vaultVersion: (unifiedModalState.data.vaultVersion ?? 0) + 1,
+              });
+            }
+          }
+          break;
+        case 'bridge':
+          if (unifiedModalState.mode === 'create') {
+            await createBridgeMutation.mutateAsync({
+              regionName: data.regionName as string,
+              bridgeName: data.bridgeName as string,
+              bridgeVault: data.bridgeVault,
+            });
+          } else if (unifiedModalState.data) {
+            const bridgeData = unifiedModalState.data as Partial<Bridge>;
+            if (data.bridgeName && data.bridgeName !== bridgeData.bridgeName) {
+              await updateBridgeNameMutation.mutateAsync({
+                regionName: bridgeData.regionName as string,
+                currentBridgeName: bridgeData.bridgeName as string,
+                newBridgeName: data.bridgeName,
+              });
+            }
+            const vaultData = data.bridgeVault;
+            if (vaultData && vaultData !== bridgeData.vaultContent) {
+              await updateBridgeVaultMutation.mutateAsync({
+                regionName: (data.regionName || bridgeData.regionName) as string,
+                bridgeName: (data.bridgeName || bridgeData.bridgeName) as string,
+                bridgeVault: vaultData,
+                vaultVersion: (bridgeData.vaultVersion ?? 0) + 1,
+              });
+            }
+          }
+          break;
+      }
+      closeUnifiedModal();
+    } catch {
+      // handled by mutation
+    }
+  };
+
+  const handleUnifiedVaultUpdate = async (vault: string, version: number) => {
+    if (!unifiedModalState.data) return;
+
+    try {
+      if (unifiedModalState.resourceType === 'region') {
+        await updateRegionVaultMutation.mutateAsync({
+          regionName: unifiedModalState.data.regionName as string,
+          regionVault: vault,
+          vaultVersion: version,
+        });
+      } else {
+        const bridgeData = unifiedModalState.data as Partial<Bridge>;
+        await updateBridgeVaultMutation.mutateAsync({
+          regionName: bridgeData.regionName as string,
+          bridgeName: bridgeData.bridgeName as string,
+          bridgeVault: vault,
+          vaultVersion: version,
+        });
+      }
+    } catch {
+      // handled by mutation
+    }
+  };
+
+  const handleDeleteRegion = async (regionName: string) => {
+    try {
+      await deleteRegionMutation.mutateAsync(regionName);
+      if (selectedRegion === regionName) {
+        setSelectedRegion(null);
+      }
+    } catch {
+      // handled by mutation
+    }
+  };
+
+  const handleDeleteBridge = async (bridge: Bridge) => {
+    try {
+      await deleteBridgeMutation.mutateAsync({
+        regionName: bridge.regionName,
+        bridgeName: bridge.bridgeName,
+      });
+    } catch {
+      // handled by mutation
+    }
+  };
+
+  const handleResetBridgeAuth = async () => {
+    const data = resetAuthModal.state.data;
+    if (!data) return;
+
+    try {
+      await resetBridgeAuthMutation.mutateAsync({
+        regionName: data.regionName,
+        bridgeName: data.bridgeName,
+        isCloudManaged: data.isCloudManaged,
+      });
+      resetAuthModal.close();
+    } catch {
+      // handled by mutation
+    }
+  };
+
+  const regionColumns: ColumnsType<Region> = [
+    {
+      title: t('regions.regionName'),
+      dataIndex: 'regionName',
+      key: 'regionName',
+      sorter: createSorter<Region>('regionName'),
+      render: (text: string) => (
+        <Space>
+          <EnvironmentOutlined />
+          <strong>{text}</strong>
+        </Space>
+      ),
+    },
+    ...(!featureFlags.isEnabled('disableBridge')
+      ? [
+          {
+            title: t('regions.bridges'),
+            dataIndex: 'bridgeCount',
+            key: 'bridgeCount',
+            width: 120,
+            sorter: createSorter<Region>('bridgeCount'),
+            render: (count: number) => (
+              <Space>
+                <ApiOutlined />
+                <span>{count}</span>
+              </Space>
+            ),
+          } as ColumnsType<Region>[number],
+        ]
+      : []),
+    ...(featureFlags.isEnabled('vaultVersionColumns')
+      ? [
+          {
+            title: t('general.vaultVersion'),
+            dataIndex: 'vaultVersion',
+            key: 'vaultVersion',
+            width: 120,
+            sorter: createSorter<Region>('vaultVersion'),
+            render: (version: number) => <Tag>{tCommon('general.versionFormat', { version })}</Tag>,
+          },
+        ]
+      : []),
+    {
+      title: t('general.actions'),
+      key: 'actions',
+      width: 300,
+      render: (_: unknown, record: Region) => (
+        <Space>
+          <Tooltip title={t('general.edit')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => openUnifiedModal('region', 'edit', record)}
+              data-testid={`system-region-edit-button-${record.regionName}`}
+              aria-label={t('general.edit')}
+            />
+          </Tooltip>
+          <Tooltip title={tSystem('actions.trace')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<HistoryOutlined />}
+              onClick={() =>
+                auditTrace.open({
+                  entityType: 'Region',
+                  entityIdentifier: record.regionName,
+                  entityName: record.regionName,
+                })
+              }
+              data-testid={`system-region-trace-button-${record.regionName}`}
+              aria-label={tSystem('actions.trace')}
+            />
+          </Tooltip>
+          <Popconfirm
+            title={t('regions.deleteRegion')}
+            description={t('regions.confirmDelete', { regionName: record.regionName })}
+            onConfirm={() => handleDeleteRegion(record.regionName)}
+            okText={t('general.yes')}
+            cancelText={t('general.no')}
+            okButtonProps={{ danger: true }}
+          >
+            <Tooltip title={t('general.delete')}>
+              <Button
+                type="primary"
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                loading={deleteRegionMutation.isPending}
+                data-testid={`system-region-delete-button-${record.regionName}`}
+                aria-label={t('general.delete')}
+              />
+            </Tooltip>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  const bridgeColumns: ColumnsType<Bridge> = [
+    {
+      title: t('bridges.bridgeName'),
+      dataIndex: 'bridgeName',
+      key: 'bridgeName',
+      sorter: createSorter<Bridge>('bridgeName'),
+      render: (text: string, record: Bridge) => (
+        <Space>
+          <ApiOutlined />
+          <strong>{text}</strong>
+          {Number(record.hasAccess || 0) === 1 && (
+            <Tag color="green" icon={<CheckCircleOutlined />}>
+              {t('bridges.access')}
+            </Tag>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: t('teams.machines'),
+      dataIndex: 'machineCount',
+      key: 'machineCount',
+      width: 120,
+      sorter: createSorter<Bridge>('machineCount'),
+      render: (count: number) => (
+        <Space>
+          <DesktopOutlined />
+          <span>{count}</span>
+        </Space>
+      ),
+    },
+    {
+      title: t('bridges.type'),
+      dataIndex: 'isGlobalBridge',
+      key: 'isGlobalBridge',
+      width: 120,
+      sorter: createSorter<Bridge>('isGlobalBridge'),
+      render: (isGlobal: boolean) =>
+        isGlobal ? (
+          <Tag color="purple" icon={<CloudServerOutlined />}>
+            {t('bridges.global')}
+          </Tag>
+        ) : (
+          <Tag color="blue" icon={<ApiOutlined />}>
+            {t('bridges.regular')}
+          </Tag>
+        ),
+    },
+    {
+      title: t('bridges.management'),
+      dataIndex: 'managementMode',
+      key: 'managementMode',
+      width: 140,
+      sorter: createSorter<Bridge>('managementMode'),
+      render: (mode: string) => {
+        if (!mode) return <Tag>{t('bridges.local')}</Tag>;
+        const color = mode === 'Cloud' ? 'green' : 'default';
+        const icon = mode === 'Cloud' ? <CloudServerOutlined /> : <DesktopOutlined />;
+        return (
+          <Tag color={color} icon={icon}>
+            {mode}
+          </Tag>
+        );
+      },
+    },
+    ...(featureFlags.isEnabled('vaultVersionColumns')
+      ? [
+          {
+            title: t('general.vaultVersion'),
+            dataIndex: 'vaultVersion',
+            key: 'vaultVersion',
+            width: 120,
+            sorter: createSorter<Bridge>('vaultVersion'),
+            render: (version: number) => <Tag>{tCommon('general.versionFormat', { version })}</Tag>,
+          },
+        ]
+      : []),
+    {
+      title: t('general.actions'),
+      key: 'actions',
+      width: ACTIONS_COLUMN_WIDTH,
+      render: (_: unknown, record: Bridge) => (
+        <Space>
+          <Tooltip title={t('general.edit')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => openUnifiedModal('bridge', 'edit', record)}
+              data-testid={`system-bridge-edit-button-${record.bridgeName}`}
+              aria-label={t('general.edit')}
+            />
+          </Tooltip>
+          <Tooltip title={tSystem('actions.token')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<KeyOutlined />}
+              onClick={() => bridgeCredentialsModal.open(record)}
+              data-testid={`system-bridge-token-button-${record.bridgeName}`}
+              aria-label={tSystem('actions.token')}
+            />
+          </Tooltip>
+          <Tooltip title={tSystem('actions.resetAuth')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<SyncOutlined />}
+              onClick={() =>
+                resetAuthModal.open({
+                  bridgeName: record.bridgeName,
+                  regionName: record.regionName,
+                  isCloudManaged: false,
+                })
+              }
+              data-testid={`system-bridge-reset-auth-button-${record.bridgeName}`}
+              aria-label={tSystem('actions.resetAuth')}
+            />
+          </Tooltip>
+          <Tooltip title={tSystem('actions.trace')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<HistoryOutlined />}
+              onClick={() =>
+                auditTrace.open({
+                  entityType: 'Bridge',
+                  entityIdentifier: record.bridgeName,
+                  entityName: record.bridgeName,
+                })
+              }
+              data-testid={`system-bridge-trace-button-${record.bridgeName}`}
+              aria-label={tSystem('actions.trace')}
+            />
+          </Tooltip>
+          <Popconfirm
+            title={t('bridges.deleteBridge')}
+            description={t('bridges.confirmDelete', { bridgeName: record.bridgeName })}
+            onConfirm={() => handleDeleteBridge(record)}
+            okText={t('general.yes')}
+            cancelText={t('general.no')}
+            okButtonProps={{ danger: true }}
+          >
+            <Tooltip title={t('general.delete')}>
+              <Button
+                type="primary"
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                loading={deleteBridgeMutation.isPending}
+                data-testid={`system-bridge-delete-button-${record.bridgeName}`}
+                aria-label={t('general.delete')}
+              />
+            </Tooltip>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  if (uiMode === 'simple') {
+    return (
+      <PageWrapper>
+        <Result
+          status="403"
+          title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
+          subTitle={tSystem('accessControl.expertOnlyMessage', {
+            defaultValue: 'Switch to expert mode to manage infrastructure.',
+          })}
+        />
+      </PageWrapper>
+    );
+  }
+
+  if (!featureFlags.isEnabled('regionsInfrastructure')) {
+    return (
+      <PageWrapper>
+        <Result
+          status="info"
+          title={t('regionsInfrastructure.unavailableTitle', {
+            defaultValue: 'Regions & Infrastructure Disabled',
+          })}
+          subTitle={t('regionsInfrastructure.unavailableDescription', {
+            defaultValue: 'Enable the regionsInfrastructure feature flag to access this page.',
+          })}
+        />
+      </PageWrapper>
+    );
+  }
+
+  return (
+    <PageWrapper>
+      <SectionStack>
+        <SectionHeading level={3}>{tSystem('regionsInfrastructure.title')}</SectionHeading>
+
+        <Row gutter={[24, 24]}>
+          <Col span={24}>
+            <RegionsListWrapper>
+              <ResourceListView
+                title={
+                  <ListTitleRow>
+                    <ListTitle>{t('regions.title')}</ListTitle>
+                    <ListSubtitle>{t('regions.selectRegionPrompt')}</ListSubtitle>
+                  </ListTitleRow>
+                }
+                loading={regionsLoading}
+                data={regionsList}
+                columns={regionColumns}
+                rowKey="regionName"
+                searchPlaceholder={t('regions.searchRegions')}
+                data-testid="system-region-table"
+                actions={
+                  <Tooltip title={t('regions.createRegion')}>
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={() => openUnifiedModal('region', 'create')}
+                      data-testid="system-create-region-button"
+                      aria-label={t('regions.createRegion')}
+                    />
+                  </Tooltip>
+                }
+                rowSelection={{
+                  type: 'radio',
+                  selectedRowKeys: effectiveRegion ? [effectiveRegion] : [],
+                  onChange: (selectedRowKeys) => {
+                    const [first] = selectedRowKeys;
+                    setSelectedRegion(typeof first === 'string' ? first : null);
+                  },
+                }}
+                onRow={(record: Region) => ({
+                  onClick: () => setSelectedRegion(record.regionName),
+                  className: [
+                    'clickable-row',
+                    effectiveRegion === record.regionName ? 'selected-row' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' '),
+                })}
+              />
+            </RegionsListWrapper>
+          </Col>
+
+          {!featureFlags.isEnabled('disableBridge') && (
+            <Col span={24}>
+              <Card>
+                <CardHeaderRow>
+                  <div>
+                    <CardTitle level={4}>
+                      {effectiveRegion
+                        ? t('regions.bridgesInRegion', { region: effectiveRegion })
+                        : t('bridges.title')}
+                    </CardTitle>
+                    {!effectiveRegion && (
+                      <SecondaryText>{t('regions.selectRegionToView')}</SecondaryText>
+                    )}
+                  </div>
+                  {effectiveRegion && (
+                    <Tooltip title={t('bridges.createBridge')}>
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() =>
+                          openUnifiedModal('bridge', 'create', { regionName: effectiveRegion })
+                        }
+                        data-testid="system-create-bridge-button"
+                        aria-label={t('bridges.createBridge')}
+                      />
+                    </Tooltip>
+                  )}
+                </CardHeaderRow>
+
+                {!effectiveRegion ? (
+                  <PaddedEmpty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={t('regions.selectRegionPrompt')}
+                  />
+                ) : (
+                  <LoadingWrapper
+                    loading={bridgesLoading}
+                    centered
+                    minHeight={200}
+                    tip={tCommon('general.loading')}
+                  >
+                    <Table
+                      columns={bridgeColumns}
+                      dataSource={bridgesList}
+                      rowKey="bridgeName"
+                      pagination={{
+                        total: bridgesList.length || 0,
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        showTotal: (total) => t('bridges.totalBridges', { total }),
+                      }}
+                      locale={{ emptyText: t('bridges.noBridges') }}
+                      data-testid="system-bridge-table"
+                    />
+                  </LoadingWrapper>
+                )}
+              </Card>
+            </Col>
+          )}
+        </Row>
+      </SectionStack>
+
+      {!featureFlags.isEnabled('disableBridge') && (
+        <Modal
+          title={`${t('bridges.bridgeToken')} - ${bridgeCredentialsModal.state.data?.bridgeName || ''}`}
+          open={bridgeCredentialsModal.isOpen}
+          onCancel={() => bridgeCredentialsModal.close()}
+          footer={[
+            <Button key="close" onClick={() => bridgeCredentialsModal.close()}>
+              {tCommon('actions.close')}
+            </Button>,
+          ]}
+          className={ModalSize.Medium}
+        >
+          {(() => {
+            const bridge = bridgeCredentialsModal.state.data;
+            if (!bridge) return null;
+
+            const token = bridge.bridgeCredentials;
+
+            if (bridge.hasAccess === 0) {
+              return (
+                <ErrorWrapper>
+                  <Alert
+                    message={t('bridges.accessDenied')}
+                    description={t('bridges.accessDeniedDescription')}
+                    type="error"
+                    showIcon
+                  />
+                </ErrorWrapper>
+              );
+            }
+
+            if (!token) {
+              return (
+                <ErrorWrapper>
+                  <Alert
+                    message={t('bridges.noToken')}
+                    description={t('bridges.noTokenDescription')}
+                    type="info"
+                    showIcon
+                  />
+                </ErrorWrapper>
+              );
+            }
+
+            return (
+              <ModalStackLarge>
+                <ModalAlert
+                  message={t('bridges.tokenHeading')}
+                  description={t('bridges.tokenDescription')}
+                  type="warning"
+                  showIcon
+                />
+
+                <div>
+                  <Typography.Text strong>{t('bridges.tokenLabel')}</Typography.Text>
+                  <TokenCopyRow>
+                    <FullWidthInput value={token} readOnly autoComplete="off" />
+                    <Button
+                      icon={<KeyOutlined />}
+                      onClick={() => {
+                        navigator.clipboard.writeText(token);
+                      }}
+                    >
+                      {tCommon('actions.copy')}
+                    </Button>
+                  </TokenCopyRow>
+                </div>
+
+                <ModalAlert
+                  message={tCommon('general.important')}
+                  description={t('bridges.tokenImportant')}
+                  type="info"
+                  showIcon
+                />
+              </ModalStackLarge>
+            );
+          })()}
+        </Modal>
+      )}
+
+      <AuditTraceModal
+        open={auditTrace.isOpen}
+        onCancel={auditTrace.close}
+        entityType={auditTrace.entityType}
+        entityIdentifier={auditTrace.entityIdentifier}
+        entityName={auditTrace.entityName}
+      />
+
+      <UnifiedResourceModal
+        open={unifiedModalState.open}
+        onCancel={closeUnifiedModal}
+        resourceType={unifiedModalState.resourceType}
+        mode={unifiedModalState.mode}
+        existingData={unifiedModalState.data as Partial<Region> | Partial<Bridge> | undefined}
+        onSubmit={handleUnifiedModalSubmit}
+        onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
+        isSubmitting={
+          createRegionMutation.isPending ||
+          updateRegionNameMutation.isPending ||
+          createBridgeMutation.isPending ||
+          updateBridgeNameMutation.isPending
+        }
+        isUpdatingVault={updateRegionVaultMutation.isPending || updateBridgeVaultMutation.isPending}
+      />
+
+      {!featureFlags.isEnabled('disableBridge') && (
+        <Modal
+          title={t('bridges.resetAuth')}
+          open={resetAuthModal.isOpen}
+          onCancel={() => resetAuthModal.close()}
+          footer={[
+            <Button key="cancel" onClick={() => resetAuthModal.close()}>
+              {tCommon('actions.cancel')}
+            </Button>,
+            <Button
+              key="reset"
+              type="primary"
+              danger
+              loading={resetBridgeAuthMutation.isPending}
+              onClick={handleResetBridgeAuth}
+            >
+              {t('bridges.resetAuthConfirm')}
+            </Button>,
+          ]}
+        >
+          {resetAuthModal.state.data && (
+            <ModalStack>
+              <ModalAlert
+                message={tCommon('general.warning')}
+                description={t('bridges.resetAuthWarning', {
+                  bridge: resetAuthModal.state.data.bridgeName,
+                })}
+                type="warning"
+                showIcon
+              />
+
+              <Form layout="vertical">
+                <Form.Item
+                  label={t('bridges.cloudManagement')}
+                  help={t('bridges.cloudManagementHelp')}
+                >
+                  <Checkbox
+                    checked={resetAuthModal.state.data.isCloudManaged}
+                    onChange={(e) =>
+                      resetAuthModal.setData({
+                        bridgeName: resetAuthModal.state.data!.bridgeName,
+                        regionName: resetAuthModal.state.data!.regionName,
+                        isCloudManaged: e.target.checked,
+                      })
+                    }
+                  >
+                    {t('bridges.enableCloudManagement')}
+                  </Checkbox>
+                </Form.Item>
+              </Form>
+            </ModalStack>
+          )}
+        </Modal>
+      )}
+    </PageWrapper>
+  );
+};
+
+export default InfrastructurePage;

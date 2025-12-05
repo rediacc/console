@@ -9,11 +9,14 @@ export default tseslint.config(
   {
     ignores: [
       'dist/',
+      'packages/*/dist/',
+      'packages/*/node_modules/',
+      'packages/*/bin/',
       'bin/',
       'node_modules/',
       '*.config.js',
       '*.config.ts',
-      'vite.config.ts',
+      'packages/web/vite.config.ts',
     ]
   },
   

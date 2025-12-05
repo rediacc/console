@@ -1,0 +1,328 @@
+{
+  "accessControl": {
+    "expertOnlyMessage": "Passez en mode expert pour afficher cette page.",
+    "expertOnlyTitle": "Mode expert requis"
+  },
+  "actions": {
+    "activate": "Activer",
+    "addMember": "Ajouter un membre",
+    "addPermission": "Ajouter une autorisation",
+    "assignUser": "Attribuer un utilisateur",
+    "changePassword": "Changer le mot de passe",
+    "configureVault": "Configurer le coffre-fort",
+    "createGroup": "Créer un groupe",
+    "createTeam": "Créer une équipe",
+    "createUser": "Créer un utilisateur",
+    "deactivate": "Désactiver",
+    "edit": "Modifier",
+    "members": "Membres",
+    "permissions": "Autorisations",
+    "resetAuth": "Réinitialiser l'authentification",
+    "token": "Jeton",
+    "trace": "Tracer",
+    "twoFactorAuth": "Authentification à deux facteurs"
+  },
+  "architecture": {
+    "bridges": "Ponts",
+    "clearAll": "Tout effacer",
+    "fetchError": "Échec de la récupération des données d'architecture",
+    "filterEntities": "Filtrer les entités",
+    "legend": "Légende",
+    "machines": "Machines",
+    "noData": "Aucune donnée d'architecture disponible",
+    "noEntitiesSelected": "Aucune entité sélectionnée. Veuillez sélectionner au moins un type d'entité à afficher.",
+    "nodeBridge": "Pont",
+    "nodeCompany": "Entreprise",
+    "nodeMachine": "Machine",
+    "nodeRegion": "Région",
+    "nodeRepo": "Dépôt",
+    "nodeStorage": "Stockage",
+    "nodeTeam": "Équipe",
+    "nodeUser": "Utilisatrice",
+    "regions": "Régions",
+    "repos": "Dépôts",
+    "schedules": "Horaires",
+    "selectAll": "Sélectionner tout",
+    "selectEntities": "Sélectionnez les types d'entités à afficher",
+    "storages": "Stockages",
+    "teams": "Équipes",
+    "title": "Architecture d'entreprise",
+    "users": "Utilisatrices",
+    "viewForce": "Forcer",
+    "viewHierarchy": "Hiérarchie",
+    "viewRadial": "Radiale"
+  },
+  "audit": {
+    "columns": {
+      "action": "Action",
+      "details": "Détails",
+      "entityName": "Nom de l'entité",
+      "entityType": "Type d'entité",
+      "timestamp": "Horodatage",
+      "user": "Utilisatrice"
+    },
+    "empty": {
+      "clearFilters": "Supprimer les filtres et élargir la plage de dates",
+      "noLogsInRange": "Aucun journal d'audit trouvé pour la plage de dates sélectionnée",
+      "noMatchingFilters": "Aucun journal ne correspond à vos filtres actuels"
+    },
+    "errors": {
+      "loadDescription": "Une erreur s'est produite lors du chargement des journaux d'audit. Veuillez essayer d'actualiser ou d'ajuster votre plage de dates.",
+      "loadTitle": "Impossible de charger les journaux d'audit",
+      "tryAgain": "Essayer à nouveau",
+      "unableToLoad": "Impossible de charger les journaux d'audit"
+    },
+    "export": {
+      "noData": "Aucune donnée disponible pour l'exportation",
+      "successCSV": "{{count}} journaux d'audit exportés au format CSV",
+      "successJSON": "{{count}} journaux d'audit exportés vers JSON",
+      "tooltip": "Exporter les journaux d'audit au format CSV ou JSON"
+    },
+    "filters": {
+      "actions": "Actes",
+      "allEntities": "Toutes les entités",
+      "dateRange": "Plage de dates",
+      "entityType": "Type d'entité",
+      "export": "Exporter",
+      "search": "Recherche",
+      "searchPlaceholder": "Rechercher dans les journaux..."
+    },
+    "pagination": {
+      "showing": "Affichage de {{start}} à {{end}} sur {{total}} journaux"
+    },
+    "subtitle": "Suivez toutes les activités et les changements dans votre organisation",
+    "title": "Journaux d'audit"
+  },
+  "company": {
+    "errors": {
+      "blockRequestsFailed": "Échec de la mise à jour de l'état de blocage des demandes utilisateur",
+      "importFailed": "Échec de l'importation des données de l'entreprise",
+      "noExportData": "Aucune donnée d'exportation renvoyée",
+      "vaultUpdateFailed": "Échec de la mise à jour de la configuration du coffre-fort"
+    },
+    "success": {
+      "errorCount": "{{count}} erreurs",
+      "importComplete": "Importation terminée : {{summary}}",
+      "importedCount": "{{count}} éléments importés",
+      "requestsBlocked": "Demandes des utilisateurs bloquées avec succès",
+      "requestsBlockedWithTerminations": "Demandes des utilisateurs bloquées. {{count}} sessions actives ont été interrompues.",
+      "requestsUnblocked": "Demandes des utilisateurs débloquées avec succès",
+      "skippedCount": "{{count}} éléments ignorés",
+      "vaultUpdated": "La configuration du coffre-fort a été mise à jour avec succès"
+    }
+  },
+  "dangerZone": {
+    "blockUserRequests": {
+      "blockButton": "Bloquer les demandes des utilisateurs",
+      "confirmBlock": {
+        "confirm": "Êtes-vous sûr de vouloir continuer ?",
+        "description": "Cette action va :",
+        "effect1": "Bloquer tous les utilisateurs non-administrateurs du système",
+        "effect2": "Terminer toutes les sessions utilisateur actives (sauf les administrateurs)",
+        "effect3": "Exiger un déblocage manuel pour que les utilisateurs puissent retrouver l'accès",
+        "okText": "Oui, bloquer les utilisateurs",
+        "title": "Bloquer les demandes des utilisateurs"
+      },
+      "confirmUnblock": {
+        "description": "Cela permettra à tous les utilisateurs de faire à nouveau des demandes au système. Es-tu sûr?",
+        "okText": "Oui, débloquer",
+        "title": "Débloquer les demandes des utilisateurs"
+      },
+      "description": "Empêchez tous les utilisateurs non administrateurs de faire des requêtes au système. Cela mettra immédiatement fin à toutes les sessions utilisateur actives, à l'exception des administrateurs. Les utilisateurs devront être débloqués manuellement pour retrouver l’accès.",
+      "title": "Bloquer les demandes des utilisateurs",
+      "unblockButton": "Débloquer les demandes des utilisateurs"
+    },
+    "exportData": {
+      "button": "Exporter les données de l'entreprise",
+      "description": "Exportez toutes les données de l'entreprise, y compris les utilisateurs, les équipes, les autorisations, les régions, les ponts, les machines, les référentiels, les configurations de stockage et les plannings. Cette exportation peut être utilisée à des fins de sauvegarde ou de migration.",
+      "downloading": "Préparation de l'exportation...",
+      "error": "Échec de l'exportation des données de l'entreprise",
+      "success": "Données de l'entreprise exportées avec succès",
+      "title": "Exporter les données de l'entreprise"
+    },
+    "exportVaults": {
+      "button": "Exporter tous les coffres-forts",
+      "description": "Téléchargez toutes les configurations du coffre-fort de l'entreprise, y compris les équipes, les régions, les ponts, les machines, les référentiels, le stockage et les planifications. Cette exportation contient des informations d'identification sensibles et doit être traitée de manière sécurisée.",
+      "error": "Échec de l'exportation des coffres-forts",
+      "success": "Coffres-forts exportés avec succès",
+      "title": "Exporter tous les coffres-forts"
+    },
+    "importData": {
+      "button": "Importer les données de l'entreprise",
+      "description": "Importez les données de l'entreprise à partir d'un fichier précédemment exporté. Vous pouvez choisir d'ignorer les éléments existants ou de les remplacer par les données importées.",
+      "error": "Échec de l'importation des données de l'entreprise",
+      "modal": {
+        "cancel": "Annuler",
+        "fileRequired": "Veuillez sélectionner un fichier à importer",
+        "import": "Importer",
+        "importMode": "Mode d'importation",
+        "importing": "Importation...",
+        "invalidFile": "Format de fichier invalide. Veuillez sélectionner un fichier d'exportation de données d'entreprise valide.",
+        "modeOverride": "Remplacer les éléments existants",
+        "modeOverrideDesc": "Remplacer les éléments existants par des données importées",
+        "modeSkip": "Ignorer les éléments existants",
+        "modeSkipDesc": "Importez uniquement les éléments qui n’existent pas déjà",
+        "selectFile": "Sélectionnez un fichier",
+        "title": "Importer les données de l'entreprise",
+        "warning": "Avertissement",
+        "warningText": "L'importation de données modifiera la configuration de votre entreprise. Assurez-vous d'avoir une sauvegarde avant de continuer."
+      },
+      "success": "Données de l'entreprise importées avec succès",
+      "title": "Importer les données de l'entreprise"
+    },
+    "title": "Zone dangereuse",
+    "updateMasterPassword": {
+      "button": "Paramètres de cryptage",
+      "description": "Configurez le mot de passe de chiffrement côté client qui protège toutes les données sensibles du coffre-fort de votre organisation. Ce mot de passe est partagé entre tous les utilisateurs et n'est jamais accessible à Rediacc pour une sécurité renforcée.",
+      "effect1": "Chiffrez à nouveau tous les coffres-forts avec le nouveau mot de passe",
+      "effect2": "Déconnectez tous les utilisateurs (sauf vous)",
+      "effect3": "Demander à tous les utilisateurs de se reconnecter une fois terminé",
+      "error": {
+        "fetchVaults": "Échec de la récupération des coffres-forts actuels",
+        "noVaults": "Aucun coffre-fort à mettre à jour trouvé",
+        "partialSuccess": "La mise à jour des coffres {{updated}} a réussi, mais {{failed}} a échoué. Consultez les journaux pour plus de détails.",
+        "updateFailed": "Échec de la mise à jour des coffres-forts avec le nouveau mot de passe de chiffrement"
+      },
+      "modal": {
+        "cancel": "Annuler",
+        "confirmPasswordLabel": "Confirmer le mot de passe principal",
+        "confirmPasswordMatch": "Les mots de passe ne correspondent pas",
+        "confirmPasswordPlaceholder": "Confirmer le nouveau mot de passe principal",
+        "confirmPasswordRequired": "Veuillez confirmer le mot de passe principal",
+        "importantNote": "Après avoir mis à jour le mot de passe de chiffrement, tous les utilisateurs devront utiliser le nouveau mot de passe partagé pour accéder aux configurations du coffre-fort. Ce mot de passe doit être distribué en toute sécurité à tous les utilisateurs autorisés. Remarque : les ponts globaux avec RequestToken devront être débloqués manuellement.",
+        "importantNoteCreate": "Après avoir créé le mot de passe de chiffrement, tous les utilisateurs auront besoin de ce mot de passe partagé pour accéder aux configurations du coffre-fort. Distribuez-le en toute sécurité à tous les membres autorisés de l'entreprise - Rediacc n'a pas accès à ce mot de passe.",
+        "importantNoteRemove": "Après avoir supprimé le mot de passe de chiffrement, les configurations du coffre-fort seront accessibles sans chiffrement côté client. Tenez compte des implications en matière de sécurité pour vos données sensibles.",
+        "newPasswordLabel": "Nouveau mot de passe principal",
+        "newPasswordMinLength": "Le mot de passe doit comporter au moins 12 caractères",
+        "newPasswordPattern": "Le mot de passe doit contenir des majuscules, des minuscules, des chiffres et des caractères spéciaux",
+        "newPasswordPlaceholder": "Entrez le nouveau mot de passe principal",
+        "newPasswordRequired": "Veuillez saisir le nouveau mot de passe principal",
+        "operationCreate": "Créer un mot de passe principal",
+        "operationRemove": "Supprimer le mot de passe principal",
+        "operationType": "Sélectionnez l'opération",
+        "operationUpdate": "Mettre à jour le mot de passe principal",
+        "submit": "Exécuter l'opération",
+        "submitCreate": "Créer un mot de passe de cryptage",
+        "submitRemove": "Supprimer le mot de passe de cryptage",
+        "submitUpdate": "Mettre à jour le mot de passe de cryptage",
+        "title": "Configuration du mot de passe de chiffrement",
+        "warningDescription": "Vous êtes sur le point de modifier le mot de passe principal de l'ensemble de votre entreprise. Cela va :",
+        "warningDescriptionCreate": "Vous êtes sur le point de créer un mot de passe principal pour l'ensemble de votre entreprise. Cela va :",
+        "warningDescriptionRemove": "Vous êtes sur le point de supprimer le mot de passe principal de l'ensemble de votre entreprise. Cela va :",
+        "warningDescriptionUpdate": "Vous êtes sur le point de mettre à jour le mot de passe principal de l'ensemble de votre entreprise. Cela va :",
+        "warningEffect1": "Verrouiller temporairement le système pendant l'opération",
+        "warningEffect2": "Déconnectez tous les utilisateurs actifs sauf vous",
+        "warningEffect3": "Chiffrez à nouveau toutes les données du coffre-fort avec le nouveau mot de passe",
+        "warningEffect3Create": "Chiffrez toutes les données du coffre-fort avec le mot de passe principal",
+        "warningEffect3Remove": "Décryptez toutes les données du coffre-fort (les coffres-forts seront stockés non cryptés)",
+        "warningEffect3Update": "Chiffrez à nouveau toutes les données du coffre-fort avec le nouveau mot de passe",
+        "warningEffect4": "Exiger une reconfiguration manuelle de tous les ponts",
+        "warningPermanent": "Cette action est permanente et ne peut être annulée.",
+        "warningSecure": "Votre nouveau mot de passe est-il stocké en toute sécurité ?",
+        "warningSecureRemove": "Êtes-vous sûr de vouloir supprimer le chiffrement de tous les coffres-forts ?",
+        "warningTitle": "⚠️ Opération de sécurité critique"
+      },
+      "success": {
+        "loginNow": "Allez à Connexion maintenant",
+        "nextSteps": "Prochaines étapes :",
+        "redirecting": "Redirection vers la page de connexion dans",
+        "seconds": "secondes",
+        "step1": "Tous les utilisateurs doivent se reconnecter en utilisant leurs identifiants existants",
+        "step2": "Partagez le nouveau mot de passe de cryptage en toute sécurité avec tous les utilisateurs autorisés de votre organisation",
+        "step2Remove": "Informer les administrateurs que les coffres-forts ne sont désormais pas chiffrés",
+        "step3": "Vos propres ponts doivent être reconfigurés manuellement avec le nouveau mot de passe de cryptage",
+        "step3Remove": "Vos propres ponts doivent être reconfigurés manuellement sans cryptage côté client",
+        "step4": "Mettez à jour le système de gestion des mots de passe de votre entreprise avec le nouveau mot de passe de cryptage partagé",
+        "step4Remove": "Supprimez le mot de passe de cryptage du système de gestion des mots de passe de votre entreprise",
+        "systemReady": "Le système est maintenant déverrouillé et prêt à être utilisé.",
+        "title": "Opération terminée avec succès",
+        "titleCreate": "Mot de passe de cryptage créé avec succès",
+        "titleRemove": "Mot de passe de cryptage supprimé avec succès",
+        "titleUpdate": "Mot de passe de cryptage mis à jour avec succès"
+      },
+      "title": "Paramètres du mot de passe de cryptage",
+      "warning": "Conservez le nouveau mot de passe dans un emplacement sécurisé : il ne pourra pas être récupéré en cas de perte."
+    }
+  },
+  "regionsInfrastructure": {
+    "title": "Régions et infrastructures"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "Actes",
+      "groupName": "Nom du groupe",
+      "permissions": "Autorisations",
+      "users": "Utilisatrices"
+    },
+    "teams": {
+      "actions": "Actes",
+      "machines": "Machines",
+      "members": "Membres",
+      "repos": "Dépôts",
+      "storage": "Stockage",
+      "teamName": "Nom de l'équipe",
+      "vaultVersion": "Version du coffre-fort"
+    },
+    "users": {
+      "actions": "Actes",
+      "email": "E-mail",
+      "lastActive": "Dernier actif",
+      "permissionGroup": "Groupe d'autorisations",
+      "status": "Statut"
+    }
+  },
+  "userSessions": {
+    "active": "Active",
+    "activeSessions": "Séances actives",
+    "averageDuration": "Durée moyenne",
+    "columns": {
+      "actions": "Actes",
+      "createdAt": "Heure de connexion",
+      "duration": "Durée",
+      "ipAddress": "Adresse IP",
+      "lastActivity": "Dernière activité",
+      "sessionName": "Session",
+      "status": "Statut",
+      "user": "Utilisatrice",
+      "userAgent": "Agent utilisateur"
+    },
+    "confirmTerminate": "Terminer la session",
+    "confirmTerminateOther": "Êtes-vous sûr de vouloir mettre fin à la session pour {{email}} ?",
+    "confirmTerminateSelf": "Ceci est votre session en cours. Y mettre fin vous déconnectera. Es-tu sûr?",
+    "currentSession": "Toi",
+    "fork": "Fourchette",
+    "forkToken": "Ceci est un jeton fork (session enfant)",
+    "hasChildren": "{{count}} sessions enfants",
+    "inactive": "Inactive",
+    "minutes": "minutes",
+    "notAvailable": "N / A",
+    "searchPlaceholder": "Recherchez par e-mail, IP ou nom de session...",
+    "selfTerminateWarning": "Votre session sera terminée. Vous devrez vous reconnecter.",
+    "terminate": "Mettre fin",
+    "title": "Sessions utilisateur",
+    "totalCount": "Total : {{count}} sessions",
+    "totalSessions": "Nombre total de séances",
+    "uniqueUsers": "Utilisateurs uniques"
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "Êtes-vous sûr de vouloir activer « {{email}} » ?",
+      "confirmTitle": "Activer l'utilisateur"
+    },
+    "deactivate": {
+      "confirmDescription": "Êtes-vous sûr de vouloir désactiver « {{email}} » ?",
+      "confirmTitle": "Désactiver l'utilisateur"
+    }
+  },
+  "vaultProtocol": {
+    "errors": {
+      "disableFailed": "Échec de la désactivation du chiffrement du coffre-fort",
+      "enableFailed": "Échec de l'activation du chiffrement du coffre-fort",
+      "noCompanySelected": "Aucune entreprise sélectionnée. Veuillez choisir une entreprise avant de mettre à jour le cryptage."
+    },
+    "success": {
+      "disabled": "Cryptage du coffre-fort désactivé. Les mots de passe principaux ne sont plus requis.",
+      "enabled": "Le chiffrement du coffre-fort a été activé avec succès. Tous les utilisateurs doivent désormais utiliser ce mot de passe principal."
+    }
+  }
+}

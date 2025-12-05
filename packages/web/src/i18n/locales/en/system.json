@@ -1,0 +1,328 @@
+{
+  "actions": {
+    "activate": "Activate",
+    "addMember": "Add Member",
+    "addPermission": "Add Permission",
+    "assignUser": "Assign User",
+    "changePassword": "Change Password",
+    "configureVault": "Configure Vault",
+    "createGroup": "Create Group",
+    "createTeam": "Create Team",
+    "createUser": "Create User",
+    "deactivate": "Deactivate",
+    "edit": "Edit",
+    "members": "Members",
+    "permissions": "Permissions",
+    "resetAuth": "Reset Auth",
+    "token": "Token",
+    "trace": "Trace",
+    "twoFactorAuth": "Two-Factor Authentication"
+  },
+  "accessControl": {
+    "expertOnlyTitle": "Expert Mode Required",
+    "expertOnlyMessage": "Switch to expert mode to view this page."
+  },
+  "audit": {
+    "columns": {
+      "action": "Action",
+      "details": "Details",
+      "entityName": "Entity Name",
+      "entityType": "Entity Type",
+      "timestamp": "Timestamp",
+      "user": "User"
+    },
+    "empty": {
+      "clearFilters": "Clear filters and expand date range",
+      "noLogsInRange": "No audit logs found for the selected date range",
+      "noMatchingFilters": "No logs match your current filters"
+    },
+    "errors": {
+      "loadDescription": "There was an error loading audit logs. Please try refreshing or adjusting your date range.",
+      "loadTitle": "Unable to Load Audit Logs",
+      "tryAgain": "Try Again",
+      "unableToLoad": "Unable to load audit logs"
+    },
+    "export": {
+      "noData": "No data available to export",
+      "successCSV": "Exported {{count}} audit logs to CSV",
+      "successJSON": "Exported {{count}} audit logs to JSON",
+      "tooltip": "Export audit logs as CSV or JSON"
+    },
+    "filters": {
+      "actions": "Actions",
+      "allEntities": "All Entities",
+      "dateRange": "Date Range",
+      "entityType": "Entity Type",
+      "export": "Export",
+      "search": "Search",
+      "searchPlaceholder": "Search in logs..."
+    },
+    "pagination": {
+      "showing": "Showing {{start}}-{{end}} of {{total}} logs"
+    },
+    "subtitle": "Track all activities and changes in your organization",
+    "title": "Audit Logs"
+  },
+  "architecture": {
+    "bridges": "Bridges",
+    "clearAll": "Clear All",
+    "fetchError": "Failed to fetch architecture data",
+    "filterEntities": "Filter Entities",
+    "legend": "Legend",
+    "machines": "Machines",
+    "noData": "No architecture data available",
+    "noEntitiesSelected": "No entities selected. Please select at least one entity type to display.",
+    "nodeBridge": "Bridge",
+    "nodeCompany": "Company",
+    "nodeMachine": "Machine",
+    "nodeRegion": "Region",
+    "nodeRepo": "Repository",
+    "nodeStorage": "Storage",
+    "nodeTeam": "Team",
+    "nodeUser": "User",
+    "regions": "Regions",
+    "repos": "Repositories",
+    "schedules": "Schedules",
+    "selectAll": "Select All",
+    "selectEntities": "Select entity types to display",
+    "storages": "Storages",
+    "teams": "Teams",
+    "title": "Company Architecture",
+    "users": "Users",
+    "viewForce": "Force",
+    "viewHierarchy": "Hierarchy",
+    "viewRadial": "Radial"
+  },
+  "dangerZone": {
+    "blockUserRequests": {
+      "blockButton": "Block User Requests",
+      "confirmBlock": {
+        "confirm": "Are you sure you want to proceed?",
+        "description": "This action will:",
+        "effect1": "Block all non-admin users from the system",
+        "effect2": "Terminate all active user sessions (except admins)",
+        "effect3": "Require manual unblocking for users to regain access",
+        "okText": "Yes, Block Users",
+        "title": "Block User Requests"
+      },
+      "confirmUnblock": {
+        "description": "This will allow all users to make requests to the system again. Are you sure?",
+        "okText": "Yes, Unblock",
+        "title": "Unblock User Requests"
+      },
+      "description": "Block all non-admin users from making requests to the system. This will immediately terminate all active user sessions except administrators. Users will need to be manually unblocked to regain access.",
+      "title": "Block User Requests",
+      "unblockButton": "Unblock User Requests"
+    },
+    "exportData": {
+      "button": "Export Company Data",
+      "description": "Export all company data including users, teams, permissions, regions, bridges, machines, repositories, storage configurations, and schedules. This export can be used for backup or migration purposes.",
+      "downloading": "Preparing export...",
+      "error": "Failed to export company data",
+      "success": "Company data exported successfully",
+      "title": "Export Company Data"
+    },
+    "exportVaults": {
+      "button": "Export All Vaults",
+      "description": "Download all company vault configurations including teams, regions, bridges, machines, repositories, storage, and schedules. This export contains sensitive credential information and should be handled securely.",
+      "error": "Failed to export vaults",
+      "success": "Vaults exported successfully",
+      "title": "Export All Vaults"
+    },
+    "importData": {
+      "button": "Import Company Data",
+      "description": "Import company data from a previously exported file. You can choose to skip existing items or override them with the imported data.",
+      "error": "Failed to import company data",
+      "modal": {
+        "cancel": "Cancel",
+        "fileRequired": "Please select a file to import",
+        "import": "Import",
+        "importMode": "Import Mode",
+        "importing": "Importing...",
+        "invalidFile": "Invalid file format. Please select a valid company data export file.",
+        "modeOverride": "Override existing items",
+        "modeOverrideDesc": "Replace existing items with imported data",
+        "modeSkip": "Skip existing items",
+        "modeSkipDesc": "Only import items that don't already exist",
+        "selectFile": "Select File",
+        "title": "Import Company Data",
+        "warning": "Warning",
+        "warningText": "Importing data will modify your company configuration. Make sure you have a backup before proceeding."
+      },
+      "success": "Company data imported successfully",
+      "title": "Import Company Data"
+    },
+    "title": "Danger Zone",
+    "updateMasterPassword": {
+      "button": "Encryption Settings",
+      "description": "Configure the client-side encryption password that protects all sensitive vault data in your organization. This password is shared among all users and is never accessible to Rediacc for enhanced security.",
+      "effect1": "Re-encrypt all vaults with the new password",
+      "effect2": "Sign out all users (except you)",
+      "effect3": "Require all users to sign in again after completion",
+      "error": {
+        "fetchVaults": "Failed to fetch current vaults",
+        "noVaults": "No vaults found to update",
+        "partialSuccess": "Updated {{updated}} vaults successfully, but {{failed}} failed. Check logs for details.",
+        "updateFailed": "Failed to update vaults with new encryption password"
+      },
+      "modal": {
+        "cancel": "Cancel",
+        "confirmPasswordLabel": "Confirm Master Password",
+        "confirmPasswordMatch": "Passwords do not match",
+        "confirmPasswordPlaceholder": "Confirm new master password",
+        "confirmPasswordRequired": "Please confirm the master password",
+        "importantNote": "After updating the encryption password, all users will need to use the new shared password to access vault configurations. This password should be securely distributed to all authorized users. Note: Global Bridges with RequestToken will need to be manually unblocked.",
+        "importantNoteCreate": "After creating the encryption password, all users will need this shared password to access vault configurations. Distribute it securely to all authorized company members - Rediacc does not have access to this password.",
+        "importantNoteRemove": "After removing the encryption password, vault configurations will be accessible without client-side encryption. Consider the security implications for your sensitive data.",
+        "newPasswordLabel": "New Master Password",
+        "newPasswordMinLength": "Password must be at least 12 characters long",
+        "newPasswordPattern": "Password must contain uppercase, lowercase, number and special character",
+        "newPasswordPlaceholder": "Enter new master password",
+        "newPasswordRequired": "Please enter the new master password",
+        "operationCreate": "Create Master Password",
+        "operationRemove": "Remove Master Password",
+        "operationType": "Select Operation",
+        "operationUpdate": "Update Master Password",
+        "submit": "Execute Operation",
+        "submitCreate": "Create Encryption Password",
+        "submitRemove": "Remove Encryption Password",
+        "submitUpdate": "Update Encryption Password",
+        "title": "Encryption Password Configuration",
+        "warningDescription": "You are about to modify the master password for your entire company. This will:",
+        "warningDescriptionCreate": "You are about to create a master password for your entire company. This will:",
+        "warningDescriptionRemove": "You are about to remove the master password for your entire company. This will:",
+        "warningDescriptionUpdate": "You are about to update the master password for your entire company. This will:",
+        "warningEffect1": "Lock the system temporarily during the operation",
+        "warningEffect2": "Sign out all active users except you",
+        "warningEffect3": "Re-encrypt all vault data with the new password",
+        "warningEffect3Create": "Encrypt all vault data with the master password",
+        "warningEffect3Remove": "Decrypt all vault data (vaults will be stored unencrypted)",
+        "warningEffect3Update": "Re-encrypt all vault data with the new password",
+        "warningEffect4": "Require manual reconfiguration of all bridges",
+        "warningPermanent": "This action is permanent and cannot be undone.",
+        "warningSecure": "Do you have your new password stored securely?",
+        "warningSecureRemove": "Are you sure you want to remove encryption from all vaults?",
+        "warningTitle": "⚠️ Critical Security Operation"
+      },
+      "success": {
+        "loginNow": "Go to Login Now",
+        "nextSteps": "Next steps:",
+        "redirecting": "Redirecting to login page in",
+        "seconds": "seconds",
+        "step1": "All users must sign in again using their existing credentials",
+        "step2": "Share the new encryption password securely with all authorized users in your organization",
+        "step2Remove": "Inform administrators that vaults are now unencrypted",
+        "step3": "Your own bridges must be manually reconfigured with the new encryption password",
+        "step3Remove": "Your own bridges must be manually reconfigured without client-side encryption",
+        "step4": "Update your company's password management system with the new shared encryption password",
+        "step4Remove": "Remove the encryption password from your company's password management system",
+        "systemReady": "The system is now unlocked and ready for use.",
+        "title": "Operation Completed Successfully",
+        "titleCreate": "Encryption Password Created Successfully",
+        "titleRemove": "Encryption Password Removed Successfully",
+        "titleUpdate": "Encryption Password Updated Successfully"
+      },
+      "title": "Encryption Password Settings",
+      "warning": "Store the new password in a secure location - it cannot be recovered if lost."
+    }
+  },
+  "regionsInfrastructure": {
+    "title": "Regions & Infrastructure"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "Actions",
+      "groupName": "Group Name",
+      "permissions": "Permissions",
+      "users": "Users"
+    },
+    "teams": {
+      "actions": "Actions",
+      "machines": "Machines",
+      "members": "Members",
+      "repos": "Repositories",
+      "storage": "Storage",
+      "teamName": "Team Name",
+      "vaultVersion": "Vault Version"
+    },
+    "users": {
+      "actions": "Actions",
+      "email": "Email",
+      "lastActive": "Last Active",
+      "permissionGroup": "Permission Group",
+      "status": "Status"
+    }
+  },
+  "users": {
+    "activate": {
+      "confirmTitle": "Activate User",
+      "confirmDescription": "Are you sure you want to activate \"{{email}}\"?"
+    },
+    "deactivate": {
+      "confirmTitle": "Deactivate User",
+      "confirmDescription": "Are you sure you want to deactivate \"{{email}}\"?"
+    }
+  },
+  "userSessions": {
+    "active": "Active",
+    "activeSessions": "Active Sessions",
+    "averageDuration": "Average Duration",
+    "columns": {
+      "actions": "Actions",
+      "createdAt": "Login Time",
+      "duration": "Duration",
+      "ipAddress": "IP Address",
+      "lastActivity": "Last Activity",
+      "sessionName": "Session",
+      "status": "Status",
+      "user": "User",
+      "userAgent": "User Agent"
+    },
+    "confirmTerminate": "Terminate Session",
+    "confirmTerminateOther": "Are you sure you want to terminate the session for {{email}}?",
+    "confirmTerminateSelf": "This is your current session. Terminating it will log you out. Are you sure?",
+    "currentSession": "You",
+    "fork": "Fork",
+    "forkToken": "This is a fork token (child session)",
+    "hasChildren": "{{count}} child sessions",
+    "inactive": "Inactive",
+    "minutes": "minutes",
+    "notAvailable": "N/A",
+    "searchPlaceholder": "Search by email, IP, or session name...",
+    "selfTerminateWarning": "Your session will be terminated. You will need to log in again.",
+    "terminate": "Terminate",
+    "title": "User Sessions",
+    "totalCount": "Total: {{count}} sessions",
+    "totalSessions": "Total Sessions",
+    "uniqueUsers": "Unique Users"
+  },
+  "company": {
+    "success": {
+      "vaultUpdated": "Vault configuration updated successfully",
+      "requestsBlocked": "User requests blocked successfully",
+      "requestsBlockedWithTerminations": "User requests blocked. {{count}} active sessions were terminated.",
+      "requestsUnblocked": "User requests unblocked successfully",
+      "importComplete": "Import completed: {{summary}}",
+      "importedCount": "{{count}} items imported",
+      "skippedCount": "{{count}} items skipped",
+      "errorCount": "{{count}} errors"
+    },
+    "errors": {
+      "vaultUpdateFailed": "Failed to update vault configuration",
+      "blockRequestsFailed": "Failed to update user request blocking status",
+      "importFailed": "Failed to import company data",
+      "noExportData": "No export data returned"
+    }
+  },
+  "vaultProtocol": {
+    "success": {
+      "enabled": "Vault encryption enabled successfully. All users must now use this master password.",
+      "disabled": "Vault encryption disabled. Master passwords are no longer required."
+    },
+    "errors": {
+      "enableFailed": "Failed to enable vault encryption",
+      "disableFailed": "Failed to disable vault encryption",
+      "noCompanySelected": "No company selected. Please choose a company before updating encryption."
+    }
+  }
+}

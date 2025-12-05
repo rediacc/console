@@ -1,0 +1,55 @@
+{
+  "name": "@rediacc/cli",
+  "version": "0.2.104",
+  "description": "Rediacc CLI - Command line interface for Rediacc operations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "rdc": "./bin/rdc"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@rediacc/shared": "^0.1.0",
+    "axios": "^1.13.2",
+    "chalk": "^5.4.1",
+    "cli-table3": "^0.6.5",
+    "commander": "^13.0.0",
+    "inquirer": "^12.3.2",
+    "ora": "^8.1.1",
+    "yaml": "^2.7.0",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^22.10.2",
+    "rimraf": "^5.0.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.15"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "keywords": [
+    "rediacc",
+    "cli",
+    "devops",
+    "automation"
+  ],
+  "author": "Rediacc",
+  "license": "MIT"
+}

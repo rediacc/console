@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:ant.design)",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "Bash(done)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
