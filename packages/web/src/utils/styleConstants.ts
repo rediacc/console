@@ -1,14 +1,14 @@
 export const DESIGN_TOKENS = {
   SPACING: {
     // Core scale (4px base)
-    XS: 4,       // Extra small
-    SM: 8,       // Small
-    SM_LG: 12,   // Small-Large (between SM and MD)
-    MD: 16,      // Medium
-    LG: 24,      // Large
-    XL: 32,      // Extra large
-    XXL: 40,     // 2x Extra large
-    XXXL: 48,    // 3x Extra large
+    XS: 4, // Extra small
+    SM: 8, // Small
+    SM_LG: 12, // Small-Large (between SM and MD)
+    MD: 16, // Medium
+    LG: 24, // Large
+    XL: 32, // Extra large
+    XXL: 40, // 2x Extra large
+    XXXL: 48, // 3x Extra large
     // Semantic aliases
     PAGE_CONTAINER: 16,
     PAGE_SECTION_GAP: 16,
