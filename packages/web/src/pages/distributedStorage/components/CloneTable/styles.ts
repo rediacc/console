@@ -2,6 +2,7 @@ import styled from 'styled-components';
 import { Badge, Button, Space, Tag } from 'antd';
 import { CopyOutlined, CloudUploadOutlined } from '@ant-design/icons';
 import {
+  FlexColumn,
   EmptyStateWrapper,
   IconButton as BaseIconButton,
   TableContainer as BaseTableContainer,
@@ -9,15 +10,13 @@ import {
   TableCellText,
   StyledIcon,
 } from '@/styles/primitives';
+import { InlineStack } from '@/components/common/styled';
 
-export const Container = styled.div`
+export const Container = styled(FlexColumn).attrs({ $gap: 'MD' })`
   padding: ${({ theme }) =>
     `${theme.spacing.MD}px ${theme.spacing.MD}px ${theme.spacing.MD}px ${theme.spacing.LG}px`};
   background: var(--color-fill-quaternary);
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const Title = styled.h5`
@@ -27,11 +26,7 @@ export const Title = styled.h5`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export const ActionsRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const ActionsRow = styled(InlineStack)``;
 
 export const CreateButton = styled(Button)`
   && {
@@ -109,11 +104,7 @@ export const MachineListStack = styled(Space).attrs({
   width: 100%;
 `;
 
-export const MachineListHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const MachineListHeader = styled(InlineStack)``;
 
 export const MachineCountTag = styled(Tag)`
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
@@ -143,10 +134,6 @@ export const MachineListActions = styled(Space)`
 
 export const EmptyState = styled(EmptyStateWrapper)`
   padding: ${({ theme }) => `${theme.spacing.LG}px ${theme.spacing.MD}px`};
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  align-items: center;
 `;
 
 export const AssignButton = styled(Button)`

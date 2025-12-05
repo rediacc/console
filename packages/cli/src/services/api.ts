@@ -272,4 +272,3 @@ export class CliApiError extends Error {
 
 export const apiClient = new CliApiClient();
 export const api = createApiServices(apiClient);
-export default apiClient;

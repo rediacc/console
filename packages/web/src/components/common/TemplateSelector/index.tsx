@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Col, Empty, message } from 'antd';
+import { Col, Empty } from 'antd';
 import {
   DatabaseOutlined,
   GlobalOutlined,
@@ -11,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { templateService } from '@/services/templateService';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import {
   SelectorContainer,
   HeaderStack,
@@ -29,8 +30,6 @@ import {
   TemplateDescription,
   DetailsButton,
   DefaultTag,
-  LoadingState,
-  LoadingText,
   ErrorState,
 } from './styles';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
@@ -58,31 +57,31 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 }) => {
   const { t } = useTranslation(['resources', 'common']);
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const { execute, isExecuting: loading, error } = useAsyncAction();
 
   useEffect(() => {
     fetchTemplates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchTemplates = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+    const result = await execute(
+      async () => {
+        const fetchedTemplates = await templateService.fetchTemplates();
+        // Sort templates alphabetically by name
+        const sortedTemplates = fetchedTemplates.sort((a, b) => {
+          return a.name.localeCompare(b.name);
+        });
+        return sortedTemplates;
+      },
+      {
+        errorMessage: 'Unable to load templates. Please check your connection.',
+      }
+    );
 
-      const fetchedTemplates = await templateService.fetchTemplates();
-      // Sort templates alphabetically by name
-      const sortedTemplates = fetchedTemplates.sort((a, b) => {
-        return a.name.localeCompare(b.name);
-      });
-      setTemplates(sortedTemplates);
-    } catch (err) {
-      console.error('Failed to fetch templates:', err);
-      setError('Unable to load templates. Please check your connection.');
-      message.error('Unable to load templates. Please check your connection.');
-    } finally {
-      setLoading(false);
+    if (result.success && result.data) {
+      setTemplates(result.data);
     }
   };
 
@@ -133,12 +132,15 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   if (loading) {
     return (
-      <LoadingState>
-        <LoadingWrapper loading centered minHeight={160}>
-          <div />
-        </LoadingWrapper>
-        <LoadingText>{t('resources:templates.loading')}</LoadingText>
-      </LoadingState>
+      <LoadingWrapper
+        loading
+        centered
+        minHeight={160}
+        tip={t('resources:templates.loading')}
+        showTextBelow
+      >
+        <div />
+      </LoadingWrapper>
     );
   }
 

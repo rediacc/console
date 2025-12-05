@@ -1,5 +1,7 @@
 import styled from 'styled-components';
 import { Card, Statistic, List, Typography } from 'antd';
+import { FlexColumn, FlexRow } from '@/styles/primitives';
+import { ActionGroup } from '@/components/common/styled';
 
 const { Text } = Typography;
 
@@ -9,11 +11,8 @@ export const WidgetCard = styled(Card)`
   box-shadow: ${({ theme }) => theme.shadows.CARD};
 `;
 
-export const HeaderContent = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+// Use InlineStack from common/styled
+export { InlineStack as HeaderContent } from '@/components/common/styled';
 
 export const TitleIcon = styled.span`
   display: inline-flex;
@@ -35,12 +34,9 @@ export const Subtitle = styled(Text)`
   }
 `;
 
-export const WidgetBody = styled.div`
-  width: 100%;
+// Use FlexColumn from primitives
+export const WidgetBody = styled(FlexColumn).attrs({ $gap: 'LG' })`
   padding: ${({ theme }) => theme.spacing.MD}px;
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 export const AssignmentCard = styled(Card)<{ $borderColor: string }>`
@@ -51,12 +47,8 @@ export const AssignmentCard = styled(Card)<{ $borderColor: string }>`
   border: 1px solid ${({ $borderColor }) => $borderColor};
 `;
 
-export const AssignmentStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+// Use FlexColumn from primitives
+export const AssignmentStack = styled(FlexColumn).attrs({ $gap: 'XS', $align: 'center' })``;
 
 export const AssignmentIcon = styled.div<{ $color: string }>`
   font-size: ${({ theme }) => theme.dimensions.ICON_XL}px;
@@ -75,15 +67,13 @@ export const PercentageText = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-export const SummaryPanel = styled.div`
+// Use FlexColumn from primitives
+export const SummaryPanel = styled(FlexColumn).attrs({ $gap: 'MD' })`
   padding: ${({ theme }) => theme.spacing.MD}px;
   background: ${({ theme }) => theme.colors.bgPrimary};
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   border: 1px solid var(--color-border-secondary);
   box-shadow: ${({ theme }) => theme.shadows.CARD};
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const SummaryTitle = styled(Text)`
@@ -94,17 +84,11 @@ export const SummaryTitle = styled(Text)`
   }
 `;
 
-export const TeamSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+// Use FlexColumn from primitives
+export const TeamSection = styled(FlexColumn).attrs({ $gap: 'SM' })``;
 
-export const TeamHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+// Use FlexRow from primitives
+export const TeamHeader = styled(FlexRow).attrs({ $gap: 'SM' })``;
 
 export const TeamListStyled = styled(List)`
   .ant-list-items {
@@ -128,10 +112,8 @@ export const TeamListContent = styled.div`
   width: 100%;
 `;
 
-export const TeamListHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+// Use FlexRow from primitives
+export const TeamListHeader = styled(FlexRow).attrs({ $justify: 'space-between' })`
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
 `;
 
@@ -149,8 +131,5 @@ export const TeamMeta = styled(Text)`
   }
 `;
 
-export const TeamTagGroup = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+// Use ActionGroup from common/styled (flex-wrap with SM gap)
+export const TeamTagGroup = ActionGroup;

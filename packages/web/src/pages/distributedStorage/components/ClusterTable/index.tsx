@@ -32,14 +32,12 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   const { t } = useTranslation(['distributedStorage', 'common', 'machines']);
   const [modal, contextHolder] = Modal.useModal();
   const { expandedRowKeys, toggleRow, setExpandedRowKeys } = useExpandableTable();
-  const [selectedCluster, setSelectedCluster] = useState<DistributedStorageCluster | null>(null);
-  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const manageMachinesModal = useDialogState<DistributedStorageCluster>();
   const auditTrace = useTraceModal();
 
   const handleManageMachines = useCallback((cluster: DistributedStorageCluster) => {
-    setSelectedCluster(cluster);
-    setAssignModalOpen(true);
-  }, []);
+    manageMachinesModal.open(cluster);
+  }, [manageMachinesModal]);
 
   const handleAuditTrace = useCallback(
     (cluster: DistributedStorageCluster) => {
@@ -173,23 +171,18 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
         entityName={auditTrace.entityName}
       />
 
-      {selectedCluster && (
+      {manageMachinesModal.state.data && (
         <ManageClusterMachinesModal
-          open={assignModalOpen}
-          clusterName={selectedCluster.clusterName}
-          teamName={selectedCluster.teamName || ''}
+          open={manageMachinesModal.isOpen}
+          clusterName={manageMachinesModal.state.data.clusterName}
+          teamName={manageMachinesModal.state.data.teamName || ''}
           onCancel={() => {
-            setAssignModalOpen(false);
-            setSelectedCluster(null);
+            manageMachinesModal.close();
           }}
           onSuccess={() => {
-            if (!selectedCluster) {
-              return;
-            }
-            setAssignModalOpen(false);
-            const clusterName = selectedCluster.clusterName;
-            setSelectedCluster(null);
-            if (expandedRowKeys.includes(clusterName)) {
+            const clusterName = manageMachinesModal.state.data?.clusterName;
+            manageMachinesModal.close();
+            if (clusterName && expandedRowKeys.includes(clusterName)) {
               setExpandedRowKeys([]);
               setTimeout(() => {
                 setExpandedRowKeys([clusterName]);

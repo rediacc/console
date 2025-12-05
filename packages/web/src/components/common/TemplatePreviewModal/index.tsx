@@ -20,6 +20,7 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { templateService } from '@/services/templateService';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { TabLabel } from '@/styles/primitives';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import {
   StyledModal,
   TitleStack,
@@ -36,8 +37,6 @@ import {
   FeatureList,
   FeatureItem,
   FeatureText,
-  LoadingContainer,
-  LoadingText,
   FilesLayout,
   FileListColumn,
   FilePreviewColumn,
@@ -110,7 +109,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   context = 'marketplace',
 }) => {
   const { t } = useTranslation(['marketplace', 'resources', 'common']);
-  const [loading, setLoading] = useState(false);
+  const { execute, isExecuting: loading } = useAsyncAction();
   const [templateDetails, setTemplateDetails] = useState<TemplateDetails | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
@@ -144,7 +143,6 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       // Reset state when modal is closed
       setTemplateDetails(null);
       setLoadedTemplate(null);
-      setLoading(false);
       setActiveTab('overview');
       setSelectedFileIndex(0);
       return;
@@ -154,43 +152,48 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       let baseTemplate = template || (templateName ? { name: templateName, readme: '' } : null);
       if (!baseTemplate) return;
 
-      try {
-        setLoading(true);
-
-        // For repo creation context, fetch the template from templates.json to get README
-        if (context === 'repo-creation' && templateName && !baseTemplate.readme) {
-          try {
-            const templates: Template[] = await templateService.fetchTemplates();
-            const foundTemplate = templates.find(
-              (templateItem) => templateItem.name === templateName
-            );
-            if (foundTemplate) {
-              // Set the loaded template with README content
-              const fullTemplate = {
-                id: foundTemplate.id,
-                name: foundTemplate.name,
-                readme: foundTemplate.readme,
-                category: foundTemplate.category,
-                tags: foundTemplate.tags,
-                difficulty: foundTemplate.difficulty,
-                download_url: foundTemplate.download_url,
-              };
-              setLoadedTemplate(fullTemplate);
-              baseTemplate = fullTemplate; // Use the full template for fetching details
+      const result = await execute(
+        async () => {
+          // For repo creation context, fetch the template from templates.json to get README
+          if (context === 'repo-creation' && templateName && baseTemplate && !baseTemplate.readme) {
+            try {
+              const templates: Template[] = await templateService.fetchTemplates();
+              const foundTemplate = templates.find(
+                (templateItem) => templateItem.name === templateName
+              );
+              if (foundTemplate) {
+                // Set the loaded template with README content
+                const fullTemplate = {
+                  id: foundTemplate.id,
+                  name: foundTemplate.name,
+                  readme: foundTemplate.readme,
+                  category: foundTemplate.category,
+                  tags: foundTemplate.tags,
+                  difficulty: foundTemplate.difficulty,
+                  download_url: foundTemplate.download_url,
+                };
+                setLoadedTemplate(fullTemplate);
+                baseTemplate = fullTemplate; // Use the full template for fetching details
+              }
+            } catch (templatesError) {
+              console.error('Failed to fetch templates:', templatesError);
             }
-          } catch (templatesError) {
-            console.error('Failed to fetch templates:', templatesError);
           }
-        }
 
-        // Fetch the detailed template data (files, etc.)
-        const data = await templateService.fetchTemplateData(baseTemplate);
-        setTemplateDetails(data as unknown as TemplateDetails);
-      } catch (error) {
-        // Failed to fetch template details
-        console.error('Failed to fetch template details:', error);
-      } finally {
-        setLoading(false);
+          // Fetch the detailed template data (files, etc.)
+          if (!baseTemplate) {
+            throw new Error('Template not found');
+          }
+          const data = await templateService.fetchTemplateData(baseTemplate);
+          return data as unknown as TemplateDetails;
+        },
+        {
+          skipErrorMessage: true, // Fail silently, component handles gracefully
+        }
+      );
+
+      if (result.success && result.data) {
+        setTemplateDetails(result.data);
       }
     };
 
@@ -317,18 +320,20 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   );
 
   const filesContent = loading ? (
-    <LoadingContainer
+    <LoadingWrapper
+      loading
+      centered
+      minHeight={160}
+      tip={
+        context === 'marketplace'
+          ? t('marketplace:loadingFiles')
+          : t('resources:templates.loadingDetails')
+      }
+      showTextBelow
       data-testid={context === 'marketplace' ? undefined : 'template-details-loading'}
     >
-      <LoadingWrapper loading centered minHeight={160}>
-        <div />
-      </LoadingWrapper>
-      <LoadingText>
-        {context === 'marketplace'
-          ? t('marketplace:loadingFiles')
-          : t('resources:templates.loadingDetails')}
-      </LoadingText>
-    </LoadingContainer>
+      <div />
+    </LoadingWrapper>
   ) : templateDetails && templateDetails.files.length > 0 ? (
     <FilesLayout>
       <FileListColumn>

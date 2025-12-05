@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { Form, Tabs, Typography } from 'antd';
-import { BaseModal } from '@/styles/primitives';
+import { BaseModal, FlexColumn, FlexRow, CaptionText } from '@/styles/primitives';
+import { ActionsRow as CommonActionsRow } from '@/components/common/styled';
 import { ModalSize } from '@/types/modal';
 
 const { Text, Paragraph } = Typography;
@@ -48,20 +49,14 @@ export const TabsWrapper = styled(Tabs)`
   }
 `;
 
-export const CommandPreview = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
+export const CommandPreview = styled(FlexColumn).attrs({ $gap: 'SM' })`
   padding: ${({ theme }) => theme.spacing.LG}px;
   background-color: ${({ theme }) => theme.colors.bgSecondary};
   border-radius: ${({ theme }) => theme.borderRadius.XL}px;
   border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
 `;
 
-export const PreviewHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+export const PreviewHeader = styled(FlexRow).attrs({ $justify: 'space-between' })`
   gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
@@ -72,11 +67,8 @@ export const PreviewTitle = styled(Text)`
   }
 `;
 
-export const PreviewError = styled.div`
+export const PreviewError = styled(FlexColumn).attrs({ $gap: 'XS' })`
   padding: ${({ theme }) => theme.spacing.SM}px 0;
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
 export const PreviewErrorText = styled(Text)`
@@ -85,7 +77,7 @@ export const PreviewErrorText = styled(Text)`
   }
 `;
 
-export const PreviewHelper = styled(Text)`
+export const PreviewHelper = styled(CaptionText)`
   && {
     color: ${({ theme }) => theme.colors.textSecondary};
     font-size: ${({ theme }) => theme.fontSize.XS}px;
@@ -107,15 +99,11 @@ export const PreviewMetaRow = styled.div`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const PreviewMetaText = styled(Text)`
+export const PreviewMetaText = styled(CaptionText)`
   && {
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
 
-export const ActionsRow = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const ActionsRow = CommonActionsRow;

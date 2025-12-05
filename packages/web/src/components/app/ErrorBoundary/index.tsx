@@ -172,5 +172,3 @@ export const withErrorBoundary = <P extends object>(
   WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`;
   return WrappedComponent;
 };
-
-export default ErrorBoundary;

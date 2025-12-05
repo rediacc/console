@@ -1,10 +1,10 @@
 import React from 'react';
-import { Button, Dropdown, Tooltip, Typography } from 'antd';
+import { Button, Dropdown, Space, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps, TooltipProps } from 'antd';
 import { MoreOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import i18n from '@/i18n/config';
-import { createStatusRenderer, type StatusConfig, renderTimestampElement } from './renderers';
+import { createStatusRenderer, type StatusConfig, renderTimestampElement, VersionTag } from './renderers';
 
 const { Text } = Typography;
 
@@ -431,6 +431,131 @@ export const createTruncatedColumn = <T,>(
       );
 
       return options.renderWrapper ? options.renderWrapper(content, resolvedValue) : content;
+    },
+  };
+};
+
+export interface CountColumnOptions<T> {
+  title: React.ReactNode;
+  dataIndex: ColumnDataIndex<T>;
+  key?: string;
+  width?: number;
+  align?: 'left' | 'center' | 'right';
+  sorter?: boolean | ColumnsType<T>[number]['sorter'];
+  icon?: React.ReactNode;
+  useBadge?: boolean;
+  showZero?: boolean;
+  renderValue?: (value: number, record: T) => React.ReactNode;
+}
+
+/**
+ * Create a count column with optional badge or icon rendering
+ */
+export const createCountColumn = <T,>(options: CountColumnOptions<T>): ColumnsType<T>[number] => {
+  const dataIndex = options.dataIndex;
+  const dataKey = typeof dataIndex === 'string' ? dataIndex : String(dataIndex);
+
+  let sorter: ColumnsType<T>[number]['sorter'] | undefined;
+  if (options.sorter === true) {
+    sorter = (a: T, b: T) => {
+      const aValue = (a as Record<string, unknown>)[dataKey];
+      const bValue = (b as Record<string, unknown>)[dataKey];
+      return Number(aValue ?? 0) - Number(bValue ?? 0);
+    };
+  } else if (options.sorter) {
+    sorter = options.sorter;
+  }
+
+  return {
+    title: options.title,
+    dataIndex,
+    key: options.key || dataKey || 'count',
+    width: options.width ?? 100,
+    align: options.align ?? 'center',
+    sorter,
+    render: (value: number, record: T) => {
+      if (options.renderValue) {
+        return options.renderValue(value, record);
+      }
+
+      const count = value ?? 0;
+
+      if (options.useBadge) {
+        return (
+          <Tooltip title={options.title}>
+            <Space size="small">
+              {options.icon}
+              <span>{count}</span>
+            </Space>
+          </Tooltip>
+        );
+      }
+
+      return (
+        <Space size="small">
+          {options.icon}
+          <span>{count}</span>
+        </Space>
+      );
+    },
+  };
+};
+
+export interface VersionColumnOptions<T> {
+  title?: React.ReactNode;
+  dataIndex: ColumnDataIndex<T>;
+  key?: string;
+  width?: number;
+  align?: 'left' | 'center' | 'right';
+  sorter?: boolean | ColumnsType<T>[number]['sorter'];
+  formatVersion?: (version: number) => string;
+  renderValue?: (value: number, record: T) => React.ReactNode;
+}
+
+/**
+ * Create a version column with consistent Tag rendering
+ */
+export const createVersionColumn = <T,>(
+  options: VersionColumnOptions<T>
+): ColumnsType<T>[number] => {
+  const dataIndex = options.dataIndex;
+  const dataKey = typeof dataIndex === 'string' ? dataIndex : String(dataIndex);
+  const fallbackTitle = i18n.t('common:general.vaultVersion', { defaultValue: 'Version' });
+
+  let sorter: ColumnsType<T>[number]['sorter'] | undefined;
+  if (options.sorter === true || options.sorter === undefined) {
+    sorter = (a: T, b: T) => {
+      const aValue = (a as Record<string, unknown>)[dataKey];
+      const bValue = (b as Record<string, unknown>)[dataKey];
+      return Number(aValue ?? 0) - Number(bValue ?? 0);
+    };
+  } else if (options.sorter === false) {
+    sorter = undefined;
+  } else {
+    sorter = options.sorter;
+  }
+
+  return {
+    title: options.title || fallbackTitle,
+    dataIndex,
+    key: options.key || dataKey || 'version',
+    width: options.width ?? 120,
+    align: options.align ?? 'center',
+    sorter,
+    render: (value: number, record: T) => {
+      if (options.renderValue) {
+        return options.renderValue(value, record);
+      }
+
+      if (value === null || value === undefined) {
+        return <Text type="secondary">-</Text>;
+      }
+
+      const formattedVersion = options.formatVersion
+        ? options.formatVersion(value)
+        : i18n.t('common:general.versionFormat', { defaultValue: 'v{{version}}', version: value });
+
+      return <VersionTag>{formattedVersion}</VersionTag>;
     },
   };
 };

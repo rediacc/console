@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { Space, Typography, Button } from 'antd';
 import { FilterOutlined } from '@/utils/optimizedIcons';
-import { PageContainer } from '@/styles/primitives';
+import { PageContainer, StyledIcon } from '@/styles/primitives';
 import { ContentStack } from '@/components/common/styled';
 
 const { Text } = Typography;
@@ -42,27 +42,14 @@ export const LinkButton = styled(Button).attrs({ type: 'link' })`
   height: auto;
 `;
 
-export const TableHeader = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-`;
+// Use HeaderRow from common/styled (space-between layout with MD gap)
+export { HeaderRow as TableHeader } from '@/components/common/styled';
 
-export const TableActions = styled(Space)`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  justify-content: flex-end;
-`;
+// Use ActionGroup from common/styled (flex-wrap with SM gap)
+export { ActionGroup as TableActions } from '@/components/common/styled';
 
-export const NoResults = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => theme.spacing.LG}px 0;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+// Use CenteredState from common/styled
+export { CenteredState as NoResults } from '@/components/common/styled';
 
 export const FilterHintIcon = styled(FilterOutlined)`
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
@@ -77,16 +64,11 @@ export const ColumnFilterIcon = styled(FilterOutlined)<{ $active?: boolean }>`
   transition: color ${({ theme }) => theme.transitions.FAST};
 `;
 
-export const ActionIcon = styled.span<{ $color: string }>`
-  display: inline-flex;
-  align-items: center;
-  color: ${({ $color }) => $color};
-  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-`;
+// Use StyledIcon from primitives
+export const ActionIcon = styled(StyledIcon).attrs<{ $color: string }>(({ $color }) => ({
+  $size: 'MD',
+  $color,
+}))<{ $color: string }>``;
 
-export const DescriptionText = styled(Text)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
+// Use CaptionText from primitives
+export { CaptionText as DescriptionText } from '@/styles/primitives';

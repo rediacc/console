@@ -23,14 +23,3 @@ export function handleError(error: unknown): never {
   process.exit(exitCode);
 }
 
-export function exitWithError(message: string, exitCode: number = EXIT_CODES.GENERAL_ERROR): never {
-  outputService.error(`Error: ${message}`);
-  process.exit(exitCode);
-}
-
-export function exitWithSuccess(message?: string): never {
-  if (message) {
-    outputService.success(message);
-  }
-  process.exit(EXIT_CODES.SUCCESS);
-}

@@ -683,5 +683,3 @@ export const createTelemetryConfig = (): TelemetryConfig => {
     enableWebVitals: true,
   };
 };
-
-export default telemetryService;

@@ -3,7 +3,9 @@ import { Card, Collapse, Typography, Tag, Button, Input, Form } from 'antd';
 import {
   PrimaryButton as PrimitivePrimaryButton,
   SecondaryButton as PrimitiveSecondaryButton,
+  FlexColumn,
 } from '@/styles/primitives';
+import { InlineStack, ActionGroup } from '@/components/common/styled';
 
 const { Title, Text } = Typography;
 
@@ -65,10 +67,7 @@ export const FieldsBadge = styled(Text)`
   }
 `;
 
-export const EditorStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.LG}px;
+export const EditorStack = styled(FlexColumn).attrs({ $gap: 'LG' })`
   width: 100%;
 `;
 
@@ -89,12 +88,7 @@ export const CardHeading = styled(Text)`
   }
 `;
 
-export const EntryActionsRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const EntryActionsRow = ActionGroup;
 
 export const KeyInputWrapper = styled.div`
   flex: 1 1 60%;
@@ -127,10 +121,7 @@ export const CollapseWrapper = styled(Collapse)`
   }
 `;
 
-export const EntryHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
+export const EntryHeader = styled(InlineStack)`
   flex-wrap: wrap;
 `;
 
@@ -150,11 +141,7 @@ export const TypeTag = styled(Tag)`
   }
 `;
 
-export const PanelActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+export const PanelActions = InlineStack;
 
 export const PanelDeleteButton = styled(Button)`
   && {

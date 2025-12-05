@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { Select, Typography } from 'antd';
-import { PillTag } from '@/styles/primitives';
+import { PillTag, FlexRow, CaptionText } from '@/styles/primitives';
 
 const { Text } = Typography;
 
@@ -73,11 +73,8 @@ export const BridgeTag = styled(PillTag).attrs({
   }
 `;
 
-export const StatusContainer = styled.div`
+export const StatusContainer = styled(FlexRow)`
   margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const StatusTag = styled(PillTag).attrs({
@@ -90,18 +87,14 @@ export const StatusIcon = styled.span`
   font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
 `;
 
-export const StatusText = styled(Text)`
+export const StatusText = styled(CaptionText)`
   && {
     color: inherit;
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
   }
 `;
 
-export const SpinnerWrapper = styled.div`
+export const SpinnerWrapper = styled(FlexRow).attrs({ $justify: 'center' })`
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: ${({ theme }) => theme.spacing.LG}px 0;
 `;
 

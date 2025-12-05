@@ -162,6 +162,9 @@ jobs:
       - name: Run ESLint (zero warnings policy)
         run: npm run lint -- --max-warnings 0
 
+      - name: Check unused exports
+        run: npm run lint:unused
+
   format-check:
     name: 🎨 Code Quality - Format
     runs-on: ubuntu-latest

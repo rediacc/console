@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { Radio, Button, Space } from 'antd';
+import { InlineStack } from '@/components/common/styled';
 
 export const PopoverContainer = styled.div`
   width: 400px;
@@ -80,12 +81,7 @@ export const GeneratorButton = styled(Button)`
   }
 `;
 
-export const TitleStack = styled(Space)`
-  && {
-    gap: ${({ theme }) => theme.spacing.SM}px;
-    align-items: center;
-  }
-`;
+export const TitleStack = InlineStack;
 
 export const CopyButton = styled(Button)`
   && {

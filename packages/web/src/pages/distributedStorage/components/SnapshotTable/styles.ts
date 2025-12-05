@@ -2,6 +2,8 @@ import styled from 'styled-components';
 import { Button, Tag } from 'antd';
 import { CameraOutlined } from '@ant-design/icons';
 import {
+  FlexColumn,
+  FlexRow,
   IconButton as BaseIconButton,
   TableContainer as BaseTableContainer,
   TableCellContent,
@@ -9,13 +11,10 @@ import {
   StyledIcon,
 } from '@/styles/primitives';
 
-export const Container = styled.div`
+export const Container = styled(FlexColumn).attrs({ $gap: 'MD' })`
   padding: ${({ theme }) => theme.spacing.MD}px;
   background: var(--color-fill-quaternary);
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const Title = styled.h4`
@@ -25,12 +24,7 @@ export const Title = styled.h4`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export const ActionsRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+export const ActionsRow = styled(FlexRow).attrs({ $gap: 'XS', $justify: 'flex-start' })``;
 
 export const CreateButton = styled(Button)`
   && {

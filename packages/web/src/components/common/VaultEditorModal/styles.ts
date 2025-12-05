@@ -1,15 +1,14 @@
 import styled, { css } from 'styled-components';
 import { Button, Tag, Typography } from 'antd';
 import { InfoCircleOutlined, UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons';
+import {
+  ContentStack as BaseContentStack,
+  ActionGroup as BaseActionGroup,
+} from '@/components/common/styled';
 
 const { Text } = Typography;
 
-export const ContentStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const ContentStack = BaseContentStack;
 
 export const VersionBanner = styled.div`
   display: flex;
@@ -80,17 +79,8 @@ export const FooterBar = styled.div`
   flex-wrap: wrap;
 `;
 
-export const FileActions = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  align-items: center;
-`;
-
-export const ActionGroup = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  align-items: center;
-`;
+export const FileActions = BaseActionGroup;
+export const ActionGroup = BaseActionGroup;
 
 const baseButtonStyles = css`
   min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_SM}px;

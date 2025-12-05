@@ -1,6 +1,8 @@
 import styled from 'styled-components';
-import { Layout, Space, Button, Avatar, Typography } from 'antd';
+import { Layout, Button, Avatar, Typography } from 'antd';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { FlexRow } from '@/styles/primitives';
+import { InlineStack } from '@/components/common/styled';
 
 const { Header, Content } = Layout;
 const { Text } = Typography;
@@ -30,23 +32,12 @@ export const StyledHeader = styled(Header)<{ $isDark: boolean }>`
   backdrop-filter: blur(8px);
 `;
 
-export const HeaderLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-`;
+export const HeaderLeft = styled(FlexRow).attrs({ $gap: 'MD' })``;
 
-export const HeaderRight = styled(Space)`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const HeaderRight = styled(InlineStack)``;
 
 export const MenuToggleButton = styled(Button)`
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-size: 18px;
   color: var(--color-text-primary);
   transition: all 0.2s ease;
@@ -57,9 +48,7 @@ export const MenuToggleButton = styled(Button)`
   }
 `;
 
-export const LogoWrapper = styled.div`
-  display: flex;
-  align-items: center;
+export const LogoWrapper = styled(InlineStack)`
   cursor: pointer;
 `;
 
@@ -71,11 +60,7 @@ export const Logo = styled.img`
   margin-left: -${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const UserMenuButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
+export const UserMenuButton = styled(Button)``;
 
 export const UserAvatar = styled(Avatar)`
   background: var(--color-primary-hover);

@@ -95,4 +95,3 @@ class NodeStorageAdapter implements IStorageProvider {
 }
 
 export const nodeStorageAdapter = new NodeStorageAdapter();
-export default nodeStorageAdapter;

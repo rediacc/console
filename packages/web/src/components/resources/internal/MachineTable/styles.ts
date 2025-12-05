@@ -2,6 +2,8 @@ import styled from 'styled-components';
 import { Button, Card, Tag, Badge, Empty } from 'antd';
 import { DesktopOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { FlexColumn } from '@/styles/primitives';
+import { InlineStack } from '@/components/common/styled';
 
 const TAG_VARIANTS = {
   team: {
@@ -32,11 +34,8 @@ const TAG_VARIANTS = {
 
 export type TagVariant = keyof typeof TAG_VARIANTS;
 
-export const MachineTableWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
+export const MachineTableWrapper = styled(FlexColumn).attrs({ $gap: 'MD' })`
   height: 100%;
-  gap: ${({ theme }) => theme.spacing.MD}px;
 
   .machine-table-row {
     cursor: pointer;
@@ -129,10 +128,7 @@ export const GroupCardContainer = styled(Card)<{ $isAlternate: boolean }>`
   }
 `;
 
-export const GroupCardHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
+export const GroupCardHeader = styled(InlineStack)`
   padding: ${({ theme }) => theme.spacing.XS}px 0;
 `;
 

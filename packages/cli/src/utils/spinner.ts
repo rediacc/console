@@ -21,12 +21,6 @@ export function stopSpinner(success = true, text?: string): void {
   currentSpinner = null;
 }
 
-export function updateSpinner(text: string): void {
-  if (currentSpinner) {
-    currentSpinner.text = text;
-  }
-}
-
 export async function withSpinner<T>(
   text: string,
   fn: () => Promise<T>,

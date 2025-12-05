@@ -9,7 +9,9 @@ import {
   PrimaryButton as PrimitivePrimaryButton,
   StatusTag,
   StatusVariant,
+  FlexColumn,
 } from '@/styles/primitives';
+import { ActionGroup, InlineStack } from '@/components/common/styled';
 
 const { Text } = Typography;
 
@@ -72,11 +74,9 @@ export const SecondaryIconButton = styled(Button)`
   }
 `;
 
-export const ProgressSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+export const ProgressSection = styled(FlexColumn).attrs({
+  $gap: 'XS',
+})``;
 
 export const ProgressBar = styled(Progress)`
   && {
@@ -112,17 +112,13 @@ export const SummaryContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.bgSecondary};
 `;
 
-export const SummaryMetrics = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+export const SummaryMetrics = styled(ActionGroup)`
   gap: ${({ theme }) => theme.spacing.XL}px;
 `;
 
-export const SummaryMetric = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+export const SummaryMetric = styled(FlexColumn).attrs({
+  $gap: 'XS',
+})``;
 
 export const SummaryLabel = styled(Text)`
   && {
@@ -157,11 +153,7 @@ export const StyledTable = styled(BaseTable)`
   }
 `;
 
-export const MachineCell = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const MachineCell = styled(InlineStack)``;
 
 export const MachineName = styled(Text)`
   && {

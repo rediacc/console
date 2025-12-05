@@ -42,32 +42,3 @@ export async function askConfirm(message: string, defaultValue = false): Promise
   return answer;
 }
 
-export async function askSelect<T extends string>(
-  message: string,
-  choices: Array<{ name: string; value: T } | T>
-): Promise<T> {
-  const { answer } = await prompt([
-    {
-      type: 'list',
-      name: 'answer',
-      message,
-      choices,
-    },
-  ]);
-  return answer;
-}
-
-export async function askMultiSelect<T extends string>(
-  message: string,
-  choices: Array<{ name: string; value: T; checked?: boolean } | T>
-): Promise<T[]> {
-  const { answer } = await prompt([
-    {
-      type: 'checkbox',
-      name: 'answer',
-      message,
-      choices,
-    },
-  ]);
-  return answer;
-}

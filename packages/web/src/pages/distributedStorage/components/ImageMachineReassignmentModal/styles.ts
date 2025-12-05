@@ -7,11 +7,13 @@ import {
   StyledIcon,
   AlertCard,
 } from '@/styles/primitives';
-import { ModalSelect } from '@/components/common/styled';
+import { ModalSelect, ContentStack, InlineStack } from '@/components/common/styled';
 import { ModalSize } from '@/types/modal';
 import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons';
 
 const { Text } = Typography;
+
+export { ContentStack };
 
 export const StyledModal = styled(BaseModal).attrs({
   className: `${ModalSize.Medium} image-machine-reassignment-modal`,
@@ -29,25 +31,13 @@ export const StyledModal = styled(BaseModal).attrs({
   }
 `;
 
-export const TitleStack = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const TitleStack = InlineStack;
 
 export const TitleIcon = styled(StyledIcon).attrs(({ theme }) => ({
   as: FileImageOutlined,
   $size: theme.fontSize.LG,
   $color: theme.colors.primary,
 }))``;
-
-export const ContentStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-  width: 100%;
-`;
 
 export const FieldRow = styled.div`
   display: flex;

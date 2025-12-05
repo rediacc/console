@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { Form, Space, Steps, Button, Input, Typography } from 'antd';
-import { BaseModal } from '@/styles/primitives';
+import { BaseModal, FlexRow } from '@/styles/primitives';
 
 const { Title, Text } = Typography;
 
@@ -22,12 +22,9 @@ export const FormField = styled(Form.Item)<{ $noMargin?: boolean }>`
   }
 `;
 
-export const TermsRow = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.LG}px;
-  align-items: flex-start;
+// Use FlexRow from primitives
+export const TermsRow = styled(FlexRow).attrs({ $gap: 'LG', $align: 'flex-start', $wrap: true })`
   margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-  flex-wrap: wrap;
 `;
 
 export const TermsField = styled(FormField)`

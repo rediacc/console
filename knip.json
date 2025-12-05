@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["eslint.config.js"],
+      "project": ["*.{js,ts}"]
+    },
+    "packages/shared": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/cli": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/web": {
+      "entry": ["src/main.tsx", "index.html"],
+      "project": ["src/**/*.{ts,tsx}"]
+    }
+  },
+  "ignore": ["**/dist/**", "**/node_modules/**", "**/*.d.ts"],
+  "ignoreDependencies": [
+    "@types/*",
+    "zod",
+    "@opentelemetry/instrumentation-*",
+    "prismjs",
+    "refractor",
+    "dayjs"
+  ],
+  "ignoreBinaries": ["rimraf"]
+}

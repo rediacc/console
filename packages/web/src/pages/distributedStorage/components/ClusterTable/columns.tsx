@@ -9,7 +9,11 @@ import {
 import type { DistributedStorageCluster } from '@/api/queries/distributedStorage';
 import { createSorter } from '@/core';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
-import { VersionTag, createActionColumn, createTruncatedColumn } from '@/components/common/columns';
+import {
+  createActionColumn,
+  createTruncatedColumn,
+  createVersionColumn,
+} from '@/components/common/columns';
 import { MachineCountBadge } from './components/MachineCountBadge';
 import { getClusterFunctionMenuItems } from './menus';
 import {
@@ -100,17 +104,14 @@ export const buildClusterColumns = ({
         </MachineManageCell>
       ),
     },
-    {
+    createVersionColumn<DistributedStorageCluster>({
       title: t('common:general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
-      align: 'center',
       sorter: createSorter<DistributedStorageCluster>('vaultVersion'),
-      render: (version: number) => (
-        <VersionTag>{t('common:general.versionFormat', { version })}</VersionTag>
-      ),
-    },
+      formatVersion: (version: number) => t('common:general.versionFormat', { version }),
+    }),
     createActionColumn<DistributedStorageCluster>({
       width: 260,
       renderActions: (record) => (

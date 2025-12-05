@@ -1,26 +1,21 @@
 import styled from 'styled-components';
 import { Avatar, Badge, Typography, Button, Segmented, Divider } from 'antd';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { FlexColumn } from '@/styles/primitives';
+import { InlineStack, FlexBetween } from '@/components/common/styled';
 
 const { Text } = Typography;
 
-export const MenuContainer = styled.div`
+export const MenuContainer = styled(FlexColumn).attrs({ $gap: 'MD' })`
   width: 320px;
   background-color: var(--color-bg-primary);
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   box-shadow: ${DESIGN_TOKENS.SHADOWS.XL};
   border: 1px solid var(--color-border-secondary);
   padding: ${({ theme }) => theme.spacing.MD}px;
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const UserInfo = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  align-items: center;
-`;
+export const UserInfo = styled(InlineStack)``;
 
 export const UserDetails = styled.div`
   flex: 1;
@@ -65,12 +60,7 @@ export const ModeSegmented = styled(Segmented)`
   background: var(--color-bg-tertiary);
 `;
 
-export const AppearanceRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const AppearanceRow = styled(FlexBetween)``;
 
 export const SectionTitle = styled(Text)`
   display: block;

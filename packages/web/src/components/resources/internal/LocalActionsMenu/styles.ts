@@ -1,5 +1,7 @@
 import styled from 'styled-components';
-import { Button } from 'antd';
+import { Button, Typography } from 'antd';
+
+const { Text } = Typography;
 
 export const TriggerButton = styled(Button)`
   && {
@@ -13,7 +15,8 @@ export const TriggerButton = styled(Button)`
   }
 `;
 
-export const MenuLabel = styled.span`
-  font-size: ${({ theme }) => theme.fontSize.SM}px;
-  color: ${({ theme }) => theme.colors.textPrimary};
+export const MenuLabel = styled(Text)`
+  && {
+    font-size: ${({ theme }) => theme.fontSize.SM}px;
+  }
 `;
