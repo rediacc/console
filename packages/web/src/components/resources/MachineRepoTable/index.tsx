@@ -42,7 +42,6 @@ import { useTeams } from '@/api/queries/teams';
 import {
   useRepos,
   useCreateRepo,
-  useDeleteRepo,
   usePromoteRepoToGrand,
   useUpdateRepoName,
   useUpdateRepoTag,
@@ -348,8 +347,6 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
   const [selectedFunction, setSelectedFunction] = useState<string | null>(null);
   const [_servicesData, setServicesData] = useState<Record<string, RepoServicesState>>({});
   const [containersData, setContainersData] = useState<Record<string, RepoContainersState>>({});
-  const [createdRepoName, setCreatedRepoName] = useState<string | null>(null);
-  const [createdRepoTag, setCreatedRepoTag] = useState<string | null>(null);
   const [groupedRepos, setGroupedRepos] = useState<GroupedRepo[]>([]);
 
   // Queue action hook for function execution
@@ -363,7 +360,6 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
   const { data: teamMachines = [] } = useMachines(machine.teamName);
   const { data: teamStorages = [] } = useStorage(machine.teamName);
   const createRepoMutation = useCreateRepo();
-  const deleteRepoMutation = useDeleteRepo();
   const promoteRepoMutation = usePromoteRepoToGrand();
   const updateRepoNameMutation = useUpdateRepoName();
   const updateRepoTagMutation = useUpdateRepoTag();
@@ -642,8 +638,6 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
       repoTag: tag,
       parentRepoName: repoName,
     });
-    setCreatedRepoName(repoName);
-    setCreatedRepoTag(tag);
     const { data: updatedRepos } = await refetchRepos();
     const newRepo = updatedRepos?.find((r) => r.repoName === repoName && r.repoTag === tag);
     if (!newRepo?.repoGuid) throw new Error('Could not find newly created Repo');
@@ -805,18 +799,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
               if (onQueueItemCreated) {
                 onQueueItemCreated(result.taskId, machine.machineName);
               }
-
-              // Step 2: Delete the credential from database after queuing
-              try {
-                await deleteRepoMutation.mutateAsync({
-                  teamName: machine.teamName,
-                  repoName: Repo.name,
-                  repoTag: Repo.repoTag || 'latest',
-                });
-                showMessage('success', t('resources:repos.deleteForkSuccess'));
-              } catch {
-                showMessage('warning', t('resources:repos.deleteCloneCredentialFailed'));
-              }
+              showMessage('success', t('resources:repos.deleteForkSuccess'));
             } else if (result.isQueued) {
               showMessage('info', t('resources:repos.highestPriorityQueued'));
             }
@@ -1147,18 +1130,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
               if (onQueueItemCreated) {
                 onQueueItemCreated(result.taskId, machine.machineName);
               }
-
-              // Step 2: Delete the credential from database after queuing
-              try {
-                await deleteRepoMutation.mutateAsync({
-                  teamName: machine.teamName,
-                  repoName: Repo.name,
-                  repoTag: Repo.repoTag || 'latest',
-                });
-                showMessage('success', t('resources:repos.deleteGrandSuccess'));
-              } catch {
-                showMessage('warning', t('resources:repos.deleteGrandCredentialFailed'));
-              }
+              showMessage('success', t('resources:repos.deleteGrandSuccess'));
             } else if (result.isQueued) {
               showMessage('info', t('resources:repos.highestPriorityQueued'));
             }
@@ -1262,17 +1234,6 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             throw new Error(result.error || 'Failed to fork Repo');
           }
         } catch {
-          if (createdRepoName && createdRepoTag) {
-            try {
-              await deleteRepoMutation.mutateAsync({
-                teamName: machine.teamName,
-                repoName: createdRepoName,
-                repoTag: createdRepoTag,
-              });
-            } catch {
-              /* cleanup failed */
-            }
-          }
           showMessage('error', t('resources:repos.failedToForkRepo'));
         }
         return;
