@@ -4,7 +4,7 @@ import { Alert, Tag, Space, Typography, Button, Tooltip, Modal, Input } from 'an
 import type { TableProps } from 'antd'
 import type { MenuProps } from 'antd'
 import { isAxiosError } from 'axios'
-import { useTableStyles } from '@/hooks/useComponentStyles'
+import styled, { useTheme as useStyledTheme } from 'styled-components'
 import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, SaveOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, EyeOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useDialogState } from '@/hooks/useDialogState'
@@ -44,6 +44,61 @@ const { Text } = Typography
 
 const RepoTableComponent = S.StyledTable as React.ComponentType<TableProps<RepoTableRow>>
 const SystemTableComponent = S.StyledTable as React.ComponentType<TableProps<Container>>
+
+const ModalContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.MD}px;
+`
+
+const ConfirmationInput = styled.input`
+  width: 100%;
+  margin-top: ${({ theme }) => theme.spacing.SM}px;
+  padding: ${({ theme }) => theme.spacing.SM}px;
+  border: 1px solid ${({ theme }) => theme.colors.borderPrimary};
+  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
+  background-color: ${({ theme }) => theme.colors.inputBg};
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const TableStateContainer = styled.div`
+  padding: ${({ theme }) => theme.spacing.LG}px;
+`
+
+const FullWidthStack = styled(Space)`
+  width: 100%;
+`
+
+const SmallText = styled(Text)`
+  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+`
+
+const GrandTag = styled(Tag)`
+  margin-left: ${({ theme }) => theme.spacing.XS}px;
+  border-radius: ${({ theme }) => theme.borderRadius.SM}px;
+  border: none;
+  background-color: ${({ theme }) => theme.colors.bgSecondary};
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const InlineTag = styled(Tag)`
+  border-radius: ${({ theme }) => theme.borderRadius.SM}px;
+  border: none;
+  background-color: ${({ theme }) => theme.colors.bgSecondary};
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const MachineTag = styled(InlineTag)`
+  margin-left: ${({ theme }) => theme.spacing.XS}px;
+`
+
+const InfoTag = styled(InlineTag)`
+  margin-right: ${({ theme }) => theme.spacing.XS}px;
+`
+
+const SectionAlert = styled(Alert)`
+  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
+`
 
 interface Repo {
   name: string
@@ -222,10 +277,10 @@ interface MachineRepoTableProps {
 
 export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepo, onRepoClick, highlightedRepo, onContainerClick: _onContainerClick, highlightedContainer: _highlightedContainer, isLoading, onRefreshMachines: _onRefreshMachines, refreshKey, onQueueItemCreated }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
+  const theme = useStyledTheme()
   const navigate = useNavigate()
   const [modal, contextHolder] = Modal.useModal()
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
-  const tableStyles = useTableStyles()
   const [_repos, setRepos] = useState<Repo[]>([])
   const [systemContainers] = useState<Container[]>([])
   const [_systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
@@ -699,7 +754,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
     modal.confirm({
       title: t('resources:repos.promoteToGrandTitle'),
       content: (
-        <div>
+        <ModalContent>
           <Typography.Paragraph>
             {t('resources:repos.promoteToGrandMessage', {
               name: Repo.name,
@@ -722,9 +777,8 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
             message={t('resources:repos.promoteWarning')}
             type="warning"
             showIcon
-            style={{ marginTop: 16 }}
           />
-        </div>
+        </ModalContent>
       ),
       okText: t('resources:repos.promoteButton'),
       okType: 'primary',
@@ -931,32 +985,24 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
     modal.confirm({
       title: t('resources:repos.deleteGrandConfirmTitle'),
       content: (
-        <div>
+        <ModalContent>
           <Alert
             message={t('resources:repos.deleteGrandWarning')}
             description={t('resources:repos.deleteGrandWarningDesc', { name: Repo.name })}
             type="warning"
             showIcon
-            style={{ marginBottom: 16 }}
           />
           <Typography.Text strong>
             {t('resources:repos.deleteGrandConfirmPrompt', { name: Repo.name })}
           </Typography.Text>
-          <input
+          <ConfirmationInput
             type="text"
             placeholder={Repo.name}
-            style={{
-              width: '100%',
-              marginTop: 8,
-              padding: '8px',
-              border: '1px solid #d9d9d9',
-              borderRadius: '4px'
-            }}
             onChange={(e) => {
               confirmationInput = e.target.value
             }}
           />
-        </div>
+        </ModalContent>
       ),
       okText: t('common:delete'),
       okType: 'danger',
@@ -1356,7 +1402,9 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
       ...systemNameColumn,
       render: (name: string, record: Container, index) => (
         <Space>
-          <CloudServerOutlined style={{ color: '#722ed1' }} />
+          <S.StatusIcon $color={theme.colors.iconSystem}>
+            <CloudServerOutlined />
+          </S.StatusIcon>
           <strong>{systemNameColumn.render?.(name, record, index) as React.ReactNode}</strong>
         </Space>
       ),
@@ -1371,7 +1419,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
             record,
             index
           ) as React.ReactNode}
-          {record.status && <Text type="secondary" style={{ fontSize: 12 }}>{record.status}</Text>}
+          {record.status && <SmallText type="secondary">{record.status}</SmallText>}
         </Space>
       ),
     },
@@ -1401,7 +1449,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
           return (
             <Space orientation="vertical" size={0}>
               {portMappings.map((mapping, index) => (
-                <Text key={index} style={{ fontSize: 12 }}>
+                <SmallText key={index}>
                   {mapping.host_port ? (
                     <span>
                       {mapping.host}:{mapping.host_port} → {mapping.container_port}/{mapping.protocol}
@@ -1409,14 +1457,14 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
                   ) : (
                     <span>{mapping.container_port}/{mapping.protocol}</span>
                   )}
-                </Text>
+                </SmallText>
               ))}
             </Space>
           )
         }
         // Fallback to raw ports string
         else if (record.ports) {
-          return <Text style={{ fontSize: 12 }}>{record.ports}</Text>
+          return <SmallText>{record.ports}</SmallText>
         }
         return '-'
       },
@@ -1494,13 +1542,11 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
 
         return (
           <Space>
-            {isGrand ? (
-              <StarOutlined style={{ color: '#faad14' }} />
-            ) : (
-              <CopyOutlined style={{ color: '#8c8c8c' }} />
-            )}
+            <S.StatusIcon $color={isGrand ? theme.colors.iconGrand : theme.colors.iconFork}>
+              {isGrand ? <StarOutlined /> : <CopyOutlined />}
+            </S.StatusIcon>
             <strong>{getRepoDisplayName(record)}</strong>
-            {isGrand && <Tag color="gold" style={{ marginLeft: 4 }}>Grand</Tag>}
+            {isGrand && <GrandTag>Grand</GrandTag>}
           </Space>
         )
       },
@@ -1786,7 +1832,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
 
   if (loading) {
     return (
-      <div style={{ padding: '20px' }} data-testid="machine-repo-list-loading">
+      <TableStateContainer data-testid="machine-repo-list-loading">
         <LoadingWrapper
           loading
           centered
@@ -1795,13 +1841,13 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
         >
           <div />
         </LoadingWrapper>
-      </div>
+      </TableStateContainer>
     )
   }
 
   if (error) {
     return (
-      <div style={{ padding: '20px' }} data-testid="machine-repo-list-error">
+      <TableStateContainer data-testid="machine-repo-list-error">
         <Alert
           message={t('common:messages.error')}
           description={error}
@@ -1818,7 +1864,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
             </Tooltip>
           }
         />
-      </div>
+      </TableStateContainer>
     )
   }
 
@@ -1849,10 +1895,10 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
               </S.MachineTitle>
             </Space>
             <Space wrap size={8}>
-              <Tag color="#8FBC8F" data-testid="machine-repo-list-team-tag">{machine.teamName}</Tag>
-              <Tag color="green" data-testid="machine-repo-list-bridge-tag">{machine.bridgeName}</Tag>
-              {machine.regionName && <Tag color="purple" data-testid="machine-repo-list-region-tag">{machine.regionName}</Tag>}
-              <Tag color="blue" data-testid="machine-repo-list-queue-tag">{machine.queueCount} {t('machines:queueItems')}</Tag>
+              <InfoTag data-testid="machine-repo-list-team-tag">{machine.teamName}</InfoTag>
+              <InfoTag data-testid="machine-repo-list-bridge-tag">{machine.bridgeName}</InfoTag>
+              {machine.regionName && <InfoTag data-testid="machine-repo-list-region-tag">{machine.regionName}</InfoTag>}
+              <InfoTag data-testid="machine-repo-list-queue-tag">{machine.queueCount} {t('machines:queueItems')}</InfoTag>
             </Space>
           </Space>
         </S.MachineHeader>
@@ -1868,13 +1914,12 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
           const missingSSHKeys = !teamVault.SSH_PRIVATE_KEY || !teamVault.SSH_PUBLIC_KEY
 
           return missingSSHKeys ? (
-            <Alert
+            <SectionAlert
               type="warning"
               showIcon
               closable
               message={t('common:vaultEditor.missingSshKeysWarning')}
               description={t('common:vaultEditor.missingSshKeysDescription')}
-              style={{ marginBottom: 16 }}
             />
           ) : null
         } catch {
@@ -1890,48 +1935,36 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
         size="small"
         pagination={false}
         scroll={{ x: 'max-content' }}
-        style={tableStyles.tableContainer}
         data-testid="machine-repo-list-table"
         rowClassName={(record: RepoTableRow) => {
-          // Apply subtle styling for fork rows
-          const RepoData = teamRepos.find(r =>
+          const repoData = teamRepos.find(r =>
             r.repoName === record.name &&
             r.repoTag === record.repoTag
           )
-          const isFork = RepoData && coreIsFork(RepoData)
-          return isFork ? 'Repo-fork-row' : ''
+          const classes = ['Repo-row']
+          if (repoData && coreIsFork(repoData)) {
+            classes.push('Repo-fork-row')
+          }
+          if (highlightedRepo?.name === record.name) {
+            classes.push('Repo-row--highlighted')
+          }
+          return classes.join(' ')
         }}
         locale={{
           emptyText: t('resources:repos.noRepos')
         }}
-        onRow={(record: RepoTableRow) => {
-          return {
-            onClick: (e: React.MouseEvent<HTMLElement>) => {
-              const target = e.target as HTMLElement
-              // Don't trigger if clicking on buttons or dropdowns
-              if (target.closest('button') || target.closest('.ant-dropdown')) {
-                return
-              }
-
-              // Row clicks always navigate to containers page
-              // Only the eye button should trigger detail panel (via onRepoClick)
-              navigate(`/machines/${machine.machineName}/repos/${record.name}/containers`, {
-                state: { machine, Repo: record }
-              })
-            },
-            style: {
-              cursor: 'pointer',
-              backgroundColor: highlightedRepo?.name === record.name ? 'rgba(24, 144, 255, 0.05)' : undefined,
-              transition: 'background-color 0.3s ease'
-            },
-            onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
-              e.currentTarget.style.backgroundColor = highlightedRepo?.name === record.name ? 'rgba(24, 144, 255, 0.08)' : 'rgba(0, 0, 0, 0.02)'
-            },
-            onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
-              e.currentTarget.style.backgroundColor = highlightedRepo?.name === record.name ? 'rgba(24, 144, 255, 0.05)' : ''
+        onRow={(record: RepoTableRow) => ({
+          onClick: (e: React.MouseEvent<HTMLElement>) => {
+            const target = e.target as HTMLElement
+            if (target.closest('button') || target.closest('.ant-dropdown')) {
+              return
             }
-          }
-        }}
+
+            navigate(`/machines/${machine.machineName}/repos/${record.name}/containers`, {
+              state: { machine, Repo: record }
+            })
+          },
+        })}
       />
       
       {/* System Containers Section */}
@@ -1947,7 +1980,6 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
             size="small"
             pagination={false}
             scroll={{ x: 'max-content' }}
-            style={tableStyles.tableContainer}
             data-testid="machine-repo-list-system-containers-table"
           />
         </S.SystemContainersWrapper>
@@ -1968,13 +2000,13 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
         data-testid="machine-repo-list-function-modal"
         subtitle={
           selectedRepo && (
-            <Space orientation="vertical" size="small" style={{ width: '100%' }}>
+            <FullWidthStack direction="vertical" size="small">
               <Space>
                 <Text>{t('resources:repos.Repo')}:</Text>
-                <Tag color="#8FBC8F">{selectedRepo.name}</Tag>
+                <InlineTag>{selectedRepo.name}</InlineTag>
                 <Text>•</Text>
                 <Text>{t('machines:machine')}:</Text>
-                <Tag color="#556b2f">{machine.machineName}</Tag>
+                <MachineTag>{machine.machineName}</MachineTag>
               </Space>
               {selectedFunction === 'push' && (() => {
                 const currentRepoData = teamRepos.find(r => r.repoName === selectedRepo.name && r.repoTag === selectedRepo.repoTag);
@@ -1983,18 +2015,20 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
                   if (parentRepo) {
                     return (
                       <Space>
-                        <Text type="secondary">Parent Repo:</Text>
-                        <Tag color="blue">{parentRepo.repoName}</Tag>
-                        <Text type="secondary">→</Text>
-                        <Text type="secondary">Current:</Text>
-                        <Tag color="#8FBC8F">{selectedRepo.name}</Tag>
+                        <SmallText type="secondary">
+                          {t('resources:repos.parentRepo', { defaultValue: 'Parent Repo' })}:
+                        </SmallText>
+                        <InlineTag>{parentRepo.repoName}</InlineTag>
+                        <SmallText type="secondary">�</SmallText>
+                        <SmallText type="secondary">{t('common:current')}:</SmallText>
+                        <InlineTag>{selectedRepo.name}</InlineTag>
                       </Space>
                     );
                   }
                 }
                 return null;
               })()}
-            </Space>
+            </FullWidthStack>
           )
         }
         allowedCategories={['Repo', 'backup', 'network']}
@@ -2041,10 +2075,6 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({ machine, onA
     </S.Container>
   )
 }
-
-
-
-
 
 
 

@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react'
 import { Button, Modal, Space, Tag, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { useTheme } from 'styled-components'
+import styled, { useTheme } from 'styled-components'
 import {
   PlusOutlined,
   ReloadOutlined,
@@ -73,6 +73,15 @@ interface StorageFunctionData {
   description: string
   selectedMachine?: string
 }
+
+const TeamSelectorWrapper = styled.div`
+  width: 100%;
+  max-width: 420px;
+`
+
+const StorageLocationIcon = styled(CloudOutlined)`
+  color: ${({ theme }) => theme.colors.primary};
+`
 
 const StoragePage: React.FC = () => {
   const { t } = useTranslation(['resources', 'common'])
@@ -309,7 +318,7 @@ const StoragePage: React.FC = () => {
         ellipsis: true,
         render: (text: string) => (
           <Space>
-            <CloudOutlined style={{ color: theme.colors.primary }} />
+            <StorageLocationIcon />
             <strong>{text}</strong>
           </Space>
         ),
@@ -392,7 +401,7 @@ const StoragePage: React.FC = () => {
         },
       }),
     ],
-    [auditTrace, handleDeleteStorage, openUnifiedModal, setCurrentResource, t, theme.colors.primary, theme.colors.secondary]
+    [auditTrace, handleDeleteStorage, openUnifiedModal, setCurrentResource, t, theme.colors.secondary]
   )
 
   const hasTeamSelection = selectedTeams.length > 0
@@ -409,7 +418,7 @@ const StoragePage: React.FC = () => {
             {t('storage.heading', { defaultValue: 'Storage' })}
           </SectionHeading>
 
-          <div style={{ width: '100%', maxWidth: 420 }}>
+          <TeamSelectorWrapper>
             <TeamSelector
               data-testid="resources-team-selector"
               teams={teams}
@@ -419,9 +428,8 @@ const StoragePage: React.FC = () => {
               placeholder={t('teams.selectTeamToView', {
                 defaultValue: 'Select a team to view its resources',
               })}
-              style={{ width: '100%' }}
             />
-          </div>
+          </TeamSelectorWrapper>
 
           <ResourceListView<Storage>
             title={

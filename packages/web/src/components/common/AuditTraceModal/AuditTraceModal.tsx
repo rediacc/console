@@ -23,6 +23,7 @@ import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit'
 import { formatTimestampAsIs } from '@/core'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
+import { CaptionText } from '@/styles/primitives'
 import {
   StyledModal,
   LoadingContainer,
@@ -221,9 +222,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       render: (timestamp: string, record: AuditTraceRecord, index: number) => (
         <Space orientation="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
           <Text>{formatTimestampAsIs(timestamp, 'datetime')}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.timeAgo}
-          </Text>
+          <CaptionText $muted>{record.timeAgo}</CaptionText>
         </Space>
       ),
     },

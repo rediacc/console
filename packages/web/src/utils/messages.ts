@@ -99,17 +99,17 @@ const TOAST_STYLES = {
   warning: {
     icon: '⚠️',
     style: {
-      background: '#FFF3CD',
-      color: '#856404',
-      border: '1px solid #FFEAA7',
+      background: 'var(--color-bg-secondary)',
+      color: 'var(--color-text-primary)',
+      border: '1px solid var(--color-border-secondary)',
     },
   },
   info: {
     icon: 'ℹ️',
     style: {
-      background: '#D1ECF1',
-      color: '#0C5460',
-      border: '1px solid #BEE5EB',
+      background: 'var(--color-bg-tertiary)',
+      color: 'var(--color-text-primary)',
+      border: '1px solid var(--color-border-secondary)',
     },
   },
 }

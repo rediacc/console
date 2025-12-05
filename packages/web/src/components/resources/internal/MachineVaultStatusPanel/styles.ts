@@ -1,7 +1,26 @@
 import styled from 'styled-components'
-import { Typography, Button, Tag, Badge, Card, Empty, Divider, List } from 'antd'
+import { Typography, Tag, Badge, Card, Empty, List } from 'antd'
 import { CloudServerOutlined } from '@/utils/optimizedIcons'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
+import {
+  DetailPanelSecondaryTextBlock,
+  DetailPanelSurface,
+  DetailPanelHeader,
+  DetailPanelHeaderRow,
+  DetailPanelTitleGroup,
+  DetailPanelTitle,
+  DetailPanelCollapseButton,
+  DetailPanelTagGroup,
+  DetailPanelBody,
+  DetailPanelFieldRow,
+  DetailPanelFieldLabel,
+  DetailPanelFieldValue,
+  DetailPanelFieldStrongValue,
+  DetailPanelFieldMonospaceValue,
+  DetailPanelDivider,
+  DetailPanelSectionHeader,
+  DetailPanelSectionTitle,
+} from '../detailPanelPrimitives'
 
 const { Title, Text } = Typography
 
@@ -28,72 +47,27 @@ const TAG_VARIANTS = {
   },
 } as const
 
-export const PanelWrapper = styled.div<{ $splitView: boolean; $visible: boolean }>`
-  position: ${({ $splitView }) => ($splitView ? 'relative' : 'fixed')};
-  top: 0;
-  right: ${({ $splitView, $visible }) => ($splitView ? 'auto' : ($visible ? 0 : '-520px'))};
-  bottom: 0;
-  width: ${({ $splitView }) => ($splitView ? '100%' : '520px')};
-  max-width: 100vw;
-  background-color: var(--color-bg-primary);
-  box-shadow: ${({ $splitView }) => ($splitView ? 'none' : '-2px 0 8px rgba(0, 0, 0, 0.15)')};
-  transition: right 0.3s ease-in-out;
-  z-index: ${({ $splitView, theme }) => ($splitView ? 'auto' : theme.zIndex.MODAL)};
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-`
-
-export const StickyHeader = styled.div`
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background-color: var(--color-bg-primary);
-  border-bottom: 1px solid var(--color-border-secondary);
-  padding: ${({ theme }) => `${theme.spacing['1.5']}px ${theme.spacing.PAGE_CARD_PADDING}px`};
-`
-
-export const HeaderRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-`
-
-export const HeaderTitleGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
+export {
+  DetailPanelSurface as PanelWrapper,
+  DetailPanelHeader as StickyHeader,
+  DetailPanelHeaderRow as HeaderRow,
+  DetailPanelTitleGroup as HeaderTitleGroup,
+  DetailPanelTitle as MachineName,
+  DetailPanelCollapseButton as CollapseButton,
+  DetailPanelBody as ContentWrapper,
+  DetailPanelFieldRow as InlineField,
+  DetailPanelFieldLabel as FieldLabel,
+  DetailPanelFieldValue as FieldValue,
+  DetailPanelFieldStrongValue as FieldValueStrong,
+  DetailPanelFieldMonospaceValue as FieldValueMonospace,
+}
 
 export const HeaderIcon = styled(CloudServerOutlined)`
   font-size: ${DESIGN_TOKENS.DIMENSIONS.ICON_XL}px;
   color: var(--color-primary);
 `
 
-export const MachineName = styled(Title)`
-  && {
-    margin: 0;
-  }
-`
-
-export const CollapseButton = styled(Button)`
-  && {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: ${DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT}px;
-    height: ${DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    border-color: var(--color-border-secondary);
-    color: var(--color-text-secondary);
-  }
-`
-
-export const TagRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
+export const TagRow = styled(DetailPanelTagGroup)`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `
 
@@ -129,35 +103,26 @@ export const Timestamp = styled(Text)`
   }
 `
 
-export const ContentWrapper = styled.div`
-  padding: ${({ theme }) => theme.spacing.PAGE_CARD_PADDING}px;
-`
-
 export const EmptyState = styled(Empty)`
   margin-top: ${({ theme }) => theme.spacing.XXXL}px;
 `
 
-export const SectionDivider = styled(Divider).attrs({
+export const SectionDivider = styled(DetailPanelDivider).attrs({
   orientation: 'left',
 })`
-  margin: ${({ theme }) => `${theme.spacing.XL}px 0`};
+  && {
+    margin: ${({ theme }) => `${theme.spacing.XL}px 0`};
+  }
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.SM}px;
 `
 
-export const SectionHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
+export const SectionHeader = styled(DetailPanelSectionHeader)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `
 
-export const SectionTitle = styled(Title)`
-  && {
-    margin: 0;
-  }
-`
+export const SectionTitle = styled(DetailPanelSectionTitle)``
 
 export const SectionBlock = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.XL}px;
@@ -177,45 +142,7 @@ export const FullWidthStack = styled.div`
   width: 100%;
 `
 
-export const InlineField = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-`
-
-export const FieldLabel = styled(Text)`
-  && {
-    font-size: ${DESIGN_TOKENS.FONT_SIZE.CAPTION}px;
-    color: var(--color-text-secondary);
-  }
-`
-
-export const FieldValue = styled(Text)`
-  && {
-    font-size: ${DESIGN_TOKENS.FONT_SIZE.SM}px;
-    color: var(--color-text-primary);
-  }
-`
-
-export const FieldValueStrong = styled(FieldValue)`
-  && {
-    font-weight: 600;
-  }
-`
-
-export const FieldValueMonospace = styled(FieldValue)`
-  && {
-    font-family: 'SFMono-Regular', Monaco, Consolas, 'Liberation Mono', monospace;
-  }
-`
-
-export const SecondaryText = styled(Text)`
-  && {
-    font-size: ${DESIGN_TOKENS.FONT_SIZE.CAPTION}px;
-    color: var(--color-text-secondary);
-  }
-`
+export const SecondaryText = styled(DetailPanelSecondaryTextBlock)``
 
 export const MetricCard = styled(Card)`
   && {

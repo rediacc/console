@@ -4,11 +4,11 @@ import { Select, Tag, Input } from 'antd'
 export const TeamSelect = styled(Select)`
   && {
     width: 100%;
+  }
 
-    .ant-select-selector {
-      border-radius: ${({ theme }) => theme.borderRadius.MD}px !important;
-      min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
-    }
+  && .ant-select-selector {
+    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
+    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
   }
 `
 

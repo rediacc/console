@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Row, Col, Tabs, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip, Segmented } from 'antd'
+import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Row, Col, Tabs, Collapse, Steps, Progress, Statistic, Divider, Badge, Tooltip } from 'antd'
 import type { CollapseProps } from 'antd'
 import { ReloadOutlined, HistoryOutlined, FileTextOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CodeOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons'
 import { useQueueItemTrace, useRetryFailedQueueItem, useCancelQueueItem } from '@/api/queries/queue'
@@ -15,9 +15,36 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import { formatTimestampAsIs } from '@/core'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
+import { spacing } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
-import { ModalTitleContainer, ModalTitleLeft, ModalTitleRight, LastFetchedText, ConsoleOutputContainer } from './styles'
+import {
+  ModalTitleContainer,
+  ModalTitleLeft,
+  ModalTitleRight,
+  LastFetchedText,
+  ConsoleOutputContainer,
+  ModeSegmented,
+  SpacedAlert,
+  FullWidthSpace,
+  CenteredMessage,
+  NoMarginTitle,
+  NoteWrapper,
+  KeyInfoCard,
+  KeyInfoValue,
+  CaptionText,
+  CodeText,
+  SmallStatusTag,
+  ItalicCaption,
+  ScrollContainer,
+  ScrollItem,
+  SectionMargin,
+  CenteredFooter,
+  SpacedCard,
+  ActionButton,
+  InfoList,
+  CenteredRow,
+  StatusText,
+} from './styles'
 import {
   normalizeProperty,
   extractMostRecentProgress,
@@ -29,7 +56,7 @@ import type { QueueTraceLog, QueuePositionEntry } from '@rediacc/shared/types'
 
 dayjs.extend(relativeTime)
 
-const { Text, Title } = Typography
+const { Text } = Typography
 
 // Helper function to extract timestamp from trace logs for specific action
 const getTimelineTimestamp = (traceLogs: QueueTraceLog[], action: string, fallbackAction?: string): string | null => {
@@ -437,7 +464,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
             <span>{`Queue Item Trace - ${taskId || ''}`}</span>
           </ModalTitleLeft>
           <ModalTitleRight>
-            <Segmented
+            <ModeSegmented
               data-testid="queue-trace-mode-switch"
               value={simpleMode ? 'simple' : 'detailed'}
               onChange={(value) => setSimpleMode(value === 'simple')}
@@ -445,7 +472,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                 { label: 'Simple', value: 'simple' },
                 { label: 'Detailed', value: 'detailed' }
               ]}
-              style={{ minHeight: 32 }}
             />
             {lastTraceFetchTime && (
               <LastFetchedText>
@@ -466,7 +492,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
         (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING')) ? (
-          <Button
+          <ActionButton
             key="cancel"
             data-testid="queue-trace-cancel-button"
             danger
@@ -474,16 +500,14 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
             icon={<CloseCircleOutlined />}
             onClick={handleCancelQueueItem}
             loading={isCancelling}
-            style={{
-              ...styles.buttonPrimary,
-              fontWeight: getTaskStaleness() === 'critical' ? 'bold' : 'normal',
-              fontSize: getTaskStaleness() === 'critical' ? '14px' : '13px'
-            }}
+            style={styles.buttonPrimary}
+            $bold={getTaskStaleness() === 'critical'}
+            $large={getTaskStaleness() === 'critical'}
           >
             {getTaskStaleness() === 'critical' ? 'Cancel Stuck Task' :
              getTaskStaleness() === 'stale' ? 'Cancel Task' :
              'Cancel'}
-          </Button>
+          </ActionButton>
         ) : null,
         // Show Retry button only for failed tasks that haven't reached max retries
         (traceData?.queueDetails && 
@@ -533,26 +557,24 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
         <div>
           {/* Progressive Stale Task Warnings */}
           {getTaskStaleness() === 'early' && (
-            <Alert
+            <SpacedAlert
               data-testid="queue-trace-alert-early"
               message="Task May Be Inactive"
               description="Task hasn't provided updates for over 1 minute. This may be normal for long-running operations."
               type="info"
               showIcon
               icon={<ClockCircleOutlined />}
-              style={{ marginBottom: 16 }}
             />
           )}
 
           {getTaskStaleness() === 'stale' && (
-            <Alert
+            <SpacedAlert
               data-testid="queue-trace-alert-stale"
               message="Task May Be Stale"
               description="Task appears inactive for over 1.5 minutes. Consider canceling if no progress is expected."
               type="warning"
               showIcon
               icon={<WarningOutlined />}
-              style={{ marginBottom: 16 }}
               action={
                 traceData?.queueDetails?.canBeCancelled &&
                 (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
@@ -573,29 +595,29 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
           )}
 
           {getTaskStaleness() === 'critical' && (
-            <Alert
+            <SpacedAlert
               data-testid="queue-trace-alert-critical"
               message="Task Likely Stuck - Cancellation Recommended"
               description="Task has been inactive for over 2 minutes. The queue processor will automatically timeout this task at 3 minutes if no activity is detected."
               type="error"
               showIcon
               icon={<ExclamationCircleOutlined />}
-              style={{ marginBottom: 16 }}
               action={
                 traceData?.queueDetails?.canBeCancelled &&
                 (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING') ? (
-                  <Button
+                  <ActionButton
+                    $bold
+                    $large
                     danger
                     type="primary"
                     icon={<CloseCircleOutlined />}
                     onClick={handleCancelQueueItem}
                     loading={isCancelling}
-                    style={{ fontWeight: 'bold' }}
                   >
                     Cancel Stuck Task
-                  </Button>
+                  </ActionButton>
                 ) : null
               }
             />
@@ -603,34 +625,32 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
           
           {/* Old Pending Warning */}
           {isStalePending() && (
-            <Alert
+            <SpacedAlert
               data-testid="queue-trace-alert-old-pending"
               message="Old Pending Task"
               description={`This task has been pending for over 6 hours. It may expire soon if not processed.`}
               type="warning"
               showIcon
               icon={<WarningOutlined />}
-              style={{ marginBottom: 16 }}
             />
           )}
 
           {/* Cancelling Status Alert */}
           {traceData.queueDetails && normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' && (
-            <Alert
+            <SpacedAlert
               data-testid="queue-trace-alert-cancelling"
               message="Task Being Cancelled"
               description="The task is being cancelled. The bridge will stop execution gracefully."
               type="warning"
               showIcon
               icon={<SyncOutlined spin />}
-              style={{ marginBottom: 16 }}
             />
           )}
 
           {/* Failure Reason Alert */}
           {traceData.queueDetails && normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') && 
            normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLING' && (
-            <Alert
+            <SpacedAlert
               data-testid="queue-trace-alert-failure"
               message={
                 normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' && 
@@ -658,30 +678,26 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                     : <RetweetOutlined /> 
                   : undefined
               }
-              style={{ marginBottom: 16 }}
             />
           )}
 
           {/* Simple Progress Overview */}
           {simpleMode && traceData.queueDetails && (
-            <Card
+            <SpacedCard
               data-testid="queue-trace-simple-overview"
-              style={{
-                marginBottom: spacing('MD')
-              }}
             >
-              <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+              <FullWidthSpace orientation="vertical" size="large">
                 {/* Status Summary */}
-                <div style={{ textAlign: 'center' }}>
+                <CenteredMessage>
                   <Space size="large">
                     <span className={`queue-trace-status-icon ${getSimplifiedStatus().status === 'Processing' ? 'processing' : ''}`}>
                       {getSimplifiedStatus().icon}
                     </span>
-                    <Title level={3} style={{ margin: 0 }}>
+                    <NoMarginTitle level={3}>
                       Task {getSimplifiedStatus().status}
-                    </Title>
+                    </NoMarginTitle>
                   </Space>
-                </div>
+                </CenteredMessage>
 
                 {/* Steps */}
                 <Steps
@@ -740,19 +756,11 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                  normalizeProperty(traceData?.queueDetails, 'status', 'Status') !== 'COMPLETED' &&
                  normalizeProperty(traceData?.queueDetails, 'status', 'Status') !== 'FAILED' &&
                  normalizeProperty(traceData?.queueDetails, 'status', 'Status') !== 'CANCELLED' && (
-                  <div style={{ marginTop: spacing('SM'), marginBottom: spacing('XS') }}>
-                    <Text
-                      type="secondary"
-                      style={{
-                        fontSize: '12px',
-                        fontStyle: 'italic',
-                        display: 'block',
-                        textAlign: 'center'
-                      }}
-                    >
+                  <NoteWrapper>
+                    <ItalicCaption type="secondary">
                       {progressMessage}
-                    </Text>
-                  </div>
+                    </ItalicCaption>
+                  </NoteWrapper>
                 )}
 
                 {/* Progress Bar - Only shown when percentage is found in console output */}
@@ -770,83 +778,84 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
 
                 {/* Key Info - Only shown in detailed mode */}
                 {!simpleMode && (
-                  <Row gutter={[spacing('MD'), spacing('MD')]} style={{ textAlign: 'center' }}>
+            <CenteredRow gutter={[spacing('MD'), spacing('MD')]}>
                     <Col span={8}>
-                      <div data-testid="queue-trace-info-duration" className="queue-trace-key-info" style={{ padding: spacing('SM'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, background: 'var(--color-bg-secondary)' }}>
-                        <Text type="secondary">Duration</Text>
+                      <KeyInfoCard data-testid="queue-trace-info-duration" className="queue-trace-key-info">
+                        <CaptionText type="secondary">Duration</CaptionText>
                         <div>
-                          <Text strong style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.LG }}>
+                          <KeyInfoValue strong>
                             {formatDuration(totalDurationSeconds)}
-                          </Text>
+                          </KeyInfoValue>
                         </div>
-                      </div>
+                      </KeyInfoCard>
                     </Col>
                     <Col span={8}>
-                      <div data-testid="queue-trace-info-machine" className="queue-trace-key-info" style={{ padding: spacing('SM'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, background: 'var(--color-bg-secondary)' }}>
-                        <Text type="secondary">Machine</Text>
+                      <KeyInfoCard data-testid="queue-trace-info-machine" className="queue-trace-key-info">
+                        <CaptionText type="secondary">Machine</CaptionText>
                         <div>
                           <Text strong>{traceData.queueDetails.machineName}</Text>
                         </div>
-                      </div>
+                      </KeyInfoCard>
                     </Col>
                     <Col span={8}>
-                      <div data-testid="queue-trace-info-priority" className="queue-trace-key-info" style={{ padding: spacing('SM'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, background: 'var(--color-bg-secondary)' }}>
-                        <Text type="secondary">Priority</Text>
+                      <KeyInfoCard data-testid="queue-trace-info-priority" className="queue-trace-key-info">
+                        <CaptionText type="secondary">Priority</CaptionText>
                         <div>
                           <Tag color={getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).color}>
                             {getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).icon}
                             {getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).label}
                           </Tag>
                         </div>
-                      </div>
+                      </KeyInfoCard>
                     </Col>
-                  </Row>
+            </CenteredRow>
                 )}
-              </Space>
-            </Card>
+              </FullWidthSpace>
+            </SpacedCard>
           )}
 
           {/* Console Output for Simple Mode */}
           {simpleMode && (
-            <Collapse
-              data-testid="queue-trace-simple-console-collapse"
-              activeKey={isSimpleConsoleExpanded ? ['console'] : []}
-              onChange={(keys) => setIsSimpleConsoleExpanded(keys.includes('console'))}
-              style={{ marginTop: spacing('MD') }}
-              expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
-              items={[
-                {
-                  key: 'console',
-                  label: (
-                    <Space>
-                      <CodeOutlined />
-                      <Text>Response (Console)</Text>
-                      {traceData?.queueDetails?.status === 'PROCESSING' && (
-                        <Tag icon={<SyncOutlined spin />} color="processing">
-                          Live Output
-                        </Tag>
-                      )}
-                    </Space>
-                  ),
-                  children: (
-                    <ConsoleOutput
-                      content={accumulatedOutput
-                        .replace(/\\r\\n/g, '\n')
-                        .replace(/\\n/g, '\n')
-                        .replace(/\\r/g, '\r')}
-                      theme={theme}
-                      consoleOutputRef={consoleOutputRef}
-                      isEmpty={!traceData?.responseVaultContent?.hasContent}
-                    />
-                  )
-                }
-              ]}
-            />
+            <SectionMargin $top={spacing('MD')}>
+              <Collapse
+                data-testid="queue-trace-simple-console-collapse"
+                activeKey={isSimpleConsoleExpanded ? ['console'] : []}
+                onChange={(keys) => setIsSimpleConsoleExpanded(keys.includes('console'))}
+                expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
+                items={[
+                  {
+                    key: 'console',
+                    label: (
+                      <Space>
+                        <CodeOutlined />
+                        <Text>Response (Console)</Text>
+                        {traceData?.queueDetails?.status === 'PROCESSING' && (
+                          <Tag icon={<SyncOutlined spin />} color="processing">
+                            Live Output
+                          </Tag>
+                        )}
+                      </Space>
+                    ),
+                    children: (
+                      <ConsoleOutput
+                        content={accumulatedOutput
+                          .replace(/\\r\\n/g, '\n')
+                          .replace(/\\n/g, '\n')
+                          .replace(/\\r/g, '\r')}
+                        theme={theme}
+                        consoleOutputRef={consoleOutputRef}
+                        isEmpty={!traceData?.responseVaultContent?.hasContent}
+                      />
+                    )
+                  }
+                ]}
+              />
+            </SectionMargin>
           )}
 
           {/* Detailed View with All 7 Result Sets */}
           {!simpleMode && (
-            <div style={{ marginTop: spacing('MD') }}>
+            <SectionMargin $top={spacing('MD')}>
               <Collapse
               data-testid="queue-trace-collapse"
               className="queue-trace-collapse"
@@ -878,7 +887,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                     <Row gutter={[24, 16]}>
                       {/* Left Column - Task Details */}
                       <Col xs={24} lg={12}>
-                        <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
+                        <FullWidthSpace orientation="vertical" size="middle">
                           <Card size="small" title="Task Information" data-testid="queue-trace-task-info">
                             <Descriptions column={1} size="small">
                               <Descriptions.Item label="Task ID">
@@ -962,7 +971,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                               />
                             </Col>
                           </Row>
-                        </Space>
+                        </FullWidthSpace>
                       </Col>
 
                       {/* Right Column - Response Console */}
@@ -1012,7 +1021,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                     <Space>
                       <FileTextOutlined />
                       <span>Queue Item Details</span>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 1)</Text>
+                      <CaptionText type="secondary">(Result Set 1)</CaptionText>
                     </Space>
                   ),
                   children: (
@@ -1096,7 +1105,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                     <Space>
                       <HistoryOutlined />
                       <span>Processing Timeline</span>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 4 - Audit Log)</Text>
+                      <CaptionText type="secondary">(Result Set 4 - Audit Log)</CaptionText>
                     </Space>
                   ),
                   children: (
@@ -1140,7 +1149,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                     <Space>
                       <FileTextOutlined />
                       <span>Vault Content</span>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>(Result Sets 2 & 3)</Text>
+                      <CaptionText type="secondary">(Result Sets 2 & 3)</CaptionText>
                     </Space>
                   ),
                   children: (
@@ -1211,9 +1220,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                                       const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown
 
                                       return (
-                                        <Space orientation="vertical" style={{ width: '100%' }}>
+                                        <FullWidthSpace orientation="vertical">
                                           {/* SSH Test Result Summary */}
-                                          <Card size="small" title="SSH Test Result" style={{ marginBottom: 16 }}>
+                                          <SpacedCard size="small" title="SSH Test Result">
                                             <Descriptions column={2} size="small">
                                               <Descriptions.Item label="Status">
                                                 <Tag color="success">{result.status}</Tag>
@@ -1238,10 +1247,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                                                 )}
                                               </Descriptions.Item>
                                             </Descriptions>
-                                          </Card>
+                                          </SpacedCard>
 
                                           {/* System Information */}
-                                          <Card size="small" title="System Information" style={{ marginBottom: 16 }}>
+                                          <SpacedCard size="small" title="System Information">
                                             <Descriptions column={1} size="small">
                                               <Descriptions.Item label="Operating System">
                                                 {osInfo.pretty_name || 'Unknown'}
@@ -1277,42 +1286,42 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                                                 })()}
                                               </Descriptions.Item>
                                             </Descriptions>
-                                          </Card>
+                                          </SpacedCard>
 
                                           {/* Compatibility Status */}
-                                          <Alert
+                                          <SpacedAlert
                                             data-testid="queue-trace-ssh-compatibility-alert"
                                             type={config.type}
                                             icon={config.icon}
                                             message={
                                               <Space>
                                                 <Text strong>Compatibility Status:</Text>
-                                                <Text style={{ color: config.color, textTransform: 'capitalize' }}>
+                                                <StatusText $color={config.color}>
                                                   {status}
-                                                </Text>
+                                                </StatusText>
                                               </Space>
                                             }
                                             description={
                                               <>
                                                 {compatibility.compatibility_issues && compatibility.compatibility_issues.length > 0 && (
-                                                  <div style={{ marginTop: 8 }}>
+                                                  <SectionMargin $top={spacing('SM')}>
                                                     <Text strong>Known Issues:</Text>
-                                                    <ul style={{ marginTop: 4, marginBottom: 8 }}>
+                                                    <InfoList $top={spacing('XS')} $bottom={spacing('SM')}>
                                                       {compatibility.compatibility_issues.map((issue: string, index: number) => (
                                                         <li key={index}>{issue}</li>
                                                       ))}
-                                                    </ul>
-                                                  </div>
+                                                    </InfoList>
+                                                  </SectionMargin>
                                                 )}
                                                 {compatibility.recommendations && compatibility.recommendations.length > 0 && (
-                                                  <div>
+                                                  <SectionMargin>
                                                     <Text strong>Recommendations:</Text>
-                                                    <ul style={{ marginTop: 4, marginBottom: 0 }}>
+                                                    <InfoList $top={spacing('XS')}>
                                                       {compatibility.recommendations.map((rec: string, index: number) => (
                                                         <li key={index}>{rec}</li>
                                                       ))}
-                                                    </ul>
-                                                  </div>
+                                                    </InfoList>
+                                                  </SectionMargin>
                                                 )}
                                               </>
                                             }
@@ -1320,23 +1329,24 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                                           />
 
                                           {/* Raw JSON fallback */}
-                                          <Collapse
-                                            style={{ marginTop: 16 }}
-                                            items={[
-                                              {
-                                                key: 'raw',
-                                                label: 'Raw Response Data',
-                                                children: (
-                                                  <SimpleJsonEditor
-                                                    value={JSON.stringify(result, null, 2)}
-                                                    readOnly={true}
-                                                    height="200px"
-                                                  />
-                                                )
-                                              }
-                                            ]}
-                                          />
-                                        </Space>
+                                          <SectionMargin $top={spacing('MD')}>
+                                            <Collapse
+                                              items={[
+                                                {
+                                                  key: 'raw',
+                                                  label: 'Raw Response Data',
+                                                  children: (
+                                                    <SimpleJsonEditor
+                                                      value={JSON.stringify(result, null, 2)}
+                                                      readOnly={true}
+                                                      height="200px"
+                                                    />
+                                                  )
+                                                }
+                                              ]}
+                                            />
+                                          </SectionMargin>
+                                        </FullWidthSpace>
                                       )
                                     }
                                   } catch {
@@ -1371,7 +1381,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                     <Space>
                       <TeamOutlined />
                       <span>Related Queue Items</span>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 5 - Nearby Tasks)</Text>
+                      <CaptionText type="secondary">(Result Set 5 - Nearby Tasks)</CaptionText>
                     </Space>
                   ),
                   children: (
@@ -1379,61 +1389,59 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                       <Row gutter={[16, 16]}>
                         <Col span={12}>
                           <Card size="small" title="Tasks Before This One">
-                            <div style={{ maxHeight: 200, overflow: 'auto' }}>
+                            <ScrollContainer>
                               {traceData.queuePosition
                                 .filter((position: QueuePositionEntry) => position.relativePosition === 'Before')
                                 .map((item, index) => (
-                                  <div key={index} style={{ marginBottom: 8 }}>
+                                  <ScrollItem key={index}>
                                     <Space>
-                                      <Text code style={{ fontSize: '11px' }}>{item.taskId}</Text>
-                                      <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'} style={{ fontSize: '11px' }}>
+                                      <CodeText code>{item.taskId}</CodeText>
+                                      <SmallStatusTag color={item.status === 'PROCESSING' ? 'processing' : 'default'}>
                                         {item.status}
-                                      </Tag>
-                                      <Text type="secondary" style={{ fontSize: '11px' }}>
+                                      </SmallStatusTag>
+                                      <CaptionText type="secondary">
                                         {dayjs(item.createdTime).fromNow()}
-                                      </Text>
+                                      </CaptionText>
                                     </Space>
-                                  </div>
-                                ))
-                              }
+                                  </ScrollItem>
+                                ))}
                               {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'Before').length === 0 && (
                                 <Empty description="No tasks ahead" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                               )}
-                            </div>
+                            </ScrollContainer>
                           </Card>
                         </Col>
                         <Col span={12}>
                           <Card size="small" title="Tasks After This One">
-                            <div style={{ maxHeight: 200, overflow: 'auto' }}>
+                            <ScrollContainer>
                               {traceData.queuePosition
                                 .filter((position: QueuePositionEntry) => position.relativePosition === 'After')
                                 .map((item, index) => (
-                                  <div key={index} style={{ marginBottom: 8 }}>
+                                  <ScrollItem key={index}>
                                     <Space>
-                                      <Text code style={{ fontSize: '11px' }}>{item.taskId}</Text>
-                                      <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'} style={{ fontSize: '11px' }}>
+                                      <CodeText code>{item.taskId}</CodeText>
+                                      <SmallStatusTag color={item.status === 'PROCESSING' ? 'processing' : 'default'}>
                                         {item.status}
-                                      </Tag>
-                                      <Text type="secondary" style={{ fontSize: '11px' }}>
+                                      </SmallStatusTag>
+                                      <CaptionText type="secondary">
                                         {dayjs(item.createdTime).fromNow()}
-                                      </Text>
+                                      </CaptionText>
                                     </Space>
-                                  </div>
-                                ))
-                              }
+                                  </ScrollItem>
+                                ))}
                               {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'After').length === 0 && (
                                 <Empty description="No tasks behind" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                               )}
-                            </div>
+                            </ScrollContainer>
                           </Card>
                         </Col>
                       </Row>
-                      <div style={{ marginTop: 16, textAlign: 'center' }}>
-                        <Text type="secondary">
+                      <CenteredFooter>
+                        <CaptionText type="secondary">
                           Total: {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'Before').length} tasks ahead,
                           {traceData.queuePosition.filter((position: QueuePositionEntry) => position.relativePosition === 'After').length} tasks behind
-                        </Text>
-                      </div>
+                        </CaptionText>
+                      </CenteredFooter>
                     </>
                   )
                 } : null,
@@ -1445,7 +1453,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                     <Space>
                       <DashboardOutlined />
                       <span>Performance Metrics</span>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 6 - Machine Stats)</Text>
+                      <CaptionText type="secondary">(Result Set 6 - Machine Stats)</CaptionText>
                     </Space>
                   ),
                   children: (
@@ -1495,7 +1503,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                         </Col>
                       </Row>
                       <Divider />
-                      <Alert
+                      <SpacedAlert
                         data-testid="queue-trace-performance-alert"
                         message="Performance Analysis"
                         description={
@@ -1518,7 +1526,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
                 } : null,
               ].filter(Boolean) as CollapseProps['items']}
             />
-            </div>
+            </SectionMargin>
           )}
         </div>
       ) : (

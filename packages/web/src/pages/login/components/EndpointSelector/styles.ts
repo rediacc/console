@@ -1,23 +1,46 @@
 import styled from 'styled-components';
-import { Select, Typography } from 'antd';
+import { Select, Typography, Space } from 'antd';
+import { LoadingOutlined, ApiOutlined, DeleteOutlined } from '@/utils/optimizedIcons';
 
 const { Text: AntText } = Typography;
 
 export const StyledSelect = styled(Select)`
-  .ant-select-selector {
-    font-size: ${({ theme }) => theme.fontSize.XS}px !important;
+  && .ant-select-selector {
+    font-size: ${({ theme }) => theme.fontSize.XS}px;
+    padding: ${({ theme }) => `${theme.spacing.XS}px ${theme.spacing.SM}px`};
+    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+    display: flex;
+    align-items: center;
   }
 
-  .ant-select-selection-item {
+  && .ant-select-selection-item {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: ${({ theme }) => theme.spacing.XS}px;
+    line-height: 1.5;
   }
   
-  .ant-select-item-option-content {
+  && .ant-select-arrow {
     display: flex;
     align-items: center;
+    height: 100%;
   }
+
+  && .ant-select-item-option-content {
+    display: flex;
+    align-items: center;
+    gap: ${({ theme }) => theme.spacing.XS}px;
+  }
+`;
+
+export const SelectorWrapper = styled.div`
+  display: inline-block;
+  width: 100%;
+`;
+
+export const EndpointSuffixIcon = styled(ApiOutlined)`
+  font-size: ${({ theme }) => theme.fontSize.XL}px;
+  align-self: flex-end;
 `;
 
 export const EndpointUrlText = styled.div`
@@ -98,7 +121,31 @@ export const LabelContent = styled.span`
   gap: 6px;
 `;
 
+export const DeleteEndpointIcon = styled(DeleteOutlined)`
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
+  color: ${({ theme }) => theme.colors.error};
+  cursor: pointer;
+`;
+
 export const AddCustomOption = styled.span`
   font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: var(--color-primary);
+`;
+
+export const CheckingSpinner = styled(LoadingOutlined)`
+  font-size: 10px;
+  color: var(--color-warning);
+`;
+
+export const SpinnerWrapper = styled.span`
+  margin-left: ${({ theme }) => theme.spacing.SM}px;
+  display: inline-flex;
+  align-items: center;
+`;
+
+export const FormActions = styled(Space)`
+  && {
+    width: 100%;
+    justify-content: flex-end;
+  }
 `;

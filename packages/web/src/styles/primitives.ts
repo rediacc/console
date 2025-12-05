@@ -22,7 +22,7 @@ import type { StyledTheme } from '@/styles/styledTheme'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
 import { RightOutlined } from '@/utils/optimizedIcons'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const GenericTable = Table as ComponentType<TableProps<unknown>>
 
 export type StatusVariant = 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'processing'
@@ -46,6 +46,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'link
 export type ButtonSize = 'SM' | 'MD' | 'LG'
 export type IconSize = 'SM' | 'MD' | 'LG' | 'XL' | 'XXL' | 'XXXL'
 type IconSizeValue = IconSize | number
+type ColorKey = keyof StyledTheme['colors']
 
 type SpacingScale = StyledTheme['spacing']
 type SpacingToken = keyof SpacingScale
@@ -63,128 +64,59 @@ const resolveSpacingValue = (
   return theme.spacing[token]
 }
 
+type StatusTokenKeys = { bg: ColorKey; color: ColorKey; border?: ColorKey }
+
+const STATUS_TOKEN_KEYS: Record<StatusVariant, StatusTokenKeys> = {
+  success: { bg: 'bgSuccess', color: 'success' },
+  warning: { bg: 'bgWarning', color: 'warning' },
+  error: { bg: 'bgError', color: 'error' },
+  processing: { bg: 'primaryBg', color: 'primary' },
+  neutral: { bg: 'bgSecondary', color: 'textSecondary', border: 'borderSecondary' },
+  info: { bg: 'bgInfo', color: 'info' },
+}
+
 const resolveStatusTokens = (variant: StatusVariant = 'info', theme: StyledTheme) => {
-  switch (variant) {
-    case 'success':
-      return {
-        bg: theme.colors.bgSuccess,
-        color: theme.colors.success,
-        border: theme.colors.success,
-      }
-    case 'warning':
-      return {
-        bg: theme.colors.bgWarning,
-        color: theme.colors.warning,
-        border: theme.colors.warning,
-      }
-    case 'error':
-      return {
-        bg: theme.colors.bgError,
-        color: theme.colors.error,
-        border: theme.colors.error,
-      }
-    case 'processing':
-      return {
-        bg: theme.colors.primaryBg,
-        color: theme.colors.primary,
-        border: theme.colors.primary,
-      }
-    case 'neutral':
-      return {
-        bg: theme.colors.bgSecondary,
-        color: theme.colors.textSecondary,
-        border: theme.colors.borderSecondary,
-      }
-    case 'info':
-    default:
-      return {
-        bg: theme.colors.bgInfo,
-        color: theme.colors.info,
-        border: theme.colors.info,
-      }
+  const tokens = STATUS_TOKEN_KEYS[variant] || STATUS_TOKEN_KEYS.info
+  const colorKey = tokens.color
+  const borderKey = tokens.border || colorKey
+
+  return {
+    bg: theme.colors[tokens.bg],
+    color: theme.colors[colorKey],
+    border: theme.colors[borderKey],
   }
 }
 
 type TagTokenSet = { bg: string; color: string; border: string }
+type TagTokenKeySet = { bg: ColorKey; color: ColorKey; border: ColorKey }
+
+const TAG_TOKEN_KEYS: Record<TagVariant, TagTokenKeySet> = {
+  primary: { bg: 'primaryBg', color: 'primary', border: 'primary' },
+  secondary: { bg: 'bgPrimary', color: 'secondary', border: 'secondary' },
+  success: { bg: 'bgSuccess', color: 'success', border: 'success' },
+  warning: { bg: 'bgWarning', color: 'warning', border: 'warning' },
+  error: { bg: 'bgError', color: 'error', border: 'error' },
+  info: { bg: 'bgInfo', color: 'info', border: 'info' },
+  neutral: { bg: 'bgSecondary', color: 'textSecondary', border: 'borderSecondary' },
+  team: { bg: 'bgPrimary', color: 'success', border: 'success' },
+  cluster: { bg: 'primaryBg', color: 'primary', border: 'primary' },
+  vault: { bg: 'bgSecondary', color: 'textPrimary', border: 'borderSecondary' },
+  machine: { bg: 'bgPrimary', color: 'primary', border: 'borderSecondary' },
+  bridge: { bg: 'bgPrimary', color: 'secondary', border: 'secondary' },
+  available: { bg: 'bgSuccess', color: 'success', border: 'success' },
+  processing: { bg: 'primaryBg', color: 'primary', border: 'primary' },
+}
 
 const resolveTagVariantTokens = (
   variant: TagVariant = 'neutral',
   theme: StyledTheme,
 ): TagTokenSet => {
-  const map: Record<TagVariant, TagTokenSet> = {
-    primary: {
-      bg: theme.colors.primaryBg,
-      color: theme.colors.primary,
-      border: theme.colors.primary,
-    },
-    secondary: {
-      bg: theme.colors.bgPrimary,
-      color: theme.colors.secondary,
-      border: theme.colors.secondary,
-    },
-    success: {
-      bg: theme.colors.bgSuccess,
-      color: theme.colors.success,
-      border: theme.colors.success,
-    },
-    warning: {
-      bg: theme.colors.bgWarning,
-      color: theme.colors.warning,
-      border: theme.colors.warning,
-    },
-    error: {
-      bg: theme.colors.bgError,
-      color: theme.colors.error,
-      border: theme.colors.error,
-    },
-    info: {
-      bg: theme.colors.bgInfo,
-      color: theme.colors.info,
-      border: theme.colors.info,
-    },
-    neutral: {
-      bg: theme.colors.bgSecondary,
-      color: theme.colors.textSecondary,
-      border: theme.colors.borderSecondary,
-    },
-    team: {
-      bg: theme.colors.bgPrimary,
-      color: theme.colors.success,
-      border: theme.colors.success,
-    },
-    cluster: {
-      bg: theme.colors.primaryBg,
-      color: theme.colors.primary,
-      border: theme.colors.primary,
-    },
-    vault: {
-      bg: theme.colors.bgSecondary,
-      color: theme.colors.textPrimary,
-      border: theme.colors.borderSecondary,
-    },
-    machine: {
-      bg: theme.colors.bgPrimary,
-      color: theme.colors.primary,
-      border: theme.colors.borderSecondary,
-    },
-    bridge: {
-      bg: theme.colors.bgPrimary,
-      color: theme.colors.secondary,
-      border: theme.colors.secondary,
-    },
-    available: {
-      bg: theme.colors.bgSuccess,
-      color: theme.colors.success,
-      border: theme.colors.success,
-    },
-    processing: {
-      bg: theme.colors.primaryBg,
-      color: theme.colors.primary,
-      border: theme.colors.primary,
-    },
+  const tokens = TAG_TOKEN_KEYS[variant] || TAG_TOKEN_KEYS.neutral
+  return {
+    bg: theme.colors[tokens.bg],
+    color: theme.colors[tokens.color],
+    border: theme.colors[tokens.border],
   }
-
-  return map[variant] || map.neutral
 }
 
 const resolveTagPadding = (theme: StyledTheme, size: TagSize = 'SM') =>
@@ -332,13 +264,12 @@ export const PageContainer = styled.div.attrs({ className: 'page-container' })`
   width: 100%;
 `
 
-export const PageCard = styled(Card).attrs({ className: 'page-card' })``
+const BasePageCard = styled(Card).attrs({ className: 'page-card' })``
 
-export const FilterCard = styled(Card).attrs({ className: 'page-card' })``
-
-export const TableCard = styled(Card).attrs({ className: 'page-card' })`` 
-
-export const SectionCard = styled(Card).attrs({ className: 'page-card' })``
+export const PageCard = BasePageCard
+export const FilterCard = BasePageCard
+export const TableCard = BasePageCard
+export const SectionCard = BasePageCard
 
 // ============================================
 // TABLE PRIMITIVES
@@ -528,7 +459,7 @@ export const SectionStack = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.PAGE_SECTION_GAP}px;
 `
 
-export const FlexColumn = styled.div<{ $gap?: SpacingValue; $align?: string; $justify?: string }>`
+const FlexColumn = styled.div<{ $gap?: SpacingValue; $align?: string; $justify?: string }>`
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -567,7 +498,7 @@ export const ActionBar = styled.div`
   justify-content: flex-end;
 `
 
-export const ButtonSurface = styled(Button)<{
+const ButtonSurface = styled(Button)<{
   $variant?: ButtonVariant
   $size?: ButtonSize
   $minWidth?: number
@@ -622,35 +553,11 @@ export const SecondaryButton = styled(ButtonSurface).attrs({
   $variant: 'secondary',
 })``
 
-export const GhostButton = styled(ButtonSurface).attrs({
-  $variant: 'ghost',
-})``
-
-export const DangerButton = styled(ButtonSurface).attrs({
-  $variant: 'danger',
-})``
-
-export const LinkButton = styled(ButtonSurface).attrs({
-  $variant: 'link',
-})`
-  && {
-    gap: ${({ theme }) => theme.spacing.XS}px;
-  }
-`
-
 export const ActionButton = styled(ButtonSurface).attrs({
   $variant: 'secondary',
 })`
   && {
     min-width: ${DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT}px;
-  }
-`
-
-export const PageTitle = styled(Title)`
-  && {
-    margin: 0;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
 `
 
@@ -663,7 +570,7 @@ export const CardTitle = styled(Text)`
   }
 `
 
-export const SectionSubtitle = styled(Text)`
+export const HelperText = styled(Text)`
   && {
     margin: 0;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
@@ -671,11 +578,12 @@ export const SectionSubtitle = styled(Text)`
   }
 `
 
-export const HelperText = styled(Text)`
+export const CaptionText = styled(Text)<{ $muted?: boolean; $size?: number }>`
   && {
     margin: 0;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: ${({ theme, $size }) =>
+      $size !== undefined ? `${$size}px` : `${theme.fontSize.CAPTION}px`};
+    color: ${({ theme, $muted }) => ($muted ? theme.colors.textSecondary : theme.colors.textPrimary)};
   }
 `
 
@@ -712,75 +620,8 @@ export const FormLabel = styled(Text)`
   }
 `
 
-export const BreadcrumbWrapper = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-`
-
 export const ContentSection = styled.div`
   min-height: 400px;
-`
-
-export const DataTable = styled(GenericTable)<{ $isLoading?: boolean }>`
-  .ant-spin-nested-loading {
-    opacity: ${(props) => (props.$isLoading ? 0.65 : 1)};
-    transition: ${({ theme }) => theme.transitions.DEFAULT};
-  }
-`
-
-export const SectionDescription = styled(Typography.Paragraph)`
-  && {
-    margin: 0;
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`
-
-export const StatGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: ${({ theme }) => theme.spacing.MD}px;
-`
-
-export const InlineBadge = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-  padding: ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.spacing.SM}px;
-  border-radius: ${({ theme }) => theme.borderRadius.FULL}px;
-  background-color: ${({ theme }) => theme.colors.bgSecondary};
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-`
-
-export const CardGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: ${({ theme }) => theme.spacing.MD}px;
-`
-
-export const SectionDivider = styled.hr`
-  border: none;
-  height: 1px;
-  width: 100%;
-  background-color: ${({ theme }) => theme.colors.borderSecondary};
-  margin: ${({ theme }) => theme.spacing.LG}px 0;
-`
-
-export const ActionToolbar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-`
-
-export const Pill = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.spacing.SM}px;
-  border-radius: ${({ theme }) => theme.borderRadius.FULL}px;
-  background-color: ${({ theme }) => theme.colors.bgSecondary};
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
 `
 
 export const StatusBadge = styled.span<{ $variant?: StatusVariant }>`
@@ -840,14 +681,6 @@ export const StyledIcon = styled.span<{ $size?: IconSizeValue; $color?: string; 
   color: ${({ $color }) => $color || 'inherit'};
   line-height: 1;
   ${({ $rotate }) => ($rotate ? `transform: rotate(${$rotate}deg);` : '')}
-`
-
-export const StatusDot = styled.span<{ $variant?: StatusVariant }>`
-  width: 8px;
-  height: 8px;
-  border-radius: ${({ theme }) => theme.borderRadius.FULL}px;
-  background-color: ${({ theme, $variant }) => resolveStatusTokens($variant, theme).color};
-  flex-shrink: 0;
 `
 
 export const IconButton = styled(Button)`
@@ -911,74 +744,6 @@ export const SecondaryIconButton = styled(Button)`
 export const CompactButton = styled(Button)`
   min-width: ${({ theme }) => theme.spacing['5']}px;
   min-height: ${({ theme }) => theme.spacing['5']}px;
-`
-
-export const InlineStack = styled.div<{ $align?: 'flex-start' | 'center' | 'flex-end' }>`
-  display: inline-flex;
-  align-items: ${({ $align }) => $align || 'center'};
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  flex-wrap: wrap;
-`
-
-export const ScrollArea = styled.div<{ $maxHeight?: number | string }>`
-  max-height: ${({ $maxHeight }) => {
-    if (!$maxHeight) return 'none'
-    return typeof $maxHeight === 'number' ? `${$maxHeight}px` : $maxHeight
-  }};
-  overflow-y: auto;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.colors.borderSecondary};
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: ${({ theme }) => theme.colors.textSecondary};
-  }
-`
-
-export const PanelCard = styled.div`
-  background-color: ${({ theme }) => theme.colors.bgPrimary};
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  box-shadow: ${({ theme }) => theme.shadows.CARD};
-  padding: ${({ theme }) => theme.spacing.LG}px;
-`
-
-export const SectionTitleRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-`
-
-export const KeyValueGrid = styled.dl`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: ${({ theme }) => theme.spacing.MD}px;
-  margin: 0;
-
-  dt {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-    margin: 0;
-  }
-
-  dd {
-    margin: 0;
-    font-size: ${({ theme }) => theme.fontSize.BASE}px;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
-  }
 `
 
 export const BaseModal = styled(Modal)`
@@ -1046,39 +811,12 @@ export const ModalContentStack = styled.div<{ $gap?: SpacingValue }>`
   width: 100%;
 `
 
-export const ModalFooter = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
-
 export const ModalFooterActions = styled.div<{ $gap?: SpacingValue; $align?: 'flex-end' | 'space-between' }>`
   display: flex;
   justify-content: ${({ $align = 'flex-end' }) => $align};
   align-items: center;
   gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'SM')}px;
   width: 100%;
-`
-
-export const ModalSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
-
-export const ModalSectionTitle = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  color: ${({ theme }) => theme.colors.textPrimary};
-`
-
-export const ModalSectionDescription = styled.span`
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: ${({ theme }) => theme.fontSize.SM}px;
 `
 
 export const ModalTitleRow = styled.div<{ $gap?: SpacingValue }>`
@@ -1122,68 +860,6 @@ export const FullWidthSelect = styled(Select)`
   && {
     ${fullWidthControlStyles};
   }
-`
-
-export const FormSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  padding: ${({ theme }) => theme.spacing.MD}px;
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-  background-color: ${({ theme }) => theme.colors.bgSecondary};
-`
-
-export const FormFieldRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-  align-items: flex-start;
-`
-
-export const FieldLabel = styled.label`
-  font-size: ${({ theme }) => theme.fontSize.SM}px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
-`
-
-export const FieldDescription = styled.p`
-  margin: 0;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: ${({ theme }) => theme.fontSize.XS}px;
-`
-
-export const DetailList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
-
-export const DetailListItem = styled.li`
-  display: flex;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-  font-size: ${({ theme }) => theme.fontSize.SM}px;
-  color: ${({ theme }) => theme.colors.textPrimary};
-
-  span {
-    &:first-child {
-      color: ${({ theme }) => theme.colors.textSecondary};
-    }
-  }
-`
-
-export const InfoBanner = styled.div<{ $variant?: StatusVariant }>`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  padding: ${({ theme }) => theme.spacing.MD}px;
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  background-color: ${({ theme, $variant }) => resolveStatusTokens($variant, theme).bg};
-  border: 1px solid ${({ theme, $variant }) => resolveStatusTokens($variant, theme).border};
-  color: ${({ theme, $variant }) => resolveStatusTokens($variant, theme).color};
 `
 
 type AlertVariant = 'info' | 'success' | 'warning' | 'error' | 'neutral'
@@ -1265,37 +941,4 @@ export const BaseTable = styled(GenericTable)<{ $isInteractive?: boolean }>`
     }
   `
       : ''}
-`
-
-export const ModalGrid = styled.div<{ $sidebarWidth?: number }>`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.LG}px;
-  align-items: flex-start;
-  flex-wrap: wrap;
-
-  > *:first-child {
-    flex: 1 1 60%;
-    min-width: min(520px, 100%);
-  }
-
-  > *:last-child {
-    flex: 0 0 ${({ $sidebarWidth, theme }) =>
-      $sidebarWidth ? `${$sidebarWidth}px` : `${theme.spacing.XL * 4}px`};
-    min-width: 280px;
-  }
-`
-
-export const ScrollablePanel = styled.div<{ $maxHeight?: number }>`
-  max-height: ${({ $maxHeight }) => ($maxHeight ? `${$maxHeight}px` : '60vh')};
-  overflow-y: auto;
-  padding-right: ${({ theme }) => theme.spacing.SM}px;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: ${({ theme }) => theme.colors.borderSecondary};
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-  }
 `

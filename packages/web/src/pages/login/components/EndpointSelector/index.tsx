@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Modal, Form, Input, Space, Button } from 'antd';
-import { ApiOutlined, PlusOutlined, DeleteOutlined, LoadingOutlined } from '@/utils/optimizedIcons';
+import { Modal, Form, Input, Button } from 'antd';
+import styled from 'styled-components';
+import { PlusOutlined } from '@/utils/optimizedIcons';
 import { endpointService, Endpoint } from '@/services/endpointService';
 import { apiConnectionService } from '@/services/apiConnectionService';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { showMessage } from '@/utils/messages';
 import apiClient from '@/api/client';
 import axios from 'axios';
@@ -21,10 +21,20 @@ import {
   EmojiIcon,
   LabelContent,
   AddCustomOption,
-  EndpointNameText
+  EndpointNameText,
+  CheckingSpinner,
+  SelectorWrapper,
+  EndpointSuffixIcon,
+  DeleteEndpointIcon,
+  SpinnerWrapper,
+  FormActions,
 } from './styles';
 
 const { Option } = StyledSelect;
+
+const FormActionsRow = styled(Form.Item)`
+  margin-bottom: 0;
+`;
 
 interface EndpointHealth {
   isHealthy: boolean;
@@ -36,6 +46,8 @@ interface EndpointHealth {
 interface EndpointSelectorProps {
   onHealthCheckComplete?: (hasHealthyEndpoint: boolean) => void;
 }
+
+const HEALTH_INDICATOR_SYMBOL = '\\u2022'
 
 const EndpointSelector: React.FC<EndpointSelectorProps> = ({
   onHealthCheckComplete
@@ -306,7 +318,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
 
   return (
     <>
-      <div style={{ display: 'inline-block' }}>
+      <SelectorWrapper>
         <StyledSelect
           value={displayValue}
           onChange={handleEndpointChange}
@@ -317,7 +329,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
           //   }
           // }}
           size="small"
-          suffixIcon={<ApiOutlined style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XL, alignSelf: 'flex-end' }} />}
+          suffixIcon={<EndpointSuffixIcon />}
           popupMatchSelectWidth={false}
           data-testid="endpoint-selector"
         >
@@ -334,10 +346,10 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
           const labelContent = (
             <LabelContent>
               {isChecking ? (
-                <LoadingOutlined style={{ fontSize: 10, color: 'var(--color-warning)' }} />
+                <CheckingSpinner />
               ) : (
                 <HealthIndicator $isHealthy={isHealthy}>
-                  ●
+                  {HEALTH_INDICATOR_SYMBOL}
                 </HealthIndicator>
               )}
               <span>
@@ -359,10 +371,10 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
                 <OptionLeft>
                   {/* Health indicator */}
                   {isChecking ? (
-                    <LoadingOutlined style={{ fontSize: 10, color: 'var(--color-warning)' }} />
+                    <CheckingSpinner />
                   ) : (
                     <HealthIndicator $isHealthy={isHealthy} $isChecking={isChecking}>
-                      ●
+                      {HEALTH_INDICATOR_SYMBOL}
                     </HealthIndicator>
                   )}
 
@@ -382,11 +394,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
 
                   {/* Delete button for custom endpoints */}
                   {endpoint.type === 'custom' && (
-                    <DeleteOutlined
-                      style={{
-                        fontSize: DESIGN_TOKENS.FONT_SIZE.XS,
-                        color: 'var(--color-error)',
-                      }}
+                    <DeleteEndpointIcon
                       onClick={(e) => handleRemoveCustomEndpoint(endpoint.id, e)}
                     />
                   )}
@@ -409,13 +417,13 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
         <EndpointUrlText>
           {selectedEndpoint.url}
           {isCheckingHealth && (
-            <span style={{ marginLeft: 8 }}>
-              <LoadingOutlined style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS }} />
-            </span>
+            <SpinnerWrapper>
+              <CheckingSpinner />
+            </SpinnerWrapper>
           )}
         </EndpointUrlText>
       )}
-    </div>
+    </SelectorWrapper>
 
       {/* Add Custom Endpoint Modal */}
       <Modal
@@ -464,8 +472,8 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
             />
           </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0 }}>
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+          <FormActionsRow>
+            <FormActions>
               <Button onClick={() => {
                 customModal.close();
                 customForm.resetFields();
@@ -479,8 +487,8 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
               >
                 Add Endpoint
               </Button>
-            </Space>
-          </Form.Item>
+            </FormActions>
+          </FormActionsRow>
         </Form>
       </Modal>
       {contextHolder}
@@ -489,3 +497,5 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
 };
 
 export default EndpointSelector;
+
+

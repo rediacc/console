@@ -1,120 +1,49 @@
 import styled from 'styled-components'
-import { Button, Card, Divider, Typography } from 'antd'
+import { Card, Typography } from 'antd'
 import {
-  PanelWrapper,
-  StickyHeader,
-  ContentWrapper,
-  InlineField,
-  LabelText,
-  MonospaceValue,
-  StrongValueText,
-  ValueText,
+  DetailPanelSecondaryTextBlock,
+  DetailPanelSurface,
+  DetailPanelHeader,
+  DetailPanelHeaderRow,
+  DetailPanelTitleGroup,
+  DetailPanelTitle,
+  DetailPanelCollapseButton,
+  DetailPanelTagGroup,
+  DetailPanelBody,
+  DetailPanelSectionHeader,
+  DetailPanelSectionTitle,
+  DetailPanelSectionCard,
+  DetailPanelFieldList,
+  DetailPanelFieldRow,
+  DetailPanelFieldLabel,
+  DetailPanelFieldValue,
+  DetailPanelFieldStrongValue,
+  DetailPanelFieldMonospaceValue,
+  DetailPanelDivider,
 } from '../detailPanelPrimitives'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
-export const DetailPanel = styled(PanelWrapper)`
-  .ant-card {
-    background-color: ${({ theme }) => theme.colors.bgSecondary};
-    border-color: ${({ theme }) => theme.colors.borderSecondary};
-  }
-`
-
-export const Header = styled(StickyHeader)`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
-
-export const HeaderTop = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
-
-export const TitleGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
-
-export const PanelTitle = styled(Title).attrs({ level: 4 })`
-  && {
-    margin: 0;
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-`
-
-export const CollapseButton = styled(Button)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  }
-`
-
-export const TagGroup = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`
-
-export const PanelContent = styled(ContentWrapper)`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.LG}px;
-`
-
-export const SectionHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
-
-export const SectionTitle = styled(Title).attrs({ level: 5 })`
-  && {
-    margin: 0;
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-`
-
-export const SectionCard = styled(Card).attrs({ size: 'small' })`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  }
-`
-
-export const FieldList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
-
-export const FieldRow = styled(InlineField)`
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  align-items: baseline;
-`
-
-export const FieldLabel = styled(LabelText)`
-  min-width: 160px;
-`
-
-export const FieldValue = styled(ValueText)`
-  word-break: break-word;
-`
-
-export const FieldValueStrong = styled(StrongValueText)`
-  word-break: break-word;
-`
-
-export const FieldValueMonospace = styled(MonospaceValue)`
-  word-break: break-word;
-`
-
-export const SectionDivider = styled(Divider)`
-  && {
-    margin: ${({ theme }) => `${theme.spacing.LG}px 0`};
-  }
-`
+export {
+  DetailPanelSurface as DetailPanel,
+  DetailPanelHeader as Header,
+  DetailPanelHeaderRow as HeaderTop,
+  DetailPanelTitleGroup as TitleGroup,
+  DetailPanelTitle as PanelTitle,
+  DetailPanelCollapseButton as CollapseButton,
+  DetailPanelTagGroup as TagGroup,
+  DetailPanelBody as PanelContent,
+  DetailPanelSectionHeader as SectionHeader,
+  DetailPanelSectionTitle as SectionTitle,
+  DetailPanelSectionCard as SectionCard,
+  DetailPanelFieldList as FieldList,
+  DetailPanelFieldRow as FieldRow,
+  DetailPanelFieldLabel as FieldLabel,
+  DetailPanelFieldValue as FieldValue,
+  DetailPanelFieldStrongValue as FieldValueStrong,
+  DetailPanelFieldMonospaceValue as FieldValueMonospace,
+  DetailPanelDivider as SectionDivider,
+}
 
 export const DividerLabel = styled.span`
   display: inline-flex;
@@ -163,9 +92,4 @@ export const InlineText = styled(Text)`
   }
 `
 
-export const SubduedText = styled(Text)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`
+export const SubduedText = styled(DetailPanelSecondaryTextBlock)``

@@ -133,25 +133,4 @@ export const TableWrapper = styled.div`
     }
   }
 
-  /* Shrink the select in pagination */
-  .ant-pagination-options {
-    .ant-select {
-      .ant-select-selector {
-        height: 32px !important;
-        min-height: 32px !important;
-        padding: 0 32px 0 12px !important; /* Space for arrow on right, text on left */
-      }
-      
-      .ant-select-selection-item {
-        line-height: 30px !important;
-        padding-right: 0 !important;
-      }
-      
-      .ant-select-arrow {
-        top: 50% !important;
-        transform: translateY(-50%) !important;
-        right: 6px !important;
-      }
-    }
-  }
 `

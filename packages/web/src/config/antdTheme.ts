@@ -120,6 +120,98 @@ const sharedTokens = {
   motionDurationFast: '0.1s',
 }
 
+const baseControlTokens = {
+  controlHeight: 44,
+  borderRadius: 6,
+}
+
+const paddedControlTokens = {
+  ...baseControlTokens,
+  paddingBlock: 10,
+  paddingInline: 14,
+}
+
+const focusStateTokens = (color: string) => ({
+  activeShadow: `0 0 0 1px ${color}`,
+  hoverBorderColor: color,
+  activeBorderColor: color,
+})
+
+const createButtonTokens = (theme: typeof themeColors.light, primaryColor: string, primaryShadow: string) => ({
+  borderRadius: 6,
+  paddingContentHorizontal: 16,
+  paddingContentVertical: 8,
+  primaryShadow,
+  dangerShadow: derivedColors.errorShadow,
+  defaultShadow: theme.shadowSm,
+  defaultBorderColor: theme.borderPrimary,
+  defaultColor: theme.textPrimary,
+  defaultBg: theme.bgPrimary,
+  defaultHoverBg: theme.bgSecondary,
+  defaultHoverBorderColor: primaryColor,
+  defaultHoverColor: theme.textPrimary,
+  defaultActiveBg: theme.bgActive,
+  defaultActiveBorderColor: primaryColor,
+  defaultActiveColor: theme.textPrimary,
+  primaryColor: theme.textInverse,
+  textTextColor: theme.textPrimary,
+  textTextHoverColor: theme.textSecondary,
+  textTextActiveColor: theme.textPrimary,
+  fontWeight: 600,
+  linkHoverBg: 'transparent',
+  textHoverBg: theme.bgHover,
+})
+
+const createDropdownTokens = (theme: typeof themeColors.light, hoverBg: string) => ({
+  borderRadiusLG: 8,
+  controlItemBgHover: hoverBg,
+  controlItemBgActive: theme.bgSelected,
+  boxShadowSecondary: theme.shadowMd,
+})
+
+const createPaginationTokens = (theme: typeof themeColors.light) => ({
+  borderRadius: 6,
+  itemSize: 32,
+  itemBg: theme.bgPrimary,
+  itemLinkBg: theme.bgPrimary,
+  itemInputBg: theme.bgPrimary,
+  itemActiveBg: theme.bgSelected,
+  itemActiveColor: theme.textSelected,
+  itemActiveColorHover: theme.textSelected,
+  itemActiveBgDisabled: theme.bgSecondary,
+  itemActiveColorDisabled: theme.textTertiary,
+})
+
+const createTabsTokens = (theme: typeof themeColors.light) => ({
+  cardBg: theme.bgPrimary,
+  cardGutter: 4,
+  horizontalMargin: '0 0 16px 0',
+  itemActiveColor: theme.textPrimary,
+  itemHoverColor: theme.textSecondary,
+  itemSelectedColor: theme.textPrimary,
+  inkBarColor: theme.textPrimary,
+})
+
+const createMenuTokens = (
+  theme: typeof themeColors.light,
+  primaryBgHover: string,
+  primaryBgActive: string,
+  primaryColor: string,
+) => ({
+  itemColor: theme.textPrimary,
+  itemBg: 'transparent',
+  itemSelectedBg: theme.bgSelected,
+  itemSelectedColor: theme.textSelected,
+  itemHoverBg: primaryBgHover,
+  itemHoverColor: primaryColor,
+  itemActiveBg: primaryBgActive,
+  itemDisabledColor: theme.textMuted,
+  horizontalItemHoverBg: 'transparent',
+  iconSize: 16,
+  itemHeight: 44,
+  itemBorderRadius: 6,
+})
+
 /**
  * Component Configuration Factory
  */
@@ -133,49 +225,39 @@ const createComponentConfig = (isDark: boolean) => {
   
   return {
     Input: {
-      controlHeight: 44,
+      ...paddedControlTokens,
       controlHeightLG: 48,
-      borderRadius: 6,
-      paddingBlock: 10,
-      paddingInline: 14,
       colorBorder: theme.borderPrimary,
       colorBgContainer: theme.bgPrimary,
-      activeShadow: `0 0 0 1px ${primaryColor}`,
       errorActiveShadow: `0 0 0 1px ${brandColors.error}`,
-      hoverBorderColor: primaryColor,
-      activeBorderColor: primaryColor,
+      ...focusStateTokens(primaryColor),
     },
     InputNumber: {
-      controlHeight: 44,
-      borderRadius: 6,
-      paddingBlock: 10,
-      paddingInline: 14,
-      activeShadow: `0 0 0 1px ${primaryColor}`,
-      hoverBorderColor: primaryColor,
+      ...paddedControlTokens,
+      ...focusStateTokens(primaryColor),
     },
     Select: {
-      controlHeight: 44,
-      borderRadius: 6,
+      ...baseControlTokens,
+      selectHeight: baseControlTokens.controlHeight,
+      controlHeightSM: 32,
       colorBorder: theme.borderPrimary,
       colorBgContainer: theme.bgPrimary,
-      optionSelectedBg: theme.bgSelected,    // High-contrast selection background
+      optionSelectedBg: theme.bgSelected,
+      optionSelectedColor: theme.textSelected,
+      optionSelectedFontWeight: 600,
       optionActiveBg: primaryBgHover,
+      optionPadding: '8px 12px',
+      optionFontSize: 14,
+      optionLineHeight: '20px',
+      optionHeight: 40,
       controlOutline: primaryBg,
       selectorBg: theme.bgPrimary,
+      clearBg: 'transparent',
+      showArrowPaddingInlineEnd: 12,
+      activeOutlineColor: primaryColor,
+      ...focusStateTokens(primaryColor),
     },
-    Button: {
-      borderRadius: 6,
-      paddingContentHorizontal: 16,
-      paddingContentVertical: 8,
-      primaryShadow: primaryShadow,
-      dangerShadow: derivedColors.errorShadow,
-      defaultBorderColor: theme.borderPrimary,
-      defaultColor: theme.textPrimary,
-      fontWeight: 600,
-      // Link button specific
-      linkHoverBg: 'transparent',
-      textHoverBg: theme.bgHover,
-    },
+    Button: createButtonTokens(theme, primaryColor, primaryShadow),
     Card: {
       borderRadiusLG: 8,
       boxShadowTertiary: theme.shadowSm,
@@ -188,9 +270,12 @@ const createComponentConfig = (isDark: boolean) => {
       headerBg: theme.bgSecondary,
       headerColor: theme.textPrimary,
       rowHoverBg: primaryBgHover,
+      rowSelectedBg: theme.bgSelected,
+      rowSelectedHoverBg: theme.bgActive,
       borderColor: theme.borderSecondary,
       headerSplitColor: theme.borderSecondary,
       footerBg: theme.bgSecondary,
+      footerColor: theme.textSecondary,
       cellPaddingBlock: 12,
       cellPaddingInline: 16,
     },
@@ -221,39 +306,10 @@ const createComponentConfig = (isDark: boolean) => {
       footerPaddingBlock: 16,
       footerPaddingInline: 24,
     },
-    Tabs: {
-      cardBg: theme.bgPrimary,
-      cardGutter: 4,
-      horizontalMargin: '0 0 16px 0',
-      itemActiveColor: theme.textPrimary,   // High-contrast text for active tab
-      itemHoverColor: theme.textSecondary,   // Slightly muted for hover
-      itemSelectedColor: theme.textPrimary,  // High-contrast text for selected tab
-      inkBarColor: theme.textPrimary,        // Visible ink bar
-    },
-    Menu: {
-      itemBg: 'transparent',
-      itemSelectedBg: theme.bgSelected,      // High-contrast selection in dark mode
-      itemSelectedColor: theme.textSelected,  // High-contrast text in dark mode
-      itemHoverBg: primaryBgHover,
-      itemHoverColor: primaryColor,
-      itemActiveBg: primaryBgActive,
-      iconSize: 16,
-      itemHeight: 44,
-      itemBorderRadius: 6,
-    },
-    Dropdown: {
-      borderRadiusLG: 8,
-      controlItemBgHover: primaryBgHover,
-      controlItemBgActive: theme.bgSelected,  // High-contrast selection background
-      boxShadowSecondary: theme.shadowMd,
-    },
-    Pagination: {
-      itemActiveBg: theme.bgSelected,       // High-contrast selection background
-      itemLinkBg: theme.bgPrimary,
-      itemBg: theme.bgPrimary,
-      itemSize: 32,
-      borderRadius: 6,
-    },
+    Tabs: createTabsTokens(theme),
+    Menu: createMenuTokens(theme, primaryBgHover, primaryBgActive, primaryColor),
+    Dropdown: createDropdownTokens(theme, primaryBgHover),
+    Pagination: createPaginationTokens(theme),
     Switch: {
       trackHeight: 22,
       trackMinWidth: 44,
@@ -270,19 +326,20 @@ const createComponentConfig = (isDark: boolean) => {
       radioSize: 18,
     },
     DatePicker: {
-      controlHeight: 44,
-      borderRadius: 6,
-      activeShadow: `0 0 0 1px ${primaryColor}`,
-      hoverBorderColor: primaryColor,
+      ...baseControlTokens,
+      ...focusStateTokens(primaryColor),
       cellActiveWithRangeBg: primaryBg,
       cellHoverBg: primaryBgHover,
     },
     Form: {
       labelFontSize: 14,
       labelColor: theme.textPrimary,
+      labelRequiredMarkColor: brandColors.error,
       labelHeight: 32,
       verticalLabelPadding: '0 0 8px',
+      verticalLabelMargin: '0',
       itemMarginBottom: 24,
+      inlineItemMarginBottom: 8,
     },
     Alert: {
       borderRadiusLG: 8,
@@ -350,11 +407,14 @@ const createComponentConfig = (isDark: boolean) => {
       dotBorderWidth: 2,
     },
     Segmented: {
+      itemColor: theme.textSecondary,
       itemSelectedBg: theme.bgPrimary,
       itemSelectedColor: theme.textPrimary,
       itemHoverBg: theme.bgHover,
       itemHoverColor: theme.textPrimary,
+      itemActiveBg: theme.bgActive,
       trackBg: theme.bgTertiary,
+      trackPadding: '2px',
       borderRadius: 6,
     },
     Layout: {

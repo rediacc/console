@@ -15,11 +15,11 @@ import { initializeApiClient } from '@/api/init'
 import AuthLayout from '@/components/layout/AuthLayout'
 import MainLayout from '@/components/layout/MainLayout'
 import LoginPage from '@/pages/login'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { getBasePath } from '@/utils/basePath'
 import { featureFlags } from '@/config/featureFlags'
 import { GlobalStyles } from '@/styles/GlobalStyles'
 import LoadingWrapper from '@/components/common/LoadingWrapper'
+import { LoadingState } from '@/styles/primitives'
 
 // Lazy load heavy pages
 const DashboardPage = lazy(() => import('@/pages/dashboard'))
@@ -41,20 +41,12 @@ const InfrastructurePage = lazy(() => import('@/pages/settings/infrastructure/In
 
 // Loading component
 const PageLoader: React.FC = () => {
-  const styles = useComponentStyles()
-
   return (
-    <div
-      data-testid="page-loader"
-      style={{
-        ...styles.flexCenter,
-        minHeight: '400px'
-      }}
-    >
+    <LoadingState data-testid="page-loader" $justify="center" $align="center" $paddingY="XXXL">
       <LoadingWrapper loading centered minHeight={400}>
         <div />
       </LoadingWrapper>
-    </div>
+    </LoadingState>
   )
 }
 

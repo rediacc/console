@@ -70,6 +70,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
     pagination !== false
       ? {
           showSizeChanger: true,
+          size: 'small' as const,
           showTotal: (total: number, range: [number, number]) =>
             `Showing records ${range[0]}-${range[1]} of ${total}`,
           pageSizeOptions: ['10', '20', '50', '100'],

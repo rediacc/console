@@ -6,8 +6,11 @@
  */
 
 import styled from 'styled-components'
-import { Space, Typography } from 'antd'
+import { Space, Typography, Table } from 'antd'
+import type { TableProps } from 'antd'
+import type { ComponentType } from 'react'
 import { IconButton } from '@/styles/primitives'
+import type { StatusVariant } from '@/styles/primitives'
 
 const { Text } = Typography
 
@@ -204,6 +207,22 @@ export const ContentStack = styled(Space).attrs({ orientation: 'vertical', size:
   width: 100%;
 `
 
+export const InlineStack = styled.div<{ $align?: 'flex-start' | 'center' | 'flex-end' }>`
+  display: inline-flex;
+  align-items: ${({ $align = 'center' }) => $align};
+  gap: ${({ theme }) => theme.spacing.SM}px;
+  flex-wrap: wrap;
+`
+
+const BaseTable = Table as ComponentType<TableProps<unknown>>
+
+export const DataTable = styled(BaseTable)<{ $isLoading?: boolean }>`
+  .ant-spin-nested-loading {
+    opacity: ${({ $isLoading }) => ($isLoading ? 0.65 : 1)};
+    transition: ${({ theme }) => theme.transitions.DEFAULT};
+  }
+`
+
 // =============================================================================
 // ACTION BUTTON VARIANTS
 // =============================================================================
@@ -251,6 +270,17 @@ export const Divider = styled.hr`
   margin: ${({ theme }) => theme.spacing.MD}px 0;
 `
 
+export const StatusDot = styled.span<{ $variant?: StatusVariant }>`
+  width: 8px;
+  height: 8px;
+  border-radius: ${({ theme }) => theme.borderRadius.FULL}px;
+  background-color: ${({ theme, $variant = 'info' }) => {
+    const colorKey = $variant in theme.colors ? ($variant as keyof typeof theme.colors) : 'info'
+    return theme.colors[colorKey]
+  }};
+  flex-shrink: 0;
+`
+
 // =============================================================================
 // RE-EXPORTS FROM PRIMITIVES
 // =============================================================================
@@ -262,13 +292,10 @@ export {
   ContentSection,
   ActionButton,
   IconButton,
-  InlineStack,
   SectionHeaderRow,
   ActionBar,
-  DataTable,
   StatusBadge,
   StatusTag,
-  StatusDot,
 } from '@/styles/primitives'
 
 export type { StatusVariant } from '@/styles/primitives'

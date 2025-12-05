@@ -147,73 +147,6 @@ export const SelectorsContainer = styled.div`
   > div:first-child {
     margin-bottom: ${({ theme }) => theme.spacing.XS}px;
   }
-  
-  /* Endpoint selector styling */
-  [data-testid="endpoint-selector"] .ant-select-selector {
-    padding: 4px 8px !important;
-    min-height: 32px !important;
-    display: flex !important;
-    align-items: center !important;
-    
-    /* Fix icon alignment */
-    .ant-select-selection-item {
-      display: flex !important;
-      align-items: center !important;
-      line-height: 1.5 !important;
-    }
-    
-    /* Suffix icon alignment */
-    .ant-select-arrow {
-      display: flex !important;
-      align-items: center !important;
-      height: 100% !important;
-      
-      .anticon {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-      }
-    }
-  }
-
-  /* Version selector button styling */
-  [data-testid="version-selector"] {
-    padding: 4px 12px !important;
-    min-height: 32px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    
-    /* Fix icon padding inside button */
-    .anticon {
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      line-height: 1 !important;
-      vertical-align: middle !important;
-    }
-    
-    /* Ensure text and icon are vertically centered */
-    > * {
-      display: flex !important;
-      align-items: center !important;
-    }
-    
-  /* Fix button content alignment */
-  &.ant-btn {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-      
-      .ant-btn-icon {
-        display: flex !important;
-        align-items: center !important;
-        line-height: 1 !important;
-      }
-    }
-  }
 `
 
 export const FullWidthStack = styled(Space)`
@@ -221,11 +154,11 @@ export const FullWidthStack = styled(Space)`
 `
 
 export const LargeGapFormItem = styled(Form.Item)`
-  margin-bottom: ${({ theme }) => theme.spacing.LG}px !important;
+  margin-bottom: ${({ theme }) => theme.spacing.LG}px;
 `
 
 export const NoMarginFormItem = styled(Form.Item)`
-  margin-bottom: 0 !important;
+  margin-bottom: 0;
 `
 
 export const TFAModalTitle = styled.div`
@@ -320,17 +253,6 @@ export const StyledInput = styled(Input)`
     border-color: ${({ theme }) => theme.colors.error};
     box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.error};
   }
-  
-  /* Autofill styles - override Chrome's yellow background */
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus,
-  input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px ${({ theme }) => theme.colors.bgPrimary} inset !important;
-    -webkit-text-fill-color: ${({ theme }) => theme.colors.textPrimary} !important;
-    transition: background-color 5000s ease-in-out 0s;
-  }
-  
 `
 
 export const StyledPasswordInput = styled(Input.Password)`
@@ -411,15 +333,4 @@ export const StyledPasswordInput = styled(Input.Password)`
     border-color: ${({ theme }) => theme.colors.error};
     box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.error};
   }
-  
-  /* Autofill styles - override Chrome's yellow background */
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus,
-  input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px ${({ theme }) => theme.colors.bgPrimary} inset !important;
-    -webkit-text-fill-color: ${({ theme }) => theme.colors.textPrimary} !important;
-    transition: background-color 5000s ease-in-out 0s;
-  }
-  
 `

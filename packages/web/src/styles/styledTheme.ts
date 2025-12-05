@@ -49,6 +49,11 @@ export interface StyledTheme {
     // Input colors
     inputBg: string
     inputBorder: string
+
+    // Iconography
+    iconGrand: string
+    iconFork: string
+    iconSystem: string
   }
   
   // Spacing
@@ -77,49 +82,24 @@ export interface StyledTheme {
   
 }
 
-export const lightTheme: StyledTheme = {
-  colors: {
-    primary: colorTokens.primary,
-    primaryHover: colorTokens.primaryHover,
-    primaryBg: colorTokens.primaryBg,
-    secondary: colorTokens.secondary,
-    secondaryHover: colorTokens.secondaryHover,
-    accent: colorTokens.accent,
-    
-    success: colorTokens.success,
-    warning: colorTokens.warning,
-    error: colorTokens.error,
-    info: colorTokens.info,
-    
-    bgPrimary: colorTokens.light.bgPrimary,
-    bgSecondary: colorTokens.light.bgSecondary,
-    bgTertiary: colorTokens.light.bgTertiary,
-    bgHover: colorTokens.light.bgHover,
-    bgActive: colorTokens.light.bgActive,
-    bgSelected: colorTokens.light.bgSelected,
-    bgSuccess: '#e9ecef',     // Light gray
-    bgWarning: '#dee2e6',     // Medium light gray
-    bgError: '#f8d7da',       // Keep red for errors
-    bgInfo: '#f1f3f5',        // Very light gray
+type ThemeMode = 'light' | 'dark'
 
-    textPrimary: colorTokens.light.textPrimary,
-    textSecondary: colorTokens.light.textSecondary,
-    textTertiary: colorTokens.light.textTertiary,
-    textMuted: colorTokens.light.textMuted,
-    textInverse: colorTokens.light.textInverse,
-    textSelected: colorTokens.light.textSelected,
-    
-    borderPrimary: colorTokens.light.borderPrimary,
-    borderSecondary: colorTokens.light.borderSecondary,
-    borderHover: colorTokens.light.borderHover,
-    
-    shadow: colorTokens.light.shadow,
-    shadowStrong: 'rgba(0, 0, 0, 0.15)',
-    
-    inputBg: colorTokens.light.bgPrimary,
-    inputBorder: colorTokens.light.borderSecondary,
+const feedbackSurfaces: Record<ThemeMode, { success: string; warning: string; error: string; info: string }> = {
+  light: {
+    success: colorTokens.light.bgSecondary,
+    warning: colorTokens.light.bgHover,
+    error: `${colorTokens.error}14`,
+    info: colorTokens.light.bgTertiary,
   },
-  
+  dark: {
+    success: colorTokens.dark.bgTertiary,
+    warning: colorTokens.dark.bgHover,
+    error: `${colorTokens.error}33`,
+    info: colorTokens.dark.bgSecondary,
+  },
+}
+
+const sharedThemeValues = {
   spacing: DESIGN_TOKENS.SPACING,
   borderRadius: DESIGN_TOKENS.BORDER_RADIUS,
   fontSize: DESIGN_TOKENS.FONT_SIZE,
@@ -130,59 +110,55 @@ export const lightTheme: StyledTheme = {
   shadows: DESIGN_TOKENS.SHADOWS,
   zIndex: DESIGN_TOKENS.Z_INDEX,
   transitions: DESIGN_TOKENS.TRANSITIONS,
+} as const
+
+const createTheme = (mode: ThemeMode): StyledTheme => {
+  const palette = colorTokens[mode]
+  const feedback = feedbackSurfaces[mode]
+  const isLight = mode === 'light'
+
+  return {
+    colors: {
+      primary: colorTokens.primary,
+      primaryHover: colorTokens.primaryHover,
+      primaryBg: colorTokens.primaryBg,
+      secondary: colorTokens.secondary,
+      secondaryHover: colorTokens.secondaryHover,
+      accent: colorTokens.accent,
+      success: colorTokens.success,
+      warning: colorTokens.warning,
+      error: colorTokens.error,
+      info: colorTokens.info,
+      bgPrimary: palette.bgPrimary,
+      bgSecondary: palette.bgSecondary,
+      bgTertiary: palette.bgTertiary,
+      bgHover: palette.bgHover,
+      bgActive: palette.bgActive,
+      bgSelected: palette.bgSelected,
+      bgSuccess: feedback.success,
+      bgWarning: feedback.warning,
+      bgError: feedback.error,
+      bgInfo: feedback.info,
+      textPrimary: palette.textPrimary,
+      textSecondary: palette.textSecondary,
+      textTertiary: palette.textTertiary,
+      textMuted: palette.textMuted,
+      textInverse: palette.textInverse,
+      textSelected: palette.textSelected,
+      borderPrimary: palette.borderPrimary,
+      borderSecondary: palette.borderSecondary,
+      borderHover: palette.borderHover,
+      shadow: palette.shadow,
+      shadowStrong: isLight ? 'rgba(0, 0, 0, 0.15)' : 'rgba(0, 0, 0, 0.5)',
+      inputBg: isLight ? palette.bgPrimary : palette.bgSecondary,
+      inputBorder: palette.borderSecondary,
+      iconGrand: colorTokens.primary,
+      iconFork: colorTokens.secondary,
+      iconSystem: colorTokens.accent,
+    },
+    ...sharedThemeValues,
+  }
 }
 
-export const darkTheme: StyledTheme = {
-  colors: {
-    primary: colorTokens.primary,
-    primaryHover: colorTokens.primaryHover,
-    primaryBg: colorTokens.primaryBg,
-    secondary: colorTokens.secondary,
-    secondaryHover: colorTokens.secondaryHover,
-    accent: colorTokens.accent,
-    
-    success: colorTokens.success,
-    warning: colorTokens.warning,
-    error: colorTokens.error,
-    info: colorTokens.info,
-    
-    bgPrimary: colorTokens.dark.bgPrimary,
-    bgSecondary: colorTokens.dark.bgSecondary,
-    bgTertiary: colorTokens.dark.bgTertiary,
-    bgHover: colorTokens.dark.bgHover,
-    bgActive: colorTokens.dark.bgActive,
-    bgSelected: colorTokens.dark.bgSelected,  // Medium-light gray (not inverted)
-    bgSuccess: '#2a2a2a',     // Medium dark gray
-    bgWarning: '#3a3a3a',     // Lighter dark gray
-    bgError: '#721c24',       // Keep red for errors
-    bgInfo: '#27272a',        // Dark gray
-
-    textPrimary: colorTokens.dark.textPrimary,
-    textSecondary: colorTokens.dark.textSecondary,
-    textTertiary: colorTokens.dark.textTertiary,
-    textMuted: colorTokens.dark.textMuted,
-    textInverse: colorTokens.dark.textInverse,
-    textSelected: colorTokens.dark.textSelected,  // White for good contrast
-    
-    borderPrimary: colorTokens.dark.borderPrimary,
-    borderSecondary: colorTokens.dark.borderSecondary,
-    borderHover: colorTokens.dark.borderHover,
-    
-    shadow: colorTokens.dark.shadow,
-    shadowStrong: 'rgba(0, 0, 0, 0.5)',
-    
-    inputBg: colorTokens.dark.bgSecondary,
-    inputBorder: colorTokens.dark.borderSecondary,
-  },
-  
-  spacing: DESIGN_TOKENS.SPACING,
-  borderRadius: DESIGN_TOKENS.BORDER_RADIUS,
-  fontSize: DESIGN_TOKENS.FONT_SIZE,
-  fontWeight: DESIGN_TOKENS.FONT_WEIGHT,
-  lineHeight: DESIGN_TOKENS.LINE_HEIGHT,
-  letterSpacing: DESIGN_TOKENS.LETTER_SPACING,
-  dimensions: DESIGN_TOKENS.DIMENSIONS,
-  shadows: DESIGN_TOKENS.SHADOWS,
-  zIndex: DESIGN_TOKENS.Z_INDEX,
-  transitions: DESIGN_TOKENS.TRANSITIONS,
-}
+export const lightTheme: StyledTheme = createTheme('light')
+export const darkTheme: StyledTheme = createTheme('dark')

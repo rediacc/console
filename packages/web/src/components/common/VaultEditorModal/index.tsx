@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+﻿import React, { useState, useRef, useEffect } from 'react'
 import { Modal, Space, message, Upload, Tooltip } from 'antd'
 import type { RcFile } from 'antd/es/upload'
 import { CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons'
@@ -38,6 +38,8 @@ interface VaultEditorModalProps {
   initialVersion?: number
   loading?: boolean
 }
+
+const VERSION_HINT_BULLET = '\u2022'
 
 const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   open,
@@ -198,7 +200,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                   {t('vaultEditor.unsavedChanges')}
                 </UnsavedChangesText>
                 <UnsavedVersionHint type="secondary">
-                  � {t('vaultEditor.versionWillIncrement', { version: vaultVersion + 1 })}
+                  {VERSION_HINT_BULLET} {t('vaultEditor.versionWillIncrement', { version: vaultVersion + 1 })}
                 </UnsavedVersionHint>
               </>
             )}
@@ -229,3 +231,4 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
 }
 
 export default VaultEditorModal
+

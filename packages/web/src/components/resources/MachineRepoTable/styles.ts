@@ -4,6 +4,9 @@ import type { TableProps } from 'antd'
 import type { ComponentType } from 'react'
 import { ExpandIcon as BaseExpandIcon } from '@/styles/primitives'
 
+const withAlpha = (color: string, alphaHex: string) =>
+  color.startsWith('#') ? `${color}${alphaHex}` : color
+
 export const Container = styled.div`
   overflow-x: auto;
   position: relative;
@@ -15,7 +18,7 @@ export const LoadingOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: ${({ theme }) => withAlpha(theme.colors.bgPrimary, 'CC')};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -24,24 +27,24 @@ export const LoadingOverlay = styled.div`
 `
 
 export const MachineHeader = styled.div`
-  margin-bottom: 16px;
-  padding-top: 16px;
-  border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 12px;
+  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
+  padding-top: ${({ theme }) => theme.spacing.MD}px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  padding-bottom: ${({ theme }) => theme.spacing.SM}px;
 `
 
 export const MachineTitle = styled.div`
   margin: 0;
-  color: #556b2f;
+  color: ${({ theme }) => theme.colors.textPrimary};
 `
 
 export const MachineIcon = styled.span`
   font-size: 20px;
-  color: #556b2f;
+  color: ${({ theme }) => theme.colors.iconSystem};
 `
 
 export const ExpandedRowContainer = styled.div`
-  padding: 16px 0;
+  padding: ${({ theme }) => theme.spacing.MD}px 0;
   position: relative;
 `
 
@@ -51,7 +54,7 @@ export const ExpandedRowLoadingOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: ${({ theme }) => withAlpha(theme.colors.bgPrimary, 'CC')};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -60,35 +63,68 @@ export const ExpandedRowLoadingOverlay = styled.div`
 `
 
 export const ContainersSection = styled.div`
-  margin-bottom: 16px;
+  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `
 
 export const PluginsSection = styled.div`
-  margin-top: 16px;
+  margin-top: ${({ theme }) => theme.spacing.MD}px;
 `
 
 const StyledTableBase = styled(AntTable)<{ $removeMargins?: boolean }>`
-  ${({ $removeMargins }) => $removeMargins && css`
-    .ant-table.ant-table-small {
-      margin-block: 0 !important;
-      margin-inline: 0 !important;
-    }
-  `}
+  background-color: ${({ theme }) => theme.colors.bgPrimary};
+  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+  overflow: hidden;
+
+  .ant-table {
+    border-radius: inherit;
+  }
+
+  .Repo-row {
+    cursor: pointer;
+    transition: background-color ${({ theme }) => theme.transitions.HOVER};
+  }
+
+  .Repo-row:hover {
+    background-color: ${({ theme }) => theme.colors.bgHover};
+  }
+
+  .Repo-row--highlighted,
+  .Repo-row--highlighted:hover {
+    background-color: ${({ theme }) => theme.colors.primaryBg};
+  }
+
+  .Repo-fork-row {
+    background-color: ${({ theme }) => theme.colors.bgSecondary};
+  }
+
+  .Repo-fork-row:hover {
+    background-color: ${({ theme }) => theme.colors.bgSecondary};
+  }
+
+  ${({ $removeMargins }) =>
+    $removeMargins &&
+    css`
+      .ant-table.ant-table-small {
+        margin-block: 0;
+        margin-inline: 0;
+      }
+    `}
 `
 
 export const StyledTable = StyledTableBase as ComponentType<TableProps<unknown> & { $removeMargins?: boolean }>
 
 export const SystemContainersWrapper = styled.div`
-  margin-bottom: 32px;
+  margin-bottom: ${({ theme }) => theme.spacing.XL}px;
 `
 
 export const SystemContainersTitle = styled.div`
-  margin-bottom: 16px;
-  margin-top: 32px;
+  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
+  margin-top: ${({ theme }) => theme.spacing.XL}px;
 `
 
 export const StatusIcon = styled.span<{ $color: string }>`
-  font-size: 18px;
+  font-size: ${({ theme }) => theme.fontSize.LG}px;
   color: ${props => props.$color};
 `
 
@@ -103,5 +139,5 @@ export const ExpandIcon = styled(BaseExpandIcon).attrs<{
 `
 
 export const PortText = styled.span`
-  font-size: 12px;
+  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
 `

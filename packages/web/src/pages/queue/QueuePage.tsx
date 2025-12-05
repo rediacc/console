@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback } from 'react'
 import { Typography, Space, Modal, Tag, Tabs, Tooltip, Dropdown } from 'antd'
+import styled, { useTheme as useStyledTheme } from 'styled-components'
 import type { ColumnsType } from 'antd/es/table'
 import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay'
 import { renderTimestamp, renderBoolean } from '@/components/common/columns'
@@ -59,12 +60,99 @@ import {
   TabLabel,
   TabCount,
   FilterCheckbox,
+  CaptionText,
 } from '@/styles/primitives'
 
 const { Text } = Typography
+
+const PriorityTooltipHeading = styled(Text)`
+  && {
+    margin: 0 0 ${({ theme }) => theme.spacing.XS / 2}px 0;
+    display: block;
+  }
+`
+
+const FullWidthSpace = styled(Space)`
+  && {
+    width: 100%;
+  }
+`
+
+const TooltipContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.XS / 2}px;
+  min-width: 240px;
+`
+
+const TooltipErrorText = styled(CaptionText)<{ $isLast?: boolean }>`
+  && {
+    display: block;
+    margin-bottom: ${({ theme, $isLast }) => ($isLast ? 0 : theme.spacing.XS / 2)}px;
+  }
+`
+
+const TooltipFooterNote = styled(CaptionText)`
+  && {
+    display: block;
+    margin-top: ${({ theme }) => theme.spacing.XS}px;
+    padding-top: ${({ theme }) => theme.spacing.XS / 2}px;
+    border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  }
+`
+
+const TooltipContentSection = styled.div`
+  width: 100%;
+`
+
+const TooltipPrimaryRow = styled(Space)`
+  && {
+    width: 100%;
+    margin-bottom: ${({ theme }) => theme.spacing.XS / 2}px;
+  }
+`
+
+const SeverityPill = styled(Tag)`
+  && {
+    margin: 0;
+    font-size: ${({ theme }) => theme.fontSize.XS}px;
+    line-height: 1.2;
+  }
+`
+
+const TruncatedErrorText = styled(CaptionText)`
+  && {
+    display: inline-flex;
+    flex: 1;
+    font-size: ${({ theme }) => theme.fontSize.SM}px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`
+
+const AdditionalErrorsNote = styled(CaptionText)`
+  && {
+    font-size: ${({ theme }) => theme.fontSize.XS}px;
+    font-style: italic;
+  }
+`
+
+const RetrySummaryTag = styled(Tag)`
+  && {
+    margin: 0;
+  }
+`
+
+const AgeValue = styled(Text)<{ $tone?: string }>`
+  && {
+    color: ${({ $tone, theme }) => $tone || theme.colors.textPrimary};
+  }
+`
 const QueuePage: React.FC = () => {
   const { t } = useTranslation(['queue', 'common'])
   const [modal, contextHolder] = Modal.useModal()
+  const theme = useStyledTheme()
 
   // Filter state management with useFilters hook
   const { filters, setFilter, clearAllFilters, hasActiveFilters: checkHasActiveFilters } = useFilters<QueuePageFilters>({
@@ -323,14 +411,14 @@ const QueuePage: React.FC = () => {
       width: 140,
       render: (priorityLabel: string | undefined, record: QueueItem) => {
         const tooltipContent = (
-          <div>
-            <div style={{ marginBottom: 4 }}><strong>{priorityLabel}</strong></div>
-            <div style={{ fontSize: 12 }}>
+          <TooltipContent>
+            <PriorityTooltipHeading strong>{priorityLabel}</PriorityTooltipHeading>
+            <CaptionText as="div">
               {record.priority === 1
                 ? t('queue:priorityTooltipP1')
                 : t('queue:priorityTooltipTier')}
-            </div>
-          </div>
+            </CaptionText>
+          </TooltipContent>
         )
         return renderPriority(priorityLabel, record.priority, tooltipContent) || <Text type="secondary">-</Text>
       },
@@ -405,62 +493,55 @@ const QueuePage: React.FC = () => {
         const { allErrors, primaryError } = parseFailureReason(record.lastFailureReason)
 
         return (
-          <Space orientation="vertical" size={2} style={{ width: '100%' }}>
+          <FullWidthSpace orientation="vertical" size={2}>
             {/* Error messages with severity badges */}
             {allErrors.length > 0 && (
               <Tooltip title={
-                <div>
+                <TooltipContent>
                   {allErrors.map((error: ParsedError, index: number) => (
-                    <div key={index} style={{ marginBottom: index < allErrors.length - 1 ? 4 : 0 }}>
+                    <TooltipErrorText
+                      key={`${error.message}-${index}`}
+                      $isLast={index === allErrors.length - 1}
+                    >
                       {error.severity && <strong>[{error.severity}]</strong>} {error.message}
-                    </div>
+                    </TooltipErrorText>
                   ))}
                   {record.lastRetryAt && (
-                    <div style={{ marginTop: 8, fontSize: '12px', borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: 4 }}>
+                    <TooltipFooterNote>
                       Last retry: {formatTimestampAsIs(record.lastRetryAt, 'datetime')}
-                    </div>
+                    </TooltipFooterNote>
                   )}
-                </div>
+                </TooltipContent>
               }>
-                <div style={{ width: '100%' }}>
+                <TooltipContentSection>
                   {/* Show primary (highest severity) error */}
-                  <Space size={4} style={{ width: '100%', marginBottom: 2 }}>
+                  <TooltipPrimaryRow size={4}>
                     {primaryError?.severity && (
-                      <Tag
+                      <SeverityPill
                         color={getSeverityColor(primaryError.severity)}
-                        style={{ margin: 0, fontSize: '11px' }}
                       >
                         {primaryError.severity}
-                      </Tag>
+                      </SeverityPill>
                     )}
-                    <Text
-                      type="secondary"
-                      style={{
-                        fontSize: '12px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        flex: 1
-                      }}
-                    >
+                    <TruncatedErrorText $muted as="span">
                       {primaryError?.message}
-                    </Text>
-                  </Space>
+                    </TruncatedErrorText>
+                  </TooltipPrimaryRow>
                   {/* Show count of additional errors if any */}
                   {allErrors.length > 1 && (
-                    <Text type="secondary" style={{ fontSize: '11px', fontStyle: 'italic' }}>
+                    <AdditionalErrorsNote $muted>
                       +{allErrors.length - 1} more {allErrors.length - 1 === 1 ? 'message' : 'messages'}
-                    </Text>
+                    </AdditionalErrorsNote>
                   )}
-                </div>
+                </TooltipContentSection>
               </Tooltip>
             )}
 
             {/* Retry count badge */}
-            <Tag color={retryColor} icon={icon} style={{ margin: 0 }}>
+            <RetrySummaryTag color={retryColor} icon={icon}>
               {retryCount}/{maxRetries} retries
-            </Tag>
-          </Space>
+            </RetrySummaryTag>
+          </FullWidthSpace>
         )
       },
       sorter: (a, b) => (a.retryCount ?? 0) - (b.retryCount ?? 0),
@@ -496,7 +577,7 @@ const QueuePage: React.FC = () => {
           color = 'orange'
         }
         
-        return <Text style={{ color }}>{ageText}</Text>
+        return <AgeValue $tone={color}>{ageText}</AgeValue>
       },
       sorter: (a, b) => a.ageInMinutes - b.ageInMinutes,
     },
@@ -719,7 +800,7 @@ const QueuePage: React.FC = () => {
               <Tooltip title={t('queue:tabs.active.tooltip')}>
                 <TabLabel data-testid="queue-tab-active">
                   {t('queue:tabs.active.title')}
-                  <TabCount count={activeItems.length} $color="#5a5a5a" />
+                  <TabCount count={activeItems.length} $color={theme.colors.secondary} />
                 </TabLabel>
               </Tooltip>
             ),
@@ -748,7 +829,7 @@ const QueuePage: React.FC = () => {
               <Tooltip title={t('queue:tabs.completed.tooltip')}>
                 <TabLabel data-testid="queue-tab-completed">
                   {t('queue:tabs.completed.title')}
-                  <TabCount count={completedCount || completedItems.length} showZero $color="#4a4a4a" />
+                  <TabCount count={completedCount || completedItems.length} showZero $color={theme.colors.success} />
                 </TabLabel>
               </Tooltip>
             ),
@@ -777,7 +858,7 @@ const QueuePage: React.FC = () => {
               <Tooltip title={t('queue:tabs.cancelled.tooltip')}>
                 <TabLabel data-testid="queue-tab-cancelled">
                   {t('queue:tabs.cancelled.title')}
-                  <TabCount count={cancelledCount || cancelledItems.length} showZero $color="#6a6a6a" />
+                  <TabCount count={cancelledCount || cancelledItems.length} showZero $color={theme.colors.accent} />
                 </TabLabel>
               </Tooltip>
             ),
@@ -806,7 +887,7 @@ const QueuePage: React.FC = () => {
               <Tooltip title={t('queue:tabs.failed.tooltip')}>
                 <TabLabel data-testid="queue-tab-failed">
                   {t('queue:tabs.failed.title')}
-                  <TabCount count={failedCount || failedItems.length} showZero $color="#ff4d4f" />
+                  <TabCount count={failedCount || failedItems.length} showZero $color={theme.colors.error} />
                 </TabLabel>
               </Tooltip>
             ),

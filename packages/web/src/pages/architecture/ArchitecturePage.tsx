@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Alert, Space, Typography, Radio, Tooltip, Statistic, Row, Col, Select } from 'antd'
 import { 
   FullscreenOutlined, 
@@ -19,6 +19,7 @@ import { useCompanyArchitecture } from '@/api/queries/architecture'
 import { useTheme } from '@/context/ThemeContext'
 import * as d3 from 'd3'
 import { SectionCard, IconButton, CompactIconButton } from '@/styles/primitives'
+import { getArchitecturePalette } from './architectureTheme'
 import LoadingWrapper from '@/components/common/LoadingWrapper'
 import type { CompanyDataGraph, CompanyGraphNode, CompanyGraphRelationship } from '@rediacc/shared/types'
 import {
@@ -76,6 +77,7 @@ const ArchitecturePage: React.FC = () => {
   const svgRef = useRef<SVGSVGElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const { theme } = useTheme()
+  const architecturePalette = useMemo(() => getArchitecturePalette(theme), [theme])
 
   // Available entity types for filtering
   const entityTypes = [
@@ -164,32 +166,10 @@ const ArchitecturePage: React.FC = () => {
   }
 
   // Get color for node type
-  const getNodeColor = useCallback((nodeType: string) => {
-    const lightColors: Record<string, string> = {
-      company: '#e0e0e0',
-      user: '#d6d6d6',
-      team: '#cccccc',
-      region: '#c2c2c2',
-      bridge: '#b8b8b8',
-      machine: '#aeaeae',
-      repo: '#a4a4a4',
-      storage: '#909090',
-    }
-    
-    const darkColors: Record<string, string> = {
-      company: '#4a5568',
-      user: '#5a6778',
-      team: '#6a7788',
-      region: '#7a8798',
-      bridge: '#8a97a8',
-      machine: '#9aa7b8',
-      repo: '#aab7c8',
-      storage: '#cad7e8',
-    }
-    
-    const colors = theme === 'dark' ? darkColors : lightColors
-    return colors[nodeType] || (theme === 'dark' ? '#6a7788' : '#cccccc')
-  }, [theme])
+  const getNodeColor = useCallback(
+    (nodeType: string) => architecturePalette.nodes[nodeType] || architecturePalette.nodeFallback,
+    [architecturePalette],
+  )
 
   // Render D3 visualization
   useEffect(() => {
@@ -218,7 +198,7 @@ const ArchitecturePage: React.FC = () => {
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .style('font-size', '16px')
-        .style('fill', '#999')
+        .style('fill', architecturePalette.labelFill)
         .text(t('architecture.noEntitiesSelected', { ns: 'system' }))
       
       return
@@ -255,7 +235,7 @@ const ArchitecturePage: React.FC = () => {
       .attr('markerHeight', 8)
       .append('path')
       .attr('d', 'M 0,-5 L 10,0 L 0,5')
-      .attr('fill', theme === 'dark' ? '#999' : '#666')
+      .attr('fill', architecturePalette.linkStroke)
 
     if (viewMode === 'force') {
       // Force-directed layout
@@ -285,7 +265,7 @@ const ArchitecturePage: React.FC = () => {
         .selectAll<SVGLineElement, GraphLink>('line')
         .data(simulationLinks)
         .join('line')
-        .attr('stroke', '#cccccc')
+        .attr('stroke', architecturePalette.linkStroke)
         .attr('stroke-opacity', 0.6)
         .attr('stroke-width', 2)
         .attr('marker-end', 'url(#arrowhead)')
@@ -317,7 +297,7 @@ const ArchitecturePage: React.FC = () => {
       node.append('circle')
         .attr('r', 20)
         .attr('fill', (d) => getNodeColor(d.nodeType))
-        .attr('stroke', '#333')
+        .attr('stroke', architecturePalette.nodeBorder)
         .attr('stroke-width', 2)
         .style('cursor', 'pointer')
         .style('transition', 'all 0.2s ease')
@@ -346,9 +326,9 @@ const ArchitecturePage: React.FC = () => {
         .attr('dy', 35)
         .attr('text-anchor', 'middle')
         .style('font-size', '12px')
-        .style('fill', theme === 'dark' ? '#e8e8e8' : '#1a1a1a')
+        .style('fill', architecturePalette.labelFill)
         .style('font-weight', '500')
-        .style('text-shadow', theme === 'dark' ? '1px 1px 2px rgba(0,0,0,0.8)' : '1px 1px 2px rgba(255,255,255,0.8)')
+        .style('text-shadow', architecturePalette.labelShadow)
         .text((d) => d.name)
 
       // Add tooltips
@@ -485,7 +465,7 @@ const ArchitecturePage: React.FC = () => {
         .join('path')
         .attr('d', (d) => linkGenerator(d) ?? '')
         .attr('fill', 'none')
-        .attr('stroke', '#cccccc')
+        .attr('stroke', architecturePalette.linkStroke)
         .attr('stroke-width', 2)
 
       // Draw nodes
@@ -497,8 +477,9 @@ const ArchitecturePage: React.FC = () => {
 
       node.append('circle')
         .attr('r', 20)
-        .attr('fill', (d) => d.data.nodeType === 'placeholder' ? '#ccc' : getNodeColor(d.data.nodeType))
-        .attr('stroke', '#333')
+        .attr('fill', (d) =>
+          d.data.nodeType === 'placeholder' ? architecturePalette.nodeFallback : getNodeColor(d.data.nodeType))
+        .attr('stroke', architecturePalette.nodeBorder)
         .attr('stroke-width', 2)
         .style('cursor', (d) => d.data.nodeType === 'placeholder' ? 'default' : 'pointer')
         .style('transition', 'all 0.2s ease')
@@ -529,9 +510,9 @@ const ArchitecturePage: React.FC = () => {
         .attr('dy', 35)
         .attr('text-anchor', 'middle')
         .style('font-size', '12px')
-        .style('fill', theme === 'dark' ? '#e8e8e8' : '#1a1a1a')
+        .style('fill', architecturePalette.labelFill)
         .style('font-weight', '500')
-        .style('text-shadow', theme === 'dark' ? '1px 1px 2px rgba(0,0,0,0.8)' : '1px 1px 2px rgba(255,255,255,0.8)')
+        .style('text-shadow', architecturePalette.labelShadow)
         .text((d) => d.data.name)
         
       // Add tooltips
@@ -582,7 +563,7 @@ const ArchitecturePage: React.FC = () => {
         .attr('y1', (d) => d.source.y ?? 0)
         .attr('x2', (d) => d.target.x ?? 0)
         .attr('y2', (d) => d.target.y ?? 0)
-        .attr('stroke', '#cccccc')
+        .attr('stroke', architecturePalette.linkStroke)
         .attr('stroke-opacity', 0.6)
         .attr('stroke-width', 2)
 
@@ -596,7 +577,7 @@ const ArchitecturePage: React.FC = () => {
       node.append('circle')
         .attr('r', 20)
         .attr('fill', (d) => getNodeColor(d.nodeType))
-        .attr('stroke', '#333')
+        .attr('stroke', architecturePalette.nodeBorder)
         .attr('stroke-width', 2)
         .style('cursor', 'pointer')
         .style('transition', 'all 0.2s ease')
@@ -623,9 +604,9 @@ const ArchitecturePage: React.FC = () => {
         .attr('dy', 35)
         .attr('text-anchor', 'middle')
         .style('font-size', '12px')
-        .style('fill', theme === 'dark' ? '#e8e8e8' : '#1a1a1a')
+        .style('fill', architecturePalette.labelFill)
         .style('font-weight', '500')
-        .style('text-shadow', theme === 'dark' ? '1px 1px 2px rgba(0,0,0,0.8)' : '1px 1px 2px rgba(255,255,255,0.8)')
+        .style('text-shadow', architecturePalette.labelShadow)
         .text((d) => d.name)
     }
 
@@ -654,7 +635,7 @@ const ArchitecturePage: React.FC = () => {
       setIsVisualizationLoading(false)
     }, viewMode === 'force' ? 1100 : 200)
 
-  }, [data, viewMode, isFullscreen, selectedEntityTypes, t, theme, getNodeColor])
+  }, [data, viewMode, isFullscreen, selectedEntityTypes, t, architecturePalette, getNodeColor])
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return

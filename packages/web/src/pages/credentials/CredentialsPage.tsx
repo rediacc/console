@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo } from 'react'
 import { Alert, Button, Modal, Space, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useTheme } from 'styled-components'
+import styled, { useTheme } from 'styled-components'
 import {
   PlusOutlined,
   ReloadOutlined,
@@ -14,6 +14,12 @@ import {
 } from '@/utils/optimizedIcons'
 
 const { Text } = Typography
+
+const InlineList = styled.ul`
+  margin-top: ${({ theme }) => theme.spacing.SM}px;
+  margin-bottom: 0;
+  padding-left: 20px;
+`
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
@@ -157,26 +163,26 @@ const CredentialsPage: React.FC = () => {
               {forks.length > 0 && (
                 <div style={{ marginTop: 16 }}>
                   <Text strong>{t('repos.affectedForks')}</Text>
-                  <ul style={{ marginTop: 8, marginBottom: 0, paddingLeft: 20 }}>
+                  <InlineList>
                     {forks.map(fork => (
                       <li key={fork.repoGuid}>
                         {fork.repoName}{fork.repoTag ? `:${fork.repoTag}` : ''}
                       </li>
                     ))}
-                  </ul>
+                  </InlineList>
                 </div>
               )}
 
               <div style={{ marginTop: 16 }}>
                 <Text strong>{t('repos.affectedMachines')}</Text>
-                <ul style={{ marginTop: 8, marginBottom: 0, paddingLeft: 20 }}>
+                <InlineList>
                   {affectedMachines.map(machine => (
                     <li key={machine.machineName}>
                       <Text strong>{machine.machineName}</Text>
                       <Text type="secondary"> ({machine.repoNames.join(', ')})</Text>
                     </li>
                   ))}
-                </ul>
+                </InlineList>
               </div>
 
               <Alert
@@ -207,13 +213,13 @@ const CredentialsPage: React.FC = () => {
                 type="warning"
                 message={t('repos.machinesWillLoseAccess')}
                 description={
-                  <ul style={{ marginTop: 8, marginBottom: 0, paddingLeft: 20 }}>
+                  <InlineList>
                     {affectedMachines.map(machine => (
                       <li key={machine.machineName}>
                         <Text strong>{machine.machineName}</Text>
                       </li>
                     ))}
-                  </ul>
+                  </InlineList>
                 }
                 showIcon
                 icon={<WarningOutlined />}
@@ -689,8 +695,6 @@ const CredentialsPage: React.FC = () => {
 }
 
 export default CredentialsPage
-
-
 
 
 

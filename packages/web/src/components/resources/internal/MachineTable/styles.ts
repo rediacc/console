@@ -47,8 +47,8 @@ export const MachineTableWrapper = styled.div`
     background-color: var(--color-bg-hover);
   }
 
-  .machine-table-row--selected {
-    background-color: var(--color-bg-selected) !important;
+  .machine-table-row--selected td {
+    background-color: var(--color-bg-selected);
   }
 `
 

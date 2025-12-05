@@ -7,20 +7,20 @@ const { Text } = Typography
 export const StyledSelect = styled(Select)`
   && {
     width: 100%;
+  }
 
-    .ant-select-selector {
-      min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_SM}px;
-      border-radius: ${({ theme }) => theme.borderRadius.MD}px !important;
-      background-color: ${({ theme }) => theme.colors.inputBg};
-      border-color: ${({ theme }) => theme.colors.inputBorder} !important;
-      transition: ${({ theme }) => theme.transitions.DEFAULT};
-      padding: 0 ${({ theme }) => theme.spacing.SM}px;
-    }
+  && .ant-select-selector {
+    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_SM}px;
+    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
+    background-color: ${({ theme }) => theme.colors.inputBg};
+    border-color: ${({ theme }) => theme.colors.inputBorder};
+    transition: ${({ theme }) => theme.transitions.DEFAULT};
+    padding: 0 ${({ theme }) => theme.spacing.SM}px;
+  }
 
-    &.ant-select-focused .ant-select-selector {
-      border-color: ${({ theme }) => theme.colors.primary} !important;
-      box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary};
-    }
+  &&.ant-select-focused .ant-select-selector {
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary};
   }
 `
 
