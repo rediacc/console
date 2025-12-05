@@ -6,15 +6,15 @@
 /**
  * Error severity levels for parsing queue errors
  */
-export type ErrorSeverity = 'CRITICAL' | 'ERROR' | 'WARNING' | 'INFO' | 'UNKNOWN'
+export type ErrorSeverity = 'CRITICAL' | 'ERROR' | 'WARNING' | 'INFO' | 'UNKNOWN';
 
 /**
  * Parsed error information from queue output
  */
 export interface ParsedError {
-  severity: ErrorSeverity
-  message: string
-  fullLine: string
+  severity: ErrorSeverity;
+  message: string;
+  fullLine: string;
 }
 
 /**
@@ -22,9 +22,9 @@ export interface ParsedError {
  */
 export interface ParsedErrorResult {
   /** All errors found in the text */
-  allErrors: ParsedError[]
+  allErrors: ParsedError[];
   /** The highest severity error (for display priority) */
-  primaryError: ParsedError | null
+  primaryError: ParsedError | null;
 }
 
 /**
@@ -34,24 +34,24 @@ export const SEVERITY_PATTERNS = {
   CRITICAL: /^CRITICAL:/i,
   ERROR: /^ERROR:/i,
   WARNING: /^WARNING:/i,
-  INFO: /^INFO:/i
-}
+  INFO: /^INFO:/i,
+};
 
 /**
  * Priority hierarchy (lower number = higher priority)
  */
 export const SEVERITY_HIERARCHY: Record<ErrorSeverity, number> = {
-  'CRITICAL': 1,
-  'ERROR': 2,
-  'WARNING': 3,
-  'INFO': 4,
-  'UNKNOWN': 5
-}
+  CRITICAL: 1,
+  ERROR: 2,
+  WARNING: 3,
+  INFO: 4,
+  UNKNOWN: 5,
+};
 
 /**
  * Main regex for extracting severity-prefixed lines
  */
-export const SEVERITY_REGEX = /^(CRITICAL|ERROR|WARNING|INFO):\s*(.+)/i
+export const SEVERITY_REGEX = /^(CRITICAL|ERROR|WARNING|INFO):\s*(.+)/i;
 
 /**
  * Extract first error line from command output
@@ -66,41 +66,41 @@ export const SEVERITY_REGEX = /^(CRITICAL|ERROR|WARNING|INFO):\s*(.+)/i
  * // Returns: { severity: 'ERROR', message: 'Repository not found', fullLine: 'ERROR: Repository not found' }
  */
 export function extractFirstError(output: string | null | undefined): ParsedError | null {
-  if (!output) return null
+  if (!output) return null;
 
   // Split into lines and search for first line with severity prefix
-  const lines = output.split('\n')
-  const severityPattern = /^(CRITICAL|ERROR|WARNING|INFO):\s*(.+)$/
+  const lines = output.split('\n');
+  const severityPattern = /^(CRITICAL|ERROR|WARNING|INFO):\s*(.+)$/;
 
   for (const line of lines) {
-    const trimmedLine = line.trim()
-    const match = trimmedLine.match(severityPattern)
+    const trimmedLine = line.trim();
+    const match = trimmedLine.match(severityPattern);
 
     if (match) {
-      const [, severity, message] = match
+      const [, severity, message] = match;
       return {
         severity: severity as ErrorSeverity,
         message: message.trim(),
-        fullLine: trimmedLine
-      }
+        fullLine: trimmedLine,
+      };
     }
   }
 
   // If no severity prefix found, look for lines containing "error" or "failed" (case-insensitive)
   for (const line of lines) {
-    const trimmedLine = line.trim()
-    const lowerLine = trimmedLine.toLowerCase()
+    const trimmedLine = line.trim();
+    const lowerLine = trimmedLine.toLowerCase();
 
     if (lowerLine.includes('error') || lowerLine.includes('failed')) {
       return {
         severity: 'UNKNOWN',
         message: trimmedLine,
-        fullLine: trimmedLine
-      }
+        fullLine: trimmedLine,
+      };
     }
   }
 
-  return null
+  return null;
 }
 
 /**
@@ -119,27 +119,27 @@ export function extractFirstError(output: string | null | undefined): ParsedErro
  * // ]
  */
 export function extractAllErrors(output: string | null | undefined): ParsedError[] {
-  if (!output) return []
+  if (!output) return [];
 
-  const errors: ParsedError[] = []
-  const lines = output.split('\n')
-  const severityPattern = /^(CRITICAL|ERROR|WARNING|INFO):\s*(.+)$/
+  const errors: ParsedError[] = [];
+  const lines = output.split('\n');
+  const severityPattern = /^(CRITICAL|ERROR|WARNING|INFO):\s*(.+)$/;
 
   for (const line of lines) {
-    const trimmedLine = line.trim()
-    const match = trimmedLine.match(severityPattern)
+    const trimmedLine = line.trim();
+    const match = trimmedLine.match(severityPattern);
 
     if (match) {
-      const [, severity, message] = match
+      const [, severity, message] = match;
       errors.push({
         severity: severity as ErrorSeverity,
         message: message.trim(),
-        fullLine: trimmedLine
-      })
+        fullLine: trimmedLine,
+      });
     }
   }
 
-  return errors
+  return errors;
 }
 
 /**
@@ -163,25 +163,25 @@ export function extractAllErrors(output: string | null | undefined): ParsedError
  */
 export function parseFailureReason(failureReason: string | null | undefined): ParsedErrorResult {
   if (!failureReason) {
-    return { allErrors: [], primaryError: null }
+    return { allErrors: [], primaryError: null };
   }
 
-  const errors: ParsedError[] = []
-  const lines = failureReason.split('\n')
-  const severityPattern = /^(CRITICAL|ERROR|WARNING|INFO):\s*(.+)$/
+  const errors: ParsedError[] = [];
+  const lines = failureReason.split('\n');
+  const severityPattern = /^(CRITICAL|ERROR|WARNING|INFO):\s*(.+)$/;
 
   // Extract all severity-prefixed lines
   for (const line of lines) {
-    const trimmedLine = line.trim()
-    const match = trimmedLine.match(severityPattern)
+    const trimmedLine = line.trim();
+    const match = trimmedLine.match(severityPattern);
 
     if (match) {
-      const [, severity, message] = match
+      const [, severity, message] = match;
       errors.push({
         severity: severity as ErrorSeverity,
         message: message.trim(),
-        fullLine: trimmedLine
-      })
+        fullLine: trimmedLine,
+      });
     }
   }
 
@@ -190,25 +190,28 @@ export function parseFailureReason(failureReason: string | null | undefined): Pa
     errors.push({
       severity: 'UNKNOWN',
       message: failureReason.trim(),
-      fullLine: failureReason.trim()
-    })
+      fullLine: failureReason.trim(),
+    });
   }
 
   // Find the highest severity error (CRITICAL > ERROR > WARNING > INFO > UNKNOWN)
-  const primaryError = errors.length > 0 ? errors.reduce((highest, current) => {
-    const severityOrder: Record<ErrorSeverity, number> = {
-      CRITICAL: 0,
-      ERROR: 1,
-      WARNING: 2,
-      INFO: 3,
-      UNKNOWN: 4
-    }
-    const highestOrder = severityOrder[highest.severity]
-    const currentOrder = severityOrder[current.severity]
-    return currentOrder < highestOrder ? current : highest
-  }) : null
+  const primaryError =
+    errors.length > 0
+      ? errors.reduce((highest, current) => {
+          const severityOrder: Record<ErrorSeverity, number> = {
+            CRITICAL: 0,
+            ERROR: 1,
+            WARNING: 2,
+            INFO: 3,
+            UNKNOWN: 4,
+          };
+          const highestOrder = severityOrder[highest.severity];
+          const currentOrder = severityOrder[current.severity];
+          return currentOrder < highestOrder ? current : highest;
+        })
+      : null;
 
-  return { allErrors: errors, primaryError }
+  return { allErrors: errors, primaryError };
 }
 
 /**
@@ -223,13 +226,13 @@ export function parseFailureReason(failureReason: string | null | undefined): Pa
  */
 export function getSeverityLevel(severity: ErrorSeverity): string {
   const levelMap: Record<ErrorSeverity, string> = {
-    'CRITICAL': 'critical',
-    'ERROR': 'error',
-    'WARNING': 'warning',
-    'INFO': 'info',
-    'UNKNOWN': 'default'
-  }
-  return levelMap[severity] || 'default'
+    CRITICAL: 'critical',
+    ERROR: 'error',
+    WARNING: 'warning',
+    INFO: 'info',
+    UNKNOWN: 'default',
+  };
+  return levelMap[severity] || 'default';
 }
 
 /**
@@ -253,14 +256,14 @@ export function formatError(
   error: ParsedError,
   colorFn?: (text: string, level: string) => string
 ): string {
-  const level = getSeverityLevel(error.severity)
-  const prefix = `[${error.severity}]`
-  const message = error.message
+  const level = getSeverityLevel(error.severity);
+  const prefix = `[${error.severity}]`;
+  const message = error.message;
 
   if (colorFn) {
-    return `${colorFn(prefix, level)} ${message}`
+    return `${colorFn(prefix, level)} ${message}`;
   }
-  return `${prefix} ${message}`
+  return `${prefix} ${message}`;
 }
 
 /**
@@ -285,21 +288,19 @@ export function formatError(
 export function formatErrors(
   result: ParsedErrorResult,
   options?: {
-    showAll?: boolean
-    colorFn?: (text: string, level: string) => string
+    showAll?: boolean;
+    colorFn?: (text: string, level: string) => string;
   }
 ): string {
-  const { showAll = false, colorFn } = options || {}
+  const { showAll = false, colorFn } = options || {};
 
   if (showAll && result.allErrors.length > 0) {
-    return result.allErrors
-      .map(error => formatError(error, colorFn))
-      .join('\n')
+    return result.allErrors.map((error) => formatError(error, colorFn)).join('\n');
   }
 
   if (result.primaryError) {
-    return formatError(result.primaryError, colorFn)
+    return formatError(result.primaryError, colorFn);
   }
 
-  return 'No errors found'
+  return 'No errors found';
 }

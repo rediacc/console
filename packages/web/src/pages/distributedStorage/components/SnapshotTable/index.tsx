@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react'
-import type { Key } from 'react'
-import { Table, Tooltip, message } from 'antd'
+import { useCallback, useMemo, useState } from 'react';
+import type { Key } from 'react';
+import { Table, Tooltip, message } from 'antd';
 import {
   PlusOutlined,
   SettingOutlined,
@@ -9,62 +9,62 @@ import {
   InfoCircleOutlined,
   SecurityScanOutlined,
   CopyOutlined,
-} from '@ant-design/icons'
-import { useTranslation } from 'react-i18next'
-import type { MenuProps } from 'antd'
+} from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
+import type { MenuProps } from 'antd';
 import {
   useDistributedStorageRbdSnapshots,
   type DistributedStorageRbdSnapshot,
   type DistributedStorageRbdImage,
   type DistributedStoragePool,
-} from '@/api/queries/distributedStorage'
+} from '@/api/queries/distributedStorage';
 import {
   useDeleteDistributedStorageRbdSnapshot,
   useCreateDistributedStorageRbdSnapshot,
   useUpdateDistributedStoragePoolVault,
-} from '@/api/queries/distributedStorageMutations'
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
-import { useQueueTraceModal, useExpandableTable } from '@/hooks'
-import CloneTable from '../CloneTable'
-import { buildSnapshotColumns } from './columns'
-import { ActionsRow, Container, CreateButton, ExpandButton, TableWrapper, Title } from './styles'
+} from '@/api/queries/distributedStorageMutations';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import { useQueueTraceModal, useExpandableTable } from '@/hooks';
+import CloneTable from '../CloneTable';
+import { buildSnapshotColumns } from './columns';
+import { ActionsRow, Container, CreateButton, ExpandButton, TableWrapper, Title } from './styles';
 
 interface SnapshotTableProps {
-  image: DistributedStorageRbdImage
-  pool: DistributedStoragePool
-  teamFilter: string | string[]
+  image: DistributedStorageRbdImage;
+  pool: DistributedStoragePool;
+  teamFilter: string | string[];
 }
 
 interface SnapshotModalState {
-  open: boolean
-  mode: 'create' | 'edit' | 'vault'
-  data?: (DistributedStorageRbdSnapshot & { vaultContent?: string | null })
+  open: boolean;
+  mode: 'create' | 'edit' | 'vault';
+  data?: DistributedStorageRbdSnapshot & { vaultContent?: string | null };
 }
 
 interface SnapshotFormValues extends Record<string, unknown> {
-  snapshotName: string
-  snapshotVault: string
+  snapshotName: string;
+  snapshotVault: string;
 }
 
 const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }) => {
-  const { t } = useTranslation('distributedStorage')
-  const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable()
-  const [modalState, setModalState] = useState<SnapshotModalState>({ open: false, mode: 'create' })
-  const queueTrace = useQueueTraceModal()
-  const managedQueueMutation = useManagedQueueItem()
-  const { buildQueueVault } = useQueueVaultBuilder()
+  const { t } = useTranslation('distributedStorage');
+  const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable();
+  const [modalState, setModalState] = useState<SnapshotModalState>({ open: false, mode: 'create' });
+  const queueTrace = useQueueTraceModal();
+  const managedQueueMutation = useManagedQueueItem();
+  const { buildQueueVault } = useQueueVaultBuilder();
 
-  const { data: snapshots = [], isLoading } = useDistributedStorageRbdSnapshots(image.imageGuid)
-  const deleteSnapshotMutation = useDeleteDistributedStorageRbdSnapshot()
-  const createSnapshotMutation = useCreateDistributedStorageRbdSnapshot()
-  const updateVaultMutation = useUpdateDistributedStoragePoolVault()
+  const { data: snapshots = [], isLoading } = useDistributedStorageRbdSnapshots(image.imageGuid);
+  const deleteSnapshotMutation = useDeleteDistributedStorageRbdSnapshot();
+  const createSnapshotMutation = useCreateDistributedStorageRbdSnapshot();
+  const updateVaultMutation = useUpdateDistributedStoragePoolVault();
 
   const handleCreate = useCallback(() => {
-    setModalState({ open: true, mode: 'create' })
-  }, [])
+    setModalState({ open: true, mode: 'create' });
+  }, []);
 
   const handleEdit = useCallback((snapshot: DistributedStorageRbdSnapshot) => {
     setModalState({
@@ -74,8 +74,8 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         ...snapshot,
         vaultContent: snapshot.vaultContent || snapshot.snapshotVault,
       },
-    })
-  }, [])
+    });
+  }, []);
 
   const handleDelete = useCallback(
     (snapshot: DistributedStorageRbdSnapshot) => {
@@ -84,18 +84,18 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         imageName: image.imageName,
         poolName: pool.poolName,
         teamName: snapshot.teamName,
-      })
+      });
     },
-    [deleteSnapshotMutation, image.imageName, pool.poolName],
-  )
+    [deleteSnapshotMutation, image.imageName, pool.poolName]
+  );
 
   const handleQueueItemCreated = useCallback(
     (taskId: string) => {
-      queueTrace.open(taskId)
-      message.success(t('queue.itemCreated'))
+      queueTrace.open(taskId);
+      message.success(t('queue.itemCreated'));
     },
-    [queueTrace, t],
-  )
+    [queueTrace, t]
+  );
 
   const handleRunFunction = useCallback(
     async (functionName: string, snapshot?: DistributedStorageRbdSnapshot) => {
@@ -113,7 +113,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
           },
           priority: 3,
           addedVia: 'DistributedStorage',
-        })
+        });
 
         const response = await managedQueueMutation.mutateAsync({
           teamName: pool.teamName,
@@ -121,13 +121,13 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
           bridgeName: 'default',
           queueVault,
           priority: 3,
-        })
+        });
 
         if (response.taskId) {
-          handleQueueItemCreated(response.taskId)
+          handleQueueItemCreated(response.taskId);
         }
       } catch {
-        message.error(t('queue.createError'))
+        message.error(t('queue.createError'));
       }
     },
     [
@@ -139,15 +139,17 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
       pool.poolName,
       pool.teamName,
       t,
-    ],
-  )
+    ]
+  );
 
   const getSnapshotMenuItems = useCallback(
     (snapshot: DistributedStorageRbdSnapshot): MenuProps['items'] => [
       {
         key: 'edit',
         label: (
-          <span data-testid={`snapshot-list-edit-${snapshot.snapshotName}`}>{t('snapshots.edit')}</span>
+          <span data-testid={`snapshot-list-edit-${snapshot.snapshotName}`}>
+            {t('snapshots.edit')}
+          </span>
         ),
         icon: <SettingOutlined />,
         onClick: () => handleEdit(snapshot),
@@ -155,7 +157,9 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
       {
         key: 'vault',
         label: (
-          <span data-testid={`snapshot-list-vault-${snapshot.snapshotName}`}>{t('snapshots.vault')}</span>
+          <span data-testid={`snapshot-list-vault-${snapshot.snapshotName}`}>
+            {t('snapshots.vault')}
+          </span>
         ),
         icon: <SettingOutlined />,
         onClick: () =>
@@ -178,7 +182,9 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
       {
         key: 'diff',
         label: (
-          <span data-testid={`snapshot-list-diff-${snapshot.snapshotName}`}>{t('snapshots.diff')}</span>
+          <span data-testid={`snapshot-list-diff-${snapshot.snapshotName}`}>
+            {t('snapshots.diff')}
+          </span>
         ),
         icon: <InfoCircleOutlined />,
         onClick: () => handleRunFunction('distributed_storage_rbd_diff', snapshot),
@@ -217,8 +223,8 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         onClick: () => handleDelete(snapshot),
       },
     ],
-    [handleDelete, handleEdit, handleRunFunction, t],
-  )
+    [handleDelete, handleEdit, handleRunFunction, t]
+  );
 
   const columns = useMemo(
     () =>
@@ -227,15 +233,15 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         getSnapshotMenuItems,
         handleRunFunction,
       }),
-    [getSnapshotMenuItems, handleRunFunction, t],
-  )
+    [getSnapshotMenuItems, handleRunFunction, t]
+  );
 
   const expandedRowRender = useCallback(
     (record: DistributedStorageRbdSnapshot) => (
       <CloneTable snapshot={record} image={image} pool={pool} teamFilter={teamFilter} />
     ),
-    [image, pool, teamFilter],
-  )
+    [image, pool, teamFilter]
+  );
 
   return (
     <>
@@ -303,16 +309,16 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
               teamName: pool.teamName,
               snapshotName: data.snapshotName,
               snapshotVault: data.snapshotVault,
-            })
+            });
           } else if (modalState.mode === 'edit') {
             await updateVaultMutation.mutateAsync({
               poolName: pool.poolName,
               teamName: pool.teamName,
               poolVault: data.snapshotVault,
               vaultVersion: modalState.data?.vaultVersion || 0,
-            })
+            });
           }
-          setModalState({ open: false, mode: 'create' })
+          setModalState({ open: false, mode: 'create' });
         }}
         isSubmitting={createSnapshotMutation.isPending || updateVaultMutation.isPending}
         data-testid={`snapshot-list-modal-${modalState.mode}`}
@@ -325,7 +331,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         data-testid="snapshot-list-queue-modal"
       />
     </>
-  )
-}
+  );
+};
 
-export default SnapshotTable
+export default SnapshotTable;

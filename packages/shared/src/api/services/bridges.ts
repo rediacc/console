@@ -1,16 +1,16 @@
-import { endpoints } from '../../endpoints'
-import type { Bridge, BridgeAuthorizationToken } from '../../types'
-import { parseFirst, parseResponse, responseExtractors } from '../parseResponse'
-import type { ApiClient } from './types'
+import { endpoints } from '../../endpoints';
+import type { Bridge, BridgeAuthorizationToken } from '../../types';
+import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
+import type { ApiClient } from './types';
 
 export function createBridgesService(client: ApiClient) {
   return {
     list: async (regionName: string): Promise<Bridge[]> => {
-      const response = await client.get<Bridge>(endpoints.regions.getRegionBridges, { regionName })
+      const response = await client.get<Bridge>(endpoints.regions.getRegionBridges, { regionName });
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<Bridge>(1),
         filter: (bridge) => Boolean(bridge.bridgeName),
-      })
+      });
     },
 
     create: (regionName: string, bridgeName: string, bridgeVault?: string) =>
@@ -39,16 +39,19 @@ export function createBridgesService(client: ApiClient) {
       }),
 
     resetAuthorization: async (regionName: string, bridgeName: string): Promise<string | null> => {
-      const response = await client.post<BridgeAuthorizationToken>(endpoints.bridges.resetBridgeAuthorization, {
-        regionName,
-        bridgeName,
-      })
+      const response = await client.post<BridgeAuthorizationToken>(
+        endpoints.bridges.resetBridgeAuthorization,
+        {
+          regionName,
+          bridgeName,
+        }
+      );
 
       const token = parseFirst<BridgeAuthorizationToken>(response, {
         extractor: responseExtractors.primaryOrSecondary,
-      })
+      });
 
-      return token?.authToken ?? null
+      return token?.authToken ?? null;
     },
-  }
+  };
 }

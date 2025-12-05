@@ -1,6 +1,6 @@
-import type { Key, ReactNode } from 'react'
-import { Table, Empty, type TableProps, Tooltip } from 'antd'
-import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons'
+import type { Key, ReactNode } from 'react';
+import { Table, Empty, type TableProps, Tooltip } from 'antd';
+import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import {
   ContainerCard,
   HeaderSection,
@@ -16,29 +16,29 @@ import {
   CreateButton,
   RefreshButton,
   TableWrapper,
-} from './styles'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
-export { COLUMN_WIDTHS, COLUMN_RESPONSIVE } from './columnConstants'
+} from './styles';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+export { COLUMN_WIDTHS, COLUMN_RESPONSIVE } from './columnConstants';
 
 interface ResourceListViewProps<T extends object = Record<string, unknown>> {
-  title?: ReactNode
-  loading?: boolean
-  data?: T[]
-  columns: TableProps<T>['columns']
-  searchPlaceholder?: string
-  onSearch?: (value: string) => void
-  filters?: ReactNode
-  actions?: ReactNode
-  rowKey?: string | ((record: T) => Key)
-  emptyText?: string
-  pagination?: TableProps<T>['pagination']
-  onRow?: TableProps<T>['onRow']
-  rowSelection?: TableProps<T>['rowSelection']
-  onCreateNew?: () => void
-  onRefresh?: () => void
-  createButtonText?: string
-  emptyDescription?: string
-  resourceType?: string
+  title?: ReactNode;
+  loading?: boolean;
+  data?: T[];
+  columns: TableProps<T>['columns'];
+  searchPlaceholder?: string;
+  onSearch?: (value: string) => void;
+  filters?: ReactNode;
+  actions?: ReactNode;
+  rowKey?: string | ((record: T) => Key);
+  emptyText?: string;
+  pagination?: TableProps<T>['pagination'];
+  onRow?: TableProps<T>['onRow'];
+  rowSelection?: TableProps<T>['rowSelection'];
+  onCreateNew?: () => void;
+  onRefresh?: () => void;
+  createButtonText?: string;
+  emptyDescription?: string;
+  resourceType?: string;
 }
 
 function ResourceListView<T extends object = Record<string, unknown>>({
@@ -61,10 +61,10 @@ function ResourceListView<T extends object = Record<string, unknown>>({
   emptyDescription,
   resourceType = 'items',
 }: ResourceListViewProps<T>) {
-  const shouldRenderControls = Boolean(title || onSearch || filters || actions)
-  const resolvedEmptyDescription = emptyDescription || emptyText
+  const shouldRenderControls = Boolean(title || onSearch || filters || actions);
+  const resolvedEmptyDescription = emptyDescription || emptyText;
   const singularResourceType =
-    resourceType && resourceType.endsWith('s') ? resourceType.slice(0, -1) : resourceType
+    resourceType && resourceType.endsWith('s') ? resourceType.slice(0, -1) : resourceType;
 
   const resolvedPagination =
     pagination !== false
@@ -77,16 +77,16 @@ function ResourceListView<T extends object = Record<string, unknown>>({
           defaultPageSize: 20,
           ...pagination,
         }
-      : false
+      : false;
 
   const getRowDataTestId = (record: T): string => {
     if (typeof rowKey === 'function') {
-      return `resource-list-item-${rowKey(record)}`
+      return `resource-list-item-${rowKey(record)}`;
     }
 
-    const recordValue = (record as Record<string, unknown>)[rowKey]
-    return `resource-list-item-${recordValue ?? rowKey}`
-  }
+    const recordValue = (record as Record<string, unknown>)[rowKey];
+    return `resource-list-item-${recordValue ?? rowKey}`;
+  };
 
   return (
     <ContainerCard data-testid="resource-list-container">
@@ -108,9 +108,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
               )}
               <FiltersSlot data-testid="resource-list-filters">{filters}</FiltersSlot>
             </ControlGroup>
-            {actions && (
-              <ActionsGroup data-testid="resource-list-actions">{actions}</ActionsGroup>
-            )}
+            {actions && <ActionsGroup data-testid="resource-list-actions">{actions}</ActionsGroup>}
           </HeaderRow>
         </HeaderSection>
       )}
@@ -175,7 +173,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
         )}
       </LoadingWrapper>
     </ContainerCard>
-  )
+  );
 }
 
-export default ResourceListView
+export default ResourceListView;

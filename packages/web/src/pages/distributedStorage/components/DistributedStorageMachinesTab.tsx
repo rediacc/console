@@ -1,116 +1,109 @@
-import React, { useState } from 'react'
-import {
-  Space,
-  Select,
-  Input,
-  Button,
-  Card,
-  Row,
-  Col
-} from 'antd'
+import React, { useState } from 'react';
+import { Space, Select, Input, Button, Card, Row, Col } from 'antd';
 import {
   SearchOutlined,
   FilterOutlined,
   ExportOutlined,
   CloudServerOutlined,
-  InfoCircleOutlined
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { FilterableMachineTable } from './FilterableMachineTable'
-import { MachineAvailabilitySummary } from './MachineAvailabilitySummary'
-import { useMachines } from '@/api/queries/machines'
-import { Machine } from '@/types'
-import { useSelector } from 'react-redux'
-import { RootState } from '@/store/store'
-import { AssignToClusterModal } from '@/pages/distributedStorage/components/AssignToClusterModal'
-import { RemoveFromClusterModal } from '@/pages/distributedStorage/components/RemoveFromClusterModal'
-import { ViewAssignmentStatusModal } from '@/pages/distributedStorage/components/ViewAssignmentStatusModal'
-import { showMessage } from '@/utils/messages'
-import { useDialogState } from '@/hooks/useDialogState'
+  InfoCircleOutlined,
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
+import { FilterableMachineTable } from './FilterableMachineTable';
+import { MachineAvailabilitySummary } from './MachineAvailabilitySummary';
+import { useMachines } from '@/api/queries/machines';
+import { Machine } from '@/types';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { AssignToClusterModal } from '@/pages/distributedStorage/components/AssignToClusterModal';
+import { RemoveFromClusterModal } from '@/pages/distributedStorage/components/RemoveFromClusterModal';
+import { ViewAssignmentStatusModal } from '@/pages/distributedStorage/components/ViewAssignmentStatusModal';
+import { showMessage } from '@/utils/messages';
+import { useDialogState } from '@/hooks/useDialogState';
 
-const { Search } = Input
+const { Search } = Input;
 
 interface DistributedStorageMachinesTabProps {
-  teamFilter?: string | string[]
+  teamFilter?: string | string[];
 }
 
-type AssignmentFilter = 'all' | 'available' | 'cluster' | 'image' | 'clone'
+type AssignmentFilter = 'all' | 'available' | 'cluster' | 'image' | 'clone';
 
 export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesTabProps> = ({
-  teamFilter
+  teamFilter,
 }) => {
-  const { t } = useTranslation(['distributedStorage', 'machines', 'common'])
-  const componentStyles = useComponentStyles()
-  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
-  const isExpertMode = uiMode === 'expert'
-  
-  // State
-  const [searchText, setSearchText] = useState('')
-  const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>('all')
-  const [selectedMachines, setSelectedMachines] = useState<string[]>([])
-  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
-  const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({})
-  
-  // Modal states
-  const assignClusterModal = useDialogState<Machine>()
+  const { t } = useTranslation(['distributedStorage', 'machines', 'common']);
+  const componentStyles = useComponentStyles();
+  const uiMode = useSelector((state: RootState) => state.ui.uiMode);
+  const isExpertMode = uiMode === 'expert';
 
-  const [bulkAssignClusterModal, setBulkAssignClusterModal] = useState(false)
-  const [removeFromClusterModal, setRemoveFromClusterModal] = useState(false)
-  const [viewAssignmentStatusModal, setViewAssignmentStatusModal] = useState(false)
-  
+  // State
+  const [searchText, setSearchText] = useState('');
+  const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>('all');
+  const [selectedMachines, setSelectedMachines] = useState<string[]>([]);
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
+  const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({});
+
+  // Modal states
+  const assignClusterModal = useDialogState<Machine>();
+
+  const [bulkAssignClusterModal, setBulkAssignClusterModal] = useState(false);
+  const [removeFromClusterModal, setRemoveFromClusterModal] = useState(false);
+  const [viewAssignmentStatusModal, setViewAssignmentStatusModal] = useState(false);
+
   // Queries
-  const { data: allMachines = [], isLoading, refetch } = useMachines(teamFilter)
-  
+  const { data: allMachines = [], isLoading, refetch } = useMachines(teamFilter);
+
   // Filter machines based on search and assignment status
   const filteredMachines = React.useMemo(() => {
     // Ensure allMachines is always an array
     if (!allMachines || !Array.isArray(allMachines)) {
-      return []
+      return [];
     }
-    
-    let filtered = allMachines
-    
+
+    let filtered = allMachines;
+
     // Apply search filter
     if (searchText) {
-      filtered = filtered.filter((machine: Machine) => 
-        machine.machineName.toLowerCase().includes(searchText.toLowerCase()) ||
-        machine.teamName.toLowerCase().includes(searchText.toLowerCase()) ||
-        machine.bridgeName.toLowerCase().includes(searchText.toLowerCase())
-      )
+      filtered = filtered.filter(
+        (machine: Machine) =>
+          machine.machineName.toLowerCase().includes(searchText.toLowerCase()) ||
+          machine.teamName.toLowerCase().includes(searchText.toLowerCase()) ||
+          machine.bridgeName.toLowerCase().includes(searchText.toLowerCase())
+      );
     }
-    
+
     // Apply assignment filter
     if (assignmentFilter !== 'all') {
       filtered = filtered.filter((machine: Machine) => {
-        const assignmentType = machine.assignmentStatus?.assignmentType
+        const assignmentType = machine.assignmentStatus?.assignmentType;
         switch (assignmentFilter) {
           case 'available':
             return (
               (!assignmentType || assignmentType === 'AVAILABLE') &&
               !machine.distributedStorageClusterName
-            )
+            );
           case 'cluster':
-            return assignmentType === 'CLUSTER' || !!machine.distributedStorageClusterName
+            return assignmentType === 'CLUSTER' || !!machine.distributedStorageClusterName;
           case 'image':
-            return assignmentType === 'IMAGE'
+            return assignmentType === 'IMAGE';
           case 'clone':
-            return assignmentType === 'CLONE'
+            return assignmentType === 'CLONE';
           default:
-            return true
+            return true;
         }
-      })
+      });
     }
-    
-    return filtered
-  }, [allMachines, searchText, assignmentFilter])
+
+    return filtered;
+  }, [allMachines, searchText, assignmentFilter]);
 
   // Handlers
   const handleRefresh = () => {
-    refetch()
-    setRefreshKeys({})
-  }
-  
+    refetch();
+    setRefreshKeys({});
+  };
+
   const handleExport = () => {
     const csvContent = [
       ['Machine Name', 'Team', 'Bridge', 'Assignment Status', 'Assigned To'],
@@ -119,37 +112,41 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
         machine.teamName,
         machine.bridgeName,
         machine.distributedStorageClusterName ? 'Cluster' : 'Available',
-        machine.distributedStorageClusterName || ''
-      ])
-    ].map(row => row.join(',')).join('\n')
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `distributed-storage-machines-${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-    
-    showMessage('success', t('common:export.success'))
-  }
+        machine.distributedStorageClusterName || '',
+      ]),
+    ]
+      .map((row) => row.join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `distributed-storage-machines-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showMessage('success', t('common:export.success'));
+  };
 
   // Render bulk actions toolbar
   const renderBulkActionsToolbar = () => {
-    if (!isExpertMode || selectedMachines.length === 0) return null
-    
+    if (!isExpertMode || selectedMachines.length === 0) return null;
+
     return (
-      <div style={{ 
-        ...componentStyles.marginBottom.md,
-        ...componentStyles.padding.md,
-        background: 'var(--color-fill-quaternary)',
-        borderRadius: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
+      <div
+        style={{
+          ...componentStyles.marginBottom.md,
+          ...componentStyles.padding.md,
+          background: 'var(--color-fill-quaternary)',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
         <Space>
           <span style={{ ...componentStyles.label, fontWeight: 500 }}>
             {t('machines:bulkActions.selected', { count: selectedMachines.length })}
@@ -191,17 +188,14 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
           </Button>
         </Space>
       </div>
-    )
-  }
-  
+    );
+  };
+
   return (
     <>
       {/* Summary Statistics */}
-      <MachineAvailabilitySummary 
-        teamFilter={teamFilter}
-        onRefresh={handleRefresh}
-      />
-      
+      <MachineAvailabilitySummary teamFilter={teamFilter} onRefresh={handleRefresh} />
+
       {/* Filters and Actions */}
       <Card style={{ ...componentStyles.card, ...componentStyles.marginBottom.md }}>
         <Row gutter={[16, 16]} align="middle">
@@ -216,7 +210,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
               style={componentStyles.input}
             />
           </Col>
-          
+
           <Col xs={24} sm={12} lg={8}>
             <Select
               style={{ width: '100%', ...componentStyles.input }}
@@ -233,7 +227,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
               <Select.Option value="clone">{t('assignment.assignedToClone')}</Select.Option>
             </Select>
           </Col>
-          
+
           <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
             <Space>
               <Button
@@ -248,10 +242,10 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
           </Col>
         </Row>
       </Card>
-      
+
       {/* Bulk Actions Toolbar */}
       {renderBulkActionsToolbar()}
-      
+
       {/* Machine Table */}
       <Card style={componentStyles.card}>
         <FilterableMachineTable
@@ -265,24 +259,25 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
           refreshKeys={refreshKeys}
         />
       </Card>
-      
+
       {/* Modals */}
       <AssignToClusterModal
         open={assignClusterModal.isOpen || bulkAssignClusterModal}
         onCancel={() => {
-          assignClusterModal.close()
-          setBulkAssignClusterModal(false)
+          assignClusterModal.close();
+          setBulkAssignClusterModal(false);
         }}
         machine={assignClusterModal.state.data}
-        machines={bulkAssignClusterModal && allMachines && Array.isArray(allMachines) ?
-          allMachines.filter(m => selectedMachines.includes(m.machineName)) :
-          undefined
+        machines={
+          bulkAssignClusterModal && allMachines && Array.isArray(allMachines)
+            ? allMachines.filter((m) => selectedMachines.includes(m.machineName))
+            : undefined
         }
         onSuccess={() => {
-          assignClusterModal.close()
-          setBulkAssignClusterModal(false)
-          setSelectedMachines([])
-          refetch()
+          assignClusterModal.close();
+          setBulkAssignClusterModal(false);
+          setSelectedMachines([]);
+          refetch();
         }}
       />
 
@@ -292,9 +287,9 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
         selectedMachines={selectedMachines}
         allMachines={allMachines}
         onSuccess={() => {
-          setRemoveFromClusterModal(false)
-          setSelectedMachines([])
-          refetch()
+          setRemoveFromClusterModal(false);
+          setSelectedMachines([]);
+          refetch();
         }}
       />
 
@@ -305,5 +300,5 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
         allMachines={allMachines}
       />
     </>
-  )
-}
+  );
+};

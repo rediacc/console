@@ -1,21 +1,21 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { CloudServerOutlined } from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import type { Machine } from '@/types'
+import React, { useEffect, useMemo, useState } from 'react';
+import { CloudServerOutlined } from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import type { Machine } from '@/types';
 import {
   useDistributedStorageClusters,
   type DistributedStorageCluster,
-} from '@/api/queries/distributedStorage'
+} from '@/api/queries/distributedStorage';
 import {
   useUpdateMachineDistributedStorage,
   useUpdateMachineClusterAssignment,
-} from '@/api/queries/distributedStorageMutations'
-import { showMessage } from '@/utils/messages'
-import { Select } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
-import { ModalSize } from '@/types/modal'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
-import { createTruncatedColumn } from '@/components/common/columns'
+} from '@/api/queries/distributedStorageMutations';
+import { showMessage } from '@/utils/messages';
+import { Select } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { ModalSize } from '@/types/modal';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { createTruncatedColumn } from '@/components/common/columns';
 import {
   StyledModal,
   TitleStack,
@@ -35,14 +35,14 @@ import {
   MachineNameText,
   TeamTag,
   AssignmentTag,
-} from './styles'
+} from './styles';
 
 interface AssignToClusterModalProps {
-  open: boolean
-  machine?: Machine | null
-  machines?: Machine[]  // For bulk operations
-  onCancel: () => void
-  onSuccess?: () => void
+  open: boolean;
+  machine?: Machine | null;
+  machines?: Machine[]; // For bulk operations
+  onCancel: () => void;
+  onSuccess?: () => void;
 }
 
 export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
@@ -50,90 +50,99 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
   machine,
   machines,
   onCancel,
-  onSuccess
+  onSuccess,
 }) => {
-  const { t } = useTranslation(['machines', 'distributedStorage', 'common'])
-  const isBulkMode = !!machines && machines.length > 0
-  const targetMachines: Machine[] = isBulkMode && machines ? machines : machine ? [machine] : []
-  
+  const { t } = useTranslation(['machines', 'distributedStorage', 'common']);
+  const isBulkMode = !!machines && machines.length > 0;
+  const targetMachines: Machine[] = isBulkMode && machines ? machines : machine ? [machine] : [];
+
   const [selectedCluster, setSelectedCluster] = useState<string | null>(
     machine?.distributedStorageClusterName || null
-  )
-  
+  );
+
   // Get unique teams from all machines for bulk mode
-  const uniqueTeams: string[] = isBulkMode && machines
-    ? Array.from(new Set(machines.map(m => m.teamName)))
-    : machine ? [machine.teamName] : []
-  
+  const uniqueTeams: string[] =
+    isBulkMode && machines
+      ? Array.from(new Set(machines.map((m) => m.teamName)))
+      : machine
+        ? [machine.teamName]
+        : [];
+
   // Load clusters for the machine's team(s)
   const { data: clusters = [], isLoading: clustersLoading } = useDistributedStorageClusters(
     uniqueTeams,
     open && uniqueTeams.length > 0
-  ) as { data: DistributedStorageCluster[]; isLoading: boolean }
-  
+  ) as { data: DistributedStorageCluster[]; isLoading: boolean };
+
   // Update mutations
-  const updateMutation = useUpdateMachineDistributedStorage()
-  const updateClusterMutation = useUpdateMachineClusterAssignment()
-  
+  const updateMutation = useUpdateMachineDistributedStorage();
+  const updateClusterMutation = useUpdateMachineClusterAssignment();
+
   const handleOk = async () => {
-    if (!selectedCluster || targetMachines.length === 0) return
-    
+    if (!selectedCluster || targetMachines.length === 0) return;
+
     try {
       if (isBulkMode) {
         // Bulk assignment
         const results = await Promise.allSettled(
-          targetMachines.map(m => 
+          targetMachines.map((m) =>
             updateClusterMutation.mutateAsync({
               teamName: m.teamName,
               machineName: m.machineName,
-              clusterName: selectedCluster
+              clusterName: selectedCluster,
             })
           )
-        )
-        
-        const succeeded = results.filter(r => r.status === 'fulfilled').length
-        const failed = results.filter(r => r.status === 'rejected').length
-        
+        );
+
+        const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+        const failed = results.filter((r) => r.status === 'rejected').length;
+
         if (failed === 0) {
-          showMessage('success', t('machines:bulkOperations.assignmentSuccess', { count: succeeded }))
+          showMessage(
+            'success',
+            t('machines:bulkOperations.assignmentSuccess', { count: succeeded })
+          );
         } else {
-          showMessage('warning', t('machines:bulkOperations.assignmentPartial', { 
-            success: succeeded, 
-            total: targetMachines.length 
-          }))
+          showMessage(
+            'warning',
+            t('machines:bulkOperations.assignmentPartial', {
+              success: succeeded,
+              total: targetMachines.length,
+            })
+          );
         }
       } else {
         // Single assignment
         await updateMutation.mutateAsync({
           teamName: machine!.teamName,
           machineName: machine!.machineName,
-          clusterName: selectedCluster
-        })
-        
+          clusterName: selectedCluster,
+        });
+
         showMessage(
-          'success', 
-          selectedCluster 
+          'success',
+          selectedCluster
             ? t('machines:clusterAssignedSuccess', { cluster: selectedCluster })
             : t('machines:clusterUnassignedSuccess')
-        )
+        );
       }
-      
-      onSuccess?.()
-      onCancel()
+
+      onSuccess?.();
+      onCancel();
     } catch {
       // Error is handled by the mutation
     }
-  }
-  
+  };
+
   // Reset selected cluster when modal opens with different machine
   useEffect(() => {
     if (open && machine && !isBulkMode) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedCluster(machine.distributedStorageClusterName || null)
+      setSelectedCluster(machine.distributedStorageClusterName || null);
     } else if (open && isBulkMode) {
-      setSelectedCluster(null)
+      setSelectedCluster(null);
     }
-  }, [open, machine, isBulkMode])
+  }, [open, machine, isBulkMode]);
 
   const bulkColumns: ColumnsType<Machine> = useMemo(() => {
     const machineColumn = createTruncatedColumn<Machine>({
@@ -146,14 +155,14 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
           <MachineNameText>{content}</MachineNameText>
         </MachineNameRow>
       ),
-    })
+    });
 
     const teamColumn = createTruncatedColumn<Machine>({
       title: t('machines:team'),
       dataIndex: 'teamName',
       key: 'teamName',
       renderWrapper: (content) => <TeamTag>{content}</TeamTag>,
-    })
+    });
 
     return [
       machineColumn,
@@ -170,23 +179,22 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
             </AssignmentTag>
           ),
       },
-    ]
-  }, [t])
+    ];
+  }, [t]);
 
-  const modalSize = isBulkMode ? ModalSize.Large : ModalSize.Medium
-  
+  const modalSize = isBulkMode ? ModalSize.Large : ModalSize.Medium;
+
   return (
     <StyledModal
       $size={modalSize}
       title={
         <TitleStack>
           <CloudServerOutlined />
-          {isBulkMode 
+          {isBulkMode
             ? t('machines:bulkActions.assignToCluster')
-            : machine?.distributedStorageClusterName 
+            : machine?.distributedStorageClusterName
               ? t('machines:changeClusterAssignment')
-              : t('machines:assignToCluster')
-          }
+              : t('machines:assignToCluster')}
         </TitleStack>
       }
       open={open}
@@ -223,31 +231,33 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
               data-testid="ds-assign-cluster-bulk-table"
             />
           </>
-        ) : machine && (
-          <>
-            <MachineDetailsSection>
-              <DetailRow>
-                <DetailLabel>{t('machines:machine')}:</DetailLabel>
-                <DetailValue>{machine.machineName}</DetailValue>
-              </DetailRow>
-              <DetailRow>
-                <DetailLabel>{t('machines:team')}:</DetailLabel>
-                <DetailValue>{machine.teamName}</DetailValue>
-              </DetailRow>
-            </MachineDetailsSection>
-            
-            {machine.distributedStorageClusterName && (
-              <ClusterAlert
-                message={t('machines:currentClusterAssignment', { 
-                  cluster: machine.distributedStorageClusterName 
-                })}
-                type="info"
-                showIcon
-              />
-            )}
-          </>
+        ) : (
+          machine && (
+            <>
+              <MachineDetailsSection>
+                <DetailRow>
+                  <DetailLabel>{t('machines:machine')}:</DetailLabel>
+                  <DetailValue>{machine.machineName}</DetailValue>
+                </DetailRow>
+                <DetailRow>
+                  <DetailLabel>{t('machines:team')}:</DetailLabel>
+                  <DetailValue>{machine.teamName}</DetailValue>
+                </DetailRow>
+              </MachineDetailsSection>
+
+              {machine.distributedStorageClusterName && (
+                <ClusterAlert
+                  message={t('machines:currentClusterAssignment', {
+                    cluster: machine.distributedStorageClusterName,
+                  })}
+                  type="info"
+                  showIcon
+                />
+              )}
+            </>
+          )
         )}
-        
+
         <FieldGroup>
           <FieldLabel>{t('distributedStorage:clusters.cluster')}:</FieldLabel>
           {clustersLoading ? (
@@ -274,15 +284,11 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
                   </Select.Option>
                 ))}
               </StyledSelect>
-              {!isBulkMode && (
-                <HelperText>
-                  {t('machines:clusterAssignmentHelp')}
-                </HelperText>
-              )}
+              {!isBulkMode && <HelperText>{t('machines:clusterAssignmentHelp')}</HelperText>}
             </>
           )}
         </FieldGroup>
       </ContentStack>
     </StyledModal>
-  )
-}
+  );
+};

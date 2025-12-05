@@ -1,5 +1,5 @@
-import { secureMemoryStorage } from '@/services/cryptoService'
+import { secureMemoryStorage } from '@/services/cryptoService';
 
-export const secureStorage = secureMemoryStorage
+export const secureStorage = secureMemoryStorage;
 
-export type ISecureStorage = typeof secureStorage
+export type ISecureStorage = typeof secureStorage;

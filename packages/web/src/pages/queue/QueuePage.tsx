@@ -1,33 +1,51 @@
-import React, { useMemo, useCallback } from 'react'
-import { Typography, Space, Modal, Tag, Tabs, Tooltip, Dropdown } from 'antd'
-import styled, { useTheme as useStyledTheme } from 'styled-components'
-import type { ColumnsType } from 'antd/es/table'
-import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay'
-import { renderTimestamp, renderBoolean } from '@/components/common/columns'
-import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, ExclamationCircleOutlined, GlobalOutlined, ReloadOutlined, ExportOutlined, HistoryOutlined, SearchOutlined, CloseCircleOutlined, PlayCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
-import { useQueueItems, useCancelQueueItem, QueueFilters, type QueueStatistics } from '@/api/queries/queue'
-import { useDropdownData } from '@/api/queries/useDropdownData'
-import ResourceListView from '@/components/common/ResourceListView'
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import { showMessage } from '@/utils/messages'
-import { useFilters, useMultiPagination, useQueueTraceModal } from '@/hooks'
-import dayjs, { Dayjs } from 'dayjs'
-import { confirmAction } from '@/utils/confirmations'
+import React, { useMemo, useCallback } from 'react';
+import { Typography, Space, Modal, Tag, Tabs, Tooltip, Dropdown } from 'antd';
+import styled, { useTheme as useStyledTheme } from 'styled-components';
+import type { ColumnsType } from 'antd/es/table';
+import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay';
+import { renderTimestamp, renderBoolean } from '@/components/common/columns';
+import {
+  ThunderboltOutlined,
+  DesktopOutlined,
+  ApiOutlined,
+  ExclamationCircleOutlined,
+  GlobalOutlined,
+  ReloadOutlined,
+  ExportOutlined,
+  HistoryOutlined,
+  SearchOutlined,
+  CloseCircleOutlined,
+  PlayCircleOutlined,
+  WarningOutlined,
+} from '@/utils/optimizedIcons';
+import {
+  useQueueItems,
+  useCancelQueueItem,
+  QueueFilters,
+  type QueueStatistics,
+} from '@/api/queries/queue';
+import { useDropdownData } from '@/api/queries/useDropdownData';
+import ResourceListView from '@/components/common/ResourceListView';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { showMessage } from '@/utils/messages';
+import { useFilters, useMultiPagination, useQueueTraceModal } from '@/hooks';
+import dayjs, { Dayjs } from 'dayjs';
+import { confirmAction } from '@/utils/confirmations';
 
 // Page-level filter state type
 type QueuePageFilters = {
-  teamName: string
-  machineName: string
-  regionName: string
-  bridgeName: string
-  statusFilter: string[]
-  dateRange: [Dayjs | null, Dayjs | null] | null
-  taskIdFilter: string
-  onlyStale: boolean
-  includeCompleted: boolean
-  includeCancelled: boolean
-}
-import { useTranslation } from 'react-i18next'
+  teamName: string;
+  machineName: string;
+  regionName: string;
+  bridgeName: string;
+  statusFilter: string[];
+  dateRange: [Dayjs | null, Dayjs | null] | null;
+  taskIdFilter: string;
+  onlyStale: boolean;
+  includeCompleted: boolean;
+  includeCancelled: boolean;
+};
+import { useTranslation } from 'react-i18next';
 import {
   formatTimestampAsIs,
   isValidGuid,
@@ -38,12 +56,12 @@ import {
   parseFailureReason,
   getSeverityColor,
   formatAge,
-  STALE_TASK_CONSTANTS
-} from '@/core'
-import type { QueueItem } from '@rediacc/shared/types'
-import type { ParsedError } from '@rediacc/shared/error-parser'
-import { renderQueueStatus, renderPriority } from '@/utils/queueRenderers'
-import { PageWrapper } from '@/components/ui'
+  STALE_TASK_CONSTANTS,
+} from '@/core';
+import type { QueueItem } from '@rediacc/shared/types';
+import type { ParsedError } from '@rediacc/shared/error-parser';
+import { renderQueueStatus, renderPriority } from '@/utils/queueRenderers';
+import { PageWrapper } from '@/components/ui';
 import {
   IconButton,
   FiltersCard,
@@ -61,36 +79,36 @@ import {
   TabCount,
   FilterCheckbox,
   CaptionText,
-} from '@/styles/primitives'
+} from '@/styles/primitives';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 const PriorityTooltipHeading = styled(Text)`
   && {
     margin: 0 0 ${({ theme }) => theme.spacing.XS / 2}px 0;
     display: block;
   }
-`
+`;
 
 const FullWidthSpace = styled(Space)`
   && {
     width: 100%;
   }
-`
+`;
 
 const TooltipContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.XS / 2}px;
   min-width: 240px;
-`
+`;
 
 const TooltipErrorText = styled(CaptionText)<{ $isLast?: boolean }>`
   && {
     display: block;
     margin-bottom: ${({ theme, $isLast }) => ($isLast ? 0 : theme.spacing.XS / 2)}px;
   }
-`
+`;
 
 const TooltipFooterNote = styled(CaptionText)`
   && {
@@ -99,18 +117,18 @@ const TooltipFooterNote = styled(CaptionText)`
     padding-top: ${({ theme }) => theme.spacing.XS / 2}px;
     border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   }
-`
+`;
 
 const TooltipContentSection = styled.div`
   width: 100%;
-`
+`;
 
 const TooltipPrimaryRow = styled(Space)`
   && {
     width: 100%;
     margin-bottom: ${({ theme }) => theme.spacing.XS / 2}px;
   }
-`
+`;
 
 const SeverityPill = styled(Tag)`
   && {
@@ -118,7 +136,7 @@ const SeverityPill = styled(Tag)`
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     line-height: 1.2;
   }
-`
+`;
 
 const TruncatedErrorText = styled(CaptionText)`
   && {
@@ -129,33 +147,38 @@ const TruncatedErrorText = styled(CaptionText)`
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-`
+`;
 
 const AdditionalErrorsNote = styled(CaptionText)`
   && {
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     font-style: italic;
   }
-`
+`;
 
 const RetrySummaryTag = styled(Tag)`
   && {
     margin: 0;
   }
-`
+`;
 
 const AgeValue = styled(Text)<{ $tone?: string }>`
   && {
     color: ${({ $tone, theme }) => $tone || theme.colors.textPrimary};
   }
-`
+`;
 const QueuePage: React.FC = () => {
-  const { t } = useTranslation(['queue', 'common'])
-  const [modal, contextHolder] = Modal.useModal()
-  const theme = useStyledTheme()
+  const { t } = useTranslation(['queue', 'common']);
+  const [modal, contextHolder] = Modal.useModal();
+  const theme = useStyledTheme();
 
   // Filter state management with useFilters hook
-  const { filters, setFilter, clearAllFilters, hasActiveFilters: checkHasActiveFilters } = useFilters<QueuePageFilters>({
+  const {
+    filters,
+    setFilter,
+    clearAllFilters,
+    hasActiveFilters: checkHasActiveFilters,
+  } = useFilters<QueuePageFilters>({
     teamName: '',
     machineName: '',
     regionName: '',
@@ -166,208 +189,248 @@ const QueuePage: React.FC = () => {
     onlyStale: false,
     includeCompleted: true,
     includeCancelled: true,
-  })
+  });
 
   // Active tab state
-  const [activeTab, setActiveTab] = React.useState<string>('active')
+  const [activeTab, setActiveTab] = React.useState<string>('active');
 
   // Pagination state for each tab using multi-pagination hook
-  const pagination = useMultiPagination(['active', 'completed', 'cancelled', 'failed'])
+  const pagination = useMultiPagination(['active', 'completed', 'cancelled', 'failed']);
 
   // Queue trace modal
-  const queueTrace = useQueueTraceModal()
-  const dateRangeValue: [Dayjs | null, Dayjs | null] | undefined = filters.dateRange ?? undefined
+  const queueTrace = useQueueTraceModal();
+  const dateRangeValue: [Dayjs | null, Dayjs | null] | undefined = filters.dateRange ?? undefined;
 
-  const handleDateRangeChange = useCallback((
-    dates: [Dayjs | null, Dayjs | null] | null,
-    _dateStrings?: [string, string]
-  ) => {
-    setFilter('dateRange', dates)
-  }, [setFilter])
+  const handleDateRangeChange = useCallback(
+    (dates: [Dayjs | null, Dayjs | null] | null, _dateStrings?: [string, string]) => {
+      setFilter('dateRange', dates);
+    },
+    [setFilter]
+  );
 
-  const handleStatusFilterChange = useCallback((
-    values: Array<string | number>,
-    _options: unknown
-  ) => {
-    const normalized = values.map((value) => String(value))
-    setFilter('statusFilter', normalized)
-  }, [setFilter])
+  const handleStatusFilterChange = useCallback(
+    (values: Array<string | number>, _options: unknown) => {
+      const normalized = values.map((value) => String(value));
+      setFilter('statusFilter', normalized);
+    },
+    [setFilter]
+  );
 
   // Combine filter state into API query format
-  const queryFilters = useMemo((): QueueFilters => ({
-    teamName: filters.teamName,
-    machineName: filters.machineName,
-    regionName: filters.regionName,
-    bridgeName: filters.bridgeName,
-    onlyStale: filters.onlyStale,
-    staleThresholdMinutes: 10,
-    maxRecords: 1000,
-    // Auto-enable includeCancelled when on cancelled tab
-    includeCancelled: activeTab === 'cancelled' ? true : filters.includeCancelled,
-    // Auto-enable includeCompleted when on completed tab
-    includeCompleted: activeTab === 'completed' ? true : filters.includeCompleted,
-    dateFrom: filters.dateRange?.[0]?.startOf('day').format('YYYY-MM-DD HH:mm:ss'),
-    dateTo: filters.dateRange?.[1]?.endOf('day').format('YYYY-MM-DD HH:mm:ss'),
-    status: filters.statusFilter.join(','),
-    ...(filters.taskIdFilter.trim() && isValidGuid(filters.taskIdFilter.trim()) ? { taskId: filters.taskIdFilter.trim() } : {})
-  }), [filters, activeTab])
-  
-  const { data: queueData, isLoading, refetch, isRefetching } = useQueueItems(queryFilters)
-  const { data: dropdownData } = useDropdownData()
-  const cancelQueueItemMutation = useCancelQueueItem()
+  const queryFilters = useMemo(
+    (): QueueFilters => ({
+      teamName: filters.teamName,
+      machineName: filters.machineName,
+      regionName: filters.regionName,
+      bridgeName: filters.bridgeName,
+      onlyStale: filters.onlyStale,
+      staleThresholdMinutes: 10,
+      maxRecords: 1000,
+      // Auto-enable includeCancelled when on cancelled tab
+      includeCancelled: activeTab === 'cancelled' ? true : filters.includeCancelled,
+      // Auto-enable includeCompleted when on completed tab
+      includeCompleted: activeTab === 'completed' ? true : filters.includeCompleted,
+      dateFrom: filters.dateRange?.[0]?.startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+      dateTo: filters.dateRange?.[1]?.endOf('day').format('YYYY-MM-DD HH:mm:ss'),
+      status: filters.statusFilter.join(','),
+      ...(filters.taskIdFilter.trim() && isValidGuid(filters.taskIdFilter.trim())
+        ? { taskId: filters.taskIdFilter.trim() }
+        : {}),
+    }),
+    [filters, activeTab]
+  );
 
-  const statistics = queueData?.statistics ?? ({} as Partial<QueueStatistics>)
-  const totalCount = statistics.totalCount ?? queueData?.items?.length ?? 0
-  const activeCount = (statistics.pendingCount ?? 0) + (statistics.assignedCount ?? 0) + (statistics.processingCount ?? 0)
-  const failedCount = statistics.failedCount ?? 0
-  const staleCount = statistics.staleCount ?? 0
-  const completedCount = statistics.completedCount ?? 0
-  const cancelledCount = statistics.cancelledCount ?? 0
+  const { data: queueData, isLoading, refetch, isRefetching } = useQueueItems(queryFilters);
+  const { data: dropdownData } = useDropdownData();
+  const cancelQueueItemMutation = useCancelQueueItem();
 
-  const items: QueueItem[] = queueData?.items ?? []
-  const activeItems = filterActiveItems(items)
-  const completedItems = filterCompletedItems(items)
-  const cancelledItems = filterCancelledItems(items)
-  const failedItems = filterFailedItems(items)
+  const statistics = queueData?.statistics ?? ({} as Partial<QueueStatistics>);
+  const totalCount = statistics.totalCount ?? queueData?.items?.length ?? 0;
+  const activeCount =
+    (statistics.pendingCount ?? 0) +
+    (statistics.assignedCount ?? 0) +
+    (statistics.processingCount ?? 0);
+  const failedCount = statistics.failedCount ?? 0;
+  const staleCount = statistics.staleCount ?? 0;
+  const completedCount = statistics.completedCount ?? 0;
+  const cancelledCount = statistics.cancelledCount ?? 0;
+
+  const items: QueueItem[] = queueData?.items ?? [];
+  const activeItems = filterActiveItems(items);
+  const completedItems = filterCompletedItems(items);
+  const cancelledItems = filterCancelledItems(items);
+  const failedItems = filterFailedItems(items);
 
   // Use hook's hasActiveFilters but ignore the includeCompleted/includeCancelled flags
-  const hasActiveFilters = checkHasActiveFilters(['includeCompleted', 'includeCancelled']) ||
-    (filters.taskIdFilter && isValidGuid(filters.taskIdFilter))
+  const hasActiveFilters =
+    checkHasActiveFilters(['includeCompleted', 'includeCancelled']) ||
+    (filters.taskIdFilter && isValidGuid(filters.taskIdFilter));
 
   // Build filter tag configuration for FilterTagDisplay
-  const filterTagConfig = useMemo((): FilterTagConfig[] => [
-    {
-      key: 'teamName',
-      value: filters.teamName,
-      label: dropdownData?.teams?.find(team => team.value === filters.teamName)?.label || filters.teamName,
-      color: 'blue',
-    },
-    {
-      key: 'machineName',
-      value: filters.machineName,
-      label: filters.machineName,
-      color: 'blue',
-    },
-    {
-      key: 'regionName',
-      value: filters.regionName,
-      label: filters.regionName,
-      color: 'blue',
-    },
-    {
-      key: 'bridgeName',
-      value: filters.bridgeName,
-      label: filters.bridgeName,
-      color: 'blue',
-    },
-    {
-      key: 'dateRange',
-      value: filters.dateRange,
-      label: filters.dateRange ? `${filters.dateRange[0]?.format('MM/DD')}\u2192${filters.dateRange[1]?.format('MM/DD')}` : '',
-      color: 'blue',
-    },
-    {
-      key: 'statusFilter',
-      value: filters.statusFilter,
-      label: '', // Array items display themselves
-      color: 'blue',
-    },
-    {
-      key: 'taskIdFilter',
-      value: filters.taskIdFilter && isValidGuid(filters.taskIdFilter) ? filters.taskIdFilter : '',
-      label: filters.taskIdFilter ? `${filters.taskIdFilter.substring(0, 8)}...` : '',
-      color: 'blue',
-    },
-    {
-      key: 'onlyStale',
-      value: filters.onlyStale,
-      label: 'Stale',
-      color: 'orange',
-    },
-  ], [filters, dropdownData?.teams])
+  const filterTagConfig = useMemo(
+    (): FilterTagConfig[] => [
+      {
+        key: 'teamName',
+        value: filters.teamName,
+        label:
+          dropdownData?.teams?.find((team) => team.value === filters.teamName)?.label ||
+          filters.teamName,
+        color: 'blue',
+      },
+      {
+        key: 'machineName',
+        value: filters.machineName,
+        label: filters.machineName,
+        color: 'blue',
+      },
+      {
+        key: 'regionName',
+        value: filters.regionName,
+        label: filters.regionName,
+        color: 'blue',
+      },
+      {
+        key: 'bridgeName',
+        value: filters.bridgeName,
+        label: filters.bridgeName,
+        color: 'blue',
+      },
+      {
+        key: 'dateRange',
+        value: filters.dateRange,
+        label: filters.dateRange
+          ? `${filters.dateRange[0]?.format('MM/DD')}\u2192${filters.dateRange[1]?.format('MM/DD')}`
+          : '',
+        color: 'blue',
+      },
+      {
+        key: 'statusFilter',
+        value: filters.statusFilter,
+        label: '', // Array items display themselves
+        color: 'blue',
+      },
+      {
+        key: 'taskIdFilter',
+        value:
+          filters.taskIdFilter && isValidGuid(filters.taskIdFilter) ? filters.taskIdFilter : '',
+        label: filters.taskIdFilter ? `${filters.taskIdFilter.substring(0, 8)}...` : '',
+        color: 'blue',
+      },
+      {
+        key: 'onlyStale',
+        value: filters.onlyStale,
+        label: 'Stale',
+        color: 'orange',
+      },
+    ],
+    [filters, dropdownData?.teams]
+  );
 
   // Handle clearing individual filter tags
-  const handleClearFilter = useCallback((key: string, arrayValue?: string) => {
-    switch (key) {
-      case 'teamName':
-        setFilter('teamName', '')
-        break
-      case 'machineName':
-        setFilter('machineName', '')
-        break
-      case 'regionName':
-        setFilter('regionName', '')
-        break
-      case 'bridgeName':
-        setFilter('bridgeName', '')
-        break
-      case 'dateRange':
-        setFilter('dateRange', null)
-        break
-      case 'statusFilter':
-        if (arrayValue) {
-          setFilter('statusFilter', filters.statusFilter.filter(s => s !== arrayValue))
-        }
-        break
-      case 'taskIdFilter':
-        setFilter('taskIdFilter', '')
-        break
-      case 'onlyStale':
-        setFilter('onlyStale', false)
-        break
-    }
-  }, [setFilter, filters.statusFilter])
+  const handleClearFilter = useCallback(
+    (key: string, arrayValue?: string) => {
+      switch (key) {
+        case 'teamName':
+          setFilter('teamName', '');
+          break;
+        case 'machineName':
+          setFilter('machineName', '');
+          break;
+        case 'regionName':
+          setFilter('regionName', '');
+          break;
+        case 'bridgeName':
+          setFilter('bridgeName', '');
+          break;
+        case 'dateRange':
+          setFilter('dateRange', null);
+          break;
+        case 'statusFilter':
+          if (arrayValue) {
+            setFilter(
+              'statusFilter',
+              filters.statusFilter.filter((s) => s !== arrayValue)
+            );
+          }
+          break;
+        case 'taskIdFilter':
+          setFilter('taskIdFilter', '');
+          break;
+        case 'onlyStale':
+          setFilter('onlyStale', false);
+          break;
+      }
+    },
+    [setFilter, filters.statusFilter]
+  );
 
-  const isFetching = isLoading || isRefetching
+  const isFetching = isLoading || isRefetching;
 
   // Handle export functionality
   const handleExport = (format: 'csv' | 'json') => {
-    const dataToExport: QueueItem[] = queueData?.items || []
-    const timestamp = dayjs().format('YYYY-MM-DD_HH-mm-ss')
-    const filename = `queue_export_${timestamp}.${format}`
-    
+    const dataToExport: QueueItem[] = queueData?.items || [];
+    const timestamp = dayjs().format('YYYY-MM-DD_HH-mm-ss');
+    const filename = `queue_export_${timestamp}.${format}`;
+
     if (format === 'csv') {
       // CSV Export
-      const headers = ['Task ID', 'Status', 'Priority', 'Age (minutes)', 'Team', 'Machine', 'Region', 'Bridge', 'Has Response', 'Retry Count', 'Created By', 'Created']
+      const headers = [
+        'Task ID',
+        'Status',
+        'Priority',
+        'Age (minutes)',
+        'Team',
+        'Machine',
+        'Region',
+        'Bridge',
+        'Has Response',
+        'Retry Count',
+        'Created By',
+        'Created',
+      ];
       const csvContent = [
         headers.join(','),
-        ...dataToExport.map((item) => [
-          item.taskId,
-          item.healthStatus,
-          item.priorityLabel || '',
-          item.ageInMinutes,
-          item.teamName,
-          item.machineName,
-          item.regionName,
-          item.bridgeName,
-          item.hasResponse ? 'Yes' : 'No',
-          item.retryCount || 0,
-          item.createdBy || '',
-          item.createdTime
-        ].map(val => `"${val || ''}"`).join(','))
-      ].join('\n')
-      
-      const blob = new Blob([csvContent], { type: 'text/csv' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      link.click()
-      URL.revokeObjectURL(url)
-      showMessage('success', `Exported ${dataToExport.length} items to ${filename}`)
+        ...dataToExport.map((item) =>
+          [
+            item.taskId,
+            item.healthStatus,
+            item.priorityLabel || '',
+            item.ageInMinutes,
+            item.teamName,
+            item.machineName,
+            item.regionName,
+            item.bridgeName,
+            item.hasResponse ? 'Yes' : 'No',
+            item.retryCount || 0,
+            item.createdBy || '',
+            item.createdTime,
+          ]
+            .map((val) => `"${val || ''}"`)
+            .join(',')
+        ),
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+      showMessage('success', `Exported ${dataToExport.length} items to ${filename}`);
     } else {
       // JSON Export
-      const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      link.click()
-      URL.revokeObjectURL(url)
-      showMessage('success', `Exported ${dataToExport.length} items to ${filename}`)
+      const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+      showMessage('success', `Exported ${dataToExport.length} items to ${filename}`);
     }
-  }
-  
+  };
+
   // Handle cancel queue item
   const handleCancelQueueItem = async (taskId: string) => {
     confirmAction({
@@ -378,16 +441,15 @@ const QueuePage: React.FC = () => {
       okType: 'danger',
       cancelText: t('common:actions.cancel') as string,
       onConfirm: async () => {
-        await cancelQueueItemMutation.mutateAsync(taskId)
+        await cancelQueueItemMutation.mutateAsync(taskId);
       },
-    })
-  }
+    });
+  };
 
   // Handle trace view
   const handleViewTrace = (taskId: string) => {
-    queueTrace.open(taskId)
-  }
-
+    queueTrace.open(taskId);
+  };
 
   const queueColumns: ColumnsType<QueueItem> = [
     {
@@ -395,14 +457,18 @@ const QueuePage: React.FC = () => {
       dataIndex: 'taskId',
       key: 'taskId',
       width: 200,
-      render: (id: string) => <Text code copyable>{id}</Text>
+      render: (id: string) => (
+        <Text code copyable>
+          {id}
+        </Text>
+      ),
     },
     {
       title: 'Status',
       dataIndex: 'healthStatus',
       key: 'healthStatus',
       width: 120,
-      render: (healthStatus: string, record: QueueItem) => renderQueueStatus(healthStatus, record)
+      render: (healthStatus: string, record: QueueItem) => renderQueueStatus(healthStatus, record),
     },
     {
       title: 'Priority',
@@ -419,8 +485,12 @@ const QueuePage: React.FC = () => {
                 : t('queue:priorityTooltipTier')}
             </CaptionText>
           </TooltipContent>
-        )
-        return renderPriority(priorityLabel, record.priority, tooltipContent) || <Text type="secondary">-</Text>
+        );
+        return (
+          renderPriority(priorityLabel, record.priority, tooltipContent) || (
+            <Text type="secondary">-</Text>
+          )
+        );
       },
       sorter: (a, b) => (a.priority ?? 3) - (b.priority ?? 3),
     },
@@ -446,7 +516,7 @@ const QueuePage: React.FC = () => {
           <DesktopOutlined />
           {name}
         </Space>
-      )
+      ),
     },
     {
       title: 'Region',
@@ -457,7 +527,7 @@ const QueuePage: React.FC = () => {
           <GlobalOutlined />
           {name}
         </Space>
-      )
+      ),
     },
     {
       title: 'Bridge',
@@ -468,7 +538,7 @@ const QueuePage: React.FC = () => {
           <ApiOutlined />
           {name}
         </Space>
-      )
+      ),
     },
     {
       title: 'Response',
@@ -483,43 +553,47 @@ const QueuePage: React.FC = () => {
       key: 'retryCount',
       width: 280,
       render: (retryCount: number | undefined, record: QueueItem) => {
-        if (!retryCount && retryCount !== 0) return <Text type="secondary">-</Text>
+        if (!retryCount && retryCount !== 0) return <Text type="secondary">-</Text>;
 
-        const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT
-        const retryColor = retryCount === 0 ? 'green' : retryCount < maxRetries - 1 ? 'orange' : 'red'
-        const icon = retryCount >= maxRetries - 1 && record.permanentlyFailed ? <ExclamationCircleOutlined /> : undefined
+        const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT;
+        const retryColor =
+          retryCount === 0 ? 'green' : retryCount < maxRetries - 1 ? 'orange' : 'red';
+        const icon =
+          retryCount >= maxRetries - 1 && record.permanentlyFailed ? (
+            <ExclamationCircleOutlined />
+          ) : undefined;
 
         // Parse error messages using consolidated utility function
-        const { allErrors, primaryError } = parseFailureReason(record.lastFailureReason)
+        const { allErrors, primaryError } = parseFailureReason(record.lastFailureReason);
 
         return (
           <FullWidthSpace orientation="vertical" size={2}>
             {/* Error messages with severity badges */}
             {allErrors.length > 0 && (
-              <Tooltip title={
-                <TooltipContent>
-                  {allErrors.map((error: ParsedError, index: number) => (
-                    <TooltipErrorText
-                      key={`${error.message}-${index}`}
-                      $isLast={index === allErrors.length - 1}
-                    >
-                      {error.severity && <strong>[{error.severity}]</strong>} {error.message}
-                    </TooltipErrorText>
-                  ))}
-                  {record.lastRetryAt && (
-                    <TooltipFooterNote>
-                      Last retry: {formatTimestampAsIs(record.lastRetryAt, 'datetime')}
-                    </TooltipFooterNote>
-                  )}
-                </TooltipContent>
-              }>
+              <Tooltip
+                title={
+                  <TooltipContent>
+                    {allErrors.map((error: ParsedError, index: number) => (
+                      <TooltipErrorText
+                        key={`${error.message}-${index}`}
+                        $isLast={index === allErrors.length - 1}
+                      >
+                        {error.severity && <strong>[{error.severity}]</strong>} {error.message}
+                      </TooltipErrorText>
+                    ))}
+                    {record.lastRetryAt && (
+                      <TooltipFooterNote>
+                        Last retry: {formatTimestampAsIs(record.lastRetryAt, 'datetime')}
+                      </TooltipFooterNote>
+                    )}
+                  </TooltipContent>
+                }
+              >
                 <TooltipContentSection>
                   {/* Show primary (highest severity) error */}
                   <TooltipPrimaryRow size={4}>
                     {primaryError?.severity && (
-                      <SeverityPill
-                        color={getSeverityColor(primaryError.severity)}
-                      >
+                      <SeverityPill color={getSeverityColor(primaryError.severity)}>
                         {primaryError.severity}
                       </SeverityPill>
                     )}
@@ -530,7 +604,8 @@ const QueuePage: React.FC = () => {
                   {/* Show count of additional errors if any */}
                   {allErrors.length > 1 && (
                     <AdditionalErrorsNote $muted>
-                      +{allErrors.length - 1} more {allErrors.length - 1 === 1 ? 'message' : 'messages'}
+                      +{allErrors.length - 1} more{' '}
+                      {allErrors.length - 1 === 1 ? 'message' : 'messages'}
                     </AdditionalErrorsNote>
                   )}
                 </TooltipContentSection>
@@ -542,7 +617,7 @@ const QueuePage: React.FC = () => {
               {retryCount}/{maxRetries} retries
             </RetrySummaryTag>
           </FullWidthSpace>
-        )
+        );
       },
       sorter: (a, b) => (a.retryCount ?? 0) - (b.retryCount ?? 0),
     },
@@ -559,25 +634,25 @@ const QueuePage: React.FC = () => {
       key: 'age',
       width: 100,
       render: (ageInMinutes: number, record: QueueItem) => {
-        const hours = Math.floor(ageInMinutes / 60)
-        const minutes = ageInMinutes % 60
-        
-        let ageText = ''
+        const hours = Math.floor(ageInMinutes / 60);
+        const minutes = ageInMinutes % 60;
+
+        let ageText = '';
         if (hours > 0) {
-          ageText = `${hours}h ${minutes}m`
+          ageText = `${hours}h ${minutes}m`;
         } else {
-          ageText = `${minutes}m`
+          ageText = `${minutes}m`;
         }
-        
+
         // Color coding based on age and status
-        let color: string | undefined
+        let color: string | undefined;
         if (record.status === 'PENDING' && hours >= 12) {
-          color = 'red'
+          color = 'red';
         } else if (record.status === 'PENDING' && hours >= 6) {
-          color = 'orange'
+          color = 'orange';
         }
-        
-        return <AgeValue $tone={color}>{ageText}</AgeValue>
+
+        return <AgeValue $tone={color}>{ageText}</AgeValue>;
       },
       sorter: (a, b) => a.ageInMinutes - b.ageInMinutes,
     },
@@ -605,24 +680,25 @@ const QueuePage: React.FC = () => {
               aria-label="Trace"
             />
           </Tooltip>
-          {record.canBeCancelled && record.healthStatus !== 'CANCELLED' && record.healthStatus !== 'CANCELLING' && (
-            <Tooltip title="Cancel">
-              <IconButton
-                size="small"
-                danger
-                icon={<CloseCircleOutlined />}
-                onClick={() => handleCancelQueueItem(record.taskId)}
-                loading={cancelQueueItemMutation.isPending}
-                data-testid={`queue-cancel-button-${record.taskId}`}
-                aria-label="Cancel"
-              />
-            </Tooltip>
-          )}
+          {record.canBeCancelled &&
+            record.healthStatus !== 'CANCELLED' &&
+            record.healthStatus !== 'CANCELLING' && (
+              <Tooltip title="Cancel">
+                <IconButton
+                  size="small"
+                  danger
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => handleCancelQueueItem(record.taskId)}
+                  loading={cancelQueueItemMutation.isPending}
+                  data-testid={`queue-cancel-button-${record.taskId}`}
+                  aria-label="Cancel"
+                />
+              </Tooltip>
+            )}
         </Space>
-      )
-    }
-  ]
-
+      ),
+    },
+  ];
 
   return (
     <PageWrapper data-testid="queue-page-container">
@@ -636,9 +712,9 @@ const QueuePage: React.FC = () => {
               placeholder="Team"
               value={filters.teamName || undefined}
               onChange={(value) => {
-                const nextValue = typeof value === 'string' ? value : ''
-                setFilter('teamName', nextValue)
-                setFilter('machineName', '')
+                const nextValue = typeof value === 'string' ? value : '';
+                setFilter('teamName', nextValue);
+                setFilter('machineName', '');
               }}
               allowClear
               options={dropdownData?.teams || []}
@@ -651,7 +727,10 @@ const QueuePage: React.FC = () => {
               value={filters.machineName || undefined}
               onChange={(value) => setFilter('machineName', typeof value === 'string' ? value : '')}
               allowClear
-              options={(dropdownData?.machines || []).map((machine) => ({ label: machine, value: machine }))}
+              options={(dropdownData?.machines || []).map((machine) => ({
+                label: machine,
+                value: machine,
+              }))}
               data-testid="queue-filter-machine"
             />
             <FilterSelect
@@ -773,8 +852,12 @@ const QueuePage: React.FC = () => {
               menu={{
                 items: [
                   { key: 'csv', label: t('common:exportCSV'), onClick: () => handleExport('csv') },
-                  { key: 'json', label: t('common:exportJSON'), onClick: () => handleExport('json') }
-                ]
+                  {
+                    key: 'json',
+                    label: t('common:exportJSON'),
+                    onClick: () => handleExport('json'),
+                  },
+                ],
               }}
             >
               <Tooltip title={t('common:export')}>
@@ -816,12 +899,13 @@ const QueuePage: React.FC = () => {
                   pageSize: pagination.active.pageSize,
                   showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100'],
-                  showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                  showTotal: (total, range) =>
+                    `Showing records ${range[0]}-${range[1]} of ${total}`,
                   onChange: pagination.active.onPageChange,
                   position: ['bottomRight'],
                 }}
               />
-            )
+            ),
           },
           {
             key: 'completed',
@@ -829,7 +913,11 @@ const QueuePage: React.FC = () => {
               <Tooltip title={t('queue:tabs.completed.tooltip')}>
                 <TabLabel data-testid="queue-tab-completed">
                   {t('queue:tabs.completed.title')}
-                  <TabCount count={completedCount || completedItems.length} showZero $color={theme.colors.success} />
+                  <TabCount
+                    count={completedCount || completedItems.length}
+                    showZero
+                    $color={theme.colors.success}
+                  />
                 </TabLabel>
               </Tooltip>
             ),
@@ -845,12 +933,13 @@ const QueuePage: React.FC = () => {
                   pageSize: pagination.completed.pageSize,
                   showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100'],
-                  showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                  showTotal: (total, range) =>
+                    `Showing records ${range[0]}-${range[1]} of ${total}`,
                   onChange: pagination.completed.onPageChange,
                   position: ['bottomRight'],
                 }}
               />
-            )
+            ),
           },
           {
             key: 'cancelled',
@@ -858,7 +947,11 @@ const QueuePage: React.FC = () => {
               <Tooltip title={t('queue:tabs.cancelled.tooltip')}>
                 <TabLabel data-testid="queue-tab-cancelled">
                   {t('queue:tabs.cancelled.title')}
-                  <TabCount count={cancelledCount || cancelledItems.length} showZero $color={theme.colors.accent} />
+                  <TabCount
+                    count={cancelledCount || cancelledItems.length}
+                    showZero
+                    $color={theme.colors.accent}
+                  />
                 </TabLabel>
               </Tooltip>
             ),
@@ -874,12 +967,13 @@ const QueuePage: React.FC = () => {
                   pageSize: pagination.cancelled.pageSize,
                   showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100'],
-                  showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                  showTotal: (total, range) =>
+                    `Showing records ${range[0]}-${range[1]} of ${total}`,
                   onChange: pagination.cancelled.onPageChange,
                   position: ['bottomRight'],
                 }}
               />
-            )
+            ),
           },
           {
             key: 'failed',
@@ -887,7 +981,11 @@ const QueuePage: React.FC = () => {
               <Tooltip title={t('queue:tabs.failed.tooltip')}>
                 <TabLabel data-testid="queue-tab-failed">
                   {t('queue:tabs.failed.title')}
-                  <TabCount count={failedCount || failedItems.length} showZero $color={theme.colors.error} />
+                  <TabCount
+                    count={failedCount || failedItems.length}
+                    showZero
+                    $color={theme.colors.error}
+                  />
                 </TabLabel>
               </Tooltip>
             ),
@@ -903,13 +1001,14 @@ const QueuePage: React.FC = () => {
                   pageSize: pagination.failed.pageSize,
                   showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100'],
-                  showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                  showTotal: (total, range) =>
+                    `Showing records ${range[0]}-${range[1]} of ${total}`,
                   onChange: pagination.failed.onPageChange,
                   position: ['bottomRight'],
                 }}
               />
-            )
-          }
+            ),
+          },
         ]}
       />
 
@@ -919,7 +1018,7 @@ const QueuePage: React.FC = () => {
         onCancel={queueTrace.close}
       />
     </PageWrapper>
-  )
-}
+  );
+};
 
-export default QueuePage
+export default QueuePage;

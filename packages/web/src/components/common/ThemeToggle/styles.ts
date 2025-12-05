@@ -1,5 +1,5 @@
-import styled from 'styled-components'
-import { Button } from 'antd'
+import styled from 'styled-components';
+import { Button } from 'antd';
 
 export const ToggleButton = styled(Button)`
   && {
@@ -21,4 +21,4 @@ export const ToggleButton = styled(Button)`
       font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
     }
   }
-`
+`;

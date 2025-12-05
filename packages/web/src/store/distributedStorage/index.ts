@@ -1,8 +1,8 @@
 // Export all actions
-export * from './machineAssignmentSlice'
+export * from './machineAssignmentSlice';
 
 // Export all selectors
-export * from './machineAssignmentSelectors'
+export * from './machineAssignmentSelectors';
 
 // Export the reducer as default
-export { default as machineAssignmentReducer } from './machineAssignmentSlice'
+export { default as machineAssignmentReducer } from './machineAssignmentSlice';

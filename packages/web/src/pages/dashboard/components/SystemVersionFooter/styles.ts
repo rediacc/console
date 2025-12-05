@@ -1,7 +1,7 @@
-import styled from 'styled-components'
-import { Tag, Typography } from 'antd'
+import styled from 'styled-components';
+import { Tag, Typography } from 'antd';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 export const FooterContainer = styled.div`
   display: flex;
@@ -12,20 +12,20 @@ export const FooterContainer = styled.div`
   margin-top: ${({ theme }) => theme.spacing.LG}px;
   border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   flex-wrap: wrap;
-`
+`;
 
 export const VersionItem = styled.div`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 export const VersionLabel = styled(Text)`
   && {
     color: ${({ theme }) => theme.colors.textMuted};
     font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
-`
+`;
 
 export const VersionValue = styled(Text)`
   && {
@@ -33,12 +33,12 @@ export const VersionValue = styled(Text)`
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   }
-`
+`;
 
 export const Separator = styled.span`
   color: ${({ theme }) => theme.colors.borderSecondary};
   font-size: ${({ theme }) => theme.fontSize.SM}px;
-`
+`;
 
 export const EnvironmentTag = styled(Tag)<{ $isProduction: boolean }>`
   && {
@@ -46,11 +46,11 @@ export const EnvironmentTag = styled(Tag)<{ $isProduction: boolean }>`
     margin: 0;
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
-`
+`;
 
 export const UptimeText = styled(Text)`
   && {
     color: ${({ theme }) => theme.colors.textMuted};
     font-size: ${({ theme }) => theme.fontSize.XS}px;
   }
-`
+`;

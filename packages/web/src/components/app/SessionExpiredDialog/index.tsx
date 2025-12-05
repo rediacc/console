@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { ClockCircleOutlined, LogoutOutlined } from '@/utils/optimizedIcons'
-import { RootState } from '@/store/store'
-import { hideSessionExpiredDialog, setStayLoggedOutMode } from '@/store/auth/authSlice'
-import { ModalSize } from '@/types/modal'
+import React, { useState, useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { ClockCircleOutlined, LogoutOutlined } from '@/utils/optimizedIcons';
+import { RootState } from '@/store/store';
+import { hideSessionExpiredDialog, setStayLoggedOutMode } from '@/store/auth/authSlice';
+import { ModalSize } from '@/types/modal';
 import {
   StyledModal,
   TitleStack,
@@ -13,63 +13,63 @@ import {
   CountdownCard,
   CountdownText,
   FooterButton,
-} from './styles'
-import { IconWrapper } from '@/components/ui'
+} from './styles';
+import { IconWrapper } from '@/components/ui';
 
-const COUNTDOWN_DURATION = 60 // 60 seconds
+const COUNTDOWN_DURATION = 60; // 60 seconds
 
 export const SessionExpiredDialog: React.FC = () => {
-  const dispatch = useDispatch()
-  const isVisible = useSelector((state: RootState) => state.auth.showSessionExpiredDialog)
+  const dispatch = useDispatch();
+  const isVisible = useSelector((state: RootState) => state.auth.showSessionExpiredDialog);
 
-  const [countdown, setCountdown] = useState(COUNTDOWN_DURATION)
-  const isVisibleRef = useRef(isVisible)
+  const [countdown, setCountdown] = useState(COUNTDOWN_DURATION);
+  const isVisibleRef = useRef(isVisible);
 
   // Reset countdown when dialog opens (synchronously during render)
   if (isVisible && !isVisibleRef.current) {
     // Dialog just opened - reset countdown synchronously
     if (countdown !== COUNTDOWN_DURATION) {
-      setCountdown(COUNTDOWN_DURATION)
+      setCountdown(COUNTDOWN_DURATION);
     }
   }
-  isVisibleRef.current = isVisible
+  isVisibleRef.current = isVisible;
 
   // Run timer when dialog is visible
   useEffect(() => {
     if (!isVisible) {
-      return
+      return;
     }
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          handleContinueToLogin()
-          return 0
+          handleContinueToLogin();
+          return 0;
         }
-        return prev - 1
-      })
-    }, 1000)
+        return prev - 1;
+      });
+    }, 1000);
 
-    return () => clearInterval(timer)
+    return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isVisible])
+  }, [isVisible]);
 
   const handleStayLoggedOut = () => {
-    dispatch(setStayLoggedOutMode(true))
-    dispatch(hideSessionExpiredDialog())
-  }
+    dispatch(setStayLoggedOutMode(true));
+    dispatch(hideSessionExpiredDialog());
+  };
 
   const handleContinueToLogin = () => {
-    dispatch(hideSessionExpiredDialog())
-    const basePath = import.meta.env.BASE_URL || '/'
-    const loginPath = `${basePath}login`.replace('//', '/')
-    window.location.href = loginPath
-  }
+    dispatch(hideSessionExpiredDialog());
+    const basePath = import.meta.env.BASE_URL || '/';
+    const loginPath = `${basePath}login`.replace('//', '/');
+    window.location.href = loginPath;
+  };
 
   const formatTime = (seconds: number) => {
-    if (seconds <= 0) return '0 seconds'
-    return seconds === 1 ? '1 second' : `${seconds} seconds`
-  }
+    if (seconds <= 0) return '0 seconds';
+    return seconds === 1 ? '1 second' : `${seconds} seconds`;
+  };
 
   return (
     <StyledModal
@@ -98,7 +98,7 @@ export const SessionExpiredDialog: React.FC = () => {
           icon={<LogoutOutlined />}
         >
           Continue to Login
-        </FooterButton>
+        </FooterButton>,
       ]}
     >
       <ContentStack>
@@ -111,11 +111,9 @@ export const SessionExpiredDialog: React.FC = () => {
         </DescriptionText>
 
         <CountdownCard>
-          <CountdownText>
-            Automatically redirecting in {formatTime(countdown)}
-          </CountdownText>
+          <CountdownText>Automatically redirecting in {formatTime(countdown)}</CountdownText>
         </CountdownCard>
       </ContentStack>
     </StyledModal>
-  )
-}
+  );
+};

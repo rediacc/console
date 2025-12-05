@@ -1,14 +1,14 @@
-import styled from 'styled-components'
-import { Layout } from 'antd'
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
+import styled from 'styled-components';
+import { Layout } from 'antd';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
-const { Sider } = Layout
+const { Sider } = Layout;
 
 export const StyledSider = styled(Sider)<{ $sidebarWidth: number; $isDrawer?: boolean }>`
   position: ${({ $isDrawer }) => ($isDrawer ? 'static' : 'fixed')};
   left: 0;
   top: ${({ $isDrawer }) => ($isDrawer ? '0' : `${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT}px`)};
-  height: ${({ $isDrawer }) => 
+  height: ${({ $isDrawer }) =>
     $isDrawer ? '100%' : `calc(100vh - ${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT}px)`};
   overflow: hidden;
   z-index: ${DESIGN_TOKENS.Z_INDEX.DROPDOWN - 1};
@@ -21,23 +21,25 @@ export const StyledSider = styled(Sider)<{ $sidebarWidth: number; $isDrawer?: bo
   @media (max-width: 768px) {
     display: ${({ $isDrawer }) => ($isDrawer ? 'block' : 'none')};
   }
-`
+`;
 
 export const SidebarContent = styled.div<{ $isDrawer?: boolean }>`
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  padding-top: ${({ theme, $isDrawer }) => 
-    $isDrawer ? `${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT + theme.spacing.MD}px` : `${theme.spacing.MD}px`};
-`
+  padding-top: ${({ theme, $isDrawer }) =>
+    $isDrawer
+      ? `${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT + theme.spacing.MD}px`
+      : `${theme.spacing.MD}px`};
+`;
 
 export const MenuScrollArea = styled.div`
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: ${({ theme }) => theme.spacing.LG}px;
-`
+`;
 
 export const MenuItem = styled.div<{ $isActive: boolean; $padding: string; $collapsed?: boolean }>`
   display: flex;
@@ -48,8 +50,7 @@ export const MenuItem = styled.div<{ $isActive: boolean; $padding: string; $coll
   cursor: pointer;
   min-height: 44px;
   justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
-  background-color: ${({ $isActive }) =>
-    $isActive ? 'var(--color-bg-selected)' : 'transparent'};
+  background-color: ${({ $isActive }) => ($isActive ? 'var(--color-bg-selected)' : 'transparent')};
   color: ${({ $isActive }) =>
     $isActive ? 'var(--color-text-selected)' : 'var(--color-text-primary)'};
   font-weight: ${({ $isActive }) => ($isActive ? 600 : 500)};
@@ -59,7 +60,7 @@ export const MenuItem = styled.div<{ $isActive: boolean; $padding: string; $coll
     background-color: ${({ $isActive }) =>
       $isActive ? 'var(--color-bg-selected)' : 'var(--color-bg-hover)'};
   }
-`
+`;
 
 export const MenuIcon = styled.span<{ $isActive: boolean; $collapsed?: boolean }>`
   font-size: 20px;
@@ -71,7 +72,7 @@ export const MenuIcon = styled.span<{ $isActive: boolean; $collapsed?: boolean }
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-`
+`;
 
 export const MenuLabel = styled.span<{ $isActive: boolean; $collapsed: boolean }>`
   margin-left: 8px;
@@ -83,7 +84,7 @@ export const MenuLabel = styled.span<{ $isActive: boolean; $collapsed: boolean }
   display: ${({ $collapsed }) => ($collapsed ? 'none' : 'block')};
   transition: opacity 0.2s ease;
   flex: 1;
-`
+`;
 
 export const TooltipContent = styled.div`
   display: flex;
@@ -94,7 +95,7 @@ export const TooltipContent = styled.div`
   padding: ${({ theme }) => theme.spacing.SM}px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   border: 1px solid var(--color-border-secondary);
-`
+`;
 
 export const TooltipItem = styled.div<{ $isActive: boolean }>`
   padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
@@ -112,7 +113,7 @@ export const TooltipItem = styled.div<{ $isActive: boolean }>`
     background-color: ${({ $isActive }) =>
       $isActive ? 'var(--color-bg-selected)' : 'var(--color-bg-hover)'};
   }
-`
+`;
 
 export const TooltipLabel = styled.div<{ $isActive: boolean }>`
   padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
@@ -121,7 +122,7 @@ export const TooltipLabel = styled.div<{ $isActive: boolean }>`
   font-weight: ${({ $isActive }) => ($isActive ? 600 : 500)};
   font-size: 14px;
   min-width: 160px;
-`
+`;
 
 export const SubMenuContainer = styled.div<{ $isExpanded: boolean }>`
   margin: 2px 12px 0 40px;
@@ -131,7 +132,7 @@ export const SubMenuContainer = styled.div<{ $isExpanded: boolean }>`
   transition: max-height ${DESIGN_TOKENS.TRANSITIONS.DEFAULT},
     opacity ${DESIGN_TOKENS.TRANSITIONS.DEFAULT};
   opacity: ${({ $isExpanded }) => ($isExpanded ? 1 : 0)};
-`
+`;
 
 export const SubMenuItem = styled.div<{ $isActive: boolean }>`
   display: flex;
@@ -144,8 +145,7 @@ export const SubMenuItem = styled.div<{ $isActive: boolean }>`
     $isActive ? 'var(--color-text-selected)' : 'var(--color-text-secondary)'};
   font-weight: ${({ $isActive }) => ($isActive ? 600 : 500)};
   cursor: pointer;
-  background-color: ${({ $isActive }) =>
-    $isActive ? 'var(--color-bg-selected)' : 'transparent'};
+  background-color: ${({ $isActive }) => ($isActive ? 'var(--color-bg-selected)' : 'transparent')};
   transition: background-color ${DESIGN_TOKENS.TRANSITIONS.DEFAULT},
     color ${DESIGN_TOKENS.TRANSITIONS.DEFAULT};
 
@@ -153,4 +153,4 @@ export const SubMenuItem = styled.div<{ $isActive: boolean }>`
     background-color: ${({ $isActive }) =>
       $isActive ? 'var(--color-bg-selected)' : 'var(--color-bg-hover)'};
   }
-`
+`;

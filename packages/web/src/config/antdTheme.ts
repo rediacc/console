@@ -1,40 +1,40 @@
-import type { ThemeConfig } from 'antd'
+import type { ThemeConfig } from 'antd';
 
 /**
  * Brand Colors (theme-independent)
  * Grayscale palette with minimal red for errors only
  */
 const brandColors = {
-  primary: '#1a1a1a',      // Dark gray
+  primary: '#1a1a1a', // Dark gray
   primaryHover: '#0a0a0a', // Darker gray
-  secondary: '#4a4a4a',    // Medium gray
+  secondary: '#4a4a4a', // Medium gray
   secondaryHover: '#3a3a3a', // Darker medium gray
-  accent: '#6a6a6a',       // Light gray
-  success: '#4a4a4a',      // Gray (no green)
-  warning: '#5a5a5a',      // Gray (no orange)
-  error: '#dc3545',        // Red (only exception)
-  info: '#6a6a6a',         // Gray (no blue)
-}
+  accent: '#6a6a6a', // Light gray
+  success: '#4a4a4a', // Gray (no green)
+  warning: '#5a5a5a', // Gray (no orange)
+  error: '#dc3545', // Red (only exception)
+  info: '#6a6a6a', // Gray (no blue)
+};
 
 /**
  * Derived Colors (alpha variants)
  * All grayscale except error shadow
  */
 const derivedColors = {
-  primaryBg: 'rgba(26, 26, 26, 0.05)',        // primary with low opacity
-  primaryBgHover: 'rgba(26, 26, 26, 0.08)',   // primary with slightly higher opacity
-  primaryBgActive: 'rgba(26, 26, 26, 0.12)',  // primary with medium opacity
+  primaryBg: 'rgba(26, 26, 26, 0.05)', // primary with low opacity
+  primaryBgHover: 'rgba(26, 26, 26, 0.08)', // primary with slightly higher opacity
+  primaryBgActive: 'rgba(26, 26, 26, 0.12)', // primary with medium opacity
   primaryShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
 
-  accentBg: 'rgba(106, 106, 106, 0.1)',       // accent with low opacity
-  accentBgHover: 'rgba(106, 106, 106, 0.15)',  // accent with medium opacity
-  accentBgActive: 'rgba(106, 106, 106, 0.2)',  // accent with higher opacity
+  accentBg: 'rgba(106, 106, 106, 0.1)', // accent with low opacity
+  accentBgHover: 'rgba(106, 106, 106, 0.15)', // accent with medium opacity
+  accentBgActive: 'rgba(106, 106, 106, 0.2)', // accent with higher opacity
   accentBgSelected: 'rgba(106, 106, 106, 0.2)',
   accentBgStrong: 'rgba(106, 106, 106, 0.25)',
   accentShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
 
   errorShadow: '0 2px 8px rgba(220, 53, 69, 0.15)', // Keep red for errors
-}
+};
 
 /**
  * Theme-specific Colors
@@ -46,13 +46,13 @@ const themeColors = {
     bgTertiary: '#e9ecef',
     bgHover: '#f1f3f5',
     bgActive: '#e9ecef',
-    bgSelected: '#e9ecef',      // Subtle selected state for light theme
+    bgSelected: '#e9ecef', // Subtle selected state for light theme
     textPrimary: '#1a1a1a',
     textSecondary: '#3d4852',
     textTertiary: '#5a6570',
     textMuted: '#9ca3af',
     textInverse: '#ffffff',
-    textSelected: '#1a1a1a',    // Dark text for selected states
+    textSelected: '#1a1a1a', // Dark text for selected states
     borderPrimary: '#dee2e6',
     borderSecondary: '#e9ecef',
     borderHover: '#adb5bd',
@@ -68,13 +68,13 @@ const themeColors = {
     bgTertiary: '#2a2a2a',
     bgHover: '#2d2d2d',
     bgActive: '#3a3a3a',
-    bgSelected: '#4a4a4a',      // Medium-light gray for selected states (not inverted)
+    bgSelected: '#4a4a4a', // Medium-light gray for selected states (not inverted)
     textPrimary: '#fafafa',
     textSecondary: '#e5e7eb',
     textTertiary: '#d1d5db',
     textMuted: '#9ca3af',
     textInverse: '#1a1a1a',
-    textSelected: '#ffffff',    // White text for selected states
+    textSelected: '#ffffff', // White text for selected states
     borderPrimary: '#27272a',
     borderSecondary: '#3f3f46',
     borderHover: '#52525b',
@@ -84,7 +84,7 @@ const themeColors = {
     shadowLg: '0 6px 16px rgba(0, 0, 0, 0.4)',
     tooltipBg: 'rgba(0, 0, 0, 0.95)',
   },
-}
+};
 
 /**
  * Export for GlobalStyles and styled-components
@@ -94,7 +94,7 @@ export const colorTokens = {
   ...derivedColors,
   light: themeColors.light,
   dark: themeColors.dark,
-}
+};
 
 /**
  * Shared Design Tokens (theme-independent)
@@ -118,26 +118,30 @@ const sharedTokens = {
   motionDurationSlow: '0.3s',
   motionDurationMid: '0.2s',
   motionDurationFast: '0.1s',
-}
+};
 
 const baseControlTokens = {
   controlHeight: 44,
   borderRadius: 6,
-}
+};
 
 const paddedControlTokens = {
   ...baseControlTokens,
   paddingBlock: 10,
   paddingInline: 14,
-}
+};
 
 const focusStateTokens = (color: string) => ({
   activeShadow: `0 0 0 1px ${color}`,
   hoverBorderColor: color,
   activeBorderColor: color,
-})
+});
 
-const createButtonTokens = (theme: typeof themeColors.light, primaryColor: string, primaryShadow: string) => ({
+const createButtonTokens = (
+  theme: typeof themeColors.light,
+  primaryColor: string,
+  primaryShadow: string
+) => ({
   borderRadius: 6,
   paddingContentHorizontal: 16,
   paddingContentVertical: 8,
@@ -160,14 +164,14 @@ const createButtonTokens = (theme: typeof themeColors.light, primaryColor: strin
   fontWeight: 600,
   linkHoverBg: 'transparent',
   textHoverBg: theme.bgHover,
-})
+});
 
 const createDropdownTokens = (theme: typeof themeColors.light, hoverBg: string) => ({
   borderRadiusLG: 8,
   controlItemBgHover: hoverBg,
   controlItemBgActive: theme.bgSelected,
   boxShadowSecondary: theme.shadowMd,
-})
+});
 
 const createPaginationTokens = (theme: typeof themeColors.light) => ({
   borderRadius: 6,
@@ -180,7 +184,7 @@ const createPaginationTokens = (theme: typeof themeColors.light) => ({
   itemActiveColorHover: theme.textSelected,
   itemActiveBgDisabled: theme.bgSecondary,
   itemActiveColorDisabled: theme.textTertiary,
-})
+});
 
 const createTabsTokens = (theme: typeof themeColors.light) => ({
   cardBg: theme.bgPrimary,
@@ -190,13 +194,13 @@ const createTabsTokens = (theme: typeof themeColors.light) => ({
   itemHoverColor: theme.textSecondary,
   itemSelectedColor: theme.textPrimary,
   inkBarColor: theme.textPrimary,
-})
+});
 
 const createMenuTokens = (
   theme: typeof themeColors.light,
   primaryBgHover: string,
   primaryBgActive: string,
-  primaryColor: string,
+  primaryColor: string
 ) => ({
   itemColor: theme.textPrimary,
   itemBg: 'transparent',
@@ -210,19 +214,19 @@ const createMenuTokens = (
   iconSize: 16,
   itemHeight: 44,
   itemBorderRadius: 6,
-})
+});
 
 /**
  * Component Configuration Factory
  */
 const createComponentConfig = (isDark: boolean) => {
-  const theme = isDark ? themeColors.dark : themeColors.light
-  const primaryColor = isDark ? brandColors.accent : brandColors.primary
-  const primaryBg = isDark ? derivedColors.accentBg : derivedColors.primaryBg
-  const primaryBgHover = isDark ? derivedColors.accentBgHover : derivedColors.primaryBgHover
-  const primaryBgActive = isDark ? derivedColors.accentBgActive : derivedColors.primaryBgActive
-  const primaryShadow = isDark ? derivedColors.accentShadow : derivedColors.primaryShadow
-  
+  const theme = isDark ? themeColors.dark : themeColors.light;
+  const primaryColor = isDark ? brandColors.accent : brandColors.primary;
+  const primaryBg = isDark ? derivedColors.accentBg : derivedColors.primaryBg;
+  const primaryBgHover = isDark ? derivedColors.accentBgHover : derivedColors.primaryBgHover;
+  const primaryBgActive = isDark ? derivedColors.accentBgActive : derivedColors.primaryBgActive;
+  const primaryShadow = isDark ? derivedColors.accentShadow : derivedColors.primaryShadow;
+
   return {
     Input: {
       ...paddedControlTokens,
@@ -425,8 +429,8 @@ const createComponentConfig = (isDark: boolean) => {
       bodyBg: theme.bgPrimary,
       siderBg: theme.bgSecondary,
     },
-  }
-}
+  };
+};
 
 /**
  * Light Theme Configuration
@@ -449,7 +453,7 @@ export const lightTheme: ThemeConfig = {
     ...sharedTokens,
   },
   components: createComponentConfig(false),
-}
+};
 
 /**
  * Dark Theme Configuration
@@ -472,4 +476,4 @@ export const darkTheme: ThemeConfig = {
     ...sharedTokens,
   },
   components: createComponentConfig(true),
-}
+};

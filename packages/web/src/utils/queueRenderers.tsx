@@ -3,17 +3,17 @@
  * These use the shared core configurations but add React-specific rendering (icons, components)
  */
 
-import React from 'react'
-import { Tag, Tooltip } from 'antd'
+import React from 'react';
+import { Tag, Tooltip } from 'antd';
 import {
   ClockCircleOutlined,
   PlayCircleOutlined,
   WarningOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
-  CloseCircleOutlined
-} from '@/utils/optimizedIcons'
-import { QUEUE_STATUS_CONFIG, PRIORITY_CONFIG, formatAge, type QueueHealthStatus } from '@/core'
+  CloseCircleOutlined,
+} from '@/utils/optimizedIcons';
+import { QUEUE_STATUS_CONFIG, PRIORITY_CONFIG, formatAge, type QueueHealthStatus } from '@/core';
 
 /**
  * Status configuration with React icon components
@@ -27,8 +27,8 @@ export const QUEUE_STATUS_ICONS: Record<QueueHealthStatus, React.ReactNode> = {
   COMPLETED: <CheckCircleOutlined />,
   FAILED: <ExclamationCircleOutlined />,
   CANCELLED: <CloseCircleOutlined />,
-  UNKNOWN: <ExclamationCircleOutlined />
-}
+  UNKNOWN: <ExclamationCircleOutlined />,
+};
 
 /**
  * Priority configuration with React icon components
@@ -38,8 +38,8 @@ export const PRIORITY_ICONS: Record<number, React.ReactNode | undefined> = {
   2: undefined,
   3: undefined,
   4: undefined,
-  5: undefined
-}
+  5: undefined,
+};
 
 /**
  * Render queue status tag with icon and tooltip
@@ -48,21 +48,23 @@ export function renderQueueStatus(
   healthStatus: string,
   record: { status?: string; minutesSinceAssigned?: number; ageInMinutes?: number }
 ): React.ReactElement {
-  const config = QUEUE_STATUS_CONFIG[healthStatus as QueueHealthStatus] || QUEUE_STATUS_CONFIG.UNKNOWN
-  const icon = QUEUE_STATUS_ICONS[healthStatus as QueueHealthStatus] || QUEUE_STATUS_ICONS.UNKNOWN
+  const config =
+    QUEUE_STATUS_CONFIG[healthStatus as QueueHealthStatus] || QUEUE_STATUS_CONFIG.UNKNOWN;
+  const icon = QUEUE_STATUS_ICONS[healthStatus as QueueHealthStatus] || QUEUE_STATUS_ICONS.UNKNOWN;
 
   // Show actual status alongside health status for active items
-  const statusText = healthStatus === 'ACTIVE' && record.status
-    ? `${record.status} (${healthStatus})`
-    : healthStatus
+  const statusText =
+    healthStatus === 'ACTIVE' && record.status
+      ? `${record.status} (${healthStatus})`
+      : healthStatus;
 
   // Generate tooltip text
-  let tooltipText: string | undefined
+  let tooltipText: string | undefined;
   if (record.minutesSinceAssigned) {
-    tooltipText = `${record.minutesSinceAssigned} minutes since assigned`
+    tooltipText = `${record.minutesSinceAssigned} minutes since assigned`;
   } else if (healthStatus === 'STALE_PENDING') {
-    const hoursOld = Math.floor((record.ageInMinutes || 0) / 60)
-    tooltipText = `Pending for ${hoursOld} hours - may need attention`
+    const hoursOld = Math.floor((record.ageInMinutes || 0) / 60);
+    tooltipText = `Pending for ${hoursOld} hours - may need attention`;
   }
 
   return (
@@ -71,7 +73,7 @@ export function renderQueueStatus(
         {statusText}
       </Tag>
     </Tooltip>
-  )
+  );
 }
 
 /**
@@ -83,11 +85,11 @@ export function renderPriority(
   tooltipContent: React.ReactNode
 ): React.ReactElement | null {
   if (!priorityLabel || !priority) {
-    return null
+    return null;
   }
 
-  const config = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG[3]
-  const icon = PRIORITY_ICONS[priority]
+  const config = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG[3];
+  const icon = PRIORITY_ICONS[priority];
 
   return (
     <Tooltip title={tooltipContent}>
@@ -95,7 +97,7 @@ export function renderPriority(
         {priorityLabel}
       </Tag>
     </Tooltip>
-  )
+  );
 }
 
 /**
@@ -103,5 +105,5 @@ export function renderPriority(
  * Uses the shared formatAge function from core
  */
 export function renderAge(minutes: number): string {
-  return formatAge(minutes)
+  return formatAge(minutes);
 }

@@ -1,11 +1,11 @@
-import { createGlobalStyle, css } from 'styled-components'
-import { colorTokens } from '@/config/antdTheme'
+import { createGlobalStyle, css } from 'styled-components';
+import { colorTokens } from '@/config/antdTheme';
 
 const toCssVars = (tokens: Record<string, string>) =>
   Object.entries(tokens)
     .filter(([, value]) => typeof value === 'string')
     .map(([key, value]) => `--color-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`)
-    .join('\n')
+    .join('\n');
 
 const MODAL_SIZES = {
   sm: { width: 480, height: 640, vh: 85, vw: 90 },
@@ -13,7 +13,7 @@ const MODAL_SIZES = {
   lg: { width: 1200, height: 960, vh: 90, vw: 90 },
   xl: { width: 1400, height: 1120, vh: 92, vw: 95 },
   full: { width: 1600, height: 1280, vh: 95, vw: 98 },
-} as const
+} as const;
 
 const scrollbarStyles = css`
   scrollbar-color: var(--color-secondary) var(--color-primary);
@@ -29,7 +29,7 @@ const scrollbarStyles = css`
   &::-webkit-scrollbar-thumb:hover {
     background-color: var(--color-accent);
   }
-`
+`;
 
 export const GlobalStyles = createGlobalStyle`
   /* ============================================
@@ -363,4 +363,4 @@ export const GlobalStyles = createGlobalStyle`
       padding: 0;
     }
   }
-`
+`;

@@ -1,6 +1,6 @@
-export { MachineAssignmentService } from './machine-assignment.service'
-export { MachineValidationService } from './machine-validation.service'
-export { BatchApiService } from './batch-api.service'
+export { MachineAssignmentService } from './machine-assignment.service';
+export { MachineValidationService } from './machine-validation.service';
+export { BatchApiService } from './batch-api.service';
 
 // Re-export models for convenience
 export type {
@@ -11,8 +11,8 @@ export type {
   ConflictResolutionResult,
   DistributedStorageResource,
   AssignmentResult,
-  MachineAssignmentSummary
-} from '../models/machine-assignment.model'
+  MachineAssignmentSummary,
+} from '../models/machine-assignment.model';
 
 export type {
   ValidationResult,
@@ -25,5 +25,5 @@ export type {
   ValidationContext,
   ExclusivityValidation,
   CapacityValidation,
-  ValidationConfig
-} from '../models/machine-validation.model'
+  ValidationConfig,
+} from '../models/machine-validation.model';

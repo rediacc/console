@@ -1,1 +1,1 @@
-export * from '@/core/utils/json'
+export * from '@/core/utils/json';

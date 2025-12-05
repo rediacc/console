@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react'
-import { Input, Switch, Popconfirm, Empty, Row, Col } from 'antd'
+import React, { useEffect, useState } from 'react';
+import { Input, Switch, Popconfirm, Empty, Row, Col } from 'antd';
 import {
   PlusOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
   CodeOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { SimpleJsonEditor } from '../SimpleJsonEditor'
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { SimpleJsonEditor } from '../SimpleJsonEditor';
 import {
   EditorContainer,
   SummaryCard,
@@ -37,80 +37,81 @@ import {
   InlineFormItem,
   ImagePatternCard,
   NumericInput,
-} from './styles'
+} from './styles';
 
-
-type NestedEntryValue = unknown
-type NestedRecord = Record<string, NestedEntryValue>
+type NestedEntryValue = unknown;
+type NestedRecord = Record<string, NestedEntryValue>;
 
 interface FieldSchema extends Record<string, unknown> {
-  type?: string
-  description?: string
-  properties?: Record<string, FieldSchema>
-  additionalProperties?: boolean | FieldSchema
-  default?: NestedEntryValue
+  type?: string;
+  description?: string;
+  properties?: Record<string, FieldSchema>;
+  additionalProperties?: boolean | FieldSchema;
+  default?: NestedEntryValue;
 }
 
 interface NestedObjectEditorProps {
-  value?: NestedRecord
-  onChange?: (value: NestedRecord) => void
-  fieldDefinition?: FieldSchema
-  readOnly?: boolean
-  title?: string
-  description?: string
-  'data-testid'?: string
+  value?: NestedRecord;
+  onChange?: (value: NestedRecord) => void;
+  fieldDefinition?: FieldSchema;
+  readOnly?: boolean;
+  title?: string;
+  description?: string;
+  'data-testid'?: string;
 }
 
 interface ObjectEntry {
-  key: string
-  value: NestedEntryValue
-  isEditing?: boolean
+  key: string;
+  value: NestedEntryValue;
+  isEditing?: boolean;
 }
 
 const isRecordLike = (value: unknown): value is NestedRecord =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const looksLikeImageReference = (value: unknown): value is string =>
-  typeof value === 'string' && (value.includes(':') || value.includes('/'))
+  typeof value === 'string' && (value.includes(':') || value.includes('/'));
 
-const detectStructurePattern = (obj: NestedRecord): {
-  isUniform: boolean
-  keys?: string[]
-  hasImagePattern?: boolean
+const detectStructurePattern = (
+  obj: NestedRecord
+): {
+  isUniform: boolean;
+  keys?: string[];
+  hasImagePattern?: boolean;
 } => {
-  const entries = Object.entries(obj)
+  const entries = Object.entries(obj);
   if (!entries.length) {
-    return { isUniform: false }
+    return { isUniform: false };
   }
 
-  const firstValue = entries[0][1]
+  const firstValue = entries[0][1];
   if (!isRecordLike(firstValue)) {
-    return { isUniform: false }
+    return { isUniform: false };
   }
 
-  const firstKeys = Object.keys(firstValue).sort()
+  const firstKeys = Object.keys(firstValue).sort();
   const isConsistent = entries.every(([, value]) => {
     if (!isRecordLike(value)) {
-      return false
+      return false;
     }
-    const keys = Object.keys(value).sort()
-    return keys.length === firstKeys.length && keys.every((key, index) => key === firstKeys[index])
-  })
+    const keys = Object.keys(value).sort();
+    return keys.length === firstKeys.length && keys.every((key, index) => key === firstKeys[index]);
+  });
 
   if (!isConsistent) {
-    return { isUniform: false }
+    return { isUniform: false };
   }
 
   const hasImagePattern =
     firstKeys.includes('image') &&
-    entries.some(([, value]) => isRecordLike(value) && looksLikeImageReference(value.image))
+    entries.some(([, value]) => isRecordLike(value) && looksLikeImageReference(value.image));
 
   return {
     isUniform: true,
     keys: firstKeys,
     hasImagePattern,
-  }
-}
+  };
+};
 
 export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   value = {},
@@ -121,140 +122,141 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   description,
   'data-testid': dataTestId,
 }) => {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation('common');
   const [entries, setEntries] = useState<ObjectEntry[]>(() =>
     Object.entries(value).map(([key, val]) => ({
       key,
       value: val,
       isEditing: false,
     }))
-  )
-  const [newKey, setNewKey] = useState('')
-  const [showRawJson, setShowRawJson] = useState(false)
-  const [rawJsonValue, setRawJsonValue] = useState(() => JSON.stringify(value, null, 2))
-  const [rawJsonError, setRawJsonError] = useState<string | null>(null)
+  );
+  const [newKey, setNewKey] = useState('');
+  const [showRawJson, setShowRawJson] = useState(false);
+  const [rawJsonValue, setRawJsonValue] = useState(() => JSON.stringify(value, null, 2));
+  const [rawJsonError, setRawJsonError] = useState<string | null>(null);
   const [structureInfo, setStructureInfo] = useState<ReturnType<typeof detectStructurePattern>>(
     () => detectStructurePattern(value)
-  )
+  );
 
   useEffect(() => {
     const entriesArray = Object.entries(value).map(([key, val]) => ({
       key,
       value: val,
       isEditing: false,
-    }))
-    setEntries(entriesArray)
-    setRawJsonValue(JSON.stringify(value, null, 2))
-    setStructureInfo(detectStructurePattern(value))
-  }, [value])
+    }));
+    setEntries(entriesArray);
+    setRawJsonValue(JSON.stringify(value, null, 2));
+    setStructureInfo(detectStructurePattern(value));
+  }, [value]);
 
   const updateValue = (newEntries: ObjectEntry[]) => {
     const newValue = newEntries.reduce<NestedRecord>((acc, entry) => {
-      acc[entry.key] = entry.value
-      return acc
-    }, {})
+      acc[entry.key] = entry.value;
+      return acc;
+    }, {});
 
-    setEntries(newEntries)
-    setRawJsonValue(JSON.stringify(newValue, null, 2))
-    onChange?.(newValue)
-  }
+    setEntries(newEntries);
+    setRawJsonValue(JSON.stringify(newValue, null, 2));
+    onChange?.(newValue);
+  };
 
   const handleAddEntry = () => {
     if (!newKey.trim()) {
-      return
+      return;
     }
 
     if (entries.some((entry) => entry.key === newKey)) {
-      return
+      return;
     }
 
-    let defaultValue: NestedEntryValue = ''
+    let defaultValue: NestedEntryValue = '';
 
     if (structureInfo.isUniform && structureInfo.keys && entries.length > 0) {
-      const firstEntry = entries[0]?.value
+      const firstEntry = entries[0]?.value;
       if (isRecordLike(firstEntry)) {
         defaultValue = Object.keys(firstEntry).reduce<NestedRecord>((acc, keyName) => {
-          const existingValue = firstEntry[keyName]
+          const existingValue = firstEntry[keyName];
           if (keyName === 'active' || keyName === 'enabled') {
-            acc[keyName] = true
+            acc[keyName] = true;
           } else if (keyName === 'image' && structureInfo.hasImagePattern) {
-            acc[keyName] = ''
+            acc[keyName] = '';
           } else if (typeof existingValue === 'boolean') {
-            acc[keyName] = false
+            acc[keyName] = false;
           } else if (typeof existingValue === 'number') {
-            acc[keyName] = 0
+            acc[keyName] = 0;
           } else if (typeof existingValue === 'string') {
-            acc[keyName] = ''
+            acc[keyName] = '';
           } else if (Array.isArray(existingValue)) {
-            acc[keyName] = []
+            acc[keyName] = [];
           } else if (isRecordLike(existingValue)) {
-            acc[keyName] = {}
+            acc[keyName] = {};
           } else {
-            acc[keyName] = ''
+            acc[keyName] = '';
           }
-          return acc
-        }, {})
+          return acc;
+        }, {});
       }
     } else if (
       fieldDefinition?.additionalProperties &&
       typeof fieldDefinition.additionalProperties === 'object'
     ) {
-      const propDef = fieldDefinition.additionalProperties as FieldSchema
+      const propDef = fieldDefinition.additionalProperties as FieldSchema;
       if (propDef.type === 'object' && propDef.properties) {
         defaultValue = Object.keys(propDef.properties).reduce<NestedRecord>((acc, keyName) => {
-          const schema = propDef.properties?.[keyName]
+          const schema = propDef.properties?.[keyName];
           if (schema) {
             acc[keyName] =
               schema.default ??
-              (schema.type === 'boolean' ? false : schema.type === 'number' ? 0 : '')
+              (schema.type === 'boolean' ? false : schema.type === 'number' ? 0 : '');
           }
-          return acc
-        }, {})
+          return acc;
+        }, {});
       } else if (propDef.type === 'boolean') {
-        defaultValue = false
+        defaultValue = false;
       } else if (propDef.type === 'number') {
-        defaultValue = 0
+        defaultValue = 0;
       }
     }
 
-    const nextEntries = [...entries, { key: newKey, value: defaultValue, isEditing: true }]
-    updateValue(nextEntries)
-    setNewKey('')
-  }
+    const nextEntries = [...entries, { key: newKey, value: defaultValue, isEditing: true }];
+    updateValue(nextEntries);
+    setNewKey('');
+  };
 
   const handleDeleteEntry = (index: number) => {
-    const filtered = entries.filter((_, i) => i !== index)
-    updateValue(filtered)
-  }
+    const filtered = entries.filter((_, i) => i !== index);
+    updateValue(filtered);
+  };
 
   const handleUpdateEntry = (index: number, updates: Partial<ObjectEntry>) => {
-    const nextEntries = [...entries]
-    nextEntries[index] = { ...nextEntries[index], ...updates }
-    updateValue(nextEntries)
-  }
+    const nextEntries = [...entries];
+    nextEntries[index] = { ...nextEntries[index], ...updates };
+    updateValue(nextEntries);
+  };
 
   const handleRawJsonChange = (jsonString: string) => {
-    setRawJsonValue(jsonString)
+    setRawJsonValue(jsonString);
     try {
-      const parsed: unknown = JSON.parse(jsonString)
+      const parsed: unknown = JSON.parse(jsonString);
       if (!isRecordLike(parsed)) {
-        throw new Error('Invalid JSON structure')
+        throw new Error('Invalid JSON structure');
       }
-      setRawJsonError(null)
-      onChange?.(parsed)
+      setRawJsonError(null);
+      onChange?.(parsed);
     } catch (error) {
-      setRawJsonError((error as Error).message)
+      setRawJsonError((error as Error).message);
     }
-  }
+  };
 
   const renderEntryValue = (entry: ObjectEntry, index: number): React.ReactNode => {
-    const entryDef = fieldDefinition?.properties?.[entry.key] ?? fieldDefinition?.additionalProperties
+    const entryDef =
+      fieldDefinition?.properties?.[entry.key] ?? fieldDefinition?.additionalProperties;
     const nestedDefinition =
-      typeof entryDef === 'object' && entryDef ? (entryDef as FieldSchema) : undefined
+      typeof entryDef === 'object' && entryDef ? (entryDef as FieldSchema) : undefined;
 
     if (isRecordLike(entry.value)) {
-      const imageValue = entry.value.image
-      const activeValue = entry.value.active
+      const imageValue = entry.value.image;
+      const activeValue = entry.value.active;
 
       if (
         typeof imageValue === 'string' &&
@@ -303,7 +305,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               </Col>
             </Row>
           </ImagePatternCard>
-        )
+        );
       }
 
       return (
@@ -318,7 +320,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               : `vault-editor-nested-nested-${entry.key}`
           }
         />
-      )
+      );
     }
 
     if (typeof entry.value === 'boolean') {
@@ -333,7 +335,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               : `vault-editor-nested-field-${entry.key}`
           }
         />
-      )
+      );
     }
 
     if (typeof entry.value === 'number') {
@@ -350,7 +352,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               : `vault-editor-nested-field-${entry.key}`
           }
         />
-      )
+      );
     }
 
     return (
@@ -362,8 +364,8 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
           dataTestId ? `${dataTestId}-field-${entry.key}` : `vault-editor-nested-field-${entry.key}`
         }
       />
-    )
-  }
+    );
+  };
 
   return (
     <EditorContainer>
@@ -407,9 +409,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                   onChange={(event) => setNewKey(event.target.value)}
                   onPressEnter={handleAddEntry}
                   autoComplete="off"
-                  data-testid={
-                    dataTestId ? `${dataTestId}-new-key` : 'vault-editor-nested-new-key'
-                  }
+                  data-testid={dataTestId ? `${dataTestId}-new-key` : 'vault-editor-nested-new-key'}
                 />
               </KeyInputWrapper>
               <PrimaryActionButton
@@ -417,9 +417,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                 icon={<PlusOutlined />}
                 onClick={handleAddEntry}
                 disabled={!newKey.trim()}
-                data-testid={
-                  dataTestId ? `${dataTestId}-add` : 'vault-editor-nested-add'
-                }
+                data-testid={dataTestId ? `${dataTestId}-add` : 'vault-editor-nested-add'}
               >
                 {t('nestedObjectEditor.Add')}
               </PrimaryActionButton>
@@ -427,9 +425,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                 icon={<CodeOutlined />}
                 onClick={() => setShowRawJson((current) => !current)}
                 data-testid={
-                  dataTestId
-                    ? `${dataTestId}-toggle-json`
-                    : 'vault-editor-nested-toggle-json'
+                  dataTestId ? `${dataTestId}-toggle-json` : 'vault-editor-nested-toggle-json'
                 }
               >
                 {showRawJson
@@ -448,9 +444,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
         ) : (
           <CollapseWrapper
             defaultActiveKey={entries.map((_, i) => i.toString())}
-            data-testid={
-              dataTestId ? `${dataTestId}-collapse` : 'vault-editor-nested-collapse'
-            }
+            data-testid={dataTestId ? `${dataTestId}-collapse` : 'vault-editor-nested-collapse'}
             items={entries.map((entry, index) => ({
               key: entry.key,
               label: (
@@ -464,9 +458,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                   )}
                   {typeof entry.value === 'boolean' && (
                     <TypeTag color={entry.value ? 'success' : 'default'}>
-                      {entry.value
-                        ? t('nestedObjectEditor.True')
-                        : t('nestedObjectEditor.False')}
+                      {entry.value ? t('nestedObjectEditor.True') : t('nestedObjectEditor.False')}
                     </TypeTag>
                   )}
                 </EntryHeader>
@@ -493,7 +485,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                   </Popconfirm>
                 </PanelActions>
               ) : undefined,
-              children: renderEntryValue(entry, index)
+              children: renderEntryValue(entry, index),
             }))}
           />
         )}
@@ -518,15 +510,11 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               onChange={handleRawJsonChange}
               readOnly={readOnly}
               height="300px"
-              data-testid={
-                dataTestId
-                  ? `${dataTestId}-raw-json`
-                  : 'vault-editor-nested-raw-json'
-              }
+              data-testid={dataTestId ? `${dataTestId}-raw-json` : 'vault-editor-nested-raw-json'}
             />
           </RawJsonCard>
         )}
       </EditorStack>
     </EditorContainer>
-  )
-}
+  );
+};

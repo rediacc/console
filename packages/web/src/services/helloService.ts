@@ -1,62 +1,62 @@
-import { useCallback } from 'react'
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
-import { useCreateQueueItem } from '@/api/queries/queue'
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
-import type { Machine } from '@/types'
-import { api } from '@/api/client'
-import { useTeams } from '@/api/queries/teams'
-import type { QueueTrace, QueueItem, Team } from '@rediacc/shared/types'
+import { useCallback } from 'react';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import { useCreateQueueItem } from '@/api/queries/queue';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
+import type { Machine } from '@/types';
+import { api } from '@/api/client';
+import { useTeams } from '@/api/queries/teams';
+import type { QueueTrace, QueueItem, Team } from '@rediacc/shared/types';
 
 export interface HelloFunctionParams {
-  teamName: string
-  machineName: string
-  bridgeName: string
-  priority?: number
-  description?: string
-  addedVia?: string
-  machineVault?: string
-  teamVault?: string
-  repoVault?: string
+  teamName: string;
+  machineName: string;
+  bridgeName: string;
+  priority?: number;
+  description?: string;
+  addedVia?: string;
+  machineVault?: string;
+  teamVault?: string;
+  repoVault?: string;
 }
 
 export interface HelloFunctionResult {
-  taskId?: string
-  success: boolean
-  error?: string
+  taskId?: string;
+  success: boolean;
+  error?: string;
 }
 
 export interface QueueItemCompletionResult {
-  success: boolean
-  message: string
-  status?: string
-  responseData?: HelloResponseData
+  success: boolean;
+  message: string;
+  status?: string;
+  responseData?: HelloResponseData;
 }
 
 type QueueItemMutation =
   | Pick<ReturnType<typeof useCreateQueueItem>, 'mutateAsync' | 'isPending'>
-  | Pick<ReturnType<typeof useManagedQueueItem>, 'mutateAsync' | 'isPending'>
+  | Pick<ReturnType<typeof useManagedQueueItem>, 'mutateAsync' | 'isPending'>;
 
-type BuildQueueVaultFn = ReturnType<typeof useQueueVaultBuilder>['buildQueueVault']
+type BuildQueueVaultFn = ReturnType<typeof useQueueVaultBuilder>['buildQueueVault'];
 
 interface HelloResponseData {
-  result?: string
-  [key: string]: unknown
+  result?: string;
+  [key: string]: unknown;
 }
 
 interface QueueCreationResponse {
-  taskId?: string
-  isQueued?: boolean
+  taskId?: string;
+  isQueued?: boolean;
 }
 
 interface CreateQueueItemArgs {
-  teamName: string
-  machineName: string
-  bridgeName: string
-  queueVault: string
-  priority?: number
+  teamName: string;
+  machineName: string;
+  bridgeName: string;
+  queueVault: string;
+  priority?: number;
 }
 
-type CreateQueueItemExecutor = (args: CreateQueueItemArgs) => Promise<QueueCreationResponse>
+type CreateQueueItemExecutor = (args: CreateQueueItemArgs) => Promise<QueueCreationResponse>;
 
 /**
  * Wait for a queue item to complete by polling its status
@@ -64,96 +64,99 @@ type CreateQueueItemExecutor = (args: CreateQueueItemArgs) => Promise<QueueCreat
  * @param timeout Maximum time to wait in milliseconds (default: 30 seconds)
  * @returns Completion result with success status and message
  */
-const DEFAULT_TIMEOUT = 30000
-const POLLING_INTERVAL = 1000
+const DEFAULT_TIMEOUT = 30000;
+const POLLING_INTERVAL = 1000;
 
 const isQueueCreationResponse = (value: unknown): value is QueueCreationResponse => {
   if (typeof value !== 'object' || value === null) {
-    return false
+    return false;
   }
 
-  const candidate = value as Partial<QueueCreationResponse>
-  const hasValidTaskId = candidate.taskId === undefined || typeof candidate.taskId === 'string'
-  const hasValidQueued = candidate.isQueued === undefined || typeof candidate.isQueued === 'boolean'
-  return hasValidTaskId && hasValidQueued
-}
+  const candidate = value as Partial<QueueCreationResponse>;
+  const hasValidTaskId = candidate.taskId === undefined || typeof candidate.taskId === 'string';
+  const hasValidQueued =
+    candidate.isQueued === undefined || typeof candidate.isQueued === 'boolean';
+  return hasValidTaskId && hasValidQueued;
+};
 
 const normalizeQueueCreationResponse = (value: unknown): QueueCreationResponse => {
-  return isQueueCreationResponse(value) ? value : {}
-}
+  return isQueueCreationResponse(value) ? value : {};
+};
 
-const parseResponseVaultContent = (vaultContent: string | Record<string, unknown>): HelloResponseData => {
+const parseResponseVaultContent = (
+  vaultContent: string | Record<string, unknown>
+): HelloResponseData => {
   if (typeof vaultContent === 'string') {
     try {
-      const parsed = JSON.parse(vaultContent)
+      const parsed = JSON.parse(vaultContent);
       if (typeof parsed === 'object' && parsed !== null) {
-        return parsed as HelloResponseData
+        return parsed as HelloResponseData;
       }
-      return { result: String(parsed) }
+      return { result: String(parsed) };
     } catch {
-      return { result: vaultContent }
+      return { result: vaultContent };
     }
   }
 
-  return vaultContent as HelloResponseData
-}
+  return vaultContent as HelloResponseData;
+};
 
 export async function waitForQueueItemCompletion(
-  taskId: string, 
+  taskId: string,
   timeout: number = DEFAULT_TIMEOUT
 ): Promise<QueueItemCompletionResult> {
-  const startTime = Date.now()
-  
+  const startTime = Date.now();
+
   while (Date.now() - startTime < timeout) {
-    const pollResult = await pollQueueItemStatus(taskId)
-    
+    const pollResult = await pollQueueItemStatus(taskId);
+
     if (pollResult) {
-      return pollResult
+      return pollResult;
     }
-    
+
     // Wait before next poll
-    await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL))
+    await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL));
   }
-  
-  return createTimeoutResult()
+
+  return createTimeoutResult();
 }
 
 async function pollQueueItemStatus(taskId: string): Promise<QueueItemCompletionResult | null> {
   try {
-    const trace = await api.queue.getTrace(taskId)
-    const queueDetails = trace.queueDetails
-    
+    const trace = await api.queue.getTrace(taskId);
+    const queueDetails = trace.queueDetails;
+
     if (!queueDetails) {
-      return null
+      return null;
     }
-    
-    const status = queueDetails.status
-    
+
+    const status = queueDetails.status;
+
     switch (status) {
       case 'COMPLETED':
-        return handleCompletedStatus(trace)
+        return handleCompletedStatus(trace);
       case 'FAILED':
       case 'CANCELLED':
-        return handleFailedStatus(queueDetails, status)
+        return handleFailedStatus(queueDetails, status);
       default:
-        return null
+        return null;
     }
   } catch {
     // Continue polling on error
-    return null
+    return null;
   }
 }
 
 function handleCompletedStatus(trace: QueueTrace): QueueItemCompletionResult {
-  const responseVault = trace.responseVaultContent
-  
+  const responseVault = trace.responseVaultContent;
+
   if (!responseVault?.vaultContent) {
-    return createSuccessResult('Hello function completed successfully', 'COMPLETED')
+    return createSuccessResult('Hello function completed successfully', 'COMPLETED');
   }
-  
-  const vaultData = parseResponseVaultContent(responseVault.vaultContent)
-  const resultMessage = typeof vaultData.result === 'string' ? vaultData.result : undefined
-  const isError = resultMessage?.includes('Error')
+
+  const vaultData = parseResponseVaultContent(responseVault.vaultContent);
+  const resultMessage = typeof vaultData.result === 'string' ? vaultData.result : undefined;
+  const isError = resultMessage?.includes('Error');
 
   return isError
     ? createErrorResult(resultMessage ?? 'Hello function reported an error', 'COMPLETED', vaultData)
@@ -161,33 +164,33 @@ function handleCompletedStatus(trace: QueueTrace): QueueItemCompletionResult {
         resultMessage || 'Hello function completed successfully',
         'COMPLETED',
         vaultData
-      )
+      );
 }
 
 function handleFailedStatus(queueDetails: QueueItem, status: string): QueueItemCompletionResult {
-  const failureReason = queueDetails.lastFailureReason || 'Operation failed'
-  
-  return createErrorResult(failureReason, status)
+  const failureReason = queueDetails.lastFailureReason || 'Operation failed';
+
+  return createErrorResult(failureReason, status);
 }
 
 function createSuccessResult(
-  message: string, 
-  status: string, 
+  message: string,
+  status: string,
   responseData?: HelloResponseData
 ): QueueItemCompletionResult {
-  return { success: true, message, status, responseData }
+  return { success: true, message, status, responseData };
 }
 
 function createErrorResult(
-  message: string, 
-  status: string, 
+  message: string,
+  status: string,
   responseData?: HelloResponseData
 ): QueueItemCompletionResult {
-  return { success: false, message, status, responseData }
+  return { success: false, message, status, responseData };
 }
 
 function createTimeoutResult(): QueueItemCompletionResult {
-  return createErrorResult('Operation timeout - no response received', 'TIMEOUT')
+  return createErrorResult('Operation timeout - no response received', 'TIMEOUT');
 }
 
 /**
@@ -195,97 +198,117 @@ function createTimeoutResult(): QueueItemCompletionResult {
  * This encapsulates the logic for building the queue vault and creating queue items
  */
 export function useHelloFunction(options?: { useManaged?: boolean }) {
-  const { buildQueueVault } = useQueueVaultBuilder()
+  const { buildQueueVault } = useQueueVaultBuilder();
   // Always call both hooks unconditionally
-  const managedMutation = useManagedQueueItem()
-  const regularMutation = useCreateQueueItem()
-  const createQueueItemMutation: QueueItemMutation = options?.useManaged ? managedMutation : regularMutation
-  const { data: teams } = useTeams()
+  const managedMutation = useManagedQueueItem();
+  const regularMutation = useCreateQueueItem();
+  const createQueueItemMutation: QueueItemMutation = options?.useManaged
+    ? managedMutation
+    : regularMutation;
+  const { data: teams } = useTeams();
 
-  const executeHello = useCallback(async (params: HelloFunctionParams): Promise<HelloFunctionResult> => {
-    try {
-      const teamVault = getTeamVault(params, teams)
-      const queueVault = await buildHelloQueueVault(params, teamVault, buildQueueVault)
-      const response = await createHelloQueueItem(params, queueVault, createQueueItemMutation)
+  const executeHello = useCallback(
+    async (params: HelloFunctionParams): Promise<HelloFunctionResult> => {
+      try {
+        const teamVault = getTeamVault(params, teams);
+        const queueVault = await buildHelloQueueVault(params, teamVault, buildQueueVault);
+        const response = await createHelloQueueItem(params, queueVault, createQueueItemMutation);
 
-      return {
-        taskId: response?.taskId,
-        success: !!response?.taskId || !!response?.isQueued
+        return {
+          taskId: response?.taskId,
+          success: !!response?.taskId || !!response?.isQueued,
+        };
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to execute hello function';
+        return {
+          success: false,
+          error: message,
+        };
       }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to execute hello function'
-      return {
-        success: false,
-        error: message
+    },
+    [buildQueueVault, createQueueItemMutation, teams]
+  );
+
+  const executeHelloForMachine = useCallback(
+    async (
+      machine: Machine,
+      options?: {
+        priority?: number;
+        description?: string;
+        addedVia?: string;
       }
-    }
-  }, [buildQueueVault, createQueueItemMutation, teams])
+    ): Promise<HelloFunctionResult> => {
+      return executeHello({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        priority: options?.priority,
+        description: options?.description,
+        addedVia: options?.addedVia,
+        machineVault: machine.vaultContent || '{}',
+      });
+    },
+    [executeHello]
+  );
 
-  const executeHelloForMachine = useCallback(async (machine: Machine, options?: {
-    priority?: number
-    description?: string
-    addedVia?: string
-  }): Promise<HelloFunctionResult> => {
-    return executeHello({
-      teamName: machine.teamName,
-      machineName: machine.machineName,
-      bridgeName: machine.bridgeName,
-      priority: options?.priority,
-      description: options?.description,
-      addedVia: options?.addedVia,
-      machineVault: machine.vaultContent || '{}'
-    })
-  }, [executeHello])
-
-  const executeHelloAndWait = useCallback(async (
-    params: HelloFunctionParams,
-    timeout?: number
-  ): Promise<{ 
-    taskId?: string
-    success: boolean
-    error?: string
-    completionResult?: QueueItemCompletionResult
-  }> => {
-    const result = await executeHello(params)
-    
-    if (!result.success || !result.taskId) {
-      return result
-    }
-
-    const completionResult = await waitForQueueItemCompletion(result.taskId, timeout)
-    
-    return {
-      ...result,
-      completionResult,
-      success: completionResult.success,
-      error: completionResult.success ? undefined : completionResult.message
-    }
-  }, [executeHello])
-
-  const executeHelloForMachineAndWait = useCallback(async (
-    machine: Machine,
-    options?: {
-      priority?: number
-      description?: string
-      addedVia?: string
+  const executeHelloAndWait = useCallback(
+    async (
+      params: HelloFunctionParams,
       timeout?: number
-    }
-  ): Promise<{
-    taskId?: string
-    success: boolean
-    error?: string
-    completionResult?: QueueItemCompletionResult
-  }> => {
-    return executeHelloAndWait({
-      teamName: machine.teamName,
-      machineName: machine.machineName,
-      bridgeName: machine.bridgeName,
-      priority: options?.priority,
-      description: options?.description,
-      addedVia: options?.addedVia,
-      machineVault: machine.vaultContent || '{}'
-    }, options?.timeout)
-  }, [executeHelloAndWait])
+    ): Promise<{
+      taskId?: string;
+      success: boolean;
+      error?: string;
+      completionResult?: QueueItemCompletionResult;
+    }> => {
+      const result = await executeHello(params);
+
+      if (!result.success || !result.taskId) {
+        return result;
+      }
+
+      const completionResult = await waitForQueueItemCompletion(result.taskId, timeout);
+
+      return {
+        ...result,
+        completionResult,
+        success: completionResult.success,
+        error: completionResult.success ? undefined : completionResult.message,
+      };
+    },
+    [executeHello]
+  );
+
+  const executeHelloForMachineAndWait = useCallback(
+    async (
+      machine: Machine,
+      options?: {
+        priority?: number;
+        description?: string;
+        addedVia?: string;
+        timeout?: number;
+      }
+    ): Promise<{
+      taskId?: string;
+      success: boolean;
+      error?: string;
+      completionResult?: QueueItemCompletionResult;
+    }> => {
+      return executeHelloAndWait(
+        {
+          teamName: machine.teamName,
+          machineName: machine.machineName,
+          bridgeName: machine.bridgeName,
+          priority: options?.priority,
+          description: options?.description,
+          addedVia: options?.addedVia,
+          machineVault: machine.vaultContent || '{}',
+        },
+        options?.timeout
+      );
+    },
+    [executeHelloAndWait]
+  );
 
   return {
     executeHello,
@@ -293,18 +316,18 @@ export function useHelloFunction(options?: { useManaged?: boolean }) {
     executeHelloAndWait,
     executeHelloForMachineAndWait,
     waitForQueueItemCompletion,
-    isLoading: createQueueItemMutation.isPending
-  }
+    isLoading: createQueueItemMutation.isPending,
+  };
 }
 
 // Helper functions
 function getTeamVault(params: HelloFunctionParams, teams: Team[] | undefined): string {
   if (params.teamVault && params.teamVault !== '{}') {
-    return params.teamVault
+    return params.teamVault;
   }
-  
-  const teamData = teams?.find(team => team.teamName === params.teamName)
-  return teamData?.vaultContent || '{}'
+
+  const teamData = teams?.find((team) => team.teamName === params.teamName);
+  return teamData?.vaultContent || '{}';
 }
 
 async function buildHelloQueueVault(
@@ -312,11 +335,11 @@ async function buildHelloQueueVault(
   teamVault: string,
   buildQueueVault: BuildQueueVaultFn
 ): Promise<string> {
-  const DEFAULT_PRIORITY = 4
-  const DEFAULT_DESCRIPTION = 'Hello function call'
-  const DEFAULT_ADDED_VIA = 'hello-service'
-  const DEFAULT_VAULT = '{}'
-  
+  const DEFAULT_PRIORITY = 4;
+  const DEFAULT_DESCRIPTION = 'Hello function call';
+  const DEFAULT_ADDED_VIA = 'hello-service';
+  const DEFAULT_VAULT = '{}';
+
   return buildQueueVault({
     teamName: params.teamName,
     machineName: params.machineName,
@@ -328,8 +351,8 @@ async function buildHelloQueueVault(
     addedVia: params.addedVia || DEFAULT_ADDED_VIA,
     machineVault: params.machineVault || DEFAULT_VAULT,
     teamVault: teamVault,
-    repoVault: params.repoVault || DEFAULT_VAULT
-  })
+    repoVault: params.repoVault || DEFAULT_VAULT,
+  });
 }
 
 async function createHelloQueueItem(
@@ -337,17 +360,17 @@ async function createHelloQueueItem(
   queueVault: string,
   createQueueItemMutation: QueueItemMutation
 ): Promise<QueueCreationResponse> {
-  const DEFAULT_PRIORITY = 4
-  
+  const DEFAULT_PRIORITY = 4;
+
   const response = await createQueueItemMutation.mutateAsync({
     teamName: params.teamName,
     machineName: params.machineName,
     bridgeName: params.bridgeName,
     queueVault,
-    priority: params.priority || DEFAULT_PRIORITY
-  })
+    priority: params.priority || DEFAULT_PRIORITY,
+  });
 
-  return normalizeQueueCreationResponse(response)
+  return normalizeQueueCreationResponse(response);
 }
 
 /**
@@ -360,29 +383,29 @@ export class HelloService {
     createQueueItem: CreateQueueItemExecutor
   ): Promise<HelloFunctionResult> {
     try {
-      const teamVault = params.teamVault || '{}'
-      const queueVault = await buildHelloQueueVault(params, teamVault, buildQueueVault)
-      
+      const teamVault = params.teamVault || '{}';
+      const queueVault = await buildHelloQueueVault(params, teamVault, buildQueueVault);
+
       const response = await createQueueItem({
         teamName: params.teamName,
         machineName: params.machineName,
         bridgeName: params.bridgeName,
         queueVault,
-        priority: params.priority || 4
-      })
+        priority: params.priority || 4,
+      });
 
       return {
         taskId: response?.taskId,
-        success: !!response?.taskId
-      }
+        success: !!response?.taskId,
+      };
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to execute hello function'
+      const message = error instanceof Error ? error.message : 'Failed to execute hello function';
       return {
         success: false,
-        error: message
-      }
+        error: message,
+      };
     }
   }
 
-  static waitForQueueItemCompletion = waitForQueueItemCompletion
+  static waitForQueueItemCompletion = waitForQueueItemCompletion;
 }

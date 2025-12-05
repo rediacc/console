@@ -11,27 +11,27 @@
  */
 
 class TokenLockManager {
-  private tokenLock: Promise<void> = Promise.resolve()
-  private currentVersion: number = 0
+  private tokenLock: Promise<void> = Promise.resolve();
+  private currentVersion: number = 0;
 
   /**
    * Acquire lock for token operation
    * Returns a release function that MUST be called to release the lock
    */
   private async acquire(): Promise<() => void> {
-    let release: () => void
+    let release: () => void;
 
     const newLock = new Promise<void>((resolve) => {
-      release = resolve
-    })
+      release = resolve;
+    });
 
-    const previousLock = this.tokenLock
-    this.tokenLock = newLock
+    const previousLock = this.tokenLock;
+    this.tokenLock = newLock;
 
     // Wait for previous lock to be released
-    await previousLock
+    await previousLock;
 
-    return release!
+    return release!;
   }
 
   /**
@@ -39,11 +39,11 @@ class TokenLockManager {
    * Guarantees lock is released even if operation throws
    */
   async withLock<T>(operation: () => Promise<T>): Promise<T> {
-    const release = await this.acquire()
+    const release = await this.acquire();
     try {
-      return await operation()
+      return await operation();
     } finally {
-      release()
+      release();
     }
   }
 
@@ -52,7 +52,7 @@ class TokenLockManager {
    * Increments on each token update to detect stale overwrites
    */
   nextVersion(): number {
-    return ++this.currentVersion
+    return ++this.currentVersion;
   }
 
   /**
@@ -60,16 +60,16 @@ class TokenLockManager {
    * Used to prevent stale token overwrites
    */
   isVersionCurrent(version: number): boolean {
-    return version === this.currentVersion
+    return version === this.currentVersion;
   }
 
   /**
    * Get current version (read-only access)
    */
   getCurrentVersion(): number {
-    return this.currentVersion
+    return this.currentVersion;
   }
 }
 
 // Export singleton instance
-export const tokenLockManager = new TokenLockManager()
+export const tokenLockManager = new TokenLockManager();

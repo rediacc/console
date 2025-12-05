@@ -5,45 +5,45 @@ import axios, {
   InternalAxiosRequestConfig,
   AxiosRequestConfig,
   isAxiosError,
-} from 'axios'
-import type { ApiResponse } from '@rediacc/shared/types'
-import { normalizeResponse, createApiServices } from '@rediacc/shared/api'
-import type { ApiClient as SharedApiClient } from '@rediacc/shared/api'
-import { endpoints } from '@rediacc/shared/endpoints'
+} from 'axios';
+import type { ApiResponse } from '@rediacc/shared/types';
+import { normalizeResponse, createApiServices } from '@rediacc/shared/api';
+import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
+import { endpoints } from '@rediacc/shared/endpoints';
 
 // Extend axios config to include metadata
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
     metadata?: {
-      startTime: number
-    }
+      startTime: number;
+    };
   }
 }
-import { store } from '@/store/store'
-import { logout, showSessionExpiredDialog } from '@/store/auth/authSlice'
-import { showMessage } from '@/utils/messages'
-import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware'
-import { tokenService } from '@/services/tokenService'
-import { apiConnectionService } from '@/services/apiConnectionService'
-import { telemetryService } from '@/services/telemetryService'
+import { store } from '@/store/store';
+import { logout, showSessionExpiredDialog } from '@/store/auth/authSlice';
+import { showMessage } from '@/utils/messages';
+import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware';
+import { tokenService } from '@/services/tokenService';
+import { apiConnectionService } from '@/services/apiConnectionService';
+import { telemetryService } from '@/services/telemetryService';
 
 // API configuration
-const API_PREFIX = endpoints.base.storedProcedure
+const API_PREFIX = endpoints.base.storedProcedure;
 
 // API URL will be determined dynamically based on connection health check
-let API_BASE_URL = ''
+let API_BASE_URL = '';
 
 class ApiClient implements SharedApiClient {
-  private client: AxiosInstance
-  private requestQueue: Promise<void> = Promise.resolve()
+  private client: AxiosInstance;
+  private requestQueue: Promise<void> = Promise.resolve();
 
-  private readonly HTTP_UNAUTHORIZED = 401
-  private readonly HTTP_SERVER_ERROR = 500
+  private readonly HTTP_UNAUTHORIZED = 401;
+  private readonly HTTP_SERVER_ERROR = 500;
 
   // Method to update API URL dynamically
   updateApiUrl(newUrl: string) {
-    API_BASE_URL = newUrl
-    this.client.defaults.baseURL = API_BASE_URL + API_PREFIX
+    API_BASE_URL = newUrl;
+    this.client.defaults.baseURL = API_BASE_URL + API_PREFIX;
   }
 
   constructor() {
@@ -54,51 +54,49 @@ class ApiClient implements SharedApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
-    })
+    });
 
-    this.setupInterceptors()
-    this.initializeBaseUrl()
+    this.setupInterceptors();
+    this.initializeBaseUrl();
   }
 
   private async initializeBaseUrl() {
     // Get the API URL from connection service (will perform health check if needed)
-    const apiUrl = await apiConnectionService.getApiUrl()
-    API_BASE_URL = apiUrl
-    this.client.defaults.baseURL = `${API_BASE_URL}${API_PREFIX}`
+    const apiUrl = await apiConnectionService.getApiUrl();
+    API_BASE_URL = apiUrl;
+    this.client.defaults.baseURL = `${API_BASE_URL}${API_PREFIX}`;
   }
 
   private setupInterceptors() {
-    this.client.interceptors.request.use(
-      async (config: InternalAxiosRequestConfig) => {
-        // Add request start time for telemetry
-        config.metadata = { startTime: performance.now() }
+    this.client.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+      // Add request start time for telemetry
+      config.metadata = { startTime: performance.now() };
 
-        const token = await tokenService.getToken()
-        if (token) {
-          config.headers['Rediacc-RequestToken'] = token
-        } else {
-          console.warn('No token available for request:', config.url)
-        }
-
-        if (config.data && hasVaultFields(config.data)) {
-          try {
-            config.data = await encryptRequestData(config.data)
-          } catch (error) {
-            return Promise.reject(error)
-          }
-        }
-        return config
+      const token = await tokenService.getToken();
+      if (token) {
+        config.headers['Rediacc-RequestToken'] = token;
+      } else {
+        console.warn('No token available for request:', config.url);
       }
-    )
+
+      if (config.data && hasVaultFields(config.data)) {
+        try {
+          config.data = await encryptRequestData(config.data);
+        } catch (error) {
+          return Promise.reject(error);
+        }
+      }
+      return config;
+    });
 
     this.client.interceptors.response.use(
       async (response) => {
-        const startTime = response.config.metadata?.startTime || 0
-        const duration = performance.now() - startTime
+        const startTime = response.config.metadata?.startTime || 0;
+        const duration = performance.now() - startTime;
 
-        let responseData = await this.handleResponseDecryption(response.data as ApiResponse)
-        responseData = normalizeResponse(responseData)
-        response.data = responseData
+        let responseData = await this.handleResponseDecryption(response.data as ApiResponse);
+        responseData = normalizeResponse(responseData);
+        response.data = responseData;
 
         // Track successful API call
         telemetryService.trackApiCall(
@@ -106,20 +104,20 @@ class ApiClient implements SharedApiClient {
           response.config.url || '',
           response.status,
           duration
-        )
+        );
 
         // CRITICAL: Save token BEFORE checking for errors
         // If the server sent a token, it means the token was rotated in the database
         // (even if subsequent operations failed), so we MUST save it to stay synchronized
-        await this.handleTokenRotation(responseData)
+        await this.handleTokenRotation(responseData);
 
-        if (responseData.failure !== 0) return this.handleApiFailure(responseData)
+        if (responseData.failure !== 0) return this.handleApiFailure(responseData);
 
-        return response
+        return response;
       },
       (error: AxiosError<ApiResponse>) => {
-        const startTime = error.config?.metadata?.startTime || 0
-        const duration = performance.now() - startTime
+        const startTime = error.config?.metadata?.startTime || 0;
+        const duration = performance.now() - startTime;
 
         // Track failed API call
         telemetryService.trackApiCall(
@@ -128,17 +126,17 @@ class ApiClient implements SharedApiClient {
           error.response?.status,
           duration,
           error.message
-        )
+        );
 
-        return this.handleResponseError(error)
+        return this.handleResponseError(error);
       }
-    )
+    );
   }
 
   async login(email: string, passwordHash: string, sessionName = 'Web Session') {
     // Ensure API URL is initialized before login
     if (!API_BASE_URL) {
-      await this.initializeBaseUrl()
+      await this.initializeBaseUrl();
     }
 
     // Route through request queue for consistency and proper token handling
@@ -150,158 +148,191 @@ class ApiClient implements SharedApiClient {
         {
           headers: {
             'Rediacc-UserEmail': email,
-            'Rediacc-UserHash': passwordHash
-          }
+            'Rediacc-UserHash': passwordHash,
+          },
         }
-      )
-    })
+      );
+    });
   }
 
   async logout() {
-    return (await this.client.post<ApiResponse>(endpoints.users.deleteUserRequest, {})).data
+    return (await this.client.post<ApiResponse>(endpoints.users.deleteUserRequest, {})).data;
   }
 
   async activateUser(email: string, activationCode: string, passwordHash: string) {
-    const response = await this.client.post<ApiResponse>(endpoints.auth.activateUserAccount, 
+    const response = await this.client.post<ApiResponse>(
+      endpoints.auth.activateUserAccount,
       { activationCode },
-      { headers: { 
-        'Rediacc-UserEmail': email,
-        'Rediacc-UserHash': passwordHash 
-      } }
-    )
-    return response.data
+      {
+        headers: {
+          'Rediacc-UserEmail': email,
+          'Rediacc-UserHash': passwordHash,
+        },
+      }
+    );
+    return response.data;
   }
 
-  private async makeRequest<T>(endpoint: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const payload = data ?? {}
-    return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, payload, config))
+  private async makeRequest<T>(
+    endpoint: string,
+    data?: unknown,
+    config?: AxiosRequestConfig
+  ): Promise<ApiResponse<T>> {
+    const payload = data ?? {};
+    return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, payload, config));
   }
 
-  get = <T>(endpoint: string, params?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
-    this.makeRequest<T>(endpoint, params, config)
+  get = <T>(
+    endpoint: string,
+    params?: unknown,
+    config?: AxiosRequestConfig
+  ): Promise<ApiResponse<T>> => this.makeRequest<T>(endpoint, params, config);
 
-  post = <T>(endpoint: string, data: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
-    this.makeRequest<T>(endpoint, data, config)
+  post = <T>(
+    endpoint: string,
+    data: unknown,
+    config?: AxiosRequestConfig
+  ): Promise<ApiResponse<T>> => this.makeRequest<T>(endpoint, data, config);
 
-  put = <T>(endpoint: string, data: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
-    this.makeRequest<T>(endpoint, data, config)
+  put = <T>(
+    endpoint: string,
+    data: unknown,
+    config?: AxiosRequestConfig
+  ): Promise<ApiResponse<T>> => this.makeRequest<T>(endpoint, data, config);
 
-  delete = <T>(endpoint: string, data: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
-    this.makeRequest<T>(endpoint, data, config)
+  delete = <T>(
+    endpoint: string,
+    data: unknown,
+    config?: AxiosRequestConfig
+  ): Promise<ApiResponse<T>> => this.makeRequest<T>(endpoint, data, config);
 
-  private async queueRequest<T>(request: () => Promise<AxiosResponse<ApiResponse<T>>>): Promise<ApiResponse<T>> {
+  private async queueRequest<T>(
+    request: () => Promise<AxiosResponse<ApiResponse<T>>>
+  ): Promise<ApiResponse<T>> {
     const nextRequest = this.requestQueue
       .catch(() => undefined)
-      .then(async () => (await request()).data)
+      .then(async () => (await request()).data);
 
     this.requestQueue = nextRequest.then(
       () => undefined,
       () => undefined
-    )
+    );
 
-    return nextRequest
+    return nextRequest;
   }
 
   private async handleResponseDecryption(responseData: ApiResponse): Promise<ApiResponse> {
-    if (!responseData || !hasVaultFields(responseData)) return responseData
+    if (!responseData || !hasVaultFields(responseData)) return responseData;
     try {
-      return await decryptResponseData(responseData)
+      return await decryptResponseData(responseData);
     } catch {
-      return responseData
+      return responseData;
     }
   }
 
   private extractErrorMessage(error: unknown): string {
     if (typeof error === 'string') {
-      return error
+      return error;
     }
 
     if (this.isApiResponse(error)) {
-      return error.errors?.join('; ') || error.message || 'Request failed'
+      return error.errors?.join('; ') || error.message || 'Request failed';
     }
 
     if (isAxiosError<ApiResponse>(error)) {
-      const responseErrors = error.response?.data?.errors?.join('; ')
-      const responseMessage = error.response?.data?.message
-      const nestedMessageEntry = error.response?.data?.resultSets?.[0]?.data?.[0] as { message?: string } | undefined
-      const nestedMessage = nestedMessageEntry?.message
-      const additionalErrors = (error as { errors?: string[] }).errors?.join('; ')
-      return responseErrors || responseMessage || nestedMessage || additionalErrors || error.message || 'Request failed'
+      const responseErrors = error.response?.data?.errors?.join('; ');
+      const responseMessage = error.response?.data?.message;
+      const nestedMessageEntry = error.response?.data?.resultSets?.[0]?.data?.[0] as
+        | { message?: string }
+        | undefined;
+      const nestedMessage = nestedMessageEntry?.message;
+      const additionalErrors = (error as { errors?: string[] }).errors?.join('; ');
+      return (
+        responseErrors ||
+        responseMessage ||
+        nestedMessage ||
+        additionalErrors ||
+        error.message ||
+        'Request failed'
+      );
     }
 
     if (error instanceof Error) {
-      return error.message
+      return error.message;
     }
 
-    return 'Request failed'
+    return 'Request failed';
   }
-  
+
   private isUnauthorizedError(error: ApiResponse | AxiosError<ApiResponse>): boolean {
     if (this.isApiResponse(error)) {
-      return error.failure === this.HTTP_UNAUTHORIZED
+      return error.failure === this.HTTP_UNAUTHORIZED;
     }
-    return error.response?.status === this.HTTP_UNAUTHORIZED
+    return error.response?.status === this.HTTP_UNAUTHORIZED;
   }
-  
+
   private handleUnauthorizedError(): void {
-    const currentPath = window.location.pathname
-    const isAlreadyOnLogin = currentPath.includes('/login')
+    const currentPath = window.location.pathname;
+    const isAlreadyOnLogin = currentPath.includes('/login');
 
     // Only show dialog if not already on login page and dialog not already shown
     if (!isAlreadyOnLogin) {
-      const state = store.getState()
+      const state = store.getState();
       if (!state.auth.showSessionExpiredDialog) {
-        showMessage('error', 'Session expired. Please login again.')
-        store.dispatch(logout())
-        store.dispatch(showSessionExpiredDialog())
+        showMessage('error', 'Session expired. Please login again.');
+        store.dispatch(logout());
+        store.dispatch(showSessionExpiredDialog());
       }
     }
   }
-  
+
   private handleApiFailure(responseData: ApiResponse): Promise<never> {
     if (this.isUnauthorizedError(responseData)) {
-      this.handleUnauthorizedError()
-      return Promise.reject(new Error('Unauthorized'))
+      this.handleUnauthorizedError();
+      return Promise.reject(new Error('Unauthorized'));
     }
-    return Promise.reject(new Error(this.extractErrorMessage(responseData)))
+    return Promise.reject(new Error(this.extractErrorMessage(responseData)));
   }
 
   private async handleTokenRotation(responseData: ApiResponse): Promise<void> {
     // For ForkAuthenticationRequest, only rotate the main session token (resultSets[0])
     // Don't use the fork token from the "Credentials" resultSet for main session rotation
-    const rotationSource = responseData.resultSets?.[0]?.data?.[0] as { nextRequestToken?: string } | undefined
-    const newToken = rotationSource?.nextRequestToken
-    if (!newToken) return
+    const rotationSource = responseData.resultSets?.[0]?.data?.[0] as
+      | { nextRequestToken?: string }
+      | undefined;
+    const newToken = rotationSource?.nextRequestToken;
+    if (!newToken) return;
 
     // Token rotation is now handled by tokenService with proper locking
     // No need for manual flag management or arbitrary delays
-    await tokenService.updateToken(newToken)
+    await tokenService.updateToken(newToken);
   }
 
   private handleResponseError(error: AxiosError<ApiResponse>): Promise<never> {
-    const responseStatus = error.response?.status
-    const isNetworkError = Boolean(error.request && !error.response)
+    const responseStatus = error.response?.status;
+    const isNetworkError = Boolean(error.request && !error.response);
     const errorHandlers = {
       [this.isUnauthorizedError(error) ? 'unauthorized' : '']: () => this.handleUnauthorizedError(),
-      [responseStatus !== undefined && responseStatus >= this.HTTP_SERVER_ERROR ? 'server' : '']: () =>
-        showMessage('error', 'Server error. Please try again later.'),
+      [responseStatus !== undefined && responseStatus >= this.HTTP_SERVER_ERROR ? 'server' : '']:
+        () => showMessage('error', 'Server error. Please try again later.'),
       [isNetworkError ? 'network' : '']: () =>
         showMessage('error', 'Network error. Please check your connection.'),
-    }
-    
-    Object.entries(errorHandlers).forEach(([key, handler]) => key && handler())
-    
-    const customError: Error & { response?: unknown } = new Error(this.extractErrorMessage(error))
-    customError.response = error.response
-    return Promise.reject(customError)
+    };
+
+    Object.entries(errorHandlers).forEach(([key, handler]) => key && handler());
+
+    const customError: Error & { response?: unknown } = new Error(this.extractErrorMessage(error));
+    customError.response = error.response;
+    return Promise.reject(customError);
   }
 
   private isApiResponse(value: unknown): value is ApiResponse {
-    return typeof value === 'object' && value !== null && 'failure' in value && 'resultSets' in value
+    return (
+      typeof value === 'object' && value !== null && 'failure' in value && 'resultSets' in value
+    );
   }
-
 }
 
-export const apiClient = new ApiClient()
-export const api = createApiServices(apiClient)
-export default apiClient
+export const apiClient = new ApiClient();
+export const api = createApiServices(apiClient);
+export default apiClient;

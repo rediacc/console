@@ -1,47 +1,51 @@
-import React, { useCallback, useState } from 'react'
-import { Dropdown, Tooltip, message } from 'antd'
-import type { MenuProps } from 'antd'
-type ItemType = NonNullable<MenuProps['items']>[number]
+import React, { useCallback, useState } from 'react';
+import { Dropdown, Tooltip, message } from 'antd';
+import type { MenuProps } from 'antd';
+type ItemType = NonNullable<MenuProps['items']>[number];
 import {
   DesktopOutlined,
   CodeOutlined,
   BuildOutlined,
-  FileTextOutlined
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { useSelector } from 'react-redux'
-import { protocolUrlService, type ProtocolAction, type ContainerParams } from '@/services/protocolUrlService'
-import { PipInstallationModal } from '../PipInstallationModal'
-import { LocalCommandModal } from '../LocalCommandModal'
-import type { RootState } from '@/store/store'
-import type { PluginContainer } from '@/types'
-import { useDialogState } from '@/hooks/useDialogState'
-import { MenuLabel, TriggerButton } from './styles'
-import { IconWrapper } from '@/components/ui'
+  FileTextOutlined,
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import {
+  protocolUrlService,
+  type ProtocolAction,
+  type ContainerParams,
+} from '@/services/protocolUrlService';
+import { PipInstallationModal } from '../PipInstallationModal';
+import { LocalCommandModal } from '../LocalCommandModal';
+import type { RootState } from '@/store/store';
+import type { PluginContainer } from '@/types';
+import { useDialogState } from '@/hooks/useDialogState';
+import { MenuLabel, TriggerButton } from './styles';
+import { IconWrapper } from '@/components/ui';
 
-type ContainerMenuAction = 'terminal' | 'logs' | 'stats'
+type ContainerMenuAction = 'terminal' | 'logs' | 'stats';
 
-type MenuItemWithTestId = ItemType & { ['data-testid']?: string }
+type MenuItemWithTestId = ItemType & { ['data-testid']?: string };
 
 interface LocalActionsMenuProps {
-  machine: string
-  repo?: string
-  teamName?: string
-  disabled?: boolean
-  userEmail?: string
-  pluginContainers?: PluginContainer[]
-  containerId?: string
-  containerName?: string
-  containerState?: string
-  isContainerMenu?: boolean
-  isMachineOnlyMenu?: boolean
+  machine: string;
+  repo?: string;
+  teamName?: string;
+  disabled?: boolean;
+  userEmail?: string;
+  pluginContainers?: PluginContainer[];
+  containerId?: string;
+  containerName?: string;
+  containerState?: string;
+  isContainerMenu?: boolean;
+  isMachineOnlyMenu?: boolean;
 }
 
 const createMenuIcon = (IconComponent: React.ElementType) => (
   <IconWrapper $size="md" $tone="primary">
     <IconComponent />
   </IconWrapper>
-)
+);
 
 export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   machine,
@@ -56,100 +60,121 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   isContainerMenu = false,
   isMachineOnlyMenu = false,
 }) => {
-  const { t } = useTranslation()
-  const installModal = useDialogState<'not-installed' | 'protocol-not-registered' | 'permission-denied'>()
-  const [isCheckingProtocol, setIsCheckingProtocol] = useState(false)
-  const commandModal = useDialogState<void>()
+  const { t } = useTranslation();
+  const installModal = useDialogState<
+    'not-installed' | 'protocol-not-registered' | 'permission-denied'
+  >();
+  const [isCheckingProtocol, setIsCheckingProtocol] = useState(false);
+  const commandModal = useDialogState<void>();
 
-  const currentUserEmail = useSelector((state: RootState) => state.auth.user?.email)
+  const currentUserEmail = useSelector((state: RootState) => state.auth.user?.email);
 
   const handleOpenInDesktop = useCallback(
     async (action?: ProtocolAction, containerAction?: ContainerMenuAction) => {
       const baseParams = {
         team: teamName,
         machine,
-        repo: isMachineOnlyMenu ? '' : repo ?? '',
-      }
+        repo: isMachineOnlyMenu ? '' : (repo ?? ''),
+      };
 
-      let url: string
+      let url: string;
       try {
         if (isContainerMenu && containerId) {
           const containerParams: ContainerParams = {
             containerId,
             containerName,
             action: containerAction ?? 'terminal',
-          }
+          };
 
           if (containerAction) {
             switch (containerAction) {
               case 'logs':
-                url = await protocolUrlService.generateContainerLogsUrl(baseParams, containerParams)
-                break
+                url = await protocolUrlService.generateContainerLogsUrl(
+                  baseParams,
+                  containerParams
+                );
+                break;
               case 'stats':
-                url = await protocolUrlService.generateContainerStatsUrl(baseParams, containerParams)
-                break
+                url = await protocolUrlService.generateContainerStatsUrl(
+                  baseParams,
+                  containerParams
+                );
+                break;
               case 'terminal':
               default:
-                url = await protocolUrlService.generateContainerTerminalUrl(baseParams, containerParams)
-                break
+                url = await protocolUrlService.generateContainerTerminalUrl(
+                  baseParams,
+                  containerParams
+                );
+                break;
             }
           } else {
-            url = await protocolUrlService.generateDesktopUrl(baseParams, containerParams)
+            url = await protocolUrlService.generateDesktopUrl(baseParams, containerParams);
           }
         } else if (action) {
           if (action === 'terminal') {
-            url = await protocolUrlService.generateTerminalUrl(baseParams)
+            url = await protocolUrlService.generateTerminalUrl(baseParams);
           } else if (action === 'desktop') {
-            url = await protocolUrlService.generateDesktopUrl(baseParams)
+            url = await protocolUrlService.generateDesktopUrl(baseParams);
           } else if (action === 'vscode') {
-            url = await protocolUrlService.generateVSCodeUrl(baseParams)
+            url = await protocolUrlService.generateVSCodeUrl(baseParams);
           } else {
-            url = await protocolUrlService.generateUrl(baseParams)
+            url = await protocolUrlService.generateUrl(baseParams);
           }
         } else {
-          url = await protocolUrlService.generateDesktopUrl(baseParams)
+          url = await protocolUrlService.generateDesktopUrl(baseParams);
         }
       } catch (error) {
-        console.error('Failed to generate protocol URL:', error)
-        message.error('Failed to create secure connection for desktop app')
-        return
+        console.error('Failed to generate protocol URL:', error);
+        message.error('Failed to create secure connection for desktop app');
+        return;
       }
 
-      setIsCheckingProtocol(true)
-      const result = await protocolUrlService.openUrl(url)
-      setIsCheckingProtocol(false)
+      setIsCheckingProtocol(true);
+      const result = await protocolUrlService.openUrl(url);
+      setIsCheckingProtocol(false);
 
       if (!result.success) {
-        let errorType: 'not-installed' | 'protocol-not-registered' | 'permission-denied' = 'not-installed'
+        let errorType: 'not-installed' | 'protocol-not-registered' | 'permission-denied' =
+          'not-installed';
         try {
-          const protocolStatus = await protocolUrlService.checkProtocolStatus()
+          const protocolStatus = await protocolUrlService.checkProtocolStatus();
 
           if (protocolStatus.available) {
-            errorType = 'permission-denied'
+            errorType = 'permission-denied';
           } else if (protocolStatus.errorReason?.includes('not registered')) {
-            errorType = 'protocol-not-registered'
+            errorType = 'protocol-not-registered';
           } else {
-            errorType = 'not-installed'
+            errorType = 'not-installed';
           }
         } catch {
           if (result.error?.type === 'timeout') {
-            errorType = 'not-installed'
+            errorType = 'not-installed';
           } else if (result.error?.message.includes('permission')) {
-            errorType = 'permission-denied'
+            errorType = 'permission-denied';
           } else {
-            errorType = 'protocol-not-registered'
+            errorType = 'protocol-not-registered';
           }
         }
 
-        installModal.open(errorType)
+        installModal.open(errorType);
       }
     },
-    [teamName, machine, repo, isContainerMenu, containerId, containerName, isMachineOnlyMenu, installModal]
-  )
+    [
+      teamName,
+      machine,
+      repo,
+      isContainerMenu,
+      containerId,
+      containerName,
+      isMachineOnlyMenu,
+      installModal,
+    ]
+  );
 
   const buildContainerMenuItems = (): MenuItemWithTestId[] => {
-    const items: MenuItemWithTestId[] = []
-    const isRunning = containerState === 'running'
+    const items: MenuItemWithTestId[] = [];
+    const isRunning = containerState === 'running';
 
     if (isRunning) {
       items.push({
@@ -158,11 +183,11 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         label: <MenuLabel>{t('resources:localActions.openContainerTerminal')}</MenuLabel>,
         onClick: () => handleOpenInDesktop(undefined, 'terminal'),
         'data-testid': `local-actions-container-terminal-${containerId}`,
-      })
+      });
     }
 
     if (items.length > 0) {
-      items.push({ type: 'divider' })
+      items.push({ type: 'divider' });
     }
 
     items.push({
@@ -171,7 +196,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       label: <MenuLabel>{t('resources:localActions.viewContainerLogs')}</MenuLabel>,
       onClick: () => handleOpenInDesktop(undefined, 'logs'),
       'data-testid': `local-actions-container-logs-${containerId}`,
-    })
+    });
 
     if (isRunning) {
       items.push({
@@ -180,11 +205,11 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         label: <MenuLabel>{t('resources:localActions.containerStats')}</MenuLabel>,
         onClick: () => handleOpenInDesktop(undefined, 'stats'),
         'data-testid': `local-actions-container-stats-${containerId}`,
-      })
+      });
     }
 
-    return items
-  }
+    return items;
+  };
 
   const buildMachineMenuItems = (): MenuItemWithTestId[] => [
     {
@@ -216,18 +241,18 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       onClick: () => commandModal.open(),
       'data-testid': `local-actions-cli-commands-${repo}`,
     },
-  ]
+  ];
 
-  const menuItems = isContainerMenu ? buildContainerMenuItems() : buildMachineMenuItems()
-  const menuConfig: MenuProps = { items: menuItems as ItemType[] }
+  const menuItems = isContainerMenu ? buildContainerMenuItems() : buildMachineMenuItems();
+  const menuConfig: MenuProps = { items: menuItems as ItemType[] };
 
   const tooltipLabel = isContainerMenu
     ? t('resources:localActions.containerLocal')
-    : t('resources:localActions.local')
+    : t('resources:localActions.local');
 
   const triggerTestId = isContainerMenu
     ? `local-actions-dropdown-${containerId}`
-    : `local-actions-dropdown-${repo}`
+    : `local-actions-dropdown-${repo}`;
 
   return (
     <>
@@ -265,5 +290,5 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         />
       )}
     </>
-  )
-}
+  );
+};

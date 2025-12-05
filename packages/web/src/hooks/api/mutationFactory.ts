@@ -1,90 +1,92 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { isAxiosError } from 'axios'
-import { showMessage } from '@/utils/messages'
-import { minifyJSON } from '@/utils/json'
-import { telemetryService } from '@/services/telemetryService'
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
+import { showMessage } from '@/utils/messages';
+import { minifyJSON } from '@/utils/json';
+import { telemetryService } from '@/services/telemetryService';
 
 export interface MutationConfig<TVariables, TResult = unknown, TTransformed = TVariables> {
-  request: (data: TTransformed) => Promise<TResult>
-  invalidateKeys: string[] | ((variables: TVariables) => string[])
-  successMessage: (variables: TVariables) => string
-  errorMessage?: string
-  transformData?: (data: TVariables) => TTransformed | Promise<TTransformed>
-  operationName?: string
+  request: (data: TTransformed) => Promise<TResult>;
+  invalidateKeys: string[] | ((variables: TVariables) => string[]);
+  successMessage: (variables: TVariables) => string;
+  errorMessage?: string;
+  transformData?: (data: TVariables) => TTransformed | Promise<TTransformed>;
+  operationName?: string;
 }
 
-export const createMutation = <TVariables, TResult = unknown, TTransformed = TVariables>(
-  config: MutationConfig<TVariables, TResult, TTransformed>
-) => () => {
-  const queryClient = useQueryClient()
+export const createMutation =
+  <TVariables, TResult = unknown, TTransformed = TVariables>(
+    config: MutationConfig<TVariables, TResult, TTransformed>
+  ) =>
+  () => {
+    const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (data: TVariables) => {
-      const startTime = performance.now()
-      const operationName = config.operationName ?? 'mutation'
+    return useMutation({
+      mutationFn: async (data: TVariables) => {
+        const startTime = performance.now();
+        const operationName = config.operationName ?? 'mutation';
 
-      telemetryService.trackEvent('data.mutation_start', {
-        'mutation.operation': operationName,
-        'mutation.has_transform': Boolean(config.transformData),
-        'mutation.data_size': JSON.stringify(data).length,
-      })
-
-      try {
-        const transformed = config.transformData
-          ? await config.transformData(data)
-          : (data as unknown as TTransformed)
-        const response = await config.request(transformed)
-
-        const duration = performance.now() - startTime
-        telemetryService.trackEvent('data.mutation_success', {
+        telemetryService.trackEvent('data.mutation_start', {
           'mutation.operation': operationName,
-          'mutation.duration_ms': duration,
-          'mutation.response_status': 'success',
-          'mutation.invalidated_keys_count': Array.isArray(config.invalidateKeys)
-            ? config.invalidateKeys.length
-            : 1,
-        })
+          'mutation.has_transform': Boolean(config.transformData),
+          'mutation.data_size': JSON.stringify(data).length,
+        });
 
-        return response
-      } catch (error) {
-        const duration = performance.now() - startTime
-        const errorType = isAxiosError(error) && error.response
-          ? error.response.status
-          : 'network_error'
-        telemetryService.trackEvent('data.mutation_error', {
-          'mutation.operation': operationName,
-          'mutation.duration_ms': duration,
-          'mutation.error': error instanceof Error ? error.message : 'unknown_error',
-          'mutation.error_type': errorType,
-        })
-        throw error
-      }
-    },
-    onSuccess: (_, variables) => {
-      const keys = typeof config.invalidateKeys === 'function'
-        ? config.invalidateKeys(variables)
-        : config.invalidateKeys
+        try {
+          const transformed = config.transformData
+            ? await config.transformData(data)
+            : (data as unknown as TTransformed);
+          const response = await config.request(transformed);
 
-      telemetryService.trackEvent('data.cache_invalidation', {
-        'cache.invalidated_keys': keys.join(','),
-        'cache.key_count': keys.length,
-        'cache.operation': config.operationName ?? 'mutation',
-      })
+          const duration = performance.now() - startTime;
+          telemetryService.trackEvent('data.mutation_success', {
+            'mutation.operation': operationName,
+            'mutation.duration_ms': duration,
+            'mutation.response_status': 'success',
+            'mutation.invalidated_keys_count': Array.isArray(config.invalidateKeys)
+              ? config.invalidateKeys.length
+              : 1,
+          });
 
-      keys.forEach(key => queryClient.invalidateQueries({ queryKey: [key] }))
-      showMessage('success', config.successMessage(variables))
-    },
-    onError: (error: unknown) => {
-      const message = error instanceof Error ? error.message : undefined
-      showMessage('error', message || config.errorMessage || 'Operation failed')
-    },
-    meta: {
-      telemetry: {
-        operation: config.operationName ?? 'mutation',
+          return response;
+        } catch (error) {
+          const duration = performance.now() - startTime;
+          const errorType =
+            isAxiosError(error) && error.response ? error.response.status : 'network_error';
+          telemetryService.trackEvent('data.mutation_error', {
+            'mutation.operation': operationName,
+            'mutation.duration_ms': duration,
+            'mutation.error': error instanceof Error ? error.message : 'unknown_error',
+            'mutation.error_type': errorType,
+          });
+          throw error;
+        }
       },
-    },
-  })
-}
+      onSuccess: (_, variables) => {
+        const keys =
+          typeof config.invalidateKeys === 'function'
+            ? config.invalidateKeys(variables)
+            : config.invalidateKeys;
+
+        telemetryService.trackEvent('data.cache_invalidation', {
+          'cache.invalidated_keys': keys.join(','),
+          'cache.key_count': keys.length,
+          'cache.operation': config.operationName ?? 'mutation',
+        });
+
+        keys.forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
+        showMessage('success', config.successMessage(variables));
+      },
+      onError: (error: unknown) => {
+        const message = error instanceof Error ? error.message : undefined;
+        showMessage('error', message || config.errorMessage || 'Operation failed');
+      },
+      meta: {
+        telemetry: {
+          operation: config.operationName ?? 'mutation',
+        },
+      },
+    });
+  };
 
 export const createResourceMutation = <T extends Record<string, unknown>>(
   resourceType: string,
@@ -97,27 +99,29 @@ export const createResourceMutation = <T extends Record<string, unknown>>(
     request,
     invalidateKeys: [resourceType.toLowerCase() + 's', 'dropdown-data', ...additionalKeys],
     successMessage: (variables: T) => {
-      const name = variables[nameField] as string
-      const actions = { create: 'created', update: 'updated', delete: 'deleted' }
-      return `${resourceType} "${name}" ${actions[operation]} successfully`
+      const name = variables[nameField] as string;
+      const actions = { create: 'created', update: 'updated', delete: 'deleted' };
+      return `${resourceType} "${name}" ${actions[operation]} successfully`;
     },
     errorMessage: `Failed to ${operation} ${resourceType.toLowerCase()}`,
     operationName: `${resourceType}.${operation}`,
-  })
+  });
 
   return () => {
-    const mutation = baseMutation()
-    const originalMutate = mutation.mutate
-    type MutateOptionsType = Parameters<typeof originalMutate>[1]
+    const mutation = baseMutation();
+    const originalMutate = mutation.mutate;
+    type MutateOptionsType = Parameters<typeof originalMutate>[1];
 
     mutation.mutate = (variables: T, options?: MutateOptionsType) => {
       telemetryService.trackEvent('business.resource_operation', {
         'resource.type': resourceType.toLowerCase(),
         'resource.operation': operation,
         'resource.name': (variables[nameField] as string) || 'unknown',
-        'resource.has_vault': Object.keys(variables).some(key => key.toLowerCase().includes('vault')),
+        'resource.has_vault': Object.keys(variables).some((key) =>
+          key.toLowerCase().includes('vault')
+        ),
         'resource.field_count': Object.keys(variables).length,
-      })
+      });
 
       return originalMutate(variables, {
         ...options,
@@ -126,8 +130,8 @@ export const createResourceMutation = <T extends Record<string, unknown>>(
             'resource.type': resourceType.toLowerCase(),
             'resource.operation': operation,
             'resource.name': (vars[nameField] as string) || 'unknown',
-          })
-          options?.onSuccess?.(data, vars, context, mutationResult)
+          });
+          options?.onSuccess?.(data, vars, context, mutationResult);
         },
         onError: (error, vars, context, mutationResult) => {
           telemetryService.trackEvent('business.resource_operation_error', {
@@ -135,29 +139,30 @@ export const createResourceMutation = <T extends Record<string, unknown>>(
             'resource.operation': operation,
             'resource.name': (vars[nameField] as string) || 'unknown',
             'resource.error': error instanceof Error ? error.message : 'unknown_error',
-          })
-          options?.onError?.(error, vars, context, mutationResult)
+          });
+          options?.onError?.(error, vars, context, mutationResult);
         },
-      })
-    }
+      });
+    };
 
-    return mutation
-  }
-}
+    return mutation;
+  };
+};
 
 export const createVaultUpdateMutation = <T extends Record<string, unknown>>(
   resourceType: string,
   request: (data: T) => Promise<unknown>,
   nameField: keyof T,
   vaultField: keyof T
-) => createMutation<T>({
-  request,
-  invalidateKeys: [resourceType.toLowerCase() + 's'],
-  successMessage: (variables) => `${resourceType} vault updated for "${variables[nameField]}"`,
-  errorMessage: `Failed to update ${resourceType.toLowerCase()} vault`,
-  transformData: (data) => ({
-    ...data,
-    [vaultField]: minifyJSON(data[vaultField] as string),
-  }),
-  operationName: `${resourceType}.updateVault`,
-})
+) =>
+  createMutation<T>({
+    request,
+    invalidateKeys: [resourceType.toLowerCase() + 's'],
+    successMessage: (variables) => `${resourceType} vault updated for "${variables[nameField]}"`,
+    errorMessage: `Failed to update ${resourceType.toLowerCase()} vault`,
+    transformData: (data) => ({
+      ...data,
+      [vaultField]: minifyJSON(data[vaultField] as string),
+    }),
+    operationName: `${resourceType}.updateVault`,
+  });

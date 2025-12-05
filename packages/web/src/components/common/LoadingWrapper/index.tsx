@@ -1,7 +1,7 @@
-import React from 'react'
-import { Spin, Empty } from 'antd'
-import styled from 'styled-components'
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
+import React from 'react';
+import { Spin, Empty } from 'antd';
+import styled from 'styled-components';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const CenteredContainer = styled.div`
   display: flex;
@@ -9,7 +9,7 @@ const CenteredContainer = styled.div`
   align-items: center;
   min-height: 200px;
   padding: ${DESIGN_TOKENS.SPACING.LG}px;
-`
+`;
 
 const FullHeightContainer = styled.div`
   display: flex;
@@ -17,29 +17,29 @@ const FullHeightContainer = styled.div`
   align-items: center;
   height: 100%;
   width: 100%;
-`
+`;
 
 export interface LoadingWrapperProps {
   /** Whether content is loading */
-  loading: boolean
+  loading: boolean;
   /** Content to display when not loading */
-  children: React.ReactNode
+  children: React.ReactNode;
   /** Whether data is empty after loading */
-  isEmpty?: boolean
+  isEmpty?: boolean;
   /** Custom empty state message */
-  emptyMessage?: string
+  emptyMessage?: string;
   /** Custom empty state description */
-  emptyDescription?: string
+  emptyDescription?: string;
   /** Spin size */
-  size?: 'small' | 'default' | 'large'
+  size?: 'small' | 'default' | 'large';
   /** Custom loading tip */
-  tip?: string
+  tip?: string;
   /** Whether to center the loading spinner */
-  centered?: boolean
+  centered?: boolean;
   /** Whether to take full height */
-  fullHeight?: boolean
+  fullHeight?: boolean;
   /** Minimum height for loading state */
-  minHeight?: number
+  minHeight?: number;
 }
 
 /**
@@ -81,26 +81,27 @@ export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
 }) => {
   if (loading) {
     if (centered || fullHeight) {
-      const Container = fullHeight ? FullHeightContainer : CenteredContainer
+      const Container = fullHeight ? FullHeightContainer : CenteredContainer;
       return (
         <Container style={minHeight ? { minHeight } : undefined}>
           <Spin size={size} tip={tip} />
         </Container>
-      )
+      );
     }
-    return <Spin spinning size={size} tip={tip}>{children}</Spin>
+    return (
+      <Spin spinning size={size} tip={tip}>
+        {children}
+      </Spin>
+    );
   }
 
   if (isEmpty) {
     return (
-      <Empty
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-        description={emptyMessage || emptyDescription}
-      />
-    )
+      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyMessage || emptyDescription} />
+    );
   }
 
-  return <>{children}</>
-}
+  return <>{children}</>;
+};
 
-export default LoadingWrapper
+export default LoadingWrapper;

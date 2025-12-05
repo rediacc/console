@@ -1,13 +1,9 @@
-import type { MenuProps } from 'antd'
-import type { TFunction } from 'i18next'
-import {
-  DatabaseOutlined,
-  PlusOutlined,
-  FunctionOutlined,
-} from '@/utils/optimizedIcons'
+import type { MenuProps } from 'antd';
+import type { TFunction } from 'i18next';
+import { DatabaseOutlined, PlusOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 
 export const getPoolFunctionMenuItems = (
-  t: TFunction<'distributedStorage' | 'common'>,
+  t: TFunction<'distributedStorage' | 'common'>
 ): MenuProps['items'] => [
   {
     key: 'list',
@@ -25,4 +21,4 @@ export const getPoolFunctionMenuItems = (
     label: t('common:actions.advanced'),
     icon: <FunctionOutlined />,
   },
-]
+];

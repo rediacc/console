@@ -6,15 +6,15 @@
  */
 
 interface VersionInfo {
-  version: string
-  buildDate?: string
-  gitCommit?: string
-  gitCommitShort?: string
+  version: string;
+  buildDate?: string;
+  gitCommit?: string;
+  gitCommitShort?: string;
 }
 
 class VersionService {
-  private versionCache: VersionInfo | null = null
-  private fetchPromise: Promise<VersionInfo> | null = null
+  private versionCache: VersionInfo | null = null;
+  private fetchPromise: Promise<VersionInfo> | null = null;
 
   /**
    * Fetches the version information from version.json
@@ -23,22 +23,22 @@ class VersionService {
   async getVersion(): Promise<VersionInfo> {
     // Return cached version if available
     if (this.versionCache) {
-      return this.versionCache
+      return this.versionCache;
     }
 
     // Return existing fetch promise if already fetching
     if (this.fetchPromise) {
-      return this.fetchPromise
+      return this.fetchPromise;
     }
 
     // Create new fetch promise
-    this.fetchPromise = this.fetchVersionFromFile()
+    this.fetchPromise = this.fetchVersionFromFile();
 
     try {
-      this.versionCache = await this.fetchPromise
-      return this.versionCache
+      this.versionCache = await this.fetchPromise;
+      return this.versionCache;
     } finally {
-      this.fetchPromise = null
+      this.fetchPromise = null;
     }
   }
 
@@ -49,27 +49,27 @@ class VersionService {
     try {
       // Fetch version.json relative to the current base path
       // This works for both root (/) and versioned (/versions/vX.Y.Z/) deployments
-      const response = await fetch('./version.json')
+      const response = await fetch('./version.json');
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch version.json: ${response.status}`)
+        throw new Error(`Failed to fetch version.json: ${response.status}`);
       }
 
-      const data = await response.json() as VersionInfo
+      const data = (await response.json()) as VersionInfo;
 
       // Validate the response has a version field
       if (!data.version) {
-        throw new Error('version.json missing version field')
+        throw new Error('version.json missing version field');
       }
 
-      return data
+      return data;
     } catch (error) {
-      console.warn('Failed to fetch version from version.json, using fallback', error)
+      console.warn('Failed to fetch version from version.json, using fallback', error);
 
       // Fallback to build-time version from Vite
       return {
         version: import.meta.env.VITE_APP_VERSION || 'unknown',
-      }
+      };
     }
   }
 
@@ -79,25 +79,25 @@ class VersionService {
    */
   formatVersion(version: string): string {
     if (version === 'dev' || version === 'development' || version === 'unknown') {
-      return 'Development'
+      return 'Development';
     }
 
     // If it looks like a commit hash (40 chars, all hex), shorten it
     if (version.length === 40 && /^[0-9a-f]+$/i.test(version)) {
-      return `v${version.substring(0, 7)}`
+      return `v${version.substring(0, 7)}`;
     }
 
     // Ensure 'v' prefix
-    return version.startsWith('v') ? version : `v${version}`
+    return version.startsWith('v') ? version : `v${version}`;
   }
 
   /**
    * Clears the cached version (useful for testing)
    */
   clearCache(): void {
-    this.versionCache = null
-    this.fetchPromise = null
+    this.versionCache = null;
+    this.fetchPromise = null;
   }
 }
 
-export const versionService = new VersionService()
+export const versionService = new VersionService();

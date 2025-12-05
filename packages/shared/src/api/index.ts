@@ -1,3 +1,3 @@
-export * from './normalizer'
-export * from './parseResponse'
-export * from './services'
+export * from './normalizer';
+export * from './parseResponse';
+export * from './services';

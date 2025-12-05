@@ -1,31 +1,36 @@
-import React, { useState } from 'react'
-import { Modal, Tabs, Table, Button, Space, Tag, Empty, message } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
-import { CloudServerOutlined, DesktopOutlined, PlusOutlined, DeleteOutlined } from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
+import React, { useState } from 'react';
+import { Modal, Tabs, Table, Button, Space, Tag, Empty, message } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import {
+  CloudServerOutlined,
+  DesktopOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
 import {
   useDistributedStorageClusterMachines,
   useAvailableMachinesForClone,
-} from '@/api/queries/distributedStorage'
+} from '@/api/queries/distributedStorage';
 import {
   useUpdateMachineClusterAssignment,
   useUpdateMachineClusterRemoval,
-} from '@/api/queries/distributedStorageMutations'
-import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector'
-import { formatTimestampAsIs } from '@/core'
-import { ModalSize } from '@/types/modal'
-import type { Machine } from '@/types'
-import { createSorter } from '@/core'
-import { confirmAction } from '@/utils/confirmations'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
-import { createDateColumn, createTruncatedColumn } from '@/components/common/columns'
+} from '@/api/queries/distributedStorageMutations';
+import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector';
+import { formatTimestampAsIs } from '@/core';
+import { ModalSize } from '@/types/modal';
+import type { Machine } from '@/types';
+import { createSorter } from '@/core';
+import { confirmAction } from '@/utils/confirmations';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { createDateColumn, createTruncatedColumn } from '@/components/common/columns';
 
 interface ManageClusterMachinesModalProps {
-  open: boolean
-  clusterName: string
-  teamName: string
-  onCancel: () => void
-  onSuccess?: () => void
+  open: boolean;
+  clusterName: string;
+  teamName: string;
+  onCancel: () => void;
+  onSuccess?: () => void;
 }
 
 export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProps> = ({
@@ -33,125 +38,134 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
   clusterName,
   teamName,
   onCancel,
-  onSuccess
+  onSuccess,
 }) => {
-  const { t } = useTranslation(['distributedStorage', 'machines', 'common'])
-  const [confirmModal, confirmContextHolder] = Modal.useModal()
-  const [activeTab, setActiveTab] = useState<'assign' | 'manage'>('assign')
-  const [selectedMachines, setSelectedMachines] = useState<string[]>([])
-  const [selectedRemoveMachines, setSelectedRemoveMachines] = useState<string[]>([])
-  const [assigningMachines, setAssigningMachines] = useState(false)
-  const [removingMachines, setRemovingMachines] = useState(false)
-  
+  const { t } = useTranslation(['distributedStorage', 'machines', 'common']);
+  const [confirmModal, confirmContextHolder] = Modal.useModal();
+  const [activeTab, setActiveTab] = useState<'assign' | 'manage'>('assign');
+  const [selectedMachines, setSelectedMachines] = useState<string[]>([]);
+  const [selectedRemoveMachines, setSelectedRemoveMachines] = useState<string[]>([]);
+  const [assigningMachines, setAssigningMachines] = useState(false);
+  const [removingMachines, setRemovingMachines] = useState(false);
+
   // Fetch cluster machines
-  const { data: clusterMachines = [], isLoading: loadingClusterMachines, refetch: refetchClusterMachines } = 
-    useDistributedStorageClusterMachines(clusterName, open)
-  
+  const {
+    data: clusterMachines = [],
+    isLoading: loadingClusterMachines,
+    refetch: refetchClusterMachines,
+  } = useDistributedStorageClusterMachines(clusterName, open);
+
   // Fetch available machines
   const { data: availableMachines = [], isLoading: loadingAvailable } =
-    useAvailableMachinesForClone(teamName, open && activeTab === 'assign')
-  const normalizedAvailableMachines = availableMachines as unknown as Machine[]
-  
+    useAvailableMachinesForClone(teamName, open && activeTab === 'assign');
+  const normalizedAvailableMachines = availableMachines as unknown as Machine[];
+
   // Mutations
-  const assignMachine = useUpdateMachineClusterAssignment()
-  const removeMachine = useUpdateMachineClusterRemoval()
-  
+  const assignMachine = useUpdateMachineClusterAssignment();
+  const removeMachine = useUpdateMachineClusterRemoval();
+
   // Reset state when modal closes
   React.useEffect(() => {
     if (!open) {
-      setActiveTab('assign')
-      setSelectedMachines([])
-      setSelectedRemoveMachines([])
+      setActiveTab('assign');
+      setSelectedMachines([]);
+      setSelectedRemoveMachines([]);
     }
-  }, [open])
-  
+  }, [open]);
+
   const handleAssignMachines = async () => {
     if (selectedMachines.length === 0) {
-      message.warning(t('machines:bulkOperations.selectMachines'))
-      return
+      message.warning(t('machines:bulkOperations.selectMachines'));
+      return;
     }
-    
-    setAssigningMachines(true)
-    
+
+    setAssigningMachines(true);
+
     try {
       // Assign each machine to the cluster
       const results = await Promise.allSettled(
-        selectedMachines.map(machineName =>
+        selectedMachines.map((machineName) =>
           assignMachine.mutateAsync({
             teamName,
             machineName,
-            clusterName
+            clusterName,
           })
         )
-      )
-      
-      const successCount = results.filter(r => r.status === 'fulfilled').length
-      const failedCount = results.filter(r => r.status === 'rejected').length
-      
+      );
+
+      const successCount = results.filter((r) => r.status === 'fulfilled').length;
+      const failedCount = results.filter((r) => r.status === 'rejected').length;
+
       if (failedCount === 0) {
-        message.success(t('machines:bulkOperations.assignmentSuccess', { count: successCount }))
-        setSelectedMachines([])
-        refetchClusterMachines()
-        if (onSuccess) onSuccess()
+        message.success(t('machines:bulkOperations.assignmentSuccess', { count: successCount }));
+        setSelectedMachines([]);
+        refetchClusterMachines();
+        if (onSuccess) onSuccess();
       } else {
-        message.warning(t('machines:bulkOperations.assignmentPartial', { 
-          success: successCount, 
-          total: results.length 
-        }))
-        refetchClusterMachines()
+        message.warning(
+          t('machines:bulkOperations.assignmentPartial', {
+            success: successCount,
+            total: results.length,
+          })
+        );
+        refetchClusterMachines();
       }
     } finally {
-      setAssigningMachines(false)
+      setAssigningMachines(false);
     }
-  }
-  
+  };
+
   const handleRemoveMachines = async () => {
     if (selectedRemoveMachines.length === 0) {
-      message.warning(t('machines:validation.noMachinesSelected'))
-      return
+      message.warning(t('machines:validation.noMachinesSelected'));
+      return;
     }
 
     confirmAction({
       modal: confirmModal,
       title: t('machines:removeFromCluster') as string,
-      content: t('machines:removeFromClusterWarning', { count: selectedRemoveMachines.length }) as string,
+      content: t('machines:removeFromClusterWarning', {
+        count: selectedRemoveMachines.length,
+      }) as string,
       okText: t('common:actions.remove') as string,
       okType: 'danger',
       cancelText: t('common:actions.cancel') as string,
       onConfirm: async () => {
-        setRemovingMachines(true)
+        setRemovingMachines(true);
 
         try {
           const results = await Promise.allSettled(
-            selectedRemoveMachines.map(machineName =>
+            selectedRemoveMachines.map((machineName) =>
               removeMachine.mutateAsync({
                 teamName,
-                machineName
+                machineName,
               })
             )
-          )
+          );
 
-          const successCount = results.filter(r => r.status === 'fulfilled').length
+          const successCount = results.filter((r) => r.status === 'fulfilled').length;
 
           if (successCount === selectedRemoveMachines.length) {
-            message.success(t('machines:bulkOperations.removalSuccess', { count: successCount }))
-            setSelectedRemoveMachines([])
-            refetchClusterMachines()
-            if (onSuccess) onSuccess()
+            message.success(t('machines:bulkOperations.removalSuccess', { count: successCount }));
+            setSelectedRemoveMachines([]);
+            refetchClusterMachines();
+            if (onSuccess) onSuccess();
           } else {
-            message.warning(t('machines:bulkOperations.assignmentPartial', {
-              success: successCount,
-              total: results.length
-            }))
-            refetchClusterMachines()
+            message.warning(
+              t('machines:bulkOperations.assignmentPartial', {
+                success: successCount,
+                total: results.length,
+              })
+            );
+            refetchClusterMachines();
           }
         } finally {
-          setRemovingMachines(false)
+          setRemovingMachines(false);
         }
-      }
-    })
-  }
-  
+      },
+    });
+  };
+
   // Columns for assigned machines table
   const machineColumn = createTruncatedColumn<Machine>({
     title: t('machines:machineName'),
@@ -164,7 +178,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
         <strong>{content}</strong>
       </Space>
     ),
-  })
+  });
 
   const bridgeColumn = createTruncatedColumn<Machine>({
     title: t('machines:bridge'),
@@ -172,7 +186,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     key: 'bridgeName',
     sorter: createSorter<Machine>('bridgeName'),
     renderWrapper: (content) => <Tag color="green">{content}</Tag>,
-  })
+  });
 
   const assignedDateColumn = createDateColumn<Machine>({
     title: t('machines:assignedDate'),
@@ -180,23 +194,23 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     key: 'assignedDate',
     sorter: false,
     render: (date: string | Date | null | undefined) => {
-      if (!date) return '-'
-      const resolved = typeof date === 'string' ? date : date.toString()
-      return formatTimestampAsIs(resolved, 'datetime')
+      if (!date) return '-';
+      const resolved = typeof date === 'string' ? date : date.toString();
+      return formatTimestampAsIs(resolved, 'datetime');
     },
-  })
+  });
 
-  const assignedColumns: ColumnsType<Machine> = [machineColumn, bridgeColumn, assignedDateColumn]
-  
+  const assignedColumns: ColumnsType<Machine> = [machineColumn, bridgeColumn, assignedDateColumn];
+
   const renderAssignTab = () => {
     if (loadingAvailable) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
           <div />
         </LoadingWrapper>
-      )
+      );
     }
-    
+
     return (
       <Space orientation="vertical" size="large" style={{ width: '100%' }}>
         <div>
@@ -207,7 +221,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
             onChange={setSelectedMachines}
           />
         </div>
-        
+
         {selectedMachines.length > 0 && (
           <div>
             <Tag color="blue">
@@ -216,29 +230,29 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
           </div>
         )}
       </Space>
-    )
-  }
-  
+    );
+  };
+
   const renderManageTab = () => {
     if (loadingClusterMachines) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
           <div />
         </LoadingWrapper>
-      )
+      );
     }
-    
+
     if (clusterMachines.length === 0) {
-      return <Empty description={t('clusters.noMachinesAssigned')} />
+      return <Empty description={t('clusters.noMachinesAssigned')} />;
     }
-    
+
     const rowSelection = {
       selectedRowKeys: selectedRemoveMachines,
       onChange: (selectedRowKeys: React.Key[]) => {
-        setSelectedRemoveMachines(selectedRowKeys as string[])
+        setSelectedRemoveMachines(selectedRowKeys as string[]);
       },
-    }
-    
+    };
+
     return (
       <Space orientation="vertical" size="large" style={{ width: '100%' }}>
         {selectedRemoveMachines.length > 0 && (
@@ -259,7 +273,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
             </Button>
           </div>
         )}
-        
+
         <Table
           rowSelection={rowSelection}
           columns={assignedColumns}
@@ -270,9 +284,9 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
           data-testid="ds-manage-machines-assigned-table"
         />
       </Space>
-    )
-  }
-  
+    );
+  };
+
   return (
     <Modal
       title={
@@ -301,7 +315,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
           >
             {t('machines:assignToCluster')}
           </Button>
-        )
+        ),
       ].filter(Boolean)}
     >
       {confirmContextHolder}
@@ -312,16 +326,24 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
         items={[
           {
             key: 'assign',
-            label: <span data-testid="ds-manage-machines-tab-assign">{t('machines:assignToCluster')}</span>,
-            children: renderAssignTab()
+            label: (
+              <span data-testid="ds-manage-machines-tab-assign">
+                {t('machines:assignToCluster')}
+              </span>
+            ),
+            children: renderAssignTab(),
           },
           {
             key: 'manage',
-            label: <span data-testid="ds-manage-machines-tab-manage">{t('clusters.assignedMachines')}</span>,
-            children: renderManageTab()
-          }
+            label: (
+              <span data-testid="ds-manage-machines-tab-manage">
+                {t('clusters.assignedMachines')}
+              </span>
+            ),
+            children: renderManageTab(),
+          },
         ]}
       />
     </Modal>
-  )
-}
+  );
+};

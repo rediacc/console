@@ -1,24 +1,24 @@
-import { useCallback, useMemo, useState } from 'react'
-import { Table, Modal } from 'antd'
-import { useTranslation } from 'react-i18next'
-import type { ColumnsType } from 'antd/es/table'
-import { DistributedStorageCluster } from '@/api/queries/distributedStorage'
-import AuditTraceModal from '@/components/common/AuditTraceModal'
-import { ManageClusterMachinesModal } from '../ManageClusterMachinesModal'
-import { buildClusterColumns } from './columns'
-import { ClusterMachines } from './components/ClusterMachines'
-import { useTraceModal, useExpandableTable } from '@/hooks'
-import { TableContainer, CreateClusterButton } from './styles'
-import { confirmAction } from '@/utils/confirmations'
-import { EmptyStatePanel } from '@/styles/primitives'
+import { useCallback, useMemo, useState } from 'react';
+import { Table, Modal } from 'antd';
+import { useTranslation } from 'react-i18next';
+import type { ColumnsType } from 'antd/es/table';
+import { DistributedStorageCluster } from '@/api/queries/distributedStorage';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { ManageClusterMachinesModal } from '../ManageClusterMachinesModal';
+import { buildClusterColumns } from './columns';
+import { ClusterMachines } from './components/ClusterMachines';
+import { useTraceModal, useExpandableTable } from '@/hooks';
+import { TableContainer, CreateClusterButton } from './styles';
+import { confirmAction } from '@/utils/confirmations';
+import { EmptyStatePanel } from '@/styles/primitives';
 
 interface ClusterTableProps {
-  clusters: DistributedStorageCluster[]
-  loading: boolean
-  onCreateCluster: () => void
-  onEditCluster: (cluster: DistributedStorageCluster) => void
-  onDeleteCluster: (cluster: DistributedStorageCluster) => void
-  onRunFunction: (cluster: DistributedStorageCluster) => void
+  clusters: DistributedStorageCluster[];
+  loading: boolean;
+  onCreateCluster: () => void;
+  onEditCluster: (cluster: DistributedStorageCluster) => void;
+  onDeleteCluster: (cluster: DistributedStorageCluster) => void;
+  onRunFunction: (cluster: DistributedStorageCluster) => void;
 }
 
 export const ClusterTable: React.FC<ClusterTableProps> = ({
@@ -29,26 +29,28 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   onDeleteCluster,
   onRunFunction,
 }) => {
-  const { t } = useTranslation(['distributedStorage', 'common', 'machines'])
-  const [modal, contextHolder] = Modal.useModal()
-  const { expandedRowKeys, toggleRow, setExpandedRowKeys } = useExpandableTable()
-  const [selectedCluster, setSelectedCluster] =
-    useState<DistributedStorageCluster | null>(null)
-  const [assignModalOpen, setAssignModalOpen] = useState(false)
-  const auditTrace = useTraceModal()
+  const { t } = useTranslation(['distributedStorage', 'common', 'machines']);
+  const [modal, contextHolder] = Modal.useModal();
+  const { expandedRowKeys, toggleRow, setExpandedRowKeys } = useExpandableTable();
+  const [selectedCluster, setSelectedCluster] = useState<DistributedStorageCluster | null>(null);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const auditTrace = useTraceModal();
 
   const handleManageMachines = useCallback((cluster: DistributedStorageCluster) => {
-    setSelectedCluster(cluster)
-    setAssignModalOpen(true)
-  }, [])
+    setSelectedCluster(cluster);
+    setAssignModalOpen(true);
+  }, []);
 
-  const handleAuditTrace = useCallback((cluster: DistributedStorageCluster) => {
-    auditTrace.open({
-      entityType: 'DistributedStorageCluster',
-      entityIdentifier: cluster.clusterName,
-      entityName: cluster.clusterName,
-    })
-  }, [auditTrace])
+  const handleAuditTrace = useCallback(
+    (cluster: DistributedStorageCluster) => {
+      auditTrace.open({
+        entityType: 'DistributedStorageCluster',
+        entityIdentifier: cluster.clusterName,
+        entityName: cluster.clusterName,
+      });
+    },
+    [auditTrace]
+  );
 
   const handleDelete = useCallback(
     (cluster: DistributedStorageCluster) => {
@@ -60,19 +62,19 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
         okType: 'danger',
         cancelText: t('common:actions.cancel') as string,
         onConfirm: async () => {
-          onDeleteCluster(cluster)
+          onDeleteCluster(cluster);
         },
-      })
+      });
     },
-    [modal, onDeleteCluster, t],
-  )
+    [modal, onDeleteCluster, t]
+  );
 
   const handleFunctionRun = useCallback(
     (cluster: DistributedStorageCluster & { preselectedFunction?: string }) => {
-      onRunFunction(cluster)
+      onRunFunction(cluster);
     },
-    [onRunFunction],
-  )
+    [onRunFunction]
+  );
 
   const columns = useMemo<ColumnsType<DistributedStorageCluster>>(
     () =>
@@ -93,20 +95,20 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
       handleFunctionRun,
       onEditCluster,
       t,
-    ],
-  )
+    ]
+  );
 
   const handleToggleRow = useCallback(
     (clusterName: string) => {
-      toggleRow(clusterName)
+      toggleRow(clusterName);
     },
-    [toggleRow],
-  )
+    [toggleRow]
+  );
 
   const expandedRowRender = useCallback(
     (record: DistributedStorageCluster) => <ClusterMachines cluster={record} />,
-    [],
-  )
+    []
+  );
 
   if (clusters.length === 0 && !loading) {
     return (
@@ -119,7 +121,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
           {t('clusters.create')}
         </CreateClusterButton>
       </EmptyStatePanel>
-    )
+    );
   }
 
   return (
@@ -145,22 +147,18 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
           expandable={{
             expandedRowRender,
             expandedRowKeys,
-            onExpandedRowsChange: (keys) =>
-              setExpandedRowKeys(keys as string[]),
+            onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
             expandIcon: () => null,
             expandRowByClick: false,
           }}
           onRow={(record) => ({
             'data-testid': `ds-cluster-row-${record.clusterName}`,
             onClick: (event) => {
-              const target = event.target as HTMLElement
-              if (
-                target.closest('button') ||
-                target.closest('.ant-dropdown-trigger')
-              ) {
-                return
+              const target = event.target as HTMLElement;
+              if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                return;
               }
-              handleToggleRow(record.clusterName)
+              handleToggleRow(record.clusterName);
             },
           })}
           rowClassName={() => 'cluster-row'}
@@ -181,25 +179,25 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
           clusterName={selectedCluster.clusterName}
           teamName={selectedCluster.teamName || ''}
           onCancel={() => {
-            setAssignModalOpen(false)
-            setSelectedCluster(null)
+            setAssignModalOpen(false);
+            setSelectedCluster(null);
           }}
           onSuccess={() => {
             if (!selectedCluster) {
-              return
+              return;
             }
-            setAssignModalOpen(false)
-            const clusterName = selectedCluster.clusterName
-            setSelectedCluster(null)
+            setAssignModalOpen(false);
+            const clusterName = selectedCluster.clusterName;
+            setSelectedCluster(null);
             if (expandedRowKeys.includes(clusterName)) {
-              setExpandedRowKeys([])
+              setExpandedRowKeys([]);
               setTimeout(() => {
-                setExpandedRowKeys([clusterName])
-              }, 100)
+                setExpandedRowKeys([clusterName]);
+              }, 100);
             }
           }}
         />
       )}
     </>
-  )
-}
+  );
+};

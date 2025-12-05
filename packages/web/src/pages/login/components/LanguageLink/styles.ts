@@ -1,5 +1,5 @@
-import styled from 'styled-components'
-import { Link } from 'react-router-dom'
+import styled from 'styled-components';
+import { Link } from 'react-router-dom';
 
 export const StyledLanguageLink = styled(Link)`
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -10,4 +10,4 @@ export const StyledLanguageLink = styled(Link)`
     color: ${({ theme }) => theme.colors.primary};
     text-decoration: underline;
   }
-`
+`;

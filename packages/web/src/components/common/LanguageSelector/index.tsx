@@ -46,7 +46,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
     // Set dayjs locale globally
     const dayjsLocaleMap: Record<string, string> = {
       en: 'en',
-      es: 'es'
+      es: 'es',
     };
     dayjs.locale(dayjsLocaleMap[value] || 'en');
 
@@ -56,7 +56,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
     }
   };
 
-  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+  const currentLanguage = languages.find((lang) => lang.code === i18n.language) || languages[0];
 
   if (iconOnly) {
     const menuItems = languages.map((lang) => ({
@@ -70,11 +70,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
     }));
 
     return (
-      <Dropdown
-        menu={{ items: menuItems }}
-        placement="bottomRight"
-        trigger={['click']}
-      >
+      <Dropdown menu={{ items: menuItems }} placement="bottomRight" trigger={['click']}>
         <LanguageButton
           type="text"
           icon={<GlobalOutlined />}

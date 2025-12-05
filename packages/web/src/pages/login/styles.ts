@@ -1,12 +1,12 @@
-import styled from 'styled-components'
-import { Button, Input, Alert, Space, Form } from 'antd'
+import styled from 'styled-components';
+import { Button, Input, Alert, Space, Form } from 'antd';
 
 export const LoginContainer = styled.div`
   width: 100%;
   max-width: ${({ theme }) => theme.dimensions.CARD_WIDTH_LG}px;
   margin: 0 auto;
   padding: ${({ theme }) => theme.spacing['3']}px;
-`
+`;
 
 export const LogoContainer = styled.div`
   display: flex;
@@ -21,7 +21,7 @@ export const LogoContainer = styled.div`
     max-width: 150px;
     object-fit: contain;
   }
-`
+`;
 
 export const StyledAlert = styled(Alert)`
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
@@ -32,7 +32,7 @@ export const StyledAlert = styled(Alert)`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const FormLabel = styled.label`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
@@ -40,7 +40,7 @@ export const FormLabel = styled.label`
   color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: ${({ theme }) => theme.spacing.SM}px;
   display: block;
-`
+`;
 
 export const MasterPasswordLabel = styled(FormLabel)`
   display: flex;
@@ -50,7 +50,7 @@ export const MasterPasswordLabel = styled(FormLabel)`
   .anticon {
     color: ${({ theme }) => theme.colors.textTertiary};
   }
-`
+`;
 
 export const MasterPasswordFormItem = styled.div`
   animation: fadeIn 0.3s ease-out;
@@ -65,13 +65,13 @@ export const MasterPasswordFormItem = styled.div`
       transform: translateY(0);
     }
   }
-`
+`;
 
 export const AdvancedOptionsContainer = styled.div`
   text-align: center;
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   margin-top: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const AdvancedOptionsButton = styled(Button)`
   color: ${({ theme }) => theme.colors.textTertiary};
@@ -85,7 +85,7 @@ export const AdvancedOptionsButton = styled(Button)`
     background-color: ${({ theme }) => theme.colors.bgHover};
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 export const LoginButton = styled(Button)`
   background: ${({ theme }) => theme.colors.primary};
@@ -106,7 +106,7 @@ export const LoginButton = styled(Button)`
   &:active:not(:disabled) {
     transform: translateY(0);
   }
-`
+`;
 
 export const RegisterContainer = styled.div`
   text-align: center;
@@ -115,7 +115,7 @@ export const RegisterContainer = styled.div`
   .ant-typography {
     font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
-`
+`;
 
 export const RegisterLink = styled.a`
   color: ${({ theme }) => theme.colors.primary};
@@ -138,7 +138,7 @@ export const RegisterLink = styled.a`
     outline-offset: 2px;
     background-color: ${({ theme }) => theme.colors.primaryBg};
   }
-`
+`;
 
 export const SelectorsContainer = styled.div`
   text-align: center;
@@ -147,19 +147,19 @@ export const SelectorsContainer = styled.div`
   > div:first-child {
     margin-bottom: ${({ theme }) => theme.spacing.XS}px;
   }
-`
+`;
 
 export const FullWidthStack = styled(Space)`
   width: 100%;
-`
+`;
 
 export const LargeGapFormItem = styled(Form.Item)`
   margin-bottom: ${({ theme }) => theme.spacing.LG}px;
-`
+`;
 
 export const NoMarginFormItem = styled(Form.Item)`
   margin-bottom: 0;
-`
+`;
 
 export const TFAModalTitle = styled.div`
   display: flex;
@@ -169,20 +169,20 @@ export const TFAModalTitle = styled.div`
   .anticon {
     color: ${({ theme }) => theme.colors.primary};
   }
-`
+`;
 
 export const TFACodeInput = styled(Input)`
   text-align: center;
   font-size: ${({ theme }) => theme.fontSize.XL}px;
   letter-spacing: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const TFAButtonContainer = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: ${({ theme }) => theme.spacing.SM}px;
   width: 100%;
-`
+`;
 
 export const TFAVerifyButton = styled(Button)`
   background: ${({ theme }) => theme.colors.primary};
@@ -194,7 +194,7 @@ export const TFAVerifyButton = styled(Button)`
     background: ${({ theme }) => theme.colors.primaryHover};
     border-color: ${({ theme }) => theme.colors.primaryHover};
   }
-`
+`;
 
 // Styled Input components for better icon styling
 export const StyledInput = styled(Input)`
@@ -253,7 +253,7 @@ export const StyledInput = styled(Input)`
     border-color: ${({ theme }) => theme.colors.error};
     box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.error};
   }
-`
+`;
 
 export const StyledPasswordInput = styled(Input.Password)`
   height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_LG}px;
@@ -333,4 +333,4 @@ export const StyledPasswordInput = styled(Input.Password)`
     border-color: ${({ theme }) => theme.colors.error};
     box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.error};
   }
-`
+`;

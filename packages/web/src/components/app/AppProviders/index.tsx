@@ -12,7 +12,7 @@ import jaJP from 'antd/locale/ja_JP';
 import arEG from 'antd/locale/ar_EG';
 import trTR from 'antd/locale/tr_TR';
 import ruRU from 'antd/locale/ru_RU';
-import { ProvidersContainer } from './styles'
+import { ProvidersContainer } from './styles';
 
 type AntdLocale = typeof enUS;
 
@@ -51,9 +51,13 @@ interface AppProvidersContentProps {
   language: string;
 }
 
-const AppProvidersContent: React.FC<AppProvidersContentProps> = ({ children, currentLocale, language }) => {
+const AppProvidersContent: React.FC<AppProvidersContentProps> = ({
+  children,
+  currentLocale,
+  language,
+}) => {
   const { theme: currentTheme } = useTheme();
-  
+
   // Select theme configuration based on current theme
   const themeConfig = currentTheme === 'dark' ? darkTheme : lightTheme;
 
@@ -64,9 +68,7 @@ const AppProvidersContent: React.FC<AppProvidersContentProps> = ({ children, cur
         locale={currentLocale}
         theme={themeConfig}
       >
-        <AntApp>
-          {children}
-        </AntApp>
+        <AntApp>{children}</AntApp>
       </ConfigProvider>
     </ProvidersContainer>
   );

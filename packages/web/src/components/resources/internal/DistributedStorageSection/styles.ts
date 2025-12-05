@@ -1,26 +1,26 @@
-import styled, { css } from 'styled-components'
-import { Alert, Button, Card, Divider, Typography } from 'antd'
+import styled, { css } from 'styled-components';
+import { Alert, Button, Card, Divider, Typography } from 'antd';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 export const SectionDivider = styled(Divider)`
   && {
     margin-bottom: ${({ theme }) => theme.spacing.LG}px;
     border-color: ${({ theme }) => theme.colors.borderSecondary};
   }
-`
+`;
 
 export const DividerContent = styled.div`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const SectionTitle = styled.span`
   font-size: ${({ theme }) => theme.fontSize.BASE}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 export const SectionCard = styled(Card)`
   && {
@@ -28,14 +28,14 @@ export const SectionCard = styled(Card)`
     border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
     background-color: ${({ theme }) => theme.colors.bgPrimary};
   }
-`
+`;
 
 export const ContentStack = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.MD}px;
   width: 100%;
-`
+`;
 
 export const AssignmentLabel = styled(Text)`
   && {
@@ -45,7 +45,7 @@ export const AssignmentLabel = styled(Text)`
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
     margin-bottom: ${({ theme }) => theme.spacing.XS}px;
   }
-`
+`;
 
 export const AlertWrapper = styled(Alert)`
   && {
@@ -53,18 +53,18 @@ export const AlertWrapper = styled(Alert)`
     border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
     padding: ${({ theme }) => theme.spacing.MD}px;
   }
-`
+`;
 
 export const AlertMessage = styled.span`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 export const ActionsRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 const actionButtonStyles = css`
   && {
@@ -77,17 +77,17 @@ const actionButtonStyles = css`
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   }
-`
+`;
 
 export const ActionButton = styled(Button).attrs({
   size: 'small',
 })`
   ${actionButtonStyles}
-`
+`;
 
 export const ButtonLabel = styled.span`
   font-size: ${({ theme }) => theme.fontSize.XS}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
-`
+`;
 
-export { LoadingState } from '@/styles/primitives'
+export { LoadingState } from '@/styles/primitives';

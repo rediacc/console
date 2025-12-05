@@ -1,123 +1,126 @@
-import React, { useCallback, useMemo, useRef, useEffect } from 'react'
-import { List as ReactWindowList } from 'react-window'
-import * as InfiniteLoaderModule from 'react-window-infinite-loader'
-import { Checkbox, Space } from 'antd'
-import { Machine } from '@/types'
-import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
-import { useMachineSelection } from '@/store/distributedStorage/hooks'
-import { useTableStyles } from '@/hooks/useComponentStyles'
-import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator'
-import styles from './VirtualMachineTable.module.css'
+import React, { useCallback, useMemo, useRef, useEffect } from 'react';
+import { List as ReactWindowList } from 'react-window';
+import * as InfiniteLoaderModule from 'react-window-infinite-loader';
+import { Checkbox, Space } from 'antd';
+import { Machine } from '@/types';
+import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
+import { useMachineSelection } from '@/store/distributedStorage/hooks';
+import { useTableStyles } from '@/hooks/useComponentStyles';
+import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
+import styles from './VirtualMachineTable.module.css';
 
-type ScrollAlign = 'auto' | 'smart' | 'center' | 'end' | 'start'
+type ScrollAlign = 'auto' | 'smart' | 'center' | 'end' | 'start';
 
 interface VirtualizedListHandle {
-  scrollToItem: (index: number, align?: ScrollAlign) => void
+  scrollToItem: (index: number, align?: ScrollAlign) => void;
 }
 
 type ListChildProps<T> = {
-  index: number
-  style: React.CSSProperties
-  data: T
-}
+  index: number;
+  style: React.CSSProperties;
+  data: T;
+};
 
 type OnItemsRendered = (info: {
-  overscanStartIndex: number
-  overscanStopIndex: number
-  visibleStartIndex: number
-  visibleStopIndex: number
-}) => void
+  overscanStartIndex: number;
+  overscanStopIndex: number;
+  visibleStartIndex: number;
+  visibleStopIndex: number;
+}) => void;
 
-type BaseListProps = Record<string, unknown>
-const BaseListComponent = ReactWindowList as unknown as React.ComponentType<BaseListProps>
+type BaseListProps = Record<string, unknown>;
+const BaseListComponent = ReactWindowList as unknown as React.ComponentType<BaseListProps>;
 
 interface VirtualListProps {
-  height: number
-  width: number | string
-  itemCount: number
-  itemSize: number
-  overscanCount?: number
-  onItemsRendered?: OnItemsRendered
-  itemData: VirtualMachineListRowProps
-  children: React.ComponentType<ListChildProps<VirtualMachineListRowProps>>
-  'data-testid'?: string
+  height: number;
+  width: number | string;
+  itemCount: number;
+  itemSize: number;
+  overscanCount?: number;
+  onItemsRendered?: OnItemsRendered;
+  itemData: VirtualMachineListRowProps;
+  children: React.ComponentType<ListChildProps<VirtualMachineListRowProps>>;
+  'data-testid'?: string;
 }
 
 const List = React.forwardRef<VirtualizedListHandle, VirtualListProps>((props, ref) => {
-  const { children, ...rest } = props
+  const { children, ...rest } = props;
   return (
-    <BaseListComponent
-      {...rest}
-      ref={ref as React.Ref<unknown>}
-    >
+    <BaseListComponent {...rest} ref={ref as React.Ref<unknown>}>
       {children as unknown}
     </BaseListComponent>
-  )
-})
-List.displayName = 'VirtualMachineList'
+  );
+});
+List.displayName = 'VirtualMachineList';
 
 type InfiniteLoaderComponentProps = {
-  isItemLoaded: (index: number) => boolean
-  itemCount: number
-  loadMoreItems: (startIndex: number, stopIndex: number) => Promise<void> | void
-  children: (props: { onItemsRendered: OnItemsRendered; ref: (instance: VirtualizedListHandle | null) => void }) => React.ReactNode
-}
+  isItemLoaded: (index: number) => boolean;
+  itemCount: number;
+  loadMoreItems: (startIndex: number, stopIndex: number) => Promise<void> | void;
+  children: (props: {
+    onItemsRendered: OnItemsRendered;
+    ref: (instance: VirtualizedListHandle | null) => void;
+  }) => React.ReactNode;
+};
 
 const infiniteLoaderModule = InfiniteLoaderModule as unknown as {
-  InfiniteLoader?: React.ComponentType<InfiniteLoaderComponentProps>
-  default?: React.ComponentType<InfiniteLoaderComponentProps>
-}
+  InfiniteLoader?: React.ComponentType<InfiniteLoaderComponentProps>;
+  default?: React.ComponentType<InfiniteLoaderComponentProps>;
+};
 
 const InfiniteLoader =
-  infiniteLoaderModule.InfiniteLoader ??
-  infiniteLoaderModule.default ??
-  (() => null)
+  infiniteLoaderModule.InfiniteLoader ?? infiniteLoaderModule.default ?? (() => null);
 
 interface VirtualMachineTableProps {
-  machines: Machine[]
-  loading?: boolean
-  hasMore?: boolean
-  loadMore?: () => Promise<void>
-  rowHeight?: number
-  height?: number
-  selectable?: boolean
-  onRowClick?: (machine: Machine) => void
-  renderActions?: (machine: Machine) => React.ReactNode
+  machines: Machine[];
+  loading?: boolean;
+  hasMore?: boolean;
+  loadMore?: () => Promise<void>;
+  rowHeight?: number;
+  height?: number;
+  selectable?: boolean;
+  onRowClick?: (machine: Machine) => void;
+  renderActions?: (machine: Machine) => React.ReactNode;
 }
 
 interface RowData {
-  machine: Machine
-  index: number
-  style: React.CSSProperties
+  machine: Machine;
+  index: number;
+  style: React.CSSProperties;
 }
 
 interface VirtualMachineListRowProps {
-  machines: Machine[]
-  isItemLoaded: (index: number) => boolean
-  selectable: boolean
-  onRowClick?: (machine: Machine) => void
-  renderActions?: (machine: Machine) => React.ReactNode
+  machines: Machine[];
+  isItemLoaded: (index: number) => boolean;
+  selectable: boolean;
+  onRowClick?: (machine: Machine) => void;
+  renderActions?: (machine: Machine) => React.ReactNode;
 }
 
-const MachineRow: React.FC<RowData & {
-  selectable: boolean
-  onRowClick?: (machine: Machine) => void
-  renderActions?: (machine: Machine) => React.ReactNode
-}> = ({ machine, style, selectable, onRowClick, renderActions }) => {
-  const { isMachineSelected, toggleSelection } = useMachineSelection()
-  const isSelected = isMachineSelected(machine.machineName)
-  const tableStyles = useTableStyles()
+const MachineRow: React.FC<
+  RowData & {
+    selectable: boolean;
+    onRowClick?: (machine: Machine) => void;
+    renderActions?: (machine: Machine) => React.ReactNode;
+  }
+> = ({ machine, style, selectable, onRowClick, renderActions }) => {
+  const { isMachineSelected, toggleSelection } = useMachineSelection();
+  const isSelected = isMachineSelected(machine.machineName);
+  const tableStyles = useTableStyles();
 
-  const handleCheckboxChange = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    toggleSelection(machine.machineName)
-  }, [machine.machineName, toggleSelection])
+  const handleCheckboxChange = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      toggleSelection(machine.machineName);
+    },
+    [machine.machineName, toggleSelection]
+  );
 
   const handleRowClick = useCallback(() => {
     if (onRowClick) {
-      onRowClick(machine)
+      onRowClick(machine);
     }
-  }, [machine, onRowClick])
+  }, [machine, onRowClick]);
 
   return (
     <div
@@ -126,7 +129,7 @@ const MachineRow: React.FC<RowData & {
         ...tableStyles.tableCell,
         cursor: onRowClick ? 'pointer' : 'default',
         borderBottom: '1px solid var(--color-border-secondary)',
-        transition: 'background-color 0.2s ease'
+        transition: 'background-color 0.2s ease',
       }}
       className={styles.row}
       onClick={handleRowClick}
@@ -140,7 +143,7 @@ const MachineRow: React.FC<RowData & {
             data-testid={`virtual-machine-checkbox-${machine.machineName}`}
           />
         )}
-        <div 
+        <div
           className={styles.machineName}
           data-testid={`virtual-machine-name-${machine.machineName}`}
         >
@@ -151,7 +154,7 @@ const MachineRow: React.FC<RowData & {
           <MachineAssignmentStatusCell machine={machine} />
         </div>
         {renderActions && (
-          <div 
+          <div
             className={styles.actions}
             data-testid={`virtual-machine-actions-${machine.machineName}`}
           >
@@ -160,8 +163,8 @@ const MachineRow: React.FC<RowData & {
         )}
       </Space>
     </div>
-  )
-}
+  );
+};
 
 export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   machines,
@@ -172,111 +175,120 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   height = 600,
   selectable = true,
   onRowClick,
-  renderActions
+  renderActions,
 }) => {
-  const listRef = useRef<VirtualizedListHandle | null>(null)
+  const listRef = useRef<VirtualizedListHandle | null>(null);
   const setListRef = useCallback((instance: VirtualizedListHandle | null) => {
-    listRef.current = instance
-  }, [])
-  const { selectedMachines } = useMachineSelection()
-  const tableStyles = useTableStyles()
+    listRef.current = instance;
+  }, []);
+  const { selectedMachines } = useMachineSelection();
+  const tableStyles = useTableStyles();
 
   // Create items list with potential placeholders for infinite loading
-  const itemCount = hasMore ? machines.length + 1 : machines.length
-  
+  const itemCount = hasMore ? machines.length + 1 : machines.length;
+
   // Check if an item is loaded
-  const isItemLoaded = useCallback((index: number) => {
-    return !hasMore || index < machines.length
-  }, [hasMore, machines.length])
+  const isItemLoaded = useCallback(
+    (index: number) => {
+      return !hasMore || index < machines.length;
+    },
+    [hasMore, machines.length]
+  );
 
   // Load more items
   const loadMoreItems = useCallback(async () => {
     if (loadMore && !loading) {
-      await loadMore()
+      await loadMore();
     }
-  }, [loadMore, loading])
+  }, [loadMore, loading]);
 
   // Render a single row
-  const RowComponent = useCallback<React.ComponentType<ListChildProps<VirtualMachineListRowProps>>>(({
-    index,
-    style,
-    data
-  }) => {
-    const {
-      machines: rowMachines,
-      isItemLoaded: rowIsItemLoaded,
-      selectable: rowSelectable,
-      onRowClick: rowOnRowClick,
-      renderActions: rowRenderActions
-    } = data
+  const RowComponent = useCallback<React.ComponentType<ListChildProps<VirtualMachineListRowProps>>>(
+    ({ index, style, data }) => {
+      const {
+        machines: rowMachines,
+        isItemLoaded: rowIsItemLoaded,
+        selectable: rowSelectable,
+        onRowClick: rowOnRowClick,
+        renderActions: rowRenderActions,
+      } = data;
 
-    if (!rowIsItemLoaded(index)) {
+      if (!rowIsItemLoaded(index)) {
+        return (
+          <div
+            style={style}
+            className={styles.loadingRow}
+            data-testid="virtual-machine-row-loading"
+          >
+            <InlineLoadingIndicator
+              width="90%"
+              height={24}
+              data-testid="virtual-machine-row-loading-indicator"
+            />
+          </div>
+        );
+      }
+
+      const machine = rowMachines[index];
       return (
-        <div 
-          style={style} 
-          className={styles.loadingRow}
-          data-testid="virtual-machine-row-loading"
-        >
-          <InlineLoadingIndicator 
-            width="90%" 
-            height={24} 
-            data-testid="virtual-machine-row-loading-indicator" 
-          />
-        </div>
-      )
-    }
+        <MachineRow
+          machine={machine}
+          index={index}
+          style={style}
+          selectable={rowSelectable}
+          onRowClick={rowOnRowClick}
+          renderActions={rowRenderActions}
+        />
+      );
+    },
+    []
+  );
 
-    const machine = rowMachines[index]
-    return (
-      <MachineRow
-        machine={machine}
-        index={index}
-        style={style}
-        selectable={rowSelectable}
-        onRowClick={rowOnRowClick}
-        renderActions={rowRenderActions}
-      />
-    )
-  }, [])
-
-  const rowProps = useMemo<VirtualMachineListRowProps>(() => ({
-    machines,
-    isItemLoaded,
-    selectable,
-    onRowClick,
-    renderActions
-  }), [machines, isItemLoaded, selectable, onRowClick, renderActions])
+  const rowProps = useMemo<VirtualMachineListRowProps>(
+    () => ({
+      machines,
+      isItemLoaded,
+      selectable,
+      onRowClick,
+      renderActions,
+    }),
+    [machines, isItemLoaded, selectable, onRowClick, renderActions]
+  );
 
   // Scroll to top when machines change significantly
   useEffect(() => {
     if (listRef.current && machines.length > 0) {
-      listRef.current.scrollToItem(0, 'start')
+      listRef.current.scrollToItem(0, 'start');
     }
-  }, [machines.length])
+  }, [machines.length]);
 
   // Handle keyboard navigation
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!listRef.current) return
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!listRef.current) return;
 
-    const currentIndex = selectedMachines.length > 0 
-      ? machines.findIndex(m => m.machineName === selectedMachines[0])
-      : 0
+      const currentIndex =
+        selectedMachines.length > 0
+          ? machines.findIndex((m) => m.machineName === selectedMachines[0])
+          : 0;
 
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        if (currentIndex < machines.length - 1) {
-          listRef.current.scrollToItem(currentIndex + 1, 'smart')
-        }
-        break
-      case 'ArrowUp':
-        e.preventDefault()
-        if (currentIndex > 0) {
-          listRef.current.scrollToItem(currentIndex - 1, 'smart')
-        }
-        break
-    }
-  }, [selectedMachines, machines])
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          if (currentIndex < machines.length - 1) {
+            listRef.current.scrollToItem(currentIndex + 1, 'smart');
+          }
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          if (currentIndex > 0) {
+            listRef.current.scrollToItem(currentIndex - 1, 'smart');
+          }
+          break;
+      }
+    },
+    [selectedMachines, machines]
+  );
 
   const content = useMemo(() => {
     if (loadMore && hasMore) {
@@ -287,11 +299,17 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
           itemCount={itemCount}
           loadMoreItems={() => loadMoreItems()}
         >
-          {({ onItemsRendered, ref }: { onItemsRendered: OnItemsRendered; ref: (instance: VirtualizedListHandle | null) => void }) => {
+          {({
+            onItemsRendered,
+            ref,
+          }: {
+            onItemsRendered: OnItemsRendered;
+            ref: (instance: VirtualizedListHandle | null) => void;
+          }) => {
             const combinedRef = (instance: VirtualizedListHandle | null) => {
-              setListRef(instance)
-              ref(instance)
-            }
+              setListRef(instance);
+              ref(instance);
+            };
             return (
               <List
                 height={height}
@@ -306,10 +324,10 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
               >
                 {RowComponent}
               </List>
-            )
+            );
           }}
         </InfiniteLoader>
-      )
+      );
     }
 
     return (
@@ -325,28 +343,40 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
       >
         {RowComponent}
       </List>
-    )
-  }, [loadMore, hasMore, isItemLoaded, itemCount, loadMoreItems, height, rowHeight, RowComponent, rowProps, machines.length, setListRef])
+    );
+  }, [
+    loadMore,
+    hasMore,
+    isItemLoaded,
+    itemCount,
+    loadMoreItems,
+    height,
+    rowHeight,
+    RowComponent,
+    rowProps,
+    machines.length,
+    setListRef,
+  ]);
 
   return (
     <div
       style={{
-        ...tableStyles.tableContainer
+        ...tableStyles.tableContainer,
       }}
       className={styles.virtualTable}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       data-testid="virtual-machine-table"
     >
-      <div 
+      <div
         style={{
           ...tableStyles.tableHeader,
           position: 'sticky',
           top: 0,
           zIndex: 1,
-          borderBottom: '1px solid var(--color-border-secondary)'
+          borderBottom: '1px solid var(--color-border-secondary)',
         }}
-        className={styles.header} 
+        className={styles.header}
         data-testid="virtual-machine-header"
       >
         <Space className={styles.headerContent}>
@@ -357,9 +387,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
           {renderActions && <div className={styles.actions}>Actions</div>}
         </Space>
       </div>
-      <div data-testid="virtual-machine-keyboard-navigation">
-        {content}
-      </div>
+      <div data-testid="virtual-machine-keyboard-navigation">{content}</div>
     </div>
-  )
-}
+  );
+};

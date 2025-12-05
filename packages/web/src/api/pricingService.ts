@@ -1,6 +1,6 @@
 // Pricing service to fetch centralized pricing configuration
 
-import { CONFIG_URLS } from '@/utils/apiConstants'
+import { CONFIG_URLS } from '@/utils/apiConstants';
 
 export interface PricingConfig {
   baseMonthlyPrices: {
@@ -50,7 +50,7 @@ export const fetchPricingConfig = async (): Promise<PricingConfig | null> => {
   const cachedData = pricingCache.get(cacheKey);
   const cacheTimestamp = cacheTimestamps.get(cacheKey);
 
-  if (cachedData && cacheTimestamp && (Date.now() - cacheTimestamp < CACHE_DURATION)) {
+  if (cachedData && cacheTimestamp && Date.now() - cacheTimestamp < CACHE_DURATION) {
     return cachedData;
   }
 
@@ -61,7 +61,7 @@ export const fetchPricingConfig = async (): Promise<PricingConfig | null> => {
       method: 'GET',
       mode: 'cors',
       credentials: 'omit',
-      cache: 'default'
+      cache: 'default',
     });
     if (!response.ok) {
       throw new Error(`Failed to fetch pricing: ${response.status}`);
@@ -89,25 +89,30 @@ export const fetchPricingConfig = async (): Promise<PricingConfig | null> => {
 export const getPlanPrice = (pricing: PricingConfig, planCode: string): number | null => {
   // Map plan codes to pricing keys
   const planMap: Record<string, string> = {
-    'COMMUNITY': 'community',
-    'PROFESSIONAL': 'professional',
-    'BUSINESS': 'business',
-    'ENTERPRISE': 'enterprise'
+    COMMUNITY: 'community',
+    PROFESSIONAL: 'professional',
+    BUSINESS: 'business',
+    ENTERPRISE: 'enterprise',
   };
-  
+
   const pricingKey = planMap[planCode] || planCode.toLowerCase();
   const priceInfo = pricing.baseMonthlyPrices[pricingKey];
-  
+
   if (!priceInfo) return null;
-  
+
   // Handle "Free" or "Gratis" pricing
-  if (typeof priceInfo.price === 'string' && (priceInfo.price.toLowerCase() === "free" || priceInfo.price.toLowerCase() === "gratis" || priceInfo.price === "0")) {
+  if (
+    typeof priceInfo.price === 'string' &&
+    (priceInfo.price.toLowerCase() === 'free' ||
+      priceInfo.price.toLowerCase() === 'gratis' ||
+      priceInfo.price === '0')
+  ) {
     return 0;
   }
-  
+
   // Convert to number if it's a string
   const price = typeof priceInfo.price === 'string' ? parseFloat(priceInfo.price) : priceInfo.price;
-  
+
   return isNaN(price) ? null : price;
 };
 

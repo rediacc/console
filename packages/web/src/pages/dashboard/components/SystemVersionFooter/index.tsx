@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react'
-import { Tooltip } from 'antd'
-import { CloudServerOutlined, DesktopOutlined, ClockCircleOutlined } from '@/utils/optimizedIcons'
-import { useApiHealth } from '@/api/queries/health'
-import { versionService } from '@/services/versionService'
+import React, { useState, useEffect } from 'react';
+import { Tooltip } from 'antd';
+import { CloudServerOutlined, DesktopOutlined, ClockCircleOutlined } from '@/utils/optimizedIcons';
+import { useApiHealth } from '@/api/queries/health';
+import { versionService } from '@/services/versionService';
 import {
   FooterContainer,
   VersionItem,
@@ -11,36 +11,36 @@ import {
   Separator,
   EnvironmentTag,
   UptimeText,
-} from './styles'
+} from './styles';
 
 const formatUptime = (uptime: { days: number; hours: number; minutes: number }): string => {
-  const parts: string[] = []
-  if (uptime.days > 0) parts.push(`${uptime.days}d`)
-  if (uptime.hours > 0) parts.push(`${uptime.hours}h`)
-  if (uptime.minutes > 0 || parts.length === 0) parts.push(`${uptime.minutes}m`)
-  return parts.join(' ')
-}
+  const parts: string[] = [];
+  if (uptime.days > 0) parts.push(`${uptime.days}d`);
+  if (uptime.hours > 0) parts.push(`${uptime.hours}h`);
+  if (uptime.minutes > 0 || parts.length === 0) parts.push(`${uptime.minutes}m`);
+  return parts.join(' ');
+};
 
 const SystemVersionFooter: React.FC = () => {
-  const [uiVersion, setUiVersion] = useState<string>('...')
-  const { data: apiHealth, isLoading: apiLoading } = useApiHealth()
+  const [uiVersion, setUiVersion] = useState<string>('...');
+  const { data: apiHealth, isLoading: apiLoading } = useApiHealth();
 
   useEffect(() => {
     const fetchUiVersion = async () => {
       try {
-        const versionInfo = await versionService.getVersion()
-        setUiVersion(versionService.formatVersion(versionInfo.version))
+        const versionInfo = await versionService.getVersion();
+        setUiVersion(versionService.formatVersion(versionInfo.version));
       } catch {
-        setUiVersion('Unknown')
+        setUiVersion('Unknown');
       }
-    }
-    fetchUiVersion()
-  }, [])
+    };
+    fetchUiVersion();
+  }, []);
 
-  const apiVersion = apiHealth?.version ? `v${apiHealth.version}` : (apiLoading ? '...' : 'Unknown')
-  const environment = apiHealth?.environment || 'Unknown'
-  const isProduction = environment === 'Production'
-  const uptime = apiHealth?.uptime
+  const apiVersion = apiHealth?.version ? `v${apiHealth.version}` : apiLoading ? '...' : 'Unknown';
+  const environment = apiHealth?.environment || 'Unknown';
+  const isProduction = environment === 'Production';
+  const uptime = apiHealth?.uptime;
 
   return (
     <FooterContainer data-testid="system-version-footer">
@@ -77,7 +77,7 @@ const SystemVersionFooter: React.FC = () => {
         </>
       )}
     </FooterContainer>
-  )
-}
+  );
+};
 
-export default SystemVersionFooter
+export default SystemVersionFooter;

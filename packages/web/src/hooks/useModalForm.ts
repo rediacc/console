@@ -1,17 +1,17 @@
-import { useCallback } from 'react'
-import { Form } from 'antd'
-import type { FormInstance } from 'antd/es/form'
-import { useDialogState } from './useDialogState'
-import type { UseDialogStateReturn } from './useDialogState'
+import { useCallback } from 'react';
+import { Form } from 'antd';
+import type { FormInstance } from 'antd/es/form';
+import { useDialogState } from './useDialogState';
+import type { UseDialogStateReturn } from './useDialogState';
 
 /**
  * Options for useModalForm hook
  */
 export interface UseModalFormOptions<T extends Record<string, unknown>> {
   /** Initial form values */
-  initialValues?: FormValues<T>
+  initialValues?: FormValues<T>;
   /** Whether to reset form on modal close (default: true) */
-  resetOnClose?: boolean
+  resetOnClose?: boolean;
 }
 
 /**
@@ -19,19 +19,19 @@ export interface UseModalFormOptions<T extends Record<string, unknown>> {
  */
 export interface UseModalFormReturn<T extends Record<string, unknown> = Record<string, unknown>> {
   /** Ant Design form instance */
-  form: FormInstance<T>
+  form: FormInstance<T>;
   /** Whether the modal is open */
-  isOpen: boolean
+  isOpen: boolean;
   /** Open the modal */
-  open: () => void
+  open: () => void;
   /** Close the modal and optionally reset form */
-  close: () => void
+  close: () => void;
   /** Close modal with form reset */
-  closeAndReset: () => void
+  closeAndReset: () => void;
   /** Reset the form to initial values */
-  reset: () => void
+  reset: () => void;
   /** The underlying dialog state return for advanced usage */
-  dialogState: UseDialogStateReturn<void>
+  dialogState: UseDialogStateReturn<void>;
 }
 
 /**
@@ -70,30 +70,30 @@ export interface UseModalFormReturn<T extends Record<string, unknown> = Record<s
 export function useModalForm<T extends Record<string, unknown> = Record<string, unknown>>(
   options: UseModalFormOptions<T> = {}
 ): UseModalFormReturn<T> {
-  const { initialValues, resetOnClose = true } = options
-  const [form] = Form.useForm<T>()
-  const dialogState = useDialogState<void>()
+  const { initialValues, resetOnClose = true } = options;
+  const [form] = Form.useForm<T>();
+  const dialogState = useDialogState<void>();
 
   const reset = useCallback(() => {
     if (initialValues) {
-      form.setFieldsValue(initialValues)
+      form.setFieldsValue(initialValues);
     } else {
-      form.resetFields()
+      form.resetFields();
     }
-  }, [form, initialValues])
+  }, [form, initialValues]);
 
   const closeAndReset = useCallback(() => {
-    dialogState.close()
-    reset()
-  }, [dialogState, reset])
+    dialogState.close();
+    reset();
+  }, [dialogState, reset]);
 
   const close = useCallback(() => {
     if (resetOnClose) {
-      closeAndReset()
+      closeAndReset();
     } else {
-      dialogState.close()
+      dialogState.close();
     }
-  }, [closeAndReset, dialogState, resetOnClose])
+  }, [closeAndReset, dialogState, resetOnClose]);
 
   return {
     form,
@@ -103,6 +103,8 @@ export function useModalForm<T extends Record<string, unknown> = Record<string, 
     closeAndReset,
     reset,
     dialogState,
-  }
+  };
 }
-type FormValues<T extends Record<string, unknown>> = Parameters<FormInstance<T>['setFieldsValue']>[0]
+type FormValues<T extends Record<string, unknown>> = Parameters<
+  FormInstance<T>['setFieldsValue']
+>[0];

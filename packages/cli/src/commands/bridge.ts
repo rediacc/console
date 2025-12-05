@@ -1,11 +1,11 @@
-import { Command } from 'commander'
-import { authService } from '../services/auth.js'
-import { api } from '../services/api.js'
-import { contextService } from '../services/context.js'
-import { outputService } from '../services/output.js'
-import { withSpinner } from '../utils/spinner.js'
-import { handleError } from '../utils/errors.js'
-import { createResourceCommands } from '../utils/commandFactory.js'
+import { Command } from 'commander';
+import { authService } from '../services/auth.js';
+import { api } from '../services/api.js';
+import { contextService } from '../services/context.js';
+import { outputService } from '../services/output.js';
+import { withSpinner } from '../utils/spinner.js';
+import { handleError } from '../utils/errors.js';
+import { createResourceCommands } from '../utils/commandFactory.js';
 export function registerBridgeCommands(program: Command): void {
   // Create standard CRUD commands using factory
   const bridge = createResourceCommands(program, {
@@ -28,7 +28,7 @@ export function registerBridgeCommands(program: Command): void {
     },
     vaultConfig: {
       fetch: (params) => api.company.getAllVaults(params),
-      vaultType: 'Bridge'
+      vaultType: 'Bridge',
     },
     vaultUpdateConfig: {
       update: (payload) =>
@@ -38,9 +38,9 @@ export function registerBridgeCommands(program: Command): void {
           payload.bridgeVault as string,
           payload.vaultVersion as number
         ),
-      vaultFieldName: 'bridgeVault'
-    }
-  })
+      vaultFieldName: 'bridgeVault',
+    },
+  });
 
   // Add custom reset-auth command
   bridge
@@ -49,25 +49,25 @@ export function registerBridgeCommands(program: Command): void {
     .option('-r, --region <name>', 'Region name')
     .action(async (name, options) => {
       try {
-        await authService.requireAuth()
-        const opts = await contextService.applyDefaults(options)
+        await authService.requireAuth();
+        const opts = await contextService.applyDefaults(options);
 
         if (!opts.region) {
-          outputService.error('Region name required. Use --region or set context.')
-          process.exit(1)
+          outputService.error('Region name required. Use --region or set context.');
+          process.exit(1);
         }
 
         const authToken = await withSpinner(
           `Resetting authorization for bridge "${name}"...`,
           () => api.bridges.resetAuthorization(opts.region as string, name),
           'Authorization reset'
-        )
+        );
 
         if (authToken) {
-          outputService.success(`New token: ${authToken}`)
+          outputService.success(`New token: ${authToken}`);
         }
       } catch (error) {
-        handleError(error)
+        handleError(error);
       }
-    })
+    });
 }

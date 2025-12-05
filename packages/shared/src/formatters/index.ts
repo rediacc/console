@@ -15,7 +15,7 @@
  * formatAge(1500)    // Returns: "1d 1h"
  */
 export function formatAge(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`
-  if (minutes < 1440) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`
-  return `${Math.floor(minutes / 1440)}d ${Math.floor((minutes % 1440) / 60)}h`
+  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+  return `${Math.floor(minutes / 1440)}d ${Math.floor((minutes % 1440) / 60)}h`;
 }

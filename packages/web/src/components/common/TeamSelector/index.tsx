@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react'
-import { TeamOutlined, SearchOutlined } from '@/utils/optimizedIcons'
-import type { Team } from '@/api/queries/teams'
-import { useTranslation } from 'react-i18next'
+import React, { useState, useMemo } from 'react';
+import { TeamOutlined, SearchOutlined } from '@/utils/optimizedIcons';
+import type { Team } from '@/api/queries/teams';
+import { useTranslation } from 'react-i18next';
 import {
   TeamSelect,
   TeamTag,
@@ -10,15 +10,15 @@ import {
   SearchInput,
   OptionLabel,
   OptionIcon,
-} from './styles'
+} from './styles';
 
 interface TeamSelectorProps {
-  teams: Team[]
-  selectedTeams: string[]
-  onChange: (selectedTeams: string[]) => void
-  loading?: boolean
-  placeholder?: string
-  style?: React.CSSProperties
+  teams: Team[];
+  selectedTeams: string[];
+  onChange: (selectedTeams: string[]) => void;
+  loading?: boolean;
+  placeholder?: string;
+  style?: React.CSSProperties;
 }
 
 const TeamSelector: React.FC<TeamSelectorProps> = ({
@@ -27,17 +27,17 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
   onChange,
   loading = false,
   placeholder = 'Select teams...',
-  style
+  style,
 }) => {
-  const { t } = useTranslation('resources')
-  const [searchValue, setSearchValue] = useState('')
+  const { t } = useTranslation('resources');
+  const [searchValue, setSearchValue] = useState('');
 
   const filteredOptions = useMemo(() => {
-    const filtered = teams.filter(team =>
+    const filtered = teams.filter((team) =>
       team.teamName.toLowerCase().includes(searchValue.toLowerCase())
-    )
-    
-    return filtered.map(team => ({
+    );
+
+    return filtered.map((team) => ({
       label: (
         <OptionLabel>
           <OptionIcon>
@@ -47,9 +47,9 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
         </OptionLabel>
       ),
       value: team.teamName,
-      'data-testid': `team-selector-option-${team.teamName}`
-    }))
-  }, [teams, searchValue])
+      'data-testid': `team-selector-option-${team.teamName}`,
+    }));
+  }, [teams, searchValue]);
 
   return (
     <TeamSelect
@@ -66,16 +66,12 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       onSearch={setSearchValue}
       data-testid="team-selector"
       tagRender={(props) => {
-        const { value, closable, onClose } = props
+        const { value, closable, onClose } = props;
         return (
-          <TeamTag
-            closable={closable}
-            onClose={onClose}
-            data-testid={`team-selector-tag-${value}`}
-          >
+          <TeamTag closable={closable} onClose={onClose} data-testid={`team-selector-tag-${value}`}>
             {value}
           </TeamTag>
-        )
+        );
       }}
       popupRender={(menu) => (
         <>
@@ -84,25 +80,21 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
               placeholder={t('teams.placeholders.searchTeams')}
               prefix={<SearchOutlined />}
               value={searchValue}
-              onChange={e => setSearchValue(e.target.value)}
-              onPressEnter={e => e.stopPropagation()}
+              onChange={(e) => setSearchValue(e.target.value)}
+              onPressEnter={(e) => e.stopPropagation()}
               autoComplete="off"
               data-testid="team-selector-search"
             />
           </DropdownSearchContainer>
-          <DropdownMenuWrapper>
-            {menu}
-          </DropdownMenuWrapper>
+          <DropdownMenuWrapper>{menu}</DropdownMenuWrapper>
         </>
       )}
-      maxTagCount='responsive'
+      maxTagCount="responsive"
       maxTagPlaceholder={(omittedValues) => (
-        <TeamTag data-testid="team-selector-more-tag">
-          +{omittedValues.length} more
-        </TeamTag>
+        <TeamTag data-testid="team-selector-more-tag">+{omittedValues.length} more</TeamTag>
       )}
     />
-  )
-}
+  );
+};
 
-export default TeamSelector
+export default TeamSelector;

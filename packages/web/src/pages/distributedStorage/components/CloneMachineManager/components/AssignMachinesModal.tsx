@@ -1,28 +1,23 @@
-import React from 'react'
-import { Modal, Alert, Empty } from 'antd'
-import type { TFunction } from 'i18next'
-import type { AvailableMachine } from '@/api/queries/distributedStorage'
-import type { Machine } from '@/types'
-import { ModalSize } from '@/types/modal'
-import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector'
-import {
-  ModalStack,
-  SelectedCountTag,
-  ModalTitle,
-  ModalTitleIcon,
-} from '../styles'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
+import React from 'react';
+import { Modal, Alert, Empty } from 'antd';
+import type { TFunction } from 'i18next';
+import type { AvailableMachine } from '@/api/queries/distributedStorage';
+import type { Machine } from '@/types';
+import { ModalSize } from '@/types/modal';
+import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector';
+import { ModalStack, SelectedCountTag, ModalTitle, ModalTitleIcon } from '../styles';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 
 interface AssignMachinesModalProps {
-  open: boolean
-  availableMachines: AvailableMachine[]
-  selectedMachines: string[]
-  isLoading: boolean
-  isSubmitting: boolean
-  onSelectionChange: (machines: string[]) => void
-  onAssign: () => void
-  onCancel: () => void
-  t: TFunction<'distributedStorage' | 'machines' | 'common'>
+  open: boolean;
+  availableMachines: AvailableMachine[];
+  selectedMachines: string[];
+  isLoading: boolean;
+  isSubmitting: boolean;
+  onSelectionChange: (machines: string[]) => void;
+  onAssign: () => void;
+  onCancel: () => void;
+  t: TFunction<'distributedStorage' | 'machines' | 'common'>;
 }
 
 export const AssignMachinesModal: React.FC<AssignMachinesModalProps> = ({
@@ -90,4 +85,4 @@ export const AssignMachinesModal: React.FC<AssignMachinesModalProps> = ({
       )}
     </ModalStack>
   </Modal>
-)
+);

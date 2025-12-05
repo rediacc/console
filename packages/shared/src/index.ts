@@ -1,10 +1,10 @@
-export * from './types'
-export * from './error-parser'
-export * from './formatters'
-export * from './queue-vault'
-export * from './api'
-export * from './endpoints'
-export * from './encryption'
+export * from './types';
+export * from './error-parser';
+export * from './formatters';
+export * from './queue-vault';
+export * from './api';
+export * from './endpoints';
+export * from './encryption';
 export {
   QUEUE_STATUS_CONFIG,
   PRIORITY_CONFIG,
@@ -24,4 +24,4 @@ export {
   filterFailedItems,
   filterCancelledItems,
   getSeverityColor,
-} from './queue'
+} from './queue';

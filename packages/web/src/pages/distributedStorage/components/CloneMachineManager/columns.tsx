@@ -1,20 +1,15 @@
-import type { ReactNode } from 'react'
-import type { ColumnsType } from 'antd/es/table'
-import type { TFunction } from 'i18next'
-import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
-import type { CloneMachine } from '@/api/queries/distributedStorage'
-import { createSorter } from '@/core'
-import { createTruncatedColumn } from '@/components/common/columns'
-import {
-  MachineNameCell,
-  MachineNameIcon,
-  MachineName,
-  BridgeTag,
-} from './styles'
+import type { ReactNode } from 'react';
+import type { ColumnsType } from 'antd/es/table';
+import type { TFunction } from 'i18next';
+import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
+import type { CloneMachine } from '@/api/queries/distributedStorage';
+import { createSorter } from '@/core';
+import { createTruncatedColumn } from '@/components/common/columns';
+import { MachineNameCell, MachineNameIcon, MachineName, BridgeTag } from './styles';
 
 interface BuildColumnsParams {
-  t: TFunction<'distributedStorage' | 'machines' | 'common'>
-  cloneName: string
+  t: TFunction<'distributedStorage' | 'machines' | 'common'>;
+  cloneName: string;
 }
 
 export const buildCloneMachineColumns = ({
@@ -26,14 +21,14 @@ export const buildCloneMachineColumns = ({
     dataIndex: 'machineName',
     key: 'machineName',
     sorter: createSorter<CloneMachine>('machineName'),
-  })
+  });
 
   const bridgeColumn = createTruncatedColumn<CloneMachine>({
     title: t('machines:bridge'),
     dataIndex: 'bridgeName',
     key: 'bridgeName',
     sorter: createSorter<CloneMachine>('bridgeName'),
-  })
+  });
 
   return [
     {
@@ -64,5 +59,5 @@ export const buildCloneMachineColumns = ({
         />
       ),
     },
-  ]
-}
+  ];
+};

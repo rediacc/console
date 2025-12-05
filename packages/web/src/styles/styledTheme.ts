@@ -1,90 +1,92 @@
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
-import { colorTokens } from '@/config/antdTheme'
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { colorTokens } from '@/config/antdTheme';
 
 export interface StyledTheme {
   // Colors
   colors: {
-    primary: string
-    primaryHover: string
-    primaryBg: string
-    secondary: string
-    secondaryHover: string
-    accent: string
-    
+    primary: string;
+    primaryHover: string;
+    primaryBg: string;
+    secondary: string;
+    secondaryHover: string;
+    accent: string;
+
     // Status colors
-    success: string
-    warning: string
-    error: string
-    info: string
-    
+    success: string;
+    warning: string;
+    error: string;
+    info: string;
+
     // Background colors
-    bgPrimary: string
-    bgSecondary: string
-    bgTertiary: string
-    bgHover: string
-    bgActive: string
-    bgSelected: string        // High-contrast selection background
-    bgSuccess: string
-    bgWarning: string
-    bgError: string
-    bgInfo: string
+    bgPrimary: string;
+    bgSecondary: string;
+    bgTertiary: string;
+    bgHover: string;
+    bgActive: string;
+    bgSelected: string; // High-contrast selection background
+    bgSuccess: string;
+    bgWarning: string;
+    bgError: string;
+    bgInfo: string;
 
     // Text colors
-    textPrimary: string
-    textSecondary: string
-    textTertiary: string
-    textMuted: string
-    textInverse: string
-    textSelected: string       // High-contrast selection text
-    
+    textPrimary: string;
+    textSecondary: string;
+    textTertiary: string;
+    textMuted: string;
+    textInverse: string;
+    textSelected: string; // High-contrast selection text
+
     // Border colors
-    borderPrimary: string
-    borderSecondary: string
-    borderHover: string
-    
+    borderPrimary: string;
+    borderSecondary: string;
+    borderHover: string;
+
     // Shadow colors
-    shadow: string
-    shadowStrong: string
-    
+    shadow: string;
+    shadowStrong: string;
+
     // Input colors
-    inputBg: string
-    inputBorder: string
+    inputBg: string;
+    inputBorder: string;
 
     // Iconography
-    iconGrand: string
-    iconFork: string
-    iconSystem: string
-  }
-  
+    iconGrand: string;
+    iconFork: string;
+    iconSystem: string;
+  };
+
   // Spacing
-  spacing: typeof DESIGN_TOKENS.SPACING
-  
+  spacing: typeof DESIGN_TOKENS.SPACING;
+
   // Border radius
-  borderRadius: typeof DESIGN_TOKENS.BORDER_RADIUS
-  
+  borderRadius: typeof DESIGN_TOKENS.BORDER_RADIUS;
+
   // Typography
-  fontSize: typeof DESIGN_TOKENS.FONT_SIZE
-  fontWeight: typeof DESIGN_TOKENS.FONT_WEIGHT
-  lineHeight: typeof DESIGN_TOKENS.LINE_HEIGHT
-  letterSpacing: typeof DESIGN_TOKENS.LETTER_SPACING
-  
+  fontSize: typeof DESIGN_TOKENS.FONT_SIZE;
+  fontWeight: typeof DESIGN_TOKENS.FONT_WEIGHT;
+  lineHeight: typeof DESIGN_TOKENS.LINE_HEIGHT;
+  letterSpacing: typeof DESIGN_TOKENS.LETTER_SPACING;
+
   // Dimensions
-  dimensions: typeof DESIGN_TOKENS.DIMENSIONS
-  
+  dimensions: typeof DESIGN_TOKENS.DIMENSIONS;
+
   // Shadows
-  shadows: typeof DESIGN_TOKENS.SHADOWS
-  
+  shadows: typeof DESIGN_TOKENS.SHADOWS;
+
   // Z-index
-  zIndex: typeof DESIGN_TOKENS.Z_INDEX
-  
+  zIndex: typeof DESIGN_TOKENS.Z_INDEX;
+
   // Transitions
-  transitions: typeof DESIGN_TOKENS.TRANSITIONS
-  
+  transitions: typeof DESIGN_TOKENS.TRANSITIONS;
 }
 
-type ThemeMode = 'light' | 'dark'
+type ThemeMode = 'light' | 'dark';
 
-const feedbackSurfaces: Record<ThemeMode, { success: string; warning: string; error: string; info: string }> = {
+const feedbackSurfaces: Record<
+  ThemeMode,
+  { success: string; warning: string; error: string; info: string }
+> = {
   light: {
     success: colorTokens.light.bgSecondary,
     warning: colorTokens.light.bgHover,
@@ -97,7 +99,7 @@ const feedbackSurfaces: Record<ThemeMode, { success: string; warning: string; er
     error: `${colorTokens.error}33`,
     info: colorTokens.dark.bgSecondary,
   },
-}
+};
 
 const sharedThemeValues = {
   spacing: DESIGN_TOKENS.SPACING,
@@ -110,12 +112,12 @@ const sharedThemeValues = {
   shadows: DESIGN_TOKENS.SHADOWS,
   zIndex: DESIGN_TOKENS.Z_INDEX,
   transitions: DESIGN_TOKENS.TRANSITIONS,
-} as const
+} as const;
 
 const createTheme = (mode: ThemeMode): StyledTheme => {
-  const palette = colorTokens[mode]
-  const feedback = feedbackSurfaces[mode]
-  const isLight = mode === 'light'
+  const palette = colorTokens[mode];
+  const feedback = feedbackSurfaces[mode];
+  const isLight = mode === 'light';
 
   return {
     colors: {
@@ -157,8 +159,8 @@ const createTheme = (mode: ThemeMode): StyledTheme => {
       iconSystem: colorTokens.accent,
     },
     ...sharedThemeValues,
-  }
-}
+  };
+};
 
-export const lightTheme: StyledTheme = createTheme('light')
-export const darkTheme: StyledTheme = createTheme('dark')
+export const lightTheme: StyledTheme = createTheme('light');
+export const darkTheme: StyledTheme = createTheme('dark');

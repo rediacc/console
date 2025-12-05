@@ -1,12 +1,12 @@
 /**
  * Modal Size Types and Enums
- * 
+ *
  * This file provides type-safe modal sizing options that correspond to the CSS classes
  * defined in /src/styles/GlobalStyles.ts
- * 
+ *
  * Usage:
  * import { ModalSize } from '@/types/modal'
- * 
+ *
  * <Modal className={ModalSize.Medium} />
  */
 
@@ -25,13 +25,13 @@ export enum ModalSize {
   /** Full width modal - ideal for tables, dashboards */
   Full = 'modal-full',
   /** Fullscreen modal - occupies entire browser viewport */
-  Fullscreen = 'modal-fullscreen'
+  Fullscreen = 'modal-fullscreen',
 }
 
 /**
  * Helper type for modal size values
  */
-export type ModalSizeValue = `${ModalSize}`
+export type ModalSizeValue = `${ModalSize}`;
 
 /**
  * Modal configuration interface
@@ -39,11 +39,11 @@ export type ModalSizeValue = `${ModalSize}`
  */
 export interface ModalConfig {
   /** Size preset to apply */
-  size: ModalSize
+  size: ModalSize;
   /** Whether modal content should be scrollable */
-  scrollable?: boolean
+  scrollable?: boolean;
   /** Custom CSS class to add alongside size class */
-  className?: string
+  className?: string;
 }
 
 /**
@@ -51,17 +51,17 @@ export interface ModalConfig {
  * Combines size class with optional scrollable/custom classes
  */
 export function getModalClassName(config: ModalConfig): string {
-  const classes: string[] = [config.size as string]
+  const classes: string[] = [config.size as string];
 
   if (config.scrollable) {
-    classes.push('modal-content-scrollable' as string)
+    classes.push('modal-content-scrollable' as string);
   }
 
   if (config.className) {
-    classes.push(config.className)
+    classes.push(config.className);
   }
 
-  return classes.join(' ')
+  return classes.join(' ');
 }
 
 /**
@@ -72,29 +72,29 @@ export const MODAL_SIZE_RECOMMENDATIONS = {
   confirmation: ModalSize.Small,
   alert: ModalSize.Small,
   simpleForm: ModalSize.Small,
-  
-  // Standard content  
+
+  // Standard content
   standardForm: ModalSize.Medium,
   contentView: ModalSize.Medium,
   userProfile: ModalSize.Medium,
-  
+
   // Complex content
   complexForm: ModalSize.Large,
   multiStepWizard: ModalSize.Large,
   detailedView: ModalSize.Large,
-  
+
   // Full-featured content
   dashboard: ModalSize.ExtraLarge,
   dataTable: ModalSize.ExtraLarge,
   editor: ModalSize.ExtraLarge,
-  
+
   // Maximum content
   fullInterface: ModalSize.Full,
   reporting: ModalSize.Full,
-  analytics: ModalSize.Full
-} as const
+  analytics: ModalSize.Full,
+} as const;
 
 /**
  * Type for modal size recommendation keys
  */
-export type ModalSizeRecommendation = keyof typeof MODAL_SIZE_RECOMMENDATIONS
+export type ModalSizeRecommendation = keyof typeof MODAL_SIZE_RECOMMENDATIONS;

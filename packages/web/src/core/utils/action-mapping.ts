@@ -52,7 +52,7 @@ export function findActionConfig(
 ): Omit<ActionConfig, 'keywords'> {
   const actionLower = action.toLowerCase();
   const config = iconMap.find(({ keywords }) =>
-    keywords.some(keyword => actionLower.includes(keyword))
+    keywords.some((keyword) => actionLower.includes(keyword))
   );
   return config || DEFAULT_ACTION_CONFIG;
 }

@@ -1,6 +1,6 @@
-import styled, { css } from 'styled-components'
-import { Card, Input, Space, Button } from 'antd'
-import { EmptyStateTitle, EmptyStateDescription } from '@/styles/primitives'
+import styled, { css } from 'styled-components';
+import { Card, Input, Space, Button } from 'antd';
+import { EmptyStateTitle, EmptyStateDescription } from '@/styles/primitives';
 
 export const ContainerCard = styled(Card)`
   && {
@@ -9,11 +9,11 @@ export const ContainerCard = styled(Card)`
     box-shadow: ${({ theme }) => theme.shadows.CARD};
     background-color: ${({ theme }) => theme.colors.bgPrimary};
   }
-`
+`;
 
 export const HeaderSection = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const HeaderRow = styled.div`
   display: flex;
@@ -26,7 +26,7 @@ export const HeaderRow = styled.div`
     flex-direction: column;
     align-items: stretch;
   }
-`
+`;
 
 export const ControlGroup = styled.div`
   display: flex;
@@ -40,12 +40,12 @@ export const ControlGroup = styled.div`
     align-items: stretch;
     width: 100%;
   }
-`
+`;
 
 export const FiltersSlot = styled.div`
   display: flex;
   align-items: center;
-`
+`;
 
 export const ActionsGroup = styled.div`
   display: flex;
@@ -56,7 +56,7 @@ export const ActionsGroup = styled.div`
     width: 100%;
     justify-content: flex-end;
   }
-`
+`;
 
 export const SearchInput = styled(Input.Search)`
   && {
@@ -70,7 +70,7 @@ export const SearchInput = styled(Input.Search)`
       width: 100%;
     }
   }
-`
+`;
 
 export const EmptyDescriptionStack = styled(Space).attrs({
   orientation: 'vertical',
@@ -79,9 +79,9 @@ export const EmptyDescriptionStack = styled(Space).attrs({
 })`
   text-align: center;
   padding: ${({ theme }) => theme.spacing.LG}px;
-`
+`;
 
-export { EmptyStateTitle as EmptyTitle, EmptyStateDescription as EmptySubtitle }
+export { EmptyStateTitle as EmptyTitle, EmptyStateDescription as EmptySubtitle };
 
 export const EmptyActions = styled(Space).attrs({
   size: 'small' as const,
@@ -89,12 +89,12 @@ export const EmptyActions = styled(Space).attrs({
   display: flex;
   justify-content: center;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 const actionButtonStyles = css`
   min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-`
+`;
 
 export const CreateButton = styled(Button)`
   && {
@@ -103,13 +103,13 @@ export const CreateButton = styled(Button)`
     align-items: center;
     justify-content: center;
   }
-`
+`;
 
 export const RefreshButton = styled(Button)`
   && {
     ${actionButtonStyles};
   }
-`
+`;
 
 export const TableWrapper = styled.div`
   /* Better scroll experience on mobile devices */
@@ -133,4 +133,4 @@ export const TableWrapper = styled.div`
     }
   }
 
-`
+`;

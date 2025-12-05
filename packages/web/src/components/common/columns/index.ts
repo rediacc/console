@@ -9,7 +9,7 @@ export {
   renderAge,
   renderBoolean,
   type StatusConfig,
-} from './renderers'
+} from './renderers';
 
 export {
   teamNameColumn,
@@ -31,4 +31,4 @@ export {
   type StatusColumnOptions,
   type DateColumnOptions,
   type TruncatedColumnOptions,
-} from './index.tsx'
+} from './index.tsx';

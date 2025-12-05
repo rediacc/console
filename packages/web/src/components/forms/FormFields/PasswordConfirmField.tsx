@@ -1,28 +1,28 @@
-import React from 'react'
-import { Form, Input } from 'antd'
-import type { Rule } from 'antd/es/form'
+import React from 'react';
+import { Form, Input } from 'antd';
+import type { Rule } from 'antd/es/form';
 
 export interface PasswordConfirmFieldProps {
   /** Field name for this confirmation field */
-  name: string
+  name: string;
   /** Field label */
-  label: string
+  label: string;
   /** Name of the password field to match against */
-  passwordFieldName: string
+  passwordFieldName: string;
   /** Placeholder text */
-  placeholder?: string
+  placeholder?: string;
   /** Whether field is required (default: true) */
-  required?: boolean
+  required?: boolean;
   /** Custom required message */
-  requiredMessage?: string
+  requiredMessage?: string;
   /** Custom mismatch message */
-  mismatchMessage?: string
+  mismatchMessage?: string;
   /** Input size (default: 'large') */
-  size?: 'small' | 'middle' | 'large'
+  size?: 'small' | 'middle' | 'large';
   /** Autocomplete attribute (default: 'new-password') */
-  autoComplete?: string
+  autoComplete?: string;
   /** data-testid attribute */
-  'data-testid'?: string
+  'data-testid'?: string;
 }
 
 /**
@@ -52,23 +52,23 @@ export const PasswordConfirmField: React.FC<PasswordConfirmFieldProps> = ({
   autoComplete = 'new-password',
   'data-testid': dataTestId,
 }) => {
-  const rules: Rule[] = []
+  const rules: Rule[] = [];
 
   if (required) {
     rules.push({
       required: true,
       message: requiredMessage || `Please confirm ${label.toLowerCase()}`,
-    })
+    });
   }
 
   rules.push(({ getFieldValue }) => ({
     validator(_, value) {
       if (!value || getFieldValue(passwordFieldName) === value) {
-        return Promise.resolve()
+        return Promise.resolve();
       }
-      return Promise.reject(new Error(mismatchMessage))
+      return Promise.reject(new Error(mismatchMessage));
     },
-  }))
+  }));
 
   return (
     <Form.Item name={name} label={label} dependencies={[passwordFieldName]} rules={rules}>
@@ -79,5 +79,5 @@ export const PasswordConfirmField: React.FC<PasswordConfirmFieldProps> = ({
         data-testid={dataTestId}
       />
     </Form.Item>
-  )
-}
+  );
+};

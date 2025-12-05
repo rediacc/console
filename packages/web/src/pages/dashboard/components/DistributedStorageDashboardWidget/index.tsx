@@ -1,16 +1,16 @@
-import React from 'react'
-import { Row, Col, Progress, Tag, Tooltip } from 'antd'
+import React from 'react';
+import { Row, Col, Progress, Tag, Tooltip } from 'antd';
 import {
   CloudServerOutlined,
   DatabaseOutlined,
   HddOutlined,
   CopyOutlined,
   TeamOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { useTheme as useStyledTheme } from 'styled-components'
-import type { DistributedStorageTeamBreakdown } from '@rediacc/shared/types'
-import { DistributedStorageDashboardWidgetProps } from './types'
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { useTheme as useStyledTheme } from 'styled-components';
+import type { DistributedStorageTeamBreakdown } from '@rediacc/shared/types';
+import { DistributedStorageDashboardWidgetProps } from './types';
 import {
   WidgetCard,
   HeaderContent,
@@ -34,16 +34,16 @@ import {
   TeamMeta,
   TeamTagGroup,
   PercentageText,
-} from './styles'
+} from './styles';
 
 const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWidgetProps> = ({
   stats,
 }) => {
-  const { t } = useTranslation(['common', 'distributedStorage'])
-  const styledTheme = useStyledTheme()
+  const { t } = useTranslation(['common', 'distributedStorage']);
+  const styledTheme = useStyledTheme();
 
   if (!stats) {
-    return null
+    return null;
   }
 
   const assignmentColors = {
@@ -51,7 +51,7 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
     cluster: styledTheme.colors.info,
     image: styledTheme.colors.warning,
     clone: styledTheme.colors.accent,
-  }
+  };
 
   const assignmentData = [
     {
@@ -86,25 +86,22 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
       icon: <CopyOutlined />,
       color: assignmentColors.clone,
     },
-  ]
+  ];
 
   const utilizationPercent = Math.round(
-    ((stats.total_machines - stats.truly_available_machines) / stats.total_machines) * 100,
-  )
+    ((stats.total_machines - stats.truly_available_machines) / stats.total_machines) * 100
+  );
 
   const renderTeamItem = (item: unknown) => {
-    const team = item as DistributedStorageTeamBreakdown
+    const team = item as DistributedStorageTeamBreakdown;
     if (!team) {
-      return null
+      return null;
     }
 
-    const teamKey = team.teamName.toLowerCase().replace(/\s+/g, '-')
+    const teamKey = team.teamName.toLowerCase().replace(/\s+/g, '-');
 
     return (
-      <TeamListItem
-        key={teamKey}
-        data-testid={`ds-widget-team-item-${teamKey}`}
-      >
+      <TeamListItem key={teamKey} data-testid={`ds-widget-team-item-${teamKey}`}>
         <TeamListContent>
           <TeamListHeader>
             <TeamName>{team.teamName}</TeamName>
@@ -140,8 +137,8 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
           </TeamTagGroup>
         </TeamListContent>
       </TeamListItem>
-    )
-  }
+    );
+  };
 
   return (
     <WidgetCard
@@ -250,7 +247,7 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
         )}
       </WidgetBody>
     </WidgetCard>
-  )
-}
+  );
+};
 
-export default DistributedStorageDashboardWidget
+export default DistributedStorageDashboardWidget;

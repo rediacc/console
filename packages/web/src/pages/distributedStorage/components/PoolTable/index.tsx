@@ -1,27 +1,27 @@
-import { useCallback, useMemo } from 'react'
-import { Modal } from 'antd'
-import { useTranslation } from 'react-i18next'
+import { useCallback, useMemo } from 'react';
+import { Modal } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   DistributedStoragePool,
   DistributedStorageCluster,
-} from '@/api/queries/distributedStorage'
-import AuditTraceModal from '@/components/common/AuditTraceModal'
-import RbdImageTable from '../RbdImageTable'
-import { buildPoolColumns } from './columns'
-import { ClusterPoolsCard } from './components/ClusterPoolsCard'
-import { useTraceModal, useExpandableTable } from '@/hooks'
-import { CreatePoolButton } from './styles'
-import { confirmAction } from '@/utils/confirmations'
-import { EmptyStatePanel } from '@/styles/primitives'
+} from '@/api/queries/distributedStorage';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import RbdImageTable from '../RbdImageTable';
+import { buildPoolColumns } from './columns';
+import { ClusterPoolsCard } from './components/ClusterPoolsCard';
+import { useTraceModal, useExpandableTable } from '@/hooks';
+import { CreatePoolButton } from './styles';
+import { confirmAction } from '@/utils/confirmations';
+import { EmptyStatePanel } from '@/styles/primitives';
 
 interface PoolTableProps {
-  pools: DistributedStoragePool[]
-  clusters: DistributedStorageCluster[]
-  loading: boolean
-  onCreatePool: () => void
-  onEditPool: (pool: DistributedStoragePool) => void
-  onDeletePool: (pool: DistributedStoragePool) => void
-  onRunFunction: (pool: DistributedStoragePool) => void
+  pools: DistributedStoragePool[];
+  clusters: DistributedStorageCluster[];
+  loading: boolean;
+  onCreatePool: () => void;
+  onEditPool: (pool: DistributedStoragePool) => void;
+  onDeletePool: (pool: DistributedStoragePool) => void;
+  onRunFunction: (pool: DistributedStoragePool) => void;
 }
 
 export const PoolTable: React.FC<PoolTableProps> = ({
@@ -33,31 +33,28 @@ export const PoolTable: React.FC<PoolTableProps> = ({
   onDeletePool,
   onRunFunction,
 }) => {
-  const { t } = useTranslation(['distributedStorage', 'common'])
-  const [modal, contextHolder] = Modal.useModal()
-  const { expandedRowKeys, toggleRow, setExpandedRowKeys } = useExpandableTable()
-  const auditTrace = useTraceModal()
+  const { t } = useTranslation(['distributedStorage', 'common']);
+  const [modal, contextHolder] = Modal.useModal();
+  const { expandedRowKeys, toggleRow, setExpandedRowKeys } = useExpandableTable();
+  const auditTrace = useTraceModal();
 
   const poolsByCluster = useMemo(() => {
-    return pools.reduce<Record<string, DistributedStoragePool[]>>(
-      (acc, pool) => {
-        if (!acc[pool.clusterName]) {
-          acc[pool.clusterName] = []
-        }
-        acc[pool.clusterName].push(pool)
-        return acc
-      },
-      {},
-    )
-  }, [pools])
+    return pools.reduce<Record<string, DistributedStoragePool[]>>((acc, pool) => {
+      if (!acc[pool.clusterName]) {
+        acc[pool.clusterName] = [];
+      }
+      acc[pool.clusterName].push(pool);
+      return acc;
+    }, {});
+  }, [pools]);
 
   const clusterMap = useMemo(() => {
-    const map = new Map<string, DistributedStorageCluster>()
+    const map = new Map<string, DistributedStorageCluster>();
     clusters.forEach((cluster) => {
-      map.set(cluster.clusterName, cluster)
-    })
-    return map
-  }, [clusters])
+      map.set(cluster.clusterName, cluster);
+    });
+    return map;
+  }, [clusters]);
 
   const handleDelete = useCallback(
     (pool: DistributedStoragePool) => {
@@ -69,27 +66,30 @@ export const PoolTable: React.FC<PoolTableProps> = ({
         okType: 'danger',
         cancelText: t('common:actions.cancel') as string,
         onConfirm: async () => {
-          onDeletePool(pool)
+          onDeletePool(pool);
         },
-      })
+      });
     },
-    [modal, onDeletePool, t],
-  )
+    [modal, onDeletePool, t]
+  );
 
-  const handleAuditTrace = useCallback((pool: DistributedStoragePool) => {
-    auditTrace.open({
-      entityType: 'DistributedStoragePool',
-      entityIdentifier: pool.poolName,
-      entityName: pool.poolName,
-    })
-  }, [auditTrace])
+  const handleAuditTrace = useCallback(
+    (pool: DistributedStoragePool) => {
+      auditTrace.open({
+        entityType: 'DistributedStoragePool',
+        entityIdentifier: pool.poolName,
+        entityName: pool.poolName,
+      });
+    },
+    [auditTrace]
+  );
 
   const handleRunFunction = useCallback(
     (pool: DistributedStoragePool & { preselectedFunction?: string }) => {
-      onRunFunction(pool)
+      onRunFunction(pool);
     },
-    [onRunFunction],
-  )
+    [onRunFunction]
+  );
 
   const columns = useMemo(
     () =>
@@ -101,60 +101,49 @@ export const PoolTable: React.FC<PoolTableProps> = ({
         onRunFunction: handleRunFunction,
         onShowAuditTrace: handleAuditTrace,
       }),
-    [
-      expandedRowKeys,
-      handleAuditTrace,
-      handleDelete,
-      handleRunFunction,
-      onEditPool,
-      t,
-    ],
-  )
+    [expandedRowKeys, handleAuditTrace, handleDelete, handleRunFunction, onEditPool, t]
+  );
 
-  const expandedRowRender = useCallback(
-    (record: DistributedStoragePool) => {
-      const teamFilter = record.teamName
-      return <RbdImageTable pool={record} teamFilter={teamFilter} />
+  const expandedRowRender = useCallback((record: DistributedStoragePool) => {
+    const teamFilter = record.teamName;
+    return <RbdImageTable pool={record} teamFilter={teamFilter} />;
+  }, []);
+
+  const handleToggleRow = useCallback(
+    (poolGuid?: string) => {
+      if (!poolGuid) {
+        return;
+      }
+      toggleRow(poolGuid);
     },
-    [],
-  )
-
-  const handleToggleRow = useCallback((poolGuid?: string) => {
-    if (!poolGuid) {
-      return
-    }
-    toggleRow(poolGuid)
-  }, [toggleRow])
+    [toggleRow]
+  );
 
   const handleExpandedRowsChange = useCallback(
     (clusterKeys: string[], keys: string[]) => {
       setExpandedRowKeys((prev) => {
-        const filtered = prev.filter((key) => !clusterKeys.includes(key))
-        return [...filtered, ...keys]
-      })
+        const filtered = prev.filter((key) => !clusterKeys.includes(key));
+        return [...filtered, ...keys];
+      });
     },
-    [setExpandedRowKeys],
-  )
+    [setExpandedRowKeys]
+  );
 
   if (pools.length === 0 && !loading) {
     return (
       <EmptyStatePanel description={t('pools.noPools')} $marginBottom="XL">
-        <CreatePoolButton
-          type="primary"
-          onClick={onCreatePool}
-          data-testid="ds-create-pool-empty"
-        >
+        <CreatePoolButton type="primary" onClick={onCreatePool} data-testid="ds-create-pool-empty">
           {t('pools.create')}
         </CreatePoolButton>
       </EmptyStatePanel>
-    )
+    );
   }
 
   return (
     <>
       {contextHolder}
       {Object.entries(poolsByCluster).map(([clusterName, clusterPools]) => {
-        const cluster = clusterMap.get(clusterName)
+        const cluster = clusterMap.get(clusterName);
         return (
           <ClusterPoolsCard
             key={clusterName}
@@ -169,7 +158,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
             onToggleRow={handleToggleRow}
             t={t}
           />
-        )
+        );
       })}
 
       <AuditTraceModal
@@ -180,5 +169,5 @@ export const PoolTable: React.FC<PoolTableProps> = ({
         entityName={auditTrace.entityName}
       />
     </>
-  )
-}
+  );
+};

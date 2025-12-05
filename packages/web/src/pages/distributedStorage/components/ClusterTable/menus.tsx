@@ -1,13 +1,9 @@
-import type { MenuProps } from 'antd'
-import type { TFunction } from 'i18next'
-import {
-  ExpandOutlined,
-  KeyOutlined,
-  FunctionOutlined,
-} from '@/utils/optimizedIcons'
+import type { MenuProps } from 'antd';
+import type { TFunction } from 'i18next';
+import { ExpandOutlined, KeyOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 
 export const getClusterFunctionMenuItems = (
-  t: TFunction<'distributedStorage' | 'common' | 'machines'>,
+  t: TFunction<'distributedStorage' | 'common' | 'machines'>
 ): MenuProps['items'] => [
   {
     key: 'status',
@@ -25,4 +21,4 @@ export const getClusterFunctionMenuItems = (
     label: t('common:actions.advanced'),
     icon: <FunctionOutlined />,
   },
-]
+];

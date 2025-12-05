@@ -1,20 +1,25 @@
-import React, { useState, useEffect } from 'react'
-import { Modal, Button, Form, Input, Typography, Result, Tabs, Card } from 'antd'
-import type { FormInstance } from 'antd/es/form'
-import type { TFunction } from 'i18next'
-import { KeyOutlined, CheckCircleOutlined, WarningOutlined, CopyOutlined } from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { useTFAStatus, useEnableTFA, useDisableTFA } from '@/api/queries/twoFactor'
-import type { EnableTwoFactorResponse } from '@/api/queries/twoFactor'
-import { useSelector } from 'react-redux'
-import { RootState } from '@/store/store'
-import QRCode from 'react-qr-code'
-import { message } from 'antd'
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
-import { ModalSize } from '@/types/modal'
-import { useDialogState } from '@/hooks/useDialogState'
-import { OTPCodeField } from '@/pages/settings/profile/components/OTPCodeField'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
+import React, { useState, useEffect } from 'react';
+import { Modal, Button, Form, Input, Typography, Result, Tabs, Card } from 'antd';
+import type { FormInstance } from 'antd/es/form';
+import type { TFunction } from 'i18next';
+import {
+  KeyOutlined,
+  CheckCircleOutlined,
+  WarningOutlined,
+  CopyOutlined,
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { useTFAStatus, useEnableTFA, useDisableTFA } from '@/api/queries/twoFactor';
+import type { EnableTwoFactorResponse } from '@/api/queries/twoFactor';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import QRCode from 'react-qr-code';
+import { message } from 'antd';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { ModalSize } from '@/types/modal';
+import { useDialogState } from '@/hooks/useDialogState';
+import { OTPCodeField } from '@/pages/settings/profile/components/OTPCodeField';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {
   LoadingContainer,
   FullWidthStack,
@@ -32,66 +37,66 @@ import {
   FormItemNoMargin,
   ModalTitleIcon,
   ModalTitleWrapper,
-} from './styles'
+} from './styles';
 
-const { Title, Text, Paragraph } = Typography
+const { Title, Text, Paragraph } = Typography;
 
 interface TwoFactorSettingsProps {
-  open: boolean
-  onCancel: () => void
+  open: boolean;
+  onCancel: () => void;
 }
 
 const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel }) => {
-  const { t } = useTranslation('settings')
-  const [passwordForm] = Form.useForm()
-  const [disableForm] = Form.useForm()
-  const [verificationForm] = Form.useForm()
-  const userEmail = useSelector((state: RootState) => state.auth.user?.email) || ''
+  const { t } = useTranslation('settings');
+  const [passwordForm] = Form.useForm();
+  const [disableForm] = Form.useForm();
+  const [verificationForm] = Form.useForm();
+  const userEmail = useSelector((state: RootState) => state.auth.user?.email) || '';
 
-  const { data: twoFAStatus, isLoading: statusLoading, refetch: refetchTFAStatus } = useTFAStatus()
-  const enableTFAMutation = useEnableTFA()
-  const disableTFAMutation = useDisableTFA()
+  const { data: twoFAStatus, isLoading: statusLoading, refetch: refetchTFAStatus } = useTFAStatus();
+  const enableTFAMutation = useEnableTFA();
+  const disableTFAMutation = useDisableTFA();
 
-  const enableModal = useDialogState<void>()
-  const disableModal = useDialogState<void>()
-  const [twoFASecret, setTwoFASecret] = useState('')
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [showVerification, setShowVerification] = useState(false)
-  const [prevOpen, setPrevOpen] = useState(open)
+  const enableModal = useDialogState<void>();
+  const disableModal = useDialogState<void>();
+  const [twoFASecret, setTwoFASecret] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [prevOpen, setPrevOpen] = useState(open);
 
   if (open !== prevOpen) {
-    setPrevOpen(open)
+    setPrevOpen(open);
     if (open) {
-      setShowSuccess(false)
-      setShowVerification(false)
-      setTwoFASecret('')
-      verificationForm.resetFields()
+      setShowSuccess(false);
+      setShowVerification(false);
+      setTwoFASecret('');
+      verificationForm.resetFields();
     }
   }
 
   useEffect(() => {
     if (open) {
-      refetchTFAStatus()
+      refetchTFAStatus();
     }
-  }, [open, refetchTFAStatus])
+  }, [open, refetchTFAStatus]);
 
   const handleEnableTFA = async (values: { password: string }) => {
     try {
       const result = (await enableTFAMutation.mutateAsync({
         password: values.password,
         generateOnly: true,
-      })) as EnableTwoFactorResponse
-      setTwoFASecret(result.secret ?? '')
-      enableModal.close()
-      setShowVerification(true)
-      passwordForm.resetFields()
+      })) as EnableTwoFactorResponse;
+      setTwoFASecret(result.secret ?? '');
+      enableModal.close();
+      setShowVerification(true);
+      passwordForm.resetFields();
     } catch (error: unknown) {
       if (error instanceof Error && error.message?.includes('already enabled')) {
-        enableModal.close()
-        passwordForm.resetFields()
+        enableModal.close();
+        passwordForm.resetFields();
       }
     }
-  }
+  };
 
   const handleVerifyTFA = async (values: { code: string }) => {
     try {
@@ -100,43 +105,43 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         verificationCode: values.code,
         secret: twoFASecret,
         confirmEnable: true,
-      })
-      setShowVerification(false)
-      setShowSuccess(true)
-      verificationForm.resetFields()
+      });
+      setShowVerification(false);
+      setShowSuccess(true);
+      verificationForm.resetFields();
     } catch {
       // handled via mutation notifications
     }
-  }
+  };
 
   const handleDisableTFA = async (values: { password: string; code: string }) => {
     try {
       await disableTFAMutation.mutateAsync({
         password: values.password,
         currentCode: values.code,
-      })
-      disableModal.close()
-      disableForm.resetFields()
+      });
+      disableModal.close();
+      disableForm.resetFields();
     } catch {
       // handled via mutation notifications
     }
-  }
+  };
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    message.success(t('twoFactorAuth.secretCopied'))
-  }
+    navigator.clipboard.writeText(text);
+    message.success(t('twoFactorAuth.secretCopied'));
+  };
 
   const generateOtpAuthUrl = (secret: string, email: string) => {
-    const issuer = 'Rediacc'
-    const encodedIssuer = encodeURIComponent(issuer)
-    const encodedEmail = encodeURIComponent(email)
-    return `otpauth://totp/${encodedIssuer}:${encodedEmail}?secret=${secret}&issuer=${encodedIssuer}`
-  }
+    const issuer = 'Rediacc';
+    const encodedIssuer = encodeURIComponent(issuer);
+    const encodedEmail = encodeURIComponent(email);
+    return `otpauth://totp/${encodedIssuer}:${encodedEmail}?secret=${secret}&issuer=${encodedIssuer}`;
+  };
 
   const mainContent = (() => {
     if (statusLoading) {
-      return <LoadingState />
+      return <LoadingState />;
     }
 
     if (showVerification && twoFASecret) {
@@ -146,9 +151,9 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
           userEmail={userEmail}
           verificationForm={verificationForm}
           onCancel={() => {
-            setShowVerification(false)
-            setTwoFASecret('')
-            verificationForm.resetFields()
+            setShowVerification(false);
+            setTwoFASecret('');
+            verificationForm.resetFields();
           }}
           onSubmit={handleVerifyTFA}
           isSubmitting={enableTFAMutation.isPending}
@@ -156,7 +161,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
           generateOtpAuthUrl={generateOtpAuthUrl}
           t={t}
         />
-      )
+      );
     }
 
     if (showSuccess) {
@@ -164,12 +169,12 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         <SuccessContent
           t={t}
           onDone={() => {
-            setShowSuccess(false)
-            setTwoFASecret('')
-            refetchTFAStatus()
+            setShowSuccess(false);
+            setTwoFASecret('');
+            refetchTFAStatus();
           }}
         />
-      )
+      );
     }
 
     return (
@@ -179,8 +184,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         onEnable={() => enableModal.open()}
         onDisable={() => disableModal.open()}
       />
-    )
-  })()
+    );
+  })();
 
   return (
     <>
@@ -203,8 +208,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       <EnableTwoFactorModal
         open={enableModal.isOpen}
         onCancel={() => {
-          enableModal.close()
-          passwordForm.resetFields()
+          enableModal.close();
+          passwordForm.resetFields();
         }}
         form={passwordForm}
         onSubmit={handleEnableTFA}
@@ -215,8 +220,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       <DisableTwoFactorModal
         open={disableModal.isOpen}
         onCancel={() => {
-          disableModal.close()
-          disableForm.resetFields()
+          disableModal.close();
+          disableForm.resetFields();
         }}
         form={disableForm}
         onSubmit={handleDisableTFA}
@@ -224,10 +229,10 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         t={t}
       />
     </>
-  )
-}
+  );
+};
 
-export default TwoFactorSettings
+export default TwoFactorSettings;
 
 const LoadingState = () => (
   <LoadingContainer data-testid="tfa-settings-loading">
@@ -235,18 +240,18 @@ const LoadingState = () => (
       <div />
     </LoadingWrapper>
   </LoadingContainer>
-)
+);
 
 interface VerificationContentProps {
-  secret: string
-  userEmail: string
-  verificationForm: FormInstance
-  onCancel: () => void
-  onSubmit: (values: { code: string }) => void
-  isSubmitting: boolean
-  copySecret: (value: string) => void
-  generateOtpAuthUrl: (secret: string, email: string) => string
-  t: TFunction<'settings'>
+  secret: string;
+  userEmail: string;
+  verificationForm: FormInstance;
+  onCancel: () => void;
+  onSubmit: (values: { code: string }) => void;
+  isSubmitting: boolean;
+  copySecret: (value: string) => void;
+  generateOtpAuthUrl: (secret: string, email: string) => string;
+  t: TFunction<'settings'>;
 }
 
 const VerificationContent: React.FC<VerificationContentProps> = ({
@@ -260,7 +265,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
   generateOtpAuthUrl,
   t,
 }) => {
-  const otpUrl = generateOtpAuthUrl(secret, userEmail)
+  const otpUrl = generateOtpAuthUrl(secret, userEmail);
 
   const tabItems = [
     {
@@ -299,7 +304,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
         />
       ),
     },
-  ]
+  ];
 
   return (
     <FullWidthStack $gap="LG">
@@ -339,12 +344,12 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
         </FormItemNoMargin>
       </Form>
     </FullWidthStack>
-  )
-}
+  );
+};
 
 interface SuccessContentProps {
-  t: TFunction<'settings'>
-  onDone: () => void
+  t: TFunction<'settings'>;
+  onDone: () => void;
 }
 
 const SuccessContent: React.FC<SuccessContentProps> = ({ t, onDone }) => (
@@ -376,13 +381,13 @@ const SuccessContent: React.FC<SuccessContentProps> = ({ t, onDone }) => (
       </FullWidthStack>
     }
   />
-)
+);
 
 interface StatusOverviewProps {
-  isEnabled: boolean
-  onEnable: () => void
-  onDisable: () => void
-  t: TFunction<'settings'>
+  isEnabled: boolean;
+  onEnable: () => void;
+  onDisable: () => void;
+  t: TFunction<'settings'>;
 }
 
 const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, onDisable, t }) => (
@@ -393,7 +398,9 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
         {isEnabled ? t('twoFactorAuth.status.enabled') : t('twoFactorAuth.status.disabled')}
       </SectionTitle>
       <Paragraph type="secondary">
-        {isEnabled ? t('twoFactorAuth.status.enabledDescription') : t('twoFactorAuth.status.disabledDescription')}
+        {isEnabled
+          ? t('twoFactorAuth.status.enabledDescription')
+          : t('twoFactorAuth.status.disabledDescription')}
       </Paragraph>
     </CenteredStack>
 
@@ -434,18 +441,25 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
       </PrimaryButton>
     )}
   </FullWidthStack>
-)
+);
 
 interface EnableModalProps {
-  open: boolean
-  onCancel: () => void
-  form: FormInstance
-  onSubmit: (values: { password: string }) => void
-  isSubmitting: boolean
-  t: TFunction<'settings'>
+  open: boolean;
+  onCancel: () => void;
+  form: FormInstance;
+  onSubmit: (values: { password: string }) => void;
+  isSubmitting: boolean;
+  t: TFunction<'settings'>;
 }
 
-const EnableTwoFactorModal: React.FC<EnableModalProps> = ({ open, onCancel, form, onSubmit, isSubmitting, t }) => (
+const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
+  open,
+  onCancel,
+  form,
+  onSubmit,
+  isSubmitting,
+  t,
+}) => (
   <Modal
     title={t('twoFactorAuth.enableModal.title')}
     open={open}
@@ -494,15 +508,15 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({ open, onCancel, form
       </FormItemNoMargin>
     </Form>
   </Modal>
-)
+);
 
 interface DisableModalProps {
-  open: boolean
-  onCancel: () => void
-  form: FormInstance
-  onSubmit: (values: { password: string; code: string }) => void
-  isSubmitting: boolean
-  t: TFunction<'settings'>
+  open: boolean;
+  onCancel: () => void;
+  form: FormInstance;
+  onSubmit: (values: { password: string; code: string }) => void;
+  isSubmitting: boolean;
+  t: TFunction<'settings'>;
 }
 
 const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
@@ -572,4 +586,4 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
       </FormItemNoMargin>
     </Form>
   </Modal>
-)
+);

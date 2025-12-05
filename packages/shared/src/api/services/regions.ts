@@ -1,20 +1,19 @@
-import { endpoints } from '../../endpoints'
-import type { Bridge, Region } from '../../types'
-import { parseResponse, responseExtractors } from '../parseResponse'
-import type { ApiClient } from './types'
+import { endpoints } from '../../endpoints';
+import type { Bridge, Region } from '../../types';
+import { parseResponse, responseExtractors } from '../parseResponse';
+import type { ApiClient } from './types';
 
 export function createRegionsService(client: ApiClient) {
   return {
     list: async (): Promise<Region[]> => {
-      const response = await client.get<Region>(endpoints.company.getCompanyRegions)
+      const response = await client.get<Region>(endpoints.company.getCompanyRegions);
       return parseResponse(response, {
         extractor: responseExtractors.primaryOrSecondary,
         filter: (region) => Boolean(region.regionName),
-      })
+      });
     },
 
-    create: (regionName: string) =>
-      client.post(endpoints.regions.createRegion, { regionName }),
+    create: (regionName: string) => client.post(endpoints.regions.createRegion, { regionName }),
 
     rename: (currentName: string, newName: string) =>
       client.post(endpoints.regions.updateRegionName, {
@@ -22,8 +21,7 @@ export function createRegionsService(client: ApiClient) {
         newRegionName: newName,
       }),
 
-    delete: (regionName: string) =>
-      client.post(endpoints.regions.deleteRegion, { regionName }),
+    delete: (regionName: string) => client.post(endpoints.regions.deleteRegion, { regionName }),
 
     updateVault: (regionName: string, vault: string, vaultVersion: number) =>
       client.post(endpoints.regions.updateRegionVault, {
@@ -33,11 +31,11 @@ export function createRegionsService(client: ApiClient) {
       }),
 
     getBridges: async (regionName: string): Promise<Bridge[]> => {
-      const response = await client.get<Bridge>(endpoints.regions.getRegionBridges, { regionName })
+      const response = await client.get<Bridge>(endpoints.regions.getRegionBridges, { regionName });
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<Bridge>(1),
         filter: (bridge) => Boolean(bridge.bridgeName),
-      })
+      });
     },
-  }
+  };
 }

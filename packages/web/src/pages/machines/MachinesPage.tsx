@@ -1,34 +1,34 @@
-﻿import React, { useState, useCallback, useEffect } from 'react'
-import { Empty, Modal, Tooltip } from 'antd'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { PlusOutlined, WifiOutlined, ReloadOutlined } from '@/utils/optimizedIcons'
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal'
-import { showMessage } from '@/utils/messages'
-import { SplitResourceView } from '@/pages/machines/components/SplitResourceView'
-import type { ContainerData } from '@/pages/machines/components/SplitResourceView'
+﻿import React, { useState, useCallback, useEffect } from 'react';
+import { Empty, Modal, Tooltip } from 'antd';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { PlusOutlined, WifiOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
+import { showMessage } from '@/utils/messages';
+import { SplitResourceView } from '@/pages/machines/components/SplitResourceView';
+import type { ContainerData } from '@/pages/machines/components/SplitResourceView';
 import {
   useCreateMachine,
   useUpdateMachineName,
   useUpdateMachineBridge,
   useUpdateMachineVault,
   useDeleteMachine,
-  useMachines
-} from '@/api/queries/machines'
-import { useRepos, Repo } from '@/api/queries/repos'
-import { useStorage } from '@/api/queries/storage'
-import { useQueueAction } from '@/hooks/useQueueAction'
-import { useUnifiedModal, useTeamSelection, useQueueTraceModal, useDialogState } from '@/hooks'
-import { confirmDelete } from '@/utils/confirmations'
-import TeamSelector from '@/components/common/TeamSelector'
-import { type Machine } from '@/types'
-import { QueueFunction } from '@/api/queries/queue'
-import type { QueueActionParams } from '@/services/queueActionService'
-import { FUNCTION_DEFINITIONS } from '@/services/functionsService'
-import { useTheme } from 'styled-components'
-import { SectionStack, SectionHeading } from '@/components/ui'
+  useMachines,
+} from '@/api/queries/machines';
+import { useRepos, Repo } from '@/api/queries/repos';
+import { useStorage } from '@/api/queries/storage';
+import { useQueueAction } from '@/hooks/useQueueAction';
+import { useUnifiedModal, useTeamSelection, useQueueTraceModal, useDialogState } from '@/hooks';
+import { confirmDelete } from '@/utils/confirmations';
+import TeamSelector from '@/components/common/TeamSelector';
+import { type Machine } from '@/types';
+import { QueueFunction } from '@/api/queries/queue';
+import type { QueueActionParams } from '@/services/queueActionService';
+import { FUNCTION_DEFINITIONS } from '@/services/functionsService';
+import { useTheme } from 'styled-components';
+import { SectionStack, SectionHeading } from '@/components/ui';
 import {
   PageContainer as PageWrapper,
   PageCard,
@@ -39,96 +39,101 @@ import {
   ActionBar as ButtonGroup,
   ActionButton,
   ContentSection,
-} from '@/styles/primitives'
+} from '@/styles/primitives';
 
 type MachinesLocationState = {
-  createRepo?: boolean
-  selectedTeam?: string
-  selectedMachine?: string
-  selectedTemplate?: string
-} | null
+  createRepo?: boolean;
+  selectedTeam?: string;
+  selectedMachine?: string;
+  selectedTemplate?: string;
+} | null;
 
 interface MachineFormValues extends Record<string, unknown> {
-  teamName: string
-  machineName: string
-  bridgeName: string
-  machineVault?: string
-  autoSetup?: boolean
+  teamName: string;
+  machineName: string;
+  bridgeName: string;
+  machineVault?: string;
+  autoSetup?: boolean;
 }
 
 interface MachineFunctionParams {
-  repo?: string
-  sourceType?: string
-  from?: string
-  [key: string]: string | number | boolean | undefined
+  repo?: string;
+  sourceType?: string;
+  from?: string;
+  [key: string]: string | number | boolean | undefined;
 }
 
 interface MachineFunctionData {
-  function: QueueFunction
-  params: MachineFunctionParams
-  priority: number
-  description: string
+  function: QueueFunction;
+  params: MachineFunctionParams;
+  priority: number;
+  description: string;
 }
 
 const MachinesPage: React.FC = () => {
-  const { t } = useTranslation(['resources', 'machines', 'common'])
-  const [modal, contextHolder] = Modal.useModal()
-  const location = useLocation<MachinesLocationState>()
-  const navigate = useNavigate()
-  const theme = useTheme()
+  const { t } = useTranslation(['resources', 'machines', 'common']);
+  const [modal, contextHolder] = Modal.useModal();
+  const location = useLocation<MachinesLocationState>();
+  const navigate = useNavigate();
+  const theme = useTheme();
 
   // Use custom hooks for common patterns
-  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection()
+  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection();
   const {
     modalState: unifiedModalState,
     currentResource,
     openModal: openUnifiedModal,
-    closeModal: closeUnifiedModal
-  } = useUnifiedModal<Machine>('machine')
+    closeModal: closeUnifiedModal,
+  } = useUnifiedModal<Machine>('machine');
 
-  const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null)
-  const [selectedRepoFromMachine, setSelectedRepoFromMachine] = useState<Repo | null>(null)
-  const [selectedContainerFromMachine, setSelectedContainerFromMachine] = useState<ContainerData | null>(null)
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(true)
-  const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({})
+  const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
+  const [selectedRepoFromMachine, setSelectedRepoFromMachine] = useState<Repo | null>(null);
+  const [selectedContainerFromMachine, setSelectedContainerFromMachine] =
+    useState<ContainerData | null>(null);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
+  const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({});
 
   // Modal state management with new hooks
-  const { state: queueTraceState, open: openQueueTrace, close: closeQueueTrace } = useQueueTraceModal()
-  const connectivityTest = useDialogState()
+  const {
+    state: queueTraceState,
+    open: openQueueTrace,
+    close: closeQueueTrace,
+  } = useQueueTraceModal();
+  const connectivityTest = useDialogState();
 
   const { data: machines = [], refetch: refetchMachines } = useMachines(
     selectedTeams.length > 0 ? selectedTeams : undefined,
     selectedTeams.length > 0
-  )
-  const { data: repos = [] } = useRepos(selectedTeams.length > 0 ? selectedTeams : undefined)
-  const { data: storages = [] } = useStorage(selectedTeams.length > 0 ? selectedTeams : undefined)
+  );
+  const { data: repos = [] } = useRepos(selectedTeams.length > 0 ? selectedTeams : undefined);
+  const { data: storages = [] } = useStorage(selectedTeams.length > 0 ? selectedTeams : undefined);
 
-  const createMachineMutation = useCreateMachine()
-  const updateMachineNameMutation = useUpdateMachineName()
-  const updateMachineBridgeMutation = useUpdateMachineBridge()
-  const deleteMachineMutation = useDeleteMachine()
-  const updateMachineVaultMutation = useUpdateMachineVault()
-  const { executeAction, isExecuting } = useQueueAction()
+  const createMachineMutation = useCreateMachine();
+  const updateMachineNameMutation = useUpdateMachineName();
+  const updateMachineBridgeMutation = useUpdateMachineBridge();
+  const deleteMachineMutation = useDeleteMachine();
+  const updateMachineVaultMutation = useUpdateMachineVault();
+  const { executeAction, isExecuting } = useQueueAction();
 
   useEffect(() => {
-    const state = location.state
+    const state = location.state;
     if (state?.createRepo) {
-      navigate('/credentials', { state, replace: true })
+      navigate('/credentials', { state, replace: true });
     }
-  }, [location, navigate])
+  }, [location, navigate]);
 
   const handleMachineSelect = (machine: Machine | null) => {
-    setSelectedMachine(machine)
+    setSelectedMachine(machine);
     if (machine) {
-      setSelectedRepoFromMachine(null)
-      setSelectedContainerFromMachine(null)
-      setIsPanelCollapsed(false)
+      setSelectedRepoFromMachine(null);
+      setSelectedContainerFromMachine(null);
+      setIsPanelCollapsed(false);
     }
-  }
+  };
 
   const handleTogglePanelCollapse = () => {
-    setIsPanelCollapsed((prev) => !prev)
-  }
+    setIsPanelCollapsed((prev) => !prev);
+  };
 
   const handleDeleteMachine = useCallback(
     (machine: Machine) => {
@@ -138,27 +143,28 @@ const MachinesPage: React.FC = () => {
         resourceType: 'machine',
         resourceName: machine.machineName,
         translationNamespace: 'machines',
-        onConfirm: () => deleteMachineMutation.mutateAsync({
-          teamName: machine.teamName,
-          machineName: machine.machineName
-        }),
-        onSuccess: () => refetchMachines()
-      })
+        onConfirm: () =>
+          deleteMachineMutation.mutateAsync({
+            teamName: machine.teamName,
+            machineName: machine.machineName,
+          }),
+        onSuccess: () => refetchMachines(),
+      });
     },
     [deleteMachineMutation, modal, refetchMachines, t]
-  )
+  );
 
   const handleUnifiedModalSubmit = useCallback(
     async (formData: MachineFormValues) => {
       try {
         if (unifiedModalState.mode === 'create') {
-          const { autoSetup, ...machineData } = formData
-          await createMachineMutation.mutateAsync(machineData)
-          showMessage('success', t('machines:createSuccess'))
+          const { autoSetup, ...machineData } = formData;
+          await createMachineMutation.mutateAsync(machineData);
+          showMessage('success', t('machines:createSuccess'));
 
           if (autoSetup) {
             try {
-              await new Promise((resolve) => setTimeout(resolve, 500))
+              await new Promise((resolve) => setTimeout(resolve, 500));
               const result = await executeAction({
                 teamName: formData.teamName,
                 machineName: formData.machineName,
@@ -170,60 +176,60 @@ const MachinesPage: React.FC = () => {
                   rclone_source: 'install-script',
                   docker_source: 'docker-repo',
                   install_amd_driver: 'auto',
-                  install_nvidia_driver: 'auto'
+                  install_nvidia_driver: 'auto',
                 },
                 priority: 3,
                 addedVia: 'machine-creation-auto-setup',
-                machineVault: formData.machineVault || '{}'
-              })
+                machineVault: formData.machineVault || '{}',
+              });
 
               if (result.success) {
                 if (result.taskId) {
-                  showMessage('info', t('machines:setupQueued'))
-                  openQueueTrace(result.taskId, formData.machineName)
+                  showMessage('info', t('machines:setupQueued'));
+                  openQueueTrace(result.taskId, formData.machineName);
                 } else if (result.isQueued) {
-                  showMessage('info', t('machines:setupQueuedForSubmission'))
+                  showMessage('info', t('machines:setupQueuedForSubmission'));
                 }
               }
             } catch {
-              showMessage('warning', t('machines:machineCreatedButSetupFailed'))
+              showMessage('warning', t('machines:machineCreatedButSetupFailed'));
             }
           }
 
-          closeUnifiedModal()
-          refetchMachines()
+          closeUnifiedModal();
+          refetchMachines();
         } else if (currentResource) {
-          const currentName = currentResource.machineName
-          const newName = formData.machineName
+          const currentName = currentResource.machineName;
+          const newName = formData.machineName;
 
           if (newName && newName !== currentName) {
             await updateMachineNameMutation.mutateAsync({
               teamName: currentResource.teamName,
               currentMachineName: currentName,
-              newMachineName: newName
-            })
+              newMachineName: newName,
+            });
           }
 
           if (formData.bridgeName && formData.bridgeName !== currentResource.bridgeName) {
             await updateMachineBridgeMutation.mutateAsync({
               teamName: currentResource.teamName,
               machineName: newName || currentName,
-              newBridgeName: formData.bridgeName
-            })
+              newBridgeName: formData.bridgeName,
+            });
           }
 
-          const vaultData = formData.machineVault
+          const vaultData = formData.machineVault;
           if (vaultData && vaultData !== currentResource.vaultContent) {
             await updateMachineVaultMutation.mutateAsync({
               teamName: currentResource.teamName,
               machineName: newName || currentName,
               machineVault: vaultData,
-              vaultVersion: currentResource.vaultVersion + 1
-            })
+              vaultVersion: currentResource.vaultVersion + 1,
+            });
           }
 
-          closeUnifiedModal()
-          refetchMachines()
+          closeUnifiedModal();
+          refetchMachines();
         }
       } catch {
         // Errors surfaced via mutation toasts
@@ -240,38 +246,39 @@ const MachinesPage: React.FC = () => {
       unifiedModalState.mode,
       updateMachineBridgeMutation,
       updateMachineNameMutation,
-      updateMachineVaultMutation
+      updateMachineVaultMutation,
     ]
-  )
+  );
 
   const handleUnifiedVaultUpdate = useCallback(
     async (vault: string, version: number) => {
-      if (!currentResource) return
+      if (!currentResource) return;
       try {
         await updateMachineVaultMutation.mutateAsync({
           teamName: currentResource.teamName,
           machineName: currentResource.machineName,
           machineVault: vault,
-          vaultVersion: version
-        })
-        closeUnifiedModal()
-        refetchMachines()
+          vaultVersion: version,
+        });
+        closeUnifiedModal();
+        refetchMachines();
       } catch {
         // Error handled by mutation toast
       }
     },
     [closeUnifiedModal, currentResource, refetchMachines, updateMachineVaultMutation]
-  )
+  );
 
   const handleMachineFunctionSelected = useCallback(
     async (functionData: MachineFunctionData) => {
-      if (!currentResource) return
+      if (!currentResource) return;
 
       try {
-        const machineName = currentResource.machineName
-        const bridgeName = currentResource.bridgeName
-        const teamData = teams.find((team) => team.teamName === currentResource.teamName)
-        const repoParam = typeof functionData.params.repo === 'string' ? functionData.params.repo : undefined
+        const machineName = currentResource.machineName;
+        const bridgeName = currentResource.bridgeName;
+        const teamData = teams.find((team) => team.teamName === currentResource.teamName);
+        const repoParam =
+          typeof functionData.params.repo === 'string' ? functionData.params.repo : undefined;
 
         const queuePayload: QueueActionParams = {
           teamName: currentResource.teamName,
@@ -283,106 +290,123 @@ const MachinesPage: React.FC = () => {
           addedVia: 'machine-table',
           teamVault: teamData?.vaultContent || '{}',
           machineVault: currentResource.vaultContent || '{}',
-          repoVault: '{}'
-        }
+          repoVault: '{}',
+        };
 
         if (repoParam) {
-          const repo = repos.find((item) => item.repoGuid === repoParam)
-          queuePayload.repoGuid = repo?.repoGuid || repoParam
-          queuePayload.repoVault = repo?.repoVault || '{}'
+          const repo = repos.find((item) => item.repoGuid === repoParam);
+          queuePayload.repoGuid = repo?.repoGuid || repoParam;
+          queuePayload.repoVault = repo?.repoVault || '{}';
         }
 
         if (functionData.function.name === 'pull') {
-          const sourceType = typeof functionData.params.sourceType === 'string'
-            ? functionData.params.sourceType
-            : undefined
-          const sourceIdentifier = typeof functionData.params.from === 'string'
-            ? functionData.params.from
-            : undefined
+          const sourceType =
+            typeof functionData.params.sourceType === 'string'
+              ? functionData.params.sourceType
+              : undefined;
+          const sourceIdentifier =
+            typeof functionData.params.from === 'string' ? functionData.params.from : undefined;
 
           if (sourceType === 'machine' && sourceIdentifier) {
-            const sourceMachine = machines.find((machine) => machine.machineName === sourceIdentifier)
+            const sourceMachine = machines.find(
+              (machine) => machine.machineName === sourceIdentifier
+            );
             if (sourceMachine?.vaultContent) {
-              queuePayload.sourceMachineVault = sourceMachine.vaultContent
+              queuePayload.sourceMachineVault = sourceMachine.vaultContent;
             }
           }
 
           if (sourceType === 'storage' && sourceIdentifier) {
-            const sourceStorage = storages.find((storage) => storage.storageName === sourceIdentifier)
+            const sourceStorage = storages.find(
+              (storage) => storage.storageName === sourceIdentifier
+            );
             if (sourceStorage?.vaultContent) {
-              queuePayload.sourceStorageVault = sourceStorage.vaultContent
+              queuePayload.sourceStorageVault = sourceStorage.vaultContent;
             }
           }
         }
 
-        const result = await executeAction(queuePayload)
-        closeUnifiedModal()
+        const result = await executeAction(queuePayload);
+        closeUnifiedModal();
 
         if (result.success) {
           if (result.taskId) {
-            showMessage('success', t('machines:queueItemCreated'))
-            openQueueTrace(result.taskId, machineName)
+            showMessage('success', t('machines:queueItemCreated'));
+            openQueueTrace(result.taskId, machineName);
           } else if (result.isQueued) {
-            showMessage('info', t('resources:messages.highestPriorityQueued', { resourceType: 'machine' }))
+            showMessage(
+              'info',
+              t('resources:messages.highestPriorityQueued', { resourceType: 'machine' })
+            );
           }
         } else {
-          showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'))
+          showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'));
         }
       } catch {
-        showMessage('error', t('resources:errors.failedToCreateQueueItem'))
+        showMessage('error', t('resources:errors.failedToCreateQueueItem'));
       }
     },
-    [closeUnifiedModal, currentResource, executeAction, machines, openQueueTrace, repos, storages, t, teams]
-  )
+    [
+      closeUnifiedModal,
+      currentResource,
+      executeAction,
+      machines,
+      openQueueTrace,
+      repos,
+      storages,
+      t,
+      teams,
+    ]
+  );
 
   const handleResourceSelection = (resource: Machine | Repo | ContainerData | null) => {
     if (resource && 'machineName' in resource) {
-      handleMachineSelect(resource)
+      handleMachineSelect(resource);
     } else if (resource && 'repoName' in resource) {
-      handleMachineSelect(null)
-      setSelectedRepoFromMachine(resource)
-      setSelectedContainerFromMachine(null)
-      setIsPanelCollapsed(false)
+      handleMachineSelect(null);
+      setSelectedRepoFromMachine(resource);
+      setSelectedContainerFromMachine(null);
+      setIsPanelCollapsed(false);
     } else if (resource && 'id' in resource && 'state' in resource) {
-      handleMachineSelect(null)
-      setSelectedRepoFromMachine(null)
-      setSelectedContainerFromMachine(resource)
-      setIsPanelCollapsed(false)
+      handleMachineSelect(null);
+      setSelectedRepoFromMachine(null);
+      setSelectedContainerFromMachine(resource);
+      setIsPanelCollapsed(false);
     } else {
-      handleMachineSelect(null)
-      setSelectedRepoFromMachine(null)
-      setSelectedContainerFromMachine(null)
+      handleMachineSelect(null);
+      setSelectedRepoFromMachine(null);
+      setSelectedContainerFromMachine(null);
     }
-  }
+  };
 
   const handleRefreshMachines = () => {
-    refetchMachines()
+    refetchMachines();
     setRefreshKeys((prev) => ({
       ...prev,
-      _global: Date.now()
-    }))
-  }
+      _global: Date.now(),
+    }));
+  };
 
   // Direct queue handler for specific functions (bypasses modal)
   const handleDirectFunctionQueue = useCallback(
     async (machine: Machine, functionName: string) => {
-      const funcDef = FUNCTION_DEFINITIONS[functionName]
+      const funcDef = FUNCTION_DEFINITIONS[functionName];
       if (!funcDef) {
-        showMessage('error', t('resources:errors.functionNotFound'))
-        return
+        showMessage('error', t('resources:errors.functionNotFound'));
+        return;
       }
 
       // Build default params from function definition
-      const defaultParams: Record<string, string> = {}
+      const defaultParams: Record<string, string> = {};
       if (funcDef.params) {
         Object.entries(funcDef.params).forEach(([paramName, paramInfo]) => {
           if (paramInfo.default) {
-            defaultParams[paramName] = paramInfo.default
+            defaultParams[paramName] = paramInfo.default;
           }
-        })
+        });
       }
 
-      const teamData = teams.find((team) => team.teamName === machine.teamName)
+      const teamData = teams.find((team) => team.teamName === machine.teamName);
 
       const queuePayload: QueueActionParams = {
         teamName: machine.teamName,
@@ -394,43 +418,46 @@ const MachinesPage: React.FC = () => {
         addedVia: 'machine-table-quick',
         teamVault: teamData?.vaultContent || '{}',
         machineVault: machine.vaultContent || '{}',
-        repoVault: '{}'
-      }
+        repoVault: '{}',
+      };
 
       try {
-        const result = await executeAction(queuePayload)
+        const result = await executeAction(queuePayload);
 
         if (result.success) {
           if (result.taskId) {
-            showMessage('success', t('machines:queueItemCreated'))
-            openQueueTrace(result.taskId, machine.machineName)
+            showMessage('success', t('machines:queueItemCreated'));
+            openQueueTrace(result.taskId, machine.machineName);
           } else if (result.isQueued) {
-            showMessage('info', t('resources:messages.highestPriorityQueued', { resourceType: 'machine' }))
+            showMessage(
+              'info',
+              t('resources:messages.highestPriorityQueued', { resourceType: 'machine' })
+            );
           }
         } else {
-          showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'))
+          showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'));
         }
 
         setRefreshKeys((prev) => ({
           ...prev,
-          [machine.machineName]: Date.now()
-        }))
+          [machine.machineName]: Date.now(),
+        }));
       } catch {
-        showMessage('error', t('resources:errors.failedToCreateQueueItem'))
+        showMessage('error', t('resources:errors.failedToCreateQueueItem'));
       }
     },
     [executeAction, openQueueTrace, t, teams]
-  )
+  );
 
   const isSubmitting =
     createMachineMutation.isPending ||
     updateMachineNameMutation.isPending ||
     updateMachineBridgeMutation.isPending ||
-    isExecuting
+    isExecuting;
 
-  const isUpdatingVault = updateMachineVaultMutation.isPending
+  const isUpdatingVault = updateMachineVaultMutation.isPending;
 
-  const modalExistingData = unifiedModalState.data ?? currentResource ?? undefined
+  const modalExistingData = unifiedModalState.data ?? currentResource ?? undefined;
 
   // Note: This page uses SplitResourceView instead of ResourceListView
   // to support the side panel detail view. This is intentional.
@@ -514,16 +541,16 @@ const MachinesPage: React.FC = () => {
                     // This split behavior is intentional - users expect quick actions for specific
                     // functions and full configuration only when clicking "Advanced".
                     if (functionName) {
-                      handleDirectFunctionQueue(machine, functionName)
+                      handleDirectFunctionQueue(machine, functionName);
                     } else {
-                      openUnifiedModal('create', machine)
+                      openUnifiedModal('create', machine);
                     }
                   }}
                   onDeleteMachine={handleDeleteMachine}
                   enabled={selectedTeams.length > 0}
                   refreshKeys={refreshKeys}
                   onQueueItemCreated={(taskId, machineName) => {
-                    openQueueTrace(taskId, machineName)
+                    openQueueTrace(taskId, machineName);
                   }}
                   selectedResource={
                     selectedMachine || selectedRepoFromMachine || selectedContainerFromMachine
@@ -562,15 +589,15 @@ const MachinesPage: React.FC = () => {
         taskId={queueTraceState.taskId}
         open={queueTraceState.open}
         onCancel={() => {
-          const machineName = queueTraceState.machineName
-          closeQueueTrace()
+          const machineName = queueTraceState.machineName;
+          closeQueueTrace();
           if (machineName) {
             setRefreshKeys((prev) => ({
               ...prev,
-              [machineName]: Date.now()
-            }))
+              [machineName]: Date.now(),
+            }));
           }
-          refetchMachines()
+          refetchMachines();
         }}
       />
 
@@ -584,9 +611,7 @@ const MachinesPage: React.FC = () => {
 
       {contextHolder}
     </>
-  )
-}
+  );
+};
 
-export default MachinesPage
-
-
+export default MachinesPage;

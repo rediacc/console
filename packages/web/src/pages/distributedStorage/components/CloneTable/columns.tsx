@@ -1,19 +1,19 @@
-import React from 'react'
-import { Tooltip } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
-import type { MenuProps } from 'antd'
-import { EllipsisOutlined, CloudUploadOutlined } from '@ant-design/icons'
-import { TFunction } from 'i18next'
-import type { DistributedStorageRbdClone } from '@/api/queries/distributedStorage'
-import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
-import { createActionColumn } from '@/components/common/columns'
-import { CloneIcon, CloneName, NameCell, VaultTag } from './styles'
+import React from 'react';
+import { Tooltip } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import type { MenuProps } from 'antd';
+import { EllipsisOutlined, CloudUploadOutlined } from '@ant-design/icons';
+import { TFunction } from 'i18next';
+import type { DistributedStorageRbdClone } from '@/api/queries/distributedStorage';
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
+import { createActionColumn } from '@/components/common/columns';
+import { CloneIcon, CloneName, NameCell, VaultTag } from './styles';
 
 interface ColumnBuilderParams {
-  t: TFunction<'distributedStorage' | 'common'>
-  renderMachineCount: (clone: DistributedStorageRbdClone) => React.ReactNode
-  handleRunFunction: (functionName: string, clone?: DistributedStorageRbdClone) => void
-  getCloneMenuItems: (clone: DistributedStorageRbdClone) => MenuProps['items']
+  t: TFunction<'distributedStorage' | 'common'>;
+  renderMachineCount: (clone: DistributedStorageRbdClone) => React.ReactNode;
+  handleRunFunction: (functionName: string, clone?: DistributedStorageRbdClone) => void;
+  getCloneMenuItems: (clone: DistributedStorageRbdClone) => MenuProps['items'];
 }
 
 export const buildCloneColumns = ({
@@ -76,4 +76,4 @@ export const buildCloneColumns = ({
       />
     ),
   }),
-]
+];

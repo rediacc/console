@@ -1,6 +1,6 @@
-import { useCallback } from 'react'
-import { Form, Button } from 'antd'
-import { Controller, FieldValues } from 'react-hook-form'
+import { useCallback } from 'react';
+import { Form, Button } from 'antd';
+import { Controller, FieldValues } from 'react-hook-form';
 import {
   StyledForm,
   TextInput,
@@ -8,8 +8,8 @@ import {
   FieldSelect,
   FormActions,
   ActionButtons,
-} from './styles'
-import { FormFieldConfig, ResourceFormProps } from './types'
+} from './styles';
+import { FormFieldConfig, ResourceFormProps } from './types';
 
 function ResourceForm<T extends FieldValues = FieldValues>({
   form,
@@ -25,7 +25,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
     control,
     handleSubmit,
     formState: { errors },
-  } = form
+  } = form;
 
   const renderField = (field: FormFieldConfig<T>) => {
     switch (field.type) {
@@ -49,7 +49,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
               />
             )}
           />
-        )
+        );
 
       case 'password':
         return (
@@ -66,7 +66,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
               />
             )}
           />
-        )
+        );
 
       default:
         return (
@@ -84,17 +84,17 @@ function ResourceForm<T extends FieldValues = FieldValues>({
               />
             )}
           />
-        )
+        );
     }
-  }
+  };
 
-  const formLayout = layout === 'vertical' ? 'horizontal' : layout
-  const labelCol = { span: 6 }
-  const wrapperCol = { span: 18 }
+  const formLayout = layout === 'vertical' ? 'horizontal' : layout;
+  const labelCol = { span: 6 };
+  const wrapperCol = { span: 18 };
 
   const onFormFinish = useCallback(() => {
-    void handleSubmit(onSubmit)()
-  }, [handleSubmit, onSubmit])
+    void handleSubmit(onSubmit)();
+  }, [handleSubmit, onSubmit]);
 
   return (
     <StyledForm
@@ -107,9 +107,9 @@ function ResourceForm<T extends FieldValues = FieldValues>({
       data-testid="resource-form"
     >
       {fields.map((field) => {
-        if (field.hidden) return null
+        if (field.hidden) return null;
 
-        const error = errors[field.name as keyof typeof errors]
+        const error = errors[field.name as keyof typeof errors];
 
         return (
           <Form.Item
@@ -121,7 +121,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
           >
             {renderField(field)}
           </Form.Item>
-        )
+        );
       })}
 
       <FormActions wrapperCol={{ offset: labelCol.span, span: wrapperCol.span }}>
@@ -142,7 +142,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
         </ActionButtons>
       </FormActions>
     </StyledForm>
-  )
+  );
 }
 
-export default ResourceForm
+export default ResourceForm;

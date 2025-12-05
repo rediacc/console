@@ -1,17 +1,17 @@
-import React, { useState, useCallback, useMemo } from 'react'
-import { 
-  Modal, 
-  Typography, 
-  Space, 
-  Alert, 
-  Button, 
-  Collapse, 
+import React, { useState, useCallback, useMemo } from 'react';
+import {
+  Modal,
+  Typography,
+  Space,
+  Alert,
+  Button,
+  Collapse,
   Checkbox,
   Tabs,
   Tag,
-  message
-} from 'antd'
-import { 
+  message,
+} from 'antd';
+import {
   RocketOutlined,
   CopyOutlined,
   CheckOutlined,
@@ -19,59 +19,67 @@ import {
   QuestionCircleOutlined,
   WindowsOutlined,
   AppleOutlined,
-  DesktopOutlined
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { pipInstallationService, InstallOptions } from '@/services/pipInstallationService'
-import { ModalSize } from '@/types/modal'
-import { CommandContainer, CommandDescription, CommandBox, CommandCode, CopyButton, ContentSpace, NotesList } from './styles'
+  DesktopOutlined,
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { pipInstallationService, InstallOptions } from '@/services/pipInstallationService';
+import { ModalSize } from '@/types/modal';
+import {
+  CommandContainer,
+  CommandDescription,
+  CommandBox,
+  CommandCode,
+  CopyButton,
+  ContentSpace,
+  NotesList,
+} from './styles';
 
-const { Text, Title } = Typography
+const { Text, Title } = Typography;
 
 interface PipInstallationModalProps {
-  open: boolean
-  onClose: () => void
-  errorType?: 'not-installed' | 'protocol-not-registered' | 'permission-denied'
+  open: boolean;
+  onClose: () => void;
+  errorType?: 'not-installed' | 'protocol-not-registered' | 'permission-denied';
 }
 
 interface CommandDisplayProps {
-  command: string
-  description?: string
-  showCopy?: boolean
+  command: string;
+  description?: string;
+  showCopy?: boolean;
 }
 
-const CommandDisplay: React.FC<CommandDisplayProps> = ({ command, description, showCopy = true }) => {
-  const [copied, setCopied] = useState(false)
+const CommandDisplay: React.FC<CommandDisplayProps> = ({
+  command,
+  description,
+  showCopy = true,
+}) => {
+  const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(command)
-      setCopied(true)
-      message.success('Command copied to clipboard!')
+      await navigator.clipboard.writeText(command);
+      setCopied(true);
+      message.success('Command copied to clipboard!');
       // Reset copy state immediately after user interaction
-      setCopied(false)
+      setCopied(false);
     } catch {
-      message.error('Failed to copy command')
+      message.error('Failed to copy command');
     }
-  }, [command])
+  }, [command]);
 
-  const formattedCommands = pipInstallationService.formatCommandsForDisplay([command])
-  const { isCommand, isComment } = formattedCommands[0]
+  const formattedCommands = pipInstallationService.formatCommandsForDisplay([command]);
+  const { isCommand, isComment } = formattedCommands[0];
 
   return (
     <CommandContainer data-testid="pip-install-command-display">
       {description && <CommandDescription type="secondary">{description}</CommandDescription>}
       <CommandBox data-testid="pip-install-command-text">
-        <CommandCode 
-          code 
-          $isComment={isComment}
-          $isCommand={isCommand}
-        >
+        <CommandCode code $isComment={isComment} $isCommand={isCommand}>
           {command}
         </CommandCode>
         {showCopy && (
-          <CopyButton 
-            size="small" 
+          <CopyButton
+            size="small"
             icon={copied ? <CheckOutlined /> : <CopyOutlined />}
             onClick={handleCopy}
             data-testid="pip-install-command-copy"
@@ -79,52 +87,49 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({ command, description, s
         )}
       </CommandBox>
     </CommandContainer>
-  )
-}
+  );
+};
 
 export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   open,
   onClose,
-  errorType = 'not-installed'
+  errorType = 'not-installed',
 }) => {
-  const { t } = useTranslation()
-  const [useUserInstall, setUseUserInstall] = useState(false)
-  const [activeTab, setActiveTab] = useState('quick')
+  const { t } = useTranslation();
+  const [useUserInstall, setUseUserInstall] = useState(false);
+  const [activeTab, setActiveTab] = useState('quick');
 
-  const platformInstructions = useMemo(
-    () => pipInstallationService.getPlatformInstructions(),
-    []
-  )
+  const platformInstructions = useMemo(() => pipInstallationService.getPlatformInstructions(), []);
 
   const installOptions: InstallOptions = {
-    useUser: useUserInstall
-  }
+    useUser: useUserInstall,
+  };
 
-  const installCommands = pipInstallationService.getInstallationCommands(installOptions)
-  const virtualEnvInstructions = pipInstallationService.getVirtualEnvInstructions()
-  const uninstallInstructions = pipInstallationService.getUninstallInstructions()
+  const installCommands = pipInstallationService.getInstallationCommands(installOptions);
+  const virtualEnvInstructions = pipInstallationService.getVirtualEnvInstructions();
+  const uninstallInstructions = pipInstallationService.getUninstallInstructions();
 
   const handleCopyAllCommands = () => {
     const allCommands = [
       installCommands.install,
-      ...installCommands.postInstall.filter(cmd => !cmd.includes('Restart')),
-      ...installCommands.verify
-    ].join('\n')
-    
-    navigator.clipboard.writeText(allCommands)
-    message.success('All commands copied to clipboard!')
-  }
+      ...installCommands.postInstall.filter((cmd) => !cmd.includes('Restart')),
+      ...installCommands.verify,
+    ].join('\n');
+
+    navigator.clipboard.writeText(allCommands);
+    message.success('All commands copied to clipboard!');
+  };
 
   const renderPlatformIcon = () => {
     switch (platformInstructions.platform) {
       case 'windows':
-        return <WindowsOutlined />
+        return <WindowsOutlined />;
       case 'macos':
-        return <AppleOutlined />
+        return <AppleOutlined />;
       default:
-        return <DesktopOutlined />
+        return <DesktopOutlined />;
     }
-  }
+  };
 
   const renderQuickInstall = () => (
     <ContentSpace orientation="vertical" size="large">
@@ -174,7 +179,9 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         message={
           <Space>
             {renderPlatformIcon()}
-            {t('resources:pipInstall.platformSpecific', { platform: platformInstructions.platform })}
+            {t('resources:pipInstall.platformSpecific', {
+              platform: platformInstructions.platform,
+            })}
           </Space>
         }
         description={
@@ -188,9 +195,9 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         data-testid="pip-install-platform-alert"
       />
 
-      <Button 
-        type="primary" 
-        icon={<CopyOutlined />} 
+      <Button
+        type="primary"
+        icon={<CopyOutlined />}
         onClick={handleCopyAllCommands}
         block
         data-testid="pip-install-copy-all-button"
@@ -198,7 +205,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         {t('resources:pipInstall.copyAllCommands')}
       </Button>
     </ContentSpace>
-  )
+  );
 
   const renderAdvancedOptions = () => (
     <Collapse
@@ -216,7 +223,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                 <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
               ))}
             </ContentSpace>
-          )
+          ),
         },
         {
           key: 'version',
@@ -231,7 +238,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                 description={t('resources:pipInstall.upgradeDesc')}
               />
             </ContentSpace>
-          )
+          ),
         },
         {
           key: 'uninstall',
@@ -243,11 +250,11 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                 <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
               ))}
             </ContentSpace>
-          )
-        }
+          ),
+        },
       ]}
     />
-  )
+  );
 
   const renderTroubleshooting = () => (
     <ContentSpace orientation="vertical" size="large">
@@ -267,7 +274,8 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
             label: t('resources:pipInstall.pipNotFound'),
             extra: <Tag color="red">{t('resources:pipInstall.error')}</Tag>,
             children: (() => {
-              const troubleshooting = pipInstallationService.getTroubleshootingCommands('pip-not-found')
+              const troubleshooting =
+                pipInstallationService.getTroubleshootingCommands('pip-not-found');
               return (
                 <ContentSpace orientation="vertical">
                   <Text>{troubleshooting.description}</Text>
@@ -275,15 +283,16 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                     <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
                   ))}
                 </ContentSpace>
-              )
-            })()
+              );
+            })(),
           },
           {
             key: 'permission',
             label: t('resources:pipInstall.permissionDenied'),
             extra: <Tag color="orange">{t('resources:pipInstall.warning')}</Tag>,
             children: (() => {
-              const troubleshooting = pipInstallationService.getTroubleshootingCommands('permission-denied')
+              const troubleshooting =
+                pipInstallationService.getTroubleshootingCommands('permission-denied');
               return (
                 <ContentSpace orientation="vertical">
                   <Text>{troubleshooting.description}</Text>
@@ -291,14 +300,15 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                     <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
                   ))}
                 </ContentSpace>
-              )
-            })()
+              );
+            })(),
           },
           {
             key: 'python-version',
             label: t('resources:pipInstall.pythonVersion'),
             children: (() => {
-              const troubleshooting = pipInstallationService.getTroubleshootingCommands('python-version')
+              const troubleshooting =
+                pipInstallationService.getTroubleshootingCommands('python-version');
               return (
                 <ContentSpace orientation="vertical">
                   <Text>{troubleshooting.description}</Text>
@@ -306,9 +316,9 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                     <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
                   ))}
                 </ContentSpace>
-              )
-            })()
-          }
+              );
+            })(),
+          },
         ]}
       />
 
@@ -317,10 +327,10 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         description={
           <ContentSpace orientation="vertical">
             <Text>
-              {t('resources:pipInstall.checkDocs')}: {' '}
-              <a 
-                href="https://www.rediacc.com/docs/cli/installation" 
-                target="_blank" 
+              {t('resources:pipInstall.checkDocs')}:{' '}
+              <a
+                href="https://www.rediacc.com/docs/cli/installation"
+                target="_blank"
                 rel="noopener noreferrer"
                 data-testid="pip-install-docs-link"
               >
@@ -328,10 +338,10 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
               </a>
             </Text>
             <Text>
-              {t('resources:pipInstall.reportIssue')}: {' '}
-              <a 
-                href="https://github.com/rediacc/desktop/issues" 
-                target="_blank" 
+              {t('resources:pipInstall.reportIssue')}:{' '}
+              <a
+                href="https://github.com/rediacc/desktop/issues"
+                target="_blank"
                 rel="noopener noreferrer"
                 data-testid="pip-install-github-link"
               >
@@ -344,18 +354,18 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         data-testid="pip-install-help-alert"
       />
     </ContentSpace>
-  )
+  );
 
   const getModalTitle = () => {
     switch (errorType) {
       case 'protocol-not-registered':
-        return t('resources:pipInstall.protocolNotRegisteredTitle')
+        return t('resources:pipInstall.protocolNotRegisteredTitle');
       case 'permission-denied':
-        return t('resources:pipInstall.permissionDeniedTitle')
+        return t('resources:pipInstall.permissionDeniedTitle');
       default:
-        return t('resources:pipInstall.installRediaccCli')
+        return t('resources:pipInstall.installRediaccCli');
     }
-  }
+  };
 
   return (
     <Modal
@@ -368,19 +378,15 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
       open={open}
       onCancel={onClose}
       footer={[
-        <Button 
-          key="close" 
-          onClick={onClose} 
-          data-testid="pip-install-close-button"
-        >
+        <Button key="close" onClick={onClose} data-testid="pip-install-close-button">
           {t('common:close')}
-        </Button>
+        </Button>,
       ]}
       className={ModalSize.Large}
       data-testid="pip-install-modal"
     >
-      <Tabs 
-        activeKey={activeTab} 
+      <Tabs
+        activeKey={activeTab}
         onChange={setActiveTab}
         data-testid="pip-install-tabs"
         items={[
@@ -392,7 +398,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                 {t('resources:pipInstall.quickInstall')}
               </Space>
             ),
-            children: renderQuickInstall()
+            children: renderQuickInstall(),
           },
           {
             key: 'advanced',
@@ -402,7 +408,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                 {t('resources:pipInstall.advancedOptions')}
               </Space>
             ),
-            children: renderAdvancedOptions()
+            children: renderAdvancedOptions(),
           },
           {
             key: 'troubleshooting',
@@ -412,10 +418,10 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                 {t('resources:pipInstall.troubleshooting')}
               </Space>
             ),
-            children: renderTroubleshooting()
-          }
+            children: renderTroubleshooting(),
+          },
         ]}
       />
     </Modal>
-  )
-}
+  );
+};

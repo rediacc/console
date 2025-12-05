@@ -1,22 +1,22 @@
-﻿import React, { useState } from 'react'
-import { Repo } from '@/api/queries/repos'
-import { Space, Dropdown, Tooltip, Tag } from 'antd'
-import type { MenuProps } from 'antd'
-import type { MenuInfo } from 'rc-menu/lib/interface'
-import { 
-  FolderOutlined, 
-  CloudUploadOutlined, 
-  EditOutlined, 
+﻿import React, { useState } from 'react';
+import { Repo } from '@/api/queries/repos';
+import { Space, Dropdown, Tooltip, Tag } from 'antd';
+import type { MenuProps } from 'antd';
+import type { MenuInfo } from 'rc-menu/lib/interface';
+import {
+  FolderOutlined,
+  CloudUploadOutlined,
+  EditOutlined,
   DeleteOutlined,
   KeyOutlined,
   AppstoreOutlined,
-  FunctionOutlined
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { UnifiedDetailPanel } from '../../UnifiedDetailPanel'
-import type { ColumnsType } from 'antd/es/table'
-import { createSorter } from '@/core'
-import { createActionColumn, createTruncatedColumn } from '@/components/common/columns'
+  FunctionOutlined,
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { UnifiedDetailPanel } from '../../UnifiedDetailPanel';
+import type { ColumnsType } from 'antd/es/table';
+import { createSorter } from '@/core';
+import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
 import {
   ActionsButton,
   EmptyState,
@@ -31,19 +31,19 @@ import {
   TableSection,
   TeamFilterTag,
   TitleRow,
-} from './styles'
-import { IconWrapper } from '@/components/ui'
+} from './styles';
+import { IconWrapper } from '@/components/ui';
 
 interface SplitRepoViewProps {
-  repos: Repo[]
-  loading?: boolean
-  selectedRepo: Repo | null
-  onRepoSelect: (repo: Repo | null) => void
-  onEditRepo?: (repo: Repo) => void
-  onDeleteRepo?: (repo: Repo) => void
-  onVaultRepo?: (repo: Repo) => void
-  onCreateRepo?: () => void
-  teamFilter?: string | string[]
+  repos: Repo[];
+  loading?: boolean;
+  selectedRepo: Repo | null;
+  onRepoSelect: (repo: Repo | null) => void;
+  onEditRepo?: (repo: Repo) => void;
+  onDeleteRepo?: (repo: Repo) => void;
+  onVaultRepo?: (repo: Repo) => void;
+  onCreateRepo?: () => void;
+  teamFilter?: string | string[];
 }
 
 export const SplitRepoView: React.FC<SplitRepoViewProps> = ({
@@ -55,35 +55,35 @@ export const SplitRepoView: React.FC<SplitRepoViewProps> = ({
   onDeleteRepo,
   onVaultRepo,
   onCreateRepo,
-  teamFilter
+  teamFilter,
 }) => {
-  const { t } = useTranslation(['resources', 'common'])
-  
-  const [splitWidth, setSplitWidth] = useState(420)
+  const { t } = useTranslation(['resources', 'common']);
+
+  const [splitWidth, setSplitWidth] = useState(420);
 
   const handleRowClick = (repo: Repo) => {
-    onRepoSelect(repo)
-  }
+    onRepoSelect(repo);
+  };
 
   const handlePanelClose = () => {
-    onRepoSelect(null)
-  }
+    onRepoSelect(null);
+  };
 
-const repoNameColumn = createTruncatedColumn<Repo>({
-  title: t('resources:repos.repoName'),
-  dataIndex: 'repoName',
-  key: 'repoName',
-  width: 300,
-  sorter: createSorter<Repo>('repoName'),
-})
+  const repoNameColumn = createTruncatedColumn<Repo>({
+    title: t('resources:repos.repoName'),
+    dataIndex: 'repoName',
+    key: 'repoName',
+    width: 300,
+    sorter: createSorter<Repo>('repoName'),
+  });
 
-const repoGuidColumn = createTruncatedColumn<Repo>({
-  title: t('resources:repos.repoGuid'),
-  dataIndex: 'repoGuid',
-  key: 'repoGuid',
-  width: 350,
-  sorter: createSorter<Repo>('repoGuid'),
-})
+  const repoGuidColumn = createTruncatedColumn<Repo>({
+    title: t('resources:repos.repoGuid'),
+    dataIndex: 'repoGuid',
+    key: 'repoGuid',
+    width: 350,
+    sorter: createSorter<Repo>('repoGuid'),
+  });
 
   const columns: ColumnsType<Repo> = [
     {
@@ -103,7 +103,7 @@ const repoGuidColumn = createTruncatedColumn<Repo>({
     {
       ...repoNameColumn,
       render: (name: string, record: Repo) => {
-        const truncated = repoNameColumn.render?.(name, record, 0) as React.ReactNode
+        const truncated = repoNameColumn.render?.(name, record, 0) as React.ReactNode;
         return (
           <Space>
             <IconWrapper $tone="success">
@@ -117,7 +117,7 @@ const repoGuidColumn = createTruncatedColumn<Repo>({
               {truncated}
             </RepoLink>
           </Space>
-        )
+        );
       },
     },
     {
@@ -131,12 +131,8 @@ const repoGuidColumn = createTruncatedColumn<Repo>({
     {
       ...repoGuidColumn,
       render: (guid: string, record: Repo) => {
-        const truncated = repoGuidColumn.render?.(guid, record, 0) as React.ReactNode
-        return (
-          <GuidText copyable={{ text: guid }}>
-            {truncated}
-          </GuidText>
-        )
+        const truncated = repoGuidColumn.render?.(guid, record, 0) as React.ReactNode;
+        return <GuidText copyable={{ text: guid }}>{truncated}</GuidText>;
       },
     },
     createActionColumn<Repo>({
@@ -144,7 +140,7 @@ const repoGuidColumn = createTruncatedColumn<Repo>({
       width: 200,
       fixed: 'end',
       renderActions: (record) => {
-        const menuItems: MenuProps['items'] = []
+        const menuItems: MenuProps['items'] = [];
 
         if (onEditRepo) {
           menuItems.push({
@@ -152,10 +148,10 @@ const repoGuidColumn = createTruncatedColumn<Repo>({
             label: t('common:actions.edit'),
             icon: <EditOutlined />,
             onClick: (e: MenuInfo) => {
-              e.domEvent.stopPropagation()
-              onEditRepo(record)
+              e.domEvent.stopPropagation();
+              onEditRepo(record);
             },
-          })
+          });
         }
 
         if (onVaultRepo) {
@@ -164,10 +160,10 @@ const repoGuidColumn = createTruncatedColumn<Repo>({
             label: t('resources:repos.manageVault'),
             icon: <KeyOutlined />,
             onClick: (e: MenuInfo) => {
-              e.domEvent.stopPropagation()
-              onVaultRepo(record)
+              e.domEvent.stopPropagation();
+              onVaultRepo(record);
             },
-          })
+          });
         }
 
         if (onDeleteRepo) {
@@ -177,10 +173,10 @@ const repoGuidColumn = createTruncatedColumn<Repo>({
             icon: <DeleteOutlined />,
             danger: true,
             onClick: (e: MenuInfo) => {
-              e.domEvent.stopPropagation()
-              onDeleteRepo(record)
+              e.domEvent.stopPropagation();
+              onDeleteRepo(record);
             },
-          })
+          });
         }
 
         return (
@@ -199,10 +195,10 @@ const repoGuidColumn = createTruncatedColumn<Repo>({
               {t('common:actions.actions')}
             </ActionsButton>
           </Dropdown>
-        )
+        );
       },
     }),
-  ]
+  ];
 
   return (
     <SplitViewContainer data-testid="split-repo-view-container">
@@ -218,7 +214,10 @@ const repoGuidColumn = createTruncatedColumn<Repo>({
               {t('resources:repos.repos')}
             </HeaderTitle>
             {teamFilter && !Array.isArray(teamFilter) && (
-              <TeamFilterTag icon={<AppstoreOutlined />} data-testid="split-repo-view-team-filter-tag">
+              <TeamFilterTag
+                icon={<AppstoreOutlined />}
+                data-testid="split-repo-view-team-filter-tag"
+              >
                 {teamFilter}
               </TeamFilterTag>
             )}
@@ -246,14 +245,13 @@ const repoGuidColumn = createTruncatedColumn<Repo>({
             scroll={{ x: 'max-content' }}
             data-testid="split-repo-view-table"
             rowClassName={(record) =>
-              selectedRepo?.repoGuid === record.repoGuid ? 'is-selected' : ''}
+              selectedRepo?.repoGuid === record.repoGuid ? 'is-selected' : ''
+            }
             onRow={(record) => ({
               onClick: () => handleRowClick(record),
             })}
             locale={{
-              emptyText: (
-                <EmptyState description={t('resources:repos.noRepos')} />
-              )
+              emptyText: <EmptyState description={t('resources:repos.noRepos')} />,
             }}
           />
         </TableSection>
@@ -271,6 +269,5 @@ const repoGuidColumn = createTruncatedColumn<Repo>({
         />
       )}
     </SplitViewContainer>
-  )
-}
-
+  );
+};

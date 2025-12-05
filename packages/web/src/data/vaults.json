@@ -57,7 +57,7 @@
       "descriptionKey": "fields.BRIDGE.description",
       "required": [],
       "optional": [],
-      "fields": { }
+      "fields": {}
     },
     "STORAGE": {
       "descriptionKey": "fields.STORAGE.entityDescription",

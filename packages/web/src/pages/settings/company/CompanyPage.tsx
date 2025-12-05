@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Button,
   Tooltip,
@@ -12,7 +12,7 @@ import {
   Result,
   Typography,
   Form,
-} from 'antd'
+} from 'antd';
 import {
   BankOutlined,
   SettingOutlined,
@@ -24,20 +24,20 @@ import {
   WarningOutlined,
   KeyOutlined,
   UploadOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { useDispatch, useSelector } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
-import VaultEditorModal from '@/components/common/VaultEditorModal'
-import { ModalSize } from '@/types/modal'
-import { RootState } from '@/store/store'
-import { logout } from '@/store/auth/authSlice'
-import { featureFlags } from '@/config/featureFlags'
-import { masterPasswordService } from '@/services/masterPasswordService'
-import { encryptString, decryptString } from '@/utils/encryption'
-import { showMessage } from '@/utils/messages'
-import { useDialogState } from '@/hooks/useDialogState'
-import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields'
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import VaultEditorModal from '@/components/common/VaultEditorModal';
+import { ModalSize } from '@/types/modal';
+import { RootState } from '@/store/store';
+import { logout } from '@/store/auth/authSlice';
+import { featureFlags } from '@/config/featureFlags';
+import { masterPasswordService } from '@/services/masterPasswordService';
+import { encryptString, decryptString } from '@/utils/encryption';
+import { showMessage } from '@/utils/messages';
+import { useDialogState } from '@/hooks/useDialogState';
+import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields';
 import {
   useCompanyVault,
   useUpdateCompanyVault,
@@ -46,7 +46,7 @@ import {
   useUpdateCompanyVaults,
   useExportCompanyData,
   useImportCompanyData,
-} from '@/api/queries/company'
+} from '@/api/queries/company';
 import {
   PageWrapper as CompanyPageWrapper,
   SectionStack as CompanySectionStack,
@@ -72,7 +72,7 @@ import {
   RequirementsList,
   CaptionText,
   CenteredBlock,
-} from '@/components/ui'
+} from '@/components/ui';
 import {
   SettingsCard,
   DangerCard,
@@ -80,83 +80,87 @@ import {
   FormItemSpaced,
   FormItemNoMargin,
   FormItemActionsLg,
-} from '@/pages/system/styles'
+} from '@/pages/system/styles';
 
 const CompanyPage: React.FC = () => {
-  const { t } = useTranslation('settings')
-  const { t: tSystem } = useTranslation('system')
-  const { t: tCommon } = useTranslation('common')
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
-  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
+  const { t } = useTranslation('settings');
+  const { t: tSystem } = useTranslation('system');
+  const { t: tCommon } = useTranslation('common');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const uiMode = useSelector((state: RootState) => state.ui.uiMode);
 
-  const companyVaultModal = useDialogState<void>()
-  const masterPasswordModal = useDialogState<void>()
-  const [masterPasswordForm] = Form.useForm()
-  const [importForm] = Form.useForm()
-  const [masterPasswordOperation, setMasterPasswordOperation] = useState<'create' | 'update' | 'remove'>('create')
-  const [completedOperation, setCompletedOperation] = useState<'create' | 'update' | 'remove'>('update')
-  const successModal = useDialogState<void>()
-  const [countdown, setCountdown] = useState(60)
-  const countdownInterval = useRef<NodeJS.Timeout | null>(null)
-  const importModal = useDialogState<void>()
-  const [importFile, setImportFile] = useState<File | null>(null)
-  const [importMode, setImportMode] = useState<'skip' | 'override'>('skip')
-  const [currentMasterPassword, setCurrentMasterPassword] = useState<string | null>(null)
+  const companyVaultModal = useDialogState<void>();
+  const masterPasswordModal = useDialogState<void>();
+  const [masterPasswordForm] = Form.useForm();
+  const [importForm] = Form.useForm();
+  const [masterPasswordOperation, setMasterPasswordOperation] = useState<
+    'create' | 'update' | 'remove'
+  >('create');
+  const [completedOperation, setCompletedOperation] = useState<'create' | 'update' | 'remove'>(
+    'update'
+  );
+  const successModal = useDialogState<void>();
+  const [countdown, setCountdown] = useState(60);
+  const countdownInterval = useRef<NodeJS.Timeout | null>(null);
+  const importModal = useDialogState<void>();
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importMode, setImportMode] = useState<'skip' | 'override'>('skip');
+  const [currentMasterPassword, setCurrentMasterPassword] = useState<string | null>(null);
 
-  const { data: companyVault } = useCompanyVault()
-  const updateCompanyVaultMutation = useUpdateCompanyVault()
-  const blockUserRequestsMutation = useUpdateCompanyBlockUserRequests()
-  const exportVaultsQuery = useCompanyVaults()
-  const updateVaultsMutation = useUpdateCompanyVaults()
-  const exportCompanyDataQuery = useExportCompanyData()
-  const importCompanyDataMutation = useImportCompanyData()
+  const { data: companyVault } = useCompanyVault();
+  const updateCompanyVaultMutation = useUpdateCompanyVault();
+  const blockUserRequestsMutation = useUpdateCompanyBlockUserRequests();
+  const exportVaultsQuery = useCompanyVaults();
+  const updateVaultsMutation = useUpdateCompanyVaults();
+  const exportCompanyDataQuery = useExportCompanyData();
+  const importCompanyDataMutation = useImportCompanyData();
 
   useEffect(() => {
     const loadMasterPassword = async () => {
-      const password = await masterPasswordService.getMasterPassword()
-      setCurrentMasterPassword(password)
-      setMasterPasswordOperation(password ? 'update' : 'create')
-    }
-    loadMasterPassword()
-  }, [])
+      const password = await masterPasswordService.getMasterPassword();
+      setCurrentMasterPassword(password);
+      setMasterPasswordOperation(password ? 'update' : 'create');
+    };
+    loadMasterPassword();
+  }, []);
 
   const handleOpenMasterPasswordModal = () => {
-    setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create')
-    masterPasswordModal.open()
-  }
+    setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create');
+    masterPasswordModal.open();
+  };
 
   useEffect(() => {
     if (successModal.isOpen && countdown > 0) {
       countdownInterval.current = setInterval(() => {
-        setCountdown((prev) => prev - 1)
-      }, 1000)
+        setCountdown((prev) => prev - 1);
+      }, 1000);
     } else if (countdown === 0) {
-      dispatch(logout())
-      navigate('/login')
+      dispatch(logout());
+      navigate('/login');
     }
 
     return () => {
       if (countdownInterval.current) {
-        clearInterval(countdownInterval.current)
+        clearInterval(countdownInterval.current);
       }
-    }
-  }, [successModal.isOpen, countdown, dispatch, navigate])
+    };
+  }, [successModal.isOpen, countdown, dispatch, navigate]);
 
   const handleUpdateCompanyVault = async (vault: string, version: number) => {
     await updateCompanyVaultMutation.mutateAsync({
       companyVault: vault,
       vaultVersion: version,
-    })
-    companyVaultModal.close()
-  }
+    });
+    companyVaultModal.close();
+  };
 
   const handleExportVaults = async () => {
     try {
-      const result = await exportVaultsQuery.refetch()
+      const result = await exportVaultsQuery.refetch();
       if (result.data) {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]
-        const { allVaults, bridgesWithRequestToken, ...vaultsByType } = result.data
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+        const { allVaults, bridgesWithRequestToken, ...vaultsByType } = result.data;
 
         const exportData = {
           exportDate: new Date().toISOString(),
@@ -169,112 +173,119 @@ const CompanyPage: React.FC = () => {
               count: vaultsByType[type]?.length || 0,
             })),
           },
-        }
+        };
 
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `company-vaults-export-${timestamp}.json`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `company-vaults-export-${timestamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
-        showMessage('success', tSystem('dangerZone.exportVaults.success'))
+        showMessage('success', tSystem('dangerZone.exportVaults.success'));
       }
     } catch {
-      showMessage('error', tSystem('dangerZone.exportVaults.error'))
+      showMessage('error', tSystem('dangerZone.exportVaults.error'));
     }
-  }
+  };
 
   const handleExportCompanyData = async () => {
     try {
-      const result = await exportCompanyDataQuery.refetch()
+      const result = await exportCompanyDataQuery.refetch();
       if (result.data) {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]
-        const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `company-data-export-${timestamp}.json`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-        showMessage('success', tSystem('dangerZone.exportData.success'))
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+        const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `company-data-export-${timestamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showMessage('success', tSystem('dangerZone.exportData.success'));
       }
     } catch {
-      showMessage('error', tSystem('dangerZone.exportData.error'))
+      showMessage('error', tSystem('dangerZone.exportData.error'));
     }
-  }
+  };
 
   const handleImportCompanyData = async () => {
     if (!importFile) {
-      showMessage('error', tSystem('dangerZone.importData.modal.fileRequired'))
-      return
+      showMessage('error', tSystem('dangerZone.importData.modal.fileRequired'));
+      return;
     }
 
     try {
-      const fileContent = await importFile.text()
+      const fileContent = await importFile.text();
       try {
-        JSON.parse(fileContent)
+        JSON.parse(fileContent);
       } catch {
-        showMessage('error', tSystem('dangerZone.importData.modal.invalidFile'))
-        return
+        showMessage('error', tSystem('dangerZone.importData.modal.invalidFile'));
+        return;
       }
 
       await importCompanyDataMutation.mutateAsync({
         companyDataJson: fileContent,
         importMode,
-      })
+      });
 
-      importModal.close()
-      setImportFile(null)
-      importForm.resetFields()
+      importModal.close();
+      setImportFile(null);
+      importForm.resetFields();
     } catch {
       // handled by mutation
     }
-  }
+  };
 
-  const handleUpdateMasterPassword = async (values: { password?: string; confirmPassword?: string }) => {
+  const handleUpdateMasterPassword = async (values: {
+    password?: string;
+    confirmPassword?: string;
+  }) => {
     if (updateVaultsMutation.isPending) {
-      return
+      return;
     }
 
     try {
-      const vaultsResult = await exportVaultsQuery.refetch()
+      const vaultsResult = await exportVaultsQuery.refetch();
       if (!vaultsResult.data || !vaultsResult.data.allVaults) {
-        showMessage('error', tSystem('dangerZone.updateMasterPassword.error.noVaults'))
-        return
+        showMessage('error', tSystem('dangerZone.updateMasterPassword.error.noVaults'));
+        return;
       }
 
       const vaultUpdates: Array<{
-        credential: string
-        name: string
-        content: string
-        version: number
-      }> = []
-      const newPassword = masterPasswordOperation === 'remove' ? '' : values.password!
+        credential: string;
+        name: string;
+        content: string;
+        version: number;
+      }> = [];
+      const newPassword = masterPasswordOperation === 'remove' ? '' : values.password!;
 
       for (const vault of vaultsResult.data.allVaults) {
         if (vault.decryptedVault && vault.credential && vault.vaultName) {
           try {
-            let vaultContent = vault.decryptedVault as string
+            let vaultContent = vault.decryptedVault as string;
 
-            if (typeof vaultContent === 'string' && currentMasterPassword && masterPasswordOperation !== 'create') {
+            if (
+              typeof vaultContent === 'string' &&
+              currentMasterPassword &&
+              masterPasswordOperation !== 'create'
+            ) {
               try {
                 if (vaultContent.match(/^[A-Za-z0-9+/]+=*$/)) {
-                  vaultContent = await decryptString(vaultContent, currentMasterPassword)
+                  vaultContent = await decryptString(vaultContent, currentMasterPassword);
                 }
               } catch {
                 // ignore
               }
             }
 
-            let finalContent = vaultContent
+            let finalContent = vaultContent;
             if (typeof vaultContent === 'string' && masterPasswordOperation !== 'remove') {
-              finalContent = await encryptString(vaultContent, newPassword)
+              finalContent = await encryptString(vaultContent, newPassword);
             }
 
             vaultUpdates.push({
@@ -282,34 +293,36 @@ const CompanyPage: React.FC = () => {
               name: vault.vaultName,
               content: finalContent,
               version: vault.version || 1,
-            })
+            });
           } catch {
-            showMessage('error', `Failed to process vault ${vault.vaultName}`)
+            showMessage('error', `Failed to process vault ${vault.vaultName}`);
           }
         }
       }
 
       if (!vaultUpdates.length) {
-        showMessage('error', tSystem('dangerZone.updateMasterPassword.error.noVaults'))
-        return
+        showMessage('error', tSystem('dangerZone.updateMasterPassword.error.noVaults'));
+        return;
       }
 
-      await updateVaultsMutation.mutateAsync(vaultUpdates)
-      await blockUserRequestsMutation.mutateAsync(false)
+      await updateVaultsMutation.mutateAsync(vaultUpdates);
+      await blockUserRequestsMutation.mutateAsync(false);
 
-      await masterPasswordService.setMasterPassword(masterPasswordOperation === 'remove' ? null : newPassword)
-      setCurrentMasterPassword(masterPasswordOperation === 'remove' ? null : newPassword)
+      await masterPasswordService.setMasterPassword(
+        masterPasswordOperation === 'remove' ? null : newPassword
+      );
+      setCurrentMasterPassword(masterPasswordOperation === 'remove' ? null : newPassword);
 
-      masterPasswordModal.close()
-      masterPasswordForm.resetFields()
-      setCompletedOperation(masterPasswordOperation)
-      setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create')
-      setCountdown(60)
-      successModal.open()
+      masterPasswordModal.close();
+      masterPasswordForm.resetFields();
+      setCompletedOperation(masterPasswordOperation);
+      setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create');
+      setCountdown(60);
+      successModal.open();
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   if (uiMode === 'simple') {
     return (
@@ -317,10 +330,12 @@ const CompanyPage: React.FC = () => {
         <Result
           status="403"
           title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
-          subTitle={tSystem('accessControl.expertOnlyMessage', { defaultValue: 'Switch to expert mode to manage company settings.' })}
+          subTitle={tSystem('accessControl.expertOnlyMessage', {
+            defaultValue: 'Switch to expert mode to manage company settings.',
+          })}
         />
       </CompanyPageWrapper>
-    )
+    );
   }
 
   return (
@@ -367,8 +382,12 @@ const CompanyPage: React.FC = () => {
                 <Row gutter={[16, 16]} align="middle">
                   <Col xs={24} lg={16}>
                     <Space orientation="vertical" size={8}>
-                      <CardTitle level={5}>{tSystem('dangerZone.blockUserRequests.title')}</CardTitle>
-                      <CardDescription>{tSystem('dangerZone.blockUserRequests.description')}</CardDescription>
+                      <CardTitle level={5}>
+                        {tSystem('dangerZone.blockUserRequests.title')}
+                      </CardTitle>
+                      <CardDescription>
+                        {tSystem('dangerZone.blockUserRequests.description')}
+                      </CardDescription>
                     </Space>
                   </Col>
                   <Col xs={24} lg={8}>
@@ -377,13 +396,23 @@ const CompanyPage: React.FC = () => {
                         title={tSystem('dangerZone.blockUserRequests.confirmBlock.title')}
                         description={
                           <ModalStack>
-                            <Typography.Text>{tSystem('dangerZone.blockUserRequests.confirmBlock.description')}</Typography.Text>
+                            <Typography.Text>
+                              {tSystem('dangerZone.blockUserRequests.confirmBlock.description')}
+                            </Typography.Text>
                             <BulletedList>
-                              <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect1')}</li>
-                              <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect2')}</li>
-                              <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect3')}</li>
+                              <li>
+                                {tSystem('dangerZone.blockUserRequests.confirmBlock.effect1')}
+                              </li>
+                              <li>
+                                {tSystem('dangerZone.blockUserRequests.confirmBlock.effect2')}
+                              </li>
+                              <li>
+                                {tSystem('dangerZone.blockUserRequests.confirmBlock.effect3')}
+                              </li>
                             </BulletedList>
-                            <Typography.Text strong>{tSystem('dangerZone.blockUserRequests.confirmBlock.confirm')}</Typography.Text>
+                            <Typography.Text strong>
+                              {tSystem('dangerZone.blockUserRequests.confirmBlock.confirm')}
+                            </Typography.Text>
                           </ModalStack>
                         }
                         onConfirm={() => blockUserRequestsMutation.mutate(true)}
@@ -403,7 +432,9 @@ const CompanyPage: React.FC = () => {
                       </Popconfirm>
                       <Popconfirm
                         title={tSystem('dangerZone.blockUserRequests.confirmUnblock.title')}
-                        description={tSystem('dangerZone.blockUserRequests.confirmUnblock.description')}
+                        description={tSystem(
+                          'dangerZone.blockUserRequests.confirmUnblock.description'
+                        )}
                         onConfirm={() => blockUserRequestsMutation.mutate(false)}
                         okText={tSystem('dangerZone.blockUserRequests.confirmUnblock.okText')}
                         cancelText={tCommon('general.cancel')}
@@ -427,7 +458,9 @@ const CompanyPage: React.FC = () => {
                   <Col xs={24} lg={16}>
                     <Space orientation="vertical" size={8}>
                       <CardTitle level={5}>{tSystem('dangerZone.exportVaults.title')}</CardTitle>
-                      <CardDescription>{tSystem('dangerZone.exportVaults.description')}</CardDescription>
+                      <CardDescription>
+                        {tSystem('dangerZone.exportVaults.description')}
+                      </CardDescription>
                     </Space>
                   </Col>
                   <Col xs={24} lg={8}>
@@ -452,7 +485,9 @@ const CompanyPage: React.FC = () => {
                   <Col xs={24} lg={16}>
                     <Space orientation="vertical" size={8}>
                       <CardTitle level={5}>{tSystem('dangerZone.exportData.title')}</CardTitle>
-                      <CardDescription>{tSystem('dangerZone.exportData.description')}</CardDescription>
+                      <CardDescription>
+                        {tSystem('dangerZone.exportData.description')}
+                      </CardDescription>
                     </Space>
                   </Col>
                   <Col xs={24} lg={8}>
@@ -477,7 +512,9 @@ const CompanyPage: React.FC = () => {
                   <Col xs={24} lg={16}>
                     <Space orientation="vertical" size={8}>
                       <CardTitle level={5}>{tSystem('dangerZone.importData.title')}</CardTitle>
-                      <CardDescription>{tSystem('dangerZone.importData.description')}</CardDescription>
+                      <CardDescription>
+                        {tSystem('dangerZone.importData.description')}
+                      </CardDescription>
                     </Space>
                   </Col>
                   <Col xs={24} lg={8}>
@@ -501,8 +538,12 @@ const CompanyPage: React.FC = () => {
                 <Row gutter={[16, 16]} align="middle">
                   <Col xs={24} lg={16}>
                     <Space orientation="vertical" size={8}>
-                      <CardTitle level={5}>{tSystem('dangerZone.updateMasterPassword.title')}</CardTitle>
-                      <CardDescription>{tSystem('dangerZone.updateMasterPassword.description')}</CardDescription>
+                      <CardTitle level={5}>
+                        {tSystem('dangerZone.updateMasterPassword.title')}
+                      </CardTitle>
+                      <CardDescription>
+                        {tSystem('dangerZone.updateMasterPassword.description')}
+                      </CardDescription>
                       <RequirementsList>
                         <li>{tSystem('dangerZone.updateMasterPassword.effect1')}</li>
                         <li>{tSystem('dangerZone.updateMasterPassword.effect2')}</li>
@@ -553,9 +594,9 @@ const CompanyPage: React.FC = () => {
         }
         open={masterPasswordModal.isOpen}
         onCancel={() => {
-          masterPasswordModal.close()
-          masterPasswordForm.resetFields()
-          setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create')
+          masterPasswordModal.close();
+          masterPasswordForm.resetFields();
+          setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create');
         }}
         footer={null}
         className={ModalSize.Medium}
@@ -566,13 +607,17 @@ const CompanyPage: React.FC = () => {
               <Radio.Group
                 value={masterPasswordOperation}
                 onChange={(e) => {
-                  setMasterPasswordOperation(e.target.value)
-                  masterPasswordForm.resetFields(['password', 'confirmPassword'])
+                  setMasterPasswordOperation(e.target.value);
+                  masterPasswordForm.resetFields(['password', 'confirmPassword']);
                 }}
               >
                 <Space orientation="vertical">
-                  <Radio value="update">{tSystem('dangerZone.updateMasterPassword.modal.operationUpdate')}</Radio>
-                  <Radio value="remove">{tSystem('dangerZone.updateMasterPassword.modal.operationRemove')}</Radio>
+                  <Radio value="update">
+                    {tSystem('dangerZone.updateMasterPassword.modal.operationUpdate')}
+                  </Radio>
+                  <Radio value="remove">
+                    {tSystem('dangerZone.updateMasterPassword.modal.operationRemove')}
+                  </Radio>
                 </Space>
               </Radio.Group>
             </FormItemSpaced>
@@ -590,7 +635,8 @@ const CompanyPage: React.FC = () => {
                 <Typography.Text>
                   {tSystem(
                     `dangerZone.updateMasterPassword.modal.warningDescription${
-                      masterPasswordOperation.charAt(0).toUpperCase() + masterPasswordOperation.slice(1)
+                      masterPasswordOperation.charAt(0).toUpperCase() +
+                      masterPasswordOperation.slice(1)
                     }`
                   )}
                 </Typography.Text>
@@ -600,7 +646,8 @@ const CompanyPage: React.FC = () => {
                   <li>
                     {tSystem(
                       `dangerZone.updateMasterPassword.modal.warningEffect3${
-                        masterPasswordOperation.charAt(0).toUpperCase() + masterPasswordOperation.slice(1)
+                        masterPasswordOperation.charAt(0).toUpperCase() +
+                        masterPasswordOperation.slice(1)
                       }`
                     )}
                   </li>
@@ -629,10 +676,16 @@ const CompanyPage: React.FC = () => {
               <PasswordField
                 name="password"
                 label={tSystem('dangerZone.updateMasterPassword.modal.newPasswordLabel')}
-                placeholder={tSystem('dangerZone.updateMasterPassword.modal.newPasswordPlaceholder')}
+                placeholder={tSystem(
+                  'dangerZone.updateMasterPassword.modal.newPasswordPlaceholder'
+                )}
                 minLength={12}
-                requiredMessage={tSystem('dangerZone.updateMasterPassword.modal.newPasswordRequired')}
-                minLengthMessage={tSystem('dangerZone.updateMasterPassword.modal.newPasswordMinLength')}
+                requiredMessage={tSystem(
+                  'dangerZone.updateMasterPassword.modal.newPasswordRequired'
+                )}
+                minLengthMessage={tSystem(
+                  'dangerZone.updateMasterPassword.modal.newPasswordMinLength'
+                )}
                 patternMessage={tSystem('dangerZone.updateMasterPassword.modal.newPasswordPattern')}
               />
 
@@ -640,9 +693,15 @@ const CompanyPage: React.FC = () => {
                 name="confirmPassword"
                 label={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordLabel')}
                 passwordFieldName="password"
-                placeholder={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordPlaceholder')}
-                requiredMessage={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordRequired')}
-                mismatchMessage={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordMatch')}
+                placeholder={tSystem(
+                  'dangerZone.updateMasterPassword.modal.confirmPasswordPlaceholder'
+                )}
+                requiredMessage={tSystem(
+                  'dangerZone.updateMasterPassword.modal.confirmPasswordRequired'
+                )}
+                mismatchMessage={tSystem(
+                  'dangerZone.updateMasterPassword.modal.confirmPasswordMatch'
+                )}
               />
             </>
           )}
@@ -666,9 +725,9 @@ const CompanyPage: React.FC = () => {
             <ModalActions>
               <Button
                 onClick={() => {
-                  masterPasswordModal.close()
-                  masterPasswordForm.resetFields()
-                  setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create')
+                  masterPasswordModal.close();
+                  masterPasswordForm.resetFields();
+                  setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create');
                 }}
                 data-testid="system-master-password-cancel-button"
               >
@@ -684,7 +743,8 @@ const CompanyPage: React.FC = () => {
               >
                 {tSystem(
                   `dangerZone.updateMasterPassword.modal.submit${
-                    masterPasswordOperation.charAt(0).toUpperCase() + masterPasswordOperation.slice(1)
+                    masterPasswordOperation.charAt(0).toUpperCase() +
+                    masterPasswordOperation.slice(1)
                   }`
                 )}
               </Button>
@@ -693,12 +753,7 @@ const CompanyPage: React.FC = () => {
         </Form>
       </Modal>
 
-      <Modal
-        open={successModal.isOpen}
-        closable={false}
-        footer={null}
-        className={ModalSize.Medium}
-      >
+      <Modal open={successModal.isOpen} closable={false} footer={null} className={ModalSize.Medium}>
         <Result
           status="success"
           title={tSystem(
@@ -755,8 +810,8 @@ const CompanyPage: React.FC = () => {
                 size="large"
                 block
                 onClick={() => {
-                  dispatch(logout())
-                  navigate('/login')
+                  dispatch(logout());
+                  navigate('/login');
                 }}
               >
                 {tSystem('dangerZone.updateMasterPassword.success.loginNow')}
@@ -770,10 +825,10 @@ const CompanyPage: React.FC = () => {
         title={tSystem('dangerZone.importData.modal.title')}
         open={importModal.isOpen}
         onCancel={() => {
-          importModal.close()
-          setImportFile(null)
-          importForm.resetFields()
-          setImportMode('skip')
+          importModal.close();
+          setImportFile(null);
+          importForm.resetFields();
+          setImportMode('skip');
         }}
         footer={null}
         className={ModalSize.Medium}
@@ -789,8 +844,8 @@ const CompanyPage: React.FC = () => {
           <Form.Item label={tSystem('dangerZone.importData.modal.selectFile')} required>
             <Upload
               beforeUpload={(file) => {
-                setImportFile(file)
-                return false
+                setImportFile(file);
+                return false;
               }}
               onRemove={() => setImportFile(null)}
               maxCount={1}
@@ -818,7 +873,9 @@ const CompanyPage: React.FC = () => {
                     <Typography.Text strong>
                       {tSystem('dangerZone.importData.modal.modeOverride')}
                     </Typography.Text>
-                    <CaptionText>{tSystem('dangerZone.importData.modal.modeOverrideDesc')}</CaptionText>
+                    <CaptionText>
+                      {tSystem('dangerZone.importData.modal.modeOverrideDesc')}
+                    </CaptionText>
                   </Space>
                 </Radio>
               </Space>
@@ -829,10 +886,10 @@ const CompanyPage: React.FC = () => {
             <ModalActions>
               <Button
                 onClick={() => {
-                  importModal.close()
-                  setImportFile(null)
-                  importForm.resetFields()
-                  setImportMode('skip')
+                  importModal.close();
+                  setImportFile(null);
+                  importForm.resetFields();
+                  setImportMode('skip');
                 }}
               >
                 {tSystem('dangerZone.importData.modal.cancel')}
@@ -850,7 +907,7 @@ const CompanyPage: React.FC = () => {
         </Form>
       </Modal>
     </CompanyPageWrapper>
-  )
-}
+  );
+};
 
-export default CompanyPage
+export default CompanyPage;

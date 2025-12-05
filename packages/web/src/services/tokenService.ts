@@ -12,18 +12,18 @@
  * - Race condition prevention through TokenLockManager
  */
 
-import { secureStorage } from '@/utils/secureMemoryStorage'
-import { tokenLockManager } from './tokenLockManager'
+import { secureStorage } from '@/utils/secureMemoryStorage';
+import { tokenLockManager } from './tokenLockManager';
 
 interface TokenMetadata {
-  token: string
-  version: number
-  timestamp: number
+  token: string;
+  version: number;
+  timestamp: number;
 }
 
 class TokenService {
-  private static instance: TokenService
-  private readonly TOKEN_KEY = 'auth_token'
+  private static instance: TokenService;
+  private readonly TOKEN_KEY = 'auth_token';
 
   private constructor() {
     // Private constructor for singleton pattern
@@ -31,9 +31,9 @@ class TokenService {
 
   static getInstance(): TokenService {
     if (!TokenService.instance) {
-      TokenService.instance = new TokenService()
+      TokenService.instance = new TokenService();
     }
-    return TokenService.instance
+    return TokenService.instance;
   }
 
   /**
@@ -42,19 +42,19 @@ class TokenService {
    */
   async setToken(token: string): Promise<void> {
     if (!token) {
-      throw new Error('Token cannot be empty')
+      throw new Error('Token cannot be empty');
     }
 
     return tokenLockManager.withLock(async () => {
-      const version = tokenLockManager.nextVersion()
+      const version = tokenLockManager.nextVersion();
       const metadata: TokenMetadata = {
         token,
         version,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      };
 
-      await secureStorage.setItem(this.TOKEN_KEY, JSON.stringify(metadata))
-    })
+      await secureStorage.setItem(this.TOKEN_KEY, JSON.stringify(metadata));
+    });
   }
 
   /**
@@ -63,34 +63,34 @@ class TokenService {
    */
   async getToken(): Promise<string | null> {
     return tokenLockManager.withLock(async () => {
-      const data = await secureStorage.getItem(this.TOKEN_KEY)
-      if (!data) return null
+      const data = await secureStorage.getItem(this.TOKEN_KEY);
+      if (!data) return null;
 
       try {
-        const metadata: TokenMetadata = JSON.parse(data)
+        const metadata: TokenMetadata = JSON.parse(data);
 
         // Validate version to detect stale overwrites
         if (!tokenLockManager.isVersionCurrent(metadata.version)) {
           console.warn('[TokenService] Token version mismatch - possible race condition detected', {
             tokenVersion: metadata.version,
-            currentVersion: tokenLockManager.getCurrentVersion()
-          })
-          return null
+            currentVersion: tokenLockManager.getCurrentVersion(),
+          });
+          return null;
         }
 
-        return metadata.token
+        return metadata.token;
       } catch (error) {
-        console.error('[TokenService] Failed to parse token metadata:', error)
-        return null
+        console.error('[TokenService] Failed to parse token metadata:', error);
+        return null;
       }
-    })
+    });
   }
 
   /**
    * Update token (for rotation)
    * Uses lock to prevent concurrent updates
    */
-  updateToken = (newToken: string): Promise<void> => this.setToken(newToken)
+  updateToken = (newToken: string): Promise<void> => this.setToken(newToken);
 
   /**
    * Clear token from memory
@@ -98,8 +98,8 @@ class TokenService {
    */
   async clearToken(): Promise<void> {
     return tokenLockManager.withLock(async () => {
-      secureStorage.removeItem(this.TOKEN_KEY)
-    })
+      secureStorage.removeItem(this.TOKEN_KEY);
+    });
   }
 
   /**
@@ -107,7 +107,7 @@ class TokenService {
    * Simple check without locking (non-critical operation)
    */
   hasToken(): boolean {
-    return secureStorage.hasItem(this.TOKEN_KEY)
+    return secureStorage.hasItem(this.TOKEN_KEY);
   }
 
   /**
@@ -115,9 +115,9 @@ class TokenService {
    * Uses lock to ensure clean state
    */
   async secureWipe(): Promise<void> {
-    await this.clearToken()
+    await this.clearToken();
     // Also clear fork tokens when logging out
-    await this.clearForkTokens()
+    await this.clearForkTokens();
   }
 
   /**
@@ -126,8 +126,8 @@ class TokenService {
   private async clearForkTokens(): Promise<void> {
     try {
       // Import dynamically to avoid circular dependencies
-      const { forkTokenService } = await import('./forkTokenService')
-      forkTokenService.clearAllForkTokens()
+      const { forkTokenService } = await import('./forkTokenService');
+      forkTokenService.clearAllForkTokens();
     } catch {
       // Silently fail - fork token cleanup is not critical for logout
     }
@@ -135,9 +135,9 @@ class TokenService {
 }
 
 // Export singleton instance
-export const tokenService = TokenService.getInstance()
+export const tokenService = TokenService.getInstance();
 
 // Helper functions for backward compatibility
-export const getAuthToken = (): Promise<string | null> => tokenService.getToken()
-export const setAuthToken = (token: string): Promise<void> => tokenService.setToken(token)
-export const clearAuthToken = (): Promise<void> => tokenService.clearToken()
+export const getAuthToken = (): Promise<string | null> => tokenService.getToken();
+export const setAuthToken = (token: string): Promise<void> => tokenService.setToken(token);
+export const clearAuthToken = (): Promise<void> => tokenService.clearToken();

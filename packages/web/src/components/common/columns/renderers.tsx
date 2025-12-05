@@ -1,9 +1,9 @@
-import React from 'react'
-import { Tag, Tooltip, Typography } from 'antd'
-import dayjs from 'dayjs'
-import styled from 'styled-components'
+import React from 'react';
+import { Tag, Tooltip, Typography } from 'antd';
+import dayjs from 'dayjs';
+import styled from 'styled-components';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 /**
  * Styled version tag used across column renderers
@@ -15,7 +15,7 @@ export const VersionTag = styled(Tag)`
     color: ${({ theme }) => theme.colors.info};
     background: ${({ theme }) => theme.colors.bgPrimary};
   }
-`
+`;
 
 /**
  * Styled truncated text for monospace display
@@ -24,7 +24,7 @@ const TruncatedMonoText = styled.span`
   font-family: monospace;
   font-size: 12px;
   color: var(--color-text-secondary);
-`
+`;
 
 /**
  * Render a timestamp in a consistent format
@@ -37,10 +37,10 @@ export const renderTimestamp = (
   format: string = 'YYYY-MM-DD HH:mm:ss'
 ): string => {
   if (!timestamp) {
-    return '-'
+    return '-';
   }
-  return dayjs(timestamp).format(format)
-}
+  return dayjs(timestamp).format(format);
+};
 
 /**
  * Render a timestamp column element
@@ -53,10 +53,10 @@ export const renderTimestampElement = (
   format: string = 'YYYY-MM-DD HH:mm:ss'
 ): React.ReactNode => {
   if (!timestamp) {
-    return <Text type="secondary">-</Text>
+    return <Text type="secondary">-</Text>;
   }
-  return dayjs(timestamp).format(format)
-}
+  return dayjs(timestamp).format(format);
+};
 
 /**
  * Render a truncated ID/GUID with tooltip showing full value
@@ -71,18 +71,18 @@ export const renderTruncatedId = (
   showEllipsis: boolean = true
 ): React.ReactNode => {
   if (!id) {
-    return <Text type="secondary">-</Text>
+    return <Text type="secondary">-</Text>;
   }
 
-  const truncated = id.substring(0, length)
-  const display = showEllipsis ? `${truncated}...` : truncated
+  const truncated = id.substring(0, length);
+  const display = showEllipsis ? `${truncated}...` : truncated;
 
   return (
     <Tooltip title={id}>
       <TruncatedMonoText>{display}</TruncatedMonoText>
     </Tooltip>
-  )
-}
+  );
+};
 
 /**
  * Render a copyable ID/GUID with tooltip
@@ -95,15 +95,15 @@ export const renderCopyableId = (
   length: number = 8
 ): React.ReactNode => {
   if (!id) {
-    return <Text type="secondary">-</Text>
+    return <Text type="secondary">-</Text>;
   }
 
   return (
     <Text code copyable>
       {id.substring(0, length)}...
     </Text>
-  )
-}
+  );
+};
 
 /**
  * Render a version number in a consistent tag format
@@ -116,20 +116,20 @@ export const renderVersionTag = (
   formatFn?: (version: number) => string
 ): React.ReactNode => {
   if (version === null || version === undefined) {
-    return <Text type="secondary">-</Text>
+    return <Text type="secondary">-</Text>;
   }
 
-  const label = formatFn ? formatFn(version) : `v${version}`
-  return <VersionTag>{label}</VersionTag>
-}
+  const label = formatFn ? formatFn(version) : `v${version}`;
+  return <VersionTag>{label}</VersionTag>;
+};
 
 /**
  * Status color configuration type
  */
 export interface StatusConfig {
-  color: string
-  icon?: React.ReactNode
-  label?: string
+  color: string;
+  icon?: React.ReactNode;
+  label?: string;
 }
 
 /**
@@ -143,18 +143,16 @@ export const createStatusRenderer = <T extends string>(
   defaultConfig: StatusConfig = { color: 'default' }
 ) => {
   function StatusRenderer(status: T): React.ReactNode {
-    const config = statusMap[status] || defaultConfig
+    const config = statusMap[status] || defaultConfig;
     return (
       <Tooltip title={config.label || status}>
-        <span style={{ fontSize: '16px', cursor: 'pointer' }}>
-          {config.icon}
-        </span>
+        <span style={{ fontSize: '16px', cursor: 'pointer' }}>{config.icon}</span>
       </Tooltip>
-    )
+    );
   }
 
-  return StatusRenderer
-}
+  return StatusRenderer;
+};
 
 /**
  * Render age/duration in a human-readable format
@@ -163,22 +161,22 @@ export const createStatusRenderer = <T extends string>(
  */
 export const renderAge = (minutes: number | null | undefined): string => {
   if (minutes === null || minutes === undefined) {
-    return '-'
+    return '-';
   }
 
   if (minutes < 60) {
-    return `${minutes}m`
+    return `${minutes}m`;
   }
   if (minutes < 1440) {
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   }
 
-  const days = Math.floor(minutes / 1440)
-  const hours = Math.floor((minutes % 1440) / 60)
-  return hours > 0 ? `${days}d ${hours}h` : `${days}d`
-}
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+};
 
 /**
  * Render a boolean value as Yes/No text
@@ -193,11 +191,7 @@ export const renderBoolean = (
   noText: string = 'No'
 ): React.ReactNode => {
   if (value === null || value === undefined) {
-    return <Text type="secondary">-</Text>
+    return <Text type="secondary">-</Text>;
   }
-  return value ? (
-    <Tag color="success">{yesText}</Tag>
-  ) : (
-    <Tag>{noText}</Tag>
-  )
-}
+  return value ? <Tag color="success">{yesText}</Tag> : <Tag>{noText}</Tag>;
+};

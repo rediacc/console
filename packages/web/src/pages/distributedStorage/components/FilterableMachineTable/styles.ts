@@ -1,6 +1,6 @@
-import styled from 'styled-components'
-import { Badge } from 'antd'
-import { PillTag } from '@/styles/primitives'
+import styled from 'styled-components';
+import { Badge } from 'antd';
+import { PillTag } from '@/styles/primitives';
 
 export const TableContainer = styled.div`
   width: 100%;
@@ -25,13 +25,13 @@ export const TableContainer = styled.div`
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     padding: ${({ theme }) => theme.spacing.SM}px ${({ theme }) => theme.spacing.MD}px;
   }
-`
+`;
 
 export const ExpandedRowContent = styled.div`
   padding: ${({ theme }) => theme.spacing.MD}px;
   background: ${({ theme }) => theme.colors.bgTertiary};
   border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-`
+`;
 
 export const AssignmentTag = styled(PillTag).attrs({
   $variant: 'primary',
@@ -46,7 +46,7 @@ export const AssignmentTag = styled(PillTag).attrs({
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     line-height: ${({ theme }) => theme.lineHeight.NORMAL};
   }
-`
+`;
 
 export const QueueBadge = styled(Badge)<{ $hasItems: boolean }>`
   && {
@@ -63,4 +63,4 @@ export const QueueBadge = styled(Badge)<{ $hasItems: boolean }>`
       line-height: ${({ theme }) => theme.lineHeight.TIGHT};
     }
   }
-`
+`;

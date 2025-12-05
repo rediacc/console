@@ -1,9 +1,9 @@
-import React from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { Tooltip } from 'antd'
-import { useTranslation } from 'react-i18next'
-import type { MenuItem } from '../helpers'
-import { SIDEBAR_COLLAPSED_WIDTH } from '../types'
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Tooltip } from 'antd';
+import { useTranslation } from 'react-i18next';
+import type { MenuItem } from '../helpers';
+import { SIDEBAR_COLLAPSED_WIDTH } from '../types';
 import {
   StyledSider,
   SidebarContent,
@@ -16,17 +16,17 @@ import {
   TooltipLabel,
   SubMenuContainer,
   SubMenuItem,
-} from './styles'
+} from './styles';
 
 type SidebarProps = {
-  collapsed: boolean
-  sidebarWidth: number
-  menuItems: MenuItem[]
-  expandedParentKeys: string[]
-  uiMode: 'simple' | 'expert'
-  onNavigate: (route: string, metadata: Record<string, unknown>) => void
-  isDrawer?: boolean
-}
+  collapsed: boolean;
+  sidebarWidth: number;
+  menuItems: MenuItem[];
+  expandedParentKeys: string[];
+  uiMode: 'simple' | 'expert';
+  onNavigate: (route: string, metadata: Record<string, unknown>) => void;
+  isDrawer?: boolean;
+};
 
 export const Sidebar: React.FC<SidebarProps> = ({
   collapsed,
@@ -37,29 +37,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
   isDrawer = false,
 }) => {
-  const { t } = useTranslation('common')
-  const navigate = useNavigate()
-  const location = useLocation()
+  const { t } = useTranslation('common');
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const isChildActive = (childKey: string) => location.pathname.startsWith(childKey)
+  const isChildActive = (childKey: string) => location.pathname.startsWith(childKey);
 
   const handleParentClick = (item: MenuItem, visibleChildren: MenuItem[]) => {
-    const targetRoute = visibleChildren.length > 0 ? visibleChildren[0]?.key : item.key
-    if (!targetRoute) return
+    const targetRoute = visibleChildren.length > 0 ? visibleChildren[0]?.key : item.key;
+    if (!targetRoute) return;
 
     onNavigate(targetRoute, {
       menu_item: item.label,
       ui_mode: uiMode,
       sidebar_collapsed: collapsed,
       from_page: location.pathname,
-    })
-    navigate(targetRoute)
-  }
+    });
+    navigate(targetRoute);
+  };
 
   const handleChildClick = (child: MenuItem, event?: React.MouseEvent) => {
     if (event) {
-      event.stopPropagation()
-      event.preventDefault()
+      event.stopPropagation();
+      event.preventDefault();
     }
 
     onNavigate(child.key, {
@@ -67,9 +67,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ui_mode: uiMode,
       sidebar_collapsed: collapsed,
       from_page: location.pathname,
-    })
-    navigate(child.key)
-  }
+    });
+    navigate(child.key);
+  };
 
   return (
     <StyledSider
@@ -86,17 +86,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <SidebarContent $isDrawer={isDrawer}>
         <MenuScrollArea>
           {menuItems.map((item) => {
-
-            const visibleChildren = item.children || []
-            const hasChildren = visibleChildren.length > 0
+            const visibleChildren = item.children || [];
+            const hasChildren = visibleChildren.length > 0;
             const isParentActive = hasChildren
               ? visibleChildren.some((child) => isChildActive(child.key))
-              : location.pathname.startsWith(item.key)
+              : location.pathname.startsWith(item.key);
             const isExpanded = hasChildren
               ? expandedParentKeys.includes(item.key) || isParentActive
-              : false
-            const padding = collapsed ? '10px 12px' : '10px 18px'
-            const itemKey = item.key || item.label
+              : false;
+            const padding = collapsed ? '10px 12px' : '10px 18px';
+            const itemKey = item.key || item.label;
 
             const parentContent = (
               <StyledMenuItem
@@ -106,18 +105,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 $collapsed={collapsed}
                 onClick={() => handleParentClick(item, visibleChildren)}
               >
-                <MenuIcon $isActive={isParentActive} $collapsed={collapsed}>{item.icon}</MenuIcon>
+                <MenuIcon $isActive={isParentActive} $collapsed={collapsed}>
+                  {item.icon}
+                </MenuIcon>
                 <MenuLabel $isActive={isParentActive} $collapsed={collapsed}>
                   {item.label}
                 </MenuLabel>
               </StyledMenuItem>
-            )
+            );
 
             if (collapsed) {
               const tooltipContent = hasChildren ? (
                 <TooltipContent>
                   {visibleChildren.map((child) => {
-                    const childActive = isChildActive(child.key)
+                    const childActive = isChildActive(child.key);
                     return (
                       <TooltipItem
                         key={child.key}
@@ -126,16 +127,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       >
                         {child.label}
                       </TooltipItem>
-                    )
+                    );
                   })}
                 </TooltipContent>
               ) : (
                 <TooltipContent>
-                  <TooltipLabel $isActive={isParentActive}>
-                    {item.label}
-                  </TooltipLabel>
+                  <TooltipLabel $isActive={isParentActive}>{item.label}</TooltipLabel>
                 </TooltipContent>
-              )
+              );
 
               return (
                 <Tooltip
@@ -147,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   {parentContent}
                 </Tooltip>
-              )
+              );
             }
 
             return (
@@ -156,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {hasChildren && (
                   <SubMenuContainer $isExpanded={isExpanded}>
                     {visibleChildren.map((child) => {
-                      const childActive = isChildActive(child.key)
+                      const childActive = isChildActive(child.key);
                       return (
                         <SubMenuItem
                           key={child.key}
@@ -165,15 +164,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         >
                           {child.label}
                         </SubMenuItem>
-                      )
+                      );
                     })}
                   </SubMenuContainer>
                 )}
               </div>
-            )
+            );
           })}
         </MenuScrollArea>
       </SidebarContent>
     </StyledSider>
-  )
-}
+  );
+};

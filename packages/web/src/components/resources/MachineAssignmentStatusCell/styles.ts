@@ -1,4 +1,4 @@
-import styled from 'styled-components'
+import styled from 'styled-components';
 
 export const StatusCellWrapper = styled.div<{ $align?: 'flex-start' | 'center' }>`
   display: flex;
@@ -6,4 +6,4 @@ export const StatusCellWrapper = styled.div<{ $align?: 'flex-start' | 'center' }
   justify-content: ${({ $align = 'flex-start' }) =>
     $align === 'center' ? 'center' : 'flex-start'};
   min-height: 24px;
-`
+`;

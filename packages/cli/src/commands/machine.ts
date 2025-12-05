@@ -1,6 +1,10 @@
-import { Command } from 'commander'
-import { api } from '../services/api.js'
-import { createResourceCommands, addStatusCommand, addAssignCommand } from '../utils/commandFactory.js'
+import { Command } from 'commander';
+import { api } from '../services/api.js';
+import {
+  createResourceCommands,
+  addStatusCommand,
+  addAssignCommand,
+} from '../utils/commandFactory.js';
 export function registerMachineCommands(program: Command): void {
   // Create standard CRUD commands using factory
   const machine = createResourceCommands(program, {
@@ -21,25 +25,20 @@ export function registerMachineCommands(program: Command): void {
         api.machines.rename(
           payload.teamName as string,
           payload.currentMachineName as string,
-          payload.newMachineName as string,
+          payload.newMachineName as string
         ),
       delete: (payload) =>
-        api.machines.delete(
-          payload.teamName as string,
-          payload.machineName as string,
-        ),
+        api.machines.delete(payload.teamName as string, payload.machineName as string),
     },
-    createOptions: [
-      { flags: '-b, --bridge <name>', description: 'Bridge name', required: true }
-    ],
+    createOptions: [{ flags: '-b, --bridge <name>', description: 'Bridge name', required: true }],
     transformCreatePayload: (name, opts) => ({
       machineName: name,
       teamName: opts.team,
-      bridgeName: opts.bridge
+      bridgeName: opts.bridge,
     }),
     vaultConfig: {
       fetch: (params) => api.company.getAllVaults(params),
-      vaultType: 'Machine'
+      vaultType: 'Machine',
     },
     vaultUpdateConfig: {
       update: (payload) =>
@@ -47,19 +46,19 @@ export function registerMachineCommands(program: Command): void {
           payload.teamName as string,
           payload.machineName as string,
           payload.machineVault as string,
-          payload.vaultVersion as number,
+          payload.vaultVersion as number
         ),
-      vaultFieldName: 'machineVault'
-    }
-  })
+      vaultFieldName: 'machineVault',
+    },
+  });
 
   // Add status command
   addStatusCommand(machine, {
     resourceName: 'machine',
     nameField: 'machineName',
     parentOption: 'team',
-    fetch: (params) => api.machines.list(params.teamName as string | undefined)
-  })
+    fetch: (params) => api.machines.list(params.teamName as string | undefined),
+  });
 
   // Add assign-bridge command
   addAssignCommand(machine, {
@@ -72,7 +71,7 @@ export function registerMachineCommands(program: Command): void {
       api.machines.assignBridge(
         payload.teamName as string,
         payload.machineName as string,
-        payload.newBridgeName as string,
-      )
-  })
+        payload.newBridgeName as string
+      ),
+  });
 }

@@ -4,7 +4,15 @@
       "name": "Amazon S3 Compatible",
       "description": "S3-compatible object storage (AWS, Linode, DigitalOcean, Vultr, etc.)",
       "required": ["provider", "access_key_id", "secret_access_key"],
-      "optional": ["endpoint", "region", "bucket", "folder", "env_auth", "location_constraint", "acl"],
+      "optional": [
+        "endpoint",
+        "region",
+        "bucket",
+        "folder",
+        "env_auth",
+        "location_constraint",
+        "acl"
+      ],
       "fields": {
         "provider": {
           "type": "string",
@@ -57,7 +65,14 @@
         },
         "acl": {
           "type": "string",
-          "enum": ["private", "public-read", "public-read-write", "authenticated-read", "bucket-owner-read", "bucket-owner-full-control"],
+          "enum": [
+            "private",
+            "public-read",
+            "public-read-write",
+            "authenticated-read",
+            "bucket-owner-read",
+            "bucket-owner-full-control"
+          ],
           "default": "private",
           "description": "Access Control List for objects"
         }
@@ -97,7 +112,15 @@
       "name": "Google Drive",
       "description": "Google Drive cloud storage",
       "required": ["token"],
-      "optional": ["client_id", "client_secret", "scope", "root_folder_id", "service_account_file", "team_drive", "impersonate"],
+      "optional": [
+        "client_id",
+        "client_secret",
+        "scope",
+        "root_folder_id",
+        "service_account_file",
+        "team_drive",
+        "impersonate"
+      ],
       "fields": {
         "client_id": {
           "type": "string",
@@ -136,7 +159,13 @@
         },
         "scope": {
           "type": "string",
-          "enum": ["drive", "drive.file", "drive.readonly", "drive.metadata.readonly", "drive.appdata"],
+          "enum": [
+            "drive",
+            "drive.file",
+            "drive.readonly",
+            "drive.metadata.readonly",
+            "drive.appdata"
+          ],
           "default": "drive",
           "description": "Access scope for Google Drive"
         },

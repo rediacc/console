@@ -1,5 +1,5 @@
-import styled from 'styled-components'
-import { Card, Typography } from 'antd'
+import styled from 'styled-components';
+import { Card, Typography } from 'antd';
 import {
   DetailPanelSecondaryTextBlock,
   DetailPanelSurface,
@@ -20,9 +20,9 @@ import {
   DetailPanelFieldStrongValue,
   DetailPanelFieldMonospaceValue,
   DetailPanelDivider,
-} from '../detailPanelPrimitives'
+} from '../detailPanelPrimitives';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 export {
   DetailPanelSurface as DetailPanel,
@@ -43,33 +43,33 @@ export {
   DetailPanelFieldStrongValue as FieldValueStrong,
   DetailPanelFieldMonospaceValue as FieldValueMonospace,
   DetailPanelDivider as SectionDivider,
-}
+};
 
 export const DividerLabel = styled.span`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.SM}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-`
+`;
 
 export const MetricsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const MetricCard = styled(Card).attrs({ size: 'small' })`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
-`
+`;
 
 export const MetricLabel = styled(Text)`
   && {
     color: ${({ theme }) => theme.colors.textSecondary};
     font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
-`
+`;
 
 export const MetricValue = styled(Text)<{ $isWarning?: boolean }>`
   && {
@@ -77,19 +77,19 @@ export const MetricValue = styled(Text)<{ $isWarning?: boolean }>`
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
     color: ${({ theme, $isWarning }) => ($isWarning ? theme.colors.error : theme.colors.textPrimary)};
   }
-`
+`;
 
 export const SectionStack = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const InlineText = styled(Text)`
   && {
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     color: ${({ theme }) => theme.colors.textPrimary};
   }
-`
+`;
 
-export const SubduedText = styled(DetailPanelSecondaryTextBlock)``
+export const SubduedText = styled(DetailPanelSecondaryTextBlock)``;

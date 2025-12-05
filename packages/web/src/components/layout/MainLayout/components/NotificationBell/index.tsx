@@ -1,27 +1,27 @@
-import React, { useState } from 'react'
-import { Badge, Dropdown, Button, List, Empty, Space, Tag } from 'antd'
-import { 
-  BellOutlined, 
+import React, { useState } from 'react';
+import { Badge, Dropdown, Button, List, Empty, Space, Tag } from 'antd';
+import {
+  BellOutlined,
   CloseOutlined,
   ExclamationCircleOutlined,
   InfoCircleOutlined,
   WarningOutlined,
-  CheckCircleOutlined
-} from '@/utils/optimizedIcons'
-import { useSelector, useDispatch } from 'react-redux'
-import { RootState } from '@/store/store'
+  CheckCircleOutlined,
+} from '@/utils/optimizedIcons';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '@/store/store';
 import {
   markAsRead,
   markAllAsRead,
   clearNotification,
   clearAllNotifications,
   NotificationType,
-  Notification
-} from '@/store/notifications/notificationSlice'
-import { useTranslation } from 'react-i18next'
-import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-import 'dayjs/locale/es'
+  Notification,
+} from '@/store/notifications/notificationSlice';
+import { useTranslation } from 'react-i18next';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/es';
 import {
   NotificationDropdown,
   NotificationHeader,
@@ -37,94 +37,97 @@ import {
   NotificationMessage,
   NotificationTimestamp,
   EmptyWrapper,
-  BellButton
-} from './styles'
+  BellButton,
+} from './styles';
 
-dayjs.extend(relativeTime)
+dayjs.extend(relativeTime);
 
 const NotificationBell: React.FC = () => {
-  const dispatch = useDispatch()
-  const { t, i18n } = useTranslation('common')
-  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dispatch = useDispatch();
+  const { t, i18n } = useTranslation('common');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const { notifications, unreadCount } = useSelector((state: RootState) => state.notifications)
+  const { notifications, unreadCount } = useSelector((state: RootState) => state.notifications);
 
   // Update dayjs locale when language changes
   React.useEffect(() => {
     const dayjsLocaleMap: Record<string, string> = {
       en: 'en',
-      es: 'es'
-    }
-    dayjs.locale(dayjsLocaleMap[i18n.language] || 'en')
-  }, [i18n.language])
+      es: 'es',
+    };
+    dayjs.locale(dayjsLocaleMap[i18n.language] || 'en');
+  }, [i18n.language]);
 
   const getIcon = (type: NotificationType) => {
     const IconComponent = (() => {
       switch (type) {
-        case 'success': return CheckCircleOutlined
-        case 'error': return ExclamationCircleOutlined
-        case 'warning': return WarningOutlined
-        case 'info': return InfoCircleOutlined
+        case 'success':
+          return CheckCircleOutlined;
+        case 'error':
+          return ExclamationCircleOutlined;
+        case 'warning':
+          return WarningOutlined;
+        case 'info':
+          return InfoCircleOutlined;
       }
-    })()
-    
+    })();
+
     return (
       <NotificationIconWrapper $type={type}>
         <IconComponent />
       </NotificationIconWrapper>
-    )
-  }
+    );
+  };
 
   const getTypeColor = (type: NotificationType) => {
     switch (type) {
-      case 'success': return 'success'
-      case 'error': return 'error'
-      case 'warning': return 'warning'
-      case 'info': return 'processing'
+      case 'success':
+        return 'success';
+      case 'error':
+        return 'error';
+      case 'warning':
+        return 'warning';
+      case 'info':
+        return 'processing';
     }
-  }
+  };
 
   const handleMarkAsRead = (id: string) => {
-    dispatch(markAsRead(id))
-  }
+    dispatch(markAsRead(id));
+  };
 
   const handleClear = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    dispatch(clearNotification(id))
-  }
+    e.stopPropagation();
+    dispatch(clearNotification(id));
+  };
 
   const handleMarkAllAsRead = () => {
-    dispatch(markAllAsRead())
-  }
+    dispatch(markAllAsRead());
+  };
 
   const handleClearAll = () => {
-    dispatch(clearAllNotifications())
-  }
+    dispatch(clearAllNotifications());
+  };
 
   const dropdownContent = (
-    <NotificationDropdown 
-      className="notification-dropdown" 
-      data-testid="notification-dropdown"
-    >
+    <NotificationDropdown className="notification-dropdown" data-testid="notification-dropdown">
       <NotificationHeader>
-        <NotificationTitle strong>
-          {t('notifications.title', 'Notifications')}
-        </NotificationTitle>
+        <NotificationTitle strong>{t('notifications.title', 'Notifications')}</NotificationTitle>
         {notifications.length > 0 && (
           <Space>
-            <Button 
-              type="link" 
-              size="small" 
+            <Button
+              type="link"
+              size="small"
               onClick={handleMarkAllAsRead}
               disabled={unreadCount === 0}
               data-testid="notification-mark-all-read"
             >
               {t('notifications.markAllRead', 'Mark all as read')}
             </Button>
-            <Button 
-              type="link" 
-              size="small" 
-              danger 
+            <Button
+              type="link"
+              size="small"
+              danger
               onClick={handleClearAll}
               data-testid="notification-clear-all"
             >
@@ -133,7 +136,7 @@ const NotificationBell: React.FC = () => {
           </Space>
         )}
       </NotificationHeader>
-      
+
       <NotificationListWrapper>
         {notifications.length === 0 ? (
           <EmptyWrapper>
@@ -189,7 +192,7 @@ const NotificationBell: React.FC = () => {
         )}
       </NotificationListWrapper>
     </NotificationDropdown>
-  )
+  );
 
   return (
     <Badge count={unreadCount} offset={[-4, 4]}>
@@ -202,15 +205,15 @@ const NotificationBell: React.FC = () => {
         popupRender={() => dropdownContent}
       >
         <BellButton
-          type='default'
-          shape='circle'
-          size='large'
+          type="default"
+          shape="circle"
+          size="large"
           icon={<BellOutlined />}
           data-testid="notification-bell"
         />
       </Dropdown>
     </Badge>
-  )
-}
+  );
+};
 
-export default NotificationBell
+export default NotificationBell;

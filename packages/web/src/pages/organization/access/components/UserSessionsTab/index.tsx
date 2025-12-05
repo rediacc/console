@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Table, Button, Row, Col, Space, Popconfirm, message, Tooltip } from 'antd'
+import React, { useState } from 'react';
+import { Table, Button, Row, Col, Space, Popconfirm, message, Tooltip } from 'antd';
 import {
   SearchOutlined,
   CloseCircleOutlined,
@@ -8,21 +8,21 @@ import {
   BranchesOutlined,
   CheckCircleOutlined,
   StopOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { useUserRequests, useDeleteUserRequest, type UserRequest } from '@/api/queries/users'
-import { useSelector } from 'react-redux'
-import { selectUser } from '@/store/auth/authSelectors'
-import type { ColumnsType } from 'antd/es/table'
-import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-import { createDateSorter } from '@/core'
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { useUserRequests, useDeleteUserRequest, type UserRequest } from '@/api/queries/users';
+import { useSelector } from 'react-redux';
+import { selectUser } from '@/store/auth/authSelectors';
+import type { ColumnsType } from 'antd/es/table';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { createDateSorter } from '@/core';
 import {
   createActionColumn,
   createDateColumn,
   createStatusColumn,
   createTruncatedColumn,
-} from '@/components/common/columns'
+} from '@/components/common/columns';
 import {
   TabContainer,
   StatCard,
@@ -38,42 +38,42 @@ import {
   SessionTag,
   CellText,
   SummaryText,
-} from './styles'
+} from './styles';
 
-dayjs.extend(relativeTime)
+dayjs.extend(relativeTime);
 
 const UserSessionsTab: React.FC = () => {
-  const { t } = useTranslation('system')
-  const user = useSelector(selectUser)
-  const [searchTerm, setSearchTerm] = useState('')
+  const { t } = useTranslation('system');
+  const user = useSelector(selectUser);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: sessions = [], isLoading, refetch } = useUserRequests()
-  const deleteUserRequestMutation = useDeleteUserRequest()
+  const { data: sessions = [], isLoading, refetch } = useUserRequests();
+  const deleteUserRequestMutation = useDeleteUserRequest();
 
   const handleTerminateSession = async (session: UserRequest) => {
     try {
-      await deleteUserRequestMutation.mutateAsync({ requestId: session.requestId })
+      await deleteUserRequestMutation.mutateAsync({ requestId: session.requestId });
       if (session.userEmail === user?.email) {
-        message.warning(t('userSessions.selfTerminateWarning'))
+        message.warning(t('userSessions.selfTerminateWarning'));
       }
     } catch {
       // noop
     }
-  }
+  };
 
   const filteredSessions = sessions.filter((session: UserRequest) => {
-    const searchLower = searchTerm.toLowerCase()
+    const searchLower = searchTerm.toLowerCase();
     return (
       session.userEmail.toLowerCase().includes(searchLower) ||
       (session.ipAddress && session.ipAddress.toLowerCase().includes(searchLower)) ||
       session.sessionName.toLowerCase().includes(searchLower) ||
       (session.userAgent && session.userAgent.toLowerCase().includes(searchLower))
-    )
-  })
+    );
+  });
 
-  const activeSessions = sessions.filter((session: UserRequest) => session.isActive)
+  const activeSessions = sessions.filter((session: UserRequest) => session.isActive);
 
-  const userAgentFallback = t('userSessions.notAvailable')
+  const userAgentFallback = t('userSessions.notAvailable');
 
   const userAgentColumn = createTruncatedColumn<UserRequest>({
     title: t('userSessions.columns.userAgent'),
@@ -84,7 +84,7 @@ const UserSessionsTab: React.FC = () => {
     renderWrapper: (content, fullText) => (
       <CellText $muted={fullText === userAgentFallback}>{content}</CellText>
     ),
-  })
+  });
 
   const statusColumn = createStatusColumn<UserRequest>({
     title: t('userSessions.columns.status'),
@@ -94,7 +94,7 @@ const UserSessionsTab: React.FC = () => {
       true: { icon: <CheckCircleOutlined />, label: t('userSessions.active'), color: 'success' },
       false: { icon: <StopOutlined />, label: t('userSessions.inactive'), color: 'default' },
     },
-  })
+  });
 
   const createdAtColumn = createDateColumn<UserRequest>({
     title: t('userSessions.columns.createdAt'),
@@ -104,7 +104,7 @@ const UserSessionsTab: React.FC = () => {
     format: 'YYYY-MM-DD HH:mm:ss',
     sorter: createDateSorter<UserRequest>('createdAt'),
     defaultSortOrder: 'descend',
-  })
+  });
 
   const lastActivityColumn = createDateColumn<UserRequest>({
     title: t('userSessions.columns.lastActivity'),
@@ -113,11 +113,11 @@ const UserSessionsTab: React.FC = () => {
     width: 150,
     sorter: createDateSorter<UserRequest>('lastActivity'),
     render: (value: string | Date | null | undefined) => {
-      if (!value) return '-'
-      const timestamp = typeof value === 'string' ? value : value.toString()
-      return dayjs(timestamp).fromNow()
+      if (!value) return '-';
+      const timestamp = typeof value === 'string' ? value : value.toString();
+      return dayjs(timestamp).fromNow();
     },
-  })
+  });
 
   const actionsColumn = createActionColumn<UserRequest>({
     title: t('userSessions.columns.actions'),
@@ -151,7 +151,7 @@ const UserSessionsTab: React.FC = () => {
         </Tooltip>
       </Popconfirm>
     ),
-  })
+  });
 
   const columns: ColumnsType<UserRequest> = [
     {
@@ -177,8 +177,8 @@ const UserSessionsTab: React.FC = () => {
       width: 220,
       render: (name: string, record: UserRequest) => {
         const childCount = filteredSessions.filter(
-          (session) => session.parentRequestId === record.requestId,
-        ).length
+          (session) => session.parentRequestId === record.requestId
+        ).length;
 
         return (
           <Space size="small">
@@ -202,7 +202,7 @@ const UserSessionsTab: React.FC = () => {
               </Tooltip>
             )}
           </Space>
-        )
+        );
       },
     },
     {
@@ -227,12 +227,12 @@ const UserSessionsTab: React.FC = () => {
       key: 'duration',
       width: 120,
       render: (_, record) => {
-        const duration = dayjs(record.lastActivity).diff(dayjs(record.createdAt), 'minute')
-        return `${duration} ${t('userSessions.minutes')}`
+        const duration = dayjs(record.lastActivity).diff(dayjs(record.createdAt), 'minute');
+        return `${duration} ${t('userSessions.minutes')}`;
       },
     },
     actionsColumn,
-  ]
+  ];
 
   return (
     <TabContainer data-testid="user-sessions-tab">
@@ -272,10 +272,10 @@ const UserSessionsTab: React.FC = () => {
                       sessions.reduce((acc: number, session: UserRequest) => {
                         const duration = dayjs(session.lastActivity).diff(
                           dayjs(session.createdAt),
-                          'minute',
-                        )
-                        return acc + duration
-                      }, 0) / sessions.length,
+                          'minute'
+                        );
+                        return acc + duration;
+                      }, 0) / sessions.length
                     )
                   : 0
               }
@@ -329,13 +329,13 @@ const UserSessionsTab: React.FC = () => {
             onRow={(record) =>
               ({
                 'data-testid': `sessions-row-${record.requestId}`,
-              } as React.HTMLAttributes<HTMLTableRowElement>)
+              }) as React.HTMLAttributes<HTMLTableRowElement>
             }
           />
         </TableWrapper>
       </TableCard>
     </TabContainer>
-  )
-}
+  );
+};
 
-export default UserSessionsTab
+export default UserSessionsTab;

@@ -1,22 +1,22 @@
-import type { MenuConfig } from './types'
-import { featureFlags } from '@/config/featureFlags'
-import type { CompanyDashboardData } from '@rediacc/shared/types'
+import type { MenuConfig } from './types';
+import { featureFlags } from '@/config/featureFlags';
+import type { CompanyDashboardData } from '@rediacc/shared/types';
 
 export type MenuItem = {
-  key: string
-  icon?: React.ReactNode
-  label: string
-  path?: string
-  children?: MenuItem[]
-}
+  key: string;
+  icon?: React.ReactNode;
+  label: string;
+  path?: string;
+  children?: MenuItem[];
+};
 
-type CompanyData = Pick<CompanyDashboardData, 'companyInfo'>
+type CompanyData = Pick<CompanyDashboardData, 'companyInfo'>;
 
 type FilterContext = {
-  uiMode: 'simple' | 'expert'
-  currentPlan: string
-  isLocalhost: boolean
-}
+  uiMode: 'simple' | 'expert';
+  currentPlan: string;
+  isLocalhost: boolean;
+};
 
 /**
  * Checks if a menu item should be visible based on UI mode, plan, and feature flags
@@ -25,22 +25,23 @@ const shouldShowMenuItem = (
   item: { showInSimple?: boolean; requiresPlan?: string[]; featureFlag?: string },
   context: FilterContext
 ): boolean => {
-  const { uiMode, currentPlan, isLocalhost } = context
+  const { uiMode, currentPlan, isLocalhost } = context;
 
   // Filter by UI mode
-  if (uiMode === 'simple' && !item.showInSimple) return false
+  if (uiMode === 'simple' && !item.showInSimple) return false;
 
-  const flag = item.featureFlag ? featureFlags.getFeature(item.featureFlag) : undefined
-  const bypassPlanCheck = isLocalhost && flag?.localhostOnly
+  const flag = item.featureFlag ? featureFlags.getFeature(item.featureFlag) : undefined;
+  const bypassPlanCheck = isLocalhost && flag?.localhostOnly;
 
   // Filter by plan requirements
-  if (!bypassPlanCheck && item.requiresPlan && !item.requiresPlan.includes(currentPlan)) return false
+  if (!bypassPlanCheck && item.requiresPlan && !item.requiresPlan.includes(currentPlan))
+    return false;
 
   // Filter by feature flags
-  if (item.featureFlag && !featureFlags.isEnabled(item.featureFlag)) return false
+  if (item.featureFlag && !featureFlags.isEnabled(item.featureFlag)) return false;
 
-  return true
-}
+  return true;
+};
 
 /**
  * Builds menu items from configuration
@@ -50,21 +51,22 @@ export const buildMenuItems = (
   uiMode: 'simple' | 'expert',
   companyData?: CompanyData
 ): MenuItem[] => {
-  const currentPlan = companyData?.companyInfo?.Plan || 'FREE'
-  const isLocalhost = typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  const currentPlan = companyData?.companyInfo?.Plan || 'FREE';
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-  const filterContext: FilterContext = { uiMode, currentPlan, isLocalhost }
+  const filterContext: FilterContext = { uiMode, currentPlan, isLocalhost };
 
   return items
     .filter((item) => {
       // Filter out dividers
-      if (item.type === 'divider') return false
+      if (item.type === 'divider') return false;
 
       // Filter out items without labels
-      if (!item.label) return false
+      if (!item.label) return false;
 
-      return shouldShowMenuItem(item, filterContext)
+      return shouldShowMenuItem(item, filterContext);
     })
     .map((item) => ({
       key: item.key,
@@ -81,28 +83,28 @@ export const buildMenuItems = (
     }))
     .filter((item) => {
       // Remove parent items that have no visible children
-      if (item.children && item.children.length === 0) return false
-      return true
-    })
-}
+      if (item.children && item.children.length === 0) return false;
+      return true;
+    });
+};
 
 /**
  * Flattens menu items to get all routes
  */
 export const flattenMenuRoutes = (items: MenuItem[]): string[] => {
-  const routes: string[] = []
-  
+  const routes: string[] = [];
+
   const flatten = (menuItems: MenuItem[]) => {
     menuItems.forEach((item) => {
       if (item.path) {
-        routes.push(item.path)
+        routes.push(item.path);
       }
       if (item.children) {
-        flatten(item.children)
+        flatten(item.children);
       }
-    })
-  }
-  
-  flatten(items)
-  return routes
-}
+    });
+  };
+
+  flatten(items);
+  return routes;
+};

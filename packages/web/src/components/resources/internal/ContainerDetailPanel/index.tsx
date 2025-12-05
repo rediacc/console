@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react'
-import { Progress, Tag } from 'antd'
+import React, { useMemo } from 'react';
+import { Progress, Tag } from 'antd';
 import {
   DoubleRightOutlined,
   ApiOutlined,
@@ -11,8 +11,8 @@ import {
   PlayCircleOutlined,
   PauseCircleOutlined,
   ContainerOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
 import {
   DetailPanel,
   Header,
@@ -40,42 +40,42 @@ import {
   SectionStack,
   InlineText,
   SubduedText,
-} from './styles'
-import { IconWrapper } from '@/components/ui'
+} from './styles';
+import { IconWrapper } from '@/components/ui';
 
 interface ContainerData {
-  id: string
-  name: string
-  image: string
-  command: string
-  created: string
-  status: string
-  state: string
-  ports: string
+  id: string;
+  name: string;
+  image: string;
+  command: string;
+  created: string;
+  status: string;
+  state: string;
+  ports: string;
   port_mappings?: Array<{
-    host?: string
-    host_port?: string
-    container_port: string
-    protocol: string
-  }>
-  labels: string
-  mounts: string
-  networks: string
-  size: string
-  repo: string
-  cpu_percent: string
-  memory_usage: string
-  memory_percent: string
-  net_io: string
-  block_io: string
-  pids: string
+    host?: string;
+    host_port?: string;
+    container_port: string;
+    protocol: string;
+  }>;
+  labels: string;
+  mounts: string;
+  networks: string;
+  size: string;
+  repo: string;
+  cpu_percent: string;
+  memory_usage: string;
+  memory_percent: string;
+  net_io: string;
+  block_io: string;
+  pids: string;
 }
 
 interface ContainerDetailPanelProps {
-  container: ContainerData | null
-  visible: boolean
-  onClose: () => void
-  splitView?: boolean
+  container: ContainerData | null;
+  visible: boolean;
+  onClose: () => void;
+  splitView?: boolean;
 }
 
 export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
@@ -84,22 +84,22 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
   onClose,
   splitView = false,
 }) => {
-  const { t } = useTranslation(['resources', 'common'])
+  const { t } = useTranslation(['resources', 'common']);
 
   const resourceUsage = useMemo(() => {
-    if (!container) return null
+    if (!container) return null;
 
-    const cpuValue = parseFloat(container.cpu_percent?.replace('%', '') || '0')
-    const memoryParts = container.memory_usage?.split(' / ') || []
-    const memoryUsed = memoryParts[0] || '0'
-    const memoryTotal = memoryParts[1] || '0'
-    const memoryPercent = parseFloat(container.memory_percent?.replace('%', '') || '0')
-    const netParts = container.net_io?.split(' / ') || []
-    const netIn = netParts[0] || '0'
-    const netOut = netParts[1] || '0'
-    const blockParts = container.block_io?.split(' / ') || []
-    const blockRead = blockParts[0] || '0'
-    const blockWrite = blockParts[1] || '0'
+    const cpuValue = parseFloat(container.cpu_percent?.replace('%', '') || '0');
+    const memoryParts = container.memory_usage?.split(' / ') || [];
+    const memoryUsed = memoryParts[0] || '0';
+    const memoryTotal = memoryParts[1] || '0';
+    const memoryPercent = parseFloat(container.memory_percent?.replace('%', '') || '0');
+    const netParts = container.net_io?.split(' / ') || [];
+    const netIn = netParts[0] || '0';
+    const netOut = netParts[1] || '0';
+    const blockParts = container.block_io?.split(' / ') || [];
+    const blockRead = blockParts[0] || '0';
+    const blockWrite = blockParts[1] || '0';
 
     return {
       cpu: cpuValue,
@@ -111,44 +111,38 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
       blockRead,
       blockWrite,
       pids: parseInt(container.pids || '0', 10),
-    }
-  }, [container])
+    };
+  }, [container]);
 
   if (!visible || !container) {
-    return null
+    return null;
   }
 
-  const isPlugin = container.name?.startsWith('plugin-')
-  const pluginName = isPlugin ? container.name.replace('plugin-', '') : null
-  const cpuWarning = (resourceUsage?.cpu || 0) > 80
-  const memoryWarning = (resourceUsage?.memoryPercent || 0) > 90
+  const isPlugin = container.name?.startsWith('plugin-');
+  const pluginName = isPlugin ? container.name.replace('plugin-', '') : null;
+  const cpuWarning = (resourceUsage?.cpu || 0) > 80;
+  const memoryWarning = (resourceUsage?.memoryPercent || 0) > 90;
 
   const renderPortMappings = () => {
     if (container.port_mappings && container.port_mappings.length > 0) {
       return container.port_mappings.map((mapping, index) => {
-        const hostBinding = mapping.host ? `${mapping.host}:${mapping.host_port}` : mapping.host_port
+        const hostBinding = mapping.host
+          ? `${mapping.host}:${mapping.host_port}`
+          : mapping.host_port;
         const tagText = hostBinding
           ? `${hostBinding} → ${mapping.container_port}/${mapping.protocol}`
-          : `${mapping.container_port}/${mapping.protocol}`
+          : `${mapping.container_port}/${mapping.protocol}`;
 
-        return (
-          <Tag key={`${mapping.container_port}-${mapping.protocol}-${index}`}>
-            {tagText}
-          </Tag>
-        )
-      })
+        return <Tag key={`${mapping.container_port}-${mapping.protocol}-${index}`}>{tagText}</Tag>;
+      });
     }
 
     if (container.ports) {
-      return (
-        <InlineText data-testid="container-detail-ports-text">
-          {container.ports}
-        </InlineText>
-      )
+      return <InlineText data-testid="container-detail-ports-text">{container.ports}</InlineText>;
     }
 
-    return null
-  }
+    return null;
+  };
 
   return (
     <DetailPanel
@@ -323,5 +317,5 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         </SectionCard>
       </PanelContent>
     </DetailPanel>
-  )
-}
+  );
+};

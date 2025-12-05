@@ -3,31 +3,31 @@
  * Handles validation for promoting forks to grand repos
  */
 
-import { type RepoWithRelations, isFork } from '../repo'
+import { type RepoWithRelations, isFork } from '../repo';
 
 /**
  * Result of promotion validation
  */
 export interface PromotionValidationResult {
-  canPromote: boolean
-  reason?: string
+  canPromote: boolean;
+  reason?: string;
 }
 
 /**
  * Sibling clone information
  */
 export interface SiblingClone {
-  repoGuid: string
-  repoName: string
-  repoTag?: string | null
+  repoGuid: string;
+  repoName: string;
+  repoTag?: string | null;
 }
 
 /**
  * Result of finding sibling clones
  */
 export interface SiblingClonesResult {
-  siblingClones: SiblingClone[]
-  currentGrandName: string
+  siblingClones: SiblingClone[];
+  currentGrandName: string;
 }
 
 /**
@@ -36,21 +36,19 @@ export interface SiblingClonesResult {
  * @param repo - Repo to check for promotion eligibility
  * @returns Validation result with canPromote flag and reason if blocked
  */
-export function canPromoteToGrand(
-  repo: RepoWithRelations
-): PromotionValidationResult {
+export function canPromoteToGrand(repo: RepoWithRelations): PromotionValidationResult {
   // Must be a fork (has grandGuid different from self)
   if (!isFork(repo)) {
     return {
       canPromote: false,
-      reason: 'Repo is already a grand repo (credential)'
-    }
+      reason: 'Repo is already a grand repo (credential)',
+    };
   }
 
   // Fork with valid grandGuid can be promoted
   return {
-    canPromote: true
-  }
+    canPromote: true,
+  };
 }
 
 /**
@@ -64,36 +62,34 @@ export function findSiblingClones(
   repo: RepoWithRelations,
   allRepos: RepoWithRelations[]
 ): SiblingClonesResult {
-  const grandGuid = repo.grandGuid
+  const grandGuid = repo.grandGuid;
 
   if (!grandGuid) {
     return {
       siblingClones: [],
-      currentGrandName: ''
-    }
+      currentGrandName: '',
+    };
   }
 
   // Find the current grand repo
-  const currentGrand = allRepos.find(r => r.repoGuid === grandGuid)
-  const currentGrandName = currentGrand?.repoName || 'original'
+  const currentGrand = allRepos.find((r) => r.repoGuid === grandGuid);
+  const currentGrandName = currentGrand?.repoName || 'original';
 
   // Find sibling clones (exclude the repo being promoted and the original)
   const siblingClones = allRepos
-    .filter(r =>
-      r.grandGuid === grandGuid &&
-      r.repoGuid !== repo.repoGuid &&
-      r.grandGuid !== r.repoGuid // Exclude original repos
+    .filter(
+      (r) => r.grandGuid === grandGuid && r.repoGuid !== repo.repoGuid && r.grandGuid !== r.repoGuid // Exclude original repos
     )
-    .map(r => ({
+    .map((r) => ({
       repoGuid: r.repoGuid,
       repoName: r.repoName,
-      repoTag: r.repoTag
-    }))
+      repoTag: r.repoTag,
+    }));
 
   return {
     siblingClones,
-    currentGrandName
-  }
+    currentGrandName,
+  };
 }
 
 /**
@@ -106,25 +102,25 @@ export function getPromotionContext(
   repo: RepoWithRelations,
   allRepos: RepoWithRelations[]
 ): {
-  canPromote: boolean
-  reason?: string
-  siblingClones: SiblingClone[]
-  currentGrandName: string
+  canPromote: boolean;
+  reason?: string;
+  siblingClones: SiblingClone[];
+  currentGrandName: string;
 } {
-  const validation = canPromoteToGrand(repo)
+  const validation = canPromoteToGrand(repo);
 
   if (!validation.canPromote) {
     return {
       ...validation,
       siblingClones: [],
-      currentGrandName: ''
-    }
+      currentGrandName: '',
+    };
   }
 
-  const siblings = findSiblingClones(repo, allRepos)
+  const siblings = findSiblingClones(repo, allRepos);
 
   return {
     canPromote: true,
-    ...siblings
-  }
+    ...siblings,
+  };
 }

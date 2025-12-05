@@ -1,8 +1,8 @@
-import { createCipheriv, createDecipheriv, pbkdf2, randomBytes, createHash } from 'node:crypto'
-import { promisify } from 'node:util'
-import type { ICryptoProvider } from '@rediacc/shared/encryption'
+import { createCipheriv, createDecipheriv, pbkdf2, randomBytes, createHash } from 'node:crypto';
+import { promisify } from 'node:util';
+import type { ICryptoProvider } from '@rediacc/shared/encryption';
 
-const pbkdf2Async = promisify(pbkdf2)
+const pbkdf2Async = promisify(pbkdf2);
 
 // Must match web implementation exactly
 const ENCRYPTION_CONFIG = {
@@ -13,60 +13,54 @@ const ENCRYPTION_CONFIG = {
   TAG_LENGTH: 16,
   ALGORITHM: 'aes-256-gcm',
   HASH: 'sha256',
-} as const
+} as const;
 
 class NodeCryptoProvider implements ICryptoProvider {
   async encrypt(data: string, password: string): Promise<string> {
-    const salt = randomBytes(ENCRYPTION_CONFIG.SALT_LENGTH)
-    const key = await this.deriveKeyBuffer(password, salt)
-    const iv = randomBytes(ENCRYPTION_CONFIG.IV_LENGTH)
+    const salt = randomBytes(ENCRYPTION_CONFIG.SALT_LENGTH);
+    const key = await this.deriveKeyBuffer(password, salt);
+    const iv = randomBytes(ENCRYPTION_CONFIG.IV_LENGTH);
 
     const cipher = createCipheriv(ENCRYPTION_CONFIG.ALGORITHM, key, iv, {
       authTagLength: ENCRYPTION_CONFIG.TAG_LENGTH,
-    })
+    });
 
-    const encrypted = Buffer.concat([
-      cipher.update(data, 'utf8'),
-      cipher.final(),
-    ])
+    const encrypted = Buffer.concat([cipher.update(data, 'utf8'), cipher.final()]);
 
-    const authTag = cipher.getAuthTag()
+    const authTag = cipher.getAuthTag();
 
     // Combine: salt + iv + ciphertext + authTag
     // Note: In web crypto, authTag is appended to ciphertext automatically
-    const combined = Buffer.concat([salt, iv, encrypted, authTag])
+    const combined = Buffer.concat([salt, iv, encrypted, authTag]);
 
-    return combined.toString('base64')
+    return combined.toString('base64');
   }
 
   async decrypt(data: string, password: string): Promise<string> {
-    const combined = Buffer.from(data, 'base64')
+    const combined = Buffer.from(data, 'base64');
 
-    const salt = combined.subarray(0, ENCRYPTION_CONFIG.SALT_LENGTH)
+    const salt = combined.subarray(0, ENCRYPTION_CONFIG.SALT_LENGTH);
     const iv = combined.subarray(
       ENCRYPTION_CONFIG.SALT_LENGTH,
       ENCRYPTION_CONFIG.SALT_LENGTH + ENCRYPTION_CONFIG.IV_LENGTH
-    )
-    const authTag = combined.subarray(-ENCRYPTION_CONFIG.TAG_LENGTH)
+    );
+    const authTag = combined.subarray(-ENCRYPTION_CONFIG.TAG_LENGTH);
     const ciphertext = combined.subarray(
       ENCRYPTION_CONFIG.SALT_LENGTH + ENCRYPTION_CONFIG.IV_LENGTH,
       -ENCRYPTION_CONFIG.TAG_LENGTH
-    )
+    );
 
-    const key = await this.deriveKeyBuffer(password, salt)
+    const key = await this.deriveKeyBuffer(password, salt);
 
     const decipher = createDecipheriv(ENCRYPTION_CONFIG.ALGORITHM, key, iv, {
       authTagLength: ENCRYPTION_CONFIG.TAG_LENGTH,
-    })
+    });
 
-    decipher.setAuthTag(authTag)
+    decipher.setAuthTag(authTag);
 
-    const decrypted = Buffer.concat([
-      decipher.update(ciphertext),
-      decipher.final(),
-    ])
+    const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
 
-    return decrypted.toString('utf8')
+    return decrypted.toString('utf8');
   }
 
   async deriveKey(password: string, salt: Uint8Array): Promise<string> {
@@ -76,8 +70,8 @@ class NodeCryptoProvider implements ICryptoProvider {
       ENCRYPTION_CONFIG.ITERATIONS,
       ENCRYPTION_CONFIG.KEY_LENGTH,
       ENCRYPTION_CONFIG.HASH
-    )
-    return key.toString('base64')
+    );
+    return key.toString('base64');
   }
 
   private async deriveKeyBuffer(password: string, salt: Buffer): Promise<Buffer> {
@@ -87,15 +81,15 @@ class NodeCryptoProvider implements ICryptoProvider {
       ENCRYPTION_CONFIG.ITERATIONS,
       ENCRYPTION_CONFIG.KEY_LENGTH,
       ENCRYPTION_CONFIG.HASH
-    )
+    );
   }
 
   async generateHash(data: string): Promise<string> {
-    const hash = createHash(ENCRYPTION_CONFIG.HASH)
-    hash.update(data)
-    return hash.digest('hex')
+    const hash = createHash(ENCRYPTION_CONFIG.HASH);
+    hash.update(data);
+    return hash.digest('hex');
   }
 }
 
-export const nodeCryptoProvider = new NodeCryptoProvider()
-export default nodeCryptoProvider
+export const nodeCryptoProvider = new NodeCryptoProvider();
+export default nodeCryptoProvider;

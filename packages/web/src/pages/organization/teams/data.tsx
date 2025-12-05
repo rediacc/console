@@ -1,5 +1,5 @@
-import { Space, Badge, Tag, Tooltip, Button, Popconfirm } from 'antd'
-import type { TableProps } from 'antd'
+import { Space, Badge, Tag, Tooltip, Button, Popconfirm } from 'antd';
+import type { TableProps } from 'antd';
 import {
   TeamOutlined,
   UserOutlined,
@@ -9,19 +9,19 @@ import {
   EditOutlined,
   HistoryOutlined,
   DeleteOutlined,
-} from '@/utils/optimizedIcons'
-import { featureFlags } from '@/config/featureFlags'
-import type { Team } from '@/api/queries/teams'
-import type { TFunction } from 'i18next'
+} from '@/utils/optimizedIcons';
+import { featureFlags } from '@/config/featureFlags';
+import type { Team } from '@/api/queries/teams';
+import type { TFunction } from 'i18next';
 
 interface GetTeamColumnsParams {
-  tSystem: TFunction<'system'>
-  tCommon: TFunction<'common'>
-  onEdit: (team: Team) => void
-  onManageMembers: (team: Team) => void
-  onTrace: (team: Team) => void
-  onDelete: (teamName: string) => void
-  isDeleting: boolean
+  tSystem: TFunction<'system'>;
+  tCommon: TFunction<'common'>;
+  onEdit: (team: Team) => void;
+  onManageMembers: (team: Team) => void;
+  onTrace: (team: Team) => void;
+  onDelete: (teamName: string) => void;
+  isDeleting: boolean;
 }
 
 export const getTeamColumns = ({
@@ -134,7 +134,7 @@ export const getTeamColumns = ({
         </Space>
       ),
     },
-  ]
+  ];
 
   if (featureFlags.isEnabled('vaultVersionColumns')) {
     columns.push({
@@ -145,7 +145,7 @@ export const getTeamColumns = ({
       render: (version: number) => (
         <Tag>{tCommon('general.versionFormat', { defaultValue: 'v{{version}}', version })}</Tag>
       ),
-    })
+    });
   }
 
   columns.push({
@@ -209,7 +209,7 @@ export const getTeamColumns = ({
         </Popconfirm>
       </Space>
     ),
-  })
+  });
 
-  return columns
-}
+  return columns;
+};

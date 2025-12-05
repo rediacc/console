@@ -1,7 +1,7 @@
-import styled from 'styled-components'
-import { Button, Typography } from 'antd'
+import styled from 'styled-components';
+import { Button, Typography } from 'antd';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 export const NotificationDropdown = styled.div`
   background-color: var(--color-bg-primary);
@@ -10,7 +10,7 @@ export const NotificationDropdown = styled.div`
   max-height: 500px;
   min-width: 380px;
   border: 1px solid var(--color-border-secondary);
-`
+`;
 
 export const NotificationHeader = styled.div`
   display: flex;
@@ -19,12 +19,12 @@ export const NotificationHeader = styled.div`
   padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
   border-bottom: 1px solid var(--color-border-secondary);
   background-color: var(--color-bg-secondary);
-`
+`;
 
 export const NotificationTitle = styled(Text)`
   font-size: ${({ theme }) => theme.fontSize.LG}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-`
+`;
 
 export const NotificationListWrapper = styled.div`
   max-height: 400px;
@@ -46,14 +46,13 @@ export const NotificationListWrapper = styled.div`
   &::-webkit-scrollbar-thumb:hover {
     background: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 export const NotificationItem = styled.div<{ $isRead: boolean }>`
   padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
   cursor: pointer;
   transition: all 0.2s ease;
-  background-color: ${({ $isRead }) =>
-    $isRead ? 'transparent' : 'var(--color-bg-selected)'};
+  background-color: ${({ $isRead }) => ($isRead ? 'transparent' : 'var(--color-bg-selected)')};
   border-bottom: 1px solid var(--color-border-secondary);
   
   &:hover {
@@ -63,9 +62,11 @@ export const NotificationItem = styled.div<{ $isRead: boolean }>`
   &:last-child {
     border-bottom: none;
   }
-`
+`;
 
-export const NotificationIconWrapper = styled.div<{ $type: 'success' | 'error' | 'warning' | 'info' }>`
+export const NotificationIconWrapper = styled.div<{
+  $type: 'success' | 'error' | 'warning' | 'info';
+}>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -74,15 +75,20 @@ export const NotificationIconWrapper = styled.div<{ $type: 'success' | 'error' |
     font-size: ${({ theme }) => theme.fontSize.LG}px;
     color: ${({ theme, $type }) => {
       switch ($type) {
-        case 'success': return theme.colors.success
-        case 'error': return theme.colors.error
-        case 'warning': return theme.colors.warning
-        case 'info': return theme.colors.info
-        default: return theme.colors.textPrimary
+        case 'success':
+          return theme.colors.success;
+        case 'error':
+          return theme.colors.error;
+        case 'warning':
+          return theme.colors.warning;
+        case 'info':
+          return theme.colors.info;
+        default:
+          return theme.colors.textPrimary;
       }
     }};
   }
-`
+`;
 
 export const NotificationTitleRow = styled.div`
   display: flex;
@@ -90,28 +96,28 @@ export const NotificationTitleRow = styled.div`
   justify-content: space-between;
   width: 100%;
   gap: ${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 export const NotificationTitleContent = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.XS}px;
   flex: 1;
-`
+`;
 
 export const NotificationText = styled(Text)<{ $isRead: boolean }>`
-  font-weight: ${({ theme, $isRead }) => 
+  font-weight: ${({ theme, $isRead }) =>
     $isRead ? theme.fontWeight.NORMAL : theme.fontWeight.SEMIBOLD};
-`
+`;
 
 export const NotificationTag = styled.span`
   margin-left: ${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 export const NotificationCloseButton = styled(Button)`
   margin-left: auto;
   flex-shrink: 0;
-`
+`;
 
 export const NotificationMessage = styled(Text)`
   display: block;
@@ -119,16 +125,16 @@ export const NotificationMessage = styled(Text)`
   word-break: break-word;
   font-size: ${({ theme }) => theme.fontSize.SM}px;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 export const NotificationTimestamp = styled(Text)`
   font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 export const EmptyWrapper = styled.div`
   padding: ${({ theme }) => `${theme.spacing.XXL}px 0`};
-`
+`;
 
 export const BellButton = styled(Button)`
   display: flex;
@@ -149,4 +155,4 @@ export const BellButton = styled(Button)`
   .anticon {
     font-size: 24px;
   }
-`
+`;

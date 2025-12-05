@@ -1,20 +1,20 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react';
 
 /**
  * Form modal modes
  */
-export type FormModalMode = 'create' | 'edit' | 'vault'
+export type FormModalMode = 'create' | 'edit' | 'vault';
 
 /**
  * Form modal state interface
  */
 export interface FormModalState<T = unknown> {
   /** Whether the modal is open */
-  open: boolean
+  open: boolean;
   /** Current mode */
-  mode: FormModalMode
+  mode: FormModalMode;
   /** Data for edit/vault modes */
-  data: T | null
+  data: T | null;
 }
 
 /**
@@ -22,21 +22,21 @@ export interface FormModalState<T = unknown> {
  */
 export interface UseFormModalReturn<T> {
   /** Current modal state */
-  state: FormModalState<T>
+  state: FormModalState<T>;
   /** Open in create mode */
-  openCreate: () => void
+  openCreate: () => void;
   /** Open in edit mode with existing data */
-  openEdit: (data: T) => void
+  openEdit: (data: T) => void;
   /** Open in vault mode with existing data */
-  openVault: (data: T) => void
+  openVault: (data: T) => void;
   /** Close the modal */
-  close: () => void
+  close: () => void;
   /** Update data without changing mode */
-  setData: (data: T | null) => void
+  setData: (data: T | null) => void;
   /** Check if modal is open */
-  isOpen: boolean
+  isOpen: boolean;
   /** Get current mode */
-  mode: FormModalMode
+  mode: FormModalMode;
 }
 
 /**
@@ -65,46 +65,46 @@ export function useFormModal<T = unknown>(
     open: false,
     mode: defaultMode,
     data: null,
-  })
+  });
 
   const openCreate = useCallback(() => {
     setState({
       open: true,
       mode: 'create',
       data: null,
-    })
-  }, [])
+    });
+  }, []);
 
   const openEdit = useCallback((data: T) => {
     setState({
       open: true,
       mode: 'edit',
       data,
-    })
-  }, [])
+    });
+  }, []);
 
   const openVault = useCallback((data: T) => {
     setState({
       open: true,
       mode: 'vault',
       data,
-    })
-  }, [])
+    });
+  }, []);
 
   const close = useCallback(() => {
     setState({
       open: false,
       mode: defaultMode,
       data: null,
-    })
-  }, [defaultMode])
+    });
+  }, [defaultMode]);
 
   const setData = useCallback((data: T | null) => {
     setState((prev) => ({
       ...prev,
       data,
-    }))
-  }, [])
+    }));
+  }, []);
 
   return {
     state,
@@ -115,7 +115,7 @@ export function useFormModal<T = unknown>(
     setData,
     isOpen: state.open,
     mode: state.mode,
-  }
+  };
 }
 
 /**
@@ -123,16 +123,16 @@ export function useFormModal<T = unknown>(
  */
 export interface ExtendedFormModalState<T = unknown> extends FormModalState<T> {
   /** Preselected function for function selection modal */
-  preselectedFunction?: string
+  preselectedFunction?: string;
   /** Creation context */
-  creationContext?: 'credentials-only' | 'normal'
+  creationContext?: 'credentials-only' | 'normal';
 }
 
 export interface UseExtendedFormModalReturn<T> extends UseFormModalReturn<T> {
   /** Open with preselected function */
-  openWithFunction: (data: T, functionName: string) => void
+  openWithFunction: (data: T, functionName: string) => void;
   /** Get preselected function */
-  preselectedFunction?: string
+  preselectedFunction?: string;
 }
 
 /**
@@ -151,7 +151,7 @@ export function useExtendedFormModal<T = unknown>(
     mode: 'create',
     data: null,
     creationContext,
-  })
+  });
 
   const openCreate = useCallback(() => {
     setState({
@@ -159,26 +159,32 @@ export function useExtendedFormModal<T = unknown>(
       mode: 'create',
       data: null,
       creationContext,
-    })
-  }, [creationContext])
+    });
+  }, [creationContext]);
 
-  const openEdit = useCallback((data: T) => {
-    setState({
-      open: true,
-      mode: 'edit',
-      data,
-      creationContext,
-    })
-  }, [creationContext])
+  const openEdit = useCallback(
+    (data: T) => {
+      setState({
+        open: true,
+        mode: 'edit',
+        data,
+        creationContext,
+      });
+    },
+    [creationContext]
+  );
 
-  const openVault = useCallback((data: T) => {
-    setState({
-      open: true,
-      mode: 'vault',
-      data,
-      creationContext,
-    })
-  }, [creationContext])
+  const openVault = useCallback(
+    (data: T) => {
+      setState({
+        open: true,
+        mode: 'vault',
+        data,
+        creationContext,
+      });
+    },
+    [creationContext]
+  );
 
   const openWithFunction = useCallback(
     (data: T, functionName: string) => {
@@ -188,10 +194,10 @@ export function useExtendedFormModal<T = unknown>(
         data,
         preselectedFunction: functionName,
         creationContext,
-      })
+      });
     },
     [creationContext]
-  )
+  );
 
   const close = useCallback(() => {
     setState({
@@ -199,15 +205,15 @@ export function useExtendedFormModal<T = unknown>(
       mode: 'create',
       data: null,
       creationContext,
-    })
-  }, [creationContext])
+    });
+  }, [creationContext]);
 
   const setData = useCallback((data: T | null) => {
     setState((prev) => ({
       ...prev,
       data,
-    }))
-  }, [])
+    }));
+  }, []);
 
   return {
     state,
@@ -220,5 +226,5 @@ export function useExtendedFormModal<T = unknown>(
     isOpen: state.open,
     mode: state.mode,
     preselectedFunction: state.preselectedFunction,
-  }
+  };
 }

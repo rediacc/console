@@ -30,7 +30,7 @@ export function searchInFields<T extends object>(
 ): boolean {
   if (!searchText) return true;
   const searchLower = searchText.toLowerCase();
-  return fields.some(field => {
+  return fields.some((field) => {
     const value = item[field];
     if (value == null) return false;
     return String(value).toLowerCase().includes(searchLower);
@@ -50,7 +50,7 @@ export function multiFieldSearch<T extends object>(
   fields: (keyof T)[]
 ): T[] {
   if (!searchText) return items;
-  return items.filter(item => searchInFields(item, searchText, fields));
+  return items.filter((item) => searchInFields(item, searchText, fields));
 }
 
 /**
@@ -66,7 +66,7 @@ export function createSearchPredicate<T extends object>(
   if (!searchText) return () => true;
   const searchLower = searchText.toLowerCase();
   return (item: T) =>
-    fields.some(field => {
+    fields.some((field) => {
       const value = item[field];
       if (value == null) return false;
       return String(value).toLowerCase().includes(searchLower);

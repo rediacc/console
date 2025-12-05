@@ -1,4 +1,4 @@
-import styled from 'styled-components'
+import styled from 'styled-components';
 
 export const EditorContainer = styled.div<{ $height: number | string }>`
   position: relative;
@@ -11,7 +11,7 @@ export const EditorContainer = styled.div<{ $height: number | string }>`
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: ${({ theme }) => theme.fontSize.SM}px;
   line-height: ${({ theme }) => theme.lineHeight.RELAXED};
-`
+`;
 
 export const EditorTextarea = styled.textarea`
   width: 100%;
@@ -26,7 +26,7 @@ export const EditorTextarea = styled.textarea`
   font-size: inherit;
   line-height: inherit;
   tab-size: 2;
-`
+`;
 
 export const ErrorBanner = styled.div`
   position: absolute;
@@ -39,4 +39,4 @@ export const ErrorBanner = styled.div`
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   border-top: 1px solid ${({ theme }) => theme.colors.error};
-`
+`;

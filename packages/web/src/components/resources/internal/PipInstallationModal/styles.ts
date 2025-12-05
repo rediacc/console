@@ -1,7 +1,7 @@
-import styled from "styled-components";
-import { Typography, Button, Space } from "antd";
+import styled from 'styled-components';
+import { Typography, Button, Space } from 'antd';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 export const CommandContainer = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
@@ -25,10 +25,12 @@ export const CommandBox = styled.div`
 export const CommandCode = styled(Text)<{ $isComment?: boolean; $isCommand?: boolean }>`
   background: transparent !important;
   border: none !important;
-  color: ${({ $isComment, $isCommand, theme }) => 
-    $isComment ? theme.colors.textTertiary : 
-    $isCommand ? theme.colors.primary : 
-    theme.colors.textPrimary} !important;
+  color: ${({ $isComment, $isCommand, theme }) =>
+    $isComment
+      ? theme.colors.textTertiary
+      : $isCommand
+        ? theme.colors.primary
+        : theme.colors.textPrimary} !important;
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
   font-size: ${({ theme }) => theme.fontSize.SM}px;
 `;

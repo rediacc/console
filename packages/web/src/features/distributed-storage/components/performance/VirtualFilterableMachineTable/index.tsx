@@ -1,10 +1,10 @@
-import React, { useMemo, useState, useCallback } from 'react'
-import { Badge, Select, ButtonProps } from 'antd'
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Machine, MachineAssignmentType } from '@/types'
-import { MachineAssignmentService } from '@/features/distributed-storage'
-import { useDebounce } from '@/features/distributed-storage/utils/useDebounce'
-import { VirtualMachineTable } from '../VirtualMachineTable'
+import React, { useMemo, useState, useCallback } from 'react';
+import { Badge, Select, ButtonProps } from 'antd';
+import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Machine, MachineAssignmentType } from '@/types';
+import { MachineAssignmentService } from '@/features/distributed-storage';
+import { useDebounce } from '@/features/distributed-storage/utils/useDebounce';
+import { VirtualMachineTable } from '../VirtualMachineTable';
 import {
   Container,
   ToolbarStack,
@@ -15,19 +15,19 @@ import {
   RefreshButton,
   StatusText,
   OptionLabel,
-} from './styles'
+} from './styles';
 
-const { Option } = Select
+const { Option } = Select;
 
 interface VirtualFilterableMachineTableProps {
-  machines: Machine[]
-  loading?: boolean
-  teamName?: string
-  onRefresh?: () => void
-  selectable?: boolean
-  onRowClick?: (machine: Machine) => void
-  renderActions?: (machine: Machine) => React.ReactNode
-  height?: number
+  machines: Machine[];
+  loading?: boolean;
+  teamName?: string;
+  onRefresh?: () => void;
+  selectable?: boolean;
+  onRowClick?: (machine: Machine) => void;
+  renderActions?: (machine: Machine) => React.ReactNode;
+  height?: number;
 }
 
 export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTableProps> = ({
@@ -40,39 +40,39 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
   renderActions,
   height = 600,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [assignmentFilter, setAssignmentFilter] = useState<MachineAssignmentType | 'ALL'>('ALL')
-  const [pageSize, setPageSize] = useState(100)
-  const [displayedCount, setDisplayedCount] = useState(100)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [assignmentFilter, setAssignmentFilter] = useState<MachineAssignmentType | 'ALL'>('ALL');
+  const [pageSize, setPageSize] = useState(100);
+  const [displayedCount, setDisplayedCount] = useState(100);
 
-  const debouncedSearch = useDebounce(searchQuery, 300)
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   const filteredMachines = useMemo(() => {
     if (!machines || !Array.isArray(machines)) {
-      return []
+      return [];
     }
 
-    let result = machines
+    let result = machines;
 
     if (assignmentFilter !== 'ALL') {
       result = result.filter((machine) => {
-        const assignmentType = MachineAssignmentService.getMachineAssignmentType(machine)
-        return assignmentType === assignmentFilter
-      })
+        const assignmentType = MachineAssignmentService.getMachineAssignmentType(machine);
+        return assignmentType === assignmentFilter;
+      });
     }
 
     if (debouncedSearch) {
-      const searchLower = debouncedSearch.toLowerCase()
+      const searchLower = debouncedSearch.toLowerCase();
       result = result.filter(
         (machine) =>
           machine.machineName.toLowerCase().includes(searchLower) ||
           machine.teamName?.toLowerCase().includes(searchLower) ||
-          machine.distributedStorageClusterName?.toLowerCase().includes(searchLower),
-      )
+          machine.distributedStorageClusterName?.toLowerCase().includes(searchLower)
+      );
     }
 
-    return result
-  }, [machines, assignmentFilter, debouncedSearch])
+    return result;
+  }, [machines, assignmentFilter, debouncedSearch]);
 
   const assignmentCounts = useMemo(() => {
     const counts: Record<MachineAssignmentType | 'ALL', number> = {
@@ -81,45 +81,45 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
       CLUSTER: 0,
       IMAGE: 0,
       CLONE: 0,
-    }
+    };
 
     machines.forEach((machine) => {
-      const type = MachineAssignmentService.getMachineAssignmentType(machine)
-      counts[type] += 1
-    })
+      const type = MachineAssignmentService.getMachineAssignmentType(machine);
+      counts[type] += 1;
+    });
 
-    return counts
-  }, [machines])
+    return counts;
+  }, [machines]);
 
-  const displayedMachines = useMemo(() => filteredMachines.slice(0, displayedCount), [
-    filteredMachines,
-    displayedCount,
-  ])
+  const displayedMachines = useMemo(
+    () => filteredMachines.slice(0, displayedCount),
+    [filteredMachines, displayedCount]
+  );
 
   const loadMore = useCallback(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    setDisplayedCount((prev) => Math.min(prev + pageSize, filteredMachines.length))
-  }, [pageSize, filteredMachines.length])
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    setDisplayedCount((prev) => Math.min(prev + pageSize, filteredMachines.length));
+  }, [pageSize, filteredMachines.length]);
 
-  const [prevDebouncedSearch, setPrevDebouncedSearch] = useState(debouncedSearch)
-  const [prevAssignmentFilter, setPrevAssignmentFilter] = useState(assignmentFilter)
-  const [prevPageSize, setPrevPageSize] = useState(pageSize)
+  const [prevDebouncedSearch, setPrevDebouncedSearch] = useState(debouncedSearch);
+  const [prevAssignmentFilter, setPrevAssignmentFilter] = useState(assignmentFilter);
+  const [prevPageSize, setPrevPageSize] = useState(pageSize);
 
   if (
     debouncedSearch !== prevDebouncedSearch ||
     assignmentFilter !== prevAssignmentFilter ||
     pageSize !== prevPageSize
   ) {
-    setPrevDebouncedSearch(debouncedSearch)
-    setPrevAssignmentFilter(assignmentFilter)
-    setPrevPageSize(pageSize)
-    setDisplayedCount(pageSize)
+    setPrevDebouncedSearch(debouncedSearch);
+    setPrevAssignmentFilter(assignmentFilter);
+    setPrevPageSize(pageSize);
+    setDisplayedCount(pageSize);
   }
 
-  const hasMore = displayedCount < filteredMachines.length
+  const hasMore = displayedCount < filteredMachines.length;
   const refreshButtonProps: ButtonProps = {
     icon: <ReloadOutlined />,
-  }
+  };
 
   return (
     <Container data-testid="filterable-machine-container">
@@ -218,5 +218,5 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
         />
       </div>
     </Container>
-  )
-}
+  );
+};

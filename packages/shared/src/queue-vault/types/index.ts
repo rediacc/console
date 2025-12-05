@@ -4,5 +4,5 @@ export type {
   StorageSystemContextData,
   MachineContextData,
   GeneralSettings,
-} from './vault'
-export type { QueueRequestContext, FunctionRequirements } from './requirements'
+} from './vault';
+export type { QueueRequestContext, FunctionRequirements } from './requirements';

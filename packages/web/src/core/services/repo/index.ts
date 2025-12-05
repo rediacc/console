@@ -20,8 +20,8 @@ export {
   getForks,
   canDeleteRepo,
   validateRepoDeletion,
-  getRepoDisplayName
-} from '../repo'
+  getRepoDisplayName,
+} from '../repo';
 
 // Export promotion validation
 export {
@@ -30,8 +30,8 @@ export {
   type SiblingClonesResult,
   canPromoteToGrand,
   findSiblingClones,
-  getPromotionContext
-} from './promotion'
+  getPromotionContext,
+} from './promotion';
 
 // Export grand deletion validation
 export {
@@ -39,8 +39,8 @@ export {
   type GrandDeletionValidationResult,
   canDeleteGrandRepo,
   findChildClones,
-  isOrphanGrand
-} from './grand-deletion'
+  isOrphanGrand,
+} from './grand-deletion';
 
 // Export fork operations
 export {
@@ -50,8 +50,8 @@ export {
   findForkParent,
   getForkRelationship,
   canForkRepo,
-  getGrandGuidForFork
-} from './fork-operations'
+  getGrandGuidForFork,
+} from './fork-operations';
 
 // Export backup validation
 export {
@@ -59,8 +59,8 @@ export {
   canBackupToStorage,
   canBackupToMachine,
   getBackupOptions,
-  validateBackupDestination
-} from './backup-validation'
+  validateBackupDestination,
+} from './backup-validation';
 
 // Export orchestration functions
 export {
@@ -75,5 +75,5 @@ export {
   preparePromotion,
   prepareBackup,
   prepareForkCreation,
-  getGrandVaultForOperation
-} from './orchestration'
+  getGrandVaultForOperation,
+} from './orchestration';

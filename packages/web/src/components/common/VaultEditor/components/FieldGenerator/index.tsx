@@ -1,13 +1,13 @@
-import React, { useState } from 'react'
-import { Popover, message, Tooltip } from 'antd'
-import { KeyOutlined, ReloadOutlined, CopyOutlined, CheckOutlined } from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { 
-  generateSSHKeyPair, 
+import React, { useState } from 'react';
+import { Popover, message, Tooltip } from 'antd';
+import { KeyOutlined, ReloadOutlined, CopyOutlined, CheckOutlined } from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import {
+  generateSSHKeyPair,
   generateRepoCredential,
-  GenerationOptions 
-} from '@/utils/cryptoGenerators'
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
+  GenerationOptions,
+} from '@/utils/cryptoGenerators';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import {
   PopoverContainer,
   OptionLabel,
@@ -22,80 +22,81 @@ import {
   TitleStack,
   CopyButton,
   OptionsStack,
-} from './styles'
+} from './styles';
 
 interface FieldGeneratorProps {
-  fieldType: 'ssh_keys' | 'repo_credential'
-  onGenerate: (values: Record<string, string>) => void
-  entityType?: string
-  'data-testid'?: string
+  fieldType: 'ssh_keys' | 'repo_credential';
+  onGenerate: (values: Record<string, string>) => void;
+  entityType?: string;
+  'data-testid'?: string;
 }
 
 const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
-  const {
-    fieldType,
-    onGenerate,
-    entityType
-  } = props
-  const { t } = useTranslation('common')
-  const [visible, setVisible] = useState(false)
-  const [generating, setGenerating] = useState(false)
-  const [generatedValues, setGeneratedValues] = useState<Record<string, string>>({})
+  const { fieldType, onGenerate, entityType } = props;
+  const { t } = useTranslation('common');
+  const [visible, setVisible] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generatedValues, setGeneratedValues] = useState<Record<string, string>>({});
   const [keyOptions, setKeyOptions] = useState<GenerationOptions>({
     keyType: 'rsa',
     keySize: 2048,
-    comment: `${entityType || 'generated'}-${new Date().toISOString().split('T')[0]}`
-  })
-  const [copiedField, setCopiedField] = useState<string | null>(null)
+    comment: `${entityType || 'generated'}-${new Date().toISOString().split('T')[0]}`,
+  });
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const generators = {
     ssh_keys: async () => {
-      const keys = await generateSSHKeyPair(keyOptions)
-      return { SSH_PRIVATE_KEY: keys.privateKey, SSH_PUBLIC_KEY: keys.publicKey }
+      const keys = await generateSSHKeyPair(keyOptions);
+      return { SSH_PRIVATE_KEY: keys.privateKey, SSH_PUBLIC_KEY: keys.publicKey };
     },
-    repo_credential: () => ({ credential: generateRepoCredential() })
-  }
+    repo_credential: () => ({ credential: generateRepoCredential() }),
+  };
 
   const handleGenerate = async () => {
-    setGenerating(true)
+    setGenerating(true);
     try {
-      const values = await generators[fieldType]()
-      setGeneratedValues(values)
-      message.success(t('fieldGenerator.generationSuccess'))
+      const values = await generators[fieldType]();
+      setGeneratedValues(values);
+      message.success(t('fieldGenerator.generationSuccess'));
     } catch {
-      message.error(t('fieldGenerator.generationError'))
+      message.error(t('fieldGenerator.generationError'));
     } finally {
-      setGenerating(false)
+      setGenerating(false);
     }
-  }
+  };
 
   const handleApply = () => {
-    onGenerate(generatedValues)
-    setVisible(false)
-    setGeneratedValues({})
-    message.success(t('fieldGenerator.applied'))
-  }
+    onGenerate(generatedValues);
+    setVisible(false);
+    setGeneratedValues({});
+    message.success(t('fieldGenerator.applied'));
+  };
 
   const handleCopy = (field: string, value: string) => {
-    navigator.clipboard.writeText(value)
+    navigator.clipboard
+      .writeText(value)
       .then(() => {
-        setCopiedField(field)
-        message.success(t('fieldGenerator.copied'))
+        setCopiedField(field);
+        message.success(t('fieldGenerator.copied'));
         // Reset copy state immediately after user interaction
-        setCopiedField(null)
+        setCopiedField(null);
       })
-      .catch(() => message.error(t('fieldGenerator.copyError')))
-  }
+      .catch(() => message.error(t('fieldGenerator.copyError')));
+  };
 
-  const keyTypeOptions: ReadonlyArray<{ value: 'rsa' | 'ed25519'; label: string; disabled?: boolean }> = [
+  const keyTypeOptions: ReadonlyArray<{
+    value: 'rsa' | 'ed25519';
+    label: string;
+    disabled?: boolean;
+  }> = [
     { value: 'rsa', label: 'RSA' },
-    { value: 'ed25519', label: `Ed25519 ${t('fieldGenerator.comingSoon')}`, disabled: true }
-  ]
-  
+    { value: 'ed25519', label: `Ed25519 ${t('fieldGenerator.comingSoon')}`, disabled: true },
+  ];
+
   const keySizeOptions: ReadonlyArray<{ value: 2048 | 4096; label: string; disabled?: boolean }> = [
     { value: 2048, label: '2048 bits' },
-    { value: 4096, label: `4096 bits (${t('fieldGenerator.moreSecure')})` }
-  ]
+    { value: 4096, label: `4096 bits (${t('fieldGenerator.moreSecure')})` },
+  ];
 
   const renderRadioGroup = <T extends string | number>(
     label: string,
@@ -110,7 +111,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
         onChange={(e) => onChange(e.target.value as T)}
         data-testid={`vault-editor-radio-${label.toLowerCase().replace(/\s+/g, '-')}`}
       >
-        {options.map(opt => (
+        {options.map((opt) => (
           <OptionRadio
             key={opt.value}
             value={opt.value}
@@ -122,27 +123,22 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
         ))}
       </OptionGroup>
     </div>
-  )
+  );
 
-  const currentKeyType: 'rsa' | 'ed25519' = keyOptions.keyType ?? 'rsa'
-  const currentKeySize: 2048 | 4096 = keyOptions.keySize ?? 2048
+  const currentKeyType: 'rsa' | 'ed25519' = keyOptions.keyType ?? 'rsa';
+  const currentKeySize: 2048 | 4096 = keyOptions.keySize ?? 2048;
 
   const renderSSHKeyOptions = () => (
     <OptionsStack orientation="vertical">
-      {renderRadioGroup(
-        t('fieldGenerator.keyType'), 
-        currentKeyType, 
-        keyTypeOptions,
-        (val) => setKeyOptions({ ...keyOptions, keyType: val })
+      {renderRadioGroup(t('fieldGenerator.keyType'), currentKeyType, keyTypeOptions, (val) =>
+        setKeyOptions({ ...keyOptions, keyType: val })
       )}
-      {currentKeyType === 'rsa' && renderRadioGroup(
-        t('fieldGenerator.keySize'),
-        currentKeySize,
-        keySizeOptions,
-        (val) => setKeyOptions({ ...keyOptions, keySize: val })
-      )}
+      {currentKeyType === 'rsa' &&
+        renderRadioGroup(t('fieldGenerator.keySize'), currentKeySize, keySizeOptions, (val) =>
+          setKeyOptions({ ...keyOptions, keySize: val })
+        )}
     </OptionsStack>
-  )
+  );
 
   const renderGeneratedValues = () => (
     <OptionsStack orientation="vertical">
@@ -169,19 +165,19 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
         </GeneratedValueCard>
       ))}
     </OptionsStack>
-  )
+  );
 
   const popoverContent = (
     <PopoverContainer>
       {fieldType === 'ssh_keys' && !Object.keys(generatedValues).length && renderSSHKeyOptions()}
-      
+
       {Object.keys(generatedValues).length > 0 && renderGeneratedValues()}
-      
+
       <ActionRow>
         {Object.keys(generatedValues).length === 0 ? (
-          <ControlButton 
-            type="primary" 
-            icon={<KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />} 
+          <ControlButton
+            type="primary"
+            icon={<KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
             onClick={handleGenerate}
             loading={generating}
             data-testid="vault-editor-generate-button"
@@ -190,22 +186,22 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
           </ControlButton>
         ) : (
           <>
-            <ControlButton 
-              onClick={() => setGeneratedValues({})} 
+            <ControlButton
+              onClick={() => setGeneratedValues({})}
               data-testid="vault-editor-generate-cancel"
             >
               {t('fieldGenerator.cancel')}
             </ControlButton>
-            <ControlButton 
-              icon={<ReloadOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />} 
+            <ControlButton
+              icon={<ReloadOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
               onClick={handleGenerate}
               loading={generating}
               data-testid="vault-editor-regenerate-button"
             >
               {t('fieldGenerator.regenerate')}
             </ControlButton>
-            <ControlButton 
-              type="primary" 
+            <ControlButton
+              type="primary"
               onClick={handleApply}
               data-testid="vault-editor-apply-generated"
             >
@@ -215,7 +211,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
         )}
       </ActionRow>
     </PopoverContainer>
-  )
+  );
 
   return (
     <Popover
@@ -232,15 +228,15 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
       placement="left"
     >
       <Tooltip title={t('fieldGenerator.tooltip')}>
-        <GeneratorButton 
-          type="text" 
-          icon={<KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />} 
+        <GeneratorButton
+          type="text"
+          icon={<KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
           size="small"
           data-testid={props['data-testid'] || 'vault-editor-field-generator'}
         />
       </Tooltip>
     </Popover>
-  )
-}
+  );
+};
 
-export default FieldGenerator
+export default FieldGenerator;

@@ -34,7 +34,8 @@ export interface FunctionParam {
 }
 
 // Import function definitions from JSON
-export const FUNCTION_DEFINITIONS: Record<string, FunctionDefinition> = functionDefinitions.functions;
+export const FUNCTION_DEFINITIONS: Record<string, FunctionDefinition> =
+  functionDefinitions.functions;
 export const FUNCTION_CATEGORIES: string[] = functionDefinitions.categories;
 
 // Hook to get localized function data
@@ -42,14 +43,14 @@ export function useLocalizedFunctions() {
   const { t } = useTranslation('functions');
 
   // Get localized category data
-  const getLocalizedCategories = () => 
+  const getLocalizedCategories = () =>
     Object.fromEntries(
-      FUNCTION_CATEGORIES.map(category => [
+      FUNCTION_CATEGORIES.map((category) => [
         category,
         {
           name: t(`categories.${category}.name`),
-          description: t(`categories.${category}.description`)
-        }
+          description: t(`categories.${category}.description`),
+        },
       ])
     );
 
@@ -63,23 +64,25 @@ export function useLocalizedFunctions() {
       description: t(`functions.${functionName}.description`),
       showInMenu: funcDef.showInMenu !== false, // Default to true if not specified
       requirements: funcDef.requirements || {},
-      params: funcDef.params ? Object.fromEntries(
-        Object.entries(funcDef.params).map(([paramName, paramDef]) => [
-          paramName,
-          {
-            ...paramDef,
-            label: t(`functions.${functionName}.params.${paramName}.label`),
-            help: t(`functions.${functionName}.params.${paramName}.help`)
-          }
-        ])
-      ) : {}
+      params: funcDef.params
+        ? Object.fromEntries(
+            Object.entries(funcDef.params).map(([paramName, paramDef]) => [
+              paramName,
+              {
+                ...paramDef,
+                label: t(`functions.${functionName}.params.${paramName}.label`),
+                help: t(`functions.${functionName}.params.${paramName}.help`),
+              },
+            ])
+          )
+        : {},
     };
   };
 
   // Get all localized functions
-  const getLocalizedFunctions = () => 
+  const getLocalizedFunctions = () =>
     Object.fromEntries(
-      Object.keys(FUNCTION_DEFINITIONS).map(name => [name, getLocalizedFunction(name)])
+      Object.keys(FUNCTION_DEFINITIONS).map((name) => [name, getLocalizedFunction(name)])
     );
 
   // Get functions by category
@@ -94,19 +97,19 @@ export function useLocalizedFunctions() {
     categories: getLocalizedCategories(),
     functions: getLocalizedFunctions(),
     getFunction: getLocalizedFunction,
-    getFunctionsByCategory
+    getFunctionsByCategory,
   };
 }
 
 // Export function to get raw function data with translations
 export function getFunctionsWithTranslations(t: TFunction) {
   const categories = Object.fromEntries(
-    FUNCTION_CATEGORIES.map(category => [
+    FUNCTION_CATEGORIES.map((category) => [
       category,
       {
         name: t(`functions:categories.${category}.name`),
-        description: t(`functions:categories.${category}.description`)
-      }
+        description: t(`functions:categories.${category}.description`),
+      },
     ])
   );
 
@@ -118,16 +121,18 @@ export function getFunctionsWithTranslations(t: TFunction) {
         category: funcDef.category,
         requirements: funcDef.requirements || {},
         description: t(`functions:functions.${functionName}.description`),
-        params: funcDef.params ? Object.fromEntries(
-          Object.entries(funcDef.params).map(([paramName, paramDef]) => [
-            paramName,
-            {
-              ...paramDef,
-              help: t(`functions:functions.${functionName}.params.${paramName}.help`)
-            }
-          ])
-        ) : {}
-      }
+        params: funcDef.params
+          ? Object.fromEntries(
+              Object.entries(funcDef.params).map(([paramName, paramDef]) => [
+                paramName,
+                {
+                  ...paramDef,
+                  help: t(`functions:functions.${functionName}.params.${paramName}.help`),
+                },
+              ])
+            )
+          : {},
+      },
     ])
   );
 

@@ -1,12 +1,7 @@
 ﻿import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  Table,
-  Button,
-  Space,
-  Tooltip,
-} from 'antd';
+import { Table, Button, Space, Tooltip } from 'antd';
 import {
   InboxOutlined,
   TeamOutlined,
@@ -64,7 +59,6 @@ import {
 } from './styles';
 import type { TagVariant } from './styles';
 
-
 type GroupByMode = 'machine' | 'bridge' | 'team' | 'region' | 'repo' | 'status' | 'grand';
 
 interface MachineTableProps {
@@ -114,7 +108,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [bulkAssignClusterModal, setBulkAssignClusterModal] = useState(false);
   const [removeFromClusterModal, setRemoveFromClusterModal] = useState(false);
   const [viewAssignmentStatusModal, setViewAssignmentStatusModal] = useState(false);
-  
+
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [vaultPanelVisible, setVaultPanelVisible] = useState(false);
 
@@ -133,7 +127,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const dynamicPageSize = useDynamicPageSize(tableContainerRef, {
     containerOffset: 170, // Account for filters, tabs, and other UI elements
     minRows: 5,
-    maxRows: 50
+    maxRows: 50,
   });
 
   // Use machines directly without filtering
@@ -141,28 +135,40 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Parse machine vault status to get repo information
   // Uses core vault-status parser with repo name resolution
-  const getMachineRepos = useCallback((machine: Machine): DeployedRepo[] => {
-    return coreGetMachineRepos(machine, repos.map(r => ({
-      repoGuid: r.repoGuid,
-      repoName: r.repoName,
-      grandGuid: r.grandGuid
-    })));
-  }, [repos]);
+  const getMachineRepos = useCallback(
+    (machine: Machine): DeployedRepo[] => {
+      return coreGetMachineRepos(
+        machine,
+        repos.map((r) => ({
+          repoGuid: r.repoGuid,
+          repoName: r.repoName,
+          grandGuid: r.grandGuid,
+        }))
+      );
+    },
+    [repos]
+  );
 
-  const handleDelete = useCallback((machine: Machine) => {
-    if (onDeleteMachine) {
-      onDeleteMachine(machine);
-    }
-  }, [onDeleteMachine]);
+  const handleDelete = useCallback(
+    (machine: Machine) => {
+      if (onDeleteMachine) {
+        onDeleteMachine(machine);
+      }
+    },
+    [onDeleteMachine]
+  );
 
-  const handleRowClick = useCallback((machine: Machine) => {
-    if (onRowClick) {
-      onRowClick(machine);
-    } else {
-      setSelectedMachine(machine);
-      setVaultPanelVisible(true);
-    }
-  }, [onRowClick]);
+  const handleRowClick = useCallback(
+    (machine: Machine) => {
+      if (onRowClick) {
+        onRowClick(machine);
+      } else {
+        setSelectedMachine(machine);
+        setVaultPanelVisible(true);
+      }
+    },
+    [onRowClick]
+  );
 
   const handlePanelClose = useCallback(() => {
     setVaultPanelVisible(false);
@@ -170,44 +176,49 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     setSelectedMachine(null);
   }, []);
 
-
-
-
-
-
   // Get machine functions
   const { getFunctionsByCategory } = useLocalizedFunctions();
-  const machineFunctions = useMemo(() =>
-    getFunctionsByCategory('machine').filter(func =>
-      func && func.showInMenu !== false &&
-      func.name !== 'mount' &&
-      func.name !== 'pull'
-    ),
+  const machineFunctions = useMemo(
+    () =>
+      getFunctionsByCategory('machine').filter(
+        (func) => func && func.showInMenu !== false && func.name !== 'mount' && func.name !== 'pull'
+      ),
     [getFunctionsByCategory]
   ) as MachineFunctionAction[];
 
   const canAssignToCluster = isExpertMode && featureFlags.isEnabled('assignToCluster');
 
   // Wrapper functions for column builder compatibility
-  const openAssignClusterModal = useCallback((state: { open: boolean; machine: Machine | null }) => {
-    if (state.open && state.machine) {
-      assignClusterModal.open(state.machine);
-    } else {
-      assignClusterModal.close();
-    }
-  }, [assignClusterModal]);
+  const openAssignClusterModal = useCallback(
+    (state: { open: boolean; machine: Machine | null }) => {
+      if (state.open && state.machine) {
+        assignClusterModal.open(state.machine);
+      } else {
+        assignClusterModal.close();
+      }
+    },
+    [assignClusterModal]
+  );
 
-  const openAuditTraceModal = useCallback((state: { open: boolean; entityType: string | null; entityIdentifier: string | null; entityName?: string }) => {
-    if (state.open && state.entityType && state.entityIdentifier) {
-      auditTrace.open({
-        entityType: state.entityType,
-        entityIdentifier: state.entityIdentifier,
-        entityName: state.entityName,
-      });
-    } else {
-      auditTrace.close();
-    }
-  }, [auditTrace]);
+  const openAuditTraceModal = useCallback(
+    (state: {
+      open: boolean;
+      entityType: string | null;
+      entityIdentifier: string | null;
+      entityName?: string;
+    }) => {
+      if (state.open && state.entityType && state.entityIdentifier) {
+        auditTrace.open({
+          entityType: state.entityType,
+          entityIdentifier: state.entityIdentifier,
+          entityName: state.entityName,
+        });
+      } else {
+        auditTrace.close();
+      }
+    },
+    [auditTrace]
+  );
 
   const columns = React.useMemo(
     () =>
@@ -242,20 +253,22 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       openAssignClusterModal,
       openAuditTraceModal,
       machineFunctions,
-    ],
+    ]
   );
 
   // Row selection configuration - only show checkboxes if assignToCluster feature is enabled
-  const rowSelection = canAssignToCluster ? {
-    selectedRowKeys,
-    onChange: (newSelectedRowKeys: React.Key[]) => {
-      setSelectedRowKeys(newSelectedRowKeys as string[]);
-    },
-    getCheckboxProps: (record: Machine) => ({
-      disabled: false, // Can be customized based on machine status
-      'data-testid': `machine-checkbox-${record.machineName}`,
-    }),
-  } : undefined;
+  const rowSelection = canAssignToCluster
+    ? {
+        selectedRowKeys,
+        onChange: (newSelectedRowKeys: React.Key[]) => {
+          setSelectedRowKeys(newSelectedRowKeys as string[]);
+        },
+        getCheckboxProps: (record: Machine) => ({
+          disabled: false, // Can be customized based on machine status
+          'data-testid': `machine-checkbox-${record.machineName}`,
+        }),
+      }
+    : undefined;
 
   // Render bulk actions toolbar - only if feature is enabled
   const renderBulkActionsToolbar = () => {
@@ -401,13 +414,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   // Grouped machines for table view
   const groupedMachinesForTable = useMemo(() => {
     const result: Record<string, Machine[]> = {};
-    
+
     if (groupBy === 'machine') {
       // Don't group when showing normal machine view
       return result;
     }
-    
-    filteredMachines.forEach(machine => {
+
+    filteredMachines.forEach((machine) => {
       let key = '';
       if (groupBy === 'bridge') {
         key = machine.bridgeName;
@@ -426,7 +439,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         machineRepos.forEach((repo) => {
           const repoKey = repo.name;
           if (!result[repoKey]) result[repoKey] = [];
-          if (!result[repoKey].find(m => m.machineName === machine.machineName)) {
+          if (!result[repoKey].find((m) => m.machineName === machine.machineName)) {
             result[repoKey].push(machine);
           }
         });
@@ -441,7 +454,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           const hasRunning = machineRepos.some((r) => r.mounted && r.docker_running);
           const hasStopped = machineRepos.some((r) => r.mounted && !r.docker_running);
           const hasUnmounted = machineRepos.some((r) => !r.mounted);
-          
+
           if (hasInaccessible) {
             key = 'Inaccessible';
           } else if (hasRunning) {
@@ -462,13 +475,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         machineRepos.forEach((repo) => {
           let grandKey = 'No Grand Repo';
           if (repo.grandGuid) {
-            const grandRepo = repos.find(r => r.repoGuid === repo.grandGuid);
+            const grandRepo = repos.find((r) => r.repoGuid === repo.grandGuid);
             if (grandRepo) {
               grandKey = grandRepo.repoName;
             }
           }
           if (!result[grandKey]) result[grandKey] = [];
-          if (!result[grandKey].find(m => m.machineName === machine.machineName)) {
+          if (!result[grandKey].find((m) => m.machineName === machine.machineName)) {
             result[grandKey].push(machine);
           }
         });
@@ -481,16 +494,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         result[key].push(machine);
       }
     });
-    
+
     return result;
   }, [filteredMachines, groupBy, repos, getMachineRepos]);
 
   // Render grouped table view
   const renderGroupedTableView = () => {
     if (Object.keys(groupedMachinesForTable).length === 0) {
-      return (
-        <EmptyState description={t('resources:repos.noRepos')} />
-      );
+      return <EmptyState description={t('resources:repos.noRepos')} />;
     }
 
     const variantMap: Record<GroupByMode, TagVariant> = {
@@ -583,19 +594,17 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 </GroupCardRow>
               ))}
             </GroupCardContainer>
-          )
+          );
         })}
       </GroupedCardStack>
     );
   };
 
-
-
   return (
     <MachineTableWrapper className={className}>
       {renderViewToggle()}
       {renderBulkActionsToolbar()}
-      
+
       {groupBy === 'machine' ? (
         <TableContainer ref={tableContainerRef}>
           <Table
@@ -614,19 +623,24 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             pagination={{
               pageSize: dynamicPageSize,
               showSizeChanger: false,
-              showTotal: (total, range) => t('common:table.showingRecords', { start: range[0], end: range[1], total }),
+              showTotal: (total, range) =>
+                t('common:table.showingRecords', { start: range[0], end: range[1], total }),
             }}
             onRow={(record) => ({
               'data-testid': `machine-row-${record.machineName}`,
               onClick: (e) => {
                 const target = e.target as HTMLElement;
-                if (target.closest('button') || target.closest('.ant-dropdown') || target.closest('.ant-dropdown-menu')) {
+                if (
+                  target.closest('button') ||
+                  target.closest('.ant-dropdown') ||
+                  target.closest('.ant-dropdown-menu')
+                ) {
                   return;
                 }
 
                 navigate(`/machines/${record.machineName}/repos`, {
-                  state: { machine: record }
-                })
+                  state: { machine: record },
+                });
               },
             })}
             sticky
@@ -668,11 +682,11 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           }}
         />
       )}
-      
+
       {/* Bulk Assign to Cluster Modal */}
       <AssignToClusterModal
         open={bulkAssignClusterModal}
-        machines={machines.filter(m => selectedRowKeys.includes(m.machineName))}
+        machines={machines.filter((m) => selectedRowKeys.includes(m.machineName))}
         onCancel={() => setBulkAssignClusterModal(false)}
         onSuccess={() => {
           setBulkAssignClusterModal(false);
@@ -680,11 +694,11 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           refetch();
         }}
       />
-      
+
       {/* Remove from Cluster Modal */}
       <RemoveFromClusterModal
         open={removeFromClusterModal}
-        machines={machines.filter(m => selectedRowKeys.includes(m.machineName))}
+        machines={machines.filter((m) => selectedRowKeys.includes(m.machineName))}
         onCancel={() => setRemoveFromClusterModal(false)}
         onSuccess={() => {
           setRemoveFromClusterModal(false);
@@ -692,14 +706,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           refetch();
         }}
       />
-      
+
       {/* View Assignment Status Modal */}
       <ViewAssignmentStatusModal
         open={viewAssignmentStatusModal}
-        machines={machines.filter(m => selectedRowKeys.includes(m.machineName))}
+        machines={machines.filter((m) => selectedRowKeys.includes(m.machineName))}
         onCancel={() => setViewAssignmentStatusModal(false)}
       />
-      
+
       {/* Machine Vault Status Panel - only show in standalone mode */}
       {!onRowClick && (
         <MachineVaultStatusPanel
@@ -711,5 +725,3 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     </MachineTableWrapper>
   );
 };
-
-

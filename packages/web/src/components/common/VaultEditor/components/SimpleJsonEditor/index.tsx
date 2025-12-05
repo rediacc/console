@@ -19,7 +19,7 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   height = '400px',
   className = '',
   'data-testid': dataTestId,
-  onFormatReady
+  onFormatReady,
 }) => {
   const [internalValue, setInternalValue] = useState(value);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +93,7 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
       const newValue = internalValue.substring(0, start) + '  ' + internalValue.substring(end);
       setInternalValue(newValue);
       onChange?.(newValue);
-      
+
       // Set cursor position immediately - no async operations
       target.selectionStart = target.selectionEnd = start + 2;
     }
@@ -112,12 +112,8 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
         autoCapitalize="off"
         data-testid={dataTestId}
       />
-      
-      {error && (
-        <ErrorBanner>
-          JSON Error: {error}
-        </ErrorBanner>
-      )}
+
+      {error && <ErrorBanner>JSON Error: {error}</ErrorBanner>}
     </EditorContainer>
   );
 };

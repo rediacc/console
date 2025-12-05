@@ -11,34 +11,34 @@
  */
 export function createBatches<T>(items: T[], batchSize: number): T[][] {
   if (batchSize <= 0) {
-    throw new Error('Batch size must be positive')
+    throw new Error('Batch size must be positive');
   }
 
-  const batches: T[][] = []
+  const batches: T[][] = [];
 
   for (let i = 0; i < items.length; i += batchSize) {
-    batches.push(items.slice(i, i + batchSize))
+    batches.push(items.slice(i, i + batchSize));
   }
 
-  return batches
+  return batches;
 }
 
 /**
  * Validation error for bulk operations
  */
 export interface BulkValidationError {
-  index: number
-  item: unknown
-  errors: string[]
+  index: number;
+  item: unknown;
+  errors: string[];
 }
 
 /**
  * Result of bulk validation
  */
 export interface BulkValidationResult<T> {
-  valid: T[]
-  invalid: BulkValidationError[]
-  hasErrors: boolean
+  valid: T[];
+  invalid: BulkValidationError[];
+  hasErrors: boolean;
 }
 
 /**
@@ -51,34 +51,34 @@ export function performBulkValidation<T>(
   items: T[],
   validator: (item: T) => string[]
 ): BulkValidationResult<T> {
-  const valid: T[] = []
-  const invalid: BulkValidationError[] = []
+  const valid: T[] = [];
+  const invalid: BulkValidationError[] = [];
 
   items.forEach((item, index) => {
-    const errors = validator(item)
+    const errors = validator(item);
     if (errors.length > 0) {
-      invalid.push({ index, item, errors })
+      invalid.push({ index, item, errors });
     } else {
-      valid.push(item)
+      valid.push(item);
     }
-  })
+  });
 
   return {
     valid,
     invalid,
-    hasErrors: invalid.length > 0
-  }
+    hasErrors: invalid.length > 0,
+  };
 }
 
 /**
  * Batch operation result
  */
 export interface BatchOperationResult<T, R> {
-  successful: Array<{ item: T; result: R }>
-  failed: Array<{ item: T; error: Error | string }>
-  totalProcessed: number
-  successCount: number
-  failCount: number
+  successful: Array<{ item: T; result: R }>;
+  failed: Array<{ item: T; error: Error | string }>;
+  totalProcessed: number;
+  successCount: number;
+  failCount: number;
 }
 
 /**
@@ -92,50 +92,45 @@ export async function executeBatchOperation<T, R>(
   items: T[],
   operation: (item: T) => Promise<R>,
   options: {
-    batchSize?: number
-    concurrency?: number
-    onProgress?: (processed: number, total: number) => void
-    stopOnError?: boolean
+    batchSize?: number;
+    concurrency?: number;
+    onProgress?: (processed: number, total: number) => void;
+    stopOnError?: boolean;
   } = {}
 ): Promise<BatchOperationResult<T, R>> {
-  const {
-    batchSize = 10,
-    concurrency = 3,
-    onProgress,
-    stopOnError = false
-  } = options
+  const { batchSize = 10, concurrency = 3, onProgress, stopOnError = false } = options;
 
-  const successful: Array<{ item: T; result: R }> = []
-  const failed: Array<{ item: T; error: Error | string }> = []
-  let processed = 0
+  const successful: Array<{ item: T; result: R }> = [];
+  const failed: Array<{ item: T; error: Error | string }> = [];
+  let processed = 0;
 
-  const batches = createBatches(items, batchSize)
+  const batches = createBatches(items, batchSize);
 
   for (const batch of batches) {
     // Process batch with concurrency limit
-    const chunkSize = Math.ceil(batch.length / concurrency)
-    const chunks = createBatches(batch, chunkSize)
+    const chunkSize = Math.ceil(batch.length / concurrency);
+    const chunks = createBatches(batch, chunkSize);
 
     const chunkPromises = chunks.map(async (chunk) => {
       for (const item of chunk) {
         try {
-          const result = await operation(item)
-          successful.push({ item, result })
+          const result = await operation(item);
+          successful.push({ item, result });
         } catch (error) {
-          const errorMessage = error instanceof Error ? error : String(error)
-          failed.push({ item, error: errorMessage })
+          const errorMessage = error instanceof Error ? error : String(error);
+          failed.push({ item, error: errorMessage });
 
           if (stopOnError) {
-            throw error
+            throw error;
           }
         }
 
-        processed++
-        onProgress?.(processed, items.length)
+        processed++;
+        onProgress?.(processed, items.length);
       }
-    })
+    });
 
-    await Promise.all(chunkPromises)
+    await Promise.all(chunkPromises);
   }
 
   return {
@@ -143,8 +138,8 @@ export async function executeBatchOperation<T, R>(
     failed,
     totalProcessed: processed,
     successCount: successful.length,
-    failCount: failed.length
-  }
+    failCount: failed.length,
+  };
 }
 
 /**
@@ -159,28 +154,28 @@ export async function retryFailedItems<T, R>(
   operation: (item: T) => Promise<R>,
   maxRetries: number = 3
 ): Promise<BatchOperationResult<T, R>> {
-  const successful: Array<{ item: T; result: R }> = []
-  const failed: Array<{ item: T; error: Error | string }> = []
+  const successful: Array<{ item: T; result: R }> = [];
+  const failed: Array<{ item: T; error: Error | string }> = [];
 
   for (const { item } of failedItems) {
-    let lastError: Error | string = ''
-    let succeeded = false
+    let lastError: Error | string = '';
+    let succeeded = false;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const result = await operation(item)
-        successful.push({ item, result })
-        succeeded = true
-        break
+        const result = await operation(item);
+        successful.push({ item, result });
+        succeeded = true;
+        break;
       } catch (error) {
-        lastError = error instanceof Error ? error : String(error)
+        lastError = error instanceof Error ? error : String(error);
         // Wait before retry (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 100))
+        await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
       }
     }
 
     if (!succeeded) {
-      failed.push({ item, error: lastError })
+      failed.push({ item, error: lastError });
     }
   }
 
@@ -189,8 +184,8 @@ export async function retryFailedItems<T, R>(
     failed,
     totalProcessed: failedItems.length,
     successCount: successful.length,
-    failCount: failed.length
-  }
+    failCount: failed.length,
+  };
 }
 
 /**
@@ -200,7 +195,7 @@ export async function retryFailedItems<T, R>(
  * @returns Array of chunks
  */
 export function chunk<T>(array: T[], size: number): T[][] {
-  return createBatches(array, size)
+  return createBatches(array, size);
 }
 
 /**
@@ -209,5 +204,5 @@ export function chunk<T>(array: T[], size: number): T[][] {
  * @returns Flattened array
  */
 export function flatten<T>(arrays: T[][]): T[] {
-  return arrays.reduce((acc, arr) => acc.concat(arr), [])
+  return arrays.reduce((acc, arr) => acc.concat(arr), []);
 }

@@ -1,7 +1,7 @@
-import styled from 'styled-components'
-import { Button, Card, Tag, Badge, Empty } from 'antd'
-import { DesktopOutlined } from '@/utils/optimizedIcons'
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
+import styled from 'styled-components';
+import { Button, Card, Tag, Badge, Empty } from 'antd';
+import { DesktopOutlined } from '@/utils/optimizedIcons';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const TAG_VARIANTS = {
   team: {
@@ -28,9 +28,9 @@ const TAG_VARIANTS = {
     background: 'var(--color-secondary)',
     color: 'var(--color-text-inverse)',
   },
-} as const
+} as const;
 
-export type TagVariant = keyof typeof TAG_VARIANTS
+export type TagVariant = keyof typeof TAG_VARIANTS;
 
 export const MachineTableWrapper = styled.div`
   display: flex;
@@ -50,14 +50,14 @@ export const MachineTableWrapper = styled.div`
   .machine-table-row--selected td {
     background-color: var(--color-bg-selected);
   }
-`
+`;
 
 export const TableContainer = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-`
+`;
 
 export const BulkActionsBar = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
@@ -69,16 +69,16 @@ export const BulkActionsBar = styled.div`
   justify-content: space-between;
   border: 1px solid var(--color-border-secondary);
   gap: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const BulkActionsSummary = styled.span`
   font-weight: 600;
   color: var(--color-text-primary);
-`
+`;
 
 export const ViewToggleContainer = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const ViewToggleButton = styled(Button)`
   && {
@@ -89,26 +89,26 @@ export const ViewToggleButton = styled(Button)`
     align-items: center;
     justify-content: center;
   }
-`
+`;
 
 export const ViewToggleDivider = styled.span`
   width: 1px;
   height: 24px;
   background-color: var(--color-border-secondary);
   margin: 0 ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const EmptyState = styled(Empty).attrs({
   image: Empty.PRESENTED_IMAGE_SIMPLE,
 })`
   margin-top: ${({ theme }) => theme.spacing.XL}px;
-`
+`;
 
 export const GroupedCardStack = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.XL}px;
-`
+`;
 
 export const GroupCardContainer = styled(Card)<{ $isAlternate: boolean }>`
   && {
@@ -127,32 +127,32 @@ export const GroupCardContainer = styled(Card)<{ $isAlternate: boolean }>`
     padding: 0;
     background-color: ${({ $isAlternate }) => ($isAlternate ? 'var(--color-bg-hover)' : 'var(--color-bg-primary)')};
   }
-`
+`;
 
 export const GroupCardHeader = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.SM}px;
   padding: ${({ theme }) => theme.spacing.XS}px 0;
-`
+`;
 
 export const GroupCardIndicator = styled.div<{ $color?: string }>`
   width: 4px;
   height: ${DESIGN_TOKENS.DIMENSIONS.ICON_XL}px;
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   background-color: ${({ $color }) => $color || 'var(--color-text-secondary)'};
-`
+`;
 
 export const GroupCardTitle = styled.span`
   font-size: 18px;
   font-weight: 700;
   color: var(--color-text-primary);
-`
+`;
 
 export const GroupCardCount = styled.span`
   font-size: 14px;
   color: var(--color-text-secondary);
-`
+`;
 
 export const GroupCardRow = styled.div<{ $isStriped: boolean }>`
   padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
@@ -171,34 +171,34 @@ export const GroupCardRow = styled.div<{ $isStriped: boolean }>`
   &:last-child {
     border-bottom: none;
   }
-`
+`;
 
 export const GroupRowContent = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.LG}px;
-`
+`;
 
 export const MachineNameIcon = styled(DesktopOutlined)`
   font-size: ${DESIGN_TOKENS.DIMENSIONS.ICON_MD}px;
   color: var(--color-primary);
-`
+`;
 
 export const GroupRowIcon = styled(MachineNameIcon)`
   font-size: ${DESIGN_TOKENS.DIMENSIONS.ICON_LG}px;
-`
+`;
 
 export const GroupRowInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 export const GroupRowName = styled.span`
   font-size: 16px;
   font-weight: 600;
   color: var(--color-text-primary);
-`
+`;
 
 export const GroupRowActionButton = styled(Button)`
   && {
@@ -209,24 +209,24 @@ export const GroupRowActionButton = styled(Button)`
     align-items: center;
     gap: ${({ theme }) => theme.spacing.XS}px;
   }
-`
+`;
 
 export const StatusIcon = styled.span<{ $status: 'online' | 'offline' | 'unknown' }>`
   font-size: 18px;
   color: ${({ $status }) => {
     switch ($status) {
       case 'online':
-        return 'var(--color-success)'
+        return 'var(--color-success)';
       case 'offline':
-        return 'var(--color-text-tertiary)'
+        return 'var(--color-text-tertiary)';
       default:
-        return 'var(--color-text-quaternary)'
+        return 'var(--color-text-quaternary)';
     }
   }};
   display: inline-flex;
   align-items: center;
   justify-content: center;
-`
+`;
 
 export const StyledTag = styled(Tag)<{ $variant: TagVariant }>`
   && {
@@ -241,18 +241,18 @@ export const StyledTag = styled(Tag)<{ $variant: TagVariant }>`
     background-color: ${({ $variant }) => TAG_VARIANTS[$variant].background};
     color: ${({ $variant }) => TAG_VARIANTS[$variant].color};
   }
-`
+`;
 
 export const GroupHeaderTag = styled(StyledTag)`
   && {
     font-size: 16px;
     padding: 4px ${({ theme }) => theme.spacing.MD}px;
   }
-`
+`;
 
 export const StyledBadge = styled(Badge)<{ $isPositive: boolean }>`
   && .ant-badge-count {
     background-color: ${({ $isPositive }) => ($isPositive ? 'var(--color-success)' : 'var(--color-border-secondary)')};
     color: ${({ $isPositive }) => ($isPositive ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)')};
   }
-`
+`;

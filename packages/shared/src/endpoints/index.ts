@@ -146,6 +146,6 @@ export const endpoints = {
   base: {
     storedProcedure: '/StoredProcedure',
   },
-} as const
+} as const;
 
-export type EndpointCategories = typeof endpoints
+export type EndpointCategories = typeof endpoints;

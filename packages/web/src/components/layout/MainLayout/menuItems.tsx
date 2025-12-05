@@ -10,9 +10,9 @@ import {
   CloudServerOutlined,
   TeamOutlined,
   DashboardOutlined,
-} from '@/utils/optimizedIcons'
-import type { TFunction } from 'i18next'
-import type { MenuConfig } from './types'
+} from '@/utils/optimizedIcons';
+import type { TFunction } from 'i18next';
+import type { MenuConfig } from './types';
 
 export const getMenuItems = (t: TFunction): MenuConfig[] => [
   {
@@ -173,4 +173,4 @@ export const getMenuItems = (t: TFunction): MenuConfig[] => [
     featureFlag: 'marketplace',
     'data-testid': 'main-nav-marketplace',
   },
-]
+];

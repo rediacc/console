@@ -27,7 +27,7 @@ export function escapeCSVValue(value: unknown): string {
  */
 export function buildCSVContent(headers: string[], rows: Array<Array<unknown>>): string {
   const headerRow = headers.join(',');
-  const dataRows = rows.map(row => row.map(escapeCSVValue).join(','));
+  const dataRows = rows.map((row) => row.map(escapeCSVValue).join(','));
   return [headerRow, ...dataRows].join('\n');
 }
 
@@ -41,9 +41,9 @@ export function buildCSVFromObjects<T extends Record<string, unknown>>(
   data: T[],
   columns: Array<{ key: keyof T; header?: string; formatter?: (value: T[keyof T]) => string }>
 ): string {
-  const headers = columns.map(col => col.header || String(col.key));
-  const rows = data.map(item =>
-    columns.map(col => {
+  const headers = columns.map((col) => col.header || String(col.key));
+  const rows = data.map((item) =>
+    columns.map((col) => {
       const value = item[col.key];
       return col.formatter ? col.formatter(value) : value;
     })

@@ -1,12 +1,12 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react';
 
 export interface UseExpandableTableReturn {
-  expandedRowKeys: string[]
-  toggleRow: (key: string) => void
-  expandAll: (keys: string[]) => void
-  collapseAll: () => void
-  isExpanded: (key: string) => boolean
-  setExpandedRowKeys: React.Dispatch<React.SetStateAction<string[]>>
+  expandedRowKeys: string[];
+  toggleRow: (key: string) => void;
+  expandAll: (keys: string[]) => void;
+  collapseAll: () => void;
+  isExpanded: (key: string) => boolean;
+  setExpandedRowKeys: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 /**
@@ -27,27 +27,28 @@ export interface UseExpandableTableReturn {
  * })}
  */
 export function useExpandableTable(initialKeys: string[] = []): UseExpandableTableReturn {
-  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>(initialKeys)
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>(initialKeys);
 
   const toggleRow = useCallback((key: string) => {
     setExpandedRowKeys((prev) =>
-      prev.includes(key)
-        ? prev.filter((k) => k !== key)
-        : [...prev, key]
-    )
-  }, [])
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  }, []);
 
   const expandAll = useCallback((keys: string[]) => {
-    setExpandedRowKeys(keys)
-  }, [])
+    setExpandedRowKeys(keys);
+  }, []);
 
   const collapseAll = useCallback(() => {
-    setExpandedRowKeys([])
-  }, [])
+    setExpandedRowKeys([]);
+  }, []);
 
-  const isExpanded = useCallback((key: string) => {
-    return expandedRowKeys.includes(key)
-  }, [expandedRowKeys])
+  const isExpanded = useCallback(
+    (key: string) => {
+      return expandedRowKeys.includes(key);
+    },
+    [expandedRowKeys]
+  );
 
   return {
     expandedRowKeys,
@@ -56,5 +57,5 @@ export function useExpandableTable(initialKeys: string[] = []): UseExpandableTab
     collapseAll,
     isExpanded,
     setExpandedRowKeys,
-  }
+  };
 }

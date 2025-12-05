@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import type { ComponentPropsWithoutRef } from 'react'
-import { Tag, Row, Col, List } from 'antd'
-import { ModalSize } from '@/types/modal'
+import React, { useState, useEffect } from 'react';
+import type { ComponentPropsWithoutRef } from 'react';
+import { Tag, Row, Col, List } from 'antd';
+import { ModalSize } from '@/types/modal';
 import {
   RocketOutlined,
   FileTextOutlined,
@@ -9,17 +9,17 @@ import {
   SafetyOutlined,
   AppstoreOutlined,
   CheckCircleOutlined,
-  FileOutlined
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import ReactMarkdown from 'react-markdown'
-import type { Components as MarkdownComponents } from 'react-markdown'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import type { SyntaxHighlighterProps } from 'react-syntax-highlighter'
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import { templateService } from '@/services/templateService'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
-import { TabLabel } from '@/styles/primitives'
+  FileOutlined,
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import ReactMarkdown from 'react-markdown';
+import type { Components as MarkdownComponents } from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { templateService } from '@/services/templateService';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { TabLabel } from '@/styles/primitives';
 import {
   StyledModal,
   TitleStack,
@@ -63,43 +63,43 @@ import {
   SecondaryActionButton,
   IconLabel,
   SuccessIcon,
-} from './styles'
+} from './styles';
 
 interface TemplateFile {
-  name: string
-  path: string
-  content: string
+  name: string;
+  path: string;
+  content: string;
 }
 
 interface Template {
-  id?: string
-  name: string
-  readme: string
-  category?: string
-  tags?: string[]
-  difficulty?: 'beginner' | 'intermediate' | 'advanced'
-  iconUrl?: string
-  download_url?: string
+  id?: string;
+  name: string;
+  readme: string;
+  category?: string;
+  tags?: string[];
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  iconUrl?: string;
+  download_url?: string;
 }
 
 interface TemplateDetails {
-  name: string
-  readme: string
-  files: TemplateFile[]
+  name: string;
+  readme: string;
+  files: TemplateFile[];
 }
 
 interface TemplatePreviewModalProps {
-  open: boolean
-  template: Template | null
-  templateName?: string | null // For backward compatibility with TemplateDetailsModal
-  onClose: () => void
-  onUseTemplate: (template: Template | string) => void
-  context?: 'marketplace' | 'repo-creation'
+  open: boolean;
+  template: Template | null;
+  templateName?: string | null; // For backward compatibility with TemplateDetailsModal
+  onClose: () => void;
+  onUseTemplate: (template: Template | string) => void;
+  context?: 'marketplace' | 'repo-creation';
 }
 
 type CodeRendererProps = ComponentPropsWithoutRef<'code'> & {
-  inline?: boolean
-}
+  inline?: boolean;
+};
 
 const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   open,
@@ -107,68 +107,63 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   templateName,
   onClose,
   onUseTemplate,
-  context = 'marketplace'
+  context = 'marketplace',
 }) => {
-  const { t } = useTranslation(['marketplace', 'resources', 'common'])
-  const [loading, setLoading] = useState(false)
-  const [templateDetails, setTemplateDetails] = useState<TemplateDetails | null>(null)
-  const [activeTab, setActiveTab] = useState('overview')
-  const [selectedFileIndex, setSelectedFileIndex] = useState(0)
-  const [loadedTemplate, setLoadedTemplate] = useState<Template | null>(null)
-  const [iconFailed, setIconFailed] = useState(false)
+  const { t } = useTranslation(['marketplace', 'resources', 'common']);
+  const [loading, setLoading] = useState(false);
+  const [templateDetails, setTemplateDetails] = useState<TemplateDetails | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedFileIndex, setSelectedFileIndex] = useState(0);
+  const [loadedTemplate, setLoadedTemplate] = useState<Template | null>(null);
+  const [iconFailed, setIconFailed] = useState(false);
 
-  const codeTheme = vscDarkPlus as SyntaxHighlighterProps['style']
+  const codeTheme = vscDarkPlus as SyntaxHighlighterProps['style'];
 
   const markdownComponents: MarkdownComponents = {
     code({ inline, className, children }: CodeRendererProps) {
-      const match = /language-(\w+)/.exec(className ?? '')
+      const match = /language-(\w+)/.exec(className ?? '');
 
       if (!inline && match) {
         return (
-          <SyntaxHighlighter
-            style={codeTheme}
-            language={match[1]}
-            PreTag="div"
-          >
+          <SyntaxHighlighter style={codeTheme} language={match[1]} PreTag="div">
             {String(children).replace(/\n$/, '')}
           </SyntaxHighlighter>
-        )
+        );
       }
 
-      return (
-        <code className={className}>
-          {children}
-        </code>
-      )
+      return <code className={className}>{children}</code>;
     },
-  }
+  };
 
   // Support both template object and templateName for backward compatibility
-  const effectiveTemplate = loadedTemplate || template || (templateName ? { name: templateName, readme: '' } : null)
+  const effectiveTemplate =
+    loadedTemplate || template || (templateName ? { name: templateName, readme: '' } : null);
 
   useEffect(() => {
     if (!visible) {
       // Reset state when modal is closed
-      setTemplateDetails(null)
-      setLoadedTemplate(null)
-      setLoading(false)
-      setActiveTab('overview')
-      setSelectedFileIndex(0)
-      return
+      setTemplateDetails(null);
+      setLoadedTemplate(null);
+      setLoading(false);
+      setActiveTab('overview');
+      setSelectedFileIndex(0);
+      return;
     }
 
     const fetchTemplateDetails = async () => {
-      let baseTemplate = template || (templateName ? { name: templateName, readme: '' } : null)
-      if (!baseTemplate) return
+      let baseTemplate = template || (templateName ? { name: templateName, readme: '' } : null);
+      if (!baseTemplate) return;
 
       try {
-        setLoading(true)
+        setLoading(true);
 
         // For repo creation context, fetch the template from templates.json to get README
         if (context === 'repo-creation' && templateName && !baseTemplate.readme) {
           try {
-            const templates: Template[] = await templateService.fetchTemplates()
-            const foundTemplate = templates.find((templateItem) => templateItem.name === templateName)
+            const templates: Template[] = await templateService.fetchTemplates();
+            const foundTemplate = templates.find(
+              (templateItem) => templateItem.name === templateName
+            );
             if (foundTemplate) {
               // Set the loaded template with README content
               const fullTemplate = {
@@ -178,102 +173,109 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                 category: foundTemplate.category,
                 tags: foundTemplate.tags,
                 difficulty: foundTemplate.difficulty,
-                download_url: foundTemplate.download_url
-              }
-              setLoadedTemplate(fullTemplate)
-              baseTemplate = fullTemplate // Use the full template for fetching details
+                download_url: foundTemplate.download_url,
+              };
+              setLoadedTemplate(fullTemplate);
+              baseTemplate = fullTemplate; // Use the full template for fetching details
             }
           } catch (templatesError) {
-            console.error('Failed to fetch templates:', templatesError)
+            console.error('Failed to fetch templates:', templatesError);
           }
         }
 
         // Fetch the detailed template data (files, etc.)
-        const data = await templateService.fetchTemplateData(baseTemplate)
-        setTemplateDetails(data)
+        const data = await templateService.fetchTemplateData(baseTemplate);
+        setTemplateDetails(data);
       } catch (error) {
         // Failed to fetch template details
-        console.error('Failed to fetch template details:', error)
+        console.error('Failed to fetch template details:', error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchTemplateDetails()
-    setActiveTab('overview')
-    setSelectedFileIndex(0)
-  }, [open, template, templateName, context])
+    fetchTemplateDetails();
+    setActiveTab('overview');
+    setSelectedFileIndex(0);
+  }, [open, template, templateName, context]);
 
   useEffect(() => {
-    setIconFailed(false)
-  }, [effectiveTemplate?.iconUrl])
+    setIconFailed(false);
+  }, [effectiveTemplate?.iconUrl]);
 
-  if (!effectiveTemplate) return null
+  if (!effectiveTemplate) return null;
 
   // Use generic icon for all templates (backend provides proper names)
   const getTemplateIcon = () => (
     <TemplateIconWrapper>
       <AppstoreOutlined />
     </TemplateIconWrapper>
-  )
+  );
 
   const getDifficultyColor = (difficulty?: string) => {
     switch (difficulty) {
-      case 'beginner': return 'success'
-      case 'intermediate': return 'warning'
-      case 'advanced': return 'error'
-      default: return 'default'
+      case 'beginner':
+        return 'success';
+      case 'intermediate':
+        return 'warning';
+      case 'advanced':
+        return 'error';
+      default:
+        return 'default';
     }
-  }
+  };
 
   const renderFileContent = (file: TemplateFile) => {
-    const language = file.name.endsWith('.yaml') || file.name.endsWith('.yml') ? 'yaml' :
-                    file.name.endsWith('.json') ? 'json' :
-                    file.name.endsWith('.sh') ? 'bash' :
-                    file.name.endsWith('.env') ? 'bash' :
-                    file.name.endsWith('.md') ? 'markdown' : 'text'
+    const language =
+      file.name.endsWith('.yaml') || file.name.endsWith('.yml')
+        ? 'yaml'
+        : file.name.endsWith('.json')
+          ? 'json'
+          : file.name.endsWith('.sh')
+            ? 'bash'
+            : file.name.endsWith('.env')
+              ? 'bash'
+              : file.name.endsWith('.md')
+                ? 'markdown'
+                : 'text';
 
     if (language === 'markdown') {
-      return (
-        <ReactMarkdown components={markdownComponents}>
-          {file.content}
-        </ReactMarkdown>
-      )
+      return <ReactMarkdown components={markdownComponents}>{file.content}</ReactMarkdown>;
     }
 
     return (
       <SyntaxHighlighter language={language} style={codeTheme}>
         {file.content}
       </SyntaxHighlighter>
-    )
-  }
+    );
+  };
 
   const getActionButtonText = () => {
     if (context === 'marketplace') {
-      return t('marketplace:deployNow')
+      return t('marketplace:deployNow');
     }
-    return t('resources:templates.useTemplate')
-  }
+    return t('resources:templates.useTemplate');
+  };
 
   const getActionButtonIcon = () => {
     if (context === 'marketplace') {
-      return <RocketOutlined />
+      return <RocketOutlined />;
     }
-    return <CheckCircleOutlined />
-  }
+    return <CheckCircleOutlined />;
+  };
 
   const handleAction = () => {
     if (context === 'marketplace') {
-      onUseTemplate(effectiveTemplate)
+      onUseTemplate(effectiveTemplate);
     } else {
       // For repo creation, pass the template name
-      onUseTemplate(effectiveTemplate.name)
+      onUseTemplate(effectiveTemplate.name);
     }
-    onClose()
-  }
+    onClose();
+  };
 
   const modalTitle =
-    context === 'marketplace' ? effectiveTemplate.name : t('resources:templates.templateDetails')
+    context === 'marketplace' ? effectiveTemplate.name : t('resources:templates.templateDetails');
 
   const overviewContent = (
     <OverviewScroll>
@@ -282,23 +284,21 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           <DescriptionCard
             title={
               <CardTitle>
-                {context === 'marketplace' ? t('marketplace:description') : t('resources:templates.overview')}
+                {context === 'marketplace'
+                  ? t('marketplace:description')
+                  : t('resources:templates.overview')}
               </CardTitle>
             }
             data-testid={context === 'marketplace' ? undefined : 'template-details-readme-content'}
           >
             <MarkdownContent>
-              <ReactMarkdown>
-                {templateDetails?.readme || effectiveTemplate.readme}
-              </ReactMarkdown>
+              <ReactMarkdown>{templateDetails?.readme || effectiveTemplate.readme}</ReactMarkdown>
             </MarkdownContent>
           </DescriptionCard>
         </Col>
         {context === 'marketplace' && (
           <Col xs={24} md={8}>
-            <FeatureCard
-              title={<CardTitle>{t('marketplace:features')}</CardTitle>}
-            >
+            <FeatureCard title={<CardTitle>{t('marketplace:features')}</CardTitle>}>
               <FeatureList orientation="vertical" size="small">
                 {effectiveTemplate.tags?.map((tag) => (
                   <FeatureItem key={tag} size="small">
@@ -314,15 +314,19 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         )}
       </Row>
     </OverviewScroll>
-  )
+  );
 
   const filesContent = loading ? (
-    <LoadingContainer data-testid={context === 'marketplace' ? undefined : 'template-details-loading'}>
+    <LoadingContainer
+      data-testid={context === 'marketplace' ? undefined : 'template-details-loading'}
+    >
       <LoadingWrapper loading centered minHeight={160}>
         <div />
       </LoadingWrapper>
       <LoadingText>
-        {context === 'marketplace' ? t('marketplace:loadingFiles') : t('resources:templates.loadingDetails')}
+        {context === 'marketplace'
+          ? t('marketplace:loadingFiles')
+          : t('resources:templates.loadingDetails')}
       </LoadingText>
     </LoadingContainer>
   ) : templateDetails && templateDetails.files.length > 0 ? (
@@ -332,7 +336,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           title={
             <IconLabel>
               <FileOutlined />
-              {context === 'marketplace' ? t('marketplace:fileList') : t('resources:templates.files')}
+              {context === 'marketplace'
+                ? t('marketplace:fileList')
+                : t('resources:templates.files')}
             </IconLabel>
           }
           data-testid={context === 'marketplace' ? undefined : 'template-details-files-content'}
@@ -375,7 +381,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             </FilePreviewHeader>
           }
           data-testid={
-            context === 'marketplace' ? undefined : `template-details-file-content-${selectedFileIndex}`
+            context === 'marketplace'
+              ? undefined
+              : `template-details-file-content-${selectedFileIndex}`
           }
         >
           <FilePreviewBody>
@@ -387,13 +395,15 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     </FilesLayout>
   ) : (
     <RoundedAlert
-      message={context === 'marketplace' ? t('marketplace:noFiles') : t('resources:templates.noReadme')}
+      message={
+        context === 'marketplace' ? t('marketplace:noFiles') : t('resources:templates.noReadme')
+      }
       description={context === 'marketplace' ? t('marketplace:noFilesDesc') : undefined}
       type="info"
       showIcon
       data-testid={context === 'marketplace' ? undefined : 'template-details-readme-empty'}
     />
-  )
+  );
 
   const securityContent = (
     <SecurityScroll>
@@ -430,13 +440,13 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 
           <SecurityTitle>Container Security</SecurityTitle>
           <BodyParagraph>
-            Always review container configurations and ensure they follow security best practices for your deployment
-            environment.
+            Always review container configurations and ensure they follow security best practices
+            for your deployment environment.
           </BodyParagraph>
         </AlertStack>
       </SecurityCard>
     </SecurityScroll>
-  )
+  );
 
   const tabItems = [
     {
@@ -444,7 +454,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       label: (
         <TabLabel>
           <FileTextOutlined />
-          {context === 'marketplace' ? t('marketplace:overview') : t('resources:templates.overview')}
+          {context === 'marketplace'
+            ? t('marketplace:overview')
+            : t('resources:templates.overview')}
         </TabLabel>
       ),
       children: overviewContent,
@@ -471,11 +483,13 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       ),
       children: securityContent,
     },
-  ]
+  ];
 
   return (
     <StyledModal
-      data-testid={context === 'marketplace' ? 'marketplace-preview-modal' : 'template-details-modal'}
+      data-testid={
+        context === 'marketplace' ? 'marketplace-preview-modal' : 'template-details-modal'
+      }
       title={
         <TitleStack>
           {effectiveTemplate.iconUrl && !iconFailed ? (
@@ -513,7 +527,11 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         <SecondaryActionButton
           key="close"
           onClick={onClose}
-          data-testid={context === 'marketplace' ? 'marketplace-preview-close-button' : 'template-details-close-button'}
+          data-testid={
+            context === 'marketplace'
+              ? 'marketplace-preview-close-button'
+              : 'template-details-close-button'
+          }
         >
           {t('common:actions.close')}
         </SecondaryActionButton>,
@@ -522,7 +540,11 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           type="primary"
           icon={getActionButtonIcon()}
           onClick={handleAction}
-          data-testid={context === 'marketplace' ? 'marketplace-preview-deploy-button' : 'template-details-select-button'}
+          data-testid={
+            context === 'marketplace'
+              ? 'marketplace-preview-deploy-button'
+              : 'template-details-select-button'
+          }
         >
           {getActionButtonText()}
         </PrimaryActionButton>,
@@ -533,10 +555,12 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         onChange={setActiveTab}
         items={tabItems}
         size="large"
-        data-testid={context === 'marketplace' ? 'marketplace-preview-tabs' : 'template-details-tabs'}
+        data-testid={
+          context === 'marketplace' ? 'marketplace-preview-tabs' : 'template-details-tabs'
+        }
       />
     </StyledModal>
-  )
-}
+  );
+};
 
-export default TemplatePreviewModal
+export default TemplatePreviewModal;

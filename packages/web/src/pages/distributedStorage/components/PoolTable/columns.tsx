@@ -1,32 +1,25 @@
-import type { ColumnsType } from 'antd/es/table'
-import type { TFunction } from 'i18next'
+import type { ColumnsType } from 'antd/es/table';
+import type { TFunction } from 'i18next';
 import {
   EditOutlined,
   FunctionOutlined,
   HistoryOutlined,
   DeleteOutlined,
-} from '@/utils/optimizedIcons'
-import type { DistributedStoragePool } from '@/api/queries/distributedStorage'
-import { createSorter } from '@/core'
-import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
-import { VersionTag, createActionColumn } from '@/components/common/columns'
-import { getPoolFunctionMenuItems } from './menus'
-import {
-  PoolNameCell,
-  ExpandIcon,
-  PoolIcon,
-  PoolNameText,
-} from './styles'
+} from '@/utils/optimizedIcons';
+import type { DistributedStoragePool } from '@/api/queries/distributedStorage';
+import { createSorter } from '@/core';
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
+import { VersionTag, createActionColumn } from '@/components/common/columns';
+import { getPoolFunctionMenuItems } from './menus';
+import { PoolNameCell, ExpandIcon, PoolIcon, PoolNameText } from './styles';
 
 interface BuildPoolColumnsParams {
-  t: TFunction<'distributedStorage' | 'common'>
-  expandedRowKeys: string[]
-  onEditPool: (pool: DistributedStoragePool) => void
-  onDeletePool: (pool: DistributedStoragePool) => void
-  onRunFunction: (
-    pool: DistributedStoragePool & { preselectedFunction?: string },
-  ) => void
-  onShowAuditTrace: (pool: DistributedStoragePool) => void
+  t: TFunction<'distributedStorage' | 'common'>;
+  expandedRowKeys: string[];
+  onEditPool: (pool: DistributedStoragePool) => void;
+  onDeletePool: (pool: DistributedStoragePool) => void;
+  onRunFunction: (pool: DistributedStoragePool & { preselectedFunction?: string }) => void;
+  onShowAuditTrace: (pool: DistributedStoragePool) => void;
 }
 
 export const buildPoolColumns = ({
@@ -44,14 +37,14 @@ export const buildPoolColumns = ({
     ellipsis: true,
     sorter: createSorter<DistributedStoragePool>('poolName'),
     render: (name: string, record: DistributedStoragePool) => {
-      const isExpanded = expandedRowKeys.includes(record.poolGuid || '')
+      const isExpanded = expandedRowKeys.includes(record.poolGuid || '');
       return (
         <PoolNameCell>
           <ExpandIcon $expanded={isExpanded} />
           <PoolIcon />
           <PoolNameText>{name}</PoolNameText>
         </PoolNameCell>
-      )
+      );
     },
   },
   {
@@ -62,9 +55,7 @@ export const buildPoolColumns = ({
     align: 'center',
     sorter: createSorter<DistributedStoragePool>('vaultVersion'),
     render: (version: number) => (
-      <VersionTag>
-        {t('common:general.versionFormat', { version })}
-      </VersionTag>
+      <VersionTag>{t('common:general.versionFormat', { version })}</VersionTag>
     ),
   },
   createActionColumn<DistributedStoragePool>({
@@ -87,9 +78,9 @@ export const buildPoolColumns = ({
             dropdownItems: getPoolFunctionMenuItems(t),
             onDropdownClick: (key) => {
               if (key === 'advanced') {
-                onRunFunction(record)
+                onRunFunction(record);
               } else {
-                onRunFunction({ ...record, preselectedFunction: key })
+                onRunFunction({ ...record, preselectedFunction: key });
               }
             },
           },
@@ -117,4 +108,4 @@ export const buildPoolColumns = ({
       />
     ),
   }),
-]
+];

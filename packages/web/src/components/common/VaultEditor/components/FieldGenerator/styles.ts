@@ -1,9 +1,9 @@
-import styled from 'styled-components'
-import { Radio, Button, Space } from 'antd'
+import styled from 'styled-components';
+import { Radio, Button, Space } from 'antd';
 
 export const PopoverContainer = styled.div`
   width: 400px;
-`
+`;
 
 export const OptionLabel = styled.label`
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
@@ -11,14 +11,14 @@ export const OptionLabel = styled.label`
   display: block;
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 export const OptionGroup = styled(Radio.Group)`
   && {
     display: block;
     margin-top: ${({ theme }) => theme.spacing.XS}px;
   }
-`
+`;
 
 export const OptionRadio = styled(Radio)`
   && {
@@ -26,13 +26,13 @@ export const OptionRadio = styled(Radio)`
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     margin-bottom: ${({ theme }) => theme.spacing.XS}px;
   }
-`
+`;
 
 export const GeneratedValueCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const ValueHeader = styled.div`
   display: flex;
@@ -41,7 +41,7 @@ export const ValueHeader = styled.div`
   padding: ${({ theme }) => theme.spacing.XS}px 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
-`
+`;
 
 export const ValueContent = styled.div`
   word-break: break-all;
@@ -53,7 +53,7 @@ export const ValueContent = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   font-size: ${({ theme }) => theme.fontSize.XS}px;
   line-height: ${({ theme }) => theme.lineHeight.NORMAL};
-`
+`;
 
 export const ActionRow = styled(Space)`
   && {
@@ -61,7 +61,7 @@ export const ActionRow = styled(Space)`
     width: 100%;
     justify-content: flex-end;
   }
-`
+`;
 
 export const ControlButton = styled(Button)`
   && {
@@ -69,7 +69,7 @@ export const ControlButton = styled(Button)`
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
-`
+`;
 
 export const GeneratorButton = styled(Button)`
   && {
@@ -78,24 +78,24 @@ export const GeneratorButton = styled(Button)`
     min-width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
-`
+`;
 
 export const TitleStack = styled(Space)`
   && {
     gap: ${({ theme }) => theme.spacing.SM}px;
     align-items: center;
   }
-`
+`;
 
 export const CopyButton = styled(Button)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     font-size: ${({ theme }) => theme.fontSize.XS}px;
   }
-`
+`;
 
 export const OptionsStack = styled(Space)`
   && {
     width: 100%;
   }
-`
+`;

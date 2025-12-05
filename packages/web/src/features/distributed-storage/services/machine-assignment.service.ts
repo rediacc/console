@@ -1,4 +1,4 @@
-import type { Machine, MachineAssignmentType } from '@/types'
+import type { Machine, MachineAssignmentType } from '@/types';
 import type {
   MachineAssignment,
   BulkOperationRequest,
@@ -6,14 +6,14 @@ import type {
   ConflictResolutionResult,
   DistributedStorageResource,
   AssignmentResult,
-  MachineAssignmentSummary
-} from '../models/machine-assignment.model'
-import { MachineValidationService } from './machine-validation.service'
-import type { ValidationContext } from '../models/machine-validation.model'
+  MachineAssignmentSummary,
+} from '../models/machine-assignment.model';
+import { MachineValidationService } from './machine-validation.service';
+import type { ValidationContext } from '../models/machine-validation.model';
 
 interface AssignmentOperationResult {
-  success: boolean
-  machineName: string
+  success: boolean;
+  machineName: string;
 }
 
 export class MachineAssignmentService {
@@ -23,16 +23,16 @@ export class MachineAssignmentService {
   static getMachineAssignmentType(machine: Machine): MachineAssignmentType {
     // Check cluster assignment first (stored directly on machine)
     if (machine.distributedStorageClusterName) {
-      return 'CLUSTER'
+      return 'CLUSTER';
     }
 
     // Check assignment status for other types
     if (machine.assignmentStatus) {
-      return machine.assignmentStatus.assignmentType
+      return machine.assignmentStatus.assignmentType;
     }
 
     // Default to available
-    return 'AVAILABLE'
+    return 'AVAILABLE';
   }
 
   /**
@@ -41,15 +41,15 @@ export class MachineAssignmentService {
   static getMachineAssignmentDetails(machine: Machine): string | null {
     // Cluster assignment
     if (machine.distributedStorageClusterName) {
-      return `Assigned to cluster: ${machine.distributedStorageClusterName}`
+      return `Assigned to cluster: ${machine.distributedStorageClusterName}`;
     }
 
     // Other assignments from status
     if (machine.assignmentStatus?.assignmentDetails) {
-      return machine.assignmentStatus.assignmentDetails
+      return machine.assignmentStatus.assignmentDetails;
     }
 
-    return null
+    return null;
   }
 
   /**
@@ -60,56 +60,53 @@ export class MachineAssignmentService {
       machineId: machine.machineGuid || '',
       machineName: machine.machineName,
       assignmentType: this.getMachineAssignmentType(machine),
-      resourceName: machine.distributedStorageClusterName ||
-                   machine.assignmentStatus?.assignmentDetails?.split(': ')[1]
-    }
+      resourceName:
+        machine.distributedStorageClusterName ||
+        machine.assignmentStatus?.assignmentDetails?.split(': ')[1],
+    };
   }
 
   /**
    * Check if a machine can be assigned to a specific resource type
    */
-  static canAssignMachine(
-    machine: Machine,
-    targetType: 'cluster' | 'image' | 'clone'
-  ): boolean {
-    const currentType = this.getMachineAssignmentType(machine)
+  static canAssignMachine(machine: Machine, targetType: 'cluster' | 'image' | 'clone'): boolean {
+    const currentType = this.getMachineAssignmentType(machine);
 
     // Available machines can be assigned to anything
     if (currentType === 'AVAILABLE') {
-      return true
+      return true;
     }
 
     // Clones can coexist with other assignments
     if (targetType === 'clone') {
-      return true
+      return true;
     }
 
     // Cluster and image assignments are exclusive
-    if ((targetType === 'cluster' || targetType === 'image') && 
-        (currentType === 'CLUSTER' || currentType === 'IMAGE')) {
-      return false
+    if (
+      (targetType === 'cluster' || targetType === 'image') &&
+      (currentType === 'CLUSTER' || currentType === 'IMAGE')
+    ) {
+      return false;
     }
 
-    return true
+    return true;
   }
 
   /**
    * Format a user-friendly assignment message
    */
-  static formatAssignmentMessage(
-    type: MachineAssignmentType,
-    resourceName?: string
-  ): string {
+  static formatAssignmentMessage(type: MachineAssignmentType, resourceName?: string): string {
     switch (type) {
       case 'CLUSTER':
-        return resourceName ? `Assigned to cluster: ${resourceName}` : 'Assigned to cluster'
+        return resourceName ? `Assigned to cluster: ${resourceName}` : 'Assigned to cluster';
       case 'IMAGE':
-        return resourceName ? `Assigned to image: ${resourceName}` : 'Assigned to image'
+        return resourceName ? `Assigned to image: ${resourceName}` : 'Assigned to image';
       case 'CLONE':
-        return resourceName ? `Assigned to clone: ${resourceName}` : 'Assigned to clone'
+        return resourceName ? `Assigned to clone: ${resourceName}` : 'Assigned to clone';
       case 'AVAILABLE':
       default:
-        return 'Available for assignment'
+        return 'Available for assignment';
     }
   }
 
@@ -120,30 +117,28 @@ export class MachineAssignmentService {
     machines: Machine[],
     targetType: 'cluster' | 'image' | 'clone'
   ): Machine[] {
-    return machines.filter(machine => this.canAssignMachine(machine, targetType))
+    return machines.filter((machine) => this.canAssignMachine(machine, targetType));
   }
 
   /**
    * Group machines by their assignment type
    */
-  static groupMachinesByAssignment(
-    machines: Machine[]
-  ): Map<MachineAssignmentType, Machine[]> {
-    const groups = new Map<MachineAssignmentType, Machine[]>()
+  static groupMachinesByAssignment(machines: Machine[]): Map<MachineAssignmentType, Machine[]> {
+    const groups = new Map<MachineAssignmentType, Machine[]>();
 
     // Initialize all types
-    const types: MachineAssignmentType[] = ['AVAILABLE', 'CLUSTER', 'IMAGE', 'CLONE']
-    types.forEach(type => groups.set(type, []))
+    const types: MachineAssignmentType[] = ['AVAILABLE', 'CLUSTER', 'IMAGE', 'CLONE'];
+    types.forEach((type) => groups.set(type, []));
 
     // Group machines
-    machines.forEach(machine => {
-      const type = this.getMachineAssignmentType(machine)
-      const group = groups.get(type) || []
-      group.push(machine)
-      groups.set(type, group)
-    })
+    machines.forEach((machine) => {
+      const type = this.getMachineAssignmentType(machine);
+      const group = groups.get(type) || [];
+      group.push(machine);
+      groups.set(type, group);
+    });
 
-    return groups
+    return groups;
   }
 
   /**
@@ -161,8 +156,8 @@ export class MachineAssignmentService {
       operation,
       targetType,
       targetResource,
-      teamName
-    }
+      teamName,
+    };
   }
 
   /**
@@ -173,19 +168,20 @@ export class MachineAssignmentService {
     targetType: 'cluster' | 'image' | 'clone',
     targetResource: string
   ): AssignmentConflict[] {
-    const conflicts: AssignmentConflict[] = []
+    const conflicts: AssignmentConflict[] = [];
 
-    machines.forEach(machine => {
-      const canAssign = this.canAssignMachine(machine, targetType)
-      
+    machines.forEach((machine) => {
+      const canAssign = this.canAssignMachine(machine, targetType);
+
       if (!canAssign) {
         const currentAssignment: MachineAssignment = {
           machineId: machine.machineGuid || '',
           machineName: machine.machineName,
           assignmentType: this.getMachineAssignmentType(machine),
-          resourceName: machine.distributedStorageClusterName || 
-                       machine.assignmentStatus?.assignmentDetails?.split(': ')[1]
-        }
+          resourceName:
+            machine.distributedStorageClusterName ||
+            machine.assignmentStatus?.assignmentDetails?.split(': ')[1],
+        };
 
         conflicts.push({
           machine,
@@ -193,12 +189,12 @@ export class MachineAssignmentService {
           currentAssignment,
           requestedAssignment: targetResource,
           conflictType: 'exclusivity',
-          message: `Machine is already assigned to ${currentAssignment.assignmentType.toLowerCase()}: ${currentAssignment.resourceName}`
-        })
+          message: `Machine is already assigned to ${currentAssignment.assignmentType.toLowerCase()}: ${currentAssignment.resourceName}`,
+        });
       }
-    })
+    });
 
-    return conflicts
+    return conflicts;
   }
 
   /**
@@ -213,21 +209,21 @@ export class MachineAssignmentService {
         // Force assignment would require removing current assignment first
         return {
           resolution: 'force',
-          reason: `Forcing reassignment from ${conflict.currentAssignment.assignmentType} to ${conflict.requestedAssignment}`
-        }
+          reason: `Forcing reassignment from ${conflict.currentAssignment.assignmentType} to ${conflict.requestedAssignment}`,
+        };
 
       case 'cancel':
         return {
           resolution: 'cancel',
-          reason: 'Operation cancelled by user'
-        }
+          reason: 'Operation cancelled by user',
+        };
 
       case 'skip':
       default:
         return {
           resolution: 'skip',
-          reason: `Skipping ${conflict.machine.machineName} due to existing assignment`
-        }
+          reason: `Skipping ${conflict.machine.machineName} due to existing assignment`,
+        };
     }
   }
 
@@ -235,12 +231,12 @@ export class MachineAssignmentService {
    * Calculate assignment statistics for a set of machines
    */
   static calculateAssignmentSummary(machines: Machine[]): MachineAssignmentSummary {
-    const groups = this.groupMachinesByAssignment(machines)
-    const breakdown = new Map<MachineAssignmentType, number>()
+    const groups = this.groupMachinesByAssignment(machines);
+    const breakdown = new Map<MachineAssignmentType, number>();
 
     groups.forEach((machineList, type) => {
-      breakdown.set(type, machineList.length)
-    })
+      breakdown.set(type, machineList.length);
+    });
 
     return {
       totalMachines: machines.length,
@@ -248,8 +244,8 @@ export class MachineAssignmentService {
       clusterAssignedMachines: groups.get('CLUSTER')?.length || 0,
       imageAssignedMachines: groups.get('IMAGE')?.length || 0,
       cloneAssignedMachines: groups.get('CLONE')?.length || 0,
-      assignmentBreakdown: breakdown
-    }
+      assignmentBreakdown: breakdown,
+    };
   }
 
   /**
@@ -260,31 +256,31 @@ export class MachineAssignmentService {
     actualResults: AssignmentOperationResult[],
     conflicts: AssignmentConflict[]
   ): AssignmentResult {
-    const assignedMachines: string[] = []
-    const failedMachines: string[] = []
+    const assignedMachines: string[] = [];
+    const failedMachines: string[] = [];
 
     // Track successful assignments
-    actualResults.forEach(result => {
+    actualResults.forEach((result) => {
       if (result.success) {
-        assignedMachines.push(result.machineName)
+        assignedMachines.push(result.machineName);
       } else {
-        failedMachines.push(result.machineName)
+        failedMachines.push(result.machineName);
       }
-    })
+    });
 
     // Add conflicted machines to failed list
-    conflicts.forEach(conflict => {
+    conflicts.forEach((conflict) => {
       if (!failedMachines.includes(conflict.machine.machineName)) {
-        failedMachines.push(conflict.machine.machineName)
+        failedMachines.push(conflict.machine.machineName);
       }
-    })
+    });
 
     return {
       success: assignedMachines.length > 0,
       assignedMachines,
       failedMachines,
-      conflicts
-    }
+      conflicts,
+    };
   }
 
   /**
@@ -295,12 +291,12 @@ export class MachineAssignmentService {
     targetResource: DistributedStorageResource,
     context: ValidationContext
   ): Promise<{
-    validMachines: Machine[]
-    conflicts: AssignmentConflict[]
-    canProceed: boolean
+    validMachines: Machine[];
+    conflicts: AssignmentConflict[];
+    canProceed: boolean;
   }> {
-    const validMachines: Machine[] = []
-    const conflicts: AssignmentConflict[] = []
+    const validMachines: Machine[] = [];
+    const conflicts: AssignmentConflict[] = [];
 
     // Validate each machine
     for (const machine of machines) {
@@ -308,10 +304,10 @@ export class MachineAssignmentService {
         machine,
         targetResource,
         context
-      )
+      );
 
       if (validationResult.isValid) {
-        validMachines.push(machine)
+        validMachines.push(machine);
       } else {
         // Convert validation errors to conflicts
         const conflict: AssignmentConflict = {
@@ -321,21 +317,21 @@ export class MachineAssignmentService {
             machineId: machine.machineGuid || '',
             machineName: machine.machineName,
             assignmentType: this.getMachineAssignmentType(machine),
-            resourceName: this.getMachineAssignmentDetails(machine)?.split(': ')[1]
+            resourceName: this.getMachineAssignmentDetails(machine)?.split(': ')[1],
           },
           requestedAssignment: targetResource.name,
           conflictType: 'exclusivity',
-          message: validationResult.errors[0]?.message || 'Validation failed'
-        }
-        conflicts.push(conflict)
+          message: validationResult.errors[0]?.message || 'Validation failed',
+        };
+        conflicts.push(conflict);
       }
     }
 
     return {
       validMachines,
       conflicts,
-      canProceed: validMachines.length > 0
-    }
+      canProceed: validMachines.length > 0,
+    };
   }
 
   /**
@@ -345,28 +341,26 @@ export class MachineAssignmentService {
     machines: Machine[],
     teamName?: string
   ): Map<string, MachineAssignmentSummary> {
-    const teamStats = new Map<string, MachineAssignmentSummary>()
+    const teamStats = new Map<string, MachineAssignmentSummary>();
 
     // Filter by team if specified
-    const filteredMachines = teamName 
-      ? machines.filter(m => m.teamName === teamName)
-      : machines
+    const filteredMachines = teamName ? machines.filter((m) => m.teamName === teamName) : machines;
 
     // Group by team
-    const machinesByTeam = new Map<string, Machine[]>()
-    filteredMachines.forEach(machine => {
-      const team = machine.teamName
+    const machinesByTeam = new Map<string, Machine[]>();
+    filteredMachines.forEach((machine) => {
+      const team = machine.teamName;
       if (!machinesByTeam.has(team)) {
-        machinesByTeam.set(team, [])
+        machinesByTeam.set(team, []);
       }
-      machinesByTeam.get(team)!.push(machine)
-    })
+      machinesByTeam.get(team)!.push(machine);
+    });
 
     // Calculate stats for each team
     machinesByTeam.forEach((teamMachines, team) => {
-      teamStats.set(team, this.calculateAssignmentSummary(teamMachines))
-    })
+      teamStats.set(team, this.calculateAssignmentSummary(teamMachines));
+    });
 
-    return teamStats
+    return teamStats;
   }
 }

@@ -1,31 +1,26 @@
-import React from 'react'
-import { Col, Tooltip } from 'antd'
-import type { TFunction } from 'i18next'
+import React from 'react';
+import { Col, Tooltip } from 'antd';
+import type { TFunction } from 'i18next';
 import {
   PlusOutlined,
   DeleteOutlined,
   ReloadOutlined,
   ExportOutlined,
   SearchOutlined,
-} from '@/utils/optimizedIcons'
-import {
-  ToolbarRow,
-  ActionButtonGroup,
-  ToolbarButton,
-  SearchInput,
-} from '../styles'
+} from '@/utils/optimizedIcons';
+import { ToolbarRow, ActionButtonGroup, ToolbarButton, SearchInput } from '../styles';
 
 interface MachineControlsProps {
-  selectedCount: number
-  assignedCount: number
-  searchText: string
-  isRemoving: boolean
-  onAddMachines: () => void
-  onRemoveMachines: () => void
-  onRefresh: () => void
-  onExport: () => void
-  onSearchChange: (value: string) => void
-  t: TFunction<'distributedStorage' | 'machines' | 'common'>
+  selectedCount: number;
+  assignedCount: number;
+  searchText: string;
+  isRemoving: boolean;
+  onAddMachines: () => void;
+  onRemoveMachines: () => void;
+  onRefresh: () => void;
+  onExport: () => void;
+  onSearchChange: (value: string) => void;
+  t: TFunction<'distributedStorage' | 'machines' | 'common'>;
 }
 
 export const MachineControls: React.FC<MachineControlsProps> = ({
@@ -53,9 +48,7 @@ export const MachineControls: React.FC<MachineControlsProps> = ({
           />
         </Tooltip>
         {selectedCount > 0 && (
-          <Tooltip
-            title={`${t('machines:removeFromClone')} (${selectedCount})`}
-          >
+          <Tooltip title={`${t('machines:removeFromClone')} (${selectedCount})`}>
             <ToolbarButton
               danger
               icon={<DeleteOutlined />}
@@ -98,4 +91,4 @@ export const MachineControls: React.FC<MachineControlsProps> = ({
       />
     </Col>
   </ToolbarRow>
-)
+);

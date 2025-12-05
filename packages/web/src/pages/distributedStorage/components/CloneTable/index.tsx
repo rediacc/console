@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react'
-import { Table, Tooltip, message } from 'antd'
+import { useCallback, useMemo, useState } from 'react';
+import { Table, Tooltip, message } from 'antd';
 import {
   PlusOutlined,
   SettingOutlined,
@@ -10,78 +10,74 @@ import {
   SyncOutlined,
   ScissorOutlined,
   CopyOutlined,
-} from '@ant-design/icons'
-import type { MenuProps } from 'antd'
-import { useTranslation } from 'react-i18next'
-import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState'
-import { useFormModal } from '@/hooks/useFormModal'
+} from '@ant-design/icons';
+import type { MenuProps } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
+import { useFormModal } from '@/hooks/useFormModal';
 import {
   useDistributedStorageRbdClones,
   type DistributedStorageRbdClone,
   type DistributedStorageRbdSnapshot,
   type DistributedStorageRbdImage,
   type DistributedStoragePool,
-} from '@/api/queries/distributedStorage'
+} from '@/api/queries/distributedStorage';
 import {
   useDeleteDistributedStorageRbdClone,
   useCreateDistributedStorageRbdClone,
   useUpdateDistributedStoragePoolVault,
-} from '@/api/queries/distributedStorageMutations'
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import { AssignMachinesToCloneModal } from '@/pages/distributedStorage/components/AssignMachinesToCloneModal'
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
-import { buildCloneColumns } from './columns'
-import {
-  ActionsRow,
-  Container,
-  CreateButton,
-  ExpandButton,
-  TableWrapper,
-  Title,
-} from './styles'
-import { CloneMachineTable } from './components/CloneMachineTable'
-import { MachineCountBadge } from './components/MachineCountBadge'
+} from '@/api/queries/distributedStorageMutations';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { AssignMachinesToCloneModal } from '@/pages/distributedStorage/components/AssignMachinesToCloneModal';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import { buildCloneColumns } from './columns';
+import { ActionsRow, Container, CreateButton, ExpandButton, TableWrapper, Title } from './styles';
+import { CloneMachineTable } from './components/CloneMachineTable';
+import { MachineCountBadge } from './components/MachineCountBadge';
 
 interface CloneTableProps {
-  snapshot: DistributedStorageRbdSnapshot
-  image: DistributedStorageRbdImage
-  pool: DistributedStoragePool
-  teamFilter: string | string[]
+  snapshot: DistributedStorageRbdSnapshot;
+  image: DistributedStorageRbdImage;
+  pool: DistributedStoragePool;
+  teamFilter: string | string[];
 }
 
 type CloneModalData = DistributedStorageRbdClone & {
-  vaultContent?: string
-  cloneVault?: string
-  vaultVersion?: number
-}
+  vaultContent?: string;
+  cloneVault?: string;
+  vaultVersion?: number;
+};
 
 const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
-  const { t } = useTranslation('distributedStorage')
-  const cloneModal = useFormModal<CloneModalData>()
-  const queueTrace = useQueueTraceModal()
-  const machineModal = useDialogState<DistributedStorageRbdClone>()
-  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
+  const { t } = useTranslation('distributedStorage');
+  const cloneModal = useFormModal<CloneModalData>();
+  const queueTrace = useQueueTraceModal();
+  const machineModal = useDialogState<DistributedStorageRbdClone>();
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
 
-  const managedQueueMutation = useManagedQueueItem()
-  const { buildQueueVault } = useQueueVaultBuilder()
+  const managedQueueMutation = useManagedQueueItem();
+  const { buildQueueVault } = useQueueVaultBuilder();
 
-  const { data: clones = [], isLoading } = useDistributedStorageRbdClones(snapshot.snapshotGuid)
-  const deleteCloneMutation = useDeleteDistributedStorageRbdClone()
-  const createCloneMutation = useCreateDistributedStorageRbdClone()
-  const updateVaultMutation = useUpdateDistributedStoragePoolVault()
+  const { data: clones = [], isLoading } = useDistributedStorageRbdClones(snapshot.snapshotGuid);
+  const deleteCloneMutation = useDeleteDistributedStorageRbdClone();
+  const createCloneMutation = useCreateDistributedStorageRbdClone();
+  const updateVaultMutation = useUpdateDistributedStoragePoolVault();
 
   const handleCreate = useCallback(() => {
-    cloneModal.openCreate()
-  }, [cloneModal])
+    cloneModal.openCreate();
+  }, [cloneModal]);
 
-  const handleEdit = useCallback((clone: DistributedStorageRbdClone) => {
-    cloneModal.openEdit({
-      ...clone,
-      vaultContent: clone.vaultContent || clone.cloneVault,
-    })
-  }, [cloneModal])
+  const handleEdit = useCallback(
+    (clone: DistributedStorageRbdClone) => {
+      cloneModal.openEdit({
+        ...clone,
+        vaultContent: clone.vaultContent || clone.cloneVault,
+      });
+    },
+    [cloneModal]
+  );
 
   const handleDelete = useCallback(
     (clone: DistributedStorageRbdClone) => {
@@ -91,22 +87,25 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
         imageName: image.imageName,
         poolName: pool.poolName,
         teamName: clone.teamName,
-      })
+      });
     },
-    [deleteCloneMutation, image.imageName, pool.poolName, snapshot.snapshotName],
-  )
+    [deleteCloneMutation, image.imageName, pool.poolName, snapshot.snapshotName]
+  );
 
   const handleQueueItemCreated = useCallback(
     (taskId: string) => {
-      queueTrace.open(taskId)
-      message.success(t('queue.itemCreated'))
+      queueTrace.open(taskId);
+      message.success(t('queue.itemCreated'));
     },
-    [t, queueTrace],
-  )
+    [t, queueTrace]
+  );
 
-  const handleManageMachines = useCallback((clone: DistributedStorageRbdClone) => {
-    machineModal.open(clone)
-  }, [machineModal])
+  const handleManageMachines = useCallback(
+    (clone: DistributedStorageRbdClone) => {
+      machineModal.open(clone);
+    },
+    [machineModal]
+  );
 
   const handleRunFunction = useCallback(
     async (functionName: string, clone?: DistributedStorageRbdClone) => {
@@ -125,7 +124,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
           },
           priority: 3,
           addedVia: 'DistributedStorage',
-        })
+        });
 
         const response = await managedQueueMutation.mutateAsync({
           teamName: pool.teamName,
@@ -133,13 +132,13 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
           bridgeName: 'default',
           queueVault,
           priority: 3,
-        })
+        });
 
         if (response.taskId) {
-          handleQueueItemCreated(response.taskId)
+          handleQueueItemCreated(response.taskId);
         }
       } catch {
-        message.error(t('queue.createError'))
+        message.error(t('queue.createError'));
       }
     },
     [
@@ -152,8 +151,8 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
       pool.teamName,
       snapshot.snapshotName,
       t,
-    ],
-  )
+    ]
+  );
 
   const getCloneMenuItems = useCallback(
     (clone: DistributedStorageRbdClone): MenuProps['items'] => [
@@ -211,8 +210,8 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
         'data-testid': `clone-list-delete-${clone.cloneName}`,
       },
     ],
-    [handleDelete, handleEdit, handleManageMachines, handleRunFunction, t],
-  )
+    [handleDelete, handleEdit, handleManageMachines, handleRunFunction, t]
+  );
 
   const renderMachineCount = useCallback(
     (clone: DistributedStorageRbdClone) => (
@@ -224,8 +223,8 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
         teamName={pool.teamName}
       />
     ),
-    [image.imageName, pool.poolName, pool.teamName, snapshot.snapshotName],
-  )
+    [image.imageName, pool.poolName, pool.teamName, snapshot.snapshotName]
+  );
 
   const columns = useMemo(
     () =>
@@ -235,8 +234,8 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
         handleRunFunction,
         getCloneMenuItems,
       }),
-    [getCloneMenuItems, handleRunFunction, renderMachineCount, t],
-  )
+    [getCloneMenuItems, handleRunFunction, renderMachineCount, t]
+  );
 
   const expandedRowRender = useCallback(
     (record: DistributedStorageRbdClone) => (
@@ -248,8 +247,8 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
         onManageMachines={handleManageMachines}
       />
     ),
-    [handleManageMachines, image, pool, snapshot],
-  )
+    [handleManageMachines, image, pool, snapshot]
+  );
 
   return (
     <>
@@ -314,7 +313,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
         }}
         teamFilter={pool.teamName}
         onSubmit={async (formValues) => {
-          const data = formValues as { cloneName: string; cloneVault: string }
+          const data = formValues as { cloneName: string; cloneVault: string };
           if (cloneModal.mode === 'create') {
             await createCloneMutation.mutateAsync({
               snapshotName: snapshot.snapshotName,
@@ -323,16 +322,16 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
               teamName: pool.teamName,
               cloneName: data.cloneName,
               cloneVault: data.cloneVault,
-            })
+            });
           } else if (cloneModal.mode === 'edit') {
             await updateVaultMutation.mutateAsync({
               poolName: pool.poolName,
               teamName: pool.teamName,
               poolVault: data.cloneVault,
               vaultVersion: cloneModal.state.data?.vaultVersion || 0,
-            })
+            });
           }
-          cloneModal.close()
+          cloneModal.close();
         }}
         isSubmitting={createCloneMutation.isPending || updateVaultMutation.isPending}
       />
@@ -353,7 +352,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
         onSuccess={machineModal.close}
       />
     </>
-  )
-}
+  );
+};
 
-export default CloneTable
+export default CloneTable;

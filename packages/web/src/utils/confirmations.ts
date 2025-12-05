@@ -1,16 +1,16 @@
-import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal'
-import type { TFunction } from 'i18next'
-import { showMessage } from './messages'
+import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
+import type { TFunction } from 'i18next';
+import { showMessage } from './messages';
 
 export interface ConfirmDeleteConfig {
-  modal: ModalHookAPI
-  t: TFunction
-  resourceType: string
-  resourceName: string
-  translationNamespace?: string
-  onConfirm: () => Promise<unknown>
-  onSuccess?: () => void
-  onError?: (error: Error) => void
+  modal: ModalHookAPI;
+  t: TFunction;
+  resourceType: string;
+  resourceName: string;
+  translationNamespace?: string;
+  onConfirm: () => Promise<unknown>;
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
 }
 
 /**
@@ -35,41 +35,44 @@ export function confirmDelete({
   translationNamespace,
   onConfirm,
   onSuccess,
-  onError
+  onError,
 }: ConfirmDeleteConfig): void {
-  const ns = translationNamespace || resourceType + 's'
+  const ns = translationNamespace || resourceType + 's';
 
   modal.confirm({
     title: t(`${ns}:confirmDelete`) as string,
-    content: t(`${ns}:deleteWarning`, { name: resourceName, [resourceType + 'Name']: resourceName }) as string,
+    content: t(`${ns}:deleteWarning`, {
+      name: resourceName,
+      [resourceType + 'Name']: resourceName,
+    }) as string,
     okText: t('common:actions.delete'),
     okType: 'danger',
     cancelText: t('common:actions.cancel'),
     onOk: async () => {
       try {
-        await onConfirm()
-        showMessage('success', t(`${ns}:deleteSuccess`))
-        onSuccess?.()
+        await onConfirm();
+        showMessage('success', t(`${ns}:deleteSuccess`));
+        onSuccess?.();
       } catch (error) {
-        showMessage('error', t(`${ns}:deleteError`))
-        onError?.(error as Error)
+        showMessage('error', t(`${ns}:deleteError`));
+        onError?.(error as Error);
       }
-    }
-  })
+    },
+  });
 }
 
 export interface ConfirmActionConfig {
-  modal: ModalHookAPI
-  title: string
-  content: string
-  okText: string
-  okType?: 'primary' | 'danger'
-  cancelText: string
-  onConfirm: () => Promise<void>
-  onSuccess?: () => void
-  successMessage?: string
-  errorMessage?: string
-  onError?: (error: Error) => void
+  modal: ModalHookAPI;
+  title: string;
+  content: string;
+  okText: string;
+  okType?: 'primary' | 'danger';
+  cancelText: string;
+  onConfirm: () => Promise<void>;
+  onSuccess?: () => void;
+  successMessage?: string;
+  errorMessage?: string;
+  onError?: (error: Error) => void;
 }
 
 /**
@@ -97,7 +100,7 @@ export function confirmAction({
   onSuccess,
   successMessage,
   errorMessage,
-  onError
+  onError,
 }: ConfirmActionConfig): void {
   modal.confirm({
     title,
@@ -107,17 +110,17 @@ export function confirmAction({
     cancelText,
     onOk: async () => {
       try {
-        await onConfirm()
+        await onConfirm();
         if (successMessage) {
-          showMessage('success', successMessage)
+          showMessage('success', successMessage);
         }
-        onSuccess?.()
+        onSuccess?.();
       } catch (error) {
         if (errorMessage) {
-          showMessage('error', errorMessage)
+          showMessage('error', errorMessage);
         }
-        onError?.(error as Error)
+        onError?.(error as Error);
       }
-    }
-  })
+    },
+  });
 }

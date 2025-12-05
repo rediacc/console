@@ -17,11 +17,11 @@
 export function isSecureContext(): boolean {
   // Use native browser check if available
   if (typeof window !== 'undefined' && 'isSecureContext' in window) {
-    return window.isSecureContext
+    return window.isSecureContext;
   }
 
   // Fallback: Check crypto.subtle availability
-  return typeof crypto !== 'undefined' && typeof crypto.subtle !== 'undefined'
+  return typeof crypto !== 'undefined' && typeof crypto.subtle !== 'undefined';
 }
 
 /**
@@ -34,9 +34,9 @@ export function isCryptoAvailable(): boolean {
       typeof crypto !== 'undefined' &&
       typeof crypto.subtle !== 'undefined' &&
       typeof crypto.subtle.digest === 'function'
-    )
+    );
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -45,23 +45,23 @@ export function isCryptoAvailable(): boolean {
  * Useful for providing helpful error messages to users.
  */
 export function getSecurityContextInfo(): {
-  isSecure: boolean
-  protocol: string
-  hostname: string
-  isLocalhost: boolean
-  suggestion: string
+  isSecure: boolean;
+  protocol: string;
+  hostname: string;
+  isLocalhost: boolean;
+  suggestion: string;
 } {
-  const protocol = window.location.protocol
-  const hostname = window.location.hostname
-  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1'
-  const isSecure = isSecureContext()
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  const isSecure = isSecureContext();
 
-  let suggestion = ''
+  let suggestion = '';
   if (!isSecure) {
     if (protocol === 'http:' && !isLocalhost) {
-      suggestion = `Access via HTTPS (https://${hostname}) or use localhost for development`
+      suggestion = `Access via HTTPS (https://${hostname}) or use localhost for development`;
     } else {
-      suggestion = 'Use HTTPS or access via localhost'
+      suggestion = 'Use HTTPS or access via localhost';
     }
   }
 
@@ -71,5 +71,5 @@ export function getSecurityContextInfo(): {
     hostname,
     isLocalhost,
     suggestion,
-  }
+  };
 }

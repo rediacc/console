@@ -1,16 +1,16 @@
-import { endpoints } from '../../endpoints'
-import type { Storage } from '../../types'
-import { parseResponse, responseExtractors } from '../parseResponse'
-import type { ApiClient } from './types'
+import { endpoints } from '../../endpoints';
+import type { Storage } from '../../types';
+import { parseResponse, responseExtractors } from '../parseResponse';
+import type { ApiClient } from './types';
 
 export function createStorageService(client: ApiClient) {
   return {
     list: async (teamName: string): Promise<Storage[]> => {
-      const response = await client.get<Storage>(endpoints.storage.getTeamStorages, { teamName })
+      const response = await client.get<Storage>(endpoints.storage.getTeamStorages, { teamName });
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<Storage>(1),
         filter: (storage) => Boolean(storage.storageName),
-      })
+      });
     },
 
     create: (teamName: string, storageName: string) =>
@@ -33,5 +33,5 @@ export function createStorageService(client: ApiClient) {
         vaultContent: vault,
         vaultVersion,
       }),
-  }
+  };
 }

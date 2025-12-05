@@ -1,14 +1,14 @@
-import { configService } from './configService'
-import { CONFIG_URLS } from '@/utils/apiConstants'
+import { configService } from './configService';
+import { CONFIG_URLS } from '@/utils/apiConstants';
 
 interface Template {
-  id?: string
-  name: string
-  readme: string
-  category?: string
-  tags?: string[]
-  difficulty?: 'beginner' | 'intermediate' | 'advanced'
-  download_url?: string
+  id?: string;
+  name: string;
+  readme: string;
+  category?: string;
+  tags?: string[];
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  download_url?: string;
 }
 
 /**
@@ -18,7 +18,7 @@ interface Template {
  * to ensure consistency across the application (Marketplace, Create Repo, etc.)
  */
 class TemplateService {
-  private templatesCache: Template[] | null = null
+  private templatesCache: Template[] | null = null;
 
   /**
    * Convert UTF-8 string to Base64
@@ -26,24 +26,24 @@ class TemplateService {
    */
   private utf8ToBase64(str: string): string {
     // Use TextEncoder for proper UTF-8 encoding (modern browsers)
-    const encoder = new TextEncoder()
-    const uint8Array = encoder.encode(str)
+    const encoder = new TextEncoder();
+    const uint8Array = encoder.encode(str);
 
     // Convert Uint8Array to binary string
-    let binaryString = ''
+    let binaryString = '';
     for (let i = 0; i < uint8Array.length; i++) {
-      binaryString += String.fromCharCode(uint8Array[i])
+      binaryString += String.fromCharCode(uint8Array[i]);
     }
 
     // Convert binary string to base64
-    return btoa(binaryString)
+    return btoa(binaryString);
   }
 
   /**
    * Get the base URL for templates directory
    */
   private getTemplatesBaseUrl(): string {
-    return CONFIG_URLS.TEMPLATES_DIR
+    return CONFIG_URLS.TEMPLATES_DIR;
   }
 
   /**
@@ -51,7 +51,7 @@ class TemplateService {
    */
   async getTemplatesListUrl(): Promise<string> {
     // Use configService for configured templates URL, or default
-    return await configService.getTemplatesUrl()
+    return await configService.getTemplatesUrl();
   }
 
   /**
@@ -63,17 +63,17 @@ class TemplateService {
     if (template.download_url) {
       // If download_url already includes the full path, use templates dir directly
       if (template.download_url.startsWith('templates/')) {
-        return `${CONFIG_URLS.TEMPLATES_DIR}/${template.download_url.replace('templates/', '')}`
+        return `${CONFIG_URLS.TEMPLATES_DIR}/${template.download_url.replace('templates/', '')}`;
       }
       // Otherwise assume it's relative to configs
-      return `${CONFIG_URLS.TEMPLATES_DIR}/${template.download_url}`
+      return `${CONFIG_URLS.TEMPLATES_DIR}/${template.download_url}`;
     }
 
     // Prefer id over name
-    const identifier = template.id || template.name
+    const identifier = template.id || template.name;
 
     // Standard pattern: templates/{identifier}.json
-    return `${this.getTemplatesBaseUrl()}/${identifier}.json`
+    return `${this.getTemplatesBaseUrl()}/${identifier}.json`;
   }
 
   /**
@@ -82,29 +82,29 @@ class TemplateService {
    */
   async fetchTemplates(forceRefresh: boolean = false): Promise<Template[]> {
     if (this.templatesCache && !forceRefresh) {
-      return this.templatesCache
+      return this.templatesCache;
     }
 
     try {
-      const url = await this.getTemplatesListUrl()
+      const url = await this.getTemplatesListUrl();
       // Use simple CORS request (no preflight needed)
       const response = await fetch(url, {
         method: 'GET',
         mode: 'cors',
         credentials: 'omit',
-        cache: forceRefresh ? 'reload' : 'default'
-      })
+        cache: forceRefresh ? 'reload' : 'default',
+      });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch templates: ${response.status} ${response.statusText}`)
+        throw new Error(`Failed to fetch templates: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json()
-      this.templatesCache = data.templates || []
-      return this.templatesCache || []
+      const data = await response.json();
+      this.templatesCache = data.templates || [];
+      return this.templatesCache || [];
     } catch (error) {
-      console.error('Failed to fetch templates:', error)
-      throw error
+      console.error('Failed to fetch templates:', error);
+      throw error;
     }
   }
 
@@ -113,41 +113,49 @@ class TemplateService {
    * Returns null if template not found
    */
   async findTemplateById(templateId: string): Promise<Template | null> {
-    const templates = await this.fetchTemplates()
-    return templates.find(t => t.id === templateId || t.name === templateId) || null
+    const templates = await this.fetchTemplates();
+    return templates.find((t) => t.id === templateId || t.name === templateId) || null;
   }
 
   /**
    * Fetch detailed data for a specific template
    */
-  async fetchTemplateData(template: { id?: string; name: string; download_url?: string }): Promise<Record<string, unknown>> {
+  async fetchTemplateData(template: {
+    id?: string;
+    name: string;
+    download_url?: string;
+  }): Promise<Record<string, unknown>> {
     try {
-      const url = this.getTemplateDataUrl(template)
+      const url = this.getTemplateDataUrl(template);
       // Use simple CORS request (no preflight needed)
       const response = await fetch(url, {
         method: 'GET',
         mode: 'cors',
         credentials: 'omit',
-        cache: 'default'
-      })
+        cache: 'default',
+      });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch template data: ${response.status} ${response.statusText}`)
+        throw new Error(`Failed to fetch template data: ${response.status} ${response.statusText}`);
       }
 
-      return await response.json() as Record<string, unknown>
+      return (await response.json()) as Record<string, unknown>;
     } catch (error) {
-      console.error('Failed to fetch template data:', error)
-      throw error
+      console.error('Failed to fetch template data:', error);
+      throw error;
     }
   }
 
   /**
    * Get Base64-encoded template data for API submission
    */
-  async getEncodedTemplateData(template: { id?: string; name: string; download_url?: string }): Promise<string> {
-    const templateData = await this.fetchTemplateData(template)
-    return this.utf8ToBase64(JSON.stringify(templateData))
+  async getEncodedTemplateData(template: {
+    id?: string;
+    name: string;
+    download_url?: string;
+  }): Promise<string> {
+    const templateData = await this.fetchTemplateData(template);
+    return this.utf8ToBase64(JSON.stringify(templateData));
   }
 
   /**
@@ -155,12 +163,12 @@ class TemplateService {
    * Looks up the template from the templates list first
    */
   async getEncodedTemplateDataById(templateId: string): Promise<string> {
-    const template = await this.findTemplateById(templateId)
+    const template = await this.findTemplateById(templateId);
     if (!template) {
-      throw new Error(`Template not found: ${templateId}`)
+      throw new Error(`Template not found: ${templateId}`);
     }
-    return this.getEncodedTemplateData(template)
+    return this.getEncodedTemplateData(template);
   }
 }
 
-export const templateService = new TemplateService()
+export const templateService = new TemplateService();

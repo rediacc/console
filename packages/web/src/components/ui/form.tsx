@@ -1,11 +1,11 @@
 /**
  * Form layout components
- * 
+ *
  * Components for form layouts:
  * - InlineFormRow: Horizontal form layout with wrapping
  */
 
-import styled from 'styled-components'
+import styled from 'styled-components';
 
 /**
  * InlineFormRow - Horizontal form layout with wrapping
@@ -16,4 +16,4 @@ export const InlineFormRow = styled.div`
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.SM}px;
   align-items: flex-start;
-`
+`;

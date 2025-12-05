@@ -3,13 +3,18 @@
  * These use the same logic as the web console but adapted for terminal output
  */
 
-import chalk from 'chalk'
-import type { ErrorSeverity } from '@rediacc/shared/error-parser'
-import { parseFailureReason, formatError as formatErrorShared, formatErrors, getSeverityLevel } from '@rediacc/shared/error-parser'
-import { STALE_TASK_CONSTANTS } from '@rediacc/shared/queue'
+import chalk from 'chalk';
+import type { ErrorSeverity } from '@rediacc/shared/error-parser';
+import {
+  parseFailureReason,
+  formatError as formatErrorShared,
+  formatErrors,
+  getSeverityLevel,
+} from '@rediacc/shared/error-parser';
+import { STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
 
 // Re-export formatAge for backwards compatibility
-export { formatAge } from '@rediacc/shared/formatters'
+export { formatAge } from '@rediacc/shared/formatters';
 
 /**
  * Get chalk color function for queue status
@@ -19,27 +24,27 @@ export { formatAge } from '@rediacc/shared/formatters'
  * @returns Chalk color function
  */
 export function getStatusColor(status: string): (text: string) => string {
-  const statusUpper = status.toUpperCase()
+  const statusUpper = status.toUpperCase();
 
   switch (statusUpper) {
     case 'COMPLETED':
-      return chalk.green
+      return chalk.green;
     case 'FAILED':
-      return chalk.red
+      return chalk.red;
     case 'CANCELLED':
-      return chalk.red
+      return chalk.red;
     case 'PROCESSING':
     case 'ASSIGNED':
     case 'ACTIVE':
-      return chalk.blue
+      return chalk.blue;
     case 'CANCELLING':
     case 'STALE':
     case 'STALE_PENDING':
-      return chalk.yellow
+      return chalk.yellow;
     case 'PENDING':
-      return chalk.gray
+      return chalk.gray;
     default:
-      return chalk.white
+      return chalk.white;
   }
 }
 
@@ -50,10 +55,10 @@ export function getStatusColor(status: string): (text: string) => string {
  * @returns Colored status string
  */
 export function formatStatus(status: string | undefined): string {
-  if (!status) return chalk.gray('UNKNOWN')
+  if (!status) return chalk.gray('UNKNOWN');
 
-  const colorFn = getStatusColor(status)
-  return colorFn(status)
+  const colorFn = getStatusColor(status);
+  return colorFn(status);
 }
 
 /**
@@ -68,18 +73,18 @@ export function formatStatus(status: string | undefined): string {
  * formatPriority(3) // Blue "P3 (Normal)"
  */
 export function formatPriority(priority: number | undefined): string {
-  if (!priority) return chalk.gray('-')
+  if (!priority) return chalk.gray('-');
 
   const priorityMap: Record<number, { color: (text: string) => string; label: string }> = {
     1: { color: chalk.red.bold, label: 'P1 (Highest)' },
     2: { color: chalk.yellow, label: 'P2 (High)' },
     3: { color: chalk.blue, label: 'P3 (Normal)' },
     4: { color: chalk.cyan, label: 'P4 (Low)' },
-    5: { color: chalk.gray, label: 'P5 (Lowest)' }
-  }
+    5: { color: chalk.gray, label: 'P5 (Lowest)' },
+  };
 
-  const config = priorityMap[priority] || priorityMap[3]
-  return config.color(config.label)
+  const config = priorityMap[priority] || priorityMap[3];
+  return config.color(config.label);
 }
 
 /**
@@ -92,13 +97,13 @@ export function formatPriority(priority: number | undefined): string {
  */
 function chalkColorFn(text: string, level: string): string {
   const colorMap: Record<string, string> = {
-    'critical': chalk.red.bold(text),
-    'error': chalk.red(text),
-    'warning': chalk.yellow(text),
-    'info': chalk.blue(text),
-    'default': chalk.gray(text)
-  }
-  return colorMap[level] || chalk.gray(text)
+    critical: chalk.red.bold(text),
+    error: chalk.red(text),
+    warning: chalk.yellow(text),
+    info: chalk.blue(text),
+    default: chalk.gray(text),
+  };
+  return colorMap[level] || chalk.gray(text);
 }
 
 /**
@@ -109,15 +114,15 @@ function chalkColorFn(text: string, level: string): string {
  * @returns Chalk color function
  */
 export function getSeverityColor(severity: ErrorSeverity): (text: string) => string {
-  const level = getSeverityLevel(severity)
+  const level = getSeverityLevel(severity);
   const colorMap: Record<string, (text: string) => string> = {
-    'critical': chalk.red.bold,
-    'error': chalk.red,
-    'warning': chalk.yellow,
-    'info': chalk.blue,
-    'default': chalk.gray
-  }
-  return colorMap[level] || chalk.gray
+    critical: chalk.red.bold,
+    error: chalk.red,
+    warning: chalk.yellow,
+    info: chalk.blue,
+    default: chalk.gray,
+  };
+  return colorMap[level] || chalk.gray;
 }
 
 /**
@@ -139,28 +144,28 @@ export function getSeverityColor(severity: ErrorSeverity): (text: string) => str
  * // Returns: [ERROR] Repo not found\n[WARNING] Disk space low
  */
 export function formatError(failureReason: string | undefined, showAll: boolean = false): string {
-  if (!failureReason) return chalk.gray('No errors')
+  if (!failureReason) return chalk.gray('No errors');
 
-  const result = parseFailureReason(failureReason)
+  const result = parseFailureReason(failureReason);
 
   if (!result.primaryError) {
     // No severity prefix found, return original message
-    return failureReason
+    return failureReason;
   }
 
   if (showAll && result.allErrors.length > 1) {
     // Use shared formatErrors with chalk color function
-    return formatErrors(result, { showAll: true, colorFn: chalkColorFn })
+    return formatErrors(result, { showAll: true, colorFn: chalkColorFn });
   }
 
   // Show primary error only with count indicator
-  const formatted = formatErrorShared(result.primaryError, chalkColorFn)
+  const formatted = formatErrorShared(result.primaryError, chalkColorFn);
 
   if (result.allErrors.length > 1) {
-    return `${formatted} ${chalk.dim(`(+${result.allErrors.length - 1} more)`)}`
+    return `${formatted} ${chalk.dim(`(+${result.allErrors.length - 1} more)`)}`;
   }
 
-  return formatted
+  return formatted;
 }
 
 /**
@@ -171,12 +176,12 @@ export function formatError(failureReason: string | undefined, showAll: boolean 
  * @returns Colored retry count string
  */
 export function formatRetryCount(retryCount: number | undefined): string {
-  if (retryCount === undefined || retryCount === null) return chalk.gray('-')
+  if (retryCount === undefined || retryCount === null) return chalk.gray('-');
 
-  const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT
-  if (retryCount === 0) return chalk.green(`${retryCount}/${maxRetries}`)
-  if (retryCount < maxRetries - 1) return chalk.yellow(`${retryCount}/${maxRetries}`)
-  return chalk.red.bold(`${retryCount}/${maxRetries}`)
+  const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT;
+  if (retryCount === 0) return chalk.green(`${retryCount}/${maxRetries}`);
+  if (retryCount < maxRetries - 1) return chalk.yellow(`${retryCount}/${maxRetries}`);
+  return chalk.red.bold(`${retryCount}/${maxRetries}`);
 }
 
 /**
@@ -186,6 +191,6 @@ export function formatRetryCount(retryCount: number | undefined): string {
  * @returns Colored checkmark or cross
  */
 export function formatBoolean(value: boolean | undefined): string {
-  if (value === undefined || value === null) return chalk.gray('-')
-  return value ? chalk.green('✓') : chalk.red('✗')
+  if (value === undefined || value === null) return chalk.gray('-');
+  return value ? chalk.green('✓') : chalk.red('✗');
 }

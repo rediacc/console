@@ -17,4 +17,4 @@ export const DETAIL_PANEL = {
 
   /** Duration of fade in/out animations in milliseconds */
   ANIMATION_DURATION: 250,
-} as const
+} as const;

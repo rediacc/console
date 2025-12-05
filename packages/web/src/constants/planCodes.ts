@@ -17,7 +17,7 @@ export const PLAN_CODES = {
   ENTERPRISE: 'ENTERPRISE',
 } as const;
 
-export type PlanCode = typeof PLAN_CODES[keyof typeof PLAN_CODES];
+export type PlanCode = (typeof PLAN_CODES)[keyof typeof PLAN_CODES];
 
 /**
  * Plan code display names for UI
@@ -80,18 +80,12 @@ export const isAtLeastTier = (planA: PlanCode, planB: PlanCode): boolean => {
 /**
  * Plans that have access to advanced features
  */
-export const ADVANCED_FEATURE_PLANS: PlanCode[] = [
-  PLAN_CODES.BUSINESS,
-  PLAN_CODES.ENTERPRISE,
-];
+export const ADVANCED_FEATURE_PLANS: PlanCode[] = [PLAN_CODES.BUSINESS, PLAN_CODES.ENTERPRISE];
 
 /**
  * Plans that have access to distributed storage features
  */
-export const DISTRIBUTED_STORAGE_PLANS: PlanCode[] = [
-  PLAN_CODES.BUSINESS,
-  PLAN_CODES.ENTERPRISE,
-];
+export const DISTRIBUTED_STORAGE_PLANS: PlanCode[] = [PLAN_CODES.BUSINESS, PLAN_CODES.ENTERPRISE];
 
 /**
  * Plans that have priority support

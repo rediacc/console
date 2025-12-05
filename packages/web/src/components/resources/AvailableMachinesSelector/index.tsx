@@ -1,11 +1,11 @@
-import React from 'react'
-import { Select, Empty } from 'antd'
-import type { DefaultOptionType } from 'antd/es/select'
-import { CloudServerOutlined, CheckCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import type { Machine } from '@/types'
-import { useAvailableMachinesForClone } from '@/api/queries/distributedStorage'
-import MachineAssignmentStatusBadge from '../MachineAssignmentStatusBadge'
+import React from 'react';
+import { Select, Empty } from 'antd';
+import type { DefaultOptionType } from 'antd/es/select';
+import { CloudServerOutlined, CheckCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import type { Machine } from '@/types';
+import { useAvailableMachinesForClone } from '@/api/queries/distributedStorage';
+import MachineAssignmentStatusBadge from '../MachineAssignmentStatusBadge';
 import {
   StyledSelect,
   OptionContent,
@@ -19,21 +19,21 @@ import {
   StatusIcon,
   StatusText,
   EmptyDescription,
-} from './styles'
+} from './styles';
 
-const { Option } = Select
+const { Option } = Select;
 
 interface AvailableMachinesSelectorProps {
-  machines: Machine[]
-  value?: string[]
-  onChange?: (value: string[]) => void
-  loading?: boolean
-  placeholder?: string
-  disabled?: boolean
-  showAssignmentStatus?: boolean
-  allowSelectAssigned?: boolean
-  maxSelection?: number
-  style?: React.CSSProperties
+  machines: Machine[];
+  value?: string[];
+  onChange?: (value: string[]) => void;
+  loading?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+  showAssignmentStatus?: boolean;
+  allowSelectAssigned?: boolean;
+  maxSelection?: number;
+  style?: React.CSSProperties;
 }
 
 export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps> = ({
@@ -48,35 +48,35 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
   maxSelection,
   style,
 }) => {
-  const { t } = useTranslation(['machines', 'common'])
+  const { t } = useTranslation(['machines', 'common']);
 
   const handleChange = (selectedValues: unknown) => {
-    const values = selectedValues as string[]
+    const values = selectedValues as string[];
     if (maxSelection && values.length > maxSelection) {
-      return
+      return;
     }
-    onChange?.(values)
-  }
+    onChange?.(values);
+  };
 
   const filterOption = (input: string, option?: DefaultOptionType): boolean => {
-    if (!option || typeof option.value !== 'string') return false
+    if (!option || typeof option.value !== 'string') return false;
 
-    const machine = machines.find((m) => m.machineName === option.value)
-    if (!machine) return false
+    const machine = machines.find((m) => m.machineName === option.value);
+    if (!machine) return false;
 
-    const loweredInput = input.toLowerCase()
+    const loweredInput = input.toLowerCase();
     return (
       machine.machineName.toLowerCase().includes(loweredInput) ||
       machine.teamName.toLowerCase().includes(loweredInput) ||
       (!!machine.bridgeName && machine.bridgeName.toLowerCase().includes(loweredInput))
-    )
-  }
+    );
+  };
 
   const renderMachineOption = (machine: Machine) => {
     const isAssigned =
       machine.distributedStorageClusterName ||
-      machine.assignmentStatus?.assignmentType !== 'AVAILABLE'
-    const isDisabled = !allowSelectAssigned && isAssigned
+      machine.assignmentStatus?.assignmentType !== 'AVAILABLE';
+    const isDisabled = !allowSelectAssigned && isAssigned;
 
     return (
       <Option
@@ -109,7 +109,8 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                   >
                     <StatusIcon as={WarningOutlined} />
                     <StatusText>
-                      {t('machines:assignmentStatus.cluster')}: {machine.distributedStorageClusterName}
+                      {t('machines:assignmentStatus.cluster')}:{' '}
+                      {machine.distributedStorageClusterName}
                     </StatusText>
                   </StatusTag>
                 ) : machine.assignmentStatus ? (
@@ -132,8 +133,8 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
           )}
         </OptionContent>
       </Option>
-    )
-  }
+    );
+  };
 
   return (
     <StyledSelect
@@ -150,27 +151,31 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
       data-testid="available-machines-selector"
       notFoundContent={
         machines.length === 0 ? (
-          <Empty description={<EmptyDescription>{t('machines:noAvailableMachines')}</EmptyDescription>} />
+          <Empty
+            description={<EmptyDescription>{t('machines:noAvailableMachines')}</EmptyDescription>}
+          />
         ) : (
-          <Empty description={<EmptyDescription>{t('common:noMatchingResults')}</EmptyDescription>} />
+          <Empty
+            description={<EmptyDescription>{t('common:noMatchingResults')}</EmptyDescription>}
+          />
         )
       }
     >
       {machines.map(renderMachineOption)}
     </StyledSelect>
-  )
-}
+  );
+};
 
 export const SimpleMachineSelector: React.FC<{
-  teamName: string
-  value?: string[]
-  onChange?: (value: string[]) => void
-  placeholder?: string
-  disabled?: boolean
-  style?: React.CSSProperties
+  teamName: string;
+  value?: string[];
+  onChange?: (value: string[]) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  style?: React.CSSProperties;
 }> = ({ teamName, value, onChange, placeholder, disabled, style }) => {
-  const { t: _t } = useTranslation(['machines'])
-  const { data: machines = [], isLoading } = useAvailableMachinesForClone(teamName, !disabled)
+  const { t: _t } = useTranslation(['machines']);
+  const { data: machines = [], isLoading } = useAvailableMachinesForClone(teamName, !disabled);
 
   return (
     <AvailableMachinesSelector
@@ -183,5 +188,5 @@ export const SimpleMachineSelector: React.FC<{
       disabled={disabled}
       style={style}
     />
-  )
-}
+  );
+};

@@ -1,26 +1,22 @@
-import React, { useState } from 'react'
-import { Empty, Alert, Tooltip } from 'antd'
-import {
-  PlusOutlined,
-  ReloadOutlined,
-  SettingOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { useCompanyInfo } from '@/api/queries/dashboard'
-import { useTeamSelection, useQueueTraceModal } from '@/hooks'
-import TeamSelector from '@/components/common/TeamSelector'
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import { ClusterTable } from './components/ClusterTable'
-import { PoolTable } from './components/PoolTable'
-import { DistributedStorageMachinesTab } from './components/DistributedStorageMachinesTab'
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
-import { showMessage } from '@/utils/messages'
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
+import React, { useState } from 'react';
+import { Empty, Alert, Tooltip } from 'antd';
+import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { useCompanyInfo } from '@/api/queries/dashboard';
+import { useTeamSelection, useQueueTraceModal } from '@/hooks';
+import TeamSelector from '@/components/common/TeamSelector';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ClusterTable } from './components/ClusterTable';
+import { PoolTable } from './components/PoolTable';
+import { DistributedStorageMachinesTab } from './components/DistributedStorageMachinesTab';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { showMessage } from '@/utils/messages';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import {
   useDistributedStorageClusters,
   useDistributedStoragePools,
-} from '@/api/queries/distributedStorage'
+} from '@/api/queries/distributedStorage';
 import {
   useCreateDistributedStorageCluster,
   useCreateDistributedStoragePool,
@@ -28,9 +24,12 @@ import {
   useUpdateDistributedStoragePoolVault,
   useDeleteDistributedStorageCluster,
   useDeleteDistributedStoragePool,
-} from '@/api/queries/distributedStorageMutations'
-import type { DistributedStorageCluster, DistributedStoragePool } from '@/api/queries/distributedStorage'
-import { PageCard, PrimaryIconButton, SecondaryIconButton } from '@/styles/primitives'
+} from '@/api/queries/distributedStorageMutations';
+import type {
+  DistributedStorageCluster,
+  DistributedStoragePool,
+} from '@/api/queries/distributedStorage';
+import { PageCard, PrimaryIconButton, SecondaryIconButton } from '@/styles/primitives';
 import {
   PageWrapper,
   HeaderSection,
@@ -40,93 +39,91 @@ import {
   TeamSelectorWrapper,
   ActionGroup,
   EmptyState,
-} from './styles'
+} from './styles';
 
-type DistributedStorageView = 'clusters' | 'pools' | 'machines'
+type DistributedStorageView = 'clusters' | 'pools' | 'machines';
 
 interface DistributedStoragePageProps {
-  view?: DistributedStorageView
+  view?: DistributedStorageView;
 }
 
 type ModalData =
   | (Partial<DistributedStorageCluster> & Record<string, unknown>)
-  | (Partial<DistributedStoragePool> & Record<string, unknown>)
+  | (Partial<DistributedStoragePool> & Record<string, unknown>);
 
 interface ClusterFormValues extends Record<string, unknown> {
-  clusterName: string
-  clusterVault: string
-  vaultVersion?: number
+  clusterName: string;
+  clusterVault: string;
+  vaultVersion?: number;
 }
 
 interface PoolFormValues extends Record<string, unknown> {
-  teamName: string
-  clusterName: string
-  poolName: string
-  poolVault: string
-  vaultVersion?: number
+  teamName: string;
+  clusterName: string;
+  poolName: string;
+  poolVault: string;
+  vaultVersion?: number;
 }
 
-type ModalFormValues = ClusterFormValues | PoolFormValues
+type ModalFormValues = ClusterFormValues | PoolFormValues;
 
 const isPoolFormValues = (values: ModalFormValues): values is PoolFormValues => {
-  return 'poolName' in values
-}
+  return 'poolName' in values;
+};
 
 const isPoolEntity = (
   data: DistributedStorageCluster | DistributedStoragePool
 ): data is DistributedStoragePool => {
-  return 'poolName' in data
-}
+  return 'poolName' in data;
+};
 
 const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 'clusters' }) => {
-  const { t } = useTranslation(['distributedStorage', 'common'])
+  const { t } = useTranslation(['distributedStorage', 'common']);
 
-  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection()
-  const queueTrace = useQueueTraceModal()
-  const { data: companyData } = useCompanyInfo()
+  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection();
+  const queueTrace = useQueueTraceModal();
+  const { data: companyData } = useCompanyInfo();
   const [modalState, setModalState] = useState<{
-    open: boolean
-    type: 'cluster' | 'pool'
-    mode: 'create' | 'edit' | 'vault'
-    data?: ModalData
-  }>({ open: false, type: 'cluster', mode: 'create' })
+    open: boolean;
+    type: 'cluster' | 'pool';
+    mode: 'create' | 'edit' | 'vault';
+    data?: ModalData;
+  }>({ open: false, type: 'cluster', mode: 'create' });
 
-  const planCode = companyData?.activeSubscription?.planCode
-  const hasDistributedStorageAccess = planCode === 'ENTERPRISE' || planCode === 'BUSINESS'
-  const hasSelectedTeam = selectedTeams.length > 0
-  const teamFilter = hasSelectedTeam ? selectedTeams : undefined
-  const primaryTeam = hasSelectedTeam ? selectedTeams[0] : undefined
+  const planCode = companyData?.activeSubscription?.planCode;
+  const hasDistributedStorageAccess = planCode === 'ENTERPRISE' || planCode === 'BUSINESS';
+  const hasSelectedTeam = selectedTeams.length > 0;
+  const teamFilter = hasSelectedTeam ? selectedTeams : undefined;
+  const primaryTeam = hasSelectedTeam ? selectedTeams[0] : undefined;
 
-  const isClustersView = view === 'clusters'
-  const isPoolsView = view === 'pools'
-  const isMachinesView = view === 'machines'
+  const isClustersView = view === 'clusters';
+  const isPoolsView = view === 'pools';
+  const isMachinesView = view === 'machines';
 
   const {
     data: clusters = [],
     isLoading: clustersLoading,
     refetch: refetchClusters,
-  } = useDistributedStorageClusters(
-    teamFilter,
-    hasDistributedStorageAccess && !!companyData,
-  )
+  } = useDistributedStorageClusters(teamFilter, hasDistributedStorageAccess && !!companyData);
 
-  const shouldLoadPools = hasDistributedStorageAccess && !!companyData && hasSelectedTeam && isPoolsView
+  const shouldLoadPools =
+    hasDistributedStorageAccess && !!companyData && hasSelectedTeam && isPoolsView;
 
   const {
     data: pools = [],
     isLoading: poolsLoading,
     refetch: refetchPools,
-  } = useDistributedStoragePools(teamFilter, shouldLoadPools)
+  } = useDistributedStoragePools(teamFilter, shouldLoadPools);
 
-  const createClusterMutation = useCreateDistributedStorageCluster()
-  const createPoolMutation = useCreateDistributedStoragePool()
-  const updateClusterVaultMutation = useUpdateDistributedStorageClusterVault()
-  const updatePoolVaultMutation = useUpdateDistributedStoragePoolVault()
-  const deleteClusterMutation = useDeleteDistributedStorageCluster()
-  const deletePoolMutation = useDeleteDistributedStoragePool()
+  const createClusterMutation = useCreateDistributedStorageCluster();
+  const createPoolMutation = useCreateDistributedStoragePool();
+  const updateClusterVaultMutation = useUpdateDistributedStorageClusterVault();
+  const updatePoolVaultMutation = useUpdateDistributedStoragePoolVault();
+  const deleteClusterMutation = useDeleteDistributedStorageCluster();
+  const deletePoolMutation = useDeleteDistributedStoragePool();
 
-  useManagedQueueItem()
-  useQueueVaultBuilder()
+  useManagedQueueItem();
+  useQueueVaultBuilder();
 
   if (!companyData) {
     return (
@@ -135,21 +132,21 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
           <Alert message="Loading company data..." type="info" showIcon />
         </PageCard>
       </PageWrapper>
-    )
+    );
   }
 
   const openModal = (
     type: 'cluster' | 'pool',
     mode: 'create' | 'edit' | 'vault',
-    data?: ModalData,
+    data?: ModalData
   ) => {
     setModalState({
       open: true,
       type,
       mode,
       data,
-    })
-  }
+    });
+  };
 
   const closeModal = () => {
     setModalState({
@@ -157,26 +154,26 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
       type: 'cluster',
       mode: 'create',
       data: undefined,
-    })
-  }
+    });
+  };
 
   const handleModalSubmit = async (data: ModalFormValues) => {
     try {
-      const { type, mode } = modalState
+      const { type, mode } = modalState;
 
       if (mode === 'create') {
         if (type === 'cluster' && !isPoolFormValues(data)) {
           await createClusterMutation.mutateAsync({
             clusterName: data.clusterName,
             clusterVault: data.clusterVault,
-          })
+          });
         } else if (type === 'pool' && isPoolFormValues(data)) {
           await createPoolMutation.mutateAsync({
             teamName: data.teamName,
             clusterName: data.clusterName,
             poolName: data.poolName,
             poolVault: data.poolVault,
-          })
+          });
         }
       } else if (mode === 'edit' || mode === 'vault') {
         if (type === 'cluster' && !isPoolFormValues(data)) {
@@ -184,22 +181,22 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
             clusterName: data.clusterName,
             clusterVault: data.clusterVault,
             vaultVersion: data.vaultVersion,
-          })
+          });
         } else if (type === 'pool' && isPoolFormValues(data)) {
           await updatePoolVaultMutation.mutateAsync({
             poolName: data.poolName,
             teamName: data.teamName,
             poolVault: data.poolVault,
             vaultVersion: data.vaultVersion,
-          })
+          });
         }
       }
 
-      closeModal()
+      closeModal();
     } catch {
       // Error handled by mutation
     }
-  }
+  };
 
   const handleDelete = async (
     type: 'cluster' | 'pool',
@@ -209,22 +206,22 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
       if (type === 'cluster' && !isPoolEntity(data)) {
         await deleteClusterMutation.mutateAsync({
           clusterName: data.clusterName,
-        })
+        });
       } else if (type === 'pool' && isPoolEntity(data)) {
         await deletePoolMutation.mutateAsync({
           poolName: data.poolName,
           teamName: data.teamName,
-        })
+        });
       }
     } catch {
       // Error handled by mutation
     }
-  }
+  };
 
   const handleFunctionSubmit = async (_functionData: unknown) => {
-    showMessage('info', 'Function execution coming soon')
-    closeModal()
-  }
+    showMessage('info', 'Function execution coming soon');
+    closeModal();
+  };
 
   if (!hasDistributedStorageAccess) {
     return (
@@ -232,7 +229,7 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
         <PageCard>
           <Alert
             message={t('accessDenied.title')}
-            description={(
+            description={
               <>
                 {t('accessDenied.description')}
                 <br />
@@ -245,14 +242,14 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
                 <br />
                 Company Data: {JSON.stringify(companyData, null, 2)}
               </>
-            )}
+            }
             type="warning"
             showIcon
             icon={<SettingOutlined />}
           />
         </PageCard>
       </PageWrapper>
-    )
+    );
   }
 
   const renderContent = () => {
@@ -261,7 +258,7 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
         <EmptyState>
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('selectTeamPrompt')} />
         </EmptyState>
-      )
+      );
     }
 
     if (isClustersView) {
@@ -272,9 +269,11 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
           onCreateCluster={() => openModal('cluster', 'create')}
           onEditCluster={(cluster) => openModal('cluster', 'edit', cluster)}
           onDeleteCluster={(cluster) => handleDelete('cluster', cluster)}
-          onRunFunction={(cluster) => openModal('cluster', 'create', { ...cluster, isFunction: true })}
+          onRunFunction={(cluster) =>
+            openModal('cluster', 'create', { ...cluster, isFunction: true })
+          }
         />
-      )
+      );
     }
 
     if (isPoolsView) {
@@ -288,23 +287,19 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
           onDeletePool={(pool) => handleDelete('pool', pool)}
           onRunFunction={(pool) => openModal('pool', 'create', { ...pool, isFunction: true })}
         />
-      )
+      );
     }
 
-    return (
-      <DistributedStorageMachinesTab
-        teamFilter={teamFilter}
-      />
-    )
-  }
+    return <DistributedStorageMachinesTab teamFilter={teamFilter} />;
+  };
 
   const renderActions = () => {
     if (!hasSelectedTeam || isMachinesView) {
-      return null
+      return null;
     }
 
-    const createLabel = isClustersView ? t('clusters.create') : t('pools.create')
-    const createTestId = isClustersView ? 'ds-create-cluster-button' : 'ds-create-pool-button'
+    const createLabel = isClustersView ? t('clusters.create') : t('pools.create');
+    const createTestId = isClustersView ? 'ds-create-cluster-button' : 'ds-create-pool-button';
 
     return (
       <ActionGroup>
@@ -314,9 +309,9 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
             icon={<PlusOutlined />}
             onClick={() => {
               if (isClustersView) {
-                openModal('cluster', 'create')
+                openModal('cluster', 'create');
               } else if (isPoolsView) {
-                openModal('pool', 'create')
+                openModal('pool', 'create');
               }
             }}
             data-testid={createTestId}
@@ -328,9 +323,9 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
             icon={<ReloadOutlined />}
             onClick={() => {
               if (isClustersView) {
-                refetchClusters()
+                refetchClusters();
               } else if (isPoolsView) {
-                refetchPools()
+                refetchPools();
               }
             }}
             data-testid="ds-refresh-button"
@@ -338,8 +333,8 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
           />
         </Tooltip>
       </ActionGroup>
-    )
-  }
+    );
+  };
 
   return (
     <PageWrapper>
@@ -379,45 +374,50 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
               teamName: primaryTeam,
               clusters: clusters,
               pools: pools,
-              vaultContent: modalState.data?.vaultContent || modalState.data?.[`${modalState.type}Vault`],
+              vaultContent:
+                modalState.data?.vaultContent || modalState.data?.[`${modalState.type}Vault`],
             }}
             teamFilter={primaryTeam}
             onSubmit={handleModalSubmit}
             onFunctionSubmit={handleFunctionSubmit}
             onUpdateVault={async (vault: string, version: number) => {
-              const data = modalState.data || {}
+              const data = modalState.data || {};
               if (modalState.type === 'cluster') {
                 await updateClusterVaultMutation.mutateAsync({
                   clusterName: data.clusterName,
                   clusterVault: vault,
                   vaultVersion: version,
-                })
+                });
               } else if (modalState.type === 'pool' && primaryTeam) {
                 await updatePoolVaultMutation.mutateAsync({
                   teamName: primaryTeam,
                   poolName: data.poolName,
                   poolVault: vault,
                   vaultVersion: version,
-                })
+                });
               }
             }}
-            isSubmitting={
-              createClusterMutation.isPending ||
-              createPoolMutation.isPending
-            }
+            isSubmitting={createClusterMutation.isPending || createPoolMutation.isPending}
             isUpdatingVault={
-              updateClusterVaultMutation.isPending ||
-              updatePoolVaultMutation.isPending
+              updateClusterVaultMutation.isPending || updatePoolVaultMutation.isPending
             }
             functionCategories={modalState.data?.isFunction ? [modalState.type] : []}
-            hiddenParams={modalState.data?.isFunction ?
-              (modalState.type === 'cluster' ? ['cluster_name'] : ['cluster_name', 'pool_name']) : []
+            hiddenParams={
+              modalState.data?.isFunction
+                ? modalState.type === 'cluster'
+                  ? ['cluster_name']
+                  : ['cluster_name', 'pool_name']
+                : []
             }
-            defaultParams={modalState.data?.isFunction ?
-              (modalState.type === 'cluster' ?
-                { cluster_name: modalState.data.clusterName } :
-                { cluster_name: modalState.data.clusterName, pool_name: modalState.data.poolName }
-              ) : {}
+            defaultParams={
+              modalState.data?.isFunction
+                ? modalState.type === 'cluster'
+                  ? { cluster_name: modalState.data.clusterName }
+                  : {
+                      cluster_name: modalState.data.clusterName,
+                      pool_name: modalState.data.poolName,
+                    }
+                : {}
             }
             preselectedFunction={modalState.data?.preselectedFunction}
           />
@@ -427,18 +427,18 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
             open={queueTrace.state.open}
             data-testid="ds-queue-trace-modal"
             onCancel={() => {
-              queueTrace.close()
+              queueTrace.close();
               if (isClustersView) {
-                refetchClusters()
+                refetchClusters();
               } else if (isPoolsView) {
-                refetchPools()
+                refetchPools();
               }
             }}
           />
         </>
       )}
     </PageWrapper>
-  )
-}
+  );
+};
 
-export default DistributedStoragePage
+export default DistributedStoragePage;

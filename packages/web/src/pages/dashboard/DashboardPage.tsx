@@ -1,7 +1,7 @@
-import React from 'react'
-import { Col, Row, Alert, Tag, Typography, Statistic, Empty, Tooltip, Table } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
-import { useTheme as useStyledTheme } from 'styled-components'
+import React from 'react';
+import { Col, Row, Alert, Tag, Typography, Statistic, Empty, Tooltip, Table } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { useTheme as useStyledTheme } from 'styled-components';
 import {
   AlertOutlined,
   CheckCircleOutlined,
@@ -23,15 +23,15 @@ import {
   FieldTimeOutlined,
   RobotOutlined,
   TeamOutlined,
-} from '@/utils/optimizedIcons'
-import { useDashboard } from '@/api/queries/dashboard'
-import type { QueueTeamIssue, QueueMachineIssue } from '@rediacc/shared/types'
-import { useRecentAuditLogs } from '@/api/queries/audit'
-import DistributedStorageDashboardWidget from '@/pages/dashboard/components/DistributedStorageDashboardWidget'
-import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter'
-import { createSorter } from '@/core'
-import { createTruncatedColumn } from '@/components/common/columns'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
+} from '@/utils/optimizedIcons';
+import { useDashboard } from '@/api/queries/dashboard';
+import type { QueueTeamIssue, QueueMachineIssue } from '@rediacc/shared/types';
+import { useRecentAuditLogs } from '@/api/queries/audit';
+import DistributedStorageDashboardWidget from '@/pages/dashboard/components/DistributedStorageDashboardWidget';
+import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
+import { createSorter } from '@/core';
+import { createTruncatedColumn } from '@/components/common/columns';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {
   PageWrapper,
   ContentStack,
@@ -65,82 +65,87 @@ import {
   PlanCountBadge,
   QuantityBadge,
   HorizontalScroll,
-} from './styles'
+} from './styles';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 const resourceIcons: Record<string, React.ReactNode> = {
   Machine: <DesktopOutlined />,
   Repo: <InboxOutlined />,
-}
+};
 
-const CRITICAL_DAYS_THRESHOLD = 30
-const RECENT_AUDIT_LOGS_COUNT = 6
-const DESCRIPTION_TRUNCATE_LENGTH = 80
+const CRITICAL_DAYS_THRESHOLD = 30;
+const RECENT_AUDIT_LOGS_COUNT = 6;
+const DESCRIPTION_TRUNCATE_LENGTH = 80;
 
 const STATUS_TYPE_MAP: Record<string, 'success' | 'warning' | 'error'> = {
   Critical: 'error',
   Warning: 'warning',
   Good: 'success',
-}
+};
 
 const PROGRESS_THRESHOLDS = {
   EXCEPTION: 90,
   NORMAL: 75,
-}
+};
 
 const getProgressStatus = (percentage: number): 'exception' | 'normal' | 'success' => {
-  if (percentage >= PROGRESS_THRESHOLDS.EXCEPTION) return 'exception'
-  if (percentage >= PROGRESS_THRESHOLDS.NORMAL) return 'normal'
-  return 'success'
-}
+  if (percentage >= PROGRESS_THRESHOLDS.EXCEPTION) return 'exception';
+  if (percentage >= PROGRESS_THRESHOLDS.NORMAL) return 'normal';
+  return 'success';
+};
 
 const DashboardPage: React.FC = () => {
-  const { data: dashboard, isLoading, error } = useDashboard()
-  const { data: auditLogs, isLoading: auditLoading } = useRecentAuditLogs(RECENT_AUDIT_LOGS_COUNT)
-  const theme = useStyledTheme()
+  const { data: dashboard, isLoading, error } = useDashboard();
+  const { data: auditLogs, isLoading: auditLoading } = useRecentAuditLogs(RECENT_AUDIT_LOGS_COUNT);
+  const theme = useStyledTheme();
 
   const getActionIcon = (action: string) => {
-    const actionLower = action.toLowerCase()
-    if (actionLower.includes('create')) return <CheckCircleOutlined style={{ color: theme.colors.success }} />
-    if (actionLower.includes('delete')) return <CloseCircleOutlined style={{ color: theme.colors.error }} />
-    if (actionLower.includes('update') || actionLower.includes('modify')) return <EditOutlined style={{ color: theme.colors.warning }} />
-    if (actionLower.includes('login') || actionLower.includes('auth')) return <LoginOutlined style={{ color: theme.colors.info }} />
-    if (actionLower.includes('export') || actionLower.includes('import')) return <SwapOutlined style={{ color: theme.colors.primary }} />
-    return <InfoCircleOutlined style={{ color: theme.colors.textSecondary }} />
-  }
+    const actionLower = action.toLowerCase();
+    if (actionLower.includes('create'))
+      return <CheckCircleOutlined style={{ color: theme.colors.success }} />;
+    if (actionLower.includes('delete'))
+      return <CloseCircleOutlined style={{ color: theme.colors.error }} />;
+    if (actionLower.includes('update') || actionLower.includes('modify'))
+      return <EditOutlined style={{ color: theme.colors.warning }} />;
+    if (actionLower.includes('login') || actionLower.includes('auth'))
+      return <LoginOutlined style={{ color: theme.colors.info }} />;
+    if (actionLower.includes('export') || actionLower.includes('import'))
+      return <SwapOutlined style={{ color: theme.colors.primary }} />;
+    return <InfoCircleOutlined style={{ color: theme.colors.textSecondary }} />;
+  };
 
   const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
 
-    if (diffMins < 1) return 'just now'
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
 
-    const diffHours = Math.floor(diffMins / 60)
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
 
-    const diffDays = Math.floor(diffHours / 24)
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 
-    return date.toLocaleDateString()
-  }
+    return date.toLocaleDateString();
+  };
 
-const machineNameColumn = createTruncatedColumn<QueueMachineIssue>({
-  title: 'Machine',
-  dataIndex: 'machineName',
-  key: 'machineName',
-  sorter: createSorter<QueueMachineIssue>('machineName'),
-})
+  const machineNameColumn = createTruncatedColumn<QueueMachineIssue>({
+    title: 'Machine',
+    dataIndex: 'machineName',
+    key: 'machineName',
+    sorter: createSorter<QueueMachineIssue>('machineName'),
+  });
 
-const teamColumn = createTruncatedColumn<QueueMachineIssue>({
-  title: 'Team',
-  dataIndex: 'teamName',
-  key: 'teamName',
-  sorter: createSorter<QueueMachineIssue>('teamName'),
-})
+  const teamColumn = createTruncatedColumn<QueueMachineIssue>({
+    title: 'Team',
+    dataIndex: 'teamName',
+    key: 'teamName',
+    sorter: createSorter<QueueMachineIssue>('teamName'),
+  });
 
   const machineIssueColumns: ColumnsType<QueueMachineIssue> = [
     machineNameColumn,
@@ -157,7 +162,7 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
         </InlineStack>
       ),
     },
-  ]
+  ];
 
   if (isLoading) {
     return (
@@ -168,7 +173,7 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
           </LoadingWrapper>
         </CenteredState>
       </PageWrapper>
-    )
+    );
   }
 
   if (error) {
@@ -183,7 +188,7 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
           data-testid="dashboard-error-alert"
         />
       </PageWrapper>
-    )
+    );
   }
 
   if (!dashboard) {
@@ -191,21 +196,23 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
       <PageWrapper>
         <Empty description="No dashboard data available" />
       </PageWrapper>
-    )
+    );
   }
 
-  const activeSubscriptions = dashboard.allActiveSubscriptions || []
-  const queueStats = dashboard.queueStats
+  const activeSubscriptions = dashboard.allActiveSubscriptions || [];
+  const queueStats = dashboard.queueStats;
   const teamIssues: QueueTeamIssue[] = Array.isArray(queueStats?.teamIssues)
     ? (queueStats!.teamIssues as QueueTeamIssue[])
-    : []
+    : [];
   const machineIssues: QueueMachineIssue[] = Array.isArray(queueStats?.machineIssues)
     ? (queueStats!.machineIssues as QueueMachineIssue[])
-    : []
-  const hasQueueDetails = Boolean(queueStats && (teamIssues.length > 0 || machineIssues.length > 0))
-  const accountHealth = dashboard.accountHealth
-  const planLimits = dashboard.planLimits
-  const featureAccess = dashboard.featureAccess
+    : [];
+  const hasQueueDetails = Boolean(
+    queueStats && (teamIssues.length > 0 || machineIssues.length > 0)
+  );
+  const accountHealth = dashboard.accountHealth;
+  const planLimits = dashboard.planLimits;
+  const featureAccess = dashboard.featureAccess;
 
   return (
     <PageWrapper>
@@ -239,14 +246,22 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
               <span>Resource Usage</span>
             </InlineStack>
           }
-          extra={<SectionDescription>Monitor your resource consumption against plan limits</SectionDescription>}
+          extra={
+            <SectionDescription>
+              Monitor your resource consumption against plan limits
+            </SectionDescription>
+          }
           data-testid="dashboard-card-resource-usage"
         >
           <Row gutter={[16, 24]}>
             {dashboard.resources
-              .filter((resource) => resource.resourceType === 'Machine' || resource.resourceType === 'Repo')
+              .filter(
+                (resource) =>
+                  resource.resourceType === 'Machine' || resource.resourceType === 'Repo'
+              )
               .map((resource) => {
-                const progressColor = resource.isLimitReached === 1 ? theme.colors.error : theme.colors.primary
+                const progressColor =
+                  resource.isLimitReached === 1 ? theme.colors.error : theme.colors.primary;
                 return (
                   <Col key={resource.resourceType} xs={24} sm={12} md={8}>
                     <ResourceTile>
@@ -257,7 +272,8 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
                             <Text strong>{resource.resourceType}s</Text>
                           </InlineStack>
                           <TileMeta>
-                            {resource.currentUsage} / {resource.resourceLimit === 0 ? '∞' : resource.resourceLimit}
+                            {resource.currentUsage} /{' '}
+                            {resource.resourceLimit === 0 ? '∞' : resource.resourceLimit}
                           </TileMeta>
                         </TileHeader>
                         <ResourceProgress
@@ -274,7 +290,7 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
                       </StatList>
                     </ResourceTile>
                   </Col>
-                )
+                );
               })}
           </Row>
         </DashboardCard>
@@ -284,7 +300,9 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
             <InlineStack>
               <CrownOutlined />
               <span>Subscription & Plan Details - {planLimits?.planCode ?? 'N/A'}</span>
-              {activeSubscriptions.length > 0 && <PlanCountBadge count={activeSubscriptions.length} />}
+              {activeSubscriptions.length > 0 && (
+                <PlanCountBadge count={activeSubscriptions.length} />
+              )}
             </InlineStack>
           }
           data-testid="dashboard-card-subscription-plans"
@@ -337,31 +355,45 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
                     <StatList size="small">
                       {activeSubscriptions.map((sub, index) => {
                         const percent = (() => {
-                          const startDate = new Date(sub.startDate)
-                          const endDate = new Date(sub.endDate)
-                          const now = new Date()
+                          const startDate = new Date(sub.startDate);
+                          const endDate = new Date(sub.endDate);
+                          const now = new Date();
 
-                          if (now < startDate) return 0
-                          if (now > endDate) return 100
+                          if (now < startDate) return 0;
+                          if (now > endDate) return 100;
 
-                          const total = endDate.getTime() - startDate.getTime()
-                          const elapsed = now.getTime() - startDate.getTime()
-                          return Math.round(Math.max(0, Math.min(100, (elapsed / total) * 100)))
-                        })()
+                          const total = endDate.getTime() - startDate.getTime();
+                          const elapsed = now.getTime() - startDate.getTime();
+                          return Math.round(Math.max(0, Math.min(100, (elapsed / total) * 100)));
+                        })();
 
                         const strokeColor =
-                          sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD ? theme.colors.error : theme.colors.primary
+                          sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD
+                            ? theme.colors.error
+                            : theme.colors.primary;
 
                         return (
-                          <LicenseItem key={`${sub.planCode}-${index}`} data-testid={`dashboard-license-item-${index}`}>
+                          <LicenseItem
+                            key={`${sub.planCode}-${index}`}
+                            data-testid={`dashboard-license-item-${index}`}
+                          >
                             <LicenseHeader>
                               <InlineStack>
                                 <Text strong>{sub.planCode}</Text>
                                 <QuantityBadge count={`×${sub.quantity}`} />
                                 {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
                               </InlineStack>
-                              <StatLabel as="span" style={{ color: sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD ? theme.colors.error : theme.colors.textSecondary }}>
-                                {sub.daysRemaining} {sub.daysRemaining === 1 ? 'day' : 'days'} remaining
+                              <StatLabel
+                                as="span"
+                                style={{
+                                  color:
+                                    sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD
+                                      ? theme.colors.error
+                                      : theme.colors.textSecondary,
+                                }}
+                              >
+                                {sub.daysRemaining} {sub.daysRemaining === 1 ? 'day' : 'days'}{' '}
+                                remaining
                               </StatLabel>
                             </LicenseHeader>
                             <Tooltip
@@ -376,7 +408,7 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
                               />
                             </Tooltip>
                           </LicenseItem>
-                        )
+                        );
                       })}
                     </StatList>
                   </ScrollContainer>
@@ -388,16 +420,34 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
           {planLimits ? (
             <Row gutter={[24, 24]}>
               <Col xs={24} md={6}>
-                <Statistic title="Max Active Jobs" value={planLimits.maxActiveJobs} valueStyle={{ color: theme.colors.primary }} />
+                <Statistic
+                  title="Max Active Jobs"
+                  value={planLimits.maxActiveJobs}
+                  valueStyle={{ color: theme.colors.primary }}
+                />
               </Col>
               <Col xs={24} md={6}>
-                <Statistic title="Max Reserved Jobs" value={planLimits.maxReservedJobs} valueStyle={{ color: theme.colors.primary }} />
+                <Statistic
+                  title="Max Reserved Jobs"
+                  value={planLimits.maxReservedJobs}
+                  valueStyle={{ color: theme.colors.primary }}
+                />
               </Col>
               <Col xs={24} md={6}>
-                <Statistic title="Job Timeout" value={planLimits.jobTimeoutHours} suffix="hours" valueStyle={{ color: theme.colors.primary }} />
+                <Statistic
+                  title="Job Timeout"
+                  value={planLimits.jobTimeoutHours}
+                  suffix="hours"
+                  valueStyle={{ color: theme.colors.primary }}
+                />
               </Col>
               <Col xs={24} md={6}>
-                <Statistic title="Max Repo Size" value={planLimits.maxRepoSize} suffix="GB" valueStyle={{ color: theme.colors.primary }} />
+                <Statistic
+                  title="Max Repo Size"
+                  value={planLimits.maxRepoSize}
+                  suffix="GB"
+                  valueStyle={{ color: theme.colors.primary }}
+                />
               </Col>
             </Row>
           ) : (
@@ -515,7 +565,9 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
                   <StatList>
                     <StatRow>
                       <StatLabel>Created</StatLabel>
-                      <StatValue data-testid="dashboard-stat-created-today">{queueStats.createdToday || 0}</StatValue>
+                      <StatValue data-testid="dashboard-stat-created-today">
+                        {queueStats.createdToday || 0}
+                      </StatValue>
                     </StatRow>
                     <StatRow>
                       <StatLabel>Completed</StatLabel>
@@ -543,7 +595,7 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
                 <StatList>
                   {teamIssues.length > 0 && (
                     <div>
-                      <Text strong style={{ marginBottom: theme.spacing.SM }}> 
+                      <Text strong style={{ marginBottom: theme.spacing.SM }}>
                         <TeamOutlined /> Team Queue Status
                       </Text>
                       <BorderlessList
@@ -551,7 +603,7 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
                         dataSource={teamIssues}
                         data-testid="dashboard-list-team-issues"
                         renderItem={(team) => {
-                          const teamIssue = team as QueueTeamIssue
+                          const teamIssue = team as QueueTeamIssue;
                           return (
                             <BorderlessListItem>
                               <FlexBetween>
@@ -567,7 +619,7 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
                                 </InlineStack>
                               </FlexBetween>
                             </BorderlessListItem>
-                          )
+                          );
                         }}
                       />
                     </div>
@@ -591,7 +643,7 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
                     </div>
                   )}
 
-                {featureAccess?.hasAdvancedAnalytics === 1 &&
+                  {featureAccess?.hasAdvancedAnalytics === 1 &&
                     queueStats.highestPriorityPending !== null && (
                       <ResourceTile>
                         <Text strong>
@@ -720,10 +772,10 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
             <TimelineWrapper
               items={auditLogs
                 .filter((log) => {
-                  const action = log.action.toLowerCase()
-                  const isTokenValidation = action.includes('token') && action.includes('validat')
-                  const isRoutineAuth = action.includes('login') && action.includes('success')
-                  return !isTokenValidation && !isRoutineAuth
+                  const action = log.action.toLowerCase();
+                  const isTokenValidation = action.includes('token') && action.includes('validat');
+                  const isRoutineAuth = action.includes('login') && action.includes('success');
+                  return !isTokenValidation && !isRoutineAuth;
                 })
                 .slice(0, 5)
                 .map((log, index) => ({
@@ -762,7 +814,7 @@ const teamColumn = createTruncatedColumn<QueueMachineIssue>({
         <SystemVersionFooter />
       </ContentStack>
     </PageWrapper>
-  )
-}
+  );
+};
 
-export default DashboardPage
+export default DashboardPage;

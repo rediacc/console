@@ -1,19 +1,15 @@
-import styled, { css } from 'styled-components'
-import { Button, Tag, Typography } from 'antd'
-import {
-  InfoCircleOutlined,
-  UploadOutlined,
-  DownloadOutlined,
-} from '@/utils/optimizedIcons'
+import styled, { css } from 'styled-components';
+import { Button, Tag, Typography } from 'antd';
+import { InfoCircleOutlined, UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 export const ContentStack = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const VersionBanner = styled.div`
   display: flex;
@@ -23,14 +19,14 @@ export const VersionBanner = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   background-color: ${({ theme }) => theme.colors.bgSecondary};
-`
+`;
 
 export const VersionLabel = styled(Text)`
   && {
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
-`
+`;
 
 export const VersionTag = styled(Tag)`
   && {
@@ -38,14 +34,14 @@ export const VersionTag = styled(Tag)`
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
-`
+`;
 
 export const VersionDescription = styled(Text)`
   && {
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 export const ValidationAlert = styled.div`
   padding: ${({ theme }) => theme.spacing.MD}px;
@@ -54,7 +50,7 @@ export const ValidationAlert = styled.div`
   background-color: ${({ theme }) => theme.colors.bgError};
   color: ${({ theme }) => theme.colors.error};
   font-size: ${({ theme }) => theme.fontSize.SM}px;
-`
+`;
 
 export const ValidationTitle = styled(Text)`
   && {
@@ -62,7 +58,7 @@ export const ValidationTitle = styled(Text)`
     margin-bottom: ${({ theme }) => theme.spacing.XS}px;
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
-`
+`;
 
 export const ValidationList = styled.ul`
   margin: 0;
@@ -70,11 +66,11 @@ export const ValidationList = styled.ul`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 export const FooterWrapper = styled.div`
   margin-top: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const FooterBar = styled.div`
   display: flex;
@@ -82,38 +78,38 @@ export const FooterBar = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.MD}px;
   flex-wrap: wrap;
-`
+`;
 
 export const FileActions = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.SM}px;
   align-items: center;
-`
+`;
 
 export const ActionGroup = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.SM}px;
   align-items: center;
-`
+`;
 
 const baseButtonStyles = css`
   min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_SM}px;
   border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   font-size: ${({ theme }) => theme.fontSize.SM}px;
-`
+`;
 
 export const FileActionButton = styled(Button)`
   && {
     ${baseButtonStyles}
   }
-`
+`;
 
 export const CancelButton = styled(Button)`
   && {
     ${baseButtonStyles}
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
-`
+`;
 
 export const SaveButton = styled(Button)`
   && {
@@ -128,7 +124,7 @@ export const SaveButton = styled(Button)`
       border-color: ${({ theme }) => theme.colors.primaryHover};
     }
   }
-`
+`;
 
 export const UnsavedChangesText = styled.span`
   display: flex;
@@ -136,23 +132,23 @@ export const UnsavedChangesText = styled.span`
   gap: ${({ theme }) => theme.spacing.XS}px;
   color: ${({ theme }) => theme.colors.warning};
   font-size: ${({ theme }) => theme.fontSize.XS}px;
-`
+`;
 
 export const UnsavedVersionHint = styled(Text)`
   && {
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 export const WarningIcon = styled(InfoCircleOutlined)`
   font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
-`
+`;
 
 export const UploadIcon = styled(UploadOutlined)`
   font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
-`
+`;
 
 export const DownloadIcon = styled(DownloadOutlined)`
   font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
-`
+`;

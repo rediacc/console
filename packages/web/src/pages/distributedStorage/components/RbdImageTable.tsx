@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import type { Key } from 'react'
-import { Table, Button, Space, Tag, Tooltip, message } from 'antd'
-import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
+import { useState } from 'react';
+import type { Key } from 'react';
+import { Table, Button, Space, Tag, Tooltip, message } from 'antd';
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
   PlusOutlined,
   SettingOutlined,
@@ -17,98 +17,101 @@ import {
   CheckCircleOutlined,
   DesktopOutlined,
   SyncOutlined,
-  CloudServerOutlined
-} from '@ant-design/icons'
-import { useTranslation } from 'react-i18next'
-import type { MenuProps, TableProps } from 'antd'
-import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
+  CloudServerOutlined,
+} from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
+import type { MenuProps, TableProps } from 'antd';
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles';
 import {
   useDistributedStorageRbdImages,
   useAvailableMachinesForClone,
   type DistributedStorageRbdImage,
-  type DistributedStoragePool
-} from '@/api/queries/distributedStorage'
+  type DistributedStoragePool,
+} from '@/api/queries/distributedStorage';
 import {
   useDeleteDistributedStorageRbdImage,
   useCreateDistributedStorageRbdImage,
   useUpdateDistributedStoragePoolVault,
-} from '@/api/queries/distributedStorageMutations'
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import { ImageMachineReassignmentModal } from '@/pages/distributedStorage/components/ImageMachineReassignmentModal'
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
-import { useDialogState, useQueueTraceModal, useExpandableTable } from '@/hooks'
-import { createActionColumn, createTruncatedColumn } from '@/components/common/columns'
-import SnapshotTable from './SnapshotTable'
-import { createSorter } from '@/core'
+} from '@/api/queries/distributedStorageMutations';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ImageMachineReassignmentModal } from '@/pages/distributedStorage/components/ImageMachineReassignmentModal';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import { useDialogState, useQueueTraceModal, useExpandableTable } from '@/hooks';
+import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
+import SnapshotTable from './SnapshotTable';
+import { createSorter } from '@/core';
 
 interface RbdImageTableProps {
-  pool: DistributedStoragePool
-  teamFilter: string | string[]
+  pool: DistributedStoragePool;
+  teamFilter: string | string[];
 }
 
 interface RbdImageModalState {
-  open: boolean
-  mode: 'create' | 'edit' | 'vault'
-  data?: (DistributedStorageRbdImage & { vaultContent?: string | null })
+  open: boolean;
+  mode: 'create' | 'edit' | 'vault';
+  data?: DistributedStorageRbdImage & { vaultContent?: string | null };
 }
 
 interface ImageFormValues extends Record<string, unknown> {
-  imageName: string
-  machineName: string
-  imageVault: string
+  imageName: string;
+  machineName: string;
+  imageVault: string;
 }
 
 const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
-  const { t } = useTranslation('distributedStorage')
-  const tableStyles = useTableStyles()
-  const componentStyles = useComponentStyles()
-  const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable()
-  const [modalState, setModalState] = useState<RbdImageModalState>({ open: false, mode: 'create' })
-  const queueTrace = useQueueTraceModal()
-  const reassignMachineModal = useDialogState<DistributedStorageRbdImage>()
-  const managedQueueMutation = useManagedQueueItem()
-  const { buildQueueVault } = useQueueVaultBuilder()
-  
-  const { data: images = [], isLoading } = useDistributedStorageRbdImages(pool.poolGuid)
-  const deleteImageMutation = useDeleteDistributedStorageRbdImage()
-  const createImageMutation = useCreateDistributedStorageRbdImage()
-  const updateImageVaultMutation = useUpdateDistributedStoragePoolVault()
-  
+  const { t } = useTranslation('distributedStorage');
+  const tableStyles = useTableStyles();
+  const componentStyles = useComponentStyles();
+  const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable();
+  const [modalState, setModalState] = useState<RbdImageModalState>({ open: false, mode: 'create' });
+  const queueTrace = useQueueTraceModal();
+  const reassignMachineModal = useDialogState<DistributedStorageRbdImage>();
+  const managedQueueMutation = useManagedQueueItem();
+  const { buildQueueVault } = useQueueVaultBuilder();
+
+  const { data: images = [], isLoading } = useDistributedStorageRbdImages(pool.poolGuid);
+  const deleteImageMutation = useDeleteDistributedStorageRbdImage();
+  const createImageMutation = useCreateDistributedStorageRbdImage();
+  const updateImageVaultMutation = useUpdateDistributedStoragePoolVault();
+
   // Fetch available machines for the team
-  const { data: availableMachines = [] } = useAvailableMachinesForClone(pool.teamName, modalState.open && modalState.mode === 'create')
+  const { data: availableMachines = [] } = useAvailableMachinesForClone(
+    pool.teamName,
+    modalState.open && modalState.mode === 'create'
+  );
   const getRowProps: TableProps<DistributedStorageRbdImage>['onRow'] = (record) => ({
     'data-testid': `rbd-image-row-${record.imageName}`,
-  })
-  
+  });
+
   const handleCreate = () => {
-    setModalState({ open: true, mode: 'create' })
-  }
-  
+    setModalState({ open: true, mode: 'create' });
+  };
+
   const handleEdit = (image: DistributedStorageRbdImage) => {
-    setModalState({ 
-      open: true, 
-      mode: 'edit', 
+    setModalState({
+      open: true,
+      mode: 'edit',
       data: {
         ...image,
-        vaultContent: image.vaultContent || image.imageVault
-      } 
-    })
-  }
-  
+        vaultContent: image.vaultContent || image.imageVault,
+      },
+    });
+  };
+
   const handleDelete = (image: DistributedStorageRbdImage) => {
     deleteImageMutation.mutate({
       imageName: image.imageName,
       poolName: pool.poolName,
-      teamName: image.teamName
-    })
-  }
-  
+      teamName: image.teamName,
+    });
+  };
+
   const handleReassignMachine = (image: DistributedStorageRbdImage) => {
-    reassignMachineModal.open(image)
-  }
-  
+    reassignMachineModal.open(image);
+  };
+
   const handleRunFunction = async (functionName: string, image?: DistributedStorageRbdImage) => {
     try {
       const queueVault = await buildQueueVault({
@@ -122,31 +125,31 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           image_name: image?.imageName || '',
         },
         priority: 3,
-        addedVia: 'DistributedStorage'
-      })
-      
+        addedVia: 'DistributedStorage',
+      });
+
       const response = await managedQueueMutation.mutateAsync({
         teamName: pool.teamName,
         machineName: pool.clusterName, // Using cluster as machine for distributed storage
         bridgeName: 'default',
         queueVault,
-        priority: 3
-      })
+        priority: 3,
+      });
 
-      const taskId = response.taskId
+      const taskId = response.taskId;
       if (taskId) {
-        handleQueueItemCreated(taskId)
+        handleQueueItemCreated(taskId);
       }
     } catch {
-      message.error(t('queue.createError'))
+      message.error(t('queue.createError'));
     }
-  }
-  
+  };
+
   const handleQueueItemCreated = (taskId: string) => {
-    queueTrace.open(taskId)
-    message.success(t('queue.itemCreated'))
-  }
-  
+    queueTrace.open(taskId);
+    message.success(t('queue.itemCreated'));
+  };
+
   const getImageMenuItems = (image: DistributedStorageRbdImage): MenuProps['items'] => [
     {
       key: 'edit',
@@ -156,14 +159,22 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     },
     {
       key: 'reassignMachine',
-      label: <span data-testid={`rbd-reassign-action-${image.imageName}`}>{t('images.reassignMachine')}</span>,
+      label: (
+        <span data-testid={`rbd-reassign-action-${image.imageName}`}>
+          {t('images.reassignMachine')}
+        </span>
+      ),
       icon: <CloudServerOutlined />,
       onClick: () => handleReassignMachine(image),
     },
     { type: 'divider' },
     {
       key: 'snapshot',
-      label: <span data-testid={`rbd-snapshot-action-${image.imageName}`}>{t('images.createSnapshot')}</span>,
+      label: (
+        <span data-testid={`rbd-snapshot-action-${image.imageName}`}>
+          {t('images.createSnapshot')}
+        </span>
+      ),
       icon: <CameraOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_snapshot_create', image),
     },
@@ -220,14 +231,20 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     },
     {
       key: 'showmapped',
-      label: <span data-testid={`rbd-showmapped-action-${image.imageName}`}>{t('images.showMapped')}</span>,
+      label: (
+        <span data-testid={`rbd-showmapped-action-${image.imageName}`}>
+          {t('images.showMapped')}
+        </span>
+      ),
       icon: <DesktopOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_showmapped', image),
     },
     { type: 'divider' },
     {
       key: 'flatten',
-      label: <span data-testid={`rbd-flatten-action-${image.imageName}`}>{t('images.flatten')}</span>,
+      label: (
+        <span data-testid={`rbd-flatten-action-${image.imageName}`}>{t('images.flatten')}</span>
+      ),
       icon: <SyncOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_flatten', image),
     },
@@ -239,8 +256,8 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       danger: true,
       onClick: () => handleDelete(image),
     },
-  ]
-  
+  ];
+
   const columns = [
     {
       title: t('images.name'),
@@ -249,11 +266,15 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       sorter: createSorter<DistributedStorageRbdImage>('imageName'),
       render: (text: string, record: DistributedStorageRbdImage) => (
         <Space data-testid={`rbd-image-name-${record.imageName}`}>
-          <FileImageOutlined style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }} />
+          <FileImageOutlined
+            style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }}
+          />
           <span style={{ color: 'var(--color-text-primary)' }}>{text}</span>
           {record.vaultContent && (
             <Tooltip title={t('common.hasVault')}>
-              <Tag color="blue" data-testid={`rbd-vault-tag-${record.imageName}`}>{t('common.vault')}</Tag>
+              <Tag color="blue" data-testid={`rbd-vault-tag-${record.imageName}`}>
+                {t('common.vault')}
+              </Tag>
             </Tooltip>
           )}
         </Space>
@@ -274,15 +295,20 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       key: 'machineName',
       width: 200,
       sorter: createSorter<DistributedStorageRbdImage>('machineName'),
-      render: (machineName: string, record: DistributedStorageRbdImage) => machineName ? (
-        <Tag icon={<CloudServerOutlined />} color="blue" data-testid={`rbd-machine-tag-${record.imageName}`}>
-          {machineName}
-        </Tag>
-      ) : (
-        <Tag color="default" data-testid={`rbd-machine-none-${record.imageName}`}>
-          {t('common.none')}
-        </Tag>
-      ),
+      render: (machineName: string, record: DistributedStorageRbdImage) =>
+        machineName ? (
+          <Tag
+            icon={<CloudServerOutlined />}
+            color="blue"
+            data-testid={`rbd-machine-tag-${record.imageName}`}
+          >
+            {machineName}
+          </Tag>
+        ) : (
+          <Tag color="default" data-testid={`rbd-machine-none-${record.imageName}`}>
+            {t('common.none')}
+          </Tag>
+        ),
     },
     createActionColumn<DistributedStorageRbdImage>({
       width: 150,
@@ -312,23 +338,19 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
         />
       ),
     }),
-  ]
-  
+  ];
+
   const expandedRowRender = (record: DistributedStorageRbdImage) => (
     <div data-testid={`rbd-snapshot-list-${record.imageName}`}>
-      <SnapshotTable
-        image={record}
-        pool={pool}
-        teamFilter={teamFilter}
-      />
+      <SnapshotTable image={record} pool={pool} teamFilter={teamFilter} />
     </div>
-  )
-  
+  );
+
   return (
     <>
       <div style={componentStyles.marginBottom.md} data-testid="rbd-image-list-container">
-        <Button 
-          type="primary" 
+        <Button
+          type="primary"
           icon={<PlusOutlined />}
           onClick={handleCreate}
           data-testid="rbd-create-image-button"
@@ -337,7 +359,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           {t('images.create')}
         </Button>
       </div>
-      
+
       <div style={tableStyles.tableContainer}>
         <Table
           columns={columns}
@@ -356,7 +378,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
               <Button
                 size="small"
                 icon={expanded ? <CameraOutlined /> : <CameraOutlined />}
-                onClick={e => onExpand(record, e)}
+                onClick={(e) => onExpand(record, e)}
                 style={{ ...tableStyles.tableActionButton, marginRight: 8 }}
                 data-testid={`rbd-expand-snapshots-${record.imageName}`}
               />
@@ -364,7 +386,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           }}
         />
       </div>
-      
+
       <UnifiedResourceModal
         open={modalState.open}
         onCancel={() => setModalState({ open: false, mode: 'create' })}
@@ -381,7 +403,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
             regionName: machine.regionName ?? '',
             status: machine.status,
           })),
-          vaultContent: modalState.data?.vaultContent || modalState.data?.imageVault
+          vaultContent: modalState.data?.vaultContent || modalState.data?.imageVault,
         }}
         teamFilter={pool.teamName}
         onSubmit={async (data: ImageFormValues) => {
@@ -391,21 +413,21 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
               teamName: pool.teamName,
               imageName: data.imageName,
               machineName: data.machineName,
-              imageVault: data.imageVault
-            })
+              imageVault: data.imageVault,
+            });
           } else if (modalState.mode === 'edit') {
             await updateImageVaultMutation.mutateAsync({
               poolName: pool.poolName,
               teamName: pool.teamName,
               poolVault: data.imageVault,
-              vaultVersion: modalState.data?.vaultVersion || 0
-            })
+              vaultVersion: modalState.data?.vaultVersion || 0,
+            });
           }
-          setModalState({ open: false, mode: 'create' })
+          setModalState({ open: false, mode: 'create' });
         }}
         isSubmitting={createImageMutation.isPending || updateImageVaultMutation.isPending}
       />
-      
+
       <QueueItemTraceModal
         open={queueTrace.state.open}
         onCancel={queueTrace.close}
@@ -420,13 +442,13 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           poolName={pool.poolName}
           onCancel={reassignMachineModal.close}
           onSuccess={() => {
-            reassignMachineModal.close()
+            reassignMachineModal.close();
             // The query will automatically refresh due to invalidation in the mutation
           }}
         />
       )}
     </>
-  )
-}
+  );
+};
 
-export default RbdImageTable
+export default RbdImageTable;

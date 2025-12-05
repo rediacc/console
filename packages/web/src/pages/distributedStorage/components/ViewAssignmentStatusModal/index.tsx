@@ -1,11 +1,11 @@
-import React from 'react'
-import { CloudServerOutlined } from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import type { Machine } from '@/types'
-import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
-import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
-import type { ColumnsType } from 'antd/es/table'
-import { createTruncatedColumn } from '@/components/common/columns'
+import React from 'react';
+import { CloudServerOutlined } from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import type { Machine } from '@/types';
+import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
+import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
+import type { ColumnsType } from 'antd/es/table';
+import { createTruncatedColumn } from '@/components/common/columns';
 import {
   StyledModal,
   TitleStack,
@@ -20,14 +20,14 @@ import {
   TeamTag,
   ClusterTag,
   MutedText,
-} from './styles'
+} from './styles';
 
 interface ViewAssignmentStatusModalProps {
-  open: boolean
-  selectedMachines?: string[]
-  allMachines?: Machine[]
-  machines?: Machine[]
-  onCancel: () => void
+  open: boolean;
+  selectedMachines?: string[];
+  allMachines?: Machine[];
+  machines?: Machine[];
+  onCancel: () => void;
 }
 
 export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps> = ({
@@ -35,17 +35,17 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
   machines,
   selectedMachines,
   allMachines,
-  onCancel
+  onCancel,
 }) => {
-  const { t } = useTranslation(['machines', 'distributedStorage', 'common'])
-  
+  const { t } = useTranslation(['machines', 'distributedStorage', 'common']);
+
   // Determine which machines to use
   const targetMachines: Machine[] =
     machines ??
     (selectedMachines && allMachines
       ? allMachines.filter((machine) => selectedMachines.includes(machine.machineName))
-      : [])
-  const noneLabel = t('common:none')
+      : []);
+  const noneLabel = t('common:none');
 
   const machineColumn = createTruncatedColumn<Machine>({
     title: t('machines:machineName'),
@@ -58,7 +58,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
         <MachineNameText>{content}</MachineNameText>
       </MachineNameRow>
     ),
-  })
+  });
 
   const teamColumn = createTruncatedColumn<Machine>({
     title: t('machines:team'),
@@ -66,7 +66,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     key: 'teamName',
     width: 150,
     renderWrapper: (content) => <TeamTag>{content}</TeamTag>,
-  })
+  });
 
   const clusterColumn = createTruncatedColumn<Machine>({
     title: t('distributedStorage:clusters.cluster'),
@@ -74,8 +74,12 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     key: 'cluster',
     renderText: (cluster?: string | null) => cluster || noneLabel,
     renderWrapper: (content, fullText) =>
-      fullText === noneLabel ? <MutedText>{fullText}</MutedText> : <ClusterTag>{content}</ClusterTag>,
-  })
+      fullText === noneLabel ? (
+        <MutedText>{fullText}</MutedText>
+      ) : (
+        <ClusterTag>{content}</ClusterTag>
+      ),
+  });
 
   const columns: ColumnsType<Machine> = [
     machineColumn,
@@ -87,22 +91,22 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
       render: (_: unknown, record: Machine) => <MachineAssignmentStatusCell machine={record} />,
     },
     clusterColumn,
-  ]
-  
+  ];
+
   // Calculate summary statistics
   const stats = targetMachines.reduce(
     (acc, machine) => {
       if (machine.distributedStorageClusterName) {
-        acc.cluster += 1
+        acc.cluster += 1;
       } else {
-        acc.available += 1
+        acc.available += 1;
       }
-      return acc
+      return acc;
     },
     { available: 0, cluster: 0 }
-  )
-  const totalMachines = targetMachines.length
-  
+  );
+  const totalMachines = targetMachines.length;
+
   return (
     <StyledModal
       title={
@@ -130,7 +134,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
           <SummaryValue>{stats.cluster}</SummaryValue>
         </SummaryItem>
       </SummaryRow>
-      
+
       <MachinesTable
         columns={columns}
         dataSource={targetMachines}
@@ -138,11 +142,11 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
         size="small"
         pagination={{
           pageSize: 10,
-          showSizeChanger: false
+          showSizeChanger: false,
         }}
         scroll={{ y: 400 }}
         data-testid="ds-view-assignment-status-table"
       />
     </StyledModal>
-  )
-}
+  );
+};

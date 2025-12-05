@@ -1,32 +1,32 @@
-import styled from 'styled-components'
-import { Card, Space, Typography, Badge, Progress, List, Timeline } from 'antd'
-import { Link as RouterLink } from 'react-router-dom'
-import { PageContainer } from '@/styles/primitives'
+import styled from 'styled-components';
+import { Card, Space, Typography, Badge, Progress, List, Timeline } from 'antd';
+import { Link as RouterLink } from 'react-router-dom';
+import { PageContainer } from '@/styles/primitives';
 
-const { Text } = Typography
+const { Text } = Typography;
 
-export const PageWrapper = PageContainer
+export const PageWrapper = PageContainer;
 
 export const ContentStack = styled(Space).attrs({ orientation: 'vertical', size: 'large' })`
   width: 100%;
-`
+`;
 
 export const CenteredState = styled.div`
   width: 100%;
   text-align: center;
   padding: ${({ theme }) => theme.spacing.LG}px 0;
-`
+`;
 
 export const DashboardCard = styled(Card)`
   width: 100%;
-`
+`;
 
 export const SectionDescription = styled(Text)`
   && {
     color: ${({ theme }) => theme.colors.textSecondary};
     font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
-`
+`;
 
 export const ResourceTile = styled.div`
   padding: ${({ theme }) => theme.spacing.MD}px;
@@ -39,7 +39,7 @@ export const ResourceTile = styled.div`
   &:hover {
     box-shadow: ${({ theme }) => theme.shadows.MD};
   }
-`
+`;
 
 export const TileHeader = styled.div`
   display: flex;
@@ -47,18 +47,18 @@ export const TileHeader = styled.div`
   justify-content: space-between;
   width: 100%;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const TileMeta = styled(Text)`
   && {
     color: ${({ theme }) => theme.colors.textSecondary};
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   }
-`
+`;
 
 export const ResourceProgress = styled(Progress)`
   margin: ${({ theme }) => theme.spacing.SM}px 0;
-`
+`;
 
 export const SectionLabel = styled(Text)`
   && {
@@ -67,13 +67,13 @@ export const SectionLabel = styled(Text)`
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     letter-spacing: ${({ theme }) => theme.letterSpacing.WIDE};
   }
-`
+`;
 
 export const SectionTitle = styled(Typography.Title)`
   && {
     margin: ${({ theme }) => theme.spacing.XS}px 0 ${({ theme }) => theme.spacing.MD}px;
   }
-`
+`;
 
 export const ScrollContainer = styled.div`
   max-height: 200px;
@@ -88,12 +88,12 @@ export const ScrollContainer = styled.div`
     background-color: ${({ theme }) => theme.colors.borderSecondary};
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
-`
+`;
 
 export const HorizontalScroll = styled.div`
   width: 100%;
   overflow-x: auto;
-`
+`;
 
 export const LicenseItem = styled.div`
   padding: ${({ theme }) => theme.spacing.SM}px ${({ theme }) => theme.spacing.MD}px;
@@ -101,7 +101,7 @@ export const LicenseItem = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   width: 100%;
-`
+`;
 
 export const LicenseHeader = styled.div`
   display: flex;
@@ -109,7 +109,7 @@ export const LicenseHeader = styled.div`
   justify-content: space-between;
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const FlexBetween = styled.div`
   display: flex;
@@ -117,30 +117,30 @@ export const FlexBetween = styled.div`
   justify-content: space-between;
   width: 100%;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const InlineStack = styled.div`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 export const StatList = styled(Space).attrs({ orientation: 'vertical', size: 'middle' })`
   width: 100%;
-`
+`;
 
 export const StatRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
-`
+`;
 
 export const StatLabel = styled(Text)`
   && {
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 export const StatValue = styled(Text)<{ $variant?: 'default' | 'success' | 'warning' | 'error' }>`
   && {
@@ -159,7 +159,7 @@ export const StatValue = styled(Text)<{ $variant?: 'default' | 'success' | 'warn
       }
     }};
   }
-`
+`;
 
 export const InlineLink = styled(RouterLink)`
   color: ${({ theme }) => theme.colors.primary};
@@ -168,13 +168,13 @@ export const InlineLink = styled(RouterLink)`
   &:hover {
     color: ${({ theme }) => theme.colors.primaryHover};
   }
-`
+`;
 
 export const QueueBadgeRow = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 export const QueueBadge = styled(Badge)<{ $variant?: 'error' | 'warning' | 'info' | 'muted' }>`
   .ant-scroll-number {
@@ -194,13 +194,13 @@ export const QueueBadge = styled(Badge)<{ $variant?: 'error' | 'warning' | 'info
     }};
     color: ${({ theme }) => theme.colors.bgPrimary};
   }
-`
+`;
 
 export const TimelineWrapper = styled(Timeline)`
   width: 100%;
-`
+`;
 
-const { Item: AntListItem } = List
+const { Item: AntListItem } = List;
 
 export const BorderlessList = styled(List)`
   width: 100%;
@@ -209,22 +209,22 @@ export const BorderlessList = styled(List)`
     padding-left: 0;
     padding-right: 0;
   }
-`
+`;
 
 export const BorderlessListItem = styled(AntListItem)`
   padding-left: 0 !important;
   padding-right: 0 !important;
   border: none !important;
-`
+`;
 
 export const AuditMeta = styled(Text)`
   && {
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
-export { EmptyStateWrapper as EmptyState } from '@/styles/primitives'
+export { EmptyStateWrapper as EmptyState } from '@/styles/primitives';
 
 export const Divider = styled.hr`
   border: none;
@@ -232,7 +232,7 @@ export const Divider = styled.hr`
   width: 100%;
   background-color: ${({ theme }) => theme.colors.borderSecondary};
   margin: ${({ theme }) => theme.spacing.MD}px 0;
-`
+`;
 
 export const SectionFooter = styled.div`
   display: flex;
@@ -242,18 +242,18 @@ export const SectionFooter = styled.div`
   margin-top: ${({ theme }) => theme.spacing.MD}px;
   padding-top: ${({ theme }) => theme.spacing.SM}px;
   border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-`
+`;
 
 export const PlanCountBadge = styled(Badge)`
   .ant-scroll-number {
     background-color: ${({ theme }) => theme.colors.textPrimary};
     color: ${({ theme }) => theme.colors.bgPrimary};
   }
-`
+`;
 
 export const QuantityBadge = styled(Badge)`
   .ant-scroll-number {
     background-color: ${({ theme }) => theme.colors.success};
     color: ${({ theme }) => theme.colors.bgPrimary};
   }
-`
+`;

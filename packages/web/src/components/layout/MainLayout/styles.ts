@@ -1,15 +1,15 @@
-import styled from 'styled-components'
-import { Layout, Space, Button, Avatar, Typography } from 'antd'
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
+import styled from 'styled-components';
+import { Layout, Space, Button, Avatar, Typography } from 'antd';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
-const { Header, Content } = Layout
-const { Text } = Typography
+const { Header, Content } = Layout;
+const { Text } = Typography;
 
-export const HEADER_HEIGHT = DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT
+export const HEADER_HEIGHT = DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT;
 
 export const MainLayoutContainer = styled(Layout)`
   min-height: 100vh;
-`
+`;
 
 export const StyledHeader = styled(Header)<{ $isDark: boolean }>`
   padding: 0 ${({ theme }) => theme.spacing.LG}px;
@@ -28,19 +28,19 @@ export const StyledHeader = styled(Header)<{ $isDark: boolean }>`
   z-index: ${DESIGN_TOKENS.Z_INDEX.DROPDOWN + 1};
   transition: ${DESIGN_TOKENS.TRANSITIONS.DEFAULT};
   backdrop-filter: blur(8px);
-`
+`;
 
 export const HeaderLeft = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const HeaderRight = styled(Space)`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const MenuToggleButton = styled(Button)`
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
@@ -55,13 +55,13 @@ export const MenuToggleButton = styled(Button)`
     background-color: var(--color-bg-tertiary);
     color: var(--color-primary);
   }
-`
+`;
 
 export const LogoWrapper = styled.div`
   display: flex;
   align-items: center;
   cursor: pointer;
-`
+`;
 
 export const Logo = styled.img`
   height: ${DESIGN_TOKENS.DIMENSIONS.ICON_LG}px;
@@ -69,17 +69,17 @@ export const Logo = styled.img`
   object-fit: contain;
   margin-top: -${({ theme }) => theme.spacing.XS}px;
   margin-left: -${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 export const UserMenuButton = styled(Button)`
   display: flex;
   align-items: center;
   justify-content: center;
-`
+`;
 
 export const UserAvatar = styled(Avatar)`
   background: var(--color-primary-hover);
-`
+`;
 
 export const StyledContent = styled(Content)<{ $marginLeft: number; $paddingTop: number }>`
   padding-top: ${({ $paddingTop }) => $paddingTop}px;
@@ -94,7 +94,7 @@ export const StyledContent = styled(Content)<{ $marginLeft: number; $paddingTop:
   @media (max-width: 768px) {
     margin-left: 0 !important;
   }
-`
+`;
 
 export const TransitionOverlay = styled.div`
   position: absolute;
@@ -102,18 +102,18 @@ export const TransitionOverlay = styled.div`
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
-`
+`;
 
 export const TransitionIcon = styled.div`
   font-size: ${DESIGN_TOKENS.FONT_SIZE.XXXXL}px;
   color: var(--color-primary);
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const TransitionText = styled(Text)`
   font-size: 18px;
   color: var(--color-text-secondary);
-`
+`;
 
 export const ContentWrapper = styled.div`
   animation: fadeIn 0.3s ease-in;
@@ -126,4 +126,4 @@ export const ContentWrapper = styled.div`
       opacity: 1;
     }
   }
-`
+`;

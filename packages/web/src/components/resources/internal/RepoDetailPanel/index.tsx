@@ -1,6 +1,6 @@
-﻿import React, { useEffect, useMemo } from 'react'
-import { Row, Col, Progress, Space } from 'antd'
-import type { TFunction } from 'i18next'
+﻿import React, { useEffect, useMemo } from 'react';
+import { Row, Col, Progress, Space } from 'antd';
+import type { TFunction } from 'i18next';
 import {
   DoubleRightOutlined,
   DatabaseOutlined,
@@ -13,12 +13,12 @@ import {
   StopOutlined,
   CodeOutlined,
   WarningOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import type { Repo } from '@/api/queries/repos'
-import type { Machine } from '@/types'
-import { useMachines } from '@/api/queries/machines'
-import { abbreviatePath } from '@/utils/pathUtils'
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import type { Repo } from '@/api/queries/repos';
+import type { Machine } from '@/types';
+import { useMachines } from '@/api/queries/machines';
+import { abbreviatePath } from '@/utils/pathUtils';
 import {
   PanelWrapper,
   StickyHeader,
@@ -56,61 +56,61 @@ import {
   PathsCard,
   ActivityCard,
   ActivityMetrics,
-} from './styles'
-import { IconWrapper } from '@/components/ui'
+} from './styles';
+import { IconWrapper } from '@/components/ui';
 
 interface RepoDetailPanelProps {
-  repo: Repo | null
-  visible: boolean
-  onClose: () => void
-  splitView?: boolean
+  repo: Repo | null;
+  visible: boolean;
+  onClose: () => void;
+  splitView?: boolean;
 }
 
 interface RepoVaultData {
-  name: string
-  size: number
-  size_human: string
-  modified: number
-  modified_human: string
-  image_path: string
-  mounted: boolean
-  mount_path: string
-  accessible: boolean
+  name: string;
+  size: number;
+  size_human: string;
+  modified: number;
+  modified_human: string;
+  image_path: string;
+  mounted: boolean;
+  mount_path: string;
+  accessible: boolean;
   disk_space?: {
-    total: string
-    used: string
-    available: string
-    use_percent: string
-  }
-  has_rediaccfile: boolean
-  docker_running: boolean
-  container_count: number
-  has_services: boolean
-  service_count: number
-  total_volumes?: number
-  internal_volumes?: number
-  external_volumes?: number
-  external_volume_names?: string[]
-  volume_status?: 'safe' | 'warning' | 'none'
+    total: string;
+    used: string;
+    available: string;
+    use_percent: string;
+  };
+  has_rediaccfile: boolean;
+  docker_running: boolean;
+  container_count: number;
+  has_services: boolean;
+  service_count: number;
+  total_volumes?: number;
+  internal_volumes?: number;
+  external_volumes?: number;
+  external_volume_names?: string[];
+  volume_status?: 'safe' | 'warning' | 'none';
 }
 
 interface ServiceData {
-  name: string
-  active_state: string
-  memory_human?: string
-  main_pid?: number
-  uptime_human?: string
-  restarts?: number
-  repo?: string
-  service_name?: string
-  unit_file?: string
+  name: string;
+  active_state: string;
+  memory_human?: string;
+  main_pid?: number;
+  uptime_human?: string;
+  restarts?: number;
+  repo?: string;
+  service_name?: string;
+  unit_file?: string;
 }
 
 interface RepoPanelData {
-  machine: Machine
-  repoData: RepoVaultData
-  systemData?: Record<string, unknown>
-  services: ServiceData[]
+  machine: Machine;
+  repoData: RepoVaultData;
+  systemData?: Record<string, unknown>;
+  services: ServiceData[];
 }
 
 export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
@@ -119,61 +119,68 @@ export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
   onClose,
   splitView = false,
 }) => {
-  const { t } = useTranslation(['resources', 'common', 'machines'])
-  const { data: machines = [] } = useMachines(repo?.teamName)
+  const { t } = useTranslation(['resources', 'common', 'machines']);
+  const { data: machines = [] } = useMachines(repo?.teamName);
 
   const repoData = useMemo<RepoPanelData | null>(() => {
-    if (!repo || !machines.length) return null
+    if (!repo || !machines.length) return null;
 
     for (const machine of machines) {
-      if (!machine.vaultStatus) continue
+      if (!machine.vaultStatus) continue;
 
       try {
-        const trimmedStatus = machine.vaultStatus.trim()
-        if (trimmedStatus.startsWith('jq:') || trimmedStatus.startsWith('error:') || !trimmedStatus.startsWith('{')) {
-          continue
+        const trimmedStatus = machine.vaultStatus.trim();
+        if (
+          trimmedStatus.startsWith('jq:') ||
+          trimmedStatus.startsWith('error:') ||
+          !trimmedStatus.startsWith('{')
+        ) {
+          continue;
         }
 
-        const vaultStatusData = JSON.parse(trimmedStatus)
+        const vaultStatusData = JSON.parse(trimmedStatus);
 
         if (vaultStatusData.status === 'completed' && vaultStatusData.result) {
-          let cleanedResult = vaultStatusData.result
-          const jsonEndMatch = cleanedResult.match(/(\}[\s\n]*$)/)
+          let cleanedResult = vaultStatusData.result;
+          const jsonEndMatch = cleanedResult.match(/(\}[\s\n]*$)/);
           if (jsonEndMatch) {
-            const lastBraceIndex = cleanedResult.lastIndexOf('}')
+            const lastBraceIndex = cleanedResult.lastIndexOf('}');
             if (lastBraceIndex < cleanedResult.length - 10) {
-              cleanedResult = cleanedResult.substring(0, lastBraceIndex + 1)
+              cleanedResult = cleanedResult.substring(0, lastBraceIndex + 1);
             }
           }
 
-          const newlineIndex = cleanedResult.indexOf('\njq:')
+          const newlineIndex = cleanedResult.indexOf('\njq:');
           if (newlineIndex > 0) {
-            cleanedResult = cleanedResult.substring(0, newlineIndex)
+            cleanedResult = cleanedResult.substring(0, newlineIndex);
           }
 
-          const result = JSON.parse(cleanedResult.trim())
+          const result = JSON.parse(cleanedResult.trim());
 
           if (Array.isArray(result.repositories)) {
             const repoData = result.repositories.find((r: RepoVaultData) => {
-              return r.name === repo.repoName || r.name === repo.repoGuid
-            })
+              return r.name === repo.repoName || r.name === repo.repoGuid;
+            });
 
             if (repoData) {
-              const servicesForRepo: ServiceData[] = []
+              const servicesForRepo: ServiceData[] = [];
 
               if (Array.isArray(result.services)) {
                 result.services.forEach((service: ServiceData) => {
                   if (service.repo === repoData.name || service.repo === repo.repoGuid) {
-                    servicesForRepo.push(service)
-                    return
+                    servicesForRepo.push(service);
+                    return;
                   }
 
-                  const serviceName = service.service_name || service.unit_file || ''
-                  const guidMatch = serviceName.match(/rediacc_([0-9a-f-]{36})_/)
-                  if (guidMatch && (guidMatch[1] === repo.repoGuid || guidMatch[1] === repoData.name)) {
-                    servicesForRepo.push(service)
+                  const serviceName = service.service_name || service.unit_file || '';
+                  const guidMatch = serviceName.match(/rediacc_([0-9a-f-]{36})_/);
+                  if (
+                    guidMatch &&
+                    (guidMatch[1] === repo.repoGuid || guidMatch[1] === repoData.name)
+                  ) {
+                    servicesForRepo.push(service);
                   }
-                })
+                });
               }
 
               return {
@@ -181,35 +188,35 @@ export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
                 repoData: repoData,
                 systemData: result.system,
                 services: servicesForRepo,
-              }
+              };
             }
           }
         }
       } catch (error) {
-        console.error('Error parsing vault status:', error)
+        console.error('Error parsing vault status:', error);
       }
     }
 
-    return null
-  }, [repo, machines])
+    return null;
+  }, [repo, machines]);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && visible) {
-        onClose()
+        onClose();
       }
-    }
+    };
 
     if (visible) {
-      document.addEventListener('keydown', handleEscape)
+      document.addEventListener('keydown', handleEscape);
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape)
-    }
-  }, [visible, onClose])
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [visible, onClose]);
 
-  if (!repo || !visible) return null
+  if (!repo || !visible) return null;
 
   return (
     <PanelWrapper $splitView={splitView} $visible={visible} data-testid="repo-detail-panel">
@@ -231,7 +238,11 @@ export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
         </HeaderRow>
 
         <TagRow>
-          <StyledTag $variant="team" icon={<AppstoreOutlined />} data-testid={`repo-detail-team-tag-${repo.repoName}`}>
+          <StyledTag
+            $variant="team"
+            icon={<AppstoreOutlined />}
+            data-testid={`repo-detail-team-tag-${repo.repoName}`}
+          >
             {t('common:general.team')}: {repo.teamName}
           </StyledTag>
           {repoData && (
@@ -243,7 +254,10 @@ export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
               {t('machines:machine')}: {repoData.machine.machineName}
             </StyledTag>
           )}
-          <StyledTag $variant="version" data-testid={`repo-detail-vault-version-tag-${repo.repoName}`}>
+          <StyledTag
+            $variant="version"
+            data-testid={`repo-detail-vault-version-tag-${repo.repoName}`}
+          >
             {t('resources:repos.vaultVersion')}: {repo.vaultVersion}
           </StyledTag>
         </TagRow>
@@ -271,17 +285,17 @@ export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
         )}
       </ContentWrapper>
     </PanelWrapper>
-  )
-}
+  );
+};
 
 interface SectionProps {
-  repo: Repo
-  panelData: RepoPanelData
-  t: TFunction<'resources' | 'common' | 'machines'>
+  repo: Repo;
+  panelData: RepoPanelData;
+  t: TFunction<'resources' | 'common' | 'machines'>;
 }
 
 const RepoInfoSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
-  const { repoData } = panelData
+  const { repoData } = panelData;
 
   return (
     <Section data-testid="repo-detail-info-section">
@@ -368,18 +382,18 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
         </Stack>
       </SectionCard>
     </Section>
-  )
-}
+  );
+};
 
 const ExternalVolumeWarning: React.FC<SectionProps> = ({ repo, panelData }) => {
-  const { repoData } = panelData
+  const { repoData } = panelData;
 
   if (
     repoData.volume_status !== 'warning' ||
     !repoData.external_volume_names ||
     repoData.external_volume_names.length === 0
   ) {
-    return null
+    return null;
   }
 
   return (
@@ -399,21 +413,19 @@ const ExternalVolumeWarning: React.FC<SectionProps> = ({ repo, panelData }) => {
             ))}
           </VolumeList>
           <ValueText type="secondary">
-            <strong>Warning:</strong> If this repo is cloned, these volumes will be orphaned. Use bind mounts to{' '}
-            <ValueText code>$REPO_PATH</ValueText> instead.
+            <strong>Warning:</strong> If this repo is cloned, these volumes will be orphaned. Use
+            bind mounts to <ValueText code>$REPO_PATH</ValueText> instead.
           </ValueText>
         </VolumeDescription>
       }
       data-testid={`repo-detail-volume-warning-alert-${repo.repoName}`}
     />
-  )
-}
+  );
+};
 
 const StorageSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
-  const { repoData } = panelData
-  const diskPercent = repoData.disk_space
-    ? parseInt(repoData.disk_space.use_percent, 10)
-    : 0
+  const { repoData } = panelData;
+  const diskPercent = repoData.disk_space ? parseInt(repoData.disk_space.use_percent, 10) : 0;
 
   return (
     <Section>
@@ -470,11 +482,11 @@ const StorageSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
         )}
       </Row>
     </Section>
-  )
-}
+  );
+};
 
 const FilePathsSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
-  const { repoData } = panelData
+  const { repoData } = panelData;
 
   return (
     <Section>
@@ -510,11 +522,11 @@ const FilePathsSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
         </Stack>
       </PathsCard>
     </Section>
-  )
-}
+  );
+};
 
 const ActivitySection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
-  const { repoData } = panelData
+  const { repoData } = panelData;
 
   return (
     <Section>
@@ -542,8 +554,8 @@ const ActivitySection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
         </ActivityMetrics>
       </ActivityCard>
     </Section>
-  )
-}
+  );
+};
 
 const ServicesSection: React.FC<SectionProps> = ({ repo, panelData, t }) => (
   <Section>
@@ -561,7 +573,7 @@ const ServicesSection: React.FC<SectionProps> = ({ repo, panelData, t }) => (
             ? 'active'
             : service.active_state === 'failed'
               ? 'failed'
-              : 'other'
+              : 'other';
 
         return (
           <ServiceCard
@@ -573,18 +585,26 @@ const ServicesSection: React.FC<SectionProps> = ({ repo, panelData, t }) => (
             <Row gutter={[16, 8]}>
               <Col span={24}>
                 <ServiceHeader>
-                  <ValueText strong data-testid={`repo-detail-service-name-${repo.repoName}-${service.name}`}>
+                  <ValueText
+                    strong
+                    data-testid={`repo-detail-service-name-${repo.repoName}-${service.name}`}
+                  >
                     {service.name}
                   </ValueText>
                   <StatusTag
-                    $tone={state === 'active' ? 'success' : state === 'failed' ? 'error' : 'neutral'}
+                    $tone={
+                      state === 'active' ? 'success' : state === 'failed' ? 'error' : 'neutral'
+                    }
                     data-testid={`repo-detail-service-status-${repo.repoName}-${service.name}`}
                   >
                     {service.active_state}
                   </StatusTag>
                 </ServiceHeader>
               </Col>
-              {(service.memory_human || service.main_pid || service.uptime_human || service.restarts !== undefined) && (
+              {(service.memory_human ||
+                service.main_pid ||
+                service.uptime_human ||
+                service.restarts !== undefined) && (
                 <Col span={24}>
                   <ServiceMetaGrid>
                     {service.memory_human && (
@@ -616,9 +636,8 @@ const ServicesSection: React.FC<SectionProps> = ({ repo, panelData, t }) => (
               )}
             </Row>
           </ServiceCard>
-        )
+        );
       })}
     </ServicesList>
   </Section>
-)
-
+);

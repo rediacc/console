@@ -19,17 +19,17 @@
 export function encodeBase64(value: string): string {
   try {
     // Try standard btoa for ASCII/Latin1 strings
-    return btoa(value)
+    return btoa(value);
   } catch (error) {
     // Handle non-Latin1 characters by encoding to UTF-8 first
     if (error instanceof DOMException) {
-      const utf8Bytes = new TextEncoder().encode(value)
+      const utf8Bytes = new TextEncoder().encode(value);
       const binaryString = Array.from(utf8Bytes)
         .map((byte) => String.fromCharCode(byte))
-        .join('')
-      return btoa(binaryString)
+        .join('');
+      return btoa(binaryString);
     }
-    throw error
+    throw error;
   }
 }
 
@@ -45,15 +45,15 @@ export function encodeBase64(value: string): string {
  */
 export function decodeBase64(value: string): string {
   try {
-    const decoded = atob(value)
+    const decoded = atob(value);
     // Try to decode as UTF-8
-    const bytes = Uint8Array.from(decoded, char => char.charCodeAt(0))
-    return new TextDecoder().decode(bytes)
+    const bytes = Uint8Array.from(decoded, (char) => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
   } catch (error) {
     // Fallback to standard atob for ASCII strings
     if (error instanceof DOMException || error instanceof RangeError) {
-      return atob(value)
+      return atob(value);
     }
-    throw error
+    throw error;
   }
 }

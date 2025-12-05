@@ -43,7 +43,7 @@ export const useRecentAuditLogs = (maxRecords: number = 10) => {
     queryKey: ['recentAuditLogs', maxRecords],
     queryFn: async () => {
       return api.audit.getLogs(undefined, undefined, undefined, maxRecords);
-    }
+    },
   });
 };
 

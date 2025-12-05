@@ -1,5 +1,5 @@
-import styled from 'styled-components'
-import { Alert } from 'antd'
+import styled from 'styled-components';
+import { Alert } from 'antd';
 
 export const SandboxBanner = styled(Alert)`
   && {
@@ -18,7 +18,7 @@ export const SandboxBanner = styled(Alert)`
     align-items: center;
     justify-content: center;
   }
-`
+`;
 
 export const BannerMessage = styled.div`
   display: inline-flex;
@@ -31,4 +31,4 @@ export const BannerMessage = styled.div`
   .anticon {
     font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
   }
-`
+`;

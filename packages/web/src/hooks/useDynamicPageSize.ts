@@ -58,18 +58,26 @@ export const useDynamicPageSize = (
 
     // Get the container height
     const containerHeight = tableContainerRef.current.offsetHeight;
-    
+
     // Calculate available height for rows
     const availableHeight = containerHeight - headerHeight - paginationHeight - containerOffset;
-    
+
     // Calculate how many rows can fit
     const calculatedRows = Math.floor(availableHeight / rowHeight);
-    
+
     // Apply min/max constraints
     const newPageSize = Math.max(minRows, Math.min(maxRows, calculatedRows));
-    
+
     setPageSize(newPageSize);
-  }, [tableContainerRef, rowHeight, headerHeight, paginationHeight, containerOffset, minRows, maxRows]);
+  }, [
+    tableContainerRef,
+    rowHeight,
+    headerHeight,
+    paginationHeight,
+    containerOffset,
+    minRows,
+    maxRows,
+  ]);
 
   // Store debounced function in a ref to avoid recreating it
   const debouncedCalculatePageSizeRef = useRef<DebouncedCallback | null>(null);

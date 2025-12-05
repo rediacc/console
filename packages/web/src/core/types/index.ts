@@ -1,4 +1,4 @@
-export * from '@rediacc/shared/types'
+export * from '@rediacc/shared/types';
 export type {
   QueueRequestContext,
   FunctionRequirements,
@@ -6,8 +6,8 @@ export type {
   QueueItemData,
   ActiveTask,
   QueueVaultPayload,
-} from './queue'
-export type { QueueItem as LocalQueueItem } from './queue'
-export * from './vault'
-export * from './storage'
-export * from './crypto'
+} from './queue';
+export type { QueueItem as LocalQueueItem } from './queue';
+export * from './vault';
+export * from './storage';
+export * from './crypto';

@@ -1,22 +1,28 @@
-﻿import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Button, Space, Tag, Typography, Alert, Tooltip } from 'antd'
-import { DoubleLeftOutlined, ReloadOutlined, DesktopOutlined, PlusOutlined, CloudDownloadOutlined } from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { usePanelWidth } from '@/hooks/usePanelWidth'
-import { DETAIL_PANEL } from '@/constants/layout'
-import { useMachines } from '@/api/queries/machines'
-import { useRepos } from '@/api/queries/repos'
-import { MachineRepoTable } from '@/components/resources/MachineRepoTable'
-import { Machine, Repo } from '@/types'
-import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel'
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal'
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
-import { useRepoCreation } from '@/hooks/useRepoCreation'
-import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState'
-import { IconButton } from '@/styles/primitives'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
+﻿import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Button, Space, Tag, Typography, Alert, Tooltip } from 'antd';
+import {
+  DoubleLeftOutlined,
+  ReloadOutlined,
+  DesktopOutlined,
+  PlusOutlined,
+  CloudDownloadOutlined,
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { usePanelWidth } from '@/hooks/usePanelWidth';
+import { DETAIL_PANEL } from '@/constants/layout';
+import { useMachines } from '@/api/queries/machines';
+import { useRepos } from '@/api/queries/repos';
+import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
+import { Machine, Repo } from '@/types';
+import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { useRepoCreation } from '@/hooks/useRepoCreation';
+import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
+import { IconButton } from '@/styles/primitives';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {
   PageWrapper,
   FullHeightCard,
@@ -33,130 +39,127 @@ import {
   DetailBackdrop,
   CenteredState,
   ErrorWrapper,
-} from './styles'
+} from './styles';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 interface ContainerData {
-  id: string
-  name: string
-  image: string
-  command: string
-  created: string
-  status: string
-  state: string
-  ports: string
+  id: string;
+  name: string;
+  image: string;
+  command: string;
+  created: string;
+  status: string;
+  state: string;
+  ports: string;
   port_mappings?: Array<{
-    host?: string
-    host_port?: string
-    container_port: string
-    protocol: string
-  }>
-  labels: string
-  mounts: string
-  networks: string
-  size: string
-  repo: string
-  cpu_percent: string
-  memory_usage: string
-  memory_percent: string
-  net_io: string
-  block_io: string
-  pids: string
+    host?: string;
+    host_port?: string;
+    container_port: string;
+    protocol: string;
+  }>;
+  labels: string;
+  mounts: string;
+  networks: string;
+  size: string;
+  repo: string;
+  cpu_percent: string;
+  memory_usage: string;
+  memory_percent: string;
+  net_io: string;
+  block_io: string;
+  pids: string;
 }
 
 type MachineReposLocationState = {
-  machine?: Machine
-} | null
+  machine?: Machine;
+} | null;
 
 type RepoRowData = {
-  name: string
-  repoTag?: string
-  originalGuid?: string
-}
+  name: string;
+  repoTag?: string;
+  originalGuid?: string;
+};
 
 const MachineReposPage: React.FC = () => {
-  const { machineName } = useParams<{ machineName: string }>()
-  const navigate = useNavigate()
-  const location = useLocation<MachineReposLocationState>()
-  const { t } = useTranslation(['resources', 'machines', 'common'])
+  const { machineName } = useParams<{ machineName: string }>();
+  const navigate = useNavigate();
+  const location = useLocation<MachineReposLocationState>();
+  const { t } = useTranslation(['resources', 'machines', 'common']);
 
   // State for machine data - can come from route state or API
-  const routeState = location.state
-  const [machine, setMachine] = useState<Machine | null>(
-    routeState?.machine || null
-  )
+  const routeState = location.state;
+  const [machine, setMachine] = useState<Machine | null>(routeState?.machine || null);
 
   // Use shared panel width hook (33% of window, min 300px, max 700px)
-  const panelWidth = usePanelWidth()
+  const panelWidth = usePanelWidth();
 
   // State for selected resource (Repo or container) and panel
-  const [selectedResource, setSelectedResource] = useState<Repo | ContainerData | null>(null)
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(true)
-  const [splitWidth, setSplitWidth] = useState(panelWidth)
-  const [backdropVisible, setBackdropVisible] = useState(false)
-  const [shouldRenderBackdrop, setShouldRenderBackdrop] = useState(false)
+  const [selectedResource, setSelectedResource] = useState<Repo | ContainerData | null>(null);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
+  const [splitWidth, setSplitWidth] = useState(panelWidth);
+  const [backdropVisible, setBackdropVisible] = useState(false);
+  const [shouldRenderBackdrop, setShouldRenderBackdrop] = useState(false);
 
   // Refresh key for forcing MachineRepoTable updates
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Queue trace modal state
-  const queueTrace = useQueueTraceModal()
+  const queueTrace = useQueueTraceModal();
 
   // Remote file browser modal state
-  const fileBrowserModal = useDialogState<Machine>()
+  const fileBrowserModal = useDialogState<Machine>();
 
   // Unified resource modal state (kept as useState due to complex prefilled data needs)
   const [unifiedModalState, setUnifiedModalState] = useState<{
-    open: boolean
-    mode: 'create' | 'edit' | 'vault'
-    data?: Record<string, unknown>
-    creationContext?: 'credentials-only' | 'normal'
+    open: boolean;
+    mode: 'create' | 'edit' | 'vault';
+    data?: Record<string, unknown>;
+    creationContext?: 'credentials-only' | 'normal';
   }>({
     open: false,
-    mode: 'create'
-  })
+    mode: 'create',
+  });
 
   // Fetch all machines to find our specific machine if not passed via state
-  const { data: machines = [], isLoading: machinesLoading, error: machinesError, refetch: refetchMachines } = useMachines(
-    machine?.teamName ? [machine.teamName] : undefined,
-    true
-  )
+  const {
+    data: machines = [],
+    isLoading: machinesLoading,
+    error: machinesError,
+    refetch: refetchMachines,
+  } = useMachines(machine?.teamName ? [machine.teamName] : undefined, true);
 
   // Repo creation hook (handles credentials + queue item)
-  const { createRepo } = useRepoCreation(machines)
+  const { createRepo } = useRepoCreation(machines);
 
   // Fetch repos (needed for MachineRepoTable)
   const { data: repos = [], refetch: refetchRepos } = useRepos(
     machine?.teamName ? [machine.teamName] : undefined
-  )
+  );
 
   // Find the machine from API if not already set OR update it when machines data changes
   useEffect(() => {
     if (machines.length > 0 && machineName) {
-      const foundMachine = machines.find(m => m.machineName === machineName)
+      const foundMachine = machines.find((m) => m.machineName === machineName);
       if (foundMachine) {
         // Update machine state with fresh data (including updated vaultStatus)
-        setMachine(foundMachine)
+        setMachine(foundMachine);
       }
     }
-  }, [machines, machineName])
+  }, [machines, machineName]);
 
   const handleBackToMachines = () => {
-    navigate('/machines')
-  }
+    navigate('/machines');
+  };
 
   const handleRefresh = async () => {
-    setRefreshKey(prev => prev + 1)
+    setRefreshKey((prev) => prev + 1);
     // Refetch both repos AND machines to get updated vaultStatus
-    await Promise.all([
-      refetchRepos(),
-      refetchMachines()
-    ])
-  }
+    await Promise.all([refetchRepos(), refetchMachines()]);
+  };
 
   const handleCreateRepo = () => {
-    if (!machine) return
+    if (!machine) return;
 
     // Open the Repo creation modal with prefilled machine
     setUnifiedModalState({
@@ -165,33 +168,33 @@ const MachineReposPage: React.FC = () => {
       data: {
         machineName: machine.machineName,
         teamName: machine.teamName,
-        prefilledMachine: true
+        prefilledMachine: true,
       },
-      creationContext: 'normal'
-    })
-  }
+      creationContext: 'normal',
+    });
+  };
 
   const handlePull = () => {
-    if (!machine) return
+    if (!machine) return;
 
-    fileBrowserModal.open(machine)
-  }
+    fileBrowserModal.open(machine);
+  };
 
   const handleUnifiedModalSubmit = async (data: Parameters<typeof createRepo>[0]) => {
-    const result = await createRepo(data)
+    const result = await createRepo(data);
 
     if (result.success) {
-      setUnifiedModalState({ open: false, mode: 'create' })
+      setUnifiedModalState({ open: false, mode: 'create' });
 
       // If we have a taskId, open the queue trace modal
       if (result.taskId) {
-        queueTrace.open(result.taskId, result.machineName || undefined)
+        queueTrace.open(result.taskId, result.machineName || undefined);
       } else {
         // No queue item (credentials-only mode), just refresh
-        await handleRefresh()
+        await handleRefresh();
       }
     }
-  }
+  };
 
   const handleRepoClick = (repoRow: RepoRowData) => {
     // Map Repo data to Repo type
@@ -202,58 +205,57 @@ const MachineReposPage: React.FC = () => {
       vaultVersion: 0,
       vaultContent: undefined,
       grandGuid: undefined,
-      repoTag: repoRow.repoTag
-    }
+      repoTag: repoRow.repoTag,
+    };
 
     // Find the actual Repo from the API data - must match both name AND tag to distinguish forks
-    const actualRepo = repos.find(r =>
-      r.repoName === repoRow.name &&
-      r.repoTag === repoRow.repoTag
-    )
+    const actualRepo = repos.find(
+      (r) => r.repoName === repoRow.name && r.repoTag === repoRow.repoTag
+    );
 
-    setSelectedResource(actualRepo || mappedRepo)
-    setIsPanelCollapsed(false)
-  }
+    setSelectedResource(actualRepo || mappedRepo);
+    setIsPanelCollapsed(false);
+  };
 
   const handleContainerClick = (container: ContainerData) => {
-    setSelectedResource(container)
-    setIsPanelCollapsed(false)
-  }
+    setSelectedResource(container);
+    setIsPanelCollapsed(false);
+  };
 
   const handlePanelClose = () => {
-    setSelectedResource(null)
+    setSelectedResource(null);
     // Panel closes completely, no need to set collapsed state
-  }
+  };
 
   const handleTogglePanelCollapse = () => {
-    setIsPanelCollapsed(!isPanelCollapsed)
-  }
+    setIsPanelCollapsed(!isPanelCollapsed);
+  };
 
   // Update splitWidth when window resizes (to keep within bounds)
   useEffect(() => {
-    setSplitWidth(panelWidth)
-  }, [panelWidth])
+    setSplitWidth(panelWidth);
+  }, [panelWidth]);
 
   // Manage backdrop fade in/out
   useEffect(() => {
     if (selectedResource) {
       // Mount backdrop and trigger fade-in
-      setShouldRenderBackdrop(true)
+      setShouldRenderBackdrop(true);
       requestAnimationFrame(() => {
-        setBackdropVisible(true)
-      })
+        setBackdropVisible(true);
+      });
     } else {
       // Trigger fade-out
-      setBackdropVisible(false)
+      setBackdropVisible(false);
       // Unmount backdrop after fade-out animation completes
       const timer = setTimeout(() => {
-        setShouldRenderBackdrop(false)
-      }, 250) // Match transition duration
-      return () => clearTimeout(timer)
+        setShouldRenderBackdrop(false);
+      }, 250); // Match transition duration
+      return () => clearTimeout(timer);
     }
-  }, [selectedResource])
+  }, [selectedResource]);
 
-  const actualPanelWidth = isPanelCollapsed ? DETAIL_PANEL.COLLAPSED_WIDTH : splitWidth
+  const actualPanelWidth = isPanelCollapsed ? DETAIL_PANEL.COLLAPSED_WIDTH : splitWidth;
 
   // Loading state
   if (machinesLoading && !machine) {
@@ -268,7 +270,7 @@ const MachineReposPage: React.FC = () => {
           </CenteredState>
         </FullHeightCard>
       </PageWrapper>
-    )
+    );
   }
 
   // Error state - machine not found
@@ -291,7 +293,7 @@ const MachineReposPage: React.FC = () => {
           />
         </FullHeightCard>
       </PageWrapper>
-    )
+    );
   }
 
   return (
@@ -302,14 +304,14 @@ const MachineReposPage: React.FC = () => {
             items={[
               {
                 title: <span>{t('machines:machines')}</span>,
-                onClick: () => navigate('/machines')
+                onClick: () => navigate('/machines'),
               },
               {
-                title: machine?.machineName || machineName
+                title: machine?.machineName || machineName,
               },
               {
-                title: t('resources:repos.repos')
-              }
+                title: t('resources:repos.repos'),
+              },
             ]}
             data-testid="machine-repos-breadcrumb"
           />
@@ -328,15 +330,23 @@ const MachineReposPage: React.FC = () => {
                 <HeaderTitleText level={4}>
                   <Space>
                     <DesktopOutlined />
-                    <span>{t('machines:machine')}: {machine?.machineName}</span>
+                    <span>
+                      {t('machines:machine')}: {machine?.machineName}
+                    </span>
                   </Space>
                 </HeaderTitleText>
               </TitleRow>
               <TagRow>
-                <Tag color="green">{t('machines:team')}: {machine?.teamName}</Tag>
-                <Tag color="blue">{t('machines:bridge')}: {machine?.bridgeName}</Tag>
+                <Tag color="green">
+                  {t('machines:team')}: {machine?.teamName}
+                </Tag>
+                <Tag color="blue">
+                  {t('machines:bridge')}: {machine?.bridgeName}
+                </Tag>
                 {machine?.regionName && (
-                  <Tag color="purple">{t('machines:region')}: {machine.regionName}</Tag>
+                  <Tag color="purple">
+                    {t('machines:region')}: {machine.regionName}
+                  </Tag>
                 )}
               </TagRow>
             </TitleColumn>
@@ -380,7 +390,7 @@ const MachineReposPage: React.FC = () => {
                 onRepoClick={handleRepoClick}
                 onContainerClick={handleContainerClick}
                 onQueueItemCreated={(taskId, machineName) => {
-                  queueTrace.open(taskId, machineName || undefined)
+                  queueTrace.open(taskId, machineName || undefined);
                 }}
               />
             )}
@@ -415,8 +425,8 @@ const MachineReposPage: React.FC = () => {
         taskId={queueTrace.state.taskId}
         open={queueTrace.state.open}
         onCancel={() => {
-          queueTrace.close()
-          handleRefresh()
+          queueTrace.close();
+          handleRefresh();
         }}
       />
 
@@ -428,8 +438,8 @@ const MachineReposPage: React.FC = () => {
           teamName={fileBrowserModal.state.data.teamName}
           bridgeName={fileBrowserModal.state.data.bridgeName}
           onQueueItemCreated={(taskId: string) => {
-            queueTrace.open(taskId, fileBrowserModal.state.data?.machineName || undefined)
-            fileBrowserModal.close()
+            queueTrace.open(taskId, fileBrowserModal.state.data?.machineName || undefined);
+            fileBrowserModal.close();
           }}
         />
       )}
@@ -445,13 +455,7 @@ const MachineReposPage: React.FC = () => {
         onSubmit={handleUnifiedModalSubmit}
       />
     </PageWrapper>
-  )
-}
+  );
+};
 
-export default MachineReposPage
-
-
-
-
-
-
+export default MachineReposPage;

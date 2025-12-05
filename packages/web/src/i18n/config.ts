@@ -32,7 +32,7 @@ const initialResources = {
     functions: enFunctions,
     distributedStorage: enDistributedStorage,
     organization: enOrganization,
-  }
+  },
 } as const;
 
 type LanguageResources = Partial<typeof initialResources.en>;
@@ -46,7 +46,7 @@ const loadLanguageResources = async (lng: string) => {
   try {
     // Dynamic imports for other languages
     const resources: LanguageResources = {};
-    
+
     switch (lng) {
       case 'es':
         resources.auth = (await import('./locales/es/auth.json')).default;
@@ -59,7 +59,9 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/es/storageProviders.json')).default;
         resources.functions = (await import('./locales/es/functions.json')).default;
         resources.marketplace = (await import('./locales/es/marketplace.json')).default;
-        resources.distributedStorage = (await import('./locales/es/distributedStorage.json')).default;
+        resources.distributedStorage = (
+          await import('./locales/es/distributedStorage.json')
+        ).default;
         resources.organization = (await import('./locales/es/organization.json')).default;
         break;
       case 'tr':
@@ -73,7 +75,9 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/tr/storageProviders.json')).default;
         resources.functions = (await import('./locales/tr/functions.json')).default;
         resources.marketplace = (await import('./locales/tr/marketplace.json')).default;
-        resources.distributedStorage = (await import('./locales/tr/distributedStorage.json')).default;
+        resources.distributedStorage = (
+          await import('./locales/tr/distributedStorage.json')
+        ).default;
         resources.organization = (await import('./locales/tr/organization.json')).default;
         break;
       case 'fr':
@@ -87,7 +91,9 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/fr/storageProviders.json')).default;
         resources.functions = (await import('./locales/fr/functions.json')).default;
         resources.marketplace = (await import('./locales/fr/marketplace.json')).default;
-        resources.distributedStorage = (await import('./locales/fr/distributedStorage.json')).default;
+        resources.distributedStorage = (
+          await import('./locales/fr/distributedStorage.json')
+        ).default;
         resources.organization = (await import('./locales/fr/organization.json')).default;
         break;
       case 'de':
@@ -101,7 +107,9 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/de/storageProviders.json')).default;
         resources.functions = (await import('./locales/de/functions.json')).default;
         resources.marketplace = (await import('./locales/de/marketplace.json')).default;
-        resources.distributedStorage = (await import('./locales/de/distributedStorage.json')).default;
+        resources.distributedStorage = (
+          await import('./locales/de/distributedStorage.json')
+        ).default;
         resources.organization = (await import('./locales/de/organization.json')).default;
         break;
       case 'zh':
@@ -115,7 +123,9 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/zh/storageProviders.json')).default;
         resources.functions = (await import('./locales/zh/functions.json')).default;
         resources.marketplace = (await import('./locales/zh/marketplace.json')).default;
-        resources.distributedStorage = (await import('./locales/zh/distributedStorage.json')).default;
+        resources.distributedStorage = (
+          await import('./locales/zh/distributedStorage.json')
+        ).default;
         resources.organization = (await import('./locales/zh/organization.json')).default;
         break;
       case 'ja':
@@ -129,7 +139,9 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/ja/storageProviders.json')).default;
         resources.functions = (await import('./locales/ja/functions.json')).default;
         resources.marketplace = (await import('./locales/ja/marketplace.json')).default;
-        resources.distributedStorage = (await import('./locales/ja/distributedStorage.json')).default;
+        resources.distributedStorage = (
+          await import('./locales/ja/distributedStorage.json')
+        ).default;
         resources.organization = (await import('./locales/ja/organization.json')).default;
         break;
       case 'ar':
@@ -143,7 +155,9 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/ar/storageProviders.json')).default;
         resources.functions = (await import('./locales/ar/functions.json')).default;
         resources.marketplace = (await import('./locales/ar/marketplace.json')).default;
-        resources.distributedStorage = (await import('./locales/ar/distributedStorage.json')).default;
+        resources.distributedStorage = (
+          await import('./locales/ar/distributedStorage.json')
+        ).default;
         resources.organization = (await import('./locales/ar/organization.json')).default;
         break;
       case 'ru':
@@ -157,13 +171,15 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/ru/storageProviders.json')).default;
         resources.functions = (await import('./locales/ru/functions.json')).default;
         resources.marketplace = (await import('./locales/ru/marketplace.json')).default;
-        resources.distributedStorage = (await import('./locales/ru/distributedStorage.json')).default;
+        resources.distributedStorage = (
+          await import('./locales/ru/distributedStorage.json')
+        ).default;
         resources.organization = (await import('./locales/ru/organization.json')).default;
         break;
     }
 
     // Add resources to i18n
-    Object.keys(resources).forEach(ns => {
+    Object.keys(resources).forEach((ns) => {
       i18n.addResourceBundle(lng, ns, resources[ns]);
     });
   } catch {
@@ -183,7 +199,18 @@ i18n
     fallbackLng: 'en',
     lng: 'en',
     debug: false,
-    ns: ['common', 'auth', 'resources', 'machines', 'system', 'queue', 'settings', 'storageProviders', 'functions', 'distributedStorage'],
+    ns: [
+      'common',
+      'auth',
+      'resources',
+      'machines',
+      'system',
+      'queue',
+      'settings',
+      'storageProviders',
+      'functions',
+      'distributedStorage',
+    ],
     defaultNS,
     resources: initialResources,
     interpolation: {
@@ -199,8 +226,8 @@ i18n
       bindI18nStore: 'added removed', // Re-render when translations are added/removed
       transEmptyNodeValue: '', // Prevent showing keys for empty translations
       transSupportBasicHtmlNodes: true,
-      transKeepBasicHtmlNodesFor: ['br', 'strong', 'i', 'p']
-    }
+      transKeepBasicHtmlNodesFor: ['br', 'strong', 'i', 'p'],
+    },
   });
 
 // Listen for language changes to load resources dynamically

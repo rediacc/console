@@ -1,193 +1,183 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 
-import { Alert, Space, Typography } from 'antd'
+import { Alert, Space, Typography } from 'antd';
 
-import type { MenuProps } from 'antd'
+import type { MenuProps } from 'antd';
 
-import { useTableStyles } from '@/hooks/useComponentStyles'
+import { useTableStyles } from '@/hooks/useComponentStyles';
 
-import { FunctionOutlined, PlayCircleOutlined, StopOutlined, ReloadOutlined, DeleteOutlined, PauseCircleOutlined, CheckCircleOutlined, DisconnectOutlined, EyeOutlined } from '@/utils/optimizedIcons'
+import {
+  FunctionOutlined,
+  PlayCircleOutlined,
+  StopOutlined,
+  ReloadOutlined,
+  DeleteOutlined,
+  PauseCircleOutlined,
+  CheckCircleOutlined,
+  DisconnectOutlined,
+  EyeOutlined,
+} from '@/utils/optimizedIcons';
 
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next';
 
-import * as S from './styles'
+import * as S from './styles';
 
-import { useQueueAction } from '@/hooks/useQueueAction'
+import { useQueueAction } from '@/hooks/useQueueAction';
 
-import { Machine } from '@/types'
+import { Machine } from '@/types';
 
-import { useRepos } from '@/api/queries/repos'
+import { useRepos } from '@/api/queries/repos';
 
-import type { ColumnsType } from 'antd/es/table'
+import type { ColumnsType } from 'antd/es/table';
 
-import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu'
+import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
 
-import { showMessage } from '@/utils/messages'
+import { showMessage } from '@/utils/messages';
 
-import { useAppSelector } from '@/store/store'
+import { useAppSelector } from '@/store/store';
 
-import { featureFlags } from '@/config/featureFlags'
+import { featureFlags } from '@/config/featureFlags';
 
-import { createSorter, createCustomSorter, createArrayLengthSorter, getGrandVaultForOperation } from '@/core'
+import {
+  createSorter,
+  createCustomSorter,
+  createArrayLengthSorter,
+  getGrandVaultForOperation,
+} from '@/core';
 
-import { parseVaultStatus } from '@/core/services/machine'
+import { parseVaultStatus } from '@/core/services/machine';
 
-import LoadingWrapper from '@/components/common/LoadingWrapper'
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 
-import { createActionColumn, createStatusColumn, createTruncatedColumn } from '@/components/common/columns'
+import {
+  createActionColumn,
+  createStatusColumn,
+  createTruncatedColumn,
+} from '@/components/common/columns';
 
-import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
-import { CaptionText } from '@/styles/primitives'
+import { CaptionText } from '@/styles/primitives';
 
-
-
-const { Text } = Typography
-
-
+const { Text } = Typography;
 
 interface PortMapping {
+  host: string;
 
-  host: string
+  host_port: string;
 
-  host_port: string
+  container_port: string;
 
-  container_port: string
-
-  protocol: string
-
+  protocol: string;
 }
-
-
 
 interface Container {
+  id: string;
 
-  id: string
+  name: string;
 
-  name: string
+  state: string;
 
-  state: string
+  status?: string;
 
-  status?: string
+  image?: string;
 
-  image?: string
+  ports?: string;
 
-  ports?: string
+  created?: string;
 
-  created?: string
+  repo?: string;
 
-  repo?: string
+  port_mappings?: PortMapping[];
 
-  port_mappings?: PortMapping[]
+  cpu_percent?: string;
 
-  cpu_percent?: string
+  memory_usage?: string;
 
-  memory_usage?: string
+  memory_percent?: string;
 
-  memory_percent?: string
+  net_io?: string;
 
-  net_io?: string
+  block_io?: string;
 
-  block_io?: string
+  pids?: string;
 
-  pids?: string
-
-  [key: string]: unknown
-
+  [key: string]: unknown;
 }
-
-
 
 // Repo interface from vaultStatus (runtime data)
 
 interface Repo {
+  name: string;
 
-  name: string
+  repoTag?: string;
 
-  repoTag?: string
+  size: number;
 
-  size: number
+  size_human: string;
 
-  size_human: string
+  modified: number;
 
-  modified: number
+  modified_human: string;
 
-  modified_human: string
+  mounted: boolean;
 
-  mounted: boolean
+  mount_path: string;
 
-  mount_path: string
+  image_path: string;
 
-  image_path: string
+  accessible: boolean;
 
-  accessible: boolean
+  has_rediaccfile: boolean;
 
-  has_rediaccfile: boolean
+  docker_available: boolean;
 
-  docker_available: boolean
+  docker_running: boolean;
 
-  docker_running: boolean
+  container_count: number;
 
-  container_count: number
+  plugin_count: number;
 
-  plugin_count: number
+  has_services: boolean;
 
-  has_services: boolean
+  service_count: number;
 
-  service_count: number
+  isUnmapped?: boolean;
 
-  isUnmapped?: boolean
-
-  originalGuid?: string
-
+  originalGuid?: string;
 }
-
-
 
 interface RepoContainerTableProps {
+  machine: Machine;
 
-  machine: Machine
+  repo: Repo;
 
-  repo: Repo
+  onContainerClick?: (container: Container) => void;
 
-  onContainerClick?: (container: Container) => void
+  highlightedContainer?: Container | null;
 
-  highlightedContainer?: Container | null
+  onQueueItemCreated?: (taskId: string, machineName: string) => void;
 
-  onQueueItemCreated?: (taskId: string, machineName: string) => void
-
-  refreshKey?: number
-
+  refreshKey?: number;
 }
-
-
 
 interface VaultStatusRepo {
+  name?: string;
 
-  name?: string
+  mount_path?: string;
 
-  mount_path?: string
-
-  image_path?: string
-
+  image_path?: string;
 }
-
-
 
 interface VaultStatusResult {
+  repos?: VaultStatusRepo[];
 
-  repos?: VaultStatusRepo[]
-
-  containers?: Container[]
-
+  containers?: Container[];
 }
 
-
-
 export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
-
   machine,
 
   repo,
@@ -198,172 +188,118 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
 
   onQueueItemCreated,
 
-  refreshKey
-
+  refreshKey,
 }) => {
+  const { t } = useTranslation(['resources', 'common', 'machines', 'functions']);
 
-  const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
+  const userEmail = useAppSelector((state) => state.auth.user?.email || '');
 
-  const userEmail = useAppSelector((state) => state.auth.user?.email || '')
+  const tableStyles = useTableStyles();
 
-  const tableStyles = useTableStyles()
+  const [loading, setLoading] = useState(false);
 
-  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null);
 
-  const [error, setError] = useState<string | null>(null)
+  const [containers, setContainers] = useState<Container[]>([]);
 
-  const [containers, setContainers] = useState<Container[]>([])
+  const [pluginContainers, setPluginContainers] = useState<Container[]>([]);
 
-  const [pluginContainers, setPluginContainers] = useState<Container[]>([])
+  const { executeAction, isExecuting } = useQueueAction();
 
-
-
-  const { executeAction, isExecuting } = useQueueAction()
-
-  const { data: teamRepos = [] } = useRepos(machine.teamName)
-
-
+  const { data: teamRepos = [] } = useRepos(machine.teamName);
 
   const getRowClassName = (container: Container) => {
-
-    const classNames = ['repo-container-row']
+    const classNames = ['repo-container-row'];
 
     if (onContainerClick) {
-
-      classNames.push('repo-container-row--clickable')
-
+      classNames.push('repo-container-row--clickable');
     }
 
     if (highlightedContainer?.id === container.id) {
-
-      classNames.push('repo-container-row--selected')
-
+      classNames.push('repo-container-row--selected');
     }
 
-    return classNames.join(' ')
-
-  }
-
-
+    return classNames.join(' ');
+  };
 
   const buildRowHandlers = (container: Container) => ({
-
     className: getRowClassName(container),
 
     onClick: (e: React.MouseEvent<HTMLElement>) => {
-
       if (!onContainerClick) {
-
-        return
-
+        return;
       }
 
-      const target = e.target as HTMLElement
+      const target = e.target as HTMLElement;
 
       if (target.closest('button') || target.closest('.ant-dropdown')) {
-
-        return
-
+        return;
       }
 
-      onContainerClick(container)
-
+      onContainerClick(container);
     },
-
-  })
-
-
+  });
 
   // Find repo data for credentials - must match both name AND tag to distinguish forks
 
-  const repoData = teamRepos.find(r =>
-
-    (r.repoName === repo.name && r.repoTag === repo.repoTag) ||
-
-    r.repoGuid === repo.originalGuid ||
-
-    r.repoGuid === repo.name
-
-  )
-
-
+  const repoData = teamRepos.find(
+    (r) =>
+      (r.repoName === repo.name && r.repoTag === repo.repoTag) ||
+      r.repoGuid === repo.originalGuid ||
+      r.repoGuid === repo.name
+  );
 
   // Get grand repo vault (for credentials) using core orchestration
 
   const grandRepoVault = repoData
-
     ? getGrandVaultForOperation(
-
         repoData.repoGuid,
 
         repoData.grandGuid,
 
         teamRepos
-
       ) || '{}'
-
-    : '{}'
-
-
+    : '{}';
 
   // Parse containers from machine vaultStatus
 
   useEffect(() => {
-
     const parseContainers = () => {
+      setLoading(true);
 
-      setLoading(true)
-
-      setError(null)
-
-
+      setError(null);
 
       try {
-
         // Check if machine has vaultStatus data
 
         if (!machine.vaultStatus) {
+          setContainers([]);
 
-          setContainers([])
+          setPluginContainers([]);
 
-          setPluginContainers([])
+          setLoading(false);
 
-          setLoading(false)
-
-          return
-
+          return;
         }
-
-
 
         // Parse vaultStatus using core utility
 
-        const parsed = parseVaultStatus(machine.vaultStatus)
-
-
+        const parsed = parseVaultStatus(machine.vaultStatus);
 
         if (parsed.error) {
-
           // Invalid vaultStatus data format (e.g., jq errors)
 
-          setError('Invalid repo data')
+          setError('Invalid repo data');
 
-          setLoading(false)
+          setLoading(false);
 
-          return
-
+          return;
         }
 
-
-
         if (parsed.status === 'completed' && parsed.rawResult) {
-
-          const result = JSON.parse(parsed.rawResult) as VaultStatusResult
-
-
+          const result = JSON.parse(parsed.rawResult) as VaultStatusResult;
 
           if (result && result.containers && Array.isArray(result.containers)) {
-
             // Filter containers that belong to this repo
 
             // We need to match containers by finding the corresponding repo in vaultStatus
@@ -371,109 +307,71 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
             // and comparing mount_path or image_path
 
             const repoContainers = result.containers.filter((container: Container) => {
-
               // Get the repo GUID from container
 
-              const containerRepoGuid = container.repo
-
-
+              const containerRepoGuid = container.repo;
 
               if (!containerRepoGuid) {
-
-                return false
-
+                return false;
               }
-
-
 
               // Find the repo in vaultStatus with this GUID
 
-              const vaultRepo = result.repositories?.find((r) => r.name === containerRepoGuid)
+              const vaultRepo = result.repositories?.find((r) => r.name === containerRepoGuid);
 
               if (!vaultRepo) {
-
-                return false
-
+                return false;
               }
-
-
 
               // Match by mount_path or image_path
 
-              return repo.mount_path === vaultRepo.mount_path ||
-
-                     repo.image_path === vaultRepo.image_path
-
-            })
-
-
+              return (
+                repo.mount_path === vaultRepo.mount_path || repo.image_path === vaultRepo.image_path
+              );
+            });
 
             // Separate plugin containers from regular containers
 
-            const plugins = repoContainers.filter((c: Container) =>
+            const plugins = repoContainers.filter(
+              (c: Container) => c.name && c.name.startsWith('plugin-')
+            );
 
-              c.name && c.name.startsWith('plugin-')
+            const regular = repoContainers.filter(
+              (c: Container) => !c.name || !c.name.startsWith('plugin-')
+            );
 
-            )
+            setPluginContainers(plugins);
 
-            const regular = repoContainers.filter((c: Container) =>
-
-              !c.name || !c.name.startsWith('plugin-')
-
-            )
-
-
-
-            setPluginContainers(plugins)
-
-            setContainers(regular)
-
+            setContainers(regular);
           } else {
+            setContainers([]);
 
-            setContainers([])
-
-            setPluginContainers([])
-
+            setPluginContainers([]);
           }
-
         } else {
+          setContainers([]);
 
-          setContainers([])
-
-          setPluginContainers([])
-
+          setPluginContainers([]);
         }
 
-
-
-        setLoading(false)
-
+        setLoading(false);
       } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : t('resources:repos.errorLoadingContainers');
 
-        const errorMessage = err instanceof Error ? err.message : t('resources:repos.errorLoadingContainers')
+        setError(errorMessage);
 
-        setError(errorMessage)
-
-        setLoading(false)
-
+        setLoading(false);
       }
+    };
 
-    }
-
-
-
-    parseContainers()
-
-  }, [machine.vaultStatus, repo.image_path, repo.mount_path, repo.name, refreshKey, t])
-
-
+    parseContainers();
+  }, [machine.vaultStatus, repo.image_path, repo.mount_path, repo.name, refreshKey, t]);
 
   // Handle container actions
 
   const handleContainerAction = async (container: Container, functionName: string) => {
-
     const result = await executeAction({
-
       teamName: machine.teamName,
 
       machineName: machine.machineName,
@@ -483,11 +381,9 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
       functionName,
 
       params: {
-
         repo: repoData?.repoGuid || repo.name,
 
-        container: container.id
-
+        container: container.id,
       },
 
       priority: 4,
@@ -504,44 +400,27 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
 
       repoNetworkMode: repoData?.repoNetworkMode,
 
-      repoTag: repoData?.repoTag
-
-    })
-
-
+      repoTag: repoData?.repoTag,
+    });
 
     if (result.success) {
-
       if (result.taskId) {
-
-        showMessage('success', t('machines:queueItemCreated'))
+        showMessage('success', t('machines:queueItemCreated'));
 
         if (onQueueItemCreated) {
-
-          onQueueItemCreated(result.taskId, machine.machineName)
-
+          onQueueItemCreated(result.taskId, machine.machineName);
         }
-
       } else if (result.isQueued) {
-
-        showMessage('info', t('resources:repos.highestPriorityQueued'))
-
+        showMessage('info', t('resources:repos.highestPriorityQueued'));
       }
-
     } else {
-
-      showMessage('error', result.error || t('common:errors.somethingWentWrong'))
-
+      showMessage('error', result.error || t('common:errors.somethingWentWrong'));
     }
-
-  }
-
-
+  };
 
   // Container columns
 
   const connectionStatusColumn = createStatusColumn<Container>({
-
     title: t('machines:status'),
 
     dataIndex: 'state',
@@ -549,25 +428,35 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
     key: 'status',
 
     statusMap: {
-
       running: { icon: <CheckCircleOutlined />, label: t('machines:connected'), color: 'success' },
 
-      paused: { icon: <PauseCircleOutlined />, label: t('resources:containers.containerStatusPaused'), color: 'warning' },
+      paused: {
+        icon: <PauseCircleOutlined />,
+        label: t('resources:containers.containerStatusPaused'),
+        color: 'warning',
+      },
 
-      exited: { icon: <DisconnectOutlined />, label: t('machines:connectionFailed'), color: 'default' },
+      exited: {
+        icon: <DisconnectOutlined />,
+        label: t('machines:connectionFailed'),
+        color: 'default',
+      },
 
-      restarting: { icon: <ReloadOutlined />, label: t('resources:containers.containerStatusRestarting'), color: 'blue' },
-
+      restarting: {
+        icon: <ReloadOutlined />,
+        label: t('resources:containers.containerStatusRestarting'),
+        color: 'blue',
+      },
     },
 
-    defaultConfig: { icon: <DisconnectOutlined />, label: t('machines:connectionFailed'), color: 'default' },
-
-  })
-
-
+    defaultConfig: {
+      icon: <DisconnectOutlined />,
+      label: t('machines:connectionFailed'),
+      color: 'default',
+    },
+  });
 
   const stateColumn = createStatusColumn<Container>({
-
     title: t('resources:containers.state'),
 
     dataIndex: 'state',
@@ -575,25 +464,39 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
     key: 'state',
 
     statusMap: {
+      running: {
+        icon: <PlayCircleOutlined />,
+        label: t('resources:containers.containerStatusRunning'),
+        color: 'success',
+      },
 
-      running: { icon: <PlayCircleOutlined />, label: t('resources:containers.containerStatusRunning'), color: 'success' },
+      paused: {
+        icon: <PauseCircleOutlined />,
+        label: t('resources:containers.containerStatusPaused'),
+        color: 'warning',
+      },
 
-      paused: { icon: <PauseCircleOutlined />, label: t('resources:containers.containerStatusPaused'), color: 'warning' },
+      restarting: {
+        icon: <ReloadOutlined />,
+        label: t('resources:containers.containerStatusRestarting'),
+        color: 'blue',
+      },
 
-      restarting: { icon: <ReloadOutlined />, label: t('resources:containers.containerStatusRestarting'), color: 'blue' },
-
-      exited: { icon: <StopOutlined />, label: t('resources:containers.containerStatusStopped'), color: 'default' },
-
+      exited: {
+        icon: <StopOutlined />,
+        label: t('resources:containers.containerStatusStopped'),
+        color: 'default',
+      },
     },
 
-    defaultConfig: { icon: <StopOutlined />, label: t('resources:containers.containerStatusStopped'), color: 'default' },
-
-  })
-
-
+    defaultConfig: {
+      icon: <StopOutlined />,
+      label: t('resources:containers.containerStatusStopped'),
+      color: 'default',
+    },
+  });
 
   const containerNameColumn = createTruncatedColumn<Container>({
-
     title: t('resources:containers.containerName'),
 
     dataIndex: 'name',
@@ -605,13 +508,9 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
     renderText: (name: string | null | undefined) => name ?? 'N/A',
 
     renderWrapper: (content) => <strong>{content}</strong>,
-
-  })
-
-
+  });
 
   const imageColumn = createTruncatedColumn<Container>({
-
     title: t('resources:containers.image'),
 
     dataIndex: 'image',
@@ -621,15 +520,10 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
     sorter: createSorter<Container>('image'),
 
     renderText: (image: string | null | undefined) => image ?? 'N/A',
-
-  })
-
-
+  });
 
   const containerColumns: ColumnsType<Container> = [
-
     {
-
       ...connectionStatusColumn,
 
       align: 'center',
@@ -637,35 +531,26 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
       sorter: createCustomSorter<Container>((c) => (c.state === 'running' ? 0 : 1)),
 
       render: (state: string, record: Container, index) =>
-
         connectionStatusColumn.render?.(state, record, index) as React.ReactNode,
-
     },
 
     containerNameColumn,
 
     {
-
       ...stateColumn,
 
       render: (state: string, record: Container, index) => (
-
         <Space>
-
           {stateColumn.render?.(state, record, index) as React.ReactNode}
 
           {record.status && <CaptionText $muted>{record.status}</CaptionText>}
-
         </Space>
-
       ),
-
     },
 
     imageColumn,
 
     {
-
       title: t('resources:containers.ports'),
 
       dataIndex: 'port_mappings',
@@ -677,41 +562,27 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
       sorter: createArrayLengthSorter<Container>('port_mappings'),
 
       render: (_: unknown, record: Container) => {
-
         if (!record.port_mappings || record.port_mappings.length === 0) {
-
-          return <Text type="secondary">-</Text>
-
+          return <Text type="secondary">-</Text>;
         }
 
-
-
         return (
-
           <Space orientation="vertical" size={0}>
-
             {record.port_mappings.slice(0, 2).map((pm, idx) => (
-
               <CaptionText key={idx}>\1</CaptionText>
-
             ))}
 
             {record.port_mappings.length > 2 && (
-
-              <CaptionText $muted $size={11}>\1</CaptionText>
-
+              <CaptionText $muted $size={11}>
+                \1
+              </CaptionText>
             )}
-
           </Space>
-
-        )
-
+        );
       },
-
     },
 
     createActionColumn<Container>({
-
       title: t('common:table.actions'),
 
       width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
@@ -719,17 +590,11 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
       fixed: 'end',
 
       renderActions: (container) => {
-
-        const menuItems: MenuProps['items'] = []
-
-
+        const menuItems: MenuProps['items'] = [];
 
         if (container.state === 'running') {
-
           menuItems.push(
-
             {
-
               key: 'stop',
 
               label: t('functions:functions.container_stop.name'),
@@ -737,11 +602,9 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
               icon: <StopOutlined />,
 
               onClick: () => handleContainerAction(container, 'container_stop'),
-
             },
 
             {
-
               key: 'restart',
 
               label: t('functions:functions.container_restart.name'),
@@ -749,11 +612,9 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
               icon: <ReloadOutlined />,
 
               onClick: () => handleContainerAction(container, 'container_restart'),
-
             },
 
             {
-
               key: 'pause',
 
               label: t('functions:functions.container_pause.name'),
@@ -761,15 +622,10 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
               icon: <PauseCircleOutlined />,
 
               onClick: () => handleContainerAction(container, 'container_pause'),
-
-            },
-
-          )
-
+            }
+          );
         } else if (container.state === 'paused') {
-
           menuItems.push({
-
             key: 'unpause',
 
             label: t('functions:functions.container_unpause.name'),
@@ -777,15 +633,10 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
             icon: <PlayCircleOutlined />,
 
             onClick: () => handleContainerAction(container, 'container_unpause'),
-
-          })
-
+          });
         } else {
-
           menuItems.push(
-
             {
-
               key: 'start',
 
               label: t('functions:functions.container_start.name'),
@@ -793,11 +644,9 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
               icon: <PlayCircleOutlined />,
 
               onClick: () => handleContainerAction(container, 'container_start'),
-
             },
 
             {
-
               key: 'remove',
 
               label: t('functions:functions.container_remove.name'),
@@ -805,23 +654,14 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
               icon: <DeleteOutlined />,
 
               onClick: () => handleContainerAction(container, 'container_remove'),
-
-            },
-
-          )
-
+            }
+          );
         }
 
-
-
         return (
-
           <ActionButtonGroup
-
             buttons={[
-
               {
-
                 type: 'view',
 
                 icon: <EyeOutlined />,
@@ -833,11 +673,9 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
                 onClick: (row) => onContainerClick?.(row),
 
                 testId: (row) => `container-view-details-${row.id}`,
-
               },
 
               {
-
                 type: 'remote',
 
                 icon: <FunctionOutlined />,
@@ -851,208 +689,106 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
                 loading: isExecuting,
 
                 testId: (row) => `container-actions-${row.id}`,
-
               },
 
               {
-
                 type: 'custom',
 
                 render: (row) => (
-
                   <LocalActionsMenu
-
                     machine={machine.machineName}
-
                     repo={repo.name}
-
                     teamName={machine.teamName}
-
                     userEmail={userEmail}
-
                     containerId={row.id}
-
                     containerName={row.name}
-
                     containerState={row.state}
-
                     isContainerMenu={true}
-
                   />
-
                 ),
-
               },
-
             ]}
-
             record={container}
-
             idField="id"
-
             t={t}
-
           />
-
-        )
-
+        );
       },
-
     }),
-
-  ]
-
-
+  ];
 
   if (loading) {
-
     return (
-
       <div data-testid="container-list-loading">
-
         <LoadingWrapper
-
           loading
-
           centered
-
           minHeight={200}
-
           tip={t('resources:containers.fetchingContainers') as string}
-
         >
-
           <div />
-
         </LoadingWrapper>
-
       </div>
-
-    )
-
+    );
   }
-
-
 
   if (error) {
-
     return (
-
       <Alert
-
         message={t('resources:repos.errorLoadingContainers')}
-
         description={error}
-
         type="error"
-
         showIcon
-
         data-testid="container-list-error"
-
       />
-
-    )
-
+    );
   }
 
-
-
   return (
-
     <div data-testid="repo-container-list">
-
       {/* Regular Containers */}
 
       {containers.length > 0 ? (
-
         <S.ContainersSection data-testid="regular-containers-section">
           <S.StyledTable
-
             columns={containerColumns}
-
             dataSource={containers}
-
             rowKey="id"
-
             size="small"
-
             $removeMargins={true}
-
             pagination={false}
-
             scroll={{ x: 'max-content' }}
-
             style={tableStyles.tableContainer}
-
             data-testid="regular-containers-table"
-
             onRow={(container: Container) => buildRowHandlers(container)}
-
           />
-
         </S.ContainersSection>
-
       ) : (
-
         <S.EmptyState data-testid="no-containers">
-
           <Text type="secondary">{t('resources:containers.noContainers')}</Text>
-
         </S.EmptyState>
-
       )}
-
-
 
       {/* Plugin Containers */}
 
       {featureFlags.isEnabled('plugins') && pluginContainers.length > 0 && (
-
         <S.PluginContainersSection data-testid="plugin-containers-section">
-
-          <S.SectionTitle level={5}>
-
-            {t('resources:containers.pluginContainers')}
-
-          </S.SectionTitle>
+          <S.SectionTitle level={5}>{t('resources:containers.pluginContainers')}</S.SectionTitle>
 
           <S.StyledTable
-
             columns={containerColumns}
-
             dataSource={pluginContainers}
-
             rowKey="id"
-
             size="small"
-
             $removeMargins={true}
-
             pagination={false}
-
             scroll={{ x: 'max-content' }}
-
             style={tableStyles.tableContainer}
-
             data-testid="plugin-containers-table"
-
             onRow={(container: Container) => buildRowHandlers(container)}
-
           />
-
         </S.PluginContainersSection>
       )}
-
     </div>
-
-  )
-
-}
-
-
-
-
-
-
-
+  );
+};

@@ -80,7 +80,11 @@ export const OptionRight = styled.div`
 export const HealthIndicator = styled.span<{ $isHealthy: boolean; $isChecking?: boolean }>`
   font-size: 10px;
   color: ${({ $isHealthy, $isChecking }) =>
-    $isChecking ? 'var(--color-warning)' : $isHealthy ? 'var(--color-success)' : 'var(--color-error)'};
+    $isChecking
+      ? 'var(--color-warning)'
+      : $isHealthy
+        ? 'var(--color-success)'
+        : 'var(--color-error)'};
 `;
 
 export const EndpointName = styled.span<{ $disabled?: boolean }>`

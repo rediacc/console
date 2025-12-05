@@ -3,23 +3,23 @@
  * Handles validation for fork-specific operations like deletion
  */
 
-import { type RepoWithRelations, isFork } from '../repo'
+import { type RepoWithRelations, isFork } from '../repo';
 
 /**
  * Result of fork deletion validation
  */
 export interface ForkDeletionValidationResult {
-  canDelete: boolean
-  reason?: string
+  canDelete: boolean;
+  reason?: string;
 }
 
 /**
  * Fork parent information
  */
 export interface ForkParent {
-  repoGuid: string
-  repoName: string
-  repoTag?: string | null
+  repoGuid: string;
+  repoName: string;
+  repoTag?: string | null;
 }
 
 /**
@@ -28,20 +28,18 @@ export interface ForkParent {
  * @param repo - Repo to check for deletion eligibility
  * @returns Validation result with canDelete flag and reason if blocked
  */
-export function canDeleteFork(
-  repo: RepoWithRelations
-): ForkDeletionValidationResult {
+export function canDeleteFork(repo: RepoWithRelations): ForkDeletionValidationResult {
   // Must be a fork (has grandGuid different from self)
   if (!isFork(repo)) {
     return {
       canDelete: false,
-      reason: 'Repo is not a fork (cannot delete grand repo as fork)'
-    }
+      reason: 'Repo is not a fork (cannot delete grand repo as fork)',
+    };
   }
 
   return {
-    canDelete: true
-  }
+    canDelete: true,
+  };
 }
 
 /**
@@ -55,26 +53,26 @@ export function findForkParent(
   allRepos: RepoWithRelations[]
 ): ForkParent | null {
   if (!isFork(fork)) {
-    return null
+    return null;
   }
 
-  const grandGuid = fork.grandGuid
+  const grandGuid = fork.grandGuid;
 
   if (!grandGuid) {
-    return null
+    return null;
   }
 
-  const parent = allRepos.find(r => r.repoGuid === grandGuid)
+  const parent = allRepos.find((r) => r.repoGuid === grandGuid);
 
   if (!parent) {
-    return null
+    return null;
   }
 
   return {
     repoGuid: parent.repoGuid,
     repoName: parent.repoName,
-    repoTag: parent.repoTag
-  }
+    repoTag: parent.repoTag,
+  };
 }
 
 /**
@@ -87,32 +85,31 @@ export function getForkRelationship(
   repo: RepoWithRelations,
   allRepos: RepoWithRelations[]
 ): {
-  isFork: boolean
-  parent: ForkParent | null
-  siblingCount: number
+  isFork: boolean;
+  parent: ForkParent | null;
+  siblingCount: number;
 } {
   if (!isFork(repo)) {
     return {
       isFork: false,
       parent: null,
-      siblingCount: 0
-    }
+      siblingCount: 0,
+    };
   }
 
-  const parent = findForkParent(repo, allRepos)
+  const parent = findForkParent(repo, allRepos);
 
   // Count siblings (other forks with same grandGuid, excluding self)
-  const siblingCount = allRepos.filter(r =>
-    r.grandGuid === repo.grandGuid &&
-    r.repoGuid !== repo.repoGuid &&
-    r.grandGuid !== r.repoGuid // Exclude the grand itself
-  ).length
+  const siblingCount = allRepos.filter(
+    (r) =>
+      r.grandGuid === repo.grandGuid && r.repoGuid !== repo.repoGuid && r.grandGuid !== r.repoGuid // Exclude the grand itself
+  ).length;
 
   return {
     isFork: true,
     parent,
-    siblingCount
-  }
+    siblingCount,
+  };
 }
 
 /**
@@ -121,13 +118,11 @@ export function getForkRelationship(
  * @param _repo - Repo to check (unused, all repos can be forked)
  * @returns True (forking is always allowed)
  */
-export function canForkRepo(
-  _repo: RepoWithRelations
-): boolean {
+export function canForkRepo(_repo: RepoWithRelations): boolean {
   // Any repo can be forked
   // If it's a fork, the new fork will share the same grandGuid
   // If it's a credential, the new fork will point to it as grand
-  return true
+  return true;
 }
 
 /**
@@ -135,10 +130,8 @@ export function canForkRepo(
  * @param repo - Repo being forked
  * @returns The grandGuid for the new fork
  */
-export function getGrandGuidForFork(
-  repo: RepoWithRelations
-): string {
+export function getGrandGuidForFork(repo: RepoWithRelations): string {
   // If forking a fork, use the same grand
   // If forking a credential, the credential becomes the grand
-  return repo.grandGuid || repo.repoGuid
+  return repo.grandGuid || repo.repoGuid;
 }

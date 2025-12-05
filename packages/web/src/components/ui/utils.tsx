@@ -1,6 +1,6 @@
 /**
  * Utility components
- * 
+ *
  * General-purpose layout utilities:
  * - IconWrapper: Icon container with sizing
  * - RightAlign, CenteredState, CenteredBlock, ErrorWrapper
@@ -8,57 +8,57 @@
  * - RegionsSection: Special section for infrastructure page
  */
 
-import styled, { type DefaultTheme } from 'styled-components'
-import { PaddedEmpty as PrimitivePaddedEmpty } from '@/styles/primitives'
+import styled, { type DefaultTheme } from 'styled-components';
+import { PaddedEmpty as PrimitivePaddedEmpty } from '@/styles/primitives';
 
-type IconSize = 'sm' | 'md' | 'lg'
-type IconTone = 'primary' | 'inherit' | 'success' | 'warning' | 'danger' | 'info' | 'muted'
+type IconSize = 'sm' | 'md' | 'lg';
+type IconTone = 'primary' | 'inherit' | 'success' | 'warning' | 'danger' | 'info' | 'muted';
 
 const getIconSize = (size: IconSize, theme: DefaultTheme) => {
   switch (size) {
     case 'sm':
-      return `${theme.dimensions.ICON_SM}px`
+      return `${theme.dimensions.ICON_SM}px`;
     case 'lg':
-      return `${theme.dimensions.ICON_LG}px`
+      return `${theme.dimensions.ICON_LG}px`;
     default:
-      return `${theme.dimensions.ICON_MD}px`
+      return `${theme.dimensions.ICON_MD}px`;
   }
-}
+};
 
 const getIconColor = (tone: IconTone, theme: DefaultTheme) => {
   switch (tone) {
     case 'success':
-      return theme.colors.success
+      return theme.colors.success;
     case 'warning':
-      return theme.colors.warning
+      return theme.colors.warning;
     case 'danger':
-      return theme.colors.error
+      return theme.colors.error;
     case 'info':
-      return theme.colors.info
+      return theme.colors.info;
     case 'muted':
-      return theme.colors.textSecondary
+      return theme.colors.textSecondary;
     case 'inherit':
-      return 'currentColor'
+      return 'currentColor';
     case 'primary':
     default:
-      return theme.colors.primary
+      return theme.colors.primary;
   }
-}
+};
 
 /**
  * IconWrapper - Wrapper for icons with consistent sizing
  */
 export const IconWrapper = styled.span<{
-  $size?: IconSize
-  $tone?: IconTone
-  $color?: string
+  $size?: IconSize;
+  $tone?: IconTone;
+  $color?: string;
 }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: ${({ theme, $size = 'md' }) => getIconSize($size, theme)};
   color: ${({ theme, $tone = 'primary', $color }) => $color ?? getIconColor($tone, theme)};
-`
+`;
 
 export const RightAlign = styled.div`
   width: 100%;
@@ -67,7 +67,7 @@ export const RightAlign = styled.div`
   text-align: right;
   gap: ${({ theme }) => theme.spacing.SM}px;
   flex-wrap: wrap;
-`
+`;
 
 export const CenteredState = styled.div`
   width: 100%;
@@ -79,23 +79,23 @@ export const CenteredState = styled.div`
   align-items: center;
   justify-content: center;
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 export const CenteredBlock = styled.div`
   text-align: center;
-`
+`;
 
 export const ErrorWrapper = styled.div`
   max-width: 480px;
   margin: 0 auto;
   width: 100%;
-`
+`;
 
-export const PaddedEmpty = PrimitivePaddedEmpty
+export const PaddedEmpty = PrimitivePaddedEmpty;
 
 export const RegionsSection = styled.section`
   margin-top: ${({ theme }) => theme.spacing['6']}px;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.LG}px;
-`
+`;

@@ -1,6 +1,6 @@
-export { 
-  useDebounce, 
-  useDebouncedCallback, 
+export {
+  useDebounce,
+  useDebouncedCallback,
   useDebouncedValidation,
-  useDebouncedSearch 
-} from './useDebounce'
+  useDebouncedSearch,
+} from './useDebounce';

@@ -1,16 +1,16 @@
-import React from 'react'
-import { Space } from 'antd'
+import React from 'react';
+import { Space } from 'antd';
 import {
   UserOutlined,
   LogoutOutlined,
   SmileOutlined,
   SafetyCertificateOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { ThemeToggle } from '@/components/common/ThemeToggle'
-import LanguageSelector from '@/components/common/LanguageSelector'
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
-import type { CompanyDashboardData } from '@rediacc/shared/types'
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
+import LanguageSelector from '@/components/common/LanguageSelector';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import type { CompanyDashboardData } from '@rediacc/shared/types';
 import {
   MenuContainer,
   UserInfo,
@@ -28,16 +28,16 @@ import {
   LanguageTitle,
   LogoutButton,
   UserAvatar,
-} from './styles'
+} from './styles';
 
 type UserMenuProps = {
-  user: { email: string } | null
-  company: string | null
-  companyData?: Pick<CompanyDashboardData, 'companyInfo' | 'activeSubscription'>
-  uiMode: 'simple' | 'expert'
-  onModeToggle: () => void
-  onLogout: () => void
-}
+  user: { email: string } | null;
+  company: string | null;
+  companyData?: Pick<CompanyDashboardData, 'companyInfo' | 'activeSubscription'>;
+  uiMode: 'simple' | 'expert';
+  onModeToggle: () => void;
+  onLogout: () => void;
+};
 
 export const UserMenu: React.FC<UserMenuProps> = ({
   user,
@@ -47,7 +47,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   onModeToggle,
   onLogout,
 }) => {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation('common');
 
   return (
     <MenuContainer>
@@ -71,7 +71,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           value={uiMode}
           onChange={(value) => {
             if (value !== uiMode) {
-              onModeToggle()
+              onModeToggle();
             }
           }}
           options={[
@@ -102,7 +102,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
       <AppearanceRow>
         <div>
-          <SectionTitle strong>{t('appearance.label', { defaultValue: 'Appearance' })}</SectionTitle>
+          <SectionTitle strong>
+            {t('appearance.label', { defaultValue: 'Appearance' })}
+          </SectionTitle>
           <SectionDescription>
             {t('appearance.description', { defaultValue: 'Device theme' })}
           </SectionDescription>
@@ -128,5 +130,5 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         {t('navigation.logout')}
       </LogoutButton>
     </MenuContainer>
-  )
-}
+  );
+};

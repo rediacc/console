@@ -1,1 +1,1 @@
-export * from './queue-status'
+export * from './queue-status';

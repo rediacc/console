@@ -1,5 +1,5 @@
-import styled from 'styled-components'
-import { Alert } from 'antd'
+import styled from 'styled-components';
+import { Alert } from 'antd';
 
 export const WarningAlert = styled(Alert)`
   && {
@@ -17,12 +17,12 @@ export const WarningAlert = styled(Alert)`
       color: ${({ theme }) => theme.colors.error};
     }
   }
-`
+`;
 
 export const WarningTitle = styled.span`
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: ${({ theme }) => theme.colors.error};
-`
+`;
 
 export const WarningDescription = styled.div`
   color: ${({ theme }) => theme.colors.textSecondary};
@@ -31,7 +31,7 @@ export const WarningDescription = styled.div`
   p {
     margin: 0 0 ${({ theme }) => theme.spacing.XS}px 0;
   }
-`
+`;
 
 export const ResolutionText = styled.p`
   && {
@@ -41,4 +41,4 @@ export const ResolutionText = styled.p`
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     font-size: ${({ theme }) => theme.fontSize.XS}px;
   }
-`
+`;

@@ -1,11 +1,11 @@
-import { QueueService, type QueueMonitoringEvent } from '@/core/services/queue'
-import type { QueueRequestContext } from '@/core/types'
-import { showMessage } from '@/utils/messages'
-import { queueMonitoringService } from '@/services/queueMonitoringService'
+import { QueueService, type QueueMonitoringEvent } from '@/core/services/queue';
+import type { QueueRequestContext } from '@/core/types';
+import { showMessage } from '@/utils/messages';
+import { queueMonitoringService } from '@/services/queueMonitoringService';
 
 const coreQueueService = new QueueService({
   emitNotification: ({ level, message }) => {
-    showMessage(level, message)
+    showMessage(level, message);
   },
   emitMonitoringEvent: (event: QueueMonitoringEvent) => {
     if (event.type === 'task-start') {
@@ -17,17 +17,17 @@ const coreQueueService = new QueueService({
         undefined,
         undefined,
         event.data.bridgeName,
-        event.data.priority,
-      )
+        event.data.priority
+      );
     } else if (event.type === 'task-status') {
-      queueMonitoringService.handleStatusUpdate(event.taskId, event.status)
+      queueMonitoringService.handleStatusUpdate(event.taskId, event.status);
     }
   },
-})
+});
 
 queueMonitoringService.registerStatusHandler((taskId, status) => {
-  coreQueueService.updateTaskStatus(taskId, status)
-})
+  coreQueueService.updateTaskStatus(taskId, status);
+});
 
-export const queueService = coreQueueService
-export type { QueueRequestContext }
+export const queueService = coreQueueService;
+export type { QueueRequestContext };

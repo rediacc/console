@@ -1,20 +1,20 @@
-import styled from 'styled-components'
-import { Button } from 'antd'
-import type { StyledTheme } from '@/styles/styledTheme'
+import styled from 'styled-components';
+import { Button } from 'antd';
+import type { StyledTheme } from '@/styles/styledTheme';
 
-type ResourceType = 'machine' | 'repo' | 'container'
+type ResourceType = 'machine' | 'repo' | 'container';
 
 const resourceColor = (type: ResourceType, theme: StyledTheme) => {
   switch (type) {
     case 'machine':
-      return theme.colors.secondary
+      return theme.colors.secondary;
     case 'repo':
-      return theme.colors.success
+      return theme.colors.success;
     case 'container':
     default:
-      return theme.colors.primary
+      return theme.colors.primary;
   }
-}
+};
 
 export const PanelContainer = styled.div<{ $width: number; $opacity: number }>`
   position: fixed;
@@ -29,7 +29,7 @@ export const PanelContainer = styled.div<{ $width: number; $opacity: number }>`
   opacity: ${({ $opacity }) => $opacity};
   transition: width 0.3s ease-in-out, opacity 0.3s ease;
   z-index: ${({ theme }) => theme.zIndex.MODAL};
-`
+`;
 
 export const ResizeHandle = styled.div`
   position: absolute;
@@ -40,7 +40,7 @@ export const ResizeHandle = styled.div`
   cursor: ew-resize;
   z-index: 10;
   background-color: transparent;
-`
+`;
 
 export const ResizeIndicator = styled.div`
   position: absolute;
@@ -54,7 +54,7 @@ export const ResizeIndicator = styled.div`
   ${ResizeHandle}:hover & {
     background-color: ${({ theme }) => theme.colors.primary};
   }
-`
+`;
 
 export const CollapsedPanel = styled.div`
   display: flex;
@@ -64,7 +64,7 @@ export const CollapsedPanel = styled.div`
   width: 100%;
   padding: ${({ theme }) => theme.spacing.MD}px 0;
   gap: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const ToggleButton = styled(Button)`
   && {
@@ -73,15 +73,15 @@ export const ToggleButton = styled(Button)`
     justify-content: center;
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
-`
+`;
 
 export const CollapsedIcon = styled.span<{ $type: ResourceType }>`
   font-size: ${({ theme }) => theme.fontSize.XL}px;
   color: ${({ theme, $type }) => resourceColor($type, theme)};
-`
+`;
 
 export const ExpandedContent = styled.div`
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-`
+`;

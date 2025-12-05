@@ -1,45 +1,45 @@
 // Runtime configuration from nginx
 export interface RediaccConfig {
   // Instance Information
-  instanceName: string
-  
+  instanceName: string;
+
   // API Configuration
-  apiUrl: string
-  domain: string
-  httpPort: string
-  
+  apiUrl: string;
+  domain: string;
+  httpPort: string;
+
   // Feature Flags
-  enableDebug: string
-  enableAnalytics: string
-  enableMaintenance: string
-  
+  enableDebug: string;
+  enableAnalytics: string;
+  enableMaintenance: string;
+
   // Version Information
-  version: string
-  buildTime: string
-  environment: string
-  
+  version: string;
+  buildTime: string;
+  environment: string;
+
   // Custom Configuration
-  customConfig: string
-  
+  customConfig: string;
+
   // Additional Settings
-  maxUploadSize: string
-  sessionTimeout: string
-  defaultLanguage: string
-  
+  maxUploadSize: string;
+  sessionTimeout: string;
+  defaultLanguage: string;
+
   // Feature URLs
-  docsUrl: string
-  supportUrl: string
-  templatesUrl: string
+  docsUrl: string;
+  supportUrl: string;
+  templatesUrl: string;
 
   // Security Settings
-  csrfEnabled: string
-  httpsOnly: string
+  csrfEnabled: string;
+  httpsOnly: string;
 }
 
 // Extend Window interface to include our config
 declare global {
   interface Window {
-    REDIACC_CONFIG?: RediaccConfig
+    REDIACC_CONFIG?: RediaccConfig;
   }
 }
 
@@ -48,5 +48,5 @@ export type {
   MachineAssignmentStatus,
   Machine,
   Repo,
-  PluginContainer
-} from '@rediacc/shared/types'
+  PluginContainer,
+} from '@rediacc/shared/types';

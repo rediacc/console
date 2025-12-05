@@ -1,19 +1,15 @@
-import { Command } from 'commander'
-import { authService } from '../services/auth.js'
-import { api } from '../services/api.js'
-import { outputService } from '../services/output.js'
-import { withSpinner } from '../utils/spinner.js'
-import { handleError } from '../utils/errors.js'
-import type { OutputFormat } from '../types/index.js'
+import { Command } from 'commander';
+import { authService } from '../services/auth.js';
+import { api } from '../services/api.js';
+import { outputService } from '../services/output.js';
+import { withSpinner } from '../utils/spinner.js';
+import { handleError } from '../utils/errors.js';
+import type { OutputFormat } from '../types/index.js';
 export function registerPermissionCommands(program: Command): void {
-  const permission = program
-    .command('permission')
-    .description('Permission management commands')
+  const permission = program.command('permission').description('Permission management commands');
 
   // permission group subcommand
-  const group = permission
-    .command('group')
-    .description('Permission group management')
+  const group = permission.command('group').description('Permission group management');
 
   // permission group list
   group
@@ -21,21 +17,21 @@ export function registerPermissionCommands(program: Command): void {
     .description('List all permission groups')
     .action(async () => {
       try {
-        await authService.requireAuth()
+        await authService.requireAuth();
 
         const groups = await withSpinner(
           'Fetching permission groups...',
           () => api.permissions.listGroups(),
           'Permission groups fetched'
-        )
+        );
 
-        const format = program.opts().output as OutputFormat
+        const format = program.opts().output as OutputFormat;
 
-        outputService.print(groups, format)
+        outputService.print(groups, format);
       } catch (error) {
-        handleError(error)
+        handleError(error);
       }
-    })
+    });
 
   // permission group create
   group
@@ -43,17 +39,17 @@ export function registerPermissionCommands(program: Command): void {
     .description('Create a new permission group')
     .action(async (name) => {
       try {
-        await authService.requireAuth()
+        await authService.requireAuth();
 
         await withSpinner(
           `Creating permission group "${name}"...`,
           () => api.permissions.createGroup(name),
           `Permission group "${name}" created`
-        )
+        );
       } catch (error) {
-        handleError(error)
+        handleError(error);
       }
-    })
+    });
 
   // permission group delete
   group
@@ -62,14 +58,14 @@ export function registerPermissionCommands(program: Command): void {
     .option('-f, --force', 'Skip confirmation')
     .action(async (name, options) => {
       try {
-        await authService.requireAuth()
+        await authService.requireAuth();
 
         if (!options.force) {
-          const { askConfirm } = await import('../utils/prompt.js')
-          const confirm = await askConfirm(`Delete permission group "${name}"?`)
+          const { askConfirm } = await import('../utils/prompt.js');
+          const confirm = await askConfirm(`Delete permission group "${name}"?`);
           if (!confirm) {
-            outputService.info('Cancelled')
-            return
+            outputService.info('Cancelled');
+            return;
           }
         }
 
@@ -77,11 +73,11 @@ export function registerPermissionCommands(program: Command): void {
           `Deleting permission group "${name}"...`,
           () => api.permissions.deleteGroup(name),
           `Permission group "${name}" deleted`
-        )
+        );
       } catch (error) {
-        handleError(error)
+        handleError(error);
       }
-    })
+    });
 
   // permission group show
   group
@@ -89,21 +85,21 @@ export function registerPermissionCommands(program: Command): void {
     .description('Show permission group details')
     .action(async (name) => {
       try {
-        await authService.requireAuth()
+        await authService.requireAuth();
 
         const details = await withSpinner(
           'Fetching permission group details...',
           () => api.permissions.getGroupDetails(name),
           'Details fetched'
-        )
+        );
 
-        const format = program.opts().output as OutputFormat
+        const format = program.opts().output as OutputFormat;
 
-        outputService.print(details, format)
+        outputService.print(details, format);
       } catch (error) {
-        handleError(error)
+        handleError(error);
       }
-    })
+    });
 
   // permission add
   permission
@@ -111,17 +107,17 @@ export function registerPermissionCommands(program: Command): void {
     .description('Add a permission to a group')
     .action(async (groupName, permissionName) => {
       try {
-        await authService.requireAuth()
+        await authService.requireAuth();
 
         await withSpinner(
           `Adding permission "${permissionName}" to group "${groupName}"...`,
           () => api.permissions.addPermission(groupName, permissionName),
           'Permission added'
-        )
+        );
       } catch (error) {
-        handleError(error)
+        handleError(error);
       }
-    })
+    });
 
   // permission remove
   permission
@@ -129,15 +125,15 @@ export function registerPermissionCommands(program: Command): void {
     .description('Remove a permission from a group')
     .action(async (groupName, permissionName) => {
       try {
-        await authService.requireAuth()
+        await authService.requireAuth();
 
         await withSpinner(
           `Removing permission "${permissionName}" from group "${groupName}"...`,
           () => api.permissions.removePermission(groupName, permissionName),
           'Permission removed'
-        )
+        );
       } catch (error) {
-        handleError(error)
+        handleError(error);
       }
-    })
+    });
 }

@@ -4,77 +4,81 @@
  */
 
 export interface InstallOptions {
-  useUser?: boolean
-  useVirtualEnv?: boolean
-  version?: string
-  upgrade?: boolean
+  useUser?: boolean;
+  useVirtualEnv?: boolean;
+  version?: string;
+  upgrade?: boolean;
 }
 
 export interface PlatformInstructions {
-  platform: 'windows' | 'macos' | 'linux'
-  pipInstallCommand: string
-  pythonCheckCommand: string
-  notes: string[]
+  platform: 'windows' | 'macos' | 'linux';
+  pipInstallCommand: string;
+  pythonCheckCommand: string;
+  notes: string[];
 }
 
 export interface InstallationCommands {
-  install: string
-  postInstall: string[]
-  verify: string[]
+  install: string;
+  postInstall: string[];
+  verify: string[];
 }
 
-export type InstallationStatus = 'not-installed' | 'installed' | 'protocol-not-registered' | 'ready'
+export type InstallationStatus =
+  | 'not-installed'
+  | 'installed'
+  | 'protocol-not-registered'
+  | 'ready';
 
-export type ErrorType = 'pip-not-found' | 'permission-denied' | 'python-version' | 'unknown'
+export type ErrorType = 'pip-not-found' | 'permission-denied' | 'python-version' | 'unknown';
 
 class PipInstallationService {
   /**
    * Generate pip install command based on options
    */
   generateInstallCommand(options: InstallOptions = {}): string {
-    const parts = ['pip install']
+    const parts = ['pip install'];
 
     if (options.useUser) {
-      parts.push('--user')
+      parts.push('--user');
     }
 
     if (options.upgrade) {
-      parts.push('--upgrade')
+      parts.push('--upgrade');
     }
 
     // Package name
-    let packageName = 'rediacc'
+    let packageName = 'rediacc';
 
     // Add version if specified
     if (options.version) {
-      packageName += `==${options.version}`
+      packageName += `==${options.version}`;
     }
 
-    parts.push(packageName)
+    parts.push(packageName);
 
-    return parts.join(' ')
+    return parts.join(' ');
   }
 
   /**
    * Generate setup command (includes protocol registration and dependency checks)
    */
   generateSetupCommand(): string {
-    return 'rediacc setup'
+    return 'rediacc setup';
   }
 
   /**
    * Generate protocol registration command (for manual registration)
    */
   generateProtocolCommand(): string {
-    return 'rediacc protocol register'
+    return 'rediacc protocol register';
   }
 
   /**
    * Get platform-specific installation instructions
    */
   getPlatformInstructions(): PlatformInstructions {
-    const platform = this.detectPlatform()
-    
+    const platform = this.detectPlatform();
+
     switch (platform) {
       case 'windows':
         return {
@@ -84,10 +88,10 @@ class PipInstallationService {
           notes: [
             'Run PowerShell as Administrator for system-wide installation',
             'Use "py -m pip" if "pip" command is not found',
-            'Restart your browser after protocol registration'
-          ]
-        }
-      
+            'Restart your browser after protocol registration',
+          ],
+        };
+
       case 'macos':
         return {
           platform: 'macos',
@@ -96,10 +100,10 @@ class PipInstallationService {
           notes: [
             'Use "python3" instead of "python" on macOS',
             'You may need to install pip with: python3 -m ensurepip',
-            'Grant permission when prompted for protocol handler'
-          ]
-        }
-      
+            'Grant permission when prompted for protocol handler',
+          ],
+        };
+
       case 'linux':
         return {
           platform: 'linux',
@@ -108,9 +112,9 @@ class PipInstallationService {
           notes: [
             'You may need to install pip: sudo apt install python3-pip',
             'Use --user flag to avoid permission issues',
-            'Log out and back in after protocol registration'
-          ]
-        }
+            'Log out and back in after protocol registration',
+          ],
+        };
     }
   }
 
@@ -118,19 +122,16 @@ class PipInstallationService {
    * Generate all installation commands
    */
   getInstallationCommands(options: InstallOptions = {}): InstallationCommands {
-    const platform = this.detectPlatform()
+    const platform = this.detectPlatform();
 
     return {
       install: this.generateInstallCommand(options),
       postInstall: [
         this.generateSetupCommand(),
-        platform === 'windows' ? 'Restart your browser' : 'Restart your browser or log out/in'
+        platform === 'windows' ? 'Restart your browser' : 'Restart your browser or log out/in',
       ],
-      verify: [
-        'rediacc --version',
-        'rediacc protocol status'
-      ]
-    }
+      verify: ['rediacc --version', 'rediacc protocol status'],
+    };
   }
 
   /**
@@ -139,24 +140,24 @@ class PipInstallationService {
   getTroubleshootingCommands(errorType: ErrorType): { description: string; commands: string[] } {
     switch (errorType) {
       case 'pip-not-found': {
-        const platform = this.detectPlatform()
+        const platform = this.detectPlatform();
         if (platform === 'windows') {
           return {
             description: 'Pip is not installed. Install it with:',
             commands: [
               'python -m ensurepip --upgrade',
-              '# Or download get-pip.py from https://pip.pypa.io/en/stable/installation/'
-            ]
-          }
+              '# Or download get-pip.py from https://pip.pypa.io/en/stable/installation/',
+            ],
+          };
         } else {
           return {
             description: 'Pip is not installed. Install it with:',
             commands: [
               'python3 -m ensurepip --upgrade',
               '# Or on Ubuntu/Debian: sudo apt install python3-pip',
-              '# Or on macOS with Homebrew: brew install python3'
-            ]
-          }
+              '# Or on macOS with Homebrew: brew install python3',
+            ],
+          };
         }
       }
 
@@ -170,10 +171,10 @@ class PipInstallationService {
             '# Option 2: Use virtual environment',
             'python3 -m venv rediacc-env',
             'source rediacc-env/bin/activate  # On Windows: rediacc-env\\Scripts\\activate',
-            this.generateInstallCommand()
-          ]
-        }
-      
+            this.generateInstallCommand(),
+          ],
+        };
+
       case 'python-version':
         return {
           description: 'Python version is too old. Rediacc requires Python 3.7+',
@@ -182,10 +183,10 @@ class PipInstallationService {
             'python --version',
             'python3 --version',
             '',
-            '# Update Python from https://www.python.org/downloads/'
-          ]
-        }
-      
+            '# Update Python from https://www.python.org/downloads/',
+          ],
+        };
+
       default:
         return {
           description: 'Installation failed. Try these steps:',
@@ -196,9 +197,9 @@ class PipInstallationService {
             '# 2. Install with verbose output',
             'pip install -v rediacc',
             '',
-            '# 3. Check for errors in the output above'
-          ]
-        }
+            '# 3. Check for errors in the output above',
+          ],
+        };
     }
   }
 
@@ -206,11 +207,10 @@ class PipInstallationService {
    * Get virtual environment setup instructions
    */
   getVirtualEnvInstructions(): { description: string; commands: string[] } {
-    const platform = this.detectPlatform()
-    const pythonCmd = platform === 'windows' ? 'python' : 'python3'
-    const activateCmd = platform === 'windows'
-      ? 'rediacc-env\\Scripts\\activate'
-      : 'source rediacc-env/bin/activate'
+    const platform = this.detectPlatform();
+    const pythonCmd = platform === 'windows' ? 'python' : 'python3';
+    const activateCmd =
+      platform === 'windows' ? 'rediacc-env\\Scripts\\activate' : 'source rediacc-env/bin/activate';
 
     return {
       description: 'Using a virtual environment (recommended for development):',
@@ -225,9 +225,9 @@ class PipInstallationService {
         this.generateInstallCommand(),
         '',
         '# Run setup (checks dependencies and registers protocol)',
-        this.generateSetupCommand()
-      ]
-    }
+        this.generateSetupCommand(),
+      ],
+    };
   }
 
   /**
@@ -245,43 +245,45 @@ class PipInstallationService {
         '',
         '# Remove configuration (optional)',
         '# Linux/macOS: rm -rf ~/.rediacc',
-        '# Windows: rmdir /s %USERPROFILE%\\.rediacc'
-      ]
-    }
+        '# Windows: rmdir /s %USERPROFILE%\\.rediacc',
+      ],
+    };
   }
 
   /**
    * Detect the current platform
    */
   private detectPlatform(): 'windows' | 'macos' | 'linux' {
-    const userAgent = navigator.userAgent.toLowerCase()
-    
+    const userAgent = navigator.userAgent.toLowerCase();
+
     if (userAgent.includes('win')) {
-      return 'windows'
+      return 'windows';
     } else if (userAgent.includes('mac')) {
-      return 'macos'
+      return 'macos';
     } else {
-      return 'linux'
+      return 'linux';
     }
   }
 
   /**
    * Format commands for display with syntax highlighting hints
    */
-  formatCommandsForDisplay(commands: string[]): Array<{ text: string; isCommand: boolean; isComment: boolean }> {
-    return commands.map(cmd => {
-      const trimmed = cmd.trim()
-      const isComment = trimmed.startsWith('#')
-      const isCommand = trimmed.length > 0 && !isComment
-      
+  formatCommandsForDisplay(
+    commands: string[]
+  ): Array<{ text: string; isCommand: boolean; isComment: boolean }> {
+    return commands.map((cmd) => {
+      const trimmed = cmd.trim();
+      const isComment = trimmed.startsWith('#');
+      const isCommand = trimmed.length > 0 && !isComment;
+
       return {
         text: cmd,
         isCommand,
-        isComment
-      }
-    })
+        isComment,
+      };
+    });
   }
 }
 
 // Export singleton instance
-export const pipInstallationService = new PipInstallationService()
+export const pipInstallationService = new PipInstallationService();

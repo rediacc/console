@@ -1,25 +1,25 @@
-import { useState, useCallback } from 'react'
-import { ResourceType } from '@/components/common/UnifiedResourceModal'
+import { useState, useCallback } from 'react';
+import { ResourceType } from '@/components/common/UnifiedResourceModal';
 
 export interface UnifiedModalState<T = Record<string, unknown>> {
-  open: boolean
-  resourceType: ResourceType
-  mode: 'create' | 'edit' | 'vault'
-  data?: Partial<T> | null
-  preselectedFunction?: string
-  creationContext?: 'credentials-only' | 'normal'
+  open: boolean;
+  resourceType: ResourceType;
+  mode: 'create' | 'edit' | 'vault';
+  data?: Partial<T> | null;
+  preselectedFunction?: string;
+  creationContext?: 'credentials-only' | 'normal';
 }
 
 export interface UseUnifiedModalReturn<T> {
-  modalState: UnifiedModalState<T>
-  currentResource: T | null
+  modalState: UnifiedModalState<T>;
+  currentResource: T | null;
   openModal: (
     mode: 'create' | 'edit' | 'vault',
     data?: Partial<T> | null,
     preselectedFunction?: string
-  ) => void
-  closeModal: () => void
-  setCurrentResource: (resource: T | null) => void
+  ) => void;
+  closeModal: () => void;
+  setCurrentResource: (resource: T | null) => void;
 }
 
 export function useUnifiedModal<T extends Record<string, unknown> = Record<string, unknown>>(
@@ -30,49 +30,45 @@ export function useUnifiedModal<T extends Record<string, unknown> = Record<strin
     open: false,
     resourceType,
     mode: 'create',
-    creationContext: initialCreationContext
-  })
+    creationContext: initialCreationContext,
+  });
 
-  const [currentResource, setCurrentResource] = useState<T | null>(null)
+  const [currentResource, setCurrentResource] = useState<T | null>(null);
 
   const openModal = useCallback(
-    (
-      mode: 'create' | 'edit' | 'vault',
-      data?: Partial<T> | null,
-      preselectedFunction?: string
-    ) => {
+    (mode: 'create' | 'edit' | 'vault', data?: Partial<T> | null, preselectedFunction?: string) => {
       setModalState({
         open: true,
         resourceType,
         mode,
         data,
         preselectedFunction,
-        creationContext: initialCreationContext
-      })
+        creationContext: initialCreationContext,
+      });
       if (data && mode !== 'create') {
-        setCurrentResource(data as T)
+        setCurrentResource(data as T);
       } else if (mode === 'create') {
-        setCurrentResource(null)
+        setCurrentResource(null);
       }
     },
     [resourceType, initialCreationContext]
-  )
+  );
 
   const closeModal = useCallback(() => {
     setModalState({
       open: false,
       resourceType,
       mode: 'create',
-      creationContext: initialCreationContext
-    })
-    setCurrentResource(null)
-  }, [resourceType, initialCreationContext])
+      creationContext: initialCreationContext,
+    });
+    setCurrentResource(null);
+  }, [resourceType, initialCreationContext]);
 
   return {
     modalState,
     currentResource,
     openModal,
     closeModal,
-    setCurrentResource
-  }
+    setCurrentResource,
+  };
 }

@@ -1,23 +1,23 @@
-import React, { useEffect, useState } from 'react'
-import { Tabs } from 'antd'
-import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
+import React, { useEffect, useState } from 'react';
+import { Tabs } from 'antd';
+import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
 import {
   useAvailableMachinesForClone,
   useCloneMachines,
   type DistributedStorageRbdClone,
   type AvailableMachine,
   type CloneMachine,
-} from '@/api/queries/distributedStorage'
+} from '@/api/queries/distributedStorage';
 import {
   useUpdateCloneMachineAssignments,
   useUpdateCloneMachineRemovals,
-} from '@/api/queries/distributedStorageMutations'
-import { showMessage } from '@/utils/messages'
-import type { ColumnsType } from 'antd/es/table'
-import type { TableRowSelection } from 'antd/es/table/interface'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
-import { createTruncatedColumn } from '@/components/common/columns'
+} from '@/api/queries/distributedStorageMutations';
+import { showMessage } from '@/utils/messages';
+import type { ColumnsType } from 'antd/es/table';
+import type { TableRowSelection } from 'antd/es/table/interface';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { createTruncatedColumn } from '@/components/common/columns';
 import {
   StyledModal,
   TitleStack,
@@ -36,17 +36,17 @@ import {
   BridgeTag,
   SelectionCount,
   FooterButton,
-} from './styles'
+} from './styles';
 
 interface AssignMachinesToCloneModalProps {
-  open: boolean
-  clone: DistributedStorageRbdClone | null
-  poolName: string
-  imageName: string
-  snapshotName: string
-  teamName: string
-  onCancel: () => void
-  onSuccess?: () => void
+  open: boolean;
+  clone: DistributedStorageRbdClone | null;
+  poolName: string;
+  imageName: string;
+  snapshotName: string;
+  teamName: string;
+  onCancel: () => void;
+  onSuccess?: () => void;
 }
 
 export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProps> = ({
@@ -57,45 +57,50 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
   snapshotName,
   teamName,
   onCancel,
-  onSuccess
+  onSuccess,
 }) => {
-  const { t } = useTranslation(['distributedStorage', 'machines', 'common'])
-  const [selectedMachines, setSelectedMachines] = useState<string[]>([])
-  const [removingMachines, setRemovingMachines] = useState<string[]>([])
-  const [activeTab, setActiveTab] = useState<'assign' | 'manage'>('assign')
-  
+  const { t } = useTranslation(['distributedStorage', 'machines', 'common']);
+  const [selectedMachines, setSelectedMachines] = useState<string[]>([]);
+  const [removingMachines, setRemovingMachines] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'assign' | 'manage'>('assign');
+
   // Fetch available machines
-  const { data: availableMachines = [], isLoading: loadingAvailable } = useAvailableMachinesForClone(
-    teamName,
-    open && !!clone
-  ) as { data?: AvailableMachine[]; isLoading: boolean }
+  const { data: availableMachines = [], isLoading: loadingAvailable } =
+    useAvailableMachinesForClone(teamName, open && !!clone) as {
+      data?: AvailableMachine[];
+      isLoading: boolean;
+    };
 
   // Fetch currently assigned machines
-  const { data: assignedMachines = [], isLoading: loadingAssigned, refetch: refetchAssigned } = useCloneMachines(
+  const {
+    data: assignedMachines = [],
+    isLoading: loadingAssigned,
+    refetch: refetchAssigned,
+  } = useCloneMachines(
     clone?.cloneName || '',
     snapshotName,
     imageName,
     poolName,
     teamName,
     open && !!clone
-  ) as { data?: CloneMachine[]; isLoading: boolean; refetch: () => Promise<unknown> }
-  
+  ) as { data?: CloneMachine[]; isLoading: boolean; refetch: () => Promise<unknown> };
+
   // Mutations
-  const assignMutation = useUpdateCloneMachineAssignments()
-  const removeMutation = useUpdateCloneMachineRemovals()
-  
+  const assignMutation = useUpdateCloneMachineAssignments();
+  const removeMutation = useUpdateCloneMachineRemovals();
+
   useEffect(() => {
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedMachines([])
-      setRemovingMachines([])
-      setActiveTab('assign')
+      setSelectedMachines([]);
+      setRemovingMachines([]);
+      setActiveTab('assign');
     }
-  }, [open])
-  
+  }, [open]);
+
   const handleAssign = async () => {
-    if (!clone || selectedMachines.length === 0) return
-    
+    if (!clone || selectedMachines.length === 0) return;
+
     try {
       await assignMutation.mutateAsync({
         teamName,
@@ -103,21 +108,21 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
         imageName,
         snapshotName,
         cloneName: clone.cloneName,
-        machineNames: selectedMachines.join(',')
-      })
-      
-      showMessage('success', t('distributedStorage:clones.machinesAssignedSuccess'))
-      refetchAssigned()
-      setSelectedMachines([])
-      onSuccess?.()
+        machineNames: selectedMachines.join(','),
+      });
+
+      showMessage('success', t('distributedStorage:clones.machinesAssignedSuccess'));
+      refetchAssigned();
+      setSelectedMachines([]);
+      onSuccess?.();
     } catch {
       // Error is handled by the mutation
     }
-  }
-  
+  };
+
   const handleRemove = async () => {
-    if (!clone || removingMachines.length === 0) return
-    
+    if (!clone || removingMachines.length === 0) return;
+
     try {
       await removeMutation.mutateAsync({
         teamName,
@@ -125,31 +130,31 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
         imageName,
         snapshotName,
         cloneName: clone.cloneName,
-        machineNames: removingMachines.join(',')
-      })
-      
-      showMessage('success', t('distributedStorage:clones.machinesRemovedSuccess'))
-      refetchAssigned()
-      setRemovingMachines([])
-      onSuccess?.()
+        machineNames: removingMachines.join(','),
+      });
+
+      showMessage('success', t('distributedStorage:clones.machinesRemovedSuccess'));
+      refetchAssigned();
+      setRemovingMachines([]);
+      onSuccess?.();
     } catch {
       // Error is handled by the mutation
     }
-  }
-  
+  };
+
   const renderAssignTab = () => {
     if (loadingAvailable) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
           <div />
         </LoadingWrapper>
-      )
+      );
     }
-    
+
     if (availableMachines.length === 0) {
-      return <EmptyState description={t('machines:noAvailableMachinesForClone')} />
+      return <EmptyState description={t('machines:noAvailableMachinesForClone')} />;
     }
-    
+
     return (
       <AssignTabContainer>
         <InfoAlert
@@ -157,7 +162,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           type="info"
           showIcon
         />
-        
+
         <FieldGroup>
           <FieldLabel>{t('distributedStorage:machines.selectMachines')}:</FieldLabel>
           <StyledSelect
@@ -169,9 +174,9 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             filterOption={(input, option) =>
               (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
             }
-            options={availableMachines.map(machine => ({
+            options={availableMachines.map((machine) => ({
               label: machine.machineName,
-              value: machine.machineName
+              value: machine.machineName,
             }))}
             data-testid="assign-clone-machine-select"
           />
@@ -180,22 +185,22 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           </SelectionCount>
         </FieldGroup>
       </AssignTabContainer>
-    )
-  }
-  
+    );
+  };
+
   const renderManageTab = () => {
     if (loadingAssigned) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
           <div />
         </LoadingWrapper>
-      )
+      );
     }
-    
+
     if (assignedMachines.length === 0) {
-      return <EmptyState description={t('distributedStorage:clones.noMachinesAssigned')} />
+      return <EmptyState description={t('distributedStorage:clones.noMachinesAssigned')} />;
     }
-    
+
     const machineColumn = createTruncatedColumn<CloneMachine>({
       title: t('machines:machineName'),
       dataIndex: 'machineName',
@@ -206,16 +211,16 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           <MachineNameText>{content}</MachineNameText>
         </MachineNameRow>
       ),
-    })
+    });
 
     const bridgeColumn = createTruncatedColumn<CloneMachine>({
       title: t('machines:bridge'),
       dataIndex: 'bridgeName',
       key: 'bridgeName',
       renderWrapper: (content) => <BridgeTag>{content}</BridgeTag>,
-    })
+    });
 
-    const columns: ColumnsType<CloneMachine> = [machineColumn, bridgeColumn]
+    const columns: ColumnsType<CloneMachine> = [machineColumn, bridgeColumn];
     const rowSelection: TableRowSelection<CloneMachine> = {
       selectedRowKeys: removingMachines,
       onChange: (keys) => setRemovingMachines(keys as string[]),
@@ -223,8 +228,8 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
         ({
           'data-testid': `assign-clone-machine-checkbox-${record.machineName}`,
         }) as Record<string, unknown>,
-    }
-    
+    };
+
     return (
       <ManageTabContainer>
         <WarningAlert
@@ -232,7 +237,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           type="warning"
           showIcon
         />
-        
+
         <MachinesTable
           rowSelection={rowSelection}
           columns={columns}
@@ -243,13 +248,13 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           scroll={{ y: 300 }}
           data-testid="assign-clone-machines-table"
         />
-        
+
         <SelectionCount data-testid="assign-clone-remove-selected-count">
           {t('machines:bulkOperations.selectedCount', { count: removingMachines.length })}
         </SelectionCount>
       </ManageTabContainer>
-    )
-  }
+    );
+  };
 
   const footerButtons =
     activeTab === 'assign'
@@ -258,7 +263,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             {t('common:actions.cancel')}
           </FooterButton>,
           <FooterButton
-            key='assign'
+            key="assign"
             type="primary"
             loading={assignMutation.isPending}
             disabled={selectedMachines.length === 0}
@@ -283,7 +288,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           >
             {t('distributedStorage:machines.unassignMachine')}
           </FooterButton>,
-        ]
+        ];
 
   return (
     <StyledModal
@@ -307,15 +312,15 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           {
             key: 'assign',
             label: t('distributedStorage:clones.assignMachines'),
-            children: renderAssignTab()
+            children: renderAssignTab(),
           },
           {
             key: 'manage',
             label: t('distributedStorage:clones.assignedMachines'),
-            children: renderManageTab()
-          }
+            children: renderManageTab(),
+          },
         ]}
       />
     </StyledModal>
-  )
-}
+  );
+};

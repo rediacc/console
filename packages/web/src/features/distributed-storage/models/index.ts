@@ -1,2 +1,2 @@
-export * from './machine-assignment.model'
-export * from './machine-validation.model'
+export * from './machine-assignment.model';
+export * from './machine-validation.model';

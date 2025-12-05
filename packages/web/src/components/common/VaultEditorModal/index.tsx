@@ -1,10 +1,10 @@
-﻿import React, { useState, useRef, useEffect } from 'react'
-import { Modal, Space, message, Upload, Tooltip } from 'antd'
-import type { RcFile } from 'antd/es/upload'
-import { CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import VaultEditor from '../VaultEditor'
-import { ModalSize } from '@/types/modal'
+﻿import React, { useState, useRef, useEffect } from 'react';
+import { Modal, Space, message, Upload, Tooltip } from 'antd';
+import type { RcFile } from 'antd/es/upload';
+import { CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import VaultEditor from '../VaultEditor';
+import { ModalSize } from '@/types/modal';
 import {
   ActionGroup,
   CancelButton,
@@ -26,20 +26,20 @@ import {
   VersionTag,
   WarningIcon,
   SaveButton,
-} from './styles'
+} from './styles';
 
 interface VaultEditorModalProps {
-  open: boolean
-  onCancel: () => void
-  onSave: (vault: string, version: number) => Promise<void>
-  entityType: string
-  title?: string
-  initialVault?: string
-  initialVersion?: number
-  loading?: boolean
+  open: boolean;
+  onCancel: () => void;
+  onSave: (vault: string, version: number) => Promise<void>;
+  entityType: string;
+  title?: string;
+  initialVault?: string;
+  initialVersion?: number;
+  loading?: boolean;
 }
 
-const VERSION_HINT_BULLET = '\u2022'
+const VERSION_HINT_BULLET = '\u2022';
 
 const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   open,
@@ -51,65 +51,68 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   initialVersion = 1,
   loading = false,
 }) => {
-  const { t } = useTranslation('common')
-  const [vaultData, setVaultData] = useState<Record<string, unknown>>({})
-  const [vaultVersion, setVaultVersion] = useState(initialVersion)
-  const [isValid, setIsValid] = useState(true)
-  const [hasChanges, setHasChanges] = useState(false)
-  const [validationErrors, setValidationErrors] = useState<string[]>([])
-  const [showValidationErrors, setShowValidationErrors] = useState(false)
-  const importExportHandlers = useRef<{ handleImport: (file: RcFile) => boolean; handleExport: () => void } | null>(null)
-  const validationErrorsRef = useRef<HTMLDivElement>(null)
+  const { t } = useTranslation('common');
+  const [vaultData, setVaultData] = useState<Record<string, unknown>>({});
+  const [vaultVersion, setVaultVersion] = useState(initialVersion);
+  const [isValid, setIsValid] = useState(true);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const importExportHandlers = useRef<{
+    handleImport: (file: RcFile) => boolean;
+    handleExport: () => void;
+  } | null>(null);
+  const validationErrorsRef = useRef<HTMLDivElement>(null);
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
-      const parsed = JSON.parse(initialVault)
-      setVaultData(parsed)
+      const parsed = JSON.parse(initialVault);
+      setVaultData(parsed);
     } catch {
-      setVaultData({})
+      setVaultData({});
     }
-    setVaultVersion(initialVersion)
-    setHasChanges(false)
-    setValidationErrors([])
-    setShowValidationErrors(false)
-  }, [initialVault, initialVersion])
+    setVaultVersion(initialVersion);
+    setHasChanges(false);
+    setValidationErrors([]);
+    setShowValidationErrors(false);
+  }, [initialVault, initialVersion]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleVaultChange = (data: Record<string, unknown>, changed: boolean) => {
-    setVaultData(data)
-    setHasChanges(changed)
-  }
+    setVaultData(data);
+    setHasChanges(changed);
+  };
 
   const handleValidate = (valid: boolean, errors?: string[]) => {
-    setIsValid(valid)
-    setValidationErrors(errors || [])
-  }
+    setIsValid(valid);
+    setValidationErrors(errors || []);
+  };
 
   const handleSave = async () => {
     if (!isValid) {
-      setShowValidationErrors(true)
-      message.error(t('vaultEditor.pleaseFixErrors'))
-      return
+      setShowValidationErrors(true);
+      message.error(t('vaultEditor.pleaseFixErrors'));
+      return;
     }
 
     try {
-      const vaultJson = JSON.stringify(vaultData)
-      await onSave(vaultJson, vaultVersion)
-      onCancel()
+      const vaultJson = JSON.stringify(vaultData);
+      await onSave(vaultJson, vaultVersion);
+      onCancel();
     } catch {
       // Parent handles notification
     }
-  }
+  };
 
   useEffect(() => {
     if (showValidationErrors && validationErrorsRef.current) {
       validationErrorsRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'start',
-      })
+      });
     }
-  }, [showValidationErrors])
+  }, [showValidationErrors]);
 
   return (
     <Modal
@@ -147,7 +150,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
           onChange={handleVaultChange}
           onValidate={handleValidate}
           onImportExport={(handlers) => {
-            importExportHandlers.current = handlers
+            importExportHandlers.current = handlers;
           }}
           onFieldMovement={(_movedToExtra, _movedFromExtra) => {
             // Parent can track movements if needed
@@ -164,9 +167,9 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               showUploadList={false}
               beforeUpload={(file) => {
                 if (importExportHandlers.current) {
-                  return importExportHandlers.current.handleImport(file)
+                  return importExportHandlers.current.handleImport(file);
                 }
-                return false
+                return false;
               }}
               data-testid="vault-modal-file-upload"
             >
@@ -183,7 +186,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               icon={<DownloadIcon />}
               onClick={() => {
                 if (importExportHandlers.current) {
-                  importExportHandlers.current.handleExport()
+                  importExportHandlers.current.handleExport();
                 }
               }}
               data-testid="vault-modal-export-button"
@@ -200,7 +203,8 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                   {t('vaultEditor.unsavedChanges')}
                 </UnsavedChangesText>
                 <UnsavedVersionHint type="secondary">
-                  {VERSION_HINT_BULLET} {t('vaultEditor.versionWillIncrement', { version: vaultVersion + 1 })}
+                  {VERSION_HINT_BULLET}{' '}
+                  {t('vaultEditor.versionWillIncrement', { version: vaultVersion + 1 })}
                 </UnsavedVersionHint>
               </>
             )}
@@ -227,8 +231,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
         </FooterBar>
       </FooterWrapper>
     </Modal>
-  )
-}
+  );
+};
 
-export default VaultEditorModal
-
+export default VaultEditorModal;

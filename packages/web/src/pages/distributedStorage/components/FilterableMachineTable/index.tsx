@@ -1,24 +1,21 @@
-﻿import React from 'react'
-import { Table } from 'antd'
-import type { TableRowSelection } from 'antd/es/table/interface'
-import { useTranslation } from 'react-i18next'
-import type { Machine } from '@/types'
-import { MachineRepoTable } from '@/components/resources/MachineRepoTable'
-import { buildMachineTableColumns } from './columns'
-import {
-  TableContainer,
-  ExpandedRowContent,
-} from './styles'
+﻿import React from 'react';
+import { Table } from 'antd';
+import type { TableRowSelection } from 'antd/es/table/interface';
+import { useTranslation } from 'react-i18next';
+import type { Machine } from '@/types';
+import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
+import { buildMachineTableColumns } from './columns';
+import { TableContainer, ExpandedRowContent } from './styles';
 
 export interface FilterableMachineTableProps {
-  machines: Machine[]
-  loading?: boolean
-  selectedRowKeys?: string[]
-  onSelectionChange?: (keys: string[]) => void
-  showSelection?: boolean
-  expandedRowKeys?: string[]
-  onExpandedRowsChange?: (keys: string[]) => void
-  refreshKeys?: Record<string, number>
+  machines: Machine[];
+  loading?: boolean;
+  selectedRowKeys?: string[];
+  onSelectionChange?: (keys: string[]) => void;
+  showSelection?: boolean;
+  expandedRowKeys?: string[];
+  onExpandedRowsChange?: (keys: string[]) => void;
+  refreshKeys?: Record<string, number>;
 }
 
 export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
@@ -31,41 +28,38 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
   onExpandedRowsChange,
   refreshKeys = {},
 }) => {
-  const { t } = useTranslation(['machines', 'distributedStorage'])
+  const { t } = useTranslation(['machines', 'distributedStorage']);
 
-  const columns = React.useMemo(() => buildMachineTableColumns(t), [t])
+  const columns = React.useMemo(() => buildMachineTableColumns(t), [t]);
 
   const rowSelection = React.useMemo<TableRowSelection<Machine> | undefined>(() => {
     if (!showSelection) {
-      return undefined
+      return undefined;
     }
 
     return {
       selectedRowKeys,
       onChange: (keys) => {
-        onSelectionChange?.(keys.map(String))
+        onSelectionChange?.(keys.map(String));
       },
-    }
-  }, [showSelection, selectedRowKeys, onSelectionChange])
+    };
+  }, [showSelection, selectedRowKeys, onSelectionChange]);
 
   const handleExpandedRowsChange = React.useCallback(
     (keys: readonly React.Key[]) => {
-      onExpandedRowsChange?.(keys.map(String))
+      onExpandedRowsChange?.(keys.map(String));
     },
-    [onExpandedRowsChange],
-  )
+    [onExpandedRowsChange]
+  );
 
   const renderExpandedRow = React.useCallback(
     (machine: Machine) => (
       <ExpandedRowContent>
-        <MachineRepoTable
-          machine={machine}
-          refreshKey={refreshKeys[machine.machineName]}
-        />
+        <MachineRepoTable machine={machine} refreshKey={refreshKeys[machine.machineName]} />
       </ExpandedRowContent>
     ),
-    [refreshKeys],
-  )
+    [refreshKeys]
+  );
 
   return (
     <TableContainer>
@@ -94,8 +88,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
         }}
       />
     </TableContainer>
-  )
-}
+  );
+};
 
-export default FilterableMachineTable
-
+export default FilterableMachineTable;

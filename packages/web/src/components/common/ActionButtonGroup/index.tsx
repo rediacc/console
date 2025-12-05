@@ -1,51 +1,51 @@
-import React from 'react'
-import { Tooltip, Dropdown } from 'antd'
-import type { MenuProps } from 'antd'
-import type { TFunction } from 'i18next'
-import styled from 'styled-components'
-import { TableActionButton } from '@/components/common/styled'
+import React from 'react';
+import { Tooltip, Dropdown } from 'antd';
+import type { MenuProps } from 'antd';
+import type { TFunction } from 'i18next';
+import styled from 'styled-components';
+import { TableActionButton } from '@/components/common/styled';
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
-export type ActionButtonType = 'edit' | 'delete' | 'run' | 'trace' | 'view' | 'vault' | 'custom'
-export type ActionButtonVariant = 'primary' | 'default' | 'link'
+export type ActionButtonType = 'edit' | 'delete' | 'run' | 'trace' | 'view' | 'vault' | 'custom';
+export type ActionButtonVariant = 'primary' | 'default' | 'link';
 
 /**
  * Configuration for a standard action button
  */
 export interface StandardButtonConfig<T = unknown> {
   /** Button type/identifier */
-  type: ActionButtonType | string
+  type: ActionButtonType | string;
   /** Icon component */
-  icon: React.ReactNode
+  icon: React.ReactNode;
   /** Tooltip text (can be i18n key if t is provided) */
-  tooltip: string
+  tooltip: string;
   /** Optional text label (translation key) - if provided, button shows text alongside icon */
-  label?: string
+  label?: string;
   /** Click handler */
-  onClick?: (record: T) => void
+  onClick?: (record: T) => void;
   /** Dropdown menu items (makes this a dropdown button) */
-  dropdownItems?: MenuProps['items']
+  dropdownItems?: MenuProps['items'];
   /** Dropdown menu click handler */
-  onDropdownClick?: (key: string, record: T) => void
+  onDropdownClick?: (key: string, record: T) => void;
   /** Show loading state */
-  loading?: boolean | ((record: T) => boolean)
+  loading?: boolean | ((record: T) => boolean);
   /** Button variant */
-  variant?: ActionButtonVariant
+  variant?: ActionButtonVariant;
   /** Show danger styling */
-  danger?: boolean
+  danger?: boolean;
   /** Visibility check */
-  visible?: boolean | ((record: T) => boolean)
+  visible?: boolean | ((record: T) => boolean);
   /** Disabled check */
-  disabled?: boolean | ((record: T) => boolean)
+  disabled?: boolean | ((record: T) => boolean);
   /** Explicit test identifier */
-  testId?: string | ((record: T) => string)
+  testId?: string | ((record: T) => string);
   /** Test ID suffix (auto-generated if not provided) */
-  testIdSuffix?: string
+  testIdSuffix?: string;
   /** Aria label (defaults to tooltip) */
-  ariaLabel?: string
+  ariaLabel?: string;
 }
 
 /**
@@ -53,34 +53,34 @@ export interface StandardButtonConfig<T = unknown> {
  */
 export interface CustomButtonConfig<T = unknown> {
   /** Must be 'custom' to use render function */
-  type: 'custom'
+  type: 'custom';
   /** Custom render function */
-  render: (record: T) => React.ReactNode
+  render: (record: T) => React.ReactNode;
   /** Visibility check */
-  visible?: boolean | ((record: T) => boolean)
+  visible?: boolean | ((record: T) => boolean);
 }
 
 /**
  * Union type for button configurations
  */
-export type ActionButtonConfig<T = unknown> = StandardButtonConfig<T> | CustomButtonConfig<T>
+export type ActionButtonConfig<T = unknown> = StandardButtonConfig<T> | CustomButtonConfig<T>;
 
 /**
  * Props for ActionButtonGroup component
  */
 export interface ActionButtonGroupProps<T> {
   /** Button configurations */
-  buttons: ActionButtonConfig<T>[]
+  buttons: ActionButtonConfig<T>[];
   /** Current row record */
-  record: T
+  record: T;
   /** Field to use for test ID generation */
-  idField: keyof T
+  idField: keyof T;
   /** Test ID prefix */
-  testIdPrefix?: string
+  testIdPrefix?: string;
   /** Translation function */
-  t?: TFunction
+  t?: TFunction;
   /** Gap between buttons */
-  gap?: 'XS' | 'SM' | 'MD'
+  gap?: 'XS' | 'SM' | 'MD';
 }
 
 // =============================================================================
@@ -91,7 +91,7 @@ const Container = styled.div<{ $gap: 'XS' | 'SM' | 'MD' }>`
   display: inline-flex;
   align-items: center;
   gap: ${({ $gap, theme }) => theme.spacing[$gap]}px;
-`
+`;
 
 // =============================================================================
 // COMPONENT
@@ -123,7 +123,7 @@ const Container = styled.div<{ $gap: 'XS' | 'SM' | 'MD' }>`
  * Type guard for custom button config
  */
 function isCustomConfig<T>(config: ActionButtonConfig<T>): config is CustomButtonConfig<T> {
-  return config.type === 'custom' && 'render' in config
+  return config.type === 'custom' && 'render' in config;
 }
 
 export function ActionButtonGroup<T>({
@@ -135,33 +135,31 @@ export function ActionButtonGroup<T>({
   gap = 'SM',
 }: ActionButtonGroupProps<T>): React.ReactElement {
   // Type-safe access to record ID field
-  const recordValue = record[idField]
-  const recordId = String(
-    recordValue !== null && recordValue !== undefined ? recordValue : ''
-  )
-  const prefix = testIdPrefix ? `${testIdPrefix}-` : ''
+  const recordValue = record[idField];
+  const recordId = String(recordValue !== null && recordValue !== undefined ? recordValue : '');
+  const prefix = testIdPrefix ? `${testIdPrefix}-` : '';
 
   const visibleButtons = buttons.filter((btn) => {
-    if (btn.visible === undefined) return true
-    if (typeof btn.visible === 'boolean') return btn.visible
-    return btn.visible(record)
-  })
+    if (btn.visible === undefined) return true;
+    if (typeof btn.visible === 'boolean') return btn.visible;
+    return btn.visible(record);
+  });
 
-  const getTooltipText = (text: string) => (t ? t(text) : text)
+  const getTooltipText = (text: string) => (t ? t(text) : text);
 
   return (
     <Container $gap={gap}>
       {visibleButtons.map((config, index) => {
         // Handle custom render slot
         if (isCustomConfig(config)) {
-          return <React.Fragment key={`custom-${index}`}>{config.render(record)}</React.Fragment>
+          return <React.Fragment key={`custom-${index}`}>{config.render(record)}</React.Fragment>;
         }
 
         const isDisabled =
           config.disabled === true ||
-          (typeof config.disabled === 'function' && config.disabled(record))
+          (typeof config.disabled === 'function' && config.disabled(record));
         const isLoading =
-          typeof config.loading === 'function' ? config.loading(record) : config.loading
+          typeof config.loading === 'function' ? config.loading(record) : config.loading;
 
         const testId =
           typeof config.testId === 'function'
@@ -169,11 +167,11 @@ export function ActionButtonGroup<T>({
             : config.testId ||
               (config.testIdSuffix
                 ? `${prefix}${config.testIdSuffix}-${recordId}`
-                : `${prefix}${config.type}-${recordId}`)
+                : `${prefix}${config.type}-${recordId}`);
 
-        const tooltipText = getTooltipText(config.tooltip)
-        const ariaLabel = config.ariaLabel ? getTooltipText(config.ariaLabel) : tooltipText
-        const labelText = config.label ? getTooltipText(config.label) : undefined
+        const tooltipText = getTooltipText(config.tooltip);
+        const ariaLabel = config.ariaLabel ? getTooltipText(config.ariaLabel) : tooltipText;
+        const labelText = config.label ? getTooltipText(config.label) : undefined;
 
         const buttonElement = (
           <TableActionButton
@@ -189,7 +187,7 @@ export function ActionButtonGroup<T>({
           >
             {labelText}
           </TableActionButton>
-        )
+        );
 
         // Wrap in dropdown if needed
         if (config.dropdownItems) {
@@ -206,17 +204,17 @@ export function ActionButtonGroup<T>({
             >
               <Tooltip title={tooltipText}>{buttonElement}</Tooltip>
             </Dropdown>
-          )
+          );
         }
 
         return (
           <Tooltip key={config.type} title={tooltipText}>
             {buttonElement}
           </Tooltip>
-        )
+        );
       })}
     </Container>
-  )
+  );
 }
 
 // =============================================================================
@@ -233,7 +231,7 @@ import {
   HistoryOutlined,
   EyeOutlined,
   LockOutlined,
-} from '@/utils/optimizedIcons'
+} from '@/utils/optimizedIcons';
 
 /**
  * Preset button configurations for common patterns
@@ -314,11 +312,11 @@ export const actionButtonPresets = {
    * Common preset: Edit + Run + Trace + Delete
    */
   editRunTraceDelete: <T,>(handlers: {
-    onEdit: (record: T) => void
-    onDelete: (record: T) => void
-    onTrace: (record: T) => void
-    dropdownItems: MenuProps['items']
-    onDropdownClick: (key: string, record: T) => void
+    onEdit: (record: T) => void;
+    onDelete: (record: T) => void;
+    onTrace: (record: T) => void;
+    dropdownItems: MenuProps['items'];
+    onDropdownClick: (key: string, record: T) => void;
   }): ActionButtonConfig<T>[] => [
     actionButtonPresets.edit(handlers.onEdit),
     actionButtonPresets.runFunction(handlers.dropdownItems, handlers.onDropdownClick),
@@ -330,8 +328,8 @@ export const actionButtonPresets = {
    * Common preset: Edit + Delete
    */
   editDelete: <T,>(handlers: {
-    onEdit: (record: T) => void
-    onDelete: (record: T) => void
+    onEdit: (record: T) => void;
+    onDelete: (record: T) => void;
   }): ActionButtonConfig<T>[] => [
     actionButtonPresets.edit(handlers.onEdit),
     actionButtonPresets.delete(handlers.onDelete),
@@ -341,14 +339,14 @@ export const actionButtonPresets = {
    * Common preset: View + Edit + Delete
    */
   viewEditDelete: <T,>(handlers: {
-    onView: (record: T) => void
-    onEdit: (record: T) => void
-    onDelete: (record: T) => void
+    onView: (record: T) => void;
+    onEdit: (record: T) => void;
+    onDelete: (record: T) => void;
   }): ActionButtonConfig<T>[] => [
     actionButtonPresets.view(handlers.onView),
     actionButtonPresets.edit(handlers.onEdit),
     actionButtonPresets.delete(handlers.onDelete),
   ],
-}
+};
 
-export default ActionButtonGroup
+export default ActionButtonGroup;

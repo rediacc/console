@@ -1,6 +1,6 @@
-import { createPromptModule } from 'inquirer'
+import { createPromptModule } from 'inquirer';
 
-const prompt = createPromptModule()
+const prompt = createPromptModule();
 
 export async function askText(
   message: string,
@@ -14,8 +14,8 @@ export async function askText(
       default: options.default,
       validate: options.validate,
     },
-  ])
-  return answer
+  ]);
+  return answer;
 }
 
 export async function askPassword(message: string): Promise<string> {
@@ -26,8 +26,8 @@ export async function askPassword(message: string): Promise<string> {
       message,
       mask: '*',
     },
-  ])
-  return answer
+  ]);
+  return answer;
 }
 
 export async function askConfirm(message: string, defaultValue = false): Promise<boolean> {
@@ -38,8 +38,8 @@ export async function askConfirm(message: string, defaultValue = false): Promise
       message,
       default: defaultValue,
     },
-  ])
-  return answer
+  ]);
+  return answer;
 }
 
 export async function askSelect<T extends string>(
@@ -53,8 +53,8 @@ export async function askSelect<T extends string>(
       message,
       choices,
     },
-  ])
-  return answer
+  ]);
+  return answer;
 }
 
 export async function askMultiSelect<T extends string>(
@@ -68,6 +68,6 @@ export async function askMultiSelect<T extends string>(
       message,
       choices,
     },
-  ])
-  return answer
+  ]);
+  return answer;
 }

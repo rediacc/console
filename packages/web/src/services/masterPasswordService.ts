@@ -3,9 +3,9 @@
  * Stores master password in secure memory storage instead of Redux state
  */
 
-import { secureStorage } from '../utils/secureMemoryStorage'
+import { secureStorage } from '../utils/secureMemoryStorage';
 
-const MASTER_PASSWORD_KEY = 'z^X8zFgx%SqhMAsK'
+const MASTER_PASSWORD_KEY = 'z^X8zFgx%SqhMAsK';
 
 class MasterPasswordService {
   /**
@@ -13,9 +13,9 @@ class MasterPasswordService {
    */
   async setMasterPassword(password: string | null): Promise<void> {
     if (password) {
-      await secureStorage.setItem(MASTER_PASSWORD_KEY, password)
+      await secureStorage.setItem(MASTER_PASSWORD_KEY, password);
     } else {
-      secureStorage.removeItem(MASTER_PASSWORD_KEY)
+      secureStorage.removeItem(MASTER_PASSWORD_KEY);
     }
   }
 
@@ -23,23 +23,23 @@ class MasterPasswordService {
    * Retrieve master password from secure memory
    */
   async getMasterPassword(): Promise<string | null> {
-    return await secureStorage.getItem(MASTER_PASSWORD_KEY)
+    return await secureStorage.getItem(MASTER_PASSWORD_KEY);
   }
 
   /**
    * Check if master password exists
    */
   hasMasterPassword(): boolean {
-    return secureStorage.hasItem(MASTER_PASSWORD_KEY)
+    return secureStorage.hasItem(MASTER_PASSWORD_KEY);
   }
 
   /**
    * Clear master password from memory
    */
   clearMasterPassword(): void {
-    secureStorage.removeItem(MASTER_PASSWORD_KEY)
+    secureStorage.removeItem(MASTER_PASSWORD_KEY);
   }
 }
 
 // Export singleton instance
-export const masterPasswordService = new MasterPasswordService()
+export const masterPasswordService = new MasterPasswordService();

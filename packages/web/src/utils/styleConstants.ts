@@ -112,10 +112,12 @@ export const DESIGN_TOKENS = {
     BUTTON: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
     HOVER: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
   },
-} as const
+} as const;
 
 // Style object generators for common patterns
-export const createControlSurfaceStyle = (size: number = DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT) => ({
+export const createControlSurfaceStyle = (
+  size: number = DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT
+) => ({
   width: size,
   height: size,
   minWidth: size,
@@ -123,54 +125,54 @@ export const createControlSurfaceStyle = (size: number = DESIGN_TOKENS.DIMENSION
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-})
+});
 
 export const createCardStyle = (width?: number | string) => ({
   width: width || '100%',
   maxWidth: 'calc(100vw - 32px)',
-  borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG,  // Cards: 8px border radius
+  borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, // Cards: 8px border radius
   boxShadow: DESIGN_TOKENS.SHADOWS.CARD,
-  border: '1px solid var(--color-border-secondary)',  // As per style guide
+  border: '1px solid var(--color-border-secondary)', // As per style guide
   background: 'var(--color-bg-primary)',
-})
+});
 
 export const createModalStyle = (width?: number) => ({
   width: width || DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH,
   maxWidth: 'calc(100vw - 32px)',
-  borderRadius: DESIGN_TOKENS.BORDER_RADIUS.XL,  // Modals: 12px border radius
+  borderRadius: DESIGN_TOKENS.BORDER_RADIUS.XL, // Modals: 12px border radius
   boxShadow: DESIGN_TOKENS.SHADOWS.MODAL,
   border: 'none',
-  padding: DESIGN_TOKENS.SPACING['4'],  // 32px padding as per style guide
-})
+  padding: DESIGN_TOKENS.SPACING['4'], // 32px padding as per style guide
+});
 
 export const createInputStyle = (_height?: number) => ({
   // Most styles are handled by CSS classes (.ant-input, etc.)
   // Only return minimal overrides if absolutely necessary
   // CSS already handles: min-height, border-radius, font-size, padding, border, transition
-})
+});
 
 export const createButtonStyle = (variant: 'primary' | 'secondary' | 'ghost' = 'primary') => {
   // Most button styles are handled by CSS classes (.ant-btn, .ant-btn-primary, etc.)
   // CSS already handles: min-height, border-radius, font-size, font-weight, padding, transition
   // Only return variant-specific overrides if absolutely necessary
-  
+
   switch (variant) {
     case 'primary':
       return {
         // Primary button styles handled by .ant-btn-primary CSS class
-      }
+      };
     case 'secondary':
       return {
         // Secondary button styles handled by .ant-btn-default CSS class
-      }
+      };
     case 'ghost':
       return {
         // Ghost button styles handled by .ant-btn-ghost CSS class
-      }
+      };
     default:
-      return {}
+      return {};
   }
-}
+};
 
 export const createTypographyStyle = (
   size: keyof typeof DESIGN_TOKENS.FONT_SIZE,
@@ -180,10 +182,13 @@ export const createTypographyStyle = (
   fontSize: DESIGN_TOKENS.FONT_SIZE[size],
   fontWeight: weight ? DESIGN_TOKENS.FONT_WEIGHT[weight] : undefined,
   lineHeight: lineHeight ? DESIGN_TOKENS.LINE_HEIGHT[lineHeight] : undefined,
-})
+});
 
 // Spacing utilities
-export const spacing = (size: keyof typeof DESIGN_TOKENS.SPACING) => DESIGN_TOKENS.SPACING[size]
-export const borderRadius = (size: keyof typeof DESIGN_TOKENS.BORDER_RADIUS) => DESIGN_TOKENS.BORDER_RADIUS[size]
-export const fontSize = (size: keyof typeof DESIGN_TOKENS.FONT_SIZE) => DESIGN_TOKENS.FONT_SIZE[size]
-export const fontWeight = (weight: keyof typeof DESIGN_TOKENS.FONT_WEIGHT) => DESIGN_TOKENS.FONT_WEIGHT[weight]
+export const spacing = (size: keyof typeof DESIGN_TOKENS.SPACING) => DESIGN_TOKENS.SPACING[size];
+export const borderRadius = (size: keyof typeof DESIGN_TOKENS.BORDER_RADIUS) =>
+  DESIGN_TOKENS.BORDER_RADIUS[size];
+export const fontSize = (size: keyof typeof DESIGN_TOKENS.FONT_SIZE) =>
+  DESIGN_TOKENS.FONT_SIZE[size];
+export const fontWeight = (weight: keyof typeof DESIGN_TOKENS.FONT_WEIGHT) =>
+  DESIGN_TOKENS.FONT_WEIGHT[weight];

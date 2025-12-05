@@ -3,49 +3,49 @@
  * Handles grand/fork detection, affected resources, and repo grouping
  */
 
-import { parseVaultStatus, type MachineWithVaultStatus } from './machine'
+import { parseVaultStatus, type MachineWithVaultStatus } from './machine';
 
 /**
  * Repo information for relationship analysis
  * Uses type to allow any object with the required properties
  */
 export type RepoWithRelations = {
-  repoGuid: string
-  repoName: string
-  grandGuid?: string | null
-  repoTag?: string | null
-  teamName?: string
-  repoNetworkId?: number | null
-  repoNetworkMode?: string | null
-  mounted?: boolean
-  vaultContent?: string
-}
+  repoGuid: string;
+  repoName: string;
+  grandGuid?: string | null;
+  repoTag?: string | null;
+  teamName?: string;
+  repoNetworkId?: number | null;
+  repoNetworkMode?: string | null;
+  mounted?: boolean;
+  vaultContent?: string;
+};
 
 /**
  * Affected machine information
  */
 export interface AffectedMachine {
-  machineName: string
-  repoNames: string[]
+  machineName: string;
+  repoNames: string[];
 }
 
 /**
  * Result of getAffectedResources
  */
 export interface AffectedResourcesResult {
-  isCredential: boolean
-  forks: RepoWithRelations[]
-  affectedMachines: AffectedMachine[]
+  isCredential: boolean;
+  forks: RepoWithRelations[];
+  affectedMachines: AffectedMachine[];
 }
 
 /**
  * Grouped repo result
  */
 export interface GroupedRepo {
-  name: string
-  credential: RepoWithRelations | null
-  forks: RepoWithRelations[]
-  allRepos: RepoWithRelations[]
+  name: string;
+  credential: RepoWithRelations | null;
+  forks: RepoWithRelations[];
+  allRepos: RepoWithRelations[];
 }
 
 /**
@@ -55,7 +55,7 @@ export interface GroupedRepo {
  * @returns True if the repo is a credential
  */
 export function isCredential(repo: RepoWithRelations): boolean {
-  return !repo.grandGuid || repo.grandGuid === repo.repoGuid
+  return !repo.grandGuid || repo.grandGuid === repo.repoGuid;
 }
 
 /**
@@ -65,7 +65,7 @@ export function isCredential(repo: RepoWithRelations): boolean {
  * @returns True if the repo is a fork
  */
 export function isFork(repo: RepoWithRelations): boolean {
-  return !!repo.grandGuid && repo.grandGuid !== repo.repoGuid
+  return !!repo.grandGuid && repo.grandGuid !== repo.repoGuid;
 }
 
 /**
@@ -79,8 +79,8 @@ export function findForksOfCredential(
   repos: RepoWithRelations[]
 ): RepoWithRelations[] {
   return repos.filter(
-    repo => repo.grandGuid === credentialGuid && repo.repoGuid !== credentialGuid
-  )
+    (repo) => repo.grandGuid === credentialGuid && repo.repoGuid !== credentialGuid
+  );
 }
 
 /**
@@ -94,12 +94,10 @@ export function findCredential(
   repos: RepoWithRelations[]
 ): RepoWithRelations | null {
   if (isCredential(repo)) {
-    return repo
+    return repo;
   }
 
-  return repos.find(
-    repo => repo.repoGuid === repo.grandGuid
-  ) || null
+  return repos.find((repo) => repo.repoGuid === repo.grandGuid) || null;
 }
 
 /**
@@ -114,63 +112,62 @@ export function getAffectedResources(
   allRepos: RepoWithRelations[],
   machines: MachineWithVaultStatus[]
 ): AffectedResourcesResult {
-  const repoIsCredential = isCredential(repo)
-  const credentialGuid = repoIsCredential ? repo.repoGuid : repo.grandGuid
+  const repoIsCredential = isCredential(repo);
+  const credentialGuid = repoIsCredential ? repo.repoGuid : repo.grandGuid;
 
   // Find all repos that use this credential
   const affectedRepos = repoIsCredential
-    ? allRepos.filter(repo =>
-        repo.grandGuid === credentialGuid || repo.repoGuid === credentialGuid
+    ? allRepos.filter(
+        (repo) => repo.grandGuid === credentialGuid || repo.repoGuid === credentialGuid
       )
-    : [repo] // For forks, only the fork itself is affected
+    : [repo]; // For forks, only the fork itself is affected
 
-  const affectedRepoGuids = affectedRepos.map(repo => repo.repoGuid)
+  const affectedRepoGuids = affectedRepos.map((repo) => repo.repoGuid);
 
   // Find machines that have any of these repos deployed
-  const affectedMachines: AffectedMachine[] = []
+  const affectedMachines: AffectedMachine[] = [];
 
   for (const machine of machines) {
-    const parsed = parseVaultStatus(machine.vaultStatus)
+    const parsed = parseVaultStatus(machine.vaultStatus);
 
     if (parsed.status === 'completed' && parsed.repos.length > 0) {
       // Find deployed repos that match our affected GUIDs
-      const deployedAffected = parsed.repos.filter(deployedRepo =>
-        affectedRepoGuids.includes(deployedRepo.name) ||
-        (deployedRepo.repoGuid && affectedRepoGuids.includes(deployedRepo.repoGuid))
-      )
+      const deployedAffected = parsed.repos.filter(
+        (deployedRepo) =>
+          affectedRepoGuids.includes(deployedRepo.name) ||
+          (deployedRepo.repoGuid && affectedRepoGuids.includes(deployedRepo.repoGuid))
+      );
 
       if (deployedAffected.length > 0) {
         // Map GUIDs back to repo names for display
-        const repoNames = deployedAffected.map(deployed => {
-          const repo = affectedRepos.find(r =>
-            r.repoGuid === deployed.name ||
-            r.repoGuid === deployed.repoGuid
-          )
-          return repo
-            ? `${repo.repoName}${repo.repoTag ? `:${repo.repoTag}` : ''}`
-            : deployed.name
-        })
+        const repoNames = deployedAffected.map((deployed) => {
+          const repo = affectedRepos.find(
+            (r) => r.repoGuid === deployed.name || r.repoGuid === deployed.repoGuid
+          );
+          return repo ? `${repo.repoName}${repo.repoTag ? `:${repo.repoTag}` : ''}` : deployed.name;
+        });
 
         affectedMachines.push({
           machineName: machine.machineName,
-          repoNames
-        })
+          repoNames,
+        });
       }
     }
   }
 
   // Get forks (repos that use this as their grand, excluding the credential itself)
-  const forks = repoIsCredential && credentialGuid
-    ? allRepos.filter(repo =>
-        repo.grandGuid === credentialGuid && repo.repoGuid !== credentialGuid
-      )
-    : []
+  const forks =
+    repoIsCredential && credentialGuid
+      ? allRepos.filter(
+          (repo) => repo.grandGuid === credentialGuid && repo.repoGuid !== credentialGuid
+        )
+      : [];
 
   return {
     isCredential: repoIsCredential,
     forks,
-    affectedMachines
-  }
+    affectedMachines,
+  };
 }
 
 /**
@@ -178,34 +175,32 @@ export function getAffectedResources(
  * @param repos - Array of all repos
  * @returns Map of repo name to grouped repo
  */
-export function groupReposByName(
-  repos: RepoWithRelations[]
-): Map<string, GroupedRepo> {
-  const grouped = new Map<string, GroupedRepo>()
+export function groupReposByName(repos: RepoWithRelations[]): Map<string, GroupedRepo> {
+  const grouped = new Map<string, GroupedRepo>();
 
   for (const repo of repos) {
-    const name = repo.repoName
+    const name = repo.repoName;
 
     if (!grouped.has(name)) {
       grouped.set(name, {
         name,
         credential: null,
         forks: [],
-        allRepos: []
-      })
+        allRepos: [],
+      });
     }
 
-    const group = grouped.get(name)!
-    group.allRepos.push(repo)
+    const group = grouped.get(name)!;
+    group.allRepos.push(repo);
 
     if (isCredential(repo)) {
-      group.credential = repo
+      group.credential = repo;
     } else {
-      group.forks.push(repo)
+      group.forks.push(repo);
     }
   }
 
-  return grouped
+  return grouped;
 }
 
 /**
@@ -213,10 +208,8 @@ export function groupReposByName(
  * @param repos - Array of all repos
  * @returns Array of credential repos
  */
-export function getCredentials(
-  repos: RepoWithRelations[]
-): RepoWithRelations[] {
-  return repos.filter(isCredential)
+export function getCredentials(repos: RepoWithRelations[]): RepoWithRelations[] {
+  return repos.filter(isCredential);
 }
 
 /**
@@ -224,10 +217,8 @@ export function getCredentials(
  * @param repos - Array of all repos
  * @returns Array of fork repos
  */
-export function getForks(
-  repos: RepoWithRelations[]
-): RepoWithRelations[] {
-  return repos.filter(isFork)
+export function getForks(repos: RepoWithRelations[]): RepoWithRelations[] {
+  return repos.filter(isFork);
 }
 
 /**
@@ -246,22 +237,22 @@ export function canDeleteRepo(
     repo,
     allRepos,
     machines
-  )
+  );
 
   // Credentials with deployments cannot be deleted
   if (repoIsCredential && affectedMachines.length > 0) {
     return {
       canDelete: false,
       reason: 'Credential has active deployments',
-      affectedMachines
-    }
+      affectedMachines,
+    };
   }
 
   // Forks with deployments can be deleted (with warning)
   return {
     canDelete: true,
-    affectedMachines: affectedMachines.length > 0 ? affectedMachines : undefined
-  }
+    affectedMachines: affectedMachines.length > 0 ? affectedMachines : undefined,
+  };
 }
 
 /**
@@ -269,17 +260,17 @@ export function canDeleteRepo(
  */
 export interface DeletionValidationResult {
   /** Whether deletion is allowed (may require confirmation for warnings) */
-  canDelete: boolean
+  canDelete: boolean;
   /** Whether deletion should be blocked completely (credential with active deployments) */
-  shouldBlock: boolean
+  shouldBlock: boolean;
   /** Whether deletion should show a warning (fork with deployments) */
-  shouldWarn: boolean
+  shouldWarn: boolean;
   /** Reason for block or warning */
-  reason?: string
+  reason?: string;
   /** Machines affected by the deletion */
-  affectedMachines?: AffectedMachine[]
+  affectedMachines?: AffectedMachine[];
   /** Child clones that depend on this credential */
-  childClones?: RepoWithRelations[]
+  childClones?: RepoWithRelations[];
 }
 
 /**
@@ -295,12 +286,8 @@ export function validateRepoDeletion(
   allRepos: RepoWithRelations[],
   machines: MachineWithVaultStatus[]
 ): DeletionValidationResult {
-  const repoIsCredential = isCredential(repo)
-  const { affectedMachines, forks } = getAffectedResources(
-    repo,
-    allRepos,
-    machines
-  )
+  const repoIsCredential = isCredential(repo);
+  const { affectedMachines, forks } = getAffectedResources(repo, allRepos, machines);
 
   // Case 1: Credential with deployments - BLOCK
   if (repoIsCredential && affectedMachines.length > 0) {
@@ -308,12 +295,13 @@ export function validateRepoDeletion(
       canDelete: false,
       shouldBlock: true,
       shouldWarn: false,
-      reason: forks.length > 0
-        ? `Credential has ${affectedMachines.length} deployment${affectedMachines.length > 1 ? 's' : ''} with ${forks.length} fork${forks.length > 1 ? 's' : ''}`
-        : `Credential has ${affectedMachines.length} active deployment${affectedMachines.length > 1 ? 's' : ''}`,
+      reason:
+        forks.length > 0
+          ? `Credential has ${affectedMachines.length} deployment${affectedMachines.length > 1 ? 's' : ''} with ${forks.length} fork${forks.length > 1 ? 's' : ''}`
+          : `Credential has ${affectedMachines.length} active deployment${affectedMachines.length > 1 ? 's' : ''}`,
       affectedMachines,
-      childClones: forks
-    }
+      childClones: forks,
+    };
   }
 
   // Case 2: Credential with forks but no deployments - BLOCK
@@ -324,8 +312,8 @@ export function validateRepoDeletion(
       shouldBlock: true,
       shouldWarn: false,
       reason: `Credential has ${forks.length} fork${forks.length > 1 ? 's' : ''} that must be deleted first`,
-      childClones: forks
-    }
+      childClones: forks,
+    };
   }
 
   // Case 3: Fork with deployments - WARN but allow
@@ -335,16 +323,16 @@ export function validateRepoDeletion(
       shouldBlock: false,
       shouldWarn: true,
       reason: `Fork has ${affectedMachines.length} deployment${affectedMachines.length > 1 ? 's' : ''} that will lose access`,
-      affectedMachines
-    }
+      affectedMachines,
+    };
   }
 
   // Case 4: Credential without deployments or forks, or fork without deployments - ALLOW
   return {
     canDelete: true,
     shouldBlock: false,
-    shouldWarn: false
-  }
+    shouldWarn: false,
+  };
 }
 
 /**
@@ -353,7 +341,5 @@ export function validateRepoDeletion(
  * @returns Display name with optional tag
  */
 export function getRepoDisplayName(repo: RepoWithRelations): string {
-  return repo.repoTag
-    ? `${repo.repoName}:${repo.repoTag}`
-    : repo.repoName
+  return repo.repoTag ? `${repo.repoName}:${repo.repoTag}` : repo.repoName;
 }

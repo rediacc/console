@@ -1,6 +1,6 @@
-import React from 'react'
-import { Col } from 'antd'
-import type { TFunction } from 'i18next'
+import React from 'react';
+import { Col } from 'antd';
+import type { TFunction } from 'i18next';
 import {
   HeaderRow,
   HeaderContent,
@@ -12,16 +12,16 @@ import {
   StatsRow,
   StatCard,
   StatIcon,
-} from '../styles'
+} from '../styles';
 
 interface HeaderSummaryProps {
-  cloneName: string
-  poolName: string
-  imageName: string
-  snapshotName: string
-  totalMachines: number
-  selectedMachines: number
-  t: TFunction<'distributedStorage' | 'machines' | 'common'>
+  cloneName: string;
+  poolName: string;
+  imageName: string;
+  snapshotName: string;
+  totalMachines: number;
+  selectedMachines: number;
+  t: TFunction<'distributedStorage' | 'machines' | 'common'>;
 }
 
 export const HeaderSummary: React.FC<HeaderSummaryProps> = ({
@@ -39,8 +39,7 @@ export const HeaderSummary: React.FC<HeaderSummaryProps> = ({
         <TitleRow>
           <TitleIcon />
           <TitleText>
-            {t('distributedStorage:clones.clone')}:{' '}
-            <CloneName>{cloneName}</CloneName>
+            {t('distributedStorage:clones.clone')}: <CloneName>{cloneName}</CloneName>
           </TitleText>
         </TitleRow>
         <MetadataText>
@@ -71,4 +70,4 @@ export const HeaderSummary: React.FC<HeaderSummaryProps> = ({
       </StatsRow>
     </Col>
   </HeaderRow>
-)
+);

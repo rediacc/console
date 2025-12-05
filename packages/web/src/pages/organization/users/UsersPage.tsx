@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Button, Tooltip, Space, Tag, Popconfirm, Modal, Form, Select } from 'antd'
+import React, { useState } from 'react';
+import { Button, Tooltip, Space, Tag, Popconfirm, Modal, Form, Select } from 'antd';
 import {
   UserOutlined,
   SafetyOutlined,
@@ -8,15 +8,15 @@ import {
   StopOutlined,
   HistoryOutlined,
   PlusOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import ResourceListView from '@/components/common/ResourceListView'
-import ResourceForm from '@/pages/organization/users/components/ResourceForm'
-import AuditTraceModal from '@/components/common/AuditTraceModal'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { createUserSchema, CreateUserForm } from '@/utils/validation'
-import { useDialogState, useTraceModal } from '@/hooks/useDialogState'
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import ResourceListView from '@/components/common/ResourceListView';
+import ResourceForm from '@/pages/organization/users/components/ResourceForm';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createUserSchema, CreateUserForm } from '@/utils/validation';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import {
   useUsers,
   useCreateUser,
@@ -24,11 +24,11 @@ import {
   useReactivateUser,
   useAssignUserPermissions,
   User,
-} from '@/api/queries/users'
+} from '@/api/queries/users';
 import {
   usePermissionGroups as usePermissionGroupsQuery,
   PermissionGroup,
-} from '@/api/queries/permissions'
+} from '@/api/queries/permissions';
 import {
   PageWrapper as UsersPageWrapper,
   SectionStack as UsersSectionStack,
@@ -36,17 +36,17 @@ import {
   ListTitleRow as UsersListHeader,
   ListTitle as UsersListTitle,
   ListSubtitle as UsersListSubtitle,
-} from '@/components/ui'
+} from '@/components/ui';
 
 const UsersPage: React.FC = () => {
-  const { t } = useTranslation('organization')
-  const { t: tSystem } = useTranslation('system')
-  const { t: tCommon } = useTranslation('common')
+  const { t } = useTranslation('organization');
+  const { t: tSystem } = useTranslation('system');
+  const { t: tCommon } = useTranslation('common');
 
-  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
-  const assignPermissionModal = useDialogState<User>()
-  const [selectedUserGroup, setSelectedUserGroup] = useState('')
-  const auditTrace = useTraceModal()
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const assignPermissionModal = useDialogState<User>();
+  const [selectedUserGroup, setSelectedUserGroup] = useState('');
+  const auditTrace = useTraceModal();
 
   const userForm = useForm<CreateUserForm>({
     resolver: zodResolver(createUserSchema),
@@ -54,14 +54,14 @@ const UsersPage: React.FC = () => {
       newUserEmail: '',
       newUserPassword: '',
     },
-  })
+  });
 
-  const { data: users = [], isLoading: usersLoading } = useUsers()
-  const createUserMutation = useCreateUser()
-  const deactivateUserMutation = useDeactivateUser()
-  const reactivateUserMutation = useReactivateUser()
-  const assignUserPermissionsMutation = useAssignUserPermissions()
-  const { data: permissionGroups = [] } = usePermissionGroupsQuery()
+  const { data: users = [], isLoading: usersLoading } = useUsers();
+  const createUserMutation = useCreateUser();
+  const deactivateUserMutation = useDeactivateUser();
+  const reactivateUserMutation = useReactivateUser();
+  const assignUserPermissionsMutation = useAssignUserPermissions();
+  const { data: permissionGroups = [] } = usePermissionGroupsQuery();
 
   const userFormFields = [
     {
@@ -78,51 +78,51 @@ const UsersPage: React.FC = () => {
       placeholder: t('users.form.passwordPlaceholder', { defaultValue: 'Enter password' }),
       required: true,
     },
-  ]
+  ];
 
   const handleCreateUser = async (data: CreateUserForm) => {
     try {
       await createUserMutation.mutateAsync({
         email: data.newUserEmail,
         password: data.newUserPassword,
-      })
-      setIsCreateUserModalOpen(false)
-      userForm.reset()
+      });
+      setIsCreateUserModalOpen(false);
+      userForm.reset();
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleDeactivateUser = async (userEmail: string) => {
     try {
-      await deactivateUserMutation.mutateAsync(userEmail)
+      await deactivateUserMutation.mutateAsync(userEmail);
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleReactivateUser = async (userEmail: string) => {
     try {
-      await reactivateUserMutation.mutateAsync(userEmail)
+      await reactivateUserMutation.mutateAsync(userEmail);
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleAssignUserPermissions = async () => {
-    if (!assignPermissionModal.state.data || !selectedUserGroup) return
+    if (!assignPermissionModal.state.data || !selectedUserGroup) return;
 
     try {
       await assignUserPermissionsMutation.mutateAsync({
         userEmail: assignPermissionModal.state.data.userEmail,
         permissionGroupName: selectedUserGroup,
-      })
-      assignPermissionModal.close()
-      setSelectedUserGroup('')
+      });
+      assignPermissionModal.close();
+      setSelectedUserGroup('');
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const userColumns = [
     {
@@ -162,14 +162,19 @@ const UsersPage: React.FC = () => {
             {group}
           </Tag>
         ) : (
-          <Tag color="default">{t('users.permissionGroups.none', { defaultValue: 'No Group' })}</Tag>
+          <Tag color="default">
+            {t('users.permissionGroups.none', { defaultValue: 'No Group' })}
+          </Tag>
         ),
     },
     {
       title: tSystem('tables.users.lastActive'),
       dataIndex: 'lastActive',
       key: 'lastActive',
-      render: (date: string) => (date ? new Date(date).toLocaleDateString() : t('users.lastActive.never', { defaultValue: 'Never' })),
+      render: (date: string) =>
+        date
+          ? new Date(date).toLocaleDateString()
+          : t('users.lastActive.never', { defaultValue: 'Never' }),
     },
     {
       title: tSystem('tables.users.actions'),
@@ -183,8 +188,8 @@ const UsersPage: React.FC = () => {
               size="small"
               icon={<SafetyOutlined />}
               onClick={() => {
-                assignPermissionModal.open(record)
-                setSelectedUserGroup(record.permissionGroupName || '')
+                assignPermissionModal.open(record);
+                setSelectedUserGroup(record.permissionGroupName || '');
               }}
               data-testid={`system-user-permissions-button-${record.userEmail}`}
               aria-label={tSystem('actions.permissions')}
@@ -257,17 +262,21 @@ const UsersPage: React.FC = () => {
         </Space>
       ),
     },
-  ]
+  ];
 
   return (
     <UsersPageWrapper>
       <UsersSectionStack>
-        <UsersSectionHeading level={3}>{t('users.heading', { defaultValue: 'Users' })}</UsersSectionHeading>
+        <UsersSectionHeading level={3}>
+          {t('users.heading', { defaultValue: 'Users' })}
+        </UsersSectionHeading>
         <ResourceListView
           title={
             <UsersListHeader>
               <UsersListTitle>{t('users.title', { defaultValue: 'Users' })}</UsersListTitle>
-              <UsersListSubtitle>{t('users.subtitle', { defaultValue: 'Manage users and their permissions' })}</UsersListSubtitle>
+              <UsersListSubtitle>
+                {t('users.subtitle', { defaultValue: 'Manage users and their permissions' })}
+              </UsersListSubtitle>
             </UsersListHeader>
           }
           loading={usersLoading}
@@ -294,8 +303,8 @@ const UsersPage: React.FC = () => {
         title={t('users.modals.createTitle', { defaultValue: 'Create User' })}
         open={isCreateUserModalOpen}
         onCancel={() => {
-          setIsCreateUserModalOpen(false)
-          userForm.reset()
+          setIsCreateUserModalOpen(false);
+          userForm.reset();
         }}
         footer={null}
       >
@@ -306,8 +315,8 @@ const UsersPage: React.FC = () => {
           submitText={tCommon('actions.create', { defaultValue: 'Create' })}
           cancelText={tCommon('actions.cancel', { defaultValue: 'Cancel' })}
           onCancel={() => {
-            setIsCreateUserModalOpen(false)
-            userForm.reset()
+            setIsCreateUserModalOpen(false);
+            userForm.reset();
           }}
           loading={createUserMutation.isPending}
         />
@@ -317,8 +326,8 @@ const UsersPage: React.FC = () => {
         title={`${t('users.modals.assignTitle', { defaultValue: 'Assign Permissions' })} - ${assignPermissionModal.state.data?.userEmail || ''}`}
         open={assignPermissionModal.isOpen}
         onCancel={() => {
-          assignPermissionModal.close()
-          setSelectedUserGroup('')
+          assignPermissionModal.close();
+          setSelectedUserGroup('');
         }}
         onOk={handleAssignUserPermissions}
         okText={tCommon('actions.assign', { defaultValue: 'Assign' })}
@@ -327,11 +336,15 @@ const UsersPage: React.FC = () => {
         cancelButtonProps={{ 'data-testid': 'modal-assign-permissions-cancel' }}
       >
         <Form layout="vertical">
-          <Form.Item label={t('users.modals.permissionGroupLabel', { defaultValue: 'Permission Group' })}>
+          <Form.Item
+            label={t('users.modals.permissionGroupLabel', { defaultValue: 'Permission Group' })}
+          >
             <Select
               value={selectedUserGroup}
               onChange={(value) => setSelectedUserGroup((value as string) || '')}
-              placeholder={t('users.modals.permissionGroupPlaceholder', { defaultValue: 'Select permission group' })}
+              placeholder={t('users.modals.permissionGroupPlaceholder', {
+                defaultValue: 'Select permission group',
+              })}
               options={permissionGroups?.map((group: PermissionGroup) => ({
                 value: group.permissionGroupName,
                 label: `${group.permissionGroupName} (${group.userCount} ${t('users.modals.usersLabel', { defaultValue: 'users' })}, ${group.permissionCount} ${t('users.modals.permissionsLabel', { defaultValue: 'permissions' })})`,
@@ -351,7 +364,7 @@ const UsersPage: React.FC = () => {
         entityName={auditTrace.entityName}
       />
     </UsersPageWrapper>
-  )
-}
+  );
+};
 
-export default UsersPage
+export default UsersPage;

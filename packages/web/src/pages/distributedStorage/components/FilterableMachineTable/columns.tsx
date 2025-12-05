@@ -1,13 +1,13 @@
-import type { ColumnsType } from 'antd/es/table/interface'
-import type { TFunction } from 'i18next'
-import type { Machine } from '@/types'
-import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
-import { createSorter } from '@/core'
-import { createTruncatedColumn } from '@/components/common/columns'
-import { AssignmentTag, QueueBadge } from './styles'
+import type { ColumnsType } from 'antd/es/table/interface';
+import type { TFunction } from 'i18next';
+import type { Machine } from '@/types';
+import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
+import { createSorter } from '@/core';
+import { createTruncatedColumn } from '@/components/common/columns';
+import { AssignmentTag, QueueBadge } from './styles';
 
 export const buildMachineTableColumns = (
-  t: TFunction<'machines' | 'distributedStorage'>,
+  t: TFunction<'machines' | 'distributedStorage'>
 ): ColumnsType<Machine> => [
   createTruncatedColumn<Machine>({
     title: t('machines:machineName'),
@@ -36,9 +36,7 @@ export const buildMachineTableColumns = (
     key: 'assignmentStatus',
     width: 200,
     ellipsis: true,
-    render: (_: unknown, record: Machine) => (
-      <MachineAssignmentStatusCell machine={record} />
-    ),
+    render: (_: unknown, record: Machine) => <MachineAssignmentStatusCell machine={record} />,
   },
   {
     title: t('machines:queueItems'),
@@ -47,8 +45,6 @@ export const buildMachineTableColumns = (
     width: 100,
     align: 'center',
     sorter: createSorter<Machine>('queueCount'),
-    render: (count: number = 0) => (
-      <QueueBadge count={count} showZero $hasItems={count > 0} />
-    ),
+    render: (count: number = 0) => <QueueBadge count={count} showZero $hasItems={count > 0} />,
   },
-]
+];

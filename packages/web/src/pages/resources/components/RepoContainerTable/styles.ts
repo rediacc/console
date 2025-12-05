@@ -1,27 +1,27 @@
-import styled, { css } from 'styled-components'
-import { Table as AntTable, Typography } from 'antd'
-import type { TableProps } from 'antd'
-import type { ComponentType } from 'react'
+import styled, { css } from 'styled-components';
+import { Table as AntTable, Typography } from 'antd';
+import type { TableProps } from 'antd';
+import type { ComponentType } from 'react';
 
-const { Title } = Typography
+const { Title } = Typography;
 
 export const Container = styled.div`
   overflow-x: auto;
   position: relative;
-`
+`;
 
 export const ContainersSection = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.LG}px;
-`
+`;
 
 export const PluginContainersSection = styled(ContainersSection)`
   margin-top: ${({ theme }) => theme.spacing.LG}px;
-`
+`;
 
 export const EmptyState = styled.div`
   padding: ${({ theme }) => `${theme.spacing.XXL}px 0`};
   text-align: center;
-`
+`;
 
 const StyledTableBase = styled(AntTable)<{ $removeMargins?: boolean }>`
   ${({ $removeMargins }) =>
@@ -48,12 +48,14 @@ const StyledTableBase = styled(AntTable)<{ $removeMargins?: boolean }>`
   .repo-container-row--selected td {
     background-color: ${({ theme }) => theme.colors.primaryBg};
   }
-`
+`;
 
-export const StyledTable = StyledTableBase as ComponentType<TableProps<unknown> & { $removeMargins?: boolean }>
+export const StyledTable = StyledTableBase as ComponentType<
+  TableProps<unknown> & { $removeMargins?: boolean }
+>;
 
 export const SectionTitle = styled(Title)`
   && {
     margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   }
-`
+`;

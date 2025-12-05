@@ -1,11 +1,11 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { Provider } from 'react-redux'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { store } from './store/store'
-import App from './App'
-import { AppProviders } from './components/app/AppProviders'
-import i18n from './i18n/config'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { Provider } from 'react-redux';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { store } from './store/store';
+import App from './App';
+import { AppProviders } from './components/app/AppProviders';
+import i18n from './i18n/config';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,11 +22,11 @@ const queryClient = new QueryClient({
       },
     },
   },
-})
+});
 
 const renderApplication = () => {
   const StrictModeWrapper = import.meta.env.DEV ? React.StrictMode : React.Fragment;
-  
+
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <StrictModeWrapper>
       <Provider store={store}>
@@ -37,13 +37,13 @@ const renderApplication = () => {
         </QueryClientProvider>
       </Provider>
     </StrictModeWrapper>
-  )
-}
+  );
+};
 
 // Wait for i18n to initialize before rendering
-i18n.on('initialized', renderApplication)
+i18n.on('initialized', renderApplication);
 
 // If i18n is already initialized, render immediately
 if (i18n.isInitialized) {
-  renderApplication()
+  renderApplication();
 }

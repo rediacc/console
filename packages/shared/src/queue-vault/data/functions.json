@@ -1,11 +1,5 @@
 {
-  "categories": [
-    "machine",
-    "repository",
-    "backup",
-    "network",
-    "container"
-  ],
+  "categories": ["machine", "repository", "backup", "network", "container"],
   "functions": {
     "setup": {
       "name": "setup",

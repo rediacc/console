@@ -1,29 +1,29 @@
-import ora, { Ora } from 'ora'
+import ora, { Ora } from 'ora';
 
-let currentSpinner: Ora | null = null
+let currentSpinner: Ora | null = null;
 
 export function startSpinner(text: string): Ora {
   if (currentSpinner) {
-    currentSpinner.stop()
+    currentSpinner.stop();
   }
-  currentSpinner = ora(text).start()
-  return currentSpinner
+  currentSpinner = ora(text).start();
+  return currentSpinner;
 }
 
 export function stopSpinner(success = true, text?: string): void {
-  if (!currentSpinner) return
+  if (!currentSpinner) return;
 
   if (success) {
-    currentSpinner.succeed(text)
+    currentSpinner.succeed(text);
   } else {
-    currentSpinner.fail(text)
+    currentSpinner.fail(text);
   }
-  currentSpinner = null
+  currentSpinner = null;
 }
 
 export function updateSpinner(text: string): void {
   if (currentSpinner) {
-    currentSpinner.text = text
+    currentSpinner.text = text;
   }
 }
 
@@ -32,13 +32,13 @@ export async function withSpinner<T>(
   fn: () => Promise<T>,
   successText?: string
 ): Promise<T> {
-  const spinner = startSpinner(text)
+  const spinner = startSpinner(text);
   try {
-    const result = await fn()
-    spinner.succeed(successText || text)
-    return result
+    const result = await fn();
+    spinner.succeed(successText || text);
+    return result;
   } catch (error) {
-    spinner.fail()
-    throw error
+    spinner.fail();
+    throw error;
   }
 }

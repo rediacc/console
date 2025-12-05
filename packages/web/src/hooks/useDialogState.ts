@@ -1,13 +1,13 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react';
 
 /**
  * Generic dialog state interface
  */
 export interface DialogState<T = unknown> {
   /** Whether the dialog is open */
-  open: boolean
+  open: boolean;
   /** Data passed to the dialog */
-  data: T | null
+  data: T | null;
 }
 
 /**
@@ -15,15 +15,15 @@ export interface DialogState<T = unknown> {
  */
 export interface UseDialogStateReturn<T> {
   /** Current dialog state */
-  state: DialogState<T>
+  state: DialogState<T>;
   /** Open the dialog with optional data */
-  open: (data?: T) => void
+  open: (data?: T) => void;
   /** Close the dialog and clear data */
-  close: () => void
+  close: () => void;
   /** Update data without changing open state */
-  setData: (data: T | null) => void
+  setData: (data: T | null) => void;
   /** Check if dialog is open */
-  isOpen: boolean
+  isOpen: boolean;
 }
 
 /**
@@ -55,28 +55,28 @@ export function useDialogState<T = unknown>(): UseDialogStateReturn<T> {
   const [state, setState] = useState<DialogState<T>>({
     open: false,
     data: null,
-  })
+  });
 
   const open = useCallback((data?: T) => {
     setState({
       open: true,
       data: data ?? null,
-    })
-  }, [])
+    });
+  }, []);
 
   const close = useCallback(() => {
     setState({
       open: false,
       data: null,
-    })
-  }, [])
+    });
+  }, []);
 
   const setData = useCallback((data: T | null) => {
     setState((prev) => ({
       ...prev,
       data,
-    }))
-  }, [])
+    }));
+  }, []);
 
   return useMemo(
     () => ({
@@ -87,16 +87,16 @@ export function useDialogState<T = unknown>(): UseDialogStateReturn<T> {
       isOpen: state.open,
     }),
     [state, open, close, setData]
-  )
+  );
 }
 
 /**
  * Specialized dialog state for audit trace modals
  */
 export interface TraceModalData {
-  entityType: string
-  entityIdentifier: string
-  entityName?: string
+  entityType: string;
+  entityIdentifier: string;
+  entityName?: string;
 }
 
 /**
@@ -104,11 +104,11 @@ export interface TraceModalData {
  */
 export interface UseTraceModalReturn extends UseDialogStateReturn<TraceModalData> {
   /** Entity type (null when no data) */
-  entityType: string | null
+  entityType: string | null;
   /** Entity identifier (null when no data) */
-  entityIdentifier: string | null
+  entityIdentifier: string | null;
   /** Entity name (undefined when no data) */
-  entityName: string | undefined
+  entityName: string | undefined;
 }
 
 /**
@@ -134,7 +134,7 @@ export interface UseTraceModalReturn extends UseDialogStateReturn<TraceModalData
  * />
  */
 export function useTraceModal(): UseTraceModalReturn {
-  const dialogState = useDialogState<TraceModalData>()
+  const dialogState = useDialogState<TraceModalData>();
 
   return useMemo(
     () => ({
@@ -144,23 +144,23 @@ export function useTraceModal(): UseTraceModalReturn {
       entityName: dialogState.state.data?.entityName,
     }),
     [dialogState]
-  )
+  );
 }
 
 /**
  * Specialized dialog state for queue trace modals
  */
 export interface QueueTraceModalState {
-  open: boolean
-  taskId: string | null
-  machineName?: string | null
+  open: boolean;
+  taskId: string | null;
+  machineName?: string | null;
 }
 
 export interface UseQueueTraceModalReturn {
-  state: QueueTraceModalState
-  open: (taskId: string, machineName?: string) => void
-  close: () => void
-  isOpen: boolean
+  state: QueueTraceModalState;
+  open: (taskId: string, machineName?: string) => void;
+  close: () => void;
+  isOpen: boolean;
 }
 
 /**
@@ -186,23 +186,23 @@ export function useQueueTraceModal(): UseQueueTraceModalReturn {
     open: false,
     taskId: null,
     machineName: null,
-  })
+  });
 
   const openModal = useCallback((taskId: string, machineName?: string) => {
     setState({
       open: true,
       taskId,
       machineName: machineName ?? null,
-    })
-  }, [])
+    });
+  }, []);
 
   const close = useCallback(() => {
     setState({
       open: false,
       taskId: null,
       machineName: null,
-    })
-  }, [])
+    });
+  }, []);
 
   return useMemo(
     () => ({
@@ -212,5 +212,5 @@ export function useQueueTraceModal(): UseQueueTraceModalReturn {
       isOpen: state.open,
     }),
     [state, openModal, close]
-  )
+  );
 }

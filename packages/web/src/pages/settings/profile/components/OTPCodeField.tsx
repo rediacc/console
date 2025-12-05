@@ -1,33 +1,33 @@
-import React from 'react'
-import { Form, Input } from 'antd'
-import type { Rule } from 'antd/es/form'
-import styled from 'styled-components'
+import React from 'react';
+import { Form, Input } from 'antd';
+import type { Rule } from 'antd/es/form';
+import styled from 'styled-components';
 
 const CenteredInput = styled(Input)`
   text-align: center;
   letter-spacing: 0.5em;
   font-family: monospace;
-`
+`;
 
 export interface OTPCodeFieldProps {
   /** Field name in the form */
-  name: string
+  name: string;
   /** Field label */
-  label: string
+  label: string;
   /** Placeholder text */
-  placeholder?: string
+  placeholder?: string;
   /** Whether field is required (default: true) */
-  required?: boolean
+  required?: boolean;
   /** Custom required message */
-  requiredMessage?: string
+  requiredMessage?: string;
   /** Custom length message */
-  lengthMessage?: string
+  lengthMessage?: string;
   /** Custom format message */
-  formatMessage?: string
+  formatMessage?: string;
   /** Input size (default: 'large') */
-  size?: 'small' | 'middle' | 'large'
+  size?: 'small' | 'middle' | 'large';
   /** data-testid attribute */
-  'data-testid'?: string
+  'data-testid'?: string;
 }
 
 /**
@@ -51,24 +51,24 @@ export const OTPCodeField: React.FC<OTPCodeFieldProps> = ({
   size = 'large',
   'data-testid': dataTestId,
 }) => {
-  const rules: Rule[] = []
+  const rules: Rule[] = [];
 
   if (required) {
     rules.push({
       required: true,
       message: requiredMessage || `Please enter ${label.toLowerCase()}`,
-    })
+    });
   }
 
   rules.push({
     len: 6,
     message: lengthMessage,
-  })
+  });
 
   rules.push({
     pattern: /^\d{6}$/,
     message: formatMessage,
-  })
+  });
 
   return (
     <Form.Item name={name} label={label} rules={rules}>
@@ -80,5 +80,5 @@ export const OTPCodeField: React.FC<OTPCodeFieldProps> = ({
         data-testid={dataTestId}
       />
     </Form.Item>
-  )
-}
+  );
+};

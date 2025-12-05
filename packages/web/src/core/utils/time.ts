@@ -93,7 +93,10 @@ export function formatTimestamp(timestamp: string | null | undefined): string {
  * @param format - 'time' for HH:mm:ss, 'datetime' for YYYY-MM-DD HH:mm:ss, 'full' for complete datetime
  * @returns Formatted timestamp string without timezone conversion
  */
-export function formatTimestampAsIs(timestamp: string | null | undefined, format: 'time' | 'datetime' | 'full' = 'datetime'): string {
+export function formatTimestampAsIs(
+  timestamp: string | null | undefined,
+  format: 'time' | 'datetime' | 'full' = 'datetime'
+): string {
   if (!timestamp) return '-';
 
   // Extract date/time components directly from the ISO string
@@ -131,7 +134,10 @@ export function formatTimestampAsIs(timestamp: string | null | undefined, format
  * @param end - End timestamp
  * @returns Duration in milliseconds
  */
-export function calculateDuration(start: string | null | undefined, end: string | null | undefined): number {
+export function calculateDuration(
+  start: string | null | undefined,
+  end: string | null | undefined
+): number {
   if (!start || !end) return 0;
 
   const startDate = new Date(start);

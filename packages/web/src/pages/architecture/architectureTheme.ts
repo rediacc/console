@@ -1,6 +1,6 @@
-export type ArchitectureMode = 'light' | 'dark'
+export type ArchitectureMode = 'light' | 'dark';
 
-type NodeColorMap = Record<string, string>
+type NodeColorMap = Record<string, string>;
 
 const NODE_COLORS: Record<ArchitectureMode, NodeColorMap> = {
   light: {
@@ -23,15 +23,15 @@ const NODE_COLORS: Record<ArchitectureMode, NodeColorMap> = {
     repo: '#aab7c8',
     storage: '#cad7e8',
   },
-}
+};
 
 export interface ArchitecturePalette {
-  nodes: NodeColorMap
-  nodeFallback: string
-  nodeBorder: string
-  linkStroke: string
-  labelFill: string
-  labelShadow: string
+  nodes: NodeColorMap;
+  nodeFallback: string;
+  nodeBorder: string;
+  linkStroke: string;
+  labelFill: string;
+  labelShadow: string;
 }
 
 const architecturePalette: Record<ArchitectureMode, ArchitecturePalette> = {
@@ -51,7 +51,7 @@ const architecturePalette: Record<ArchitectureMode, ArchitecturePalette> = {
     labelFill: '#e8e8e8',
     labelShadow: '1px 1px 2px rgba(0,0,0,0.8)',
   },
-}
+};
 
 export const getArchitecturePalette = (mode: ArchitectureMode): ArchitecturePalette =>
-  architecturePalette[mode] || architecturePalette.light
+  architecturePalette[mode] || architecturePalette.light;

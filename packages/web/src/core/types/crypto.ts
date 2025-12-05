@@ -1,1 +1,1 @@
-export type { ICryptoProvider } from '@rediacc/shared/encryption'
+export type { ICryptoProvider } from '@rediacc/shared/encryption';

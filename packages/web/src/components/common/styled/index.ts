@@ -5,20 +5,20 @@
  * Import from '@/components/common/styled' instead of defining in page styles.
  */
 
-import styled from 'styled-components'
-import { Space, Typography, Table } from 'antd'
-import type { TableProps } from 'antd'
-import type { ComponentType } from 'react'
-import { IconButton } from '@/styles/primitives'
-import type { StatusVariant } from '@/styles/primitives'
+import styled from 'styled-components';
+import { Space, Typography, Table } from 'antd';
+import type { TableProps } from 'antd';
+import type { ComponentType } from 'react';
+import { IconButton } from '@/styles/primitives';
+import type { StatusVariant } from '@/styles/primitives';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 // =============================================================================
 // SPACING TYPES
 // =============================================================================
 
-export type SpacingSize = 'XS' | 'SM' | 'MD' | 'LG' | 'XL'
+export type SpacingSize = 'XS' | 'SM' | 'MD' | 'LG' | 'XL';
 
 // =============================================================================
 // CENTERED/EMPTY STATE COMPONENTS
@@ -26,9 +26,9 @@ export type SpacingSize = 'XS' | 'SM' | 'MD' | 'LG' | 'XL'
 
 export interface CenteredStateProps {
   /** Vertical padding size */
-  $padding?: SpacingSize
+  $padding?: SpacingSize;
   /** Show secondary text color */
-  $muted?: boolean
+  $muted?: boolean;
 }
 
 /**
@@ -44,22 +44,22 @@ export const CenteredState = styled.div<CenteredStateProps>`
   text-align: center;
   padding: ${({ $padding = 'LG', theme }) => theme.spacing[$padding]}px 0;
   ${({ $muted, theme }) => $muted && `color: ${theme.colors.textSecondary};`}
-`
+`;
 
 /**
  * Empty state wrapper - alias for CenteredState
  */
-export const EmptyState = styled(CenteredState)``
+export const EmptyState = styled(CenteredState)``;
 
 // =============================================================================
 // STAT DISPLAY COMPONENTS
 // =============================================================================
 
-export type StatVariant = 'default' | 'success' | 'warning' | 'error' | 'info'
+export type StatVariant = 'default' | 'success' | 'warning' | 'error' | 'info';
 
 export interface StatLabelProps {
   /** Font size */
-  $size?: 'XS' | 'SM' | 'BASE'
+  $size?: 'XS' | 'SM' | 'BASE';
 }
 
 /**
@@ -68,20 +68,20 @@ export interface StatLabelProps {
 export const StatLabel = styled(Text)<StatLabelProps>`
   && {
     font-size: ${({ $size = 'SM', theme }) => {
-      const sizes = { XS: theme.fontSize.XS, SM: theme.fontSize.CAPTION, BASE: theme.fontSize.SM }
-      return `${sizes[$size]}px`
+      const sizes = { XS: theme.fontSize.XS, SM: theme.fontSize.CAPTION, BASE: theme.fontSize.SM };
+      return `${sizes[$size]}px`;
     }};
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 export interface StatValueProps {
   /** Color variant based on status */
-  $variant?: StatVariant
+  $variant?: StatVariant;
   /** Custom color (overrides variant) */
-  $color?: string
+  $color?: string;
   /** Font size */
-  $size?: 'SM' | 'BASE' | 'LG' | 'XL'
+  $size?: 'SM' | 'BASE' | 'LG' | 'XL';
 }
 
 /**
@@ -94,21 +94,31 @@ export const StatValue = styled(Text)<StatValueProps>`
   && {
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
     font-size: ${({ $size = 'LG', theme }) => {
-      const sizes = { SM: theme.fontSize.SM, BASE: theme.fontSize.BASE, LG: theme.fontSize.LG, XL: theme.fontSize.XL }
-      return `${sizes[$size]}px`
+      const sizes = {
+        SM: theme.fontSize.SM,
+        BASE: theme.fontSize.BASE,
+        LG: theme.fontSize.LG,
+        XL: theme.fontSize.XL,
+      };
+      return `${sizes[$size]}px`;
     }};
     color: ${({ $color, $variant = 'default', theme }) => {
-      if ($color) return $color
+      if ($color) return $color;
       switch ($variant) {
-        case 'success': return theme.colors.success
-        case 'warning': return theme.colors.warning
-        case 'error': return theme.colors.error
-        case 'info': return theme.colors.info
-        default: return theme.colors.textPrimary
+        case 'success':
+          return theme.colors.success;
+        case 'warning':
+          return theme.colors.warning;
+        case 'error':
+          return theme.colors.error;
+        case 'info':
+          return theme.colors.info;
+        default:
+          return theme.colors.textPrimary;
       }
     }};
   }
-`
+`;
 
 /**
  * Row for displaying stat label and value
@@ -118,7 +128,7 @@ export const StatRow = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-`
+`;
 
 // =============================================================================
 // LAYOUT COMPONENTS
@@ -126,9 +136,9 @@ export const StatRow = styled.div`
 
 export interface HeaderRowProps {
   /** Vertical alignment */
-  $align?: 'flex-start' | 'center' | 'flex-end'
+  $align?: 'flex-start' | 'center' | 'flex-end';
   /** Gap between items */
-  $spacing?: SpacingSize
+  $spacing?: SpacingSize;
 }
 
 /**
@@ -146,7 +156,7 @@ export const HeaderRow = styled.div<HeaderRowProps>`
   justify-content: space-between;
   flex-wrap: wrap;
   gap: ${({ $spacing = 'MD', theme }) => theme.spacing[$spacing]}px;
-`
+`;
 
 /**
  * Flex container with space-between
@@ -157,13 +167,13 @@ export const FlexBetween = styled.div`
   justify-content: space-between;
   width: 100%;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export interface ActionsRowProps {
   /** Gap between buttons */
-  $spacing?: 'SM' | 'MD'
+  $spacing?: 'SM' | 'MD';
   /** Alignment */
-  $justify?: 'flex-start' | 'flex-end' | 'center'
+  $justify?: 'flex-start' | 'flex-end' | 'center';
 }
 
 /**
@@ -174,7 +184,7 @@ export const ActionsRow = styled.div<ActionsRowProps>`
   gap: ${({ $spacing = 'SM', theme }) => theme.spacing[$spacing]}px;
   flex-wrap: wrap;
   justify-content: ${({ $justify = 'flex-end' }) => $justify};
-`
+`;
 
 /**
  * Container for action buttons in table cells
@@ -183,11 +193,11 @@ export const ActionsContainer = styled.div`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export interface HeaderSectionProps {
   /** Bottom margin */
-  $margin?: 'MD' | 'LG'
+  $margin?: 'MD' | 'LG';
 }
 
 /**
@@ -198,30 +208,30 @@ export const HeaderSection = styled.div<HeaderSectionProps>`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.MD}px;
   margin-bottom: ${({ $margin = 'LG', theme }) => theme.spacing[$margin]}px;
-`
+`;
 
 /**
  * Content stack using antd Space
  */
 export const ContentStack = styled(Space).attrs({ orientation: 'vertical', size: 'large' })`
   width: 100%;
-`
+`;
 
 export const InlineStack = styled.div<{ $align?: 'flex-start' | 'center' | 'flex-end' }>`
   display: inline-flex;
   align-items: ${({ $align = 'center' }) => $align};
   gap: ${({ theme }) => theme.spacing.SM}px;
   flex-wrap: wrap;
-`
+`;
 
-const BaseTable = Table as ComponentType<TableProps<unknown>>
+const BaseTable = Table as ComponentType<TableProps<unknown>>;
 
 export const DataTable = styled(BaseTable)<{ $isLoading?: boolean }>`
   .ant-spin-nested-loading {
     opacity: ${({ $isLoading }) => ($isLoading ? 0.65 : 1)};
     transition: ${({ theme }) => theme.transitions.DEFAULT};
   }
-`
+`;
 
 // =============================================================================
 // ACTION BUTTON VARIANTS
@@ -229,7 +239,7 @@ export const DataTable = styled(BaseTable)<{ $isLoading?: boolean }>`
 
 export interface TableActionButtonProps {
   /** Include gap for label */
-  $hasLabel?: boolean
+  $hasLabel?: boolean;
 }
 
 /**
@@ -253,7 +263,7 @@ export const TableActionButton = styled(IconButton)<TableActionButtonProps>`
     min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   }
-`
+`;
 
 // =============================================================================
 // DIVIDERS
@@ -268,18 +278,18 @@ export const Divider = styled.hr`
   width: 100%;
   background-color: ${({ theme }) => theme.colors.borderSecondary};
   margin: ${({ theme }) => theme.spacing.MD}px 0;
-`
+`;
 
 export const StatusDot = styled.span<{ $variant?: StatusVariant }>`
   width: 8px;
   height: 8px;
   border-radius: ${({ theme }) => theme.borderRadius.FULL}px;
   background-color: ${({ theme, $variant = 'info' }) => {
-    const colorKey = $variant in theme.colors ? ($variant as keyof typeof theme.colors) : 'info'
-    return theme.colors[colorKey]
+    const colorKey = $variant in theme.colors ? ($variant as keyof typeof theme.colors) : 'info';
+    return theme.colors[colorKey];
   }};
   flex-shrink: 0;
-`
+`;
 
 // =============================================================================
 // RE-EXPORTS FROM PRIMITIVES
@@ -296,6 +306,6 @@ export {
   ActionBar,
   StatusBadge,
   StatusTag,
-} from '@/styles/primitives'
+} from '@/styles/primitives';
 
-export type { StatusVariant } from '@/styles/primitives'
+export type { StatusVariant } from '@/styles/primitives';

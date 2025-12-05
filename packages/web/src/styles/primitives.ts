@@ -1,4 +1,4 @@
-import styled, { css } from 'styled-components'
+import styled, { css } from 'styled-components';
 import {
   Card,
   Button,
@@ -15,17 +15,17 @@ import {
   Badge,
   Empty,
   Alert,
-} from 'antd'
-import type { TableProps } from 'antd'
-import type { ComponentType } from 'react'
-import type { StyledTheme } from '@/styles/styledTheme'
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
-import { RightOutlined } from '@/utils/optimizedIcons'
+} from 'antd';
+import type { TableProps } from 'antd';
+import type { ComponentType } from 'react';
+import type { StyledTheme } from '@/styles/styledTheme';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { RightOutlined } from '@/utils/optimizedIcons';
 
-const { Text } = Typography
-const GenericTable = Table as ComponentType<TableProps<unknown>>
+const { Text } = Typography;
+const GenericTable = Table as ComponentType<TableProps<unknown>>;
 
-export type StatusVariant = 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'processing'
+export type StatusVariant = 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'processing';
 export type TagVariant =
   | 'primary'
   | 'secondary'
@@ -40,31 +40,31 @@ export type TagVariant =
   | 'machine'
   | 'bridge'
   | 'available'
-  | 'processing'
-export type TagSize = 'SM' | 'MD'
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'link'
-export type ButtonSize = 'SM' | 'MD' | 'LG'
-export type IconSize = 'SM' | 'MD' | 'LG' | 'XL' | 'XXL' | 'XXXL'
-type IconSizeValue = IconSize | number
-type ColorKey = keyof StyledTheme['colors']
+  | 'processing';
+export type TagSize = 'SM' | 'MD';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'link';
+export type ButtonSize = 'SM' | 'MD' | 'LG';
+export type IconSize = 'SM' | 'MD' | 'LG' | 'XL' | 'XXL' | 'XXXL';
+type IconSizeValue = IconSize | number;
+type ColorKey = keyof StyledTheme['colors'];
 
-type SpacingScale = StyledTheme['spacing']
-type SpacingToken = keyof SpacingScale
-type SpacingValue = SpacingToken | number
+type SpacingScale = StyledTheme['spacing'];
+type SpacingToken = keyof SpacingScale;
+type SpacingValue = SpacingToken | number;
 
 const resolveSpacingValue = (
   theme: StyledTheme,
   value?: SpacingValue,
-  fallback: SpacingToken = 'MD',
+  fallback: SpacingToken = 'MD'
 ) => {
   if (typeof value === 'number') {
-    return value
+    return value;
   }
-  const token = (value || fallback) as SpacingToken
-  return theme.spacing[token]
-}
+  const token = (value || fallback) as SpacingToken;
+  return theme.spacing[token];
+};
 
-type StatusTokenKeys = { bg: ColorKey; color: ColorKey; border?: ColorKey }
+type StatusTokenKeys = { bg: ColorKey; color: ColorKey; border?: ColorKey };
 
 const STATUS_TOKEN_KEYS: Record<StatusVariant, StatusTokenKeys> = {
   success: { bg: 'bgSuccess', color: 'success' },
@@ -73,22 +73,22 @@ const STATUS_TOKEN_KEYS: Record<StatusVariant, StatusTokenKeys> = {
   processing: { bg: 'primaryBg', color: 'primary' },
   neutral: { bg: 'bgSecondary', color: 'textSecondary', border: 'borderSecondary' },
   info: { bg: 'bgInfo', color: 'info' },
-}
+};
 
 const resolveStatusTokens = (variant: StatusVariant = 'info', theme: StyledTheme) => {
-  const tokens = STATUS_TOKEN_KEYS[variant] || STATUS_TOKEN_KEYS.info
-  const colorKey = tokens.color
-  const borderKey = tokens.border || colorKey
+  const tokens = STATUS_TOKEN_KEYS[variant] || STATUS_TOKEN_KEYS.info;
+  const colorKey = tokens.color;
+  const borderKey = tokens.border || colorKey;
 
   return {
     bg: theme.colors[tokens.bg],
     color: theme.colors[colorKey],
     border: theme.colors[borderKey],
-  }
-}
+  };
+};
 
-type TagTokenSet = { bg: string; color: string; border: string }
-type TagTokenKeySet = { bg: ColorKey; color: ColorKey; border: ColorKey }
+type TagTokenSet = { bg: string; color: string; border: string };
+type TagTokenKeySet = { bg: ColorKey; color: ColorKey; border: ColorKey };
 
 const TAG_TOKEN_KEYS: Record<TagVariant, TagTokenKeySet> = {
   primary: { bg: 'primaryBg', color: 'primary', border: 'primary' },
@@ -105,43 +105,41 @@ const TAG_TOKEN_KEYS: Record<TagVariant, TagTokenKeySet> = {
   bridge: { bg: 'bgPrimary', color: 'secondary', border: 'secondary' },
   available: { bg: 'bgSuccess', color: 'success', border: 'success' },
   processing: { bg: 'primaryBg', color: 'primary', border: 'primary' },
-}
+};
 
 const resolveTagVariantTokens = (
   variant: TagVariant = 'neutral',
-  theme: StyledTheme,
+  theme: StyledTheme
 ): TagTokenSet => {
-  const tokens = TAG_TOKEN_KEYS[variant] || TAG_TOKEN_KEYS.neutral
+  const tokens = TAG_TOKEN_KEYS[variant] || TAG_TOKEN_KEYS.neutral;
   return {
     bg: theme.colors[tokens.bg],
     color: theme.colors[tokens.color],
     border: theme.colors[tokens.border],
-  }
-}
+  };
+};
 
 const resolveTagPadding = (theme: StyledTheme, size: TagSize = 'SM') =>
-  size === 'MD'
-    ? `${theme.spacing.XS}px ${theme.spacing.SM}px`
-    : `0 ${theme.spacing.XS}px`
+  size === 'MD' ? `${theme.spacing.XS}px ${theme.spacing.SM}px` : `0 ${theme.spacing.XS}px`;
 
 const resolveTagRadius = (theme: StyledTheme, size: TagSize = 'SM') =>
-  size === 'MD' ? theme.borderRadius.MD : theme.borderRadius.SM
+  size === 'MD' ? theme.borderRadius.MD : theme.borderRadius.SM;
 
 const resolveTagFontSize = (theme: StyledTheme, size: TagSize = 'SM') =>
-  size === 'MD' ? theme.fontSize.SM : theme.fontSize.CAPTION
+  size === 'MD' ? theme.fontSize.SM : theme.fontSize.CAPTION;
 
 type ButtonTokenSet = {
-  bg: string
-  color: string
-  border: string
-  hoverBg: string
-  hoverColor: string
-  hoverBorder: string
-}
+  bg: string;
+  color: string;
+  border: string;
+  hoverBg: string;
+  hoverColor: string;
+  hoverBorder: string;
+};
 
 const resolveButtonVariantTokens = (
   variant: ButtonVariant = 'secondary',
-  theme: StyledTheme,
+  theme: StyledTheme
 ): ButtonTokenSet => {
   switch (variant) {
     case 'primary':
@@ -152,7 +150,7 @@ const resolveButtonVariantTokens = (
         hoverBg: theme.colors.primaryHover,
         hoverColor: theme.colors.textInverse,
         hoverBorder: theme.colors.primaryHover,
-      }
+      };
     case 'danger':
       return {
         bg: theme.colors.error,
@@ -161,7 +159,7 @@ const resolveButtonVariantTokens = (
         hoverBg: theme.colors.error,
         hoverColor: theme.colors.textInverse,
         hoverBorder: theme.colors.error,
-      }
+      };
     case 'ghost':
       return {
         bg: 'transparent',
@@ -170,7 +168,7 @@ const resolveButtonVariantTokens = (
         hoverBg: theme.colors.bgSecondary,
         hoverColor: theme.colors.textPrimary,
         hoverBorder: theme.colors.borderSecondary,
-      }
+      };
     case 'link':
       return {
         bg: 'transparent',
@@ -179,7 +177,7 @@ const resolveButtonVariantTokens = (
         hoverBg: 'transparent',
         hoverColor: theme.colors.primaryHover,
         hoverBorder: 'transparent',
-      }
+      };
     case 'secondary':
     default:
       return {
@@ -189,97 +187,97 @@ const resolveButtonVariantTokens = (
         hoverBg: theme.colors.bgSecondary,
         hoverColor: theme.colors.textPrimary,
         hoverBorder: theme.colors.borderPrimary,
-      }
+      };
   }
-}
+};
 
 const resolveButtonHeight = (theme: StyledTheme, size: ButtonSize = 'MD') => {
   switch (size) {
     case 'SM':
-      return theme.dimensions.CONTROL_HEIGHT_SM
+      return theme.dimensions.CONTROL_HEIGHT_SM;
     case 'LG':
-      return theme.dimensions.CONTROL_HEIGHT_LG
+      return theme.dimensions.CONTROL_HEIGHT_LG;
     case 'MD':
     default:
-      return theme.dimensions.CONTROL_HEIGHT
+      return theme.dimensions.CONTROL_HEIGHT;
   }
-}
+};
 
 const resolveIconSize = (theme: StyledTheme, size?: IconSizeValue) => {
   if (typeof size === 'number') {
-    return size
+    return size;
   }
-  const token = size || 'MD'
+  const token = size || 'MD';
   switch (token) {
     case 'SM':
-      return theme.dimensions.ICON_SM
+      return theme.dimensions.ICON_SM;
     case 'LG':
-      return theme.dimensions.ICON_LG
+      return theme.dimensions.ICON_LG;
     case 'XL':
-      return theme.dimensions.ICON_XL
+      return theme.dimensions.ICON_XL;
     case 'XXL':
-      return theme.dimensions.ICON_XXL
+      return theme.dimensions.ICON_XXL;
     case 'XXXL':
-      return theme.dimensions.ICON_XXXL
+      return theme.dimensions.ICON_XXXL;
     case 'MD':
     default:
-      return theme.dimensions.ICON_MD
+      return theme.dimensions.ICON_MD;
   }
-}
+};
 
-type FontWeightScale = StyledTheme['fontWeight']
-type FontWeightToken = keyof FontWeightScale
+type FontWeightScale = StyledTheme['fontWeight'];
+type FontWeightToken = keyof FontWeightScale;
 
 const resolveFontWeight = (theme: StyledTheme, value?: FontWeightToken | number) => {
   if (typeof value === 'number') {
-    return value
+    return value;
   }
-  const token = (value || 'SEMIBOLD') as FontWeightToken
-  return theme.fontWeight[token]
-}
+  const token = (value || 'SEMIBOLD') as FontWeightToken;
+  return theme.fontWeight[token];
+};
 
-type DimensionScale = StyledTheme['dimensions']
-type DimensionToken = keyof DimensionScale
+type DimensionScale = StyledTheme['dimensions'];
+type DimensionToken = keyof DimensionScale;
 
 const resolveDimensionValue = (
   theme: StyledTheme,
   value?: DimensionToken | number,
-  fallback: DimensionToken = 'ICON_SM',
+  fallback: DimensionToken = 'ICON_SM'
 ) => {
   if (typeof value === 'number') {
-    return value
+    return value;
   }
-  const token = (value || fallback) as DimensionToken
-  return theme.dimensions[token]
-}
+  const token = (value || fallback) as DimensionToken;
+  return theme.dimensions[token];
+};
 
 const fullWidthControlStyles = css`
   width: 100%;
-`
+`;
 
-const PasswordInput = Input.Password
-const TextAreaInput = Input.TextArea
+const PasswordInput = Input.Password;
+const TextAreaInput = Input.TextArea;
 
 export const PageContainer = styled.div.attrs({ className: 'page-container' })`
   width: 100%;
-`
+`;
 
-const BasePageCard = styled(Card).attrs({ className: 'page-card' })``
+const BasePageCard = styled(Card).attrs({ className: 'page-card' })``;
 
-export const PageCard = BasePageCard
-export const FilterCard = BasePageCard
-export const TableCard = BasePageCard
-export const SectionCard = BasePageCard
+export const PageCard = BasePageCard;
+export const FilterCard = BasePageCard;
+export const TableCard = BasePageCard;
+export const SectionCard = BasePageCard;
 
 // ============================================
 // TABLE PRIMITIVES
 // ============================================
 
 export const ExpandIcon = styled(RightOutlined)<{
-  $expanded?: boolean
-  $visible?: boolean
-  $color?: string
-  $size?: DimensionToken | number
+  $expanded?: boolean;
+  $visible?: boolean;
+  $color?: string;
+  $size?: DimensionToken | number;
 }>`
   font-size: ${({ theme, $size }) => `${resolveDimensionValue(theme, $size)}px`};
   color: ${({ theme, $color }) => $color || theme.colors.textTertiary};
@@ -289,28 +287,28 @@ export const ExpandIcon = styled(RightOutlined)<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-`
+`;
 
 export const TableContainer = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   overflow: hidden;
   background: ${({ theme }) => theme.colors.bgPrimary};
-`
+`;
 
 export const TableCellContent = styled.span<{ $gap?: SpacingValue }>`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'SM')}px;
-`
+`;
 
 export const TableCellText = styled.span<{
-  $muted?: boolean
-  $weight?: FontWeightToken | number
+  $muted?: boolean;
+  $weight?: FontWeightToken | number;
 }>`
   font-weight: ${({ theme, $weight }) => resolveFontWeight(theme, $weight)};
   color: ${({ theme, $muted }) => ($muted ? theme.colors.textSecondary : theme.colors.textPrimary)};
-`
+`;
 
 // ============================================
 // FILTER COMPONENTS
@@ -320,27 +318,27 @@ export const FiltersCard = styled(Card)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-`
+`;
 
 export const FiltersGrid = styled(Space).attrs({ size: 8, wrap: true })`
   width: 100%;
-`
+`;
 
 export const FilterSelect = styled(Select)<{ $minWidth?: number }>`
   min-width: ${({ $minWidth }) => ($minWidth ? `${$minWidth}px` : '150px')};
-`
+`;
 
 export const FilterRangePicker = styled(DatePicker.RangePicker)`
   min-width: 220px;
-`
+`;
 
 export const FilterInput = styled(Input)`
   min-width: 200px;
-`
+`;
 
 export const FilterCheckbox = styled(Checkbox)`
   margin-left: ${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 // ============================================
 // STATS COMPONENTS
@@ -349,18 +347,18 @@ export const FilterCheckbox = styled(Checkbox)`
 export const StatsBar = styled(Space).attrs({ size: 12 })`
   align-items: center;
   flex-wrap: wrap;
-`
+`;
 
 export const StatItem = styled(Space).attrs({ size: 4 })`
   align-items: center;
-`
+`;
 
 export const StatLabel = styled(Text)`
   && {
     font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 export const StatValue = styled(Text)<{ $color?: string }>`
   && {
@@ -368,33 +366,33 @@ export const StatValue = styled(Text)<{ $color?: string }>`
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
     color: ${({ $color, theme }) => $color || theme.colors.textPrimary};
   }
-`
+`;
 
 export const StatDivider = styled.span`
   display: inline-block;
   width: 1px;
   height: 16px;
   background-color: ${({ theme }) => theme.colors.borderSecondary};
-`
+`;
 
 export const StatIcon = styled.span<{ $color?: string }>`
   display: inline-flex;
   align-items: center;
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
   color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
-`
+`;
 
 export const TabLabel = styled.span`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 export const TabCount = styled(Badge)<{ $color?: string }>`
   .ant-scroll-number {
     background-color: ${({ $color, theme }) => $color || theme.colors.primary};
   }
-`
+`;
 
 // ============================================
 // EMPTY STATE COMPONENTS
@@ -402,19 +400,19 @@ export const TabCount = styled(Badge)<{ $color?: string }>`
 
 export const PaddedEmpty = styled(Empty)`
   padding: ${({ theme }) => theme.spacing['5']}px 0;
-`
+`;
 
 export const EmptyStateWrapper = styled.div`
   padding: ${({ theme }) => theme.spacing['5']}px 0;
   text-align: center;
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 export const EmptyStatePanel = styled(PaddedEmpty)<{
-  $align?: 'center' | 'flex-start'
-  $gap?: SpacingValue
-  $marginTop?: SpacingValue
-  $marginBottom?: SpacingValue
+  $align?: 'center' | 'flex-start';
+  $gap?: SpacingValue;
+  $marginTop?: SpacingValue;
+  $marginBottom?: SpacingValue;
 }>`
   && {
     display: flex;
@@ -423,23 +421,21 @@ export const EmptyStatePanel = styled(PaddedEmpty)<{
     align-items: ${({ $align = 'center' }) => $align};
     text-align: ${({ $align = 'center' }) => ($align === 'center' ? 'center' : 'left')};
     ${({ theme, $marginTop }) =>
-      $marginTop !== undefined
-        ? `margin-top: ${resolveSpacingValue(theme, $marginTop)}px;`
-        : ''}
+      $marginTop !== undefined ? `margin-top: ${resolveSpacingValue(theme, $marginTop)}px;` : ''}
     ${({ theme, $marginBottom }) =>
       $marginBottom !== undefined
         ? `margin-bottom: ${resolveSpacingValue(theme, $marginBottom)}px;`
         : ''}
   }
-`
+`;
 
 export const LoadingState = styled.div<{
-  $paddingY?: SpacingValue
-  $gap?: SpacingValue
-  $align?: 'flex-start' | 'center'
-  $justify?: 'flex-start' | 'center'
-  $textAlign?: 'left' | 'center'
-  $muted?: boolean
+  $paddingY?: SpacingValue;
+  $gap?: SpacingValue;
+  $align?: 'flex-start' | 'center';
+  $justify?: 'flex-start' | 'center';
+  $textAlign?: 'left' | 'center';
+  $muted?: boolean;
 }>`
   display: flex;
   flex-direction: column;
@@ -450,14 +446,14 @@ export const LoadingState = styled.div<{
   gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'SM')}px;
   color: ${({ theme, $muted = true }) =>
     $muted ? theme.colors.textSecondary : theme.colors.textPrimary};
-`
+`;
 
 export const SectionStack = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.MD}px;
   margin-bottom: ${({ theme }) => theme.spacing.PAGE_SECTION_GAP}px;
-`
+`;
 
 const FlexColumn = styled.div<{ $gap?: SpacingValue; $align?: string; $justify?: string }>`
   display: flex;
@@ -466,9 +462,9 @@ const FlexColumn = styled.div<{ $gap?: SpacingValue; $align?: string; $justify?:
   gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'MD')}px;
   align-items: ${({ $align }) => $align || 'stretch'};
   justify-content: ${({ $justify }) => $justify || 'flex-start'};
-`
+`;
 
-export const NeutralStack = styled(FlexColumn)``
+export const NeutralStack = styled(FlexColumn)``;
 
 export const SectionHeaderRow = styled.div`
   display: flex;
@@ -476,7 +472,7 @@ export const SectionHeaderRow = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const ControlStack = styled.div`
   display: flex;
@@ -484,24 +480,24 @@ export const ControlStack = styled.div`
   min-width: 0;
   gap: ${({ theme }) => theme.spacing.MD}px;
   align-items: center;
-`
+`;
 
 export const InputSlot = styled.div`
   flex: 1 1 280px;
   min-width: 240px;
-`
+`;
 
 export const ActionBar = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.SM}px;
   justify-content: flex-end;
-`
+`;
 
 const ButtonSurface = styled(Button)<{
-  $variant?: ButtonVariant
-  $size?: ButtonSize
-  $minWidth?: number
+  $variant?: ButtonVariant;
+  $size?: ButtonSize;
+  $minWidth?: number;
 }>`
   && {
     display: inline-flex;
@@ -543,15 +539,15 @@ const ButtonSurface = styled(Button)<{
       `}
     }
   }
-`
+`;
 
 export const PrimaryButton = styled(ButtonSurface).attrs({
   $variant: 'primary',
-})``
+})``;
 
 export const SecondaryButton = styled(ButtonSurface).attrs({
   $variant: 'secondary',
-})``
+})``;
 
 export const ActionButton = styled(ButtonSurface).attrs({
   $variant: 'secondary',
@@ -559,7 +555,7 @@ export const ActionButton = styled(ButtonSurface).attrs({
   && {
     min-width: ${DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT}px;
   }
-`
+`;
 
 export const CardTitle = styled(Text)`
   && {
@@ -568,7 +564,7 @@ export const CardTitle = styled(Text)`
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
     color: ${({ theme }) => theme.colors.textPrimary};
   }
-`
+`;
 
 export const HelperText = styled(Text)`
   && {
@@ -576,7 +572,7 @@ export const HelperText = styled(Text)`
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 export const CaptionText = styled(Text)<{ $muted?: boolean; $size?: number }>`
   && {
@@ -585,7 +581,7 @@ export const CaptionText = styled(Text)<{ $muted?: boolean; $size?: number }>`
       $size !== undefined ? `${$size}px` : `${theme.fontSize.CAPTION}px`};
     color: ${({ theme, $muted }) => ($muted ? theme.colors.textSecondary : theme.colors.textPrimary)};
   }
-`
+`;
 
 export const MutedCaption = styled(Text)`
   && {
@@ -593,7 +589,7 @@ export const MutedCaption = styled(Text)`
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 export const EmptyStateTitle = styled(Text)`
   && {
@@ -602,7 +598,7 @@ export const EmptyStateTitle = styled(Text)`
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
     color: ${({ theme }) => theme.colors.textPrimary};
   }
-`
+`;
 
 export const EmptyStateDescription = styled(Text)`
   && {
@@ -610,7 +606,7 @@ export const EmptyStateDescription = styled(Text)`
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 export const FormLabel = styled(Text)`
   && {
@@ -618,11 +614,11 @@ export const FormLabel = styled(Text)`
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
     color: ${({ theme }) => theme.colors.textPrimary};
   }
-`
+`;
 
 export const ContentSection = styled.div`
   min-height: 400px;
-`
+`;
 
 export const StatusBadge = styled.span<{ $variant?: StatusVariant }>`
   display: inline-flex;
@@ -637,7 +633,7 @@ export const StatusBadge = styled.span<{ $variant?: StatusVariant }>`
   border: 1px solid ${({ theme, $variant }) => resolveStatusTokens($variant, theme).border};
   line-height: 1;
   text-transform: none;
-`
+`;
 
 export const StatusTag = styled(Tag)<{ $variant?: StatusVariant }>`
   && {
@@ -650,12 +646,12 @@ export const StatusTag = styled(Tag)<{ $variant?: StatusVariant }>`
     align-items: center;
     gap: ${({ theme }) => theme.spacing.XS}px;
   }
-`
+`;
 
 export const PillTag = styled(Tag)<{
-  $variant?: TagVariant
-  $size?: TagSize
-  $borderless?: boolean
+  $variant?: TagVariant;
+  $size?: TagSize;
+  $borderless?: boolean;
 }>`
   && {
     display: inline-flex;
@@ -671,7 +667,7 @@ export const PillTag = styled(Tag)<{
       $borderless ? 'none' : `1px solid ${resolveTagVariantTokens($variant, theme).border}`};
     line-height: 1.2;
   }
-`
+`;
 
 export const StyledIcon = styled.span<{ $size?: IconSizeValue; $color?: string; $rotate?: number }>`
   display: inline-flex;
@@ -681,7 +677,7 @@ export const StyledIcon = styled.span<{ $size?: IconSizeValue; $color?: string; 
   color: ${({ $color }) => $color || 'inherit'};
   line-height: 1;
   ${({ $rotate }) => ($rotate ? `transform: rotate(${$rotate}deg);` : '')}
-`
+`;
 
 export const IconButton = styled(Button)`
   width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
@@ -703,14 +699,14 @@ export const IconButton = styled(Button)`
   .anticon {
     font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
   }
-`
+`;
 
 export const CompactIconButton = styled(IconButton)`
   width: ${({ theme }) => theme.spacing['5']}px;
   height: ${({ theme }) => theme.spacing['5']}px;
   min-width: ${({ theme }) => theme.spacing['5']}px;
   min-height: ${({ theme }) => theme.spacing['5']}px;
-`
+`;
 
 export const PrimaryIconButton = styled(Button)`
   min-width: ${({ theme }) => theme.spacing['6']}px;
@@ -729,7 +725,7 @@ export const PrimaryIconButton = styled(Button)`
     border-color: ${({ theme }) => theme.colors.primaryHover};
     color: ${({ theme }) => theme.colors.bgPrimary};
   }
-`
+`;
 
 export const SecondaryIconButton = styled(Button)`
   min-width: ${({ theme }) => theme.spacing['6']}px;
@@ -739,12 +735,12 @@ export const SecondaryIconButton = styled(Button)`
   justify-content: center;
   color: ${({ theme }) => theme.colors.textPrimary};
   border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-`
+`;
 
 export const CompactButton = styled(Button)`
   min-width: ${({ theme }) => theme.spacing['5']}px;
   min-height: ${({ theme }) => theme.spacing['5']}px;
-`
+`;
 
 export const BaseModal = styled(Modal)`
   .ant-modal-content {
@@ -777,47 +773,50 @@ export const BaseModal = styled(Modal)`
     align-items: center;
     gap: ${({ theme }) => theme.spacing.SM}px;
   }
-`
+`;
 
 export const ModalHeader = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const ModalTitle = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.XS}px;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 export const ModalSubtitle = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: ${({ theme }) => theme.fontSize.SM}px;
-`
+`;
 
 export const ModalBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.LG}px;
-`
+`;
 
 export const ModalContentStack = styled.div<{ $gap?: SpacingValue }>`
   display: flex;
   flex-direction: column;
   gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'LG')}px;
   width: 100%;
-`
+`;
 
-export const ModalFooterActions = styled.div<{ $gap?: SpacingValue; $align?: 'flex-end' | 'space-between' }>`
+export const ModalFooterActions = styled.div<{
+  $gap?: SpacingValue;
+  $align?: 'flex-end' | 'space-between';
+}>`
   display: flex;
   justify-content: ${({ $align = 'flex-end' }) => $align};
   align-items: center;
   gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'SM')}px;
   width: 100%;
-`
+`;
 
 export const ModalTitleRow = styled.div<{ $gap?: SpacingValue }>`
   display: flex;
@@ -826,7 +825,7 @@ export const ModalTitleRow = styled.div<{ $gap?: SpacingValue }>`
   font-size: ${({ theme }) => theme.fontSize.LG}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 // ============================================
 // FORM CONTROL PRIMITIVES
@@ -836,33 +835,33 @@ export const FullWidthInput = styled(Input)`
   && {
     ${fullWidthControlStyles};
   }
-`
+`;
 
 export const FullWidthPasswordInput = styled(PasswordInput)`
   && {
     ${fullWidthControlStyles};
   }
-`
+`;
 
 export const FullWidthTextArea = styled(TextAreaInput)`
   && {
     ${fullWidthControlStyles};
   }
-`
+`;
 
 export const FullWidthInputNumber = styled(InputNumber)`
   && {
     ${fullWidthControlStyles};
   }
-`
+`;
 
 export const FullWidthSelect = styled(Select)`
   && {
     ${fullWidthControlStyles};
   }
-`
+`;
 
-type AlertVariant = 'info' | 'success' | 'warning' | 'error' | 'neutral'
+type AlertVariant = 'info' | 'success' | 'warning' | 'error' | 'neutral';
 
 const resolveAlertColors = (variant: AlertVariant | undefined, theme: StyledTheme) => {
   switch (variant) {
@@ -871,34 +870,34 @@ const resolveAlertColors = (variant: AlertVariant | undefined, theme: StyledThem
         bg: theme.colors.bgSuccess,
         border: theme.colors.success,
         color: theme.colors.success,
-      }
+      };
     case 'warning':
       return {
         bg: theme.colors.bgWarning,
         border: theme.colors.warning,
         color: theme.colors.warning,
-      }
+      };
     case 'error':
       return {
         bg: theme.colors.bgError,
         border: theme.colors.error,
         color: theme.colors.error,
-      }
+      };
     case 'info':
       return {
         bg: theme.colors.bgInfo,
         border: theme.colors.info,
         color: theme.colors.info,
-      }
+      };
     case 'neutral':
     default:
       return {
         bg: theme.colors.bgSecondary,
         border: theme.colors.borderSecondary,
         color: theme.colors.textSecondary,
-      }
+      };
   }
-}
+};
 
 export const AlertCard = styled(Alert)<{ $variant?: AlertVariant }>`
   && {
@@ -912,7 +911,7 @@ export const AlertCard = styled(Alert)<{ $variant?: AlertVariant }>`
       color: ${({ theme, $variant }) => resolveAlertColors($variant, theme).color};
     }
   }
-`
+`;
 
 export const BaseTable = styled(GenericTable)<{ $isInteractive?: boolean }>`
   border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
@@ -941,4 +940,4 @@ export const BaseTable = styled(GenericTable)<{ $isInteractive?: boolean }>`
     }
   `
       : ''}
-`
+`;

@@ -1,16 +1,16 @@
-import React, { type ReactNode } from 'react'
+import React, { type ReactNode } from 'react';
 import {
   DatabaseOutlined,
   CloudServerOutlined,
   HddOutlined,
   CopyOutlined,
   HistoryOutlined,
-  RightOutlined
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import type { Machine, MachineAssignmentType } from '@/types'
-import { useMachineAssignmentStatus } from '@/api/queries/distributedStorage'
-import MachineAssignmentStatusBadge from '../../MachineAssignmentStatusBadge'
+  RightOutlined,
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import type { Machine, MachineAssignmentType } from '@/types';
+import { useMachineAssignmentStatus } from '@/api/queries/distributedStorage';
+import MachineAssignmentStatusBadge from '../../MachineAssignmentStatusBadge';
 import {
   LoadingState,
   SectionDivider,
@@ -23,53 +23,53 @@ import {
   AlertMessage,
   ActionsRow,
   ActionButton,
-  ButtonLabel
-} from './styles'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
-import { IconWrapper } from '@/components/ui'
+  ButtonLabel,
+} from './styles';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { IconWrapper } from '@/components/ui';
 
 interface DistributedStorageSectionProps {
-  machine: Machine
-  onViewDetails?: () => void
-  onManageAssignment?: () => void
+  machine: Machine;
+  onViewDetails?: () => void;
+  onManageAssignment?: () => void;
 }
 
 const getAssignmentIcon = (assignmentType: MachineAssignmentType): ReactNode => {
   switch (assignmentType) {
     case 'CLUSTER':
-      return <DatabaseOutlined />
+      return <DatabaseOutlined />;
     case 'IMAGE':
-      return <HddOutlined />
+      return <HddOutlined />;
     case 'CLONE':
-      return <CopyOutlined />
+      return <CopyOutlined />;
     case 'AVAILABLE':
     default:
-      return <CloudServerOutlined />
+      return <CloudServerOutlined />;
   }
-}
+};
 
 export const DistributedStorageSection: React.FC<DistributedStorageSectionProps> = ({
   machine,
   onViewDetails,
   onManageAssignment,
 }) => {
-  const { t } = useTranslation(['distributedStorage', 'machines'])
+  const { t } = useTranslation(['distributedStorage', 'machines']);
 
-  const hasClusterAssignment = Boolean(machine.distributedStorageClusterName)
+  const hasClusterAssignment = Boolean(machine.distributedStorageClusterName);
 
   const { data: assignmentData, isLoading } = useMachineAssignmentStatus(
     machine.machineName,
     machine.teamName,
     !hasClusterAssignment
-  )
+  );
 
   const assignmentType: MachineAssignmentType = hasClusterAssignment
     ? 'CLUSTER'
-    : ((assignmentData?.assignmentType as MachineAssignmentType) ?? 'AVAILABLE')
+    : ((assignmentData?.assignmentType as MachineAssignmentType) ?? 'AVAILABLE');
 
   const assignmentDetails = hasClusterAssignment
     ? `Assigned to cluster: ${machine.distributedStorageClusterName}`
-    : assignmentData?.assignmentDetails
+    : assignmentData?.assignmentDetails;
 
   if (isLoading) {
     return (
@@ -78,10 +78,10 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
           <div />
         </LoadingWrapper>
       </LoadingState>
-    )
+    );
   }
 
-  const showAssignmentAlert = assignmentType !== 'AVAILABLE' && Boolean(assignmentDetails)
+  const showAssignmentAlert = assignmentType !== 'AVAILABLE' && Boolean(assignmentDetails);
 
   return (
     <>
@@ -169,5 +169,5 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
         </ContentStack>
       </SectionCard>
     </>
-  )
-}
+  );
+};

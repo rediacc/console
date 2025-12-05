@@ -1,6 +1,6 @@
-import styled from 'styled-components'
-import { Badge, Button, Space, Tag } from 'antd'
-import { CopyOutlined, CloudUploadOutlined } from '@ant-design/icons'
+import styled from 'styled-components';
+import { Badge, Button, Space, Tag } from 'antd';
+import { CopyOutlined, CloudUploadOutlined } from '@ant-design/icons';
 import {
   EmptyStateWrapper,
   IconButton as BaseIconButton,
@@ -8,7 +8,7 @@ import {
   TableCellContent,
   TableCellText,
   StyledIcon,
-} from '@/styles/primitives'
+} from '@/styles/primitives';
 
 export const Container = styled.div`
   padding: ${({ theme }) =>
@@ -18,20 +18,20 @@ export const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const Title = styled.h5`
   margin: 0;
   font-size: ${({ theme }) => theme.fontSize.H5}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 export const ActionsRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const CreateButton = styled(Button)`
   && {
@@ -41,9 +41,9 @@ export const CreateButton = styled(Button)`
     align-items: center;
     justify-content: center;
   }
-`
+`;
 
-export const TableWrapper = styled(BaseTableContainer)``
+export const TableWrapper = styled(BaseTableContainer)``;
 
 export const IconActionButton = styled(BaseIconButton)`
   && {
@@ -60,29 +60,29 @@ export const IconActionButton = styled(BaseIconButton)`
       background: var(--color-fill-tertiary);
     }
   }
-`
+`;
 
 export const ExpandButton = styled(IconActionButton)`
   margin-right: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
-export const NameCell = styled(TableCellContent)``
+export const NameCell = styled(TableCellContent)``;
 
 export const CloneIcon = styled(StyledIcon).attrs(({ theme }) => ({
   as: CopyOutlined,
   $size: 'MD',
   $color: theme.colors.textSecondary,
-}))``
+}))``;
 
 export const CloneName = styled(TableCellText)`
   font-size: ${({ theme }) => theme.fontSize.BASE}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
-`
+`;
 
 export const VaultTag = styled(Tag)`
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-`
+`;
 
 export const MachineCountBadgeWrapper = styled(Badge)<{ $active?: boolean }>`
   .ant-badge-count {
@@ -96,50 +96,50 @@ export const MachineCountBadgeWrapper = styled(Badge)<{ $active?: boolean }>`
   .anticon {
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 export const MachineListWrapper = styled.div`
   padding: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const MachineListStack = styled(Space).attrs({
   orientation: 'vertical',
   size: 'middle',
 })`
   width: 100%;
-`
+`;
 
 export const MachineListHeader = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const MachineCountTag = styled(Tag)`
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   background: var(--color-fill-tertiary);
-`
+`;
 
 export const MachineTagGrid = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 export const MachineTag = styled(Tag)`
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   padding: 0 ${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 export const MachineListButton = styled(Button)`
   && {
     align-self: flex-start;
   }
-`
+`;
 
 export const MachineListActions = styled(Space)`
   width: 100%;
-`
+`;
 
 export const EmptyState = styled(EmptyStateWrapper)`
   padding: ${({ theme }) => `${theme.spacing.LG}px ${theme.spacing.MD}px`};
@@ -147,15 +147,15 @@ export const EmptyState = styled(EmptyStateWrapper)`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.SM}px;
   align-items: center;
-`
+`;
 
 export const AssignButton = styled(Button)`
   && {
     min-width: ${({ theme }) => theme.spacing['6']}px;
   }
-`
+`;
 
 export const RemoteIcon = styled(StyledIcon).attrs(({ theme }) => ({
   as: CloudUploadOutlined,
   $size: theme.fontSize.BASE,
-}))``
+}))``;

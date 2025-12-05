@@ -1,7 +1,7 @@
-import React from 'react'
-import { Empty, Typography } from 'antd'
-import { TeamOutlined, CloudServerOutlined } from '@ant-design/icons'
-import { useTranslation } from 'react-i18next'
+import React from 'react';
+import { Empty, Typography } from 'antd';
+import { TeamOutlined, CloudServerOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import {
   useCloneMachines,
   type DistributedStorageRbdClone,
@@ -9,7 +9,7 @@ import {
   type DistributedStorageRbdImage,
   type DistributedStoragePool,
   type CloneMachine,
-} from '@/api/queries/distributedStorage'
+} from '@/api/queries/distributedStorage';
 import {
   AssignButton,
   EmptyState,
@@ -20,17 +20,17 @@ import {
   MachineListWrapper,
   MachineTag,
   MachineTagGrid,
-} from '../styles'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
+} from '../styles';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 interface CloneMachineTableProps {
-  clone: DistributedStorageRbdClone
-  snapshot: DistributedStorageRbdSnapshot
-  image: DistributedStorageRbdImage
-  pool: DistributedStoragePool
-  onManageMachines: (clone: DistributedStorageRbdClone) => void
+  clone: DistributedStorageRbdClone;
+  snapshot: DistributedStorageRbdSnapshot;
+  image: DistributedStorageRbdImage;
+  pool: DistributedStoragePool;
+  onManageMachines: (clone: DistributedStorageRbdClone) => void;
 }
 
 export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
@@ -40,15 +40,15 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
   pool,
   onManageMachines,
 }) => {
-  const { t } = useTranslation(['distributedStorage', 'machines'])
+  const { t } = useTranslation(['distributedStorage', 'machines']);
   const { data: machines = [], isLoading } = useCloneMachines(
     clone.cloneName,
     snapshot.snapshotName,
     image.imageName,
     pool.poolName,
     pool.teamName,
-    true,
-  )
+    true
+  );
 
   if (isLoading) {
     return (
@@ -57,7 +57,7 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
           <div />
         </LoadingWrapper>
       </MachineListWrapper>
-    )
+    );
   }
 
   if (machines.length === 0) {
@@ -75,7 +75,7 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
           </AssignButton>
         </EmptyState>
       </MachineListWrapper>
-    )
+    );
   }
 
   return (
@@ -111,5 +111,5 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
         </MachineListButton>
       </MachineListStack>
     </MachineListWrapper>
-  )
-}
+  );
+};

@@ -1,8 +1,8 @@
-import React, { lazy, Suspense } from 'react'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
-import type { AuditTraceModalProps } from './AuditTraceModal'
+import React, { lazy, Suspense } from 'react';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import type { AuditTraceModalProps } from './AuditTraceModal';
 
-const LazyAuditTraceModal = lazy(() => import('./AuditTraceModal'))
+const LazyAuditTraceModal = lazy(() => import('./AuditTraceModal'));
 
 const AuditTraceModal: React.FC<AuditTraceModalProps> = (props) => (
   <Suspense
@@ -14,7 +14,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = (props) => (
   >
     <LazyAuditTraceModal {...props} />
   </Suspense>
-)
+);
 
-export type { AuditTraceModalProps }
-export default AuditTraceModal
+export type { AuditTraceModalProps };
+export default AuditTraceModal;

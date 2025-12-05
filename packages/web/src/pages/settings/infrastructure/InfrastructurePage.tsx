@@ -1,5 +1,22 @@
-import React, { useState, useMemo } from 'react'
-import { Button, Tooltip, Space, Tag, Card, Row, Col, Table, Modal, Alert, Typography, Popconfirm, Result, Empty, Form, Checkbox } from 'antd'
+import React, { useState, useMemo } from 'react';
+import {
+  Button,
+  Tooltip,
+  Space,
+  Tag,
+  Card,
+  Row,
+  Col,
+  Table,
+  Modal,
+  Alert,
+  Typography,
+  Popconfirm,
+  Result,
+  Empty,
+  Form,
+  Checkbox,
+} from 'antd';
 import {
   EnvironmentOutlined,
   ApiOutlined,
@@ -12,15 +29,15 @@ import {
   DesktopOutlined,
   CloudServerOutlined,
   CheckCircleOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import ResourceListView from '@/components/common/ResourceListView'
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
-import AuditTraceModal from '@/components/common/AuditTraceModal'
-import { useDialogState, useTraceModal } from '@/hooks/useDialogState'
-import { ModalSize } from '@/types/modal'
-import { featureFlags } from '@/config/featureFlags'
-import type { ColumnsType } from 'antd/es/table'
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import ResourceListView from '@/components/common/ResourceListView';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import { ModalSize } from '@/types/modal';
+import { featureFlags } from '@/config/featureFlags';
+import type { ColumnsType } from 'antd/es/table';
 import {
   useRegions,
   useCreateRegion,
@@ -28,7 +45,7 @@ import {
   useDeleteRegion,
   useUpdateRegionVault,
   Region,
-} from '@/api/queries/regions'
+} from '@/api/queries/regions';
 import {
   useBridges,
   useCreateBridge,
@@ -37,7 +54,7 @@ import {
   useUpdateBridgeVault,
   useResetBridgeAuthorization,
   Bridge,
-} from '@/api/queries/bridges'
+} from '@/api/queries/bridges';
 import {
   PageWrapper,
   SectionStack,
@@ -53,125 +70,133 @@ import {
   ModalStack,
   ModalStackLarge,
   ErrorWrapper,
-} from '@/components/ui'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
+} from '@/components/ui';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {
   ModalAlert,
   TokenCopyRow,
   FullWidthInput,
   ACTIONS_COLUMN_WIDTH,
-} from '@/pages/system/styles'
-import { useSelector } from 'react-redux'
-import { RootState } from '@/store/store'
-import { createSorter } from '@/core'
+} from '@/pages/system/styles';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { createSorter } from '@/core';
 
 const InfrastructurePage: React.FC = () => {
-  const { t } = useTranslation('resources')
-  const { t: tSystem } = useTranslation('system')
-  const { t: tCommon } = useTranslation('common')
-  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
+  const { t } = useTranslation('resources');
+  const { t: tSystem } = useTranslation('system');
+  const { t: tCommon } = useTranslation('common');
+  const uiMode = useSelector((state: RootState) => state.ui.uiMode);
 
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
-  const bridgeCredentialsModal = useDialogState<Bridge>()
-  const resetAuthModal = useDialogState<{ bridgeName: string; regionName: string; isCloudManaged: boolean }>()
-  const auditTrace = useTraceModal()
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const bridgeCredentialsModal = useDialogState<Bridge>();
+  const resetAuthModal = useDialogState<{
+    bridgeName: string;
+    regionName: string;
+    isCloudManaged: boolean;
+  }>();
+  const auditTrace = useTraceModal();
   const [unifiedModalState, setUnifiedModalState] = useState<{
-    open: boolean
-    resourceType: 'region' | 'bridge'
-    mode: 'create' | 'edit'
+    open: boolean;
+    resourceType: 'region' | 'bridge';
+    mode: 'create' | 'edit';
+    data?: Partial<Region> | Partial<Bridge> | null;
+  }>({ open: false, resourceType: 'region', mode: 'create' });
+
+  const { data: regions, isLoading: regionsLoading } = useRegions(true);
+  const regionsList: Region[] = useMemo(() => regions || [], [regions]);
+
+  const effectiveRegion = selectedRegion ?? regionsList[0]?.regionName ?? null;
+
+  const { data: bridges, isLoading: bridgesLoading } = useBridges(effectiveRegion || undefined);
+  const bridgesList: Bridge[] = useMemo(() => bridges || [], [bridges]);
+
+  const createRegionMutation = useCreateRegion();
+  const updateRegionNameMutation = useUpdateRegionName();
+  const deleteRegionMutation = useDeleteRegion();
+  const updateRegionVaultMutation = useUpdateRegionVault();
+
+  const createBridgeMutation = useCreateBridge();
+  const updateBridgeNameMutation = useUpdateBridgeName();
+  const deleteBridgeMutation = useDeleteBridge();
+  const updateBridgeVaultMutation = useUpdateBridgeVault();
+  const resetBridgeAuthMutation = useResetBridgeAuthorization();
+
+  const openUnifiedModal = (
+    resourceType: 'region' | 'bridge',
+    mode: 'create' | 'edit',
     data?: Partial<Region> | Partial<Bridge> | null
-  }>({ open: false, resourceType: 'region', mode: 'create' })
-
-  const { data: regions, isLoading: regionsLoading } = useRegions(true)
-  const regionsList: Region[] = useMemo(() => regions || [], [regions])
-
-  const effectiveRegion = selectedRegion ?? regionsList[0]?.regionName ?? null
-
-  const { data: bridges, isLoading: bridgesLoading } = useBridges(effectiveRegion || undefined)
-  const bridgesList: Bridge[] = useMemo(() => bridges || [], [bridges])
-
-  const createRegionMutation = useCreateRegion()
-  const updateRegionNameMutation = useUpdateRegionName()
-  const deleteRegionMutation = useDeleteRegion()
-  const updateRegionVaultMutation = useUpdateRegionVault()
-
-  const createBridgeMutation = useCreateBridge()
-  const updateBridgeNameMutation = useUpdateBridgeName()
-  const deleteBridgeMutation = useDeleteBridge()
-  const updateBridgeVaultMutation = useUpdateBridgeVault()
-  const resetBridgeAuthMutation = useResetBridgeAuthorization()
-
-  const openUnifiedModal = (resourceType: 'region' | 'bridge', mode: 'create' | 'edit', data?: Partial<Region> | Partial<Bridge> | null) => {
-    setUnifiedModalState({ open: true, resourceType, mode, data })
-  }
+  ) => {
+    setUnifiedModalState({ open: true, resourceType, mode, data });
+  };
 
   const closeUnifiedModal = () => {
-    setUnifiedModalState({ open: false, resourceType: 'region', mode: 'create', data: null })
-  }
+    setUnifiedModalState({ open: false, resourceType: 'region', mode: 'create', data: null });
+  };
 
   type UnifiedFormData = {
-    regionName?: string
-    bridgeName?: string
-    regionVault?: string
-    bridgeVault?: string
-    vaultVersion?: number
-    [key: string]: unknown
-  }
+    regionName?: string;
+    bridgeName?: string;
+    regionVault?: string;
+    bridgeVault?: string;
+    vaultVersion?: number;
+    [key: string]: unknown;
+  };
 
   const handleUnifiedModalSubmit = async (data: UnifiedFormData) => {
     try {
       switch (unifiedModalState.resourceType) {
         case 'region':
           if (unifiedModalState.mode === 'create') {
-            await createRegionMutation.mutateAsync(data)
+            await createRegionMutation.mutateAsync(data);
           } else if (unifiedModalState.data) {
             if (data.regionName !== unifiedModalState.data.regionName) {
               await updateRegionNameMutation.mutateAsync({
                 currentRegionName: unifiedModalState.data.regionName,
                 newRegionName: data.regionName,
-              })
+              });
             }
-            const vaultData = data.regionVault
+            const vaultData = data.regionVault;
             if (vaultData && vaultData !== unifiedModalState.data.vaultContent) {
               await updateRegionVaultMutation.mutateAsync({
                 regionName: data.regionName || unifiedModalState.data.regionName,
                 regionVault: vaultData,
                 vaultVersion: unifiedModalState.data.vaultVersion + 1,
-              })
+              });
             }
           }
-          break
+          break;
         case 'bridge':
           if (unifiedModalState.mode === 'create') {
-            await createBridgeMutation.mutateAsync(data)
+            await createBridgeMutation.mutateAsync(data);
           } else if (unifiedModalState.data) {
             if (data.bridgeName !== unifiedModalState.data.bridgeName) {
               await updateBridgeNameMutation.mutateAsync({
                 regionName: unifiedModalState.data.regionName,
                 currentBridgeName: unifiedModalState.data.bridgeName,
                 newBridgeName: data.bridgeName,
-              })
+              });
             }
-            const vaultData = data.bridgeVault
+            const vaultData = data.bridgeVault;
             if (vaultData && vaultData !== unifiedModalState.data.vaultContent) {
               await updateBridgeVaultMutation.mutateAsync({
                 regionName: data.regionName || unifiedModalState.data.regionName,
                 bridgeName: data.bridgeName || unifiedModalState.data.bridgeName,
                 bridgeVault: vaultData,
                 vaultVersion: unifiedModalState.data.vaultVersion + 1,
-              })
+              });
             }
           }
-          break
+          break;
       }
-      closeUnifiedModal()
+      closeUnifiedModal();
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleUnifiedVaultUpdate = async (vault: string, version: number) => {
-    if (!unifiedModalState.data) return
+    if (!unifiedModalState.data) return;
 
     try {
       if (unifiedModalState.resourceType === 'region') {
@@ -179,57 +204,57 @@ const InfrastructurePage: React.FC = () => {
           regionName: unifiedModalState.data.regionName,
           regionVault: vault,
           vaultVersion: version,
-        })
+        });
       } else {
         await updateBridgeVaultMutation.mutateAsync({
           regionName: unifiedModalState.data.regionName,
           bridgeName: unifiedModalState.data.bridgeName,
           bridgeVault: vault,
           vaultVersion: version,
-        })
+        });
       }
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleDeleteRegion = async (regionName: string) => {
     try {
-      await deleteRegionMutation.mutateAsync(regionName)
+      await deleteRegionMutation.mutateAsync(regionName);
       if (selectedRegion === regionName) {
-        setSelectedRegion(null)
+        setSelectedRegion(null);
       }
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleDeleteBridge = async (bridge: Bridge) => {
     try {
       await deleteBridgeMutation.mutateAsync({
         regionName: bridge.regionName,
         bridgeName: bridge.bridgeName,
-      })
+      });
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleResetBridgeAuth = async () => {
-    const data = resetAuthModal.state.data
-    if (!data) return
+    const data = resetAuthModal.state.data;
+    if (!data) return;
 
     try {
       await resetBridgeAuthMutation.mutateAsync({
         regionName: data.regionName,
         bridgeName: data.bridgeName,
         isCloudManaged: data.isCloudManaged,
-      })
-      resetAuthModal.close()
+      });
+      resetAuthModal.close();
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const regionColumns: ColumnsType<Region> = [
     {
@@ -328,7 +353,7 @@ const InfrastructurePage: React.FC = () => {
         </Space>
       ),
     },
-  ]
+  ];
 
   const bridgeColumns: ColumnsType<Bridge> = [
     {
@@ -385,10 +410,14 @@ const InfrastructurePage: React.FC = () => {
       width: 140,
       sorter: createSorter<Bridge>('managementMode'),
       render: (mode: string) => {
-        if (!mode) return <Tag>{t('bridges.local')}</Tag>
-        const color = mode === 'Cloud' ? 'green' : 'default'
-        const icon = mode === 'Cloud' ? <CloudServerOutlined /> : <DesktopOutlined />
-        return <Tag color={color} icon={icon}>{mode}</Tag>
+        if (!mode) return <Tag>{t('bridges.local')}</Tag>;
+        const color = mode === 'Cloud' ? 'green' : 'default';
+        const icon = mode === 'Cloud' ? <CloudServerOutlined /> : <DesktopOutlined />;
+        return (
+          <Tag color={color} icon={icon}>
+            {mode}
+          </Tag>
+        );
       },
     },
     ...(featureFlags.isEnabled('vaultVersionColumns')
@@ -484,7 +513,7 @@ const InfrastructurePage: React.FC = () => {
         </Space>
       ),
     },
-  ]
+  ];
 
   if (uiMode === 'simple') {
     return (
@@ -492,10 +521,12 @@ const InfrastructurePage: React.FC = () => {
         <Result
           status="403"
           title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
-          subTitle={tSystem('accessControl.expertOnlyMessage', { defaultValue: 'Switch to expert mode to manage infrastructure.' })}
+          subTitle={tSystem('accessControl.expertOnlyMessage', {
+            defaultValue: 'Switch to expert mode to manage infrastructure.',
+          })}
         />
       </PageWrapper>
-    )
+    );
   }
 
   if (!featureFlags.isEnabled('regionsInfrastructure')) {
@@ -503,11 +534,15 @@ const InfrastructurePage: React.FC = () => {
       <PageWrapper>
         <Result
           status="info"
-          title={t('regionsInfrastructure.unavailableTitle', { defaultValue: 'Regions & Infrastructure Disabled' })}
-          subTitle={t('regionsInfrastructure.unavailableDescription', { defaultValue: 'Enable the regionsInfrastructure feature flag to access this page.' })}
+          title={t('regionsInfrastructure.unavailableTitle', {
+            defaultValue: 'Regions & Infrastructure Disabled',
+          })}
+          subTitle={t('regionsInfrastructure.unavailableDescription', {
+            defaultValue: 'Enable the regionsInfrastructure feature flag to access this page.',
+          })}
         />
       </PageWrapper>
-    )
+    );
   }
 
   return (
@@ -546,8 +581,8 @@ const InfrastructurePage: React.FC = () => {
                   type: 'radio',
                   selectedRowKeys: effectiveRegion ? [effectiveRegion] : [],
                   onChange: (selectedRowKeys) => {
-                    const [first] = selectedRowKeys
-                    setSelectedRegion(typeof first === 'string' ? first : null)
+                    const [first] = selectedRowKeys;
+                    setSelectedRegion(typeof first === 'string' ? first : null);
                   },
                 }}
                 onRow={(record: Region) => ({
@@ -582,7 +617,9 @@ const InfrastructurePage: React.FC = () => {
                       <Button
                         type="primary"
                         icon={<PlusOutlined />}
-                        onClick={() => openUnifiedModal('bridge', 'create', { regionName: effectiveRegion })}
+                        onClick={() =>
+                          openUnifiedModal('bridge', 'create', { regionName: effectiveRegion })
+                        }
                         data-testid="system-create-bridge-button"
                         aria-label={t('bridges.createBridge')}
                       />
@@ -591,7 +628,10 @@ const InfrastructurePage: React.FC = () => {
                 </CardHeaderRow>
 
                 {!effectiveRegion ? (
-                  <PaddedEmpty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('regions.selectRegionPrompt')} />
+                  <PaddedEmpty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={t('regions.selectRegionPrompt')}
+                  />
                 ) : (
                   <LoadingWrapper
                     loading={bridgesLoading}
@@ -633,10 +673,10 @@ const InfrastructurePage: React.FC = () => {
           className={ModalSize.Medium}
         >
           {(() => {
-            const bridge = bridgeCredentialsModal.state.data
-            if (!bridge) return null
+            const bridge = bridgeCredentialsModal.state.data;
+            if (!bridge) return null;
 
-            const token = bridge.bridgeCredentials
+            const token = bridge.bridgeCredentials;
 
             if (bridge.hasAccess === 0) {
               return (
@@ -648,7 +688,7 @@ const InfrastructurePage: React.FC = () => {
                     showIcon
                   />
                 </ErrorWrapper>
-              )
+              );
             }
 
             if (!token) {
@@ -661,7 +701,7 @@ const InfrastructurePage: React.FC = () => {
                     showIcon
                   />
                 </ErrorWrapper>
-              )
+              );
             }
 
             return (
@@ -680,7 +720,7 @@ const InfrastructurePage: React.FC = () => {
                     <Button
                       icon={<KeyOutlined />}
                       onClick={() => {
-                        navigator.clipboard.writeText(token)
+                        navigator.clipboard.writeText(token);
                       }}
                     >
                       {tCommon('actions.copy')}
@@ -695,7 +735,7 @@ const InfrastructurePage: React.FC = () => {
                   showIcon
                 />
               </ModalStackLarge>
-            )
+            );
           })()}
         </Modal>
       )}
@@ -722,10 +762,7 @@ const InfrastructurePage: React.FC = () => {
           createBridgeMutation.isPending ||
           updateBridgeNameMutation.isPending
         }
-        isUpdatingVault={
-          updateRegionVaultMutation.isPending ||
-          updateBridgeVaultMutation.isPending
-        }
+        isUpdatingVault={updateRegionVaultMutation.isPending || updateBridgeVaultMutation.isPending}
       />
 
       {!featureFlags.isEnabled('disableBridge') && (
@@ -734,10 +771,7 @@ const InfrastructurePage: React.FC = () => {
           open={resetAuthModal.isOpen}
           onCancel={() => resetAuthModal.close()}
           footer={[
-            <Button
-              key="cancel"
-              onClick={() => resetAuthModal.close()}
-            >
+            <Button key="cancel" onClick={() => resetAuthModal.close()}>
               {tCommon('actions.cancel')}
             </Button>,
             <Button
@@ -755,7 +789,9 @@ const InfrastructurePage: React.FC = () => {
             <ModalStack>
               <ModalAlert
                 message={tCommon('general.warning')}
-                description={t('bridges.resetAuthWarning', { bridge: resetAuthModal.state.data.bridgeName })}
+                description={t('bridges.resetAuthWarning', {
+                  bridge: resetAuthModal.state.data.bridgeName,
+                })}
                 type="warning"
                 showIcon
               />
@@ -784,7 +820,7 @@ const InfrastructurePage: React.FC = () => {
         </Modal>
       )}
     </PageWrapper>
-  )
-}
+  );
+};
 
-export default InfrastructurePage
+export default InfrastructurePage;

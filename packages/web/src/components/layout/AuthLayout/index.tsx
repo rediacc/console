@@ -1,9 +1,9 @@
-import React from 'react'
-import { Outlet } from 'react-router-dom'
-import { Space } from 'antd'
-import { ThemeToggle } from '@/components/common/ThemeToggle'
-import LanguageSelector from '@/components/common/LanguageSelector'
-import { AuthLayoutContainer, ControlsWrapper, AuthContent } from './styles'
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import { Space } from 'antd';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
+import LanguageSelector from '@/components/common/LanguageSelector';
+import { AuthLayoutContainer, ControlsWrapper, AuthContent } from './styles';
 
 const AuthLayout: React.FC = () => {
   return (
@@ -18,7 +18,7 @@ const AuthLayout: React.FC = () => {
         <Outlet />
       </AuthContent>
     </AuthLayoutContainer>
-  )
-}
+  );
+};
 
-export default AuthLayout
+export default AuthLayout;

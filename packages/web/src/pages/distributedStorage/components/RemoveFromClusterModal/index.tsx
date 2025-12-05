@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
-import { CloudServerOutlined } from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import type { Machine } from '@/types'
-import { useUpdateMachineClusterAssignment } from '@/api/queries/distributedStorageMutations'
-import { showMessage } from '@/utils/messages'
-import type { ColumnsType } from 'antd/es/table'
-import { createTruncatedColumn } from '@/components/common/columns'
+import React, { useState } from 'react';
+import { CloudServerOutlined } from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import type { Machine } from '@/types';
+import { useUpdateMachineClusterAssignment } from '@/api/queries/distributedStorageMutations';
+import { showMessage } from '@/utils/messages';
+import type { ColumnsType } from 'antd/es/table';
+import { createTruncatedColumn } from '@/components/common/columns';
 import {
   StyledModal,
   TitleStack,
@@ -17,15 +17,15 @@ import {
   MachineNameText,
   ClusterTag,
   MutedText,
-} from './styles'
+} from './styles';
 
 interface RemoveFromClusterModalProps {
-  open: boolean
-  selectedMachines?: string[]
-  allMachines?: Machine[]
-  machines?: Machine[]
-  onCancel: () => void
-  onSuccess?: () => void
+  open: boolean;
+  selectedMachines?: string[];
+  allMachines?: Machine[];
+  machines?: Machine[];
+  onCancel: () => void;
+  onSuccess?: () => void;
 }
 
 export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
@@ -34,64 +34,69 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
   selectedMachines,
   allMachines,
   onCancel,
-  onSuccess
+  onSuccess,
 }) => {
-  const { t } = useTranslation(['machines', 'distributedStorage', 'common'])
-  const [removing, setRemoving] = useState(false)
-  
+  const { t } = useTranslation(['machines', 'distributedStorage', 'common']);
+  const [removing, setRemoving] = useState(false);
+
   // Update mutation
-  const updateMutation = useUpdateMachineClusterAssignment()
-  
+  const updateMutation = useUpdateMachineClusterAssignment();
+
   // Determine which machines to use
   const targetMachines: Machine[] =
     machines ??
     (selectedMachines && allMachines
       ? allMachines.filter((machine) => selectedMachines.includes(machine.machineName))
-      : [])
-  
+      : []);
+
   // Filter machines that have cluster assignments
-  const machinesWithClusters = targetMachines.filter((machine) => machine.distributedStorageClusterName)
-  
+  const machinesWithClusters = targetMachines.filter(
+    (machine) => machine.distributedStorageClusterName
+  );
+
   const handleOk = async () => {
-    if (machinesWithClusters.length === 0) return
-    
-    setRemoving(true)
-    
+    if (machinesWithClusters.length === 0) return;
+
+    setRemoving(true);
+
     try {
       // Remove each machine from its cluster
       const results = await Promise.allSettled(
-        machinesWithClusters.map(machine => 
+        machinesWithClusters.map((machine) =>
           updateMutation.mutateAsync({
             teamName: machine.teamName,
             machineName: machine.machineName,
-            clusterName: '' // Empty string to remove assignment
+            clusterName: '', // Empty string to remove assignment
           })
         )
-      )
-      
+      );
+
       // Count successes and failures
-      const succeeded = results.filter(r => r.status === 'fulfilled').length
-      const failed = results.filter(r => r.status === 'rejected').length
-      
+      const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+      const failed = results.filter((r) => r.status === 'rejected').length;
+
       if (failed === 0) {
-        showMessage('success', t('machines:bulkOperations.removalSuccess', { count: succeeded }))
+        showMessage('success', t('machines:bulkOperations.removalSuccess', { count: succeeded }));
       } else {
-        showMessage('warning', t('machines:bulkOperations.assignmentPartial', { 
-          success: succeeded, 
-          total: machinesWithClusters.length 
-        }))
+        showMessage(
+          'warning',
+          t('machines:bulkOperations.assignmentPartial', {
+            success: succeeded,
+            total: machinesWithClusters.length,
+          })
+        );
       }
-      
-      if (onSuccess) onSuccess()
-      onCancel()
+
+      if (onSuccess) onSuccess();
+      onCancel();
     } catch {
-      showMessage('error', t('distributedStorage:machines.unassignError'))
+      showMessage('error', t('distributedStorage:machines.unassignError'));
     } finally {
-      setRemoving(false)
+      setRemoving(false);
     }
-  }
-  
-  const noneLabel = t('common:none')
+  };
+
+  const noneLabel = t('common:none');
 
   const machineColumn = createTruncatedColumn<Machine>({
     title: t('machines:machineName'),
@@ -103,7 +108,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
         <MachineNameText>{content}</MachineNameText>
       </MachineNameRow>
     ),
-  })
+  });
 
   const clusterColumn = createTruncatedColumn<Machine>({
     title: t('distributedStorage:clusters.cluster'),
@@ -111,11 +116,15 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     key: 'cluster',
     renderText: (cluster?: string | null) => cluster || noneLabel,
     renderWrapper: (content, fullText) =>
-      fullText === noneLabel ? <MutedText>{fullText}</MutedText> : <ClusterTag>{content}</ClusterTag>,
-  })
+      fullText === noneLabel ? (
+        <MutedText>{fullText}</MutedText>
+      ) : (
+        <ClusterTag>{content}</ClusterTag>
+      ),
+  });
 
-  const columns: ColumnsType<Machine> = [machineColumn, clusterColumn]
-  
+  const columns: ColumnsType<Machine> = [machineColumn, clusterColumn];
+
   return (
     <StyledModal
       title={
@@ -130,7 +139,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
       okText={t('common:actions.remove')}
       cancelText={t('common:actions.cancel')}
       confirmLoading={removing}
-      okButtonProps={{ 
+      okButtonProps={{
         danger: true,
         disabled: machinesWithClusters.length === 0,
         'data-testid': 'ds-remove-cluster-ok-button',
@@ -141,11 +150,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
       data-testid="ds-remove-cluster-modal"
     >
       {machinesWithClusters.length === 0 ? (
-        <InfoAlert
-          message={t('machines:noMachinesWithClusters')}
-          type="info"
-          showIcon
-        />
+        <InfoAlert message={t('machines:noMachinesWithClusters')} type="info" showIcon />
       ) : (
         <>
           <WarningAlert
@@ -154,7 +159,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
             type="warning"
             showIcon
           />
-          
+
           <MachinesTable
             columns={columns}
             dataSource={machinesWithClusters}
@@ -167,5 +172,5 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
         </>
       )}
     </StyledModal>
-  )
-}
+  );
+};

@@ -33,7 +33,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       'theme.was_saved': !!savedTheme,
       'theme.system_preference': isSystemDark ? 'dark' : 'light',
       'theme.matches_system': initialTheme.current === (isSystemDark ? 'dark' : 'light'),
-      'accessibility.prefers_dark': isSystemDark
+      'accessibility.prefers_dark': isSystemDark,
     });
   }, []); // Only run on mount
 
@@ -44,22 +44,21 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         // Set data-theme attribute for design system
         document.body.setAttribute('data-theme', theme);
         document.documentElement.setAttribute('data-theme', theme);
-        
+
         // Add/remove dark class for compatibility
         const isDark = theme === 'dark';
         document.documentElement.classList.toggle('dark', isDark);
         document.body.classList.toggle('dark', isDark);
-        
+
         // Remove inline styles - let design system CSS handle the colors
         document.body.style.removeProperty('background-color');
         document.body.style.removeProperty('color');
-        
+
         // Apply theme class to root for design system
-        document.documentElement.className = document.documentElement.className
-          .replace(/\btheme-\w+/g, '')
-          .trim() + ` theme-${theme}`;
+        document.documentElement.className =
+          document.documentElement.className.replace(/\btheme-\w+/g, '').trim() + ` theme-${theme}`;
       });
-      
+
       // Save to localStorage
       localStorage.setItem('theme', theme);
     };
@@ -78,7 +77,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       'theme.method': 'toggle',
       'theme.time_of_day': new Date().getHours(),
       'page.url': window.location.pathname,
-      'accessibility.prefers_dark': window.matchMedia?.('(prefers-color-scheme: dark)').matches || false
+      'accessibility.prefers_dark':
+        window.matchMedia?.('(prefers-color-scheme: dark)').matches || false,
     });
 
     setTheme(newTheme);
@@ -88,9 +88,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <StyledThemeProvider theme={styledTheme}>
-        {children}
-      </StyledThemeProvider>
+      <StyledThemeProvider theme={styledTheme}>{children}</StyledThemeProvider>
     </ThemeContext.Provider>
   );
 };

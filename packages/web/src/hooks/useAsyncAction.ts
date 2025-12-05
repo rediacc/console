@@ -1,16 +1,16 @@
-import { useState, useCallback } from 'react'
-import { showMessage } from '@/utils/messages'
+import { useState, useCallback } from 'react';
+import { showMessage } from '@/utils/messages';
 
 /**
  * Result of an async action
  */
 export interface AsyncActionResult<T = unknown> {
   /** Whether the action succeeded */
-  success: boolean
+  success: boolean;
   /** Data returned from the action */
-  data?: T
+  data?: T;
   /** Error message if failed */
-  error?: string
+  error?: string;
 }
 
 /**
@@ -18,17 +18,17 @@ export interface AsyncActionResult<T = unknown> {
  */
 export interface AsyncActionConfig {
   /** Success message to display */
-  successMessage?: string
+  successMessage?: string;
   /** Error message to display (defaults to error.message) */
-  errorMessage?: string
+  errorMessage?: string;
   /** Skip showing the default error message */
-  skipErrorMessage?: boolean
+  skipErrorMessage?: boolean;
   /** Skip showing the success message */
-  skipSuccessMessage?: boolean
+  skipSuccessMessage?: boolean;
   /** Custom error handler */
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void;
   /** Custom success handler */
-  onSuccess?: (data: unknown) => void
+  onSuccess?: (data: unknown) => void;
 }
 
 /**
@@ -39,9 +39,9 @@ export interface UseAsyncActionReturn {
   execute: <T>(
     operation: () => Promise<T>,
     config?: AsyncActionConfig
-  ) => Promise<AsyncActionResult<T>>
+  ) => Promise<AsyncActionResult<T>>;
   /** Whether an action is currently executing */
-  isExecuting: boolean
+  isExecuting: boolean;
 }
 
 /**
@@ -69,44 +69,44 @@ export interface UseAsyncActionReturn {
  * }
  */
 export function useAsyncAction(): UseAsyncActionReturn {
-  const [isExecuting, setIsExecuting] = useState(false)
+  const [isExecuting, setIsExecuting] = useState(false);
 
   const execute = useCallback(
     async <T>(
       operation: () => Promise<T>,
       config?: AsyncActionConfig
     ): Promise<AsyncActionResult<T>> => {
-      setIsExecuting(true)
+      setIsExecuting(true);
 
       try {
-        const data = await operation()
+        const data = await operation();
 
         if (config?.successMessage && !config.skipSuccessMessage) {
-          showMessage('success', config.successMessage)
+          showMessage('success', config.successMessage);
         }
 
-        config?.onSuccess?.(data)
+        config?.onSuccess?.(data);
 
-        return { success: true, data }
+        return { success: true, data };
       } catch (error) {
         const errorMessage =
-          error instanceof Error ? error.message : config?.errorMessage || 'An error occurred'
+          error instanceof Error ? error.message : config?.errorMessage || 'An error occurred';
 
         if (!config?.skipErrorMessage) {
-          showMessage('error', config?.errorMessage || errorMessage)
+          showMessage('error', config?.errorMessage || errorMessage);
         }
 
-        config?.onError?.(error instanceof Error ? error : new Error(errorMessage))
+        config?.onError?.(error instanceof Error ? error : new Error(errorMessage));
 
-        return { success: false, error: errorMessage }
+        return { success: false, error: errorMessage };
       } finally {
-        setIsExecuting(false)
+        setIsExecuting(false);
       }
     },
     []
-  )
+  );
 
-  return { execute, isExecuting }
+  return { execute, isExecuting };
 }
 
 /**
@@ -116,16 +116,16 @@ export interface MultiStepActionConfig<T> {
   /** Steps to execute in sequence */
   steps: Array<{
     /** Step operation */
-    operation: () => Promise<unknown>
+    operation: () => Promise<unknown>;
     /** Step name for error context */
-    name: string
+    name: string;
     /** Whether to continue on failure */
-    continueOnError?: boolean
-  }>
+    continueOnError?: boolean;
+  }>;
   /** Success message for all steps completing */
-  successMessage?: string
+  successMessage?: string;
   /** Transform the results of all steps */
-  transformResults?: (results: unknown[]) => T
+  transformResults?: (results: unknown[]) => T;
 }
 
 /**
@@ -143,31 +143,31 @@ export interface MultiStepActionConfig<T> {
 export async function executeMultiStep<T = unknown>(
   config: MultiStepActionConfig<T>
 ): Promise<AsyncActionResult<T>> {
-  const results: unknown[] = []
+  const results: unknown[] = [];
 
   for (const step of config.steps) {
     try {
-      const result = await step.operation()
-      results.push(result)
+      const result = await step.operation();
+      results.push(result);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
       if (!step.continueOnError) {
-        showMessage('error', `${step.name} failed: ${errorMessage}`)
-        return { success: false, error: `${step.name}: ${errorMessage}` }
+        showMessage('error', `${step.name} failed: ${errorMessage}`);
+        return { success: false, error: `${step.name}: ${errorMessage}` };
       }
 
       // Continue but track the error
-      results.push({ error: errorMessage })
+      results.push({ error: errorMessage });
     }
   }
 
   if (config.successMessage) {
-    showMessage('success', config.successMessage)
+    showMessage('success', config.successMessage);
   }
 
-  const data = config.transformResults ? config.transformResults(results) : (results as T)
-  return { success: true, data }
+  const data = config.transformResults ? config.transformResults(results) : (results as T);
+  return { success: true, data };
 }
 
 /**
@@ -192,28 +192,28 @@ export async function executeMultiStep<T = unknown>(
  */
 export interface UseFormSubmissionConfig<T> {
   /** Submit handler */
-  onSubmit: (data: T) => Promise<void>
+  onSubmit: (data: T) => Promise<void>;
   /** Success message */
-  successMessage?: string
+  successMessage?: string;
   /** Error message prefix */
-  errorMessage?: string
+  errorMessage?: string;
   /** Callback on success */
-  onSuccess?: () => void
+  onSuccess?: () => void;
   /** Callback on error */
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void;
 }
 
 export interface UseFormSubmissionReturn<T> {
   /** Submit handler to pass to form */
-  submit: (data: T) => Promise<void>
+  submit: (data: T) => Promise<void>;
   /** Whether form is submitting */
-  isSubmitting: boolean
+  isSubmitting: boolean;
 }
 
 export function useFormSubmission<T>(
   config: UseFormSubmissionConfig<T>
 ): UseFormSubmissionReturn<T> {
-  const { execute, isExecuting } = useAsyncAction()
+  const { execute, isExecuting } = useAsyncAction();
 
   const submit = useCallback(
     async (data: T) => {
@@ -221,17 +221,17 @@ export function useFormSubmission<T>(
         successMessage: config.successMessage,
         errorMessage: config.errorMessage,
         onError: config.onError,
-      })
+      });
 
       if (result.success) {
-        config.onSuccess?.()
+        config.onSuccess?.();
       }
     },
     [execute, config]
-  )
+  );
 
   return {
     submit,
     isSubmitting: isExecuting,
-  }
+  };
 }

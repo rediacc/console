@@ -3,21 +3,21 @@
  * This service consolidates duplicated parsing logic from 6+ components
  */
 
-import { isValidGuid } from '../utils/validation'
+import { isValidGuid } from '../utils/validation';
 
 /**
  * Status of the vault status check
  */
-export type VaultStatusState = 'completed' | 'pending' | 'failed' | 'unknown'
+export type VaultStatusState = 'completed' | 'pending' | 'failed' | 'unknown';
 
 /**
  * Parsed vault status result
  */
 export interface ParsedVaultStatus {
-  status: VaultStatusState
-  repos: DeployedRepo[]
-  rawResult?: string
-  error?: string
+  status: VaultStatusState;
+  repos: DeployedRepo[];
+  rawResult?: string;
+  error?: string;
 }
 
 /**
@@ -25,34 +25,34 @@ export interface ParsedVaultStatus {
  */
 export interface DeployedRepo {
   /** Repo name or GUID */
-  name: string
+  name: string;
   /** Repo GUID (if resolved) */
-  repoGuid?: string
+  repoGuid?: string;
   /** Grand GUID (if resolved) */
-  grandGuid?: string
+  grandGuid?: string;
   /** Size in bytes */
-  size?: number
+  size?: number;
   /** Human-readable size */
-  size_human?: string
+  size_human?: string;
   /** Whether the repo is mounted */
-  mounted?: boolean
+  mounted?: boolean;
   /** Whether the repo is accessible */
-  accessible?: boolean
+  accessible?: boolean;
   /** Whether Docker is running */
-  docker_running?: boolean
+  docker_running?: boolean;
   /** Number of containers */
-  container_count?: number
+  container_count?: number;
   /** Additional properties from vault status */
-  [key: string]: unknown
+  [key: string]: unknown;
 }
 
 /**
  * Repo information for resolution
  */
 export interface RepoInfo {
-  repoGuid: string
-  repoName: string
-  grandGuid?: string
+  repoGuid: string;
+  repoName: string;
+  grandGuid?: string;
 }
 
 /**
@@ -62,26 +62,26 @@ export interface RepoInfo {
  * @returns Cleaned result string
  */
 export function cleanResultString(result: string): string {
-  if (!result) return result
+  if (!result) return result;
 
-  let cleaned = result
+  let cleaned = result;
 
   // Handle trailing content after JSON
-  const jsonEndMatch = cleaned.match(/(\}[\s\n]*$)/)
+  const jsonEndMatch = cleaned.match(/(\}[\s\n]*$)/);
   if (jsonEndMatch) {
-    const lastBraceIndex = cleaned.lastIndexOf('}')
+    const lastBraceIndex = cleaned.lastIndexOf('}');
     if (lastBraceIndex < cleaned.length - 10) {
-      cleaned = cleaned.substring(0, lastBraceIndex + 1)
+      cleaned = cleaned.substring(0, lastBraceIndex + 1);
     }
   }
 
   // Handle jq errors appearing after valid JSON
-  const newlineIndex = cleaned.indexOf('\njq:')
+  const newlineIndex = cleaned.indexOf('\njq:');
   if (newlineIndex > 0) {
-    cleaned = cleaned.substring(0, newlineIndex)
+    cleaned = cleaned.substring(0, newlineIndex);
   }
 
-  return cleaned.trim()
+  return cleaned.trim();
 }
 
 /**
@@ -91,46 +91,48 @@ export function cleanResultString(result: string): string {
  */
 export function parseVaultStatus(vaultStatusJson: string | undefined | null): ParsedVaultStatus {
   if (!vaultStatusJson) {
-    return { status: 'unknown', repos: [] }
+    return { status: 'unknown', repos: [] };
   }
 
   // Check for error prefixes
-  if (vaultStatusJson.trim().startsWith('jq:') ||
-      vaultStatusJson.trim().startsWith('error:') ||
-      !vaultStatusJson.trim().startsWith('{')) {
-    return { status: 'unknown', repos: [], error: 'Invalid vault status format' }
+  if (
+    vaultStatusJson.trim().startsWith('jq:') ||
+    vaultStatusJson.trim().startsWith('error:') ||
+    !vaultStatusJson.trim().startsWith('{')
+  ) {
+    return { status: 'unknown', repos: [], error: 'Invalid vault status format' };
   }
 
   try {
-    const data = JSON.parse(vaultStatusJson)
+    const data = JSON.parse(vaultStatusJson);
 
     if (data.status !== 'completed' || !data.result) {
       return {
         status: (data.status as VaultStatusState) || 'unknown',
-        repos: []
-      }
+        repos: [],
+      };
     }
 
     // Clean and parse the result
-    const cleanedResult = cleanResultString(data.result)
-    const result = JSON.parse(cleanedResult)
+    const cleanedResult = cleanResultString(data.result);
+    const result = JSON.parse(cleanedResult);
 
-    const repos: DeployedRepo[] = []
+    const repos: DeployedRepo[] = [];
     if (result?.repositories && Array.isArray(result.repositories)) {
-      repos.push(...result.repositories)
+      repos.push(...result.repositories);
     }
 
     return {
       status: 'completed',
       repos,
-      rawResult: cleanedResult
-    }
+      rawResult: cleanedResult,
+    };
   } catch (error) {
     return {
       status: 'unknown',
       repos: [],
-      error: error instanceof Error ? error.message : String(error)
-    }
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -140,25 +142,22 @@ export function parseVaultStatus(vaultStatusJson: string | undefined | null): Pa
  * @param repoList - Array of repo information for resolution
  * @returns Repos with resolved names
  */
-export function resolveRepoNames(
-  repos: DeployedRepo[],
-  repoList: RepoInfo[]
-): DeployedRepo[] {
-  return repos.map(repo => {
+export function resolveRepoNames(repos: DeployedRepo[], repoList: RepoInfo[]): DeployedRepo[] {
+  return repos.map((repo) => {
     // Check if name is a GUID
     if (isValidGuid(repo.name)) {
-      const matchingRepo = repoList.find(r => r.repoGuid === repo.name)
+      const matchingRepo = repoList.find((r) => r.repoGuid === repo.name);
       if (matchingRepo) {
         return {
           ...repo,
           name: matchingRepo.repoName,
           repoGuid: matchingRepo.repoGuid,
-          grandGuid: matchingRepo.grandGuid
-        }
+          grandGuid: matchingRepo.grandGuid,
+        };
       }
     }
-    return repo
-  })
+    return repo;
+  });
 }
 
 /**
@@ -166,9 +165,9 @@ export function resolveRepoNames(
  * Uses generic to allow any machine type that has the required properties
  */
 export type MachineWithVaultStatus = {
-  machineName: string
-  vaultStatus?: string | null
-}
+  machineName: string;
+  vaultStatus?: string | null;
+};
 
 /**
  * Find deployed repos across multiple machines
@@ -180,25 +179,26 @@ export function findDeployedRepos(
   machines: MachineWithVaultStatus[],
   repoGuids: string[]
 ): Map<string, DeployedRepo[]> {
-  const result = new Map<string, DeployedRepo[]>()
+  const result = new Map<string, DeployedRepo[]>();
 
   for (const machine of machines) {
-    const parsed = parseVaultStatus(machine.vaultStatus)
+    const parsed = parseVaultStatus(machine.vaultStatus);
 
     if (parsed.status === 'completed' && parsed.repos.length > 0) {
-      const matchingRepos = parsed.repos.filter(repo => {
+      const matchingRepos = parsed.repos.filter((repo) => {
         // Check if repo name (which might be GUID) matches
-        return repoGuids.includes(repo.name) ||
-               (repo.repoGuid && repoGuids.includes(repo.repoGuid))
-      })
+        return (
+          repoGuids.includes(repo.name) || (repo.repoGuid && repoGuids.includes(repo.repoGuid))
+        );
+      });
 
       if (matchingRepos.length > 0) {
-        result.set(machine.machineName, matchingRepos)
+        result.set(machine.machineName, matchingRepos);
       }
     }
   }
 
-  return result
+  return result;
 }
 
 /**
@@ -211,17 +211,17 @@ export function getMachineRepos(
   machine: MachineWithVaultStatus,
   repoList?: RepoInfo[]
 ): DeployedRepo[] {
-  const parsed = parseVaultStatus(machine.vaultStatus)
+  const parsed = parseVaultStatus(machine.vaultStatus);
 
   if (parsed.status !== 'completed') {
-    return []
+    return [];
   }
 
   if (repoList && repoList.length > 0) {
-    return resolveRepoNames(parsed.repos, repoList)
+    return resolveRepoNames(parsed.repos, repoList);
   }
 
-  return parsed.repos
+  return parsed.repos;
 }
 
 /**
@@ -230,16 +230,10 @@ export function getMachineRepos(
  * @param repoGuid - Repo GUID to check
  * @returns True if the repo is deployed
  */
-export function isRepoDeployed(
-  machine: MachineWithVaultStatus,
-  repoGuid: string
-): boolean {
-  const repos = getMachineRepos(machine)
+export function isRepoDeployed(machine: MachineWithVaultStatus, repoGuid: string): boolean {
+  const repos = getMachineRepos(machine);
 
-  return repos.some(repo =>
-    repo.name === repoGuid ||
-    repo.repoGuid === repoGuid
-  )
+  return repos.some((repo) => repo.name === repoGuid || repo.repoGuid === repoGuid);
 }
 
 /**
@@ -248,26 +242,26 @@ export function isRepoDeployed(
  * @returns Summary object with counts and status
  */
 export function getDeploymentSummary(machine: MachineWithVaultStatus): {
-  status: VaultStatusState
-  totalRepos: number
-  mountedCount: number
-  dockerRunningCount: number
+  status: VaultStatusState;
+  totalRepos: number;
+  mountedCount: number;
+  dockerRunningCount: number;
 } {
-  const parsed = parseVaultStatus(machine.vaultStatus)
+  const parsed = parseVaultStatus(machine.vaultStatus);
 
   if (parsed.status !== 'completed') {
     return {
       status: parsed.status,
       totalRepos: 0,
       mountedCount: 0,
-      dockerRunningCount: 0
-    }
+      dockerRunningCount: 0,
+    };
   }
 
   return {
     status: 'completed',
     totalRepos: parsed.repos.length,
-    mountedCount: parsed.repos.filter(r => r.mounted).length,
-    dockerRunningCount: parsed.repos.filter(r => r.docker_running).length
-  }
+    mountedCount: parsed.repos.filter((r) => r.mounted).length,
+    dockerRunningCount: parsed.repos.filter((r) => r.docker_running).length,
+  };
 }

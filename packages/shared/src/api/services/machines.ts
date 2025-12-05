@@ -1,11 +1,11 @@
-import { endpoints } from '../../endpoints'
-import type { Machine } from '../../types'
-import { parseResponse, responseExtractors } from '../parseResponse'
-import type { ApiClient } from './types'
+import { endpoints } from '../../endpoints';
+import type { Machine } from '../../types';
+import { parseResponse, responseExtractors } from '../parseResponse';
+import type { ApiClient } from './types';
 
 function normalizeTeamName(teamName?: string | string[]) {
-  if (!teamName) return undefined
-  return Array.isArray(teamName) ? teamName.join(',') : teamName
+  if (!teamName) return undefined;
+  return Array.isArray(teamName) ? teamName.join(',') : teamName;
 }
 
 export function createMachinesService(client: ApiClient) {
@@ -14,23 +14,18 @@ export function createMachinesService(client: ApiClient) {
       const response = await client.get<Machine>(
         endpoints.machines.getTeamMachines,
         teamName ? { teamName: normalizeTeamName(teamName) } : undefined
-      )
+      );
 
       return parseResponse(response, {
         extractor: responseExtractors.primaryOrSecondary,
         filter: (machine) => Boolean(machine.machineName),
-      })
+      });
     },
 
     getAssignmentStatus: (machineName: string, teamName: string) =>
       client.get(endpoints.machines.getMachineAssignmentStatus, { machineName, teamName }),
 
-    create: (
-      teamName: string,
-      machineName: string,
-      bridgeName: string,
-      machineVault?: string
-    ) =>
+    create: (teamName: string, machineName: string, bridgeName: string, machineVault?: string) =>
       client.post(endpoints.machines.createMachine, {
         teamName,
         machineName,
@@ -117,11 +112,7 @@ export function createMachinesService(client: ApiClient) {
         machineNames,
       }),
 
-    updateDistributedStorage: (
-      teamName: string,
-      machineName: string,
-      clusterName: string | null
-    ) =>
+    updateDistributedStorage: (teamName: string, machineName: string, clusterName: string | null) =>
       client.post(endpoints.machines.updateMachineDistributedStorage, {
         teamName,
         machineName,
@@ -164,5 +155,5 @@ export function createMachinesService(client: ApiClient) {
 
     getAvailableMachinesForClone: (teamName: string) =>
       client.get(endpoints.machines.getAvailableMachinesForClone, { teamName }),
-  }
+  };
 }

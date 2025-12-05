@@ -1,19 +1,19 @@
-import styled from 'styled-components'
-import { Card, Space, Input, Typography, Button, Tag, Empty, Row } from 'antd'
-import { HelperText as PrimitiveHelperText, MutedCaption } from '@/styles/primitives'
+import styled from 'styled-components';
+import { Card, Space, Input, Typography, Button, Tag, Empty, Row } from 'antd';
+import { HelperText as PrimitiveHelperText, MutedCaption } from '@/styles/primitives';
 
-const { Text, Paragraph } = Typography
+const { Text, Paragraph } = Typography;
 
 export const SelectorContainer = styled.div`
   width: 100%;
-`
+`;
 
 export const HeaderStack = styled(Space)`
   && {
     width: 100%;
     margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   }
-`
+`;
 
 export const HelperRow = styled.div`
   display: flex;
@@ -21,9 +21,9 @@ export const HelperRow = styled.div`
   align-items: center;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
-export const HelperText = PrimitiveHelperText
+export const HelperText = PrimitiveHelperText;
 
 export const ClearButton = styled(Button)`
   && {
@@ -31,31 +31,31 @@ export const ClearButton = styled(Button)`
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
   }
-`
+`;
 
 export const SearchInput = styled(Input.Search)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
-`
+`;
 
 export const ResultCount = styled(MutedCaption)`
   && {
     margin-bottom: ${({ theme }) => theme.spacing.SM}px;
     display: block;
   }
-`
+`;
 
 export const NoResultsEmpty = styled(Empty)`
   && {
     margin: ${({ theme }) => theme.spacing.MD}px 0;
   }
-`
+`;
 
 export const TemplateGrid = styled(Row)`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const TemplateCard = styled(Card)<{ $selected?: boolean; $variant?: 'default' | 'none' }>`
   height: 100%;
@@ -72,7 +72,7 @@ export const TemplateCard = styled(Card)<{ $selected?: boolean; $variant?: 'defa
   cursor: pointer;
   transition: ${({ theme }) => theme.transitions.HOVER};
   padding: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const SelectionIndicator = styled.span<{ $variant?: 'default' | 'none' }>`
   position: absolute;
@@ -81,13 +81,13 @@ export const SelectionIndicator = styled.span<{ $variant?: 'default' | 'none' }>
   color: ${({ theme, $variant }) =>
     $variant === 'none' ? theme.colors.success : theme.colors.primary};
   font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-`
+`;
 
 export const CardStack = styled(Space)`
   && {
     width: 100%;
   }
-`
+`;
 
 export const TemplateIconWrapper = styled.div<{ $muted?: boolean }>`
   text-align: center;
@@ -98,13 +98,13 @@ export const TemplateIconWrapper = styled.div<{ $muted?: boolean }>`
   .anticon {
     font-size: ${({ theme }) => theme.dimensions.ICON_LG}px;
   }
-`
+`;
 
 export const TemplateTitle = styled(Text)`
   && {
     font-size: ${({ theme }) => theme.fontSize.BASE}px;
   }
-`
+`;
 
 export const TemplateDescription = styled(Paragraph)`
   && {
@@ -112,7 +112,7 @@ export const TemplateDescription = styled(Paragraph)`
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     line-height: ${({ theme }) => theme.lineHeight.RELAXED};
   }
-`
+`;
 
 export const DetailsButton = styled(Button)`
   && {
@@ -126,7 +126,7 @@ export const DetailsButton = styled(Button)`
       font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
     }
   }
-`
+`;
 
 export const DefaultTag = styled(Tag)`
   && {
@@ -134,15 +134,15 @@ export const DefaultTag = styled(Tag)`
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     margin: 0;
   }
-`
+`;
 
 export const LoadingText = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const ErrorState = styled.div`
   text-align: center;
   padding: ${({ theme }) => `${theme.spacing.MD}px 0`};
-`
+`;
 
-export { LoadingState } from '@/styles/primitives'
+export { LoadingState } from '@/styles/primitives';

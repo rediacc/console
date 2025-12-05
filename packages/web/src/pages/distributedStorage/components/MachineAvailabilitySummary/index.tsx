@@ -1,19 +1,16 @@
-import React from 'react'
-import { Row, Col } from 'antd'
+import React from 'react';
+import { Row, Col } from 'antd';
 import {
   DesktopOutlined,
   CheckCircleOutlined,
   CloudServerOutlined,
   HddOutlined,
   CopyOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { useTheme as useStyledTheme } from 'styled-components'
-import { useMachines } from '@/api/queries/machines'
-import {
-  MachineAvailabilitySummaryProps,
-  MachineStats,
-} from './types'
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { useTheme as useStyledTheme } from 'styled-components';
+import { useMachines } from '@/api/queries/machines';
+import { MachineAvailabilitySummaryProps, MachineStats } from './types';
 import {
   SummaryCard,
   LoadingCard,
@@ -23,16 +20,16 @@ import {
   StatCard,
   SummaryStatistic,
   PercentageSuffix,
-} from './styles'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
+} from './styles';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 
 export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProps> = ({
   teamFilter,
   onRefresh,
 }) => {
-  const { t } = useTranslation(['distributedStorage', 'machines'])
-  const styledTheme = useStyledTheme()
-  const { data: machines = [], isLoading, refetch } = useMachines(teamFilter)
+  const { t } = useTranslation(['distributedStorage', 'machines']);
+  const styledTheme = useStyledTheme();
+  const { data: machines = [], isLoading, refetch } = useMachines(teamFilter);
 
   const stats = React.useMemo<MachineStats>(() => {
     const result: MachineStats = {
@@ -41,26 +38,26 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       cluster: 0,
       image: 0,
       clone: 0,
-    }
+    };
 
     machines.forEach((machine) => {
       if (machine.distributedStorageClusterName) {
-        result.cluster += 1
+        result.cluster += 1;
       } else {
-        result.available += 1
+        result.available += 1;
       }
-    })
+    });
 
-    return result
-  }, [machines])
+    return result;
+  }, [machines]);
 
   const handleRefresh = () => {
-    refetch()
-    onRefresh?.()
-  }
+    refetch();
+    onRefresh?.();
+  };
 
   const getPercentage = (value: number) =>
-    stats.total > 0 ? Math.round((value / stats.total) * 100) : 0
+    stats.total > 0 ? Math.round((value / stats.total) * 100) : 0;
 
   if (isLoading) {
     return (
@@ -69,7 +66,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
           <LoadingContent />
         </LoadingWrapper>
       </LoadingCard>
-    )
+    );
   }
 
   const statCards = [
@@ -91,11 +88,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       accent: styledTheme.colors.success,
       testId: 'ds-machines-summary-available',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
-      suffix: (
-        <PercentageSuffix>
-          ({getPercentage(stats.available)}%)
-        </PercentageSuffix>
-      ),
+      suffix: <PercentageSuffix>({getPercentage(stats.available)}%)</PercentageSuffix>,
     },
     {
       key: 'clusters',
@@ -105,11 +98,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       accent: styledTheme.colors.info,
       testId: 'ds-machines-summary-clusters',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
-      suffix: (
-        <PercentageSuffix>
-          ({getPercentage(stats.cluster)}%)
-        </PercentageSuffix>
-      ),
+      suffix: <PercentageSuffix>({getPercentage(stats.cluster)}%)</PercentageSuffix>,
     },
     {
       key: 'images',
@@ -119,11 +108,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       accent: styledTheme.colors.warning,
       testId: 'ds-machines-summary-images',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
-      suffix: (
-        <PercentageSuffix>
-          ({getPercentage(stats.image)}%)
-        </PercentageSuffix>
-      ),
+      suffix: <PercentageSuffix>({getPercentage(stats.image)}%)</PercentageSuffix>,
     },
     {
       key: 'clones',
@@ -133,13 +118,9 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       accent: styledTheme.colors.accent,
       testId: 'ds-machines-summary-clones',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
-      suffix: (
-        <PercentageSuffix>
-          ({getPercentage(stats.clone)}%)
-        </PercentageSuffix>
-      ),
+      suffix: <PercentageSuffix>({getPercentage(stats.clone)}%)</PercentageSuffix>,
     },
-  ]
+  ];
 
   return (
     <SummaryCard
@@ -172,7 +153,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
         ))}
       </Row>
     </SummaryCard>
-  )
-}
+  );
+};
 
-export default MachineAvailabilitySummary
+export default MachineAvailabilitySummary;

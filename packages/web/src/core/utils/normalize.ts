@@ -19,15 +19,15 @@ export function normalizeProperty<T extends Record<string, unknown>>(
   obj: T | null | undefined,
   ...propertyNames: string[]
 ): unknown {
-  if (!obj) return null
+  if (!obj) return null;
 
   for (const prop of propertyNames) {
     if (obj[prop] !== undefined && obj[prop] !== null) {
-      return obj[prop]
+      return obj[prop];
     }
   }
 
-  return null
+  return null;
 }
 
 /**
@@ -41,17 +41,17 @@ export function normalizePropertyAs<T, R = unknown>(
   obj: T | null | undefined,
   ...propertyNames: string[]
 ): R | null {
-  if (!obj || typeof obj !== 'object') return null
+  if (!obj || typeof obj !== 'object') return null;
 
-  const record = obj as Record<string, unknown>
+  const record = obj as Record<string, unknown>;
 
   for (const prop of propertyNames) {
     if (record[prop] !== undefined && record[prop] !== null) {
-      return record[prop] as R
+      return record[prop] as R;
     }
   }
 
-  return null
+  return null;
 }
 
 /**
@@ -72,13 +72,13 @@ export function normalizeProperties<T extends Record<string, unknown>>(
   obj: T | null | undefined,
   propertyMap: Record<string, string[]>
 ): Record<string, unknown> {
-  const result: Record<string, unknown> = {}
+  const result: Record<string, unknown> = {};
 
   for (const [outputKey, propertyNames] of Object.entries(propertyMap)) {
-    result[outputKey] = normalizeProperty(obj, ...propertyNames)
+    result[outputKey] = normalizeProperty(obj, ...propertyNames);
   }
 
-  return result
+  return result;
 }
 
 /**
@@ -92,9 +92,9 @@ export function normalizeToString<T extends Record<string, unknown>>(
   obj: T | null | undefined,
   ...propertyNames: string[]
 ): string {
-  const value = normalizeProperty(obj, ...propertyNames)
-  if (value === null || value === undefined) return ''
-  return String(value)
+  const value = normalizeProperty(obj, ...propertyNames);
+  if (value === null || value === undefined) return '';
+  return String(value);
 }
 
 /**
@@ -110,10 +110,10 @@ export function normalizeToNumber<T extends Record<string, unknown>>(
   defaultValue: number,
   ...propertyNames: string[]
 ): number {
-  const value = normalizeProperty(obj, ...propertyNames)
-  if (value === null || value === undefined) return defaultValue
-  const num = Number(value)
-  return isNaN(num) ? defaultValue : num
+  const value = normalizeProperty(obj, ...propertyNames);
+  if (value === null || value === undefined) return defaultValue;
+  const num = Number(value);
+  return isNaN(num) ? defaultValue : num;
 }
 
 /**
@@ -127,8 +127,8 @@ export function normalizeToBoolean<T extends Record<string, unknown>>(
   obj: T | null | undefined,
   ...propertyNames: string[]
 ): boolean {
-  const value = normalizeProperty(obj, ...propertyNames)
-  return Boolean(value)
+  const value = normalizeProperty(obj, ...propertyNames);
+  return Boolean(value);
 }
 
 /**
@@ -142,15 +142,15 @@ export function hasProperty<T extends Record<string, unknown>>(
   obj: T | null | undefined,
   ...propertyNames: string[]
 ): boolean {
-  if (!obj) return false
+  if (!obj) return false;
 
   for (const prop of propertyNames) {
     if (obj[prop] !== undefined && obj[prop] !== null) {
-      return true
+      return true;
     }
   }
 
-  return false
+  return false;
 }
 
 /**
@@ -167,17 +167,17 @@ export function getNestedProperty<T = unknown>(
   obj: Record<string, unknown> | null | undefined,
   path: string
 ): T | undefined {
-  if (!obj) return undefined
+  if (!obj) return undefined;
 
-  const keys = path.split('.')
-  let current: unknown = obj
+  const keys = path.split('.');
+  let current: unknown = obj;
 
   for (const key of keys) {
     if (current === null || current === undefined || typeof current !== 'object') {
-      return undefined
+      return undefined;
     }
-    current = (current as Record<string, unknown>)[key]
+    current = (current as Record<string, unknown>)[key];
   }
 
-  return current as T
+  return current as T;
 }

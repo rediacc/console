@@ -53,10 +53,7 @@ export function groupBy<T, K extends string | number>(
  * @param keyFn - Function to extract the group key from each item
  * @returns Object with keys mapping to arrays of items
  */
-export function groupByToObject<T>(
-  items: T[],
-  keyFn: (item: T) => string
-): Record<string, T[]> {
+export function groupByToObject<T>(items: T[], keyFn: (item: T) => string): Record<string, T[]> {
   const result: Record<string, T[]> = {};
   for (const item of items) {
     const key = keyFn(item);
@@ -90,7 +87,7 @@ export function countBy<T>(items: T[]): Map<T, number> {
  */
 export function uniqueBy<T, K>(items: T[], keyFn: (item: T) => K): T[] {
   const seen = new Set<K>();
-  return items.filter(item => {
+  return items.filter((item) => {
     const key = keyFn(item);
     if (seen.has(key)) {
       return false;

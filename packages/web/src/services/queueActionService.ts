@@ -1,47 +1,47 @@
-import type { QueueRequestContext } from '@/core/types'
+import type { QueueRequestContext } from '@/core/types';
 
 export interface QueueActionParams {
-  teamName: string
-  machineName: string
-  bridgeName: string
-  functionName: string
-  params: Record<string, unknown>
-  priority: number
-  description?: string
-  addedVia: string
-  machineVault: string
-  repoGuid?: string
-  repoVault?: string
-  repoNetworkId?: number
-  repoNetworkMode?: string
-  repoTag?: string
-  storageName?: string
-  storageVault?: string
-  sourceMachineVault?: string
-  sourceStorageVault?: string
-  sourceRepoVault?: string
-  destinationMachineVault?: string
-  destinationStorageVault?: string
-  destinationRepoVault?: string
-  teamVault?: string
+  teamName: string;
+  machineName: string;
+  bridgeName: string;
+  functionName: string;
+  params: Record<string, unknown>;
+  priority: number;
+  description?: string;
+  addedVia: string;
+  machineVault: string;
+  repoGuid?: string;
+  repoVault?: string;
+  repoNetworkId?: number;
+  repoNetworkMode?: string;
+  repoTag?: string;
+  storageName?: string;
+  storageVault?: string;
+  sourceMachineVault?: string;
+  sourceStorageVault?: string;
+  sourceRepoVault?: string;
+  destinationMachineVault?: string;
+  destinationStorageVault?: string;
+  destinationRepoVault?: string;
+  teamVault?: string;
 }
 
 export interface QueueActionResult {
-  success: boolean
-  taskId?: string
-  error?: string
-  isQueued?: boolean
+  success: boolean;
+  taskId?: string;
+  error?: string;
+  isQueued?: boolean;
 }
 
 interface QueueActionDependencies {
-  buildQueueVault(context: QueueRequestContext): Promise<string>
+  buildQueueVault(context: QueueRequestContext): Promise<string>;
   createQueueItem(data: {
-    teamName: string
-    machineName: string
-    bridgeName: string
-    queueVault: string
-    priority: number
-  }): Promise<{ taskId?: string; isQueued?: boolean }>
+    teamName: string;
+    machineName: string;
+    bridgeName: string;
+    queueVault: string;
+    priority: number;
+  }): Promise<{ taskId?: string; isQueued?: boolean }>;
 }
 
 export class QueueActionService {
@@ -71,7 +71,7 @@ export class QueueActionService {
       destinationMachineVault: params.destinationMachineVault,
       destinationStorageVault: params.destinationStorageVault,
       destinationRepositoryVault: params.destinationRepoVault,
-    })
+    });
 
     const response = await this.deps.createQueueItem({
       teamName: params.teamName,
@@ -79,12 +79,12 @@ export class QueueActionService {
       bridgeName: params.bridgeName,
       queueVault,
       priority: params.priority,
-    })
+    });
 
     return {
       success: true,
       taskId: response?.taskId,
       isQueued: response?.isQueued,
-    }
+    };
   }
 }

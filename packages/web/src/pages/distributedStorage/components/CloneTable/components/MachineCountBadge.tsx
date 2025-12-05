@@ -1,14 +1,17 @@
-import React from 'react'
-import { CloudServerOutlined } from '@ant-design/icons'
-import { useCloneMachines, type DistributedStorageRbdClone } from '@/api/queries/distributedStorage'
-import { MachineCountBadgeWrapper } from '../styles'
+import React from 'react';
+import { CloudServerOutlined } from '@ant-design/icons';
+import {
+  useCloneMachines,
+  type DistributedStorageRbdClone,
+} from '@/api/queries/distributedStorage';
+import { MachineCountBadgeWrapper } from '../styles';
 
 interface MachineCountBadgeProps {
-  clone: DistributedStorageRbdClone
-  snapshotName: string
-  imageName: string
-  poolName: string
-  teamName: string
+  clone: DistributedStorageRbdClone;
+  snapshotName: string;
+  imageName: string;
+  poolName: string;
+  teamName: string;
 }
 
 export const MachineCountBadge: React.FC<MachineCountBadgeProps> = ({
@@ -24,8 +27,8 @@ export const MachineCountBadge: React.FC<MachineCountBadgeProps> = ({
     imageName,
     poolName,
     teamName,
-    true,
-  )
+    true
+  );
 
   return (
     <MachineCountBadgeWrapper
@@ -36,5 +39,5 @@ export const MachineCountBadge: React.FC<MachineCountBadgeProps> = ({
     >
       <CloudServerOutlined />
     </MachineCountBadgeWrapper>
-  )
-}
+  );
+};

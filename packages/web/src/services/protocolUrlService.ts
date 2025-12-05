@@ -3,114 +3,114 @@
  * Generates and handles rediacc:// URLs for desktop app integration
  */
 
-export type ProtocolAction = 'terminal' | 'desktop' | 'vscode'
+export type ProtocolAction = 'terminal' | 'desktop' | 'vscode';
 
 export interface ProtocolError {
-  type: 'timeout' | 'exception' | 'not-installed' | 'permission-denied'
-  message: string
+  type: 'timeout' | 'exception' | 'not-installed' | 'permission-denied';
+  message: string;
 }
 
 export interface ProtocolUrlParams {
-  team: string
-  machine: string
-  repo: string
-  action?: ProtocolAction
-  queryParams?: Record<string, string | number | boolean>
+  team: string;
+  machine: string;
+  repo: string;
+  action?: ProtocolAction;
+  queryParams?: Record<string, string | number | boolean>;
 }
 
 export interface TerminalParams {
-  command?: string
-  autoExecute?: boolean
-  terminalType?: 'repo' | 'machine'
-  fontSize?: number
+  command?: string;
+  autoExecute?: boolean;
+  terminalType?: 'repo' | 'machine';
+  fontSize?: number;
 }
 
 export interface ContainerParams {
-  containerId?: string
-  containerName?: string
-  action?: 'terminal' | 'logs' | 'stats' | 'exec'
-  command?: string
-  lines?: number
-  follow?: boolean
-  shell?: 'bash' | 'sh' | 'zsh'
+  containerId?: string;
+  containerName?: string;
+  action?: 'terminal' | 'logs' | 'stats' | 'exec';
+  command?: string;
+  lines?: number;
+  follow?: boolean;
+  shell?: 'bash' | 'sh' | 'zsh';
 }
 
 export interface WindowParams {
-  popup?: boolean
-  fullscreen?: boolean
-  minimize?: boolean
-  alwaysOnTop?: boolean
-  x?: number
-  y?: number
-  width?: number
-  height?: number
-  theme?: 'dark' | 'light'
-  lang?: 'en' | 'ar' | 'de'
+  popup?: boolean;
+  fullscreen?: boolean;
+  minimize?: boolean;
+  alwaysOnTop?: boolean;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  theme?: 'dark' | 'light';
+  lang?: 'en' | 'ar' | 'de';
 }
 
 export interface VSCodeParams {
-  path?: string  // Optional: specific directory to open in VSCode
-  windowParams?: WindowParams  // Optional: window customization
+  path?: string; // Optional: specific directory to open in VSCode
+  windowParams?: WindowParams; // Optional: window customization
 }
 
 interface ProtocolWindow extends Window {
-  signalProtocolLaunch?: () => void
+  signalProtocolLaunch?: () => void;
 }
 
 class ProtocolUrlService {
-  private readonly PROTOCOL_SCHEME = 'rediacc'
+  private readonly PROTOCOL_SCHEME = 'rediacc';
 
   /**
    * Generate a protocol URL with the given parameters
    * Fork token will be created automatically for the specified action
    */
   async generateUrl(params: ProtocolUrlParams): Promise<string> {
-    const { team, machine, repo, action, queryParams } = params
+    const { team, machine, repo, action, queryParams } = params;
 
     // Import services dynamically to avoid circular dependencies
-    const { createFreshForkToken } = await import('./forkTokenService')
-    const { apiConnectionService } = await import('./apiConnectionService')
+    const { createFreshForkToken } = await import('./forkTokenService');
+    const { apiConnectionService } = await import('./apiConnectionService');
 
     // Get current API URL to include in protocol URL
-    let apiUrl = await apiConnectionService.getApiUrl()
+    let apiUrl = await apiConnectionService.getApiUrl();
 
     // Convert relative API URL to absolute URL for CLI usage
     // Production builds use '/api' which works in browsers but not in CLI
     if (apiUrl.startsWith('/')) {
-      const protocol = window.location.protocol
-      const host = window.location.host
-      apiUrl = `${protocol}//${host}${apiUrl}`
+      const protocol = window.location.protocol;
+      const host = window.location.host;
+      apiUrl = `${protocol}//${host}${apiUrl}`;
     }
 
     // Create fresh fork token for this action (ensures new token per click)
-    const actionKey = action || 'default'
-    const forkToken = await createFreshForkToken(actionKey)
+    const actionKey = action || 'default';
+    const forkToken = await createFreshForkToken(actionKey);
 
     // Build path components
     const pathParts = [
       encodeURIComponent(forkToken),
       encodeURIComponent(team),
-      encodeURIComponent(machine)
-    ]
+      encodeURIComponent(machine),
+    ];
 
     // Only add repo if it's provided and not empty
     if (repo && repo.trim() !== '') {
-      pathParts.push(encodeURIComponent(repo))
+      pathParts.push(encodeURIComponent(repo));
     }
 
     // Add action if specified
     if (action) {
-      pathParts.push(action)
+      pathParts.push(action);
     }
 
     // Build base URL
-    let url = `${this.PROTOCOL_SCHEME}://${pathParts.join('/')}`
+    let url = `${this.PROTOCOL_SCHEME}://${pathParts.join('/')}`;
 
     // Build query parameters
-    const searchParams = new URLSearchParams()
+    const searchParams = new URLSearchParams();
 
     // Add API URL as the first query parameter (critical for domain matching)
-    searchParams.append('apiUrl', apiUrl)
+    searchParams.append('apiUrl', apiUrl);
 
     // Add other query parameters if any
     if (queryParams && Object.keys(queryParams).length > 0) {
@@ -118,22 +118,21 @@ class ProtocolUrlService {
         if (value !== undefined && value !== null) {
           // Convert boolean to yes/no for consistency with CLI
           if (typeof value === 'boolean') {
-            searchParams.append(key, value ? 'yes' : 'no')
+            searchParams.append(key, value ? 'yes' : 'no');
           } else {
-            searchParams.append(key, String(value))
+            searchParams.append(key, String(value));
           }
         }
-      })
+      });
     }
 
-    const queryString = searchParams.toString()
+    const queryString = searchParams.toString();
     if (queryString) {
-      url += `?${queryString}`
+      url += `?${queryString}`;
     }
 
-    return url
+    return url;
   }
-
 
   /**
    * Generate a terminal-specific URL
@@ -148,11 +147,10 @@ class ProtocolUrlService {
       action: 'terminal',
       queryParams: {
         ...terminalParams,
-        ...windowParams
-      }
-    })
+        ...windowParams,
+      },
+    });
   }
-
 
   /**
    * Generate a desktop-specific URL
@@ -167,9 +165,9 @@ class ProtocolUrlService {
       action: 'desktop',
       queryParams: {
         ...containerParams,
-        ...windowParams
-      }
-    })
+        ...windowParams,
+      },
+    });
   }
 
   /**
@@ -186,9 +184,9 @@ class ProtocolUrlService {
       queryParams: {
         terminalType: 'container',
         ...containerParams,
-        ...windowParams
-      }
-    })
+        ...windowParams,
+      },
+    });
   }
 
   /**
@@ -208,9 +206,9 @@ class ProtocolUrlService {
         lines: containerParams.lines || 100,
         follow: true,
         ...containerParams,
-        ...windowParams
-      }
-    })
+        ...windowParams,
+      },
+    });
   }
 
   /**
@@ -228,9 +226,9 @@ class ProtocolUrlService {
         terminalType: 'container',
         action: 'stats',
         ...containerParams,
-        ...windowParams
-      }
-    })
+        ...windowParams,
+      },
+    });
   }
 
   /**
@@ -245,10 +243,10 @@ class ProtocolUrlService {
       ...baseParams,
       action: 'vscode',
       queryParams: {
-        ...vscodeParams?.path ? { path: vscodeParams.path } : {},
-        ...vscodeParams?.windowParams || {}
-      }
-    })
+        ...(vscodeParams?.path ? { path: vscodeParams.path } : {}),
+        ...(vscodeParams?.windowParams || {}),
+      },
+    });
   }
 
   /**
@@ -258,57 +256,57 @@ class ProtocolUrlService {
    */
   async openUrl(url: string): Promise<{ success: boolean; error?: ProtocolError }> {
     return new Promise((resolve) => {
-      let handled = false
-      
+      let handled = false;
+
       // Set up a timeout - if nothing happens in 3 seconds, assume failure
       const timeout = setTimeout(() => {
         if (!handled) {
-          handled = true
-          resolve({ 
-            success: false, 
-            error: { 
-              type: 'timeout', 
-              message: 'Protocol handler did not respond' 
-            } 
-          })
+          handled = true;
+          resolve({
+            success: false,
+            error: {
+              type: 'timeout',
+              message: 'Protocol handler did not respond',
+            },
+          });
         }
-      }, 3000)
-      
+      }, 3000);
+
       // Listen for blur event - might indicate protocol handler opened
       const handleBlur = () => {
         if (!handled) {
-          handled = true
-          clearTimeout(timeout)
-          window.removeEventListener('blur', handleBlur)
-          resolve({ success: true })
+          handled = true;
+          clearTimeout(timeout);
+          window.removeEventListener('blur', handleBlur);
+          resolve({ success: true });
         }
-      }
-      
-      window.addEventListener('blur', handleBlur)
-      
+      };
+
+      window.addEventListener('blur', handleBlur);
+
       try {
         // Signal that we're about to launch a protocol URL to prevent token wipe
-        const protocolWindow = window as ProtocolWindow
+        const protocolWindow = window as ProtocolWindow;
         if (typeof protocolWindow.signalProtocolLaunch === 'function') {
-          protocolWindow.signalProtocolLaunch()
+          protocolWindow.signalProtocolLaunch();
         }
 
         // Use window.open with _self to replace current tab behavior
         // This triggers the protocol handler without opening a new tab
-        window.open(url, '_self')
+        window.open(url, '_self');
       } catch (error) {
-        handled = true
-        clearTimeout(timeout)
-        window.removeEventListener('blur', handleBlur)
-        resolve({ 
-          success: false, 
-          error: { 
-            type: 'exception', 
-            message: error instanceof Error ? error.message : 'Unknown error' 
-          } 
-        })
+        handled = true;
+        clearTimeout(timeout);
+        window.removeEventListener('blur', handleBlur);
+        resolve({
+          success: false,
+          error: {
+            type: 'exception',
+            message: error instanceof Error ? error.message : 'Unknown error',
+          },
+        });
       }
-    })
+    });
   }
 
   /**
@@ -318,26 +316,26 @@ class ProtocolUrlService {
   async checkProtocolAvailable(): Promise<boolean> {
     // Try to detect if the protocol handler is registered
     // This is tricky because browsers don't expose this information directly
-    
+
     // Method 1: Try to open a test URL in an iframe (won't work in all browsers)
     try {
-      const testUrl = `${this.PROTOCOL_SCHEME}://test`
-      const iframe = document.createElement('iframe')
-      iframe.style.display = 'none'
-      
+      const testUrl = `${this.PROTOCOL_SCHEME}://test`;
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+
       return new Promise<boolean>((resolve) => {
         // Timeout after 2 seconds - assume not installed
         setTimeout(() => {
-          document.body.removeChild(iframe)
-          resolve(false)
-        }, 2000)
-        
-        document.body.appendChild(iframe)
-        iframe.src = testUrl
-      })
+          document.body.removeChild(iframe);
+          resolve(false);
+        }, 2000);
+
+        document.body.appendChild(iframe);
+        iframe.src = testUrl;
+      });
     } catch {
       // If iframe method fails, we can't determine availability
-      return false
+      return false;
     }
   }
 
@@ -353,13 +351,13 @@ class ProtocolUrlService {
   }> {
     // Method 1: Try iframe-based detection
     try {
-      const iframeResult = await this.checkProtocolAvailable()
+      const iframeResult = await this.checkProtocolAvailable();
       if (iframeResult) {
         return {
           available: true,
           method: 'iframe',
-          confidence: 'medium'
-        }
+          confidence: 'medium',
+        };
       }
     } catch {
       // Continue to next method
@@ -367,35 +365,35 @@ class ProtocolUrlService {
 
     // Method 2: Try navigation-based detection (more aggressive)
     try {
-      const testUrl = `${this.PROTOCOL_SCHEME}://status-check/test/test/test`
-      
+      const testUrl = `${this.PROTOCOL_SCHEME}://status-check/test/test/test`;
+
       return new Promise<{
         available: boolean;
         method: 'iframe' | 'navigation' | 'unknown';
         confidence: 'high' | 'medium' | 'low';
         errorReason?: string;
       }>((resolve) => {
-        let resolved = false
-        
+        let resolved = false;
+
         // Create a hidden window/tab to test protocol
-        const testWindow = window.open('', '_blank', 'width=1,height=1,left=-1000,top=-1000')
-        
+        const testWindow = window.open('', '_blank', 'width=1,height=1,left=-1000,top=-1000');
+
         if (!testWindow) {
           resolve({
             available: false,
             method: 'unknown',
             confidence: 'low',
-            errorReason: 'Popup blocked'
-          })
-          return
+            errorReason: 'Popup blocked',
+          });
+          return;
         }
 
         // Set up timeout
         const timeout: ReturnType<typeof setTimeout> = setTimeout(() => {
           if (!resolved) {
-            resolved = true
+            resolved = true;
             try {
-              testWindow.close()
+              testWindow.close();
             } catch {
               // Ignore close errors
             }
@@ -403,63 +401,62 @@ class ProtocolUrlService {
               available: false,
               method: 'navigation',
               confidence: 'medium',
-              errorReason: 'Timeout - protocol handler may not be registered'
-            })
+              errorReason: 'Timeout - protocol handler may not be registered',
+            });
           }
-        }, 3000)
+        }, 3000);
 
         // If the protocol handler is registered, the test window should handle the URL
         // and we won't be able to access its location due to cross-origin restrictions
         try {
-          testWindow.location.href = testUrl
-          
+          testWindow.location.href = testUrl;
+
           // Check if window was redirected (indicates protocol handler worked)
           setTimeout(() => {
             if (!resolved) {
               try {
                 // If we can still access the window's location, protocol didn't work
-                const location = testWindow.location.href
-                resolved = true
-                clearTimeout(timeout)
-                testWindow.close()
-                
+                const location = testWindow.location.href;
+                resolved = true;
+                clearTimeout(timeout);
+                testWindow.close();
+
                 if (location === testUrl || location === 'about:blank') {
                   resolve({
                     available: false,
                     method: 'navigation',
                     confidence: 'high',
-                    errorReason: 'Protocol handler not registered'
-                  })
+                    errorReason: 'Protocol handler not registered',
+                  });
                 } else {
                   resolve({
                     available: true,
                     method: 'navigation',
-                    confidence: 'high'
-                  })
+                    confidence: 'high',
+                  });
                 }
               } catch {
                 // Cross-origin error means protocol handler likely worked
-                resolved = true
-                clearTimeout(timeout)
+                resolved = true;
+                clearTimeout(timeout);
                 try {
-                  testWindow.close()
+                  testWindow.close();
                 } catch {
                   // Ignore close errors
                 }
                 resolve({
                   available: true,
                   method: 'navigation',
-                  confidence: 'medium'
-                })
+                  confidence: 'medium',
+                });
               }
             }
-          }, 1000)
-          
+          }, 1000);
         } catch (error) {
-          resolved = true
-          clearTimeout(timeout)
+          resolved = true;
+          clearTimeout(timeout);
           try {
-            testWindow.close()
+            testWindow.close();
           } catch {
             // Ignore close errors
           }
@@ -467,17 +464,17 @@ class ProtocolUrlService {
             available: false,
             method: 'navigation',
             confidence: 'low',
-            errorReason: `Navigation error: ${error}`
-          })
+            errorReason: `Navigation error: ${error}`,
+          });
         }
-      })
+      });
     } catch (error) {
       return {
         available: false,
         method: 'unknown',
         confidence: 'low',
-        errorReason: `Detection failed: ${error}`
-      }
+        errorReason: `Detection failed: ${error}`,
+      };
     }
   }
 
@@ -493,8 +490,8 @@ class ProtocolUrlService {
           'Open PowerShell or Command Prompt',
           'Run: rediacc protocol register',
           'For system-wide: rediacc protocol register --system-wide (requires Admin)',
-          'Restart your browser'
-        ]
+          'Restart your browser',
+        ],
       },
       {
         platform: 'macOS',
@@ -503,8 +500,8 @@ class ProtocolUrlService {
           'Open Terminal',
           'Run: ./rediacc protocol register',
           'For system-wide: sudo ./rediacc protocol register --system-wide',
-          'You may need to grant permission when prompted'
-        ]
+          'You may need to grant permission when prompted',
+        ],
       },
       {
         platform: 'Linux',
@@ -513,10 +510,10 @@ class ProtocolUrlService {
           'Open Terminal',
           'Run: ./rediacc protocol register',
           'For system-wide: sudo ./rediacc protocol register --system-wide',
-          'Log out and log back in for changes to take effect'
-        ]
-      }
-    ]
+          'Log out and log back in for changes to take effect',
+        ],
+      },
+    ];
   }
 
   /**
@@ -533,9 +530,9 @@ class ProtocolUrlService {
       queryParams: {
         action: 'sync',
         ...syncParams,
-        ...windowParams
-      }
-    })
+        ...windowParams,
+      },
+    });
   }
 
   /**
@@ -552,9 +549,9 @@ class ProtocolUrlService {
       queryParams: {
         action: 'plugin',
         ...pluginParams,
-        ...windowParams
-      }
-    })
+        ...windowParams,
+      },
+    });
   }
 
   /**
@@ -571,9 +568,9 @@ class ProtocolUrlService {
       queryParams: {
         action: 'browser',
         ...browserParams,
-        ...windowParams
-      }
-    })
+        ...windowParams,
+      },
+    });
   }
 
   /**
@@ -586,10 +583,10 @@ class ProtocolUrlService {
       navigate: await this.generateUrl(baseParams),
       terminal: await this.generateTerminalUrl(baseParams),
       desktop: await this.generateDesktopUrl(baseParams),
-      vscode: await this.generateVSCodeUrl(baseParams)
-    }
+      vscode: await this.generateVSCodeUrl(baseParams),
+    };
   }
 }
 
 // Export singleton instance
-export const protocolUrlService = new ProtocolUrlService()
+export const protocolUrlService = new ProtocolUrlService();

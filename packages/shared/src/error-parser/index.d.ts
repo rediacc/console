@@ -10,27 +10,27 @@ export type ErrorSeverity = 'CRITICAL' | 'ERROR' | 'WARNING' | 'INFO' | 'UNKNOWN
  * Parsed error information from queue output
  */
 export interface ParsedError {
-    severity: ErrorSeverity;
-    message: string;
-    fullLine: string;
+  severity: ErrorSeverity;
+  message: string;
+  fullLine: string;
 }
 /**
  * Parsed error result with all errors and prioritization
  */
 export interface ParsedErrorResult {
-    /** All errors found in the text */
-    allErrors: ParsedError[];
-    /** The highest severity error (for display priority) */
-    primaryError: ParsedError | null;
+  /** All errors found in the text */
+  allErrors: ParsedError[];
+  /** The highest severity error (for display priority) */
+  primaryError: ParsedError | null;
 }
 /**
  * Regex patterns for severity matching
  */
 export declare const SEVERITY_PATTERNS: {
-    CRITICAL: RegExp;
-    ERROR: RegExp;
-    WARNING: RegExp;
-    INFO: RegExp;
+  CRITICAL: RegExp;
+  ERROR: RegExp;
+  WARNING: RegExp;
+  INFO: RegExp;
 };
 /**
  * Priority hierarchy (lower number = higher priority)
@@ -88,7 +88,9 @@ export declare function extractAllErrors(output: string | null | undefined): Par
  * //   primaryError: { severity: 'ERROR', message: 'Repository not found', ... }
  * // }
  */
-export declare function parseFailureReason(failureReason: string | null | undefined): ParsedErrorResult;
+export declare function parseFailureReason(
+  failureReason: string | null | undefined
+): ParsedErrorResult;
 /**
  * Maps ErrorSeverity to generic level strings for platform-specific coloring
  *
@@ -117,7 +119,10 @@ export declare function getSeverityLevel(severity: ErrorSeverity): string;
  * formatError(error, (text, level) => chalk.red(text))
  * // Returns: colored "[ERROR] Repository not found"
  */
-export declare function formatError(error: ParsedError, colorFn?: (text: string, level: string) => string): string;
+export declare function formatError(
+  error: ParsedError,
+  colorFn?: (text: string, level: string) => string
+): string;
 /**
  * Platform-agnostic multi-error formatter
  * Accepts optional configuration for showing all errors and applying colors
@@ -137,8 +142,11 @@ export declare function formatError(error: ParsedError, colorFn?: (text: string,
  * formatErrors(result, { showAll: true, colorFn: chalkColorFn })
  * // Returns: "[ERROR] Repository not found\n[WARNING] Disk space low"
  */
-export declare function formatErrors(result: ParsedErrorResult, options?: {
+export declare function formatErrors(
+  result: ParsedErrorResult,
+  options?: {
     showAll?: boolean;
     colorFn?: (text: string, level: string) => string;
-}): string;
+  }
+): string;
 //# sourceMappingURL=index.d.ts.map

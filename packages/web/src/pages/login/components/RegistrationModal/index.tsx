@@ -1,20 +1,20 @@
-import React, { useState } from 'react'
-import { Form, Input, Alert, Checkbox } from 'antd'
+import React, { useState } from 'react';
+import { Form, Input, Alert, Checkbox } from 'antd';
 import {
   UserOutlined,
   LockOutlined,
   MailOutlined,
   BankOutlined,
   SafetyCertificateOutlined,
-  CheckCircleOutlined
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { showMessage } from '@/utils/messages'
-import { hashPassword } from '@/utils/auth'
-import apiClient, { api } from '@/api/client'
-import { apiConnectionService } from '@/services/apiConnectionService'
-import { Turnstile } from '@/pages/login/components/Turnstile'
-import { LanguageLink } from '@/pages/login/components/LanguageLink'
+  CheckCircleOutlined,
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { showMessage } from '@/utils/messages';
+import { hashPassword } from '@/utils/auth';
+import apiClient, { api } from '@/api/client';
+import { apiConnectionService } from '@/services/apiConnectionService';
+import { Turnstile } from '@/pages/login/components/Turnstile';
+import { LanguageLink } from '@/pages/login/components/LanguageLink';
 import {
   StyledModal,
   VerticalStack,
@@ -30,34 +30,34 @@ import {
   SuccessTitle,
   SuccessDescription,
   StepsWrapper,
-} from './styles'
+} from './styles';
 
-const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
-const isCaptchaEnabled = !!turnstileSiteKey 
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
+const isCaptchaEnabled = !!turnstileSiteKey;
 
 interface RegistrationModalProps {
-  open: boolean
-  onCancel: () => void
+  open: boolean;
+  onCancel: () => void;
   autoFillData?: {
-    email: string
-    password: string
-    companyName: string
-    activationCode?: string
-  }
-  autoSubmit?: boolean
-  onRegistrationComplete?: (credentials: { email: string; password: string }) => void
+    email: string;
+    password: string;
+    companyName: string;
+    activationCode?: string;
+  };
+  autoSubmit?: boolean;
+  onRegistrationComplete?: (credentials: { email: string; password: string }) => void;
 }
 
 interface RegistrationForm {
-  email: string
-  password: string
-  passwordConfirm: string
-  companyName: string
-  termsAccepted?: boolean
+  email: string;
+  password: string;
+  passwordConfirm: string;
+  companyName: string;
+  termsAccepted?: boolean;
 }
 
 interface VerificationForm {
-  activationCode: string
+  activationCode: string;
 }
 
 const RegistrationModal: React.FC<RegistrationModalProps> = ({
@@ -65,41 +65,41 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   onCancel,
   autoFillData,
   autoSubmit = false,
-  onRegistrationComplete
+  onRegistrationComplete,
 }) => {
-  const { t, i18n } = useTranslation(['auth', 'common'])
-  const [currentStep, setCurrentStep] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const { t, i18n } = useTranslation(['auth', 'common']);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   // Default to true (CI mode) - this is safer as it allows form submission
   // If CI mode is actually disabled, the check will set it to false
   // Server-side validation will enforce captcha requirements regardless
-  const [ciMode, setCiMode] = useState<boolean>(true)
-  
+  const [ciMode, setCiMode] = useState<boolean>(true);
+
   const [registrationData, setRegistrationData] = useState<{
-    email: string
-    companyName: string
-    passwordHash: string
-    password?: string // Store password for auto-login
-  } | null>(null)
-  
-  const [registrationForm] = Form.useForm<RegistrationForm>()
-  const [verificationForm] = Form.useForm<VerificationForm>()
+    email: string;
+    companyName: string;
+    passwordHash: string;
+    password?: string; // Store password for auto-login
+  } | null>(null);
+
+  const [registrationForm] = Form.useForm<RegistrationForm>();
+  const [verificationForm] = Form.useForm<VerificationForm>();
 
   // Check if CI mode is enabled (for testing/e2e)
   React.useEffect(() => {
     const checkCiMode = async () => {
       try {
-        const isCI = await apiConnectionService.isCiMode()
-        setCiMode(isCI)
+        const isCI = await apiConnectionService.isCiMode();
+        setCiMode(isCI);
       } catch (error) {
-        console.error('Failed to check CI mode:', error)
-        setCiMode(false) // Default to false on error
+        console.error('Failed to check CI mode:', error);
+        setCiMode(false); // Default to false on error
       }
-    }
-    checkCiMode()
-  }, [])
+    };
+    checkCiMode();
+  }, []);
 
   // Auto-fill and auto-submit logic
   React.useEffect(() => {
@@ -109,49 +109,49 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         email: autoFillData.email,
         password: autoFillData.password,
         passwordConfirm: autoFillData.password,
-        companyName: autoFillData.companyName
-      })
+        companyName: autoFillData.companyName,
+      });
 
       // Auto-submit registration form after a short delay
       setTimeout(() => {
-        registrationForm.submit()
-      }, 500)
+        registrationForm.submit();
+      }, 500);
     }
-  }, [open, autoFillData, autoSubmit, registrationForm])
+  }, [open, autoFillData, autoSubmit, registrationForm]);
 
   // Auto-fill and auto-submit verification code
   React.useEffect(() => {
     if (currentStep === 1 && autoFillData?.activationCode && autoSubmit) {
       verificationForm.setFieldsValue({
-        activationCode: autoFillData.activationCode
-      })
-      
+        activationCode: autoFillData.activationCode,
+      });
+
       // Auto-submit verification form after a short delay
       setTimeout(() => {
-        verificationForm.submit()
-      }, 500)
+        verificationForm.submit();
+      }, 500);
     }
-  }, [currentStep, autoFillData, autoSubmit, verificationForm])
+  }, [currentStep, autoFillData, autoSubmit, verificationForm]);
 
   const handleRegistration = async (values: RegistrationForm) => {
     // Check Turnstile token only if captcha is enabled and not in CI mode
     if (isCaptchaEnabled && !ciMode && !turnstileToken) {
-      setError(t('auth:registration.captchaRequired', 'Please complete the captcha'))
-      return
+      setError(t('auth:registration.captchaRequired', 'Please complete the captcha'));
+      return;
     }
 
     // Check terms acceptance
     if (!values.termsAccepted) {
-      setError(t('auth:registration.termsRequired', 'You must accept the terms and conditions'))
-      return
+      setError(t('auth:registration.termsRequired', 'You must accept the terms and conditions'));
+      return;
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       // Hash the password
-      const passwordHash = await hashPassword(values.password)
+      const passwordHash = await hashPassword(values.password);
 
       // Call CreateNewCompany with headers and captcha token
       await api.company.registerCompany(
@@ -160,53 +160,52 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         passwordHash,
         turnstileToken || undefined,
         i18n.language || 'en'
-      )
+      );
 
       // Store registration data for verification step
       setRegistrationData({
         email: values.email,
         companyName: values.companyName,
         passwordHash: passwordHash,
-        password: values.password // Store for auto-login if needed
-      })
+        password: values.password, // Store for auto-login if needed
+      });
 
       // Move to verification step
-      setCurrentStep(1)
-      showMessage('success', t('auth:registration.registrationSuccess'))
+      setCurrentStep(1);
+      showMessage('success', t('auth:registration.registrationSuccess'));
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : t('auth:registration.registrationFailed')
-      setError(errorMessage)
-      showMessage('error', errorMessage)
+      const errorMessage =
+        error instanceof Error ? error.message : t('auth:registration.registrationFailed');
+      setError(errorMessage);
+      showMessage('error', errorMessage);
 
       // Reset Turnstile token on error (widget will auto-reset)
-      setTurnstileToken(null)
+      setTurnstileToken(null);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Turnstile handlers
   const onTurnstileSuccess = (token: string) => {
-    setTurnstileToken(token)
-    setError(null) // Clear error when captcha is completed
-  }
+    setTurnstileToken(token);
+    setError(null); // Clear error when captcha is completed
+  };
 
   const onTurnstileExpire = () => {
-    setTurnstileToken(null)
-  }
+    setTurnstileToken(null);
+  };
 
   const onTurnstileError = (errorCode?: string) => {
-    console.error('Turnstile error:', errorCode)
-    setTurnstileToken(null)
-  }
+    console.error('Turnstile error:', errorCode);
+    setTurnstileToken(null);
+  };
 
   const handleVerification = async (values: VerificationForm) => {
-    if (!registrationData) return
+    if (!registrationData) return;
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       // Use the updated activateUser method with authentication
@@ -214,47 +213,46 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         registrationData.email,
         values.activationCode,
         registrationData.passwordHash
-      )
+      );
 
       if (response.failure !== 0) {
-        throw new Error(response.errors?.join('; ') || 'Activation failed')
+        throw new Error(response.errors?.join('; ') || 'Activation failed');
       }
 
       // Move to success step
-      setCurrentStep(2)
-      showMessage('success', t('auth:registration.activationSuccess'))
+      setCurrentStep(2);
+      showMessage('success', t('auth:registration.activationSuccess'));
 
       // Call completion callback if provided (for auto-login)
       if (onRegistrationComplete && registrationData?.password) {
         onRegistrationComplete({
           email: registrationData.email,
-          password: registrationData.password
-        })
+          password: registrationData.password,
+        });
       }
 
       // Close modal immediately after success
-      handleClose()
+      handleClose();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : t('auth:registration.activationFailed')
-      setError(errorMessage)
-      showMessage('error', errorMessage)
+      const errorMessage =
+        error instanceof Error ? error.message : t('auth:registration.activationFailed');
+      setError(errorMessage);
+      showMessage('error', errorMessage);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleClose = () => {
-    setCurrentStep(0)
-    setError(null)
-    setRegistrationData(null)
-    setTurnstileToken(null)
-    registrationForm.resetFields()
-    verificationForm.resetFields()
+    setCurrentStep(0);
+    setError(null);
+    setRegistrationData(null);
+    setTurnstileToken(null);
+    registrationForm.resetFields();
+    verificationForm.resetFields();
 
-    onCancel()
-  }
+    onCancel();
+  };
 
   const renderRegistrationForm = () => (
     <Form
@@ -269,7 +267,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         label={t('auth:registration.companyName')}
         rules={[
           { required: true, message: t('common:messages.required') },
-          { min: 3, message: t('auth:registration.companyNameMin') }
+          { min: 3, message: t('auth:registration.companyNameMin') },
         ]}
       >
         <Input
@@ -285,7 +283,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         label={t('auth:registration.email')}
         rules={[
           { required: true, message: t('common:messages.required') },
-          { type: 'email', message: t('common:messages.invalidEmail') }
+          { type: 'email', message: t('common:messages.invalidEmail') },
         ]}
       >
         <Input
@@ -302,7 +300,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         label={t('auth:registration.password')}
         rules={[
           { required: true, message: t('common:messages.required') },
-          { min: 8, message: t('auth:registration.passwordMin') }
+          { min: 8, message: t('auth:registration.passwordMin') },
         ]}
       >
         <Input.Password
@@ -323,9 +321,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           ({ getFieldValue }) => ({
             validator(_, value) {
               if (!value || getFieldValue('password') === value) {
-                return Promise.resolve()
+                return Promise.resolve();
               }
-              return Promise.reject(new Error(t('auth:registration.passwordMismatch')))
+              return Promise.reject(new Error(t('auth:registration.passwordMismatch')));
             },
           }),
         ]}
@@ -348,21 +346,47 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           rules={[
             {
               validator: (_, value) =>
-                value ? Promise.resolve() : Promise.reject(new Error(t('auth:registration.termsRequired', 'You must accept the terms and conditions')))
-            }
+                value
+                  ? Promise.resolve()
+                  : Promise.reject(
+                      new Error(
+                        t(
+                          'auth:registration.termsRequired',
+                          'You must accept the terms and conditions'
+                        )
+                      )
+                    ),
+            },
           ]}
           $noMargin
         >
           <Checkbox>
-            {t('auth:registration.termsText', 'I accept the terms and conditions {terms} and {privacy}').split('{terms}')[0]}
-            <LanguageLink to="/terms" className="underline" target='_blank'>
+            {
+              t(
+                'auth:registration.termsText',
+                'I accept the terms and conditions {terms} and {privacy}'
+              ).split('{terms}')[0]
+            }
+            <LanguageLink to="/terms" className="underline" target="_blank">
               {t('auth:registration.termsLink', 'Terms of Use')}
             </LanguageLink>
-            {t('auth:registration.termsText', 'I accept the terms and conditions {terms} and {privacy}').split('{terms}')[1].split('{privacy}')[0]}
-            <LanguageLink to="/privacy" className="underline" target='_blank'>
+            {
+              t(
+                'auth:registration.termsText',
+                'I accept the terms and conditions {terms} and {privacy}'
+              )
+                .split('{terms}')[1]
+                .split('{privacy}')[0]
+            }
+            <LanguageLink to="/privacy" className="underline" target="_blank">
               {t('auth:registration.privacyLink', 'Privacy Policy')}
             </LanguageLink>
-            {t('auth:registration.termsText', 'I accept the terms and conditions {terms} and {privacy}').split('{privacy}')[1]}
+            {
+              t(
+                'auth:registration.termsText',
+                'I accept the terms and conditions {terms} and {privacy}'
+              ).split('{privacy}')[1]
+            }
           </Checkbox>
         </TermsField>
 
@@ -394,7 +418,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         </SubmitButton>
       </FormField>
     </Form>
-  )
+  );
 
   const renderVerificationForm = () => (
     <Form
@@ -419,7 +443,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           rules={[
             { required: true, message: t('common:messages.required') },
             { len: 6, message: t('auth:registration.activationCodeLength') },
-            { pattern: /^\d{6}$/, message: t('auth:registration.activationCodeFormat') }
+            { pattern: /^\d{6}$/, message: t('auth:registration.activationCodeFormat') },
           ]}
         >
           <CodeInput
@@ -445,7 +469,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         </FormField>
       </VerticalStack>
     </Form>
-  )
+  );
 
   const renderSuccess = () => (
     <SuccessContainer data-testid="registration-success-container">
@@ -459,20 +483,20 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         {t('auth:registration.successDescription')}
       </SuccessDescription>
     </SuccessContainer>
-  )
+  );
 
   const renderContent = () => {
     switch (currentStep) {
       case 0:
-        return renderRegistrationForm()
+        return renderRegistrationForm();
       case 1:
-        return renderVerificationForm()
+        return renderVerificationForm();
       case 2:
-        return renderSuccess()
+        return renderSuccess();
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <StyledModal
@@ -491,7 +515,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           items={[
             { title: t('auth:registration.steps.register'), icon: <UserOutlined /> },
             { title: t('auth:registration.steps.verify'), icon: <SafetyCertificateOutlined /> },
-            { title: t('auth:registration.steps.complete'), icon: <CheckCircleOutlined /> }
+            { title: t('auth:registration.steps.complete'), icon: <CheckCircleOutlined /> },
           ]}
         />
 
@@ -509,8 +533,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         {renderContent()}
       </VerticalStack>
     </StyledModal>
-  )
-}
+  );
+};
 
-export default RegistrationModal
-
+export default RegistrationModal;

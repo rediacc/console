@@ -1,14 +1,12 @@
-import React, { useEffect, useState } from 'react'
-import { Select } from 'antd'
-import { useTranslation } from 'react-i18next'
+import React, { useEffect, useState } from 'react';
+import { Select } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   useAvailableMachinesForClone,
   type DistributedStorageRbdImage,
   type AvailableMachine,
-} from '@/api/queries/distributedStorage'
-import {
-  useUpdateImageMachineAssignment,
-} from '@/api/queries/distributedStorageMutations'
+} from '@/api/queries/distributedStorage';
+import { useUpdateImageMachineAssignment } from '@/api/queries/distributedStorageMutations';
 import {
   StyledModal,
   TitleStack,
@@ -26,16 +24,16 @@ import {
   DisabledOptionText,
   HelperText,
   LoadingContainer,
-} from './styles'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
+} from './styles';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 
 interface ImageMachineReassignmentModalProps {
-  open: boolean
-  image: DistributedStorageRbdImage | null
-  teamName: string
-  poolName: string
-  onCancel: () => void
-  onSuccess?: () => void
+  open: boolean;
+  image: DistributedStorageRbdImage | null;
+  teamName: string;
+  poolName: string;
+  onCancel: () => void;
+  onSuccess?: () => void;
 }
 
 export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentModalProps> = ({
@@ -44,43 +42,43 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   teamName,
   poolName,
   onCancel,
-  onSuccess
+  onSuccess,
 }) => {
-  const { t } = useTranslation(['distributedStorage', 'machines', 'common'])
-  const [selectedMachine, setSelectedMachine] = useState<string>('')
-  const updateMachineAssignment = useUpdateImageMachineAssignment()
-  
+  const { t } = useTranslation(['distributedStorage', 'machines', 'common']);
+  const [selectedMachine, setSelectedMachine] = useState<string>('');
+  const updateMachineAssignment = useUpdateImageMachineAssignment();
+
   // Fetch available machines
   const { data: availableMachines = [], isLoading: loadingMachines } = useAvailableMachinesForClone(
     teamName,
     open && !!image
-  ) as { data?: AvailableMachine[]; isLoading: boolean }
+  ) as { data?: AvailableMachine[]; isLoading: boolean };
 
   useEffect(() => {
     if (!open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedMachine('')
+      setSelectedMachine('');
     }
-  }, [open])
+  }, [open]);
 
   const handleOk = async () => {
-    if (!image || !selectedMachine) return
-    
+    if (!image || !selectedMachine) return;
+
     try {
       await updateMachineAssignment.mutateAsync({
         teamName,
         poolName,
         imageName: image.imageName,
-        newMachineName: selectedMachine
-      })
-      
-      if (onSuccess) onSuccess()
-      onCancel()
+        newMachineName: selectedMachine,
+      });
+
+      if (onSuccess) onSuccess();
+      onCancel();
     } catch {
       // Error is handled by the mutation hook
     }
-  }
-  
+  };
+
   return (
     <StyledModal
       title={
@@ -95,7 +93,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       okText={t('common:actions.save')}
       cancelText={t('common:actions.cancel')}
       confirmLoading={updateMachineAssignment.isPending}
-      okButtonProps={{ 
+      okButtonProps={{
         disabled: !selectedMachine || selectedMachine === image?.machineName,
         'data-testid': 'image-reassign-submit',
       }}
@@ -110,12 +108,12 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
             <FieldLabel>{t('distributedStorage:images.image')}:</FieldLabel>
             <FieldValue>{image.imageName}</FieldValue>
           </FieldRow>
-          
+
           <FieldRow>
             <FieldLabel>{t('distributedStorage:pools.pool')}:</FieldLabel>
             <FieldValue>{poolName}</FieldValue>
           </FieldRow>
-          
+
           {image.machineName && (
             <InfoAlert
               message={t('machines:currentMachineAssignment', { machine: image.machineName })}
@@ -124,11 +122,9 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
               data-testid="image-reassign-current-machine-info"
             />
           )}
-          
+
           <div>
-            <SelectLabel>
-              {t('distributedStorage:images.selectNewMachine')}:
-            </SelectLabel>
+            <SelectLabel>{t('distributedStorage:images.selectNewMachine')}:</SelectLabel>
             <LoadingContainer>
               <LoadingWrapper loading={loadingMachines} centered minHeight={120}>
                 <>
@@ -139,16 +135,18 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                     showSearch
                     optionFilterProp="children"
                     notFoundContent={
-                      availableMachines.length === 0 
-                        ? <SelectOptionText>{t('machines:noAvailableMachines')}</SelectOptionText>
-                        : <SelectOptionText>{t('common:noMatchingResults')}</SelectOptionText>
+                      availableMachines.length === 0 ? (
+                        <SelectOptionText>{t('machines:noAvailableMachines')}</SelectOptionText>
+                      ) : (
+                        <SelectOptionText>{t('common:noMatchingResults')}</SelectOptionText>
+                      )
                     }
                     data-testid="image-reassign-machine-select"
                   >
                     {/* Include current machine if it exists */}
                     {image.machineName && (
-                      <Select.Option 
-                        key={image.machineName} 
+                      <Select.Option
+                        key={image.machineName}
                         value={image.machineName}
                         disabled
                         data-testid={`image-reassign-machine-option-${image.machineName}`}
@@ -158,11 +156,11 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                         </DisabledOptionText>
                       </Select.Option>
                     )}
-                    
+
                     {/* Available machines */}
-                    {availableMachines.map(machine => (
-                      <Select.Option 
-                        key={machine.machineName} 
+                    {availableMachines.map((machine) => (
+                      <Select.Option
+                        key={machine.machineName}
                         value={machine.machineName}
                         data-testid={`image-reassign-machine-option-${machine.machineName}`}
                       >
@@ -170,18 +168,18 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                       </Select.Option>
                     ))}
                   </StyledSelect>
-                  
-                  <HelperText>
-                    {t('distributedStorage:images.reassignmentInfo')}
-                  </HelperText>
+
+                  <HelperText>{t('distributedStorage:images.reassignmentInfo')}</HelperText>
                 </>
               </LoadingWrapper>
             </LoadingContainer>
           </div>
-          
+
           <WarningAlert
             message={<FieldLabel>{t('common:important')}</FieldLabel>}
-            description={<FieldValue>{t('distributedStorage:images.reassignmentWarning')}</FieldValue>}
+            description={
+              <FieldValue>{t('distributedStorage:images.reassignmentWarning')}</FieldValue>
+            }
             type="warning"
             showIcon
             data-testid="image-reassign-warning"
@@ -189,5 +187,5 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
         </ContentStack>
       )}
     </StyledModal>
-  )
-}
+  );
+};

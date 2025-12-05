@@ -1,19 +1,19 @@
-﻿import React, { useState, useEffect, useMemo } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Button, Space, Tag, Typography, Alert, Tooltip } from 'antd'
-import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { usePanelWidth } from '@/hooks/usePanelWidth'
-import { DETAIL_PANEL } from '@/constants/layout'
-import { useMachines } from '@/api/queries/machines'
-import { useRepos } from '@/api/queries/repos'
-import { RepoContainerTable } from '@/pages/resources/components/RepoContainerTable'
-import { Machine } from '@/types'
-import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel'
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import { useQueueTraceModal } from '@/hooks/useDialogState'
-import { IconButton } from '@/styles/primitives'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
+﻿import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Button, Space, Tag, Typography, Alert, Tooltip } from 'antd';
+import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { usePanelWidth } from '@/hooks/usePanelWidth';
+import { DETAIL_PANEL } from '@/constants/layout';
+import { useMachines } from '@/api/queries/machines';
+import { useRepos } from '@/api/queries/repos';
+import { RepoContainerTable } from '@/pages/resources/components/RepoContainerTable';
+import { Machine } from '@/types';
+import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { useQueueTraceModal } from '@/hooks/useDialogState';
+import { IconButton } from '@/styles/primitives';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {
   PageWrapper,
   FullHeightCard,
@@ -30,164 +30,169 @@ import {
   CenteredState,
   ErrorWrapper,
   HeaderTitleText,
-} from './styles'
+} from './styles';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 // Repo interface from vaultStatus (runtime data)
 interface Repo {
-  name: string
-  repoTag?: string
-  size: number
-  size_human: string
-  modified: number
-  modified_human: string
-  mounted: boolean
-  mount_path: string
-  image_path: string
-  accessible: boolean
-  has_rediaccfile: boolean
-  docker_available: boolean
-  docker_running: boolean
-  container_count: number
-  plugin_count: number
-  has_services: boolean
-  service_count: number
-  isUnmapped?: boolean
-  originalGuid?: string
+  name: string;
+  repoTag?: string;
+  size: number;
+  size_human: string;
+  modified: number;
+  modified_human: string;
+  mounted: boolean;
+  mount_path: string;
+  image_path: string;
+  accessible: boolean;
+  has_rediaccfile: boolean;
+  docker_available: boolean;
+  docker_running: boolean;
+  container_count: number;
+  plugin_count: number;
+  has_services: boolean;
+  service_count: number;
+  isUnmapped?: boolean;
+  originalGuid?: string;
 }
 
 interface ContainerData {
-  id: string
-  name: string
-  image: string
-  command: string
-  created: string
-  status: string
-  state: string
-  ports: string
+  id: string;
+  name: string;
+  image: string;
+  command: string;
+  created: string;
+  status: string;
+  state: string;
+  ports: string;
   port_mappings?: Array<{
-    host?: string
-    host_port?: string
-    container_port: string
-    protocol: string
-  }>
-  labels: string
-  mounts: string
-  networks: string
-  size: string
-  repo: string
-  cpu_percent: string
-  memory_usage: string
-  memory_percent: string
-  net_io: string
-  block_io: string
-  pids: string
+    host?: string;
+    host_port?: string;
+    container_port: string;
+    protocol: string;
+  }>;
+  labels: string;
+  mounts: string;
+  networks: string;
+  size: string;
+  repo: string;
+  cpu_percent: string;
+  memory_usage: string;
+  memory_percent: string;
+  net_io: string;
+  block_io: string;
+  pids: string;
 }
 
 type RepoContainersLocationState = {
-  machine?: Machine
-  repo?: Repo
-} | null
+  machine?: Machine;
+  repo?: Repo;
+} | null;
 
 const isRepoData = (value: unknown): value is Repo => {
-  return typeof value === 'object' && value !== null && 'name' in value
-}
+  return typeof value === 'object' && value !== null && 'name' in value;
+};
 
 const RepoContainersPage: React.FC = () => {
-  const { machineName, repoName } = useParams<{ machineName: string; repoName: string }>()
-  const navigate = useNavigate()
-  const location = useLocation<RepoContainersLocationState>()
-  const { t } = useTranslation(['resources', 'machines', 'common'])
+  const { machineName, repoName } = useParams<{ machineName: string; repoName: string }>();
+  const navigate = useNavigate();
+  const location = useLocation<RepoContainersLocationState>();
+  const { t } = useTranslation(['resources', 'machines', 'common']);
 
   // Extract machine and repo from navigation state
-  const machine = location.state?.machine
-  const repo = location.state?.repo
+  const machine = location.state?.machine;
+  const repo = location.state?.repo;
 
-  const [selectedContainer, setSelectedContainer] = useState<ContainerData | null>(null)
-  const [refreshKey, setRefreshKey] = useState(0)
-  const queueTrace = useQueueTraceModal()
+  const [selectedContainer, setSelectedContainer] = useState<ContainerData | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const queueTrace = useQueueTraceModal();
 
   // Fetch machine data if not provided via state
-  const { data: machines, isLoading: machinesLoading, refetch: refetchMachines } = useMachines()
-  const actualMachine = machine || machines?.find(m => m.machineName === machineName)
+  const { data: machines, isLoading: machinesLoading, refetch: refetchMachines } = useMachines();
+  const actualMachine = machine || machines?.find((m) => m.machineName === machineName);
 
   // Fetch repos to get the repoGuid from friendly name
-  const { data: teamRepos = [], isLoading: reposLoading } = useRepos(actualMachine?.teamName ? [actualMachine.teamName] : undefined)
+  const { data: teamRepos = [], isLoading: reposLoading } = useRepos(
+    actualMachine?.teamName ? [actualMachine.teamName] : undefined
+  );
 
   // Reconstruct repo from vaultStatus if not provided via state
   const actualRepo = useMemo(() => {
-    if (repo) return repo
+    if (repo) return repo;
 
-    if (!actualMachine?.vaultStatus || !repoName) return null
+    if (!actualMachine?.vaultStatus || !repoName) return null;
 
     // First, find the repoGuid from the API data using the friendly name
-    const repoCredential = teamRepos.find(r => r.repoName === repoName)
-    const repoGuidToFind = repoCredential?.repoGuid
+    const repoCredential = teamRepos.find((r) => r.repoName === repoName);
+    const repoGuidToFind = repoCredential?.repoGuid;
 
     try {
-      const vaultStatusData = JSON.parse(actualMachine.vaultStatus)
+      const vaultStatusData = JSON.parse(actualMachine.vaultStatus);
       if (vaultStatusData.status === 'completed' && vaultStatusData.result) {
-        let cleanedResult = vaultStatusData.result.trim()
-        const newlineIndex = cleanedResult.indexOf('\njq:')
+        let cleanedResult = vaultStatusData.result.trim();
+        const newlineIndex = cleanedResult.indexOf('\njq:');
         if (newlineIndex > 0) {
-          cleanedResult = cleanedResult.substring(0, newlineIndex)
+          cleanedResult = cleanedResult.substring(0, newlineIndex);
         }
-        const result = JSON.parse(cleanedResult)
+        const result = JSON.parse(cleanedResult);
 
         if (Array.isArray(result?.repositories)) {
           // Search by GUID if we have it, otherwise try by name as fallback
-          return result.repositories.find(
-            (candidate): candidate is Repo => isRepoData(candidate) &&
-              (repoGuidToFind ? candidate.name === repoGuidToFind : candidate.name === repoName)
-          ) || null
+          return (
+            result.repositories.find(
+              (candidate): candidate is Repo =>
+                isRepoData(candidate) &&
+                (repoGuidToFind ? candidate.name === repoGuidToFind : candidate.name === repoName)
+            ) || null
+          );
         }
       }
     } catch (err) {
-      console.error('Failed to parse repo from vaultStatus:', err)
+      console.error('Failed to parse repo from vaultStatus:', err);
     }
 
-    return null
-  }, [repo, actualMachine?.vaultStatus, repoName, teamRepos])
+    return null;
+  }, [repo, actualMachine?.vaultStatus, repoName, teamRepos]);
 
   // Panel width management
-  const panelWidth = usePanelWidth()
-  const [splitWidth, setSplitWidth] = useState(panelWidth)
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(true)
+  const panelWidth = usePanelWidth();
+  const [splitWidth, setSplitWidth] = useState(panelWidth);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
 
   // Update splitWidth when window resizes
   useEffect(() => {
-    setSplitWidth(panelWidth)
-  }, [panelWidth])
+    setSplitWidth(panelWidth);
+  }, [panelWidth]);
 
-  const actualPanelWidth = isPanelCollapsed ? DETAIL_PANEL.COLLAPSED_WIDTH : splitWidth
+  const actualPanelWidth = isPanelCollapsed ? DETAIL_PANEL.COLLAPSED_WIDTH : splitWidth;
 
   // Determine selected resource for detail panel
   const selectedResource = selectedContainer
     ? { type: 'container' as const, data: selectedContainer }
-    : null
+    : null;
 
   // Navigation handlers
   const handleBackToRepos = () => {
     navigate(`/machines/${machineName}/repos`, {
-      state: { machine: actualMachine }
-    })
-  }
+      state: { machine: actualMachine },
+    });
+  };
 
   const handleBackToMachines = () => {
-    navigate('/machines')
-  }
+    navigate('/machines');
+  };
 
   const handleContainerClick = (container: ContainerData) => {
-    setSelectedContainer(container)
-    setIsPanelCollapsed(false)
-  }
+    setSelectedContainer(container);
+    setIsPanelCollapsed(false);
+  };
 
   const handleRefresh = async () => {
-    setRefreshKey(prev => prev + 1)
+    setRefreshKey((prev) => prev + 1);
     // Refetch machines to get updated vaultStatus with container data
-    await refetchMachines()
-  }
+    await refetchMachines();
+  };
 
   // Loading state
   if (machinesLoading || reposLoading) {
@@ -202,7 +207,7 @@ const RepoContainersPage: React.FC = () => {
           </CenteredState>
         </FullHeightCard>
       </PageWrapper>
-    )
+    );
   }
 
   // Error state - machine not found
@@ -225,7 +230,7 @@ const RepoContainersPage: React.FC = () => {
           />
         </FullHeightCard>
       </PageWrapper>
-    )
+    );
   }
 
   // Error state - repo not found
@@ -248,10 +253,10 @@ const RepoContainersPage: React.FC = () => {
           />
         </FullHeightCard>
       </PageWrapper>
-    )
+    );
   }
 
-  const actualRepoName = actualRepo.name
+  const actualRepoName = actualRepo.name;
 
   return (
     <PageWrapper>
@@ -261,22 +266,24 @@ const RepoContainersPage: React.FC = () => {
             items={[
               {
                 title: <span>{t('machines:machines')}</span>,
-                onClick: () => navigate('/machines')
+                onClick: () => navigate('/machines'),
               },
               {
                 title: <span>{actualMachine.machineName}</span>,
-                onClick: () => navigate(`/machines/${machineName}/repos`, { state: { machine: actualMachine } })
+                onClick: () =>
+                  navigate(`/machines/${machineName}/repos`, { state: { machine: actualMachine } }),
               },
               {
                 title: <span>{t('resources:repos.repos')}</span>,
-                onClick: () => navigate(`/machines/${machineName}/repos`, { state: { machine: actualMachine } })
+                onClick: () =>
+                  navigate(`/machines/${machineName}/repos`, { state: { machine: actualMachine } }),
               },
               {
-                title: actualRepoName
+                title: actualRepoName,
               },
               {
-                title: t('resources:containers.containers')
-              }
+                title: t('resources:containers.containers'),
+              },
             ]}
             data-testid="repo-containers-breadcrumb"
           />
@@ -295,16 +302,26 @@ const RepoContainersPage: React.FC = () => {
                 <HeaderTitleText level={4}>
                   <Space>
                     <InboxOutlined />
-                    <span>{t('machines:repoContainers')}: {actualRepoName}</span>
+                    <span>
+                      {t('machines:repoContainers')}: {actualRepoName}
+                    </span>
                   </Space>
                 </HeaderTitleText>
               </TitleRow>
               <TagRow>
-                <Tag color="purple">{t('machines:machine')}: {actualMachine.machineName}</Tag>
-                <Tag color="green">{t('machines:team')}: {actualMachine.teamName}</Tag>
-                <Tag color="blue">{t('machines:bridge')}: {actualMachine.bridgeName}</Tag>
+                <Tag color="purple">
+                  {t('machines:machine')}: {actualMachine.machineName}
+                </Tag>
+                <Tag color="green">
+                  {t('machines:team')}: {actualMachine.teamName}
+                </Tag>
+                <Tag color="blue">
+                  {t('machines:bridge')}: {actualMachine.bridgeName}
+                </Tag>
                 {actualMachine.regionName && (
-                  <Tag color="cyan">{t('machines:region')}: {actualMachine.regionName}</Tag>
+                  <Tag color="cyan">
+                    {t('machines:region')}: {actualMachine.regionName}
+                  </Tag>
                 )}
               </TagRow>
             </TitleColumn>
@@ -331,7 +348,7 @@ const RepoContainersPage: React.FC = () => {
               onContainerClick={handleContainerClick}
               highlightedContainer={selectedContainer}
               onQueueItemCreated={(taskId, machineName) => {
-                queueTrace.open(taskId, machineName)
+                queueTrace.open(taskId, machineName);
               }}
             />
           </ListPanel>
@@ -342,8 +359,8 @@ const RepoContainersPage: React.FC = () => {
               $right={actualPanelWidth}
               $visible={true}
               onClick={() => {
-                setSelectedContainer(null)
-                setIsPanelCollapsed(true)
+                setSelectedContainer(null);
+                setIsPanelCollapsed(true);
               }}
               data-testid="repo-containers-backdrop"
             />
@@ -355,8 +372,8 @@ const RepoContainersPage: React.FC = () => {
               data={selectedResource.data}
               visible={true}
               onClose={() => {
-                setSelectedContainer(null)
-                setIsPanelCollapsed(true)
+                setSelectedContainer(null);
+                setIsPanelCollapsed(true);
               }}
               splitWidth={splitWidth}
               onSplitWidthChange={setSplitWidth}
@@ -373,14 +390,13 @@ const RepoContainersPage: React.FC = () => {
           taskId={queueTrace.state.taskId}
           open={queueTrace.state.open}
           onCancel={() => {
-            queueTrace.close()
-            handleRefresh()
+            queueTrace.close();
+            handleRefresh();
           }}
         />
       )}
     </PageWrapper>
-  )
-}
+  );
+};
 
-export default RepoContainersPage
-
+export default RepoContainersPage;

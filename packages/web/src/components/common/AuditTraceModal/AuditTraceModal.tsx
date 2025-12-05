@@ -1,5 +1,5 @@
-import React from 'react'
-import { Table, Tag, Typography, Space, Alert, Button, Dropdown, message } from 'antd'
+import React from 'react';
+import { Table, Tag, Typography, Space, Alert, Button, Dropdown, message } from 'antd';
 import {
   PlusCircleOutlined,
   EditOutlined,
@@ -16,14 +16,14 @@ import {
   FileExcelOutlined,
   DatabaseOutlined,
   HddOutlined,
-  CopyOutlined
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit'
-import { formatTimestampAsIs } from '@/core'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
-import { CaptionText } from '@/styles/primitives'
+  CopyOutlined,
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit';
+import { formatTimestampAsIs } from '@/core';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { CaptionText } from '@/styles/primitives';
 import {
   StyledModal,
   LoadingContainer,
@@ -33,19 +33,19 @@ import {
   SummaryStats,
   StatItem,
   StatValue,
-} from './styles'
-import { createSorter, createDateSorter } from '@/core'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
-import { IconWrapper } from '@/components/ui'
+} from './styles';
+import { createSorter, createDateSorter } from '@/core';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { IconWrapper } from '@/components/ui';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 export interface AuditTraceModalProps {
-  open: boolean
-  onCancel: () => void
-  entityType: string | null
-  entityIdentifier: string | null
-  entityName?: string
+  open: boolean;
+  onCancel: () => void;
+  entityType: string | null;
+  entityIdentifier: string | null;
+  entityName?: string;
 }
 
 const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
@@ -53,51 +53,99 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
   onCancel,
   entityType,
   entityIdentifier,
-  entityName
+  entityName,
 }) => {
-  const { t } = useTranslation(['resources', 'common'])
-  const styles = useComponentStyles()
-  
+  const { t } = useTranslation(['resources', 'common']);
+  const styles = useComponentStyles();
+
   const { data, isLoading, error } = useEntityAuditTrace(
     entityType,
     entityIdentifier,
     open // Only fetch when modal is open
-  )
+  );
 
   // Map icon hints to actual icons
   // Using grayscale with opacity variations for differentiation
   const getIcon = (iconHint: string) => {
     // Use CSS variables for theme-aware colors
-    const errorColor = 'var(--color-error)'
-    const defaultColor = 'var(--color-text-secondary)'
+    const errorColor = 'var(--color-error)';
+    const defaultColor = 'var(--color-text-secondary)';
 
     switch (iconHint) {
       case 'plus-circle':
-        return <IconWrapper $color={defaultColor}><PlusCircleOutlined /></IconWrapper>
+        return (
+          <IconWrapper $color={defaultColor}>
+            <PlusCircleOutlined />
+          </IconWrapper>
+        );
       case 'edit':
-        return <IconWrapper $color={defaultColor}><EditOutlined /></IconWrapper>
+        return (
+          <IconWrapper $color={defaultColor}>
+            <EditOutlined />
+          </IconWrapper>
+        );
       case 'trash':
-        return <IconWrapper $color={errorColor}><DeleteOutlined /></IconWrapper>
+        return (
+          <IconWrapper $color={errorColor}>
+            <DeleteOutlined />
+          </IconWrapper>
+        );
       case 'lock':
-        return <IconWrapper $color={defaultColor}><LockOutlined /></IconWrapper>
+        return (
+          <IconWrapper $color={defaultColor}>
+            <LockOutlined />
+          </IconWrapper>
+        );
       case 'key':
-        return <IconWrapper $color={defaultColor}><KeyOutlined /></IconWrapper>
+        return (
+          <IconWrapper $color={defaultColor}>
+            <KeyOutlined />
+          </IconWrapper>
+        );
       case 'users':
-        return <IconWrapper $color={defaultColor}><UserOutlined /></IconWrapper>
+        return (
+          <IconWrapper $color={defaultColor}>
+            <UserOutlined />
+          </IconWrapper>
+        );
       case 'check-circle':
-        return <IconWrapper $color={defaultColor}><CheckCircleOutlined /></IconWrapper>
+        return (
+          <IconWrapper $color={defaultColor}>
+            <CheckCircleOutlined />
+          </IconWrapper>
+        );
       case 'x-circle':
-        return <IconWrapper $color={errorColor}><CloseCircleOutlined /></IconWrapper>
+        return (
+          <IconWrapper $color={errorColor}>
+            <CloseCircleOutlined />
+          </IconWrapper>
+        );
       case 'database':
-        return <IconWrapper $color={defaultColor}><DatabaseOutlined /></IconWrapper>
+        return (
+          <IconWrapper $color={defaultColor}>
+            <DatabaseOutlined />
+          </IconWrapper>
+        );
       case 'hdd':
-        return <IconWrapper $color={defaultColor}><HddOutlined /></IconWrapper>
+        return (
+          <IconWrapper $color={defaultColor}>
+            <HddOutlined />
+          </IconWrapper>
+        );
       case 'copy':
-        return <IconWrapper $color={defaultColor}><CopyOutlined /></IconWrapper>
+        return (
+          <IconWrapper $color={defaultColor}>
+            <CopyOutlined />
+          </IconWrapper>
+        );
       default:
-        return <IconWrapper $color={defaultColor}><InfoCircleOutlined /></IconWrapper>
+        return (
+          <IconWrapper $color={defaultColor}>
+            <InfoCircleOutlined />
+          </IconWrapper>
+        );
     }
-  }
+  };
 
   // Get action color based on type
   // Using grayscale system - only 'error' for actual delete/cancel actions
@@ -105,48 +153,48 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
     switch (actionType) {
       case 'Deleted':
       case 'Cancelled':
-        return 'error'  // Red for destructive actions only
+        return 'error'; // Red for destructive actions only
       default:
-        return 'default'  // Grayscale for all other actions
+        return 'default'; // Grayscale for all other actions
     }
-  }
+  };
 
   // Export functions
   const exportToCSV = () => {
-    if (!data?.records || data.records.length === 0) return
+    if (!data?.records || data.records.length === 0) return;
 
     // Create CSV header
-    const headers = ['Action', 'Details', 'Performed By', 'Timestamp', 'Time Ago']
+    const headers = ['Action', 'Details', 'Performed By', 'Timestamp', 'Time Ago'];
     const csvContent = [
       headers.join(','),
-      ...data.records.map(record => {
+      ...data.records.map((record) => {
         const row = [
           record.actionType,
           `"${record.details.replace(/"/g, '""')}"`, // Escape quotes in details
           record.performedBy || 'System',
           formatTimestampAsIs(record.timestamp, 'datetime'),
-          record.timeAgo
-        ]
-        return row.join(',')
-      })
-    ].join('\n')
+          record.timeAgo,
+        ];
+        return row.join(',');
+      }),
+    ].join('\n');
 
     // Create and download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `audit-trace-${entityType}-${entityIdentifier}-${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-    
-    message.success(t('audit.exportSuccess', { format: 'CSV' }))
-  }
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `audit-trace-${entityType}-${entityIdentifier}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    message.success(t('audit.exportSuccess', { format: 'CSV' }));
+  };
 
   const exportToJSON = () => {
-    if (!data?.records || data.records.length === 0) return
+    if (!data?.records || data.records.length === 0) return;
 
     const exportData = {
       entityType,
@@ -154,30 +202,30 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       entityName,
       exportDate: new Date().toISOString(),
       summary: data.summary,
-      records: data.records.map(record => ({
+      records: data.records.map((record) => ({
         actionType: record.actionType,
         details: record.details,
         performedBy: record.performedBy || 'System',
         timestamp: record.timestamp,
         timeAgo: record.timeAgo,
-        iconHint: record.iconHint
-      }))
-    }
+        iconHint: record.iconHint,
+      })),
+    };
 
     // Create and download file
-    const jsonString = JSON.stringify(exportData, null, 2)
-    const blob = new Blob([jsonString], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `audit-trace-${entityType}-${entityIdentifier}-${new Date().toISOString().split('T')[0]}.json`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-    
-    message.success(t('audit.exportSuccess', { format: 'JSON' }))
-  }
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `audit-trace-${entityType}-${entityIdentifier}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    message.success(t('audit.exportSuccess', { format: 'JSON' }));
+  };
 
   const columns = [
     {
@@ -188,7 +236,10 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       render: (_: unknown, record: AuditTraceRecord, index: number) => (
         <Space data-testid={`audit-trace-action-${index}`}>
           {getIcon(record.iconHint)}
-          <Tag color={getActionColor(record.actionType)} data-testid={`audit-trace-action-tag-${index}`}>
+          <Tag
+            color={getActionColor(record.actionType)}
+            data-testid={`audit-trace-action-tag-${index}`}
+          >
             {record.actionType}
           </Tag>
         </Space>
@@ -208,9 +259,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       width: 200,
       sorter: createSorter<AuditTraceRecord>('performedBy'),
       render: (user: string, _record: AuditTraceRecord, index: number) => (
-        <span data-testid={`audit-trace-performed-by-${index}`}>
-          {user || t('audit.system')}
-        </span>
+        <span data-testid={`audit-trace-performed-by-${index}`}>{user || t('audit.system')}</span>
       ),
     },
     {
@@ -226,7 +275,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
         </Space>
       ),
     },
-  ]
+  ];
 
   // Alternative timeline view (commented out for now, may be used in future)
   // const renderTimelineView = () => {
@@ -279,9 +328,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           <LoadingWrapper loading centered minHeight={160}>
             <div />
           </LoadingWrapper>
-          <LoadingText>
-            {t('common:general.loading')}
-          </LoadingText>
+          <LoadingText>{t('common:general.loading')}</LoadingText>
         </LoadingContainer>
       ) : error ? (
         <Alert
@@ -337,8 +384,8 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                   placement="bottomRight"
                   data-testid="audit-trace-export-dropdown"
                 >
-                  <Button 
-                    icon={<DownloadOutlined />} 
+                  <Button
+                    icon={<DownloadOutlined />}
                     data-testid="audit-trace-export-button"
                     style={styles.buttonSecondary}
                   >
@@ -357,11 +404,11 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
             pagination={{
               pageSize: 10,
               showSizeChanger: false,
-              showTotal: (total, range) => 
-                t('common:general.showingRecords', { 
-                  start: range[0], 
-                  end: range[1], 
-                  total 
+              showTotal: (total, range) =>
+                t('common:general.showingRecords', {
+                  start: range[0],
+                  end: range[1],
+                  total,
                 }),
             }}
             scroll={{ x: 800 }}
@@ -374,7 +421,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
         </>
       ) : null}
     </StyledModal>
-  )
-}
+  );
+};
 
-export default AuditTraceModal
+export default AuditTraceModal;

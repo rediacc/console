@@ -78,4 +78,3 @@ export const cookieDetector: CustomDetector = {
     setCookie(COOKIE_NAME, lng);
   },
 };
-

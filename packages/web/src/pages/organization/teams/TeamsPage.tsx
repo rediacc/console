@@ -1,18 +1,16 @@
-import React, { useState } from 'react'
-import { Button, Tooltip, List, Popconfirm, Tabs, Card, Space, Tag, Modal } from 'antd'
-import {
-  UserOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import ResourceListView from '@/components/common/ResourceListView'
-import UnifiedResourceModal, { type ExistingResourceData } from '@/components/common/UnifiedResourceModal'
-import AuditTraceModal from '@/components/common/AuditTraceModal'
-import { ModalSize } from '@/types/modal'
-import { useDropdownData } from '@/api/queries/useDropdownData'
-import { useDialogState, useTraceModal } from '@/hooks/useDialogState'
-import { useFormModal } from '@/hooks/useFormModal'
+import React, { useState } from 'react';
+import { Button, Tooltip, List, Popconfirm, Tabs, Card, Space, Tag, Modal } from 'antd';
+import { UserOutlined, DeleteOutlined, PlusOutlined } from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import ResourceListView from '@/components/common/ResourceListView';
+import UnifiedResourceModal, {
+  type ExistingResourceData,
+} from '@/components/common/UnifiedResourceModal';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { ModalSize } from '@/types/modal';
+import { useDropdownData } from '@/api/queries/useDropdownData';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import { useFormModal } from '@/hooks/useFormModal';
 import {
   useTeams,
   useTeamMembers,
@@ -24,7 +22,7 @@ import {
   useRemoveTeamMember,
   Team,
   TeamMember,
-} from '@/api/queries/teams'
+} from '@/api/queries/teams';
 import {
   PageWrapper,
   SectionStack,
@@ -34,49 +32,54 @@ import {
   ListSubtitle,
   InlineFormRow,
   ModalStack,
-} from '@/components/ui'
-import { FullWidthSelect } from '@/pages/system/styles'
-import { getTeamColumns } from './data'
+} from '@/components/ui';
+import { FullWidthSelect } from '@/pages/system/styles';
+import { getTeamColumns } from './data';
 
 const TeamsPage: React.FC = () => {
-  const { t } = useTranslation('organization')
-  const { t: tSystem } = useTranslation('system')
-  const { t: tCommon } = useTranslation('common')
+  const { t } = useTranslation('organization');
+  const { t: tSystem } = useTranslation('system');
+  const { t: tCommon } = useTranslation('common');
 
-  const { data: dropdownData } = useDropdownData()
-  const { data: teams = [], isLoading: teamsLoading } = useTeams()
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
-  const manageTeamModal = useDialogState()
-  const [selectedMemberEmail, setSelectedMemberEmail] = useState('')
-  const auditTrace = useTraceModal()
-  const unifiedModal = useFormModal<ExistingResourceData>()
+  const { data: dropdownData } = useDropdownData();
+  const { data: teams = [], isLoading: teamsLoading } = useTeams();
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const manageTeamModal = useDialogState();
+  const [selectedMemberEmail, setSelectedMemberEmail] = useState('');
+  const auditTrace = useTraceModal();
+  const unifiedModal = useFormModal<ExistingResourceData>();
 
-  const { data: teamMembers = [], isLoading: membersLoading } = useTeamMembers(selectedTeam?.teamName || '')
-  const createTeamMutation = useCreateTeam()
-  const updateTeamNameMutation = useUpdateTeamName()
-  const deleteTeamMutation = useDeleteTeam()
-  const updateTeamVaultMutation = useUpdateTeamVault()
-  const addTeamMemberMutation = useAddTeamMember()
-  const removeTeamMemberMutation = useRemoveTeamMember()
+  const { data: teamMembers = [], isLoading: membersLoading } = useTeamMembers(
+    selectedTeam?.teamName || ''
+  );
+  const createTeamMutation = useCreateTeam();
+  const updateTeamNameMutation = useUpdateTeamName();
+  const deleteTeamMutation = useDeleteTeam();
+  const updateTeamVaultMutation = useUpdateTeamVault();
+  const addTeamMemberMutation = useAddTeamMember();
+  const removeTeamMemberMutation = useRemoveTeamMember();
 
   const handleUnifiedModalSubmit = async (data: Partial<Team> & { teamVault?: string }) => {
     try {
       if (unifiedModal.mode === 'create') {
         if (!data.teamName) {
-          throw new Error('Team name is required')
+          throw new Error('Team name is required');
         }
-        await createTeamMutation.mutateAsync({ teamName: data.teamName, teamVault: data.teamVault })
+        await createTeamMutation.mutateAsync({
+          teamName: data.teamName,
+          teamVault: data.teamVault,
+        });
       } else if (unifiedModal.state.data) {
-        const existingData = unifiedModal.state.data
+        const existingData = unifiedModal.state.data;
         if (!existingData.teamName) {
-          throw new Error('Team name is required')
+          throw new Error('Team name is required');
         }
 
         if (data.teamName && data.teamName !== existingData.teamName) {
           await updateTeamNameMutation.mutateAsync({
             currentTeamName: existingData.teamName,
             newTeamName: data.teamName,
-          })
+          });
         }
 
         if (data.teamVault && data.teamVault !== existingData.vaultContent) {
@@ -84,71 +87,71 @@ const TeamsPage: React.FC = () => {
             teamName: data.teamName || existingData.teamName,
             teamVault: data.teamVault,
             vaultVersion: (existingData.vaultVersion ?? 0) + 1,
-          })
+          });
         }
       }
-      unifiedModal.close()
+      unifiedModal.close();
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleUnifiedVaultUpdate = async (vault: string, version: number) => {
-    if (!unifiedModal.state.data?.teamName) return
+    if (!unifiedModal.state.data?.teamName) return;
 
     try {
       await updateTeamVaultMutation.mutateAsync({
         teamName: unifiedModal.state.data.teamName,
         teamVault: vault,
         vaultVersion: version,
-      })
+      });
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleDeleteTeam = async (teamName: string) => {
     try {
-      await deleteTeamMutation.mutateAsync(teamName)
+      await deleteTeamMutation.mutateAsync(teamName);
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleAddTeamMember = async () => {
-    if (!selectedTeam || !selectedMemberEmail) return
+    if (!selectedTeam || !selectedMemberEmail) return;
 
     try {
       await addTeamMemberMutation.mutateAsync({
         teamName: selectedTeam.teamName,
         newUserEmail: selectedMemberEmail,
-      })
-      setSelectedMemberEmail('')
+      });
+      setSelectedMemberEmail('');
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleRemoveTeamMember = async (userEmail: string) => {
-    if (!selectedTeam) return
+    if (!selectedTeam) return;
 
     try {
       await removeTeamMemberMutation.mutateAsync({
         teamName: selectedTeam.teamName,
         removeUserEmail: userEmail,
-      })
+      });
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const teamColumns = getTeamColumns({
     tSystem,
     tCommon,
     onEdit: (team) => unifiedModal.openEdit(team as ExistingResourceData),
     onManageMembers: (team) => {
-      setSelectedTeam(team)
-      manageTeamModal.open()
+      setSelectedTeam(team);
+      manageTeamModal.open();
     },
     onTrace: (team) =>
       auditTrace.open({
@@ -158,7 +161,7 @@ const TeamsPage: React.FC = () => {
       }),
     onDelete: handleDeleteTeam,
     isDeleting: deleteTeamMutation.isPending,
-  })
+  });
 
   return (
     <PageWrapper>
@@ -168,7 +171,9 @@ const TeamsPage: React.FC = () => {
           title={
             <ListTitleRow>
               <ListTitle>{t('teams.title', { defaultValue: 'Teams' })}</ListTitle>
-              <ListSubtitle>{t('teams.subtitle', { defaultValue: 'Manage teams and their members' })}</ListSubtitle>
+              <ListSubtitle>
+                {t('teams.subtitle', { defaultValue: 'Manage teams and their members' })}
+              </ListSubtitle>
             </ListTitleRow>
           }
           loading={teamsLoading}
@@ -198,9 +203,9 @@ const TeamsPage: React.FC = () => {
         })}
         open={manageTeamModal.isOpen}
         onCancel={() => {
-          manageTeamModal.close()
-          setSelectedTeam(null)
-          setSelectedMemberEmail('')
+          manageTeamModal.close();
+          setSelectedTeam(null);
+          setSelectedMemberEmail('');
         }}
         footer={null}
         className={ModalSize.Large}
@@ -215,15 +220,22 @@ const TeamsPage: React.FC = () => {
                   <List
                     dataSource={teamMembers}
                     loading={membersLoading}
-                    locale={{ emptyText: t('teams.manageMembers.empty', { defaultValue: 'No members in this team' }) }}
+                    locale={{
+                      emptyText: t('teams.manageMembers.empty', {
+                        defaultValue: 'No members in this team',
+                      }),
+                    }}
                     renderItem={(member: TeamMember) => (
                       <List.Item
                         actions={[
                           <Popconfirm
                             key="remove"
-                            title={t('teams.manageMembers.removeTitle', { defaultValue: 'Remove Team Member' })}
+                            title={t('teams.manageMembers.removeTitle', {
+                              defaultValue: 'Remove Team Member',
+                            })}
                             description={t('teams.manageMembers.removeDescription', {
-                              defaultValue: 'Are you sure you want to remove "{{email}}" from this team?',
+                              defaultValue:
+                                'Are you sure you want to remove "{{email}}" from this team?',
                               email: member.userEmail,
                             })}
                             onConfirm={() => handleRemoveTeamMember(member.userEmail)}
@@ -249,8 +261,20 @@ const TeamsPage: React.FC = () => {
                           title={member.userEmail}
                           description={
                             <Space size="small">
-                              {member.isMember && <Tag color="green">{t('teams.manageMembers.memberStatus', { defaultValue: 'Member' })}</Tag>}
-                              {member.hasAccess && <Tag color="blue">{t('teams.manageMembers.accessStatus', { defaultValue: 'Has Access' })}</Tag>}
+                              {member.isMember && (
+                                <Tag color="green">
+                                  {t('teams.manageMembers.memberStatus', {
+                                    defaultValue: 'Member',
+                                  })}
+                                </Tag>
+                              )}
+                              {member.hasAccess && (
+                                <Tag color="blue">
+                                  {t('teams.manageMembers.accessStatus', {
+                                    defaultValue: 'Has Access',
+                                  })}
+                                </Tag>
+                              )}
                             </Space>
                           }
                         />
@@ -268,11 +292,15 @@ const TeamsPage: React.FC = () => {
                   <InlineFormRow>
                     <FullWidthSelect
                       showSearch
-                      placeholder={t('teams.manageMembers.selectUser', { defaultValue: 'Select user' })}
+                      placeholder={t('teams.manageMembers.selectUser', {
+                        defaultValue: 'Select user',
+                      })}
                       value={selectedMemberEmail || undefined}
                       onChange={(value) => setSelectedMemberEmail((value as string) || '')}
                       filterOption={(input, option) =>
-                        String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        String(option?.label ?? '')
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
                       }
                       options={
                         dropdownData?.users
@@ -280,7 +308,10 @@ const TeamsPage: React.FC = () => {
                           ?.map((user) => ({
                             value: user.value,
                             label: user.label,
-                            disabled: teamMembers.some((member: TeamMember) => member.userEmail === user.value && member.isMember),
+                            disabled: teamMembers.some(
+                              (member: TeamMember) =>
+                                member.userEmail === user.value && member.isMember
+                            ),
                           })) || []
                       }
                     />
@@ -322,7 +353,7 @@ const TeamsPage: React.FC = () => {
         entityName={auditTrace.entityName}
       />
     </PageWrapper>
-  )
-}
+  );
+};
 
-export default TeamsPage
+export default TeamsPage;

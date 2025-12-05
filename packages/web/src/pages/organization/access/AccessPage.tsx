@@ -1,5 +1,17 @@
-import React, { useState } from 'react'
-import { Button, Tooltip, Space, Modal, Input, Tabs, Card, List, Select, Popconfirm, Result } from 'antd'
+import React, { useState } from 'react';
+import {
+  Button,
+  Tooltip,
+  Space,
+  Modal,
+  Input,
+  Tabs,
+  Card,
+  List,
+  Select,
+  Popconfirm,
+  Result,
+} from 'antd';
 import {
   SafetyOutlined,
   KeyOutlined,
@@ -7,14 +19,14 @@ import {
   HistoryOutlined,
   PlusOutlined,
   DeleteOutlined,
-} from '@/utils/optimizedIcons'
-import { useTranslation } from 'react-i18next'
-import { useSelector } from 'react-redux'
-import ResourceListView from '@/components/common/ResourceListView'
-import AuditTraceModal from '@/components/common/AuditTraceModal'
-import { useDialogState, useTraceModal } from '@/hooks/useDialogState'
-import UserSessionsTab from '@/pages/organization/access/components/UserSessionsTab'
-import { useDropdownData } from '@/api/queries/useDropdownData'
+} from '@/utils/optimizedIcons';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import ResourceListView from '@/components/common/ResourceListView';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import UserSessionsTab from '@/pages/organization/access/components/UserSessionsTab';
+import { useDropdownData } from '@/api/queries/useDropdownData';
 import {
   usePermissionGroups as usePermissionGroupsQuery,
   usePermissionGroupDetails,
@@ -24,8 +36,8 @@ import {
   useRemovePermissionFromGroup,
   useAssignUserToGroup,
   PermissionGroup,
-} from '@/api/queries/permissions'
-import { ModalSize } from '@/types/modal'
+} from '@/api/queries/permissions';
+import { ModalSize } from '@/types/modal';
 import {
   PageWrapper as AccessPageWrapper,
   SectionStack as AccessSectionStack,
@@ -35,100 +47,105 @@ import {
   ListSubtitle as AccessListSubtitle,
   ModalStack,
   InlineFormRow,
-} from '@/components/ui'
-import { FullWidthSelect } from '@/pages/system/styles'
-import { showMessage } from '@/utils/messages'
-import { RootState } from '@/store/store'
+} from '@/components/ui';
+import { FullWidthSelect } from '@/pages/system/styles';
+import { showMessage } from '@/utils/messages';
+import { RootState } from '@/store/store';
 
 const AccessPage: React.FC = () => {
-  const { t } = useTranslation('organization')
-  const { t: tSystem } = useTranslation('system')
-  const { t: tCommon } = useTranslation('common')
-  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
+  const { t } = useTranslation('organization');
+  const { t: tSystem } = useTranslation('system');
+  const { t: tCommon } = useTranslation('common');
+  const uiMode = useSelector((state: RootState) => state.ui.uiMode);
 
-  const [activeTab, setActiveTab] = useState<'permissions' | 'sessions'>('permissions')
-  const createModal = useDialogState()
-  const manageModal = useDialogState<PermissionGroup>()
-  const assignModal = useDialogState<PermissionGroup>()
-  const [newGroupName, setNewGroupName] = useState('')
-  const [selectedPermission, setSelectedPermission] = useState('')
-  const [selectedUser, setSelectedUser] = useState('')
-  const auditTrace = useTraceModal()
+  const [activeTab, setActiveTab] = useState<'permissions' | 'sessions'>('permissions');
+  const createModal = useDialogState();
+  const manageModal = useDialogState<PermissionGroup>();
+  const assignModal = useDialogState<PermissionGroup>();
+  const [newGroupName, setNewGroupName] = useState('');
+  const [selectedPermission, setSelectedPermission] = useState('');
+  const [selectedUser, setSelectedUser] = useState('');
+  const auditTrace = useTraceModal();
 
-  const { data: dropdownData } = useDropdownData()
-  const availablePermissions = dropdownData?.permissions || []
-  const { data: permissionGroups = [], isLoading: permissionsLoading } = usePermissionGroupsQuery()
-  const { data: groupDetails } = usePermissionGroupDetails(manageModal.state.data?.permissionGroupName || '')
-  const createGroupMutation = useCreatePermissionGroup()
-  const deleteGroupMutation = useDeletePermissionGroup()
-  const addPermissionMutation = useAddPermissionToGroup()
-  const removePermissionMutation = useRemovePermissionFromGroup()
-  const assignUserMutation = useAssignUserToGroup()
+  const { data: dropdownData } = useDropdownData();
+  const availablePermissions = dropdownData?.permissions || [];
+  const { data: permissionGroups = [], isLoading: permissionsLoading } = usePermissionGroupsQuery();
+  const { data: groupDetails } = usePermissionGroupDetails(
+    manageModal.state.data?.permissionGroupName || ''
+  );
+  const createGroupMutation = useCreatePermissionGroup();
+  const deleteGroupMutation = useDeletePermissionGroup();
+  const addPermissionMutation = useAddPermissionToGroup();
+  const removePermissionMutation = useRemovePermissionFromGroup();
+  const assignUserMutation = useAssignUserToGroup();
 
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) {
-      showMessage('error', t('access.modals.groupNameRequired', { defaultValue: 'Please enter a group name' }))
-      return
+      showMessage(
+        'error',
+        t('access.modals.groupNameRequired', { defaultValue: 'Please enter a group name' })
+      );
+      return;
     }
 
     try {
-      await createGroupMutation.mutateAsync({ permissionGroupName: newGroupName.trim() })
-      createModal.close()
-      setNewGroupName('')
+      await createGroupMutation.mutateAsync({ permissionGroupName: newGroupName.trim() });
+      createModal.close();
+      setNewGroupName('');
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleDeleteGroup = async (groupName: string) => {
     try {
-      await deleteGroupMutation.mutateAsync(groupName)
+      await deleteGroupMutation.mutateAsync(groupName);
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleAddPermission = async () => {
-    if (!manageModal.state.data || !selectedPermission) return
+    if (!manageModal.state.data || !selectedPermission) return;
 
     try {
       await addPermissionMutation.mutateAsync({
         permissionGroupName: manageModal.state.data.permissionGroupName,
         permissionName: selectedPermission,
-      })
-      setSelectedPermission('')
+      });
+      setSelectedPermission('');
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleRemovePermission = async (permission: string) => {
-    if (!manageModal.state.data) return
+    if (!manageModal.state.data) return;
 
     try {
       await removePermissionMutation.mutateAsync({
         permissionGroupName: manageModal.state.data.permissionGroupName,
         permissionName: permission,
-      })
+      });
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const handleAssignUser = async () => {
-    if (!assignModal.state.data || !selectedUser) return
+    if (!assignModal.state.data || !selectedUser) return;
 
     try {
       await assignUserMutation.mutateAsync({
         userEmail: selectedUser,
         permissionGroupName: assignModal.state.data.permissionGroupName,
-      })
-      assignModal.close()
-      setSelectedUser('')
+      });
+      assignModal.close();
+      setSelectedUser('');
     } catch {
       // handled by mutation
     }
-  }
+  };
 
   const permissionColumns = [
     {
@@ -234,15 +251,19 @@ const AccessPage: React.FC = () => {
         </Space>
       ),
     },
-  ]
+  ];
 
   const permissionsContent = (
     <ResourceListView
       title={
         <AccessListHeader>
-          <AccessListTitle>{t('access.permissions.title', { defaultValue: 'Permission Groups' })}</AccessListTitle>
+          <AccessListTitle>
+            {t('access.permissions.title', { defaultValue: 'Permission Groups' })}
+          </AccessListTitle>
           <AccessListSubtitle>
-            {t('access.permissions.subtitle', { defaultValue: 'Manage permission groups and their assignments' })}
+            {t('access.permissions.subtitle', {
+              defaultValue: 'Manage permission groups and their assignments',
+            })}
           </AccessListSubtitle>
         </AccessListHeader>
       }
@@ -250,7 +271,9 @@ const AccessPage: React.FC = () => {
       data={permissionGroups}
       columns={permissionColumns}
       rowKey="permissionGroupName"
-      searchPlaceholder={t('access.permissions.searchPlaceholder', { defaultValue: 'Search permission groups...' })}
+      searchPlaceholder={t('access.permissions.searchPlaceholder', {
+        defaultValue: 'Search permission groups...',
+      })}
       data-testid="system-permission-group-table"
       actions={
         <Tooltip title={tSystem('actions.createGroup')}>
@@ -264,13 +287,13 @@ const AccessPage: React.FC = () => {
         </Tooltip>
       }
     />
-  )
+  );
 
   const sessionsContent = (
     <Card>
       <UserSessionsTab />
     </Card>
-  )
+  );
 
   if (uiMode === 'simple') {
     return (
@@ -278,16 +301,20 @@ const AccessPage: React.FC = () => {
         <Result
           status="403"
           title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
-          subTitle={tSystem('accessControl.expertOnlyMessage', { defaultValue: 'Switch to expert mode to manage access control.' })}
+          subTitle={tSystem('accessControl.expertOnlyMessage', {
+            defaultValue: 'Switch to expert mode to manage access control.',
+          })}
         />
       </AccessPageWrapper>
-    )
+    );
   }
 
   return (
     <AccessPageWrapper>
       <AccessSectionStack>
-        <AccessSectionHeading level={3}>{t('access.heading', { defaultValue: 'Access Control' })}</AccessSectionHeading>
+        <AccessSectionHeading level={3}>
+          {t('access.heading', { defaultValue: 'Access Control' })}
+        </AccessSectionHeading>
         <Card>
           <Tabs
             activeKey={activeTab}
@@ -312,8 +339,8 @@ const AccessPage: React.FC = () => {
         title={t('access.modals.createGroupTitle', { defaultValue: 'Create Permission Group' })}
         open={createModal.isOpen}
         onCancel={() => {
-          createModal.close()
-          setNewGroupName('')
+          createModal.close();
+          setNewGroupName('');
         }}
         onOk={handleCreateGroup}
         confirmLoading={createGroupMutation.isPending}
@@ -336,8 +363,8 @@ const AccessPage: React.FC = () => {
         }`}
         open={manageModal.isOpen}
         onCancel={() => {
-          manageModal.close()
-          setSelectedPermission('')
+          manageModal.close();
+          setSelectedPermission('');
         }}
         footer={null}
         className={ModalSize.Large}
@@ -346,12 +373,18 @@ const AccessPage: React.FC = () => {
           items={[
             {
               key: 'current',
-              label: t('access.modals.currentPermissionsTab', { defaultValue: 'Current Permissions' }),
+              label: t('access.modals.currentPermissionsTab', {
+                defaultValue: 'Current Permissions',
+              }),
               children: (
                 <Card>
                   <List
                     dataSource={groupDetails?.permissions || []}
-                    locale={{ emptyText: t('access.modals.noPermissions', { defaultValue: 'No permissions assigned' }) }}
+                    locale={{
+                      emptyText: t('access.modals.noPermissions', {
+                        defaultValue: 'No permissions assigned',
+                      }),
+                    }}
                     renderItem={(permission: string) => (
                       <List.Item
                         actions={[
@@ -382,12 +415,16 @@ const AccessPage: React.FC = () => {
                 <ModalStack>
                   <InlineFormRow>
                     <FullWidthSelect
-                      placeholder={t('access.modals.permissionPlaceholder', { defaultValue: 'Select permission to add' })}
+                      placeholder={t('access.modals.permissionPlaceholder', {
+                        defaultValue: 'Select permission to add',
+                      })}
                       value={selectedPermission}
                       onChange={(value) => setSelectedPermission((value as string) || '')}
                       showSearch
                       filterOption={(input, option) =>
-                        String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        String(option?.label ?? '')
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
                       }
                       data-testid="permission-select-add"
                     >
@@ -424,12 +461,17 @@ const AccessPage: React.FC = () => {
 
       <Modal
         title={`${t('access.modals.assignUserTitle', { defaultValue: 'Assign User' })} ${
-          assignModal.state.data ? t('access.modals.assignUserTo', { defaultValue: 'to {{group}}', group: assignModal.state.data.permissionGroupName }) : ''
+          assignModal.state.data
+            ? t('access.modals.assignUserTo', {
+                defaultValue: 'to {{group}}',
+                group: assignModal.state.data.permissionGroupName,
+              })
+            : ''
         }`}
         open={assignModal.isOpen}
         onCancel={() => {
-          assignModal.close()
-          setSelectedUser('')
+          assignModal.close();
+          setSelectedUser('');
         }}
         onOk={handleAssignUser}
         confirmLoading={assignUserMutation.isPending}
@@ -441,7 +483,9 @@ const AccessPage: React.FC = () => {
           value={selectedUser}
           onChange={(value) => setSelectedUser((value as string) || '')}
           showSearch
-          filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
           options={
             dropdownData?.users?.map((user) => ({
               value: user.value,
@@ -461,7 +505,7 @@ const AccessPage: React.FC = () => {
         entityName={auditTrace.entityName}
       />
     </AccessPageWrapper>
-  )
-}
+  );
+};
 
-export default AccessPage
+export default AccessPage;

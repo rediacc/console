@@ -1,13 +1,13 @@
-import React, { useMemo } from 'react'
-import { Table, Empty } from 'antd'
-import { useTranslation } from 'react-i18next'
+import React, { useMemo } from 'react';
+import { Table, Empty } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   DistributedStorageCluster,
   useDistributedStorageClusterMachines,
-} from '@/api/queries/distributedStorage'
-import type { Machine } from '@/types'
-import { createSorter } from '@/core'
-import { formatTimestampAsIs } from '@/core'
+} from '@/api/queries/distributedStorage';
+import type { Machine } from '@/types';
+import { createSorter } from '@/core';
+import { formatTimestampAsIs } from '@/core';
 import {
   ExpandedRowContainer,
   ExpandedRowTitle,
@@ -17,20 +17,18 @@ import {
   MachineNameText,
   MachineBridgeTag,
   AssignedDateText,
-} from '../styles'
+} from '../styles';
 
 interface ClusterMachinesProps {
-  cluster: DistributedStorageCluster
+  cluster: DistributedStorageCluster;
 }
 
-export const ClusterMachines: React.FC<ClusterMachinesProps> = ({
-  cluster,
-}) => {
-  const { t } = useTranslation('distributedStorage')
+export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => {
+  const { t } = useTranslation('distributedStorage');
   const { data: machines = [], isLoading } = useDistributedStorageClusterMachines(
     cluster.clusterName,
-    true,
-  )
+    true
+  );
 
   const machineColumns = useMemo(
     () => [
@@ -58,14 +56,12 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({
         dataIndex: 'assignedDate',
         key: 'assignedDate',
         render: (date: string) => (
-          <AssignedDateText>
-            {date ? formatTimestampAsIs(date, 'datetime') : '-'}
-          </AssignedDateText>
+          <AssignedDateText>{date ? formatTimestampAsIs(date, 'datetime') : '-'}</AssignedDateText>
         ),
       },
     ],
-    [t],
-  )
+    [t]
+  );
 
   return (
     <ExpandedRowContainer data-testid={`cluster-expanded-row-${cluster.clusterName}`}>
@@ -86,5 +82,5 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({
         </MachinesTableWrapper>
       )}
     </ExpandedRowContainer>
-  )
-}
+  );
+};

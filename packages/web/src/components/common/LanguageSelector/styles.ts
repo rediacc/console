@@ -1,6 +1,6 @@
-import styled from 'styled-components'
-import { Select } from 'antd'
-import { IconButton } from '@/styles/primitives'
+import styled from 'styled-components';
+import { Select } from 'antd';
+import { IconButton } from '@/styles/primitives';
 
 export const LanguageButton = styled(IconButton)`
   && {
@@ -11,7 +11,7 @@ export const LanguageButton = styled(IconButton)`
       background-color: ${({ theme }) => theme.colors.bgHover};
     }
   }
-`
+`;
 
 export const LanguageSelect = styled(Select)`
   && {
@@ -27,10 +27,10 @@ export const LanguageSelect = styled(Select)`
       font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
     }
   }
-`
+`;
 
 export const LanguageOption = styled.span`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.XS}px;
-`
+`;

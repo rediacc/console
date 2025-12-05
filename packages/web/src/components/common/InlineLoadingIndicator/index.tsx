@@ -1,13 +1,13 @@
-import React from 'react'
+import React from 'react';
 
 export interface InlineLoadingIndicatorProps {
-  width?: number | string
-  height?: number
-  borderRadius?: number
-  className?: string
-  style?: React.CSSProperties
-  'data-testid'?: string
-  'aria-label'?: string
+  width?: number | string;
+  height?: number;
+  borderRadius?: number;
+  className?: string;
+  style?: React.CSSProperties;
+  'data-testid'?: string;
+  'aria-label'?: string;
 }
 
 /**
@@ -23,7 +23,7 @@ const InlineLoadingIndicator: React.FC<InlineLoadingIndicatorProps> = ({
   'data-testid': dataTestId,
   'aria-label': ariaLabel = 'loading',
 }) => {
-  const classes = ['skeleton-shimmer', className].filter(Boolean).join(' ')
+  const classes = ['skeleton-shimmer', className].filter(Boolean).join(' ');
 
   return (
     <div
@@ -38,7 +38,7 @@ const InlineLoadingIndicator: React.FC<InlineLoadingIndicatorProps> = ({
       data-testid={dataTestId}
       aria-label={ariaLabel}
     />
-  )
-}
+  );
+};
 
-export default InlineLoadingIndicator
+export default InlineLoadingIndicator;

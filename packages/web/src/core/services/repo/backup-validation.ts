@@ -3,14 +3,14 @@
  * Handles validation for repo backup operations
  */
 
-import { type RepoWithRelations, isFork } from '../repo'
+import { type RepoWithRelations, isFork } from '../repo';
 
 /**
  * Result of backup validation
  */
 export interface BackupValidationResult {
-  canBackup: boolean
-  reason?: string
+  canBackup: boolean;
+  reason?: string;
 }
 
 /**
@@ -20,20 +20,19 @@ export interface BackupValidationResult {
  * @param repo - Repo to check for backup eligibility
  * @returns Validation result with canBackup flag and reason if blocked
  */
-export function canBackupToStorage(
-  repo: RepoWithRelations
-): BackupValidationResult {
+export function canBackupToStorage(repo: RepoWithRelations): BackupValidationResult {
   // Only grand repos can backup to storage
   if (isFork(repo)) {
     return {
       canBackup: false,
-      reason: 'Forks cannot backup to storage. Only grand repos (credentials) can perform storage backups.'
-    }
+      reason:
+        'Forks cannot backup to storage. Only grand repos (credentials) can perform storage backups.',
+    };
   }
 
   return {
-    canBackup: true
-  }
+    canBackup: true,
+  };
 }
 
 /**
@@ -42,13 +41,11 @@ export function canBackupToStorage(
  * @param _repo - Repo to check (unused, all repos can backup to machines)
  * @returns Validation result
  */
-export function canBackupToMachine(
-  _repo: RepoWithRelations
-): BackupValidationResult {
+export function canBackupToMachine(_repo: RepoWithRelations): BackupValidationResult {
   // Any repo can backup to a machine
   return {
-    canBackup: true
-  }
+    canBackup: true,
+  };
 }
 
 /**
@@ -56,21 +53,19 @@ export function canBackupToMachine(
  * @param repo - Repo to get backup options for
  * @returns Available backup options
  */
-export function getBackupOptions(
-  repo: RepoWithRelations
-): {
-  canBackupToStorage: boolean
-  canBackupToMachine: boolean
-  storageReason?: string
+export function getBackupOptions(repo: RepoWithRelations): {
+  canBackupToStorage: boolean;
+  canBackupToMachine: boolean;
+  storageReason?: string;
 } {
-  const storageResult = canBackupToStorage(repo)
-  const machineResult = canBackupToMachine(repo)
+  const storageResult = canBackupToStorage(repo);
+  const machineResult = canBackupToMachine(repo);
 
   return {
     canBackupToStorage: storageResult.canBackup,
     canBackupToMachine: machineResult.canBackup,
-    storageReason: storageResult.reason
-  }
+    storageReason: storageResult.reason,
+  };
 }
 
 /**
@@ -84,8 +79,8 @@ export function validateBackupDestination(
   destinationType: 'storage' | 'machine'
 ): BackupValidationResult {
   if (destinationType === 'storage') {
-    return canBackupToStorage(repo)
+    return canBackupToStorage(repo);
   }
 
-  return canBackupToMachine(repo)
+  return canBackupToMachine(repo);
 }

@@ -6,7 +6,7 @@
 /**
  * Base URL for JSON configuration files hosted on json.rediacc.com
  */
-export const JSON_API_BASE_URL = 'https://json.rediacc.com'
+export const JSON_API_BASE_URL = 'https://json.rediacc.com';
 
 /**
  * Configuration endpoints - direct paths matching json.rediacc.com structure
@@ -29,4 +29,4 @@ export const CONFIG_URLS = {
 
   /** Tiers configuration */
   TIERS: `${JSON_API_BASE_URL}/configs/tiers.json`,
-} as const
+} as const;

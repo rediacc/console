@@ -1,18 +1,18 @@
-import { Tooltip } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
-import type { MenuProps } from 'antd'
-import { EllipsisOutlined, CloudUploadOutlined } from '@ant-design/icons'
-import { TFunction } from 'i18next'
-import { createSorter } from '@/core'
-import type { DistributedStorageRbdSnapshot } from '@/api/queries/distributedStorage'
-import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
-import { createActionColumn, createTruncatedColumn } from '@/components/common/columns'
-import { NameCell, NameIcon, NameText, VaultTag } from './styles'
+import { Tooltip } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import type { MenuProps } from 'antd';
+import { EllipsisOutlined, CloudUploadOutlined } from '@ant-design/icons';
+import { TFunction } from 'i18next';
+import { createSorter } from '@/core';
+import type { DistributedStorageRbdSnapshot } from '@/api/queries/distributedStorage';
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
+import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
+import { NameCell, NameIcon, NameText, VaultTag } from './styles';
 
 interface ColumnBuilderParams {
-  t: TFunction<'distributedStorage'>
-  getSnapshotMenuItems: (snapshot: DistributedStorageRbdSnapshot) => MenuProps['items']
-  handleRunFunction: (functionName: string, snapshot: DistributedStorageRbdSnapshot) => void
+  t: TFunction<'distributedStorage'>;
+  getSnapshotMenuItems: (snapshot: DistributedStorageRbdSnapshot) => MenuProps['items'];
+  handleRunFunction: (functionName: string, snapshot: DistributedStorageRbdSnapshot) => void;
 }
 
 export const buildSnapshotColumns = ({
@@ -79,4 +79,4 @@ export const buildSnapshotColumns = ({
       />
     ),
   }),
-]
+];

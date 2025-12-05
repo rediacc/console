@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import { Table, Modal, message } from 'antd'
-import { useTranslation } from 'react-i18next'
+import { useMemo, useState } from 'react';
+import { Table, Modal, message } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   useCloneMachines,
   useAvailableMachinesForClone,
@@ -9,33 +9,28 @@ import {
   type DistributedStorageRbdImage,
   type DistributedStoragePool,
   type CloneMachine,
-} from '@/api/queries/distributedStorage'
+} from '@/api/queries/distributedStorage';
 import {
   useUpdateCloneMachineAssignments,
   useUpdateCloneMachineRemovals,
-} from '@/api/queries/distributedStorageMutations'
-import { MachineExclusivityWarning } from '@/pages/distributedStorage/components/MachineExclusivityWarning'
-import { PlusOutlined } from '@/utils/optimizedIcons'
-import { buildCloneMachineColumns } from './columns'
-import { useDialogState } from '@/hooks/useDialogState'
-import {
-  ManagerCard,
-  TableContainer,
-  EmptyActionButton,
-  WarningWrapper,
-} from './styles'
-import { HeaderSummary } from './components/HeaderSummary'
-import { MachineControls } from './components/MachineControls'
-import { AssignMachinesModal } from './components/AssignMachinesModal'
-import LoadingWrapper from '@/components/common/LoadingWrapper'
-import { EmptyStatePanel } from '@/styles/primitives'
+} from '@/api/queries/distributedStorageMutations';
+import { MachineExclusivityWarning } from '@/pages/distributedStorage/components/MachineExclusivityWarning';
+import { PlusOutlined } from '@/utils/optimizedIcons';
+import { buildCloneMachineColumns } from './columns';
+import { useDialogState } from '@/hooks/useDialogState';
+import { ManagerCard, TableContainer, EmptyActionButton, WarningWrapper } from './styles';
+import { HeaderSummary } from './components/HeaderSummary';
+import { MachineControls } from './components/MachineControls';
+import { AssignMachinesModal } from './components/AssignMachinesModal';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { EmptyStatePanel } from '@/styles/primitives';
 
 interface CloneMachineManagerProps {
-  clone: DistributedStorageRbdClone
-  snapshot: DistributedStorageRbdSnapshot
-  image: DistributedStorageRbdImage
-  pool: DistributedStoragePool
-  teamName: string
+  clone: DistributedStorageRbdClone;
+  snapshot: DistributedStorageRbdSnapshot;
+  image: DistributedStorageRbdImage;
+  pool: DistributedStoragePool;
+  teamName: string;
 }
 
 export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
@@ -45,13 +40,13 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
   pool,
   teamName,
 }) => {
-  const { t } = useTranslation(['distributedStorage', 'machines', 'common'])
-  const [searchText, setSearchText] = useState('')
-  const [selectedMachines, setSelectedMachines] = useState<string[]>([])
-  const addModal = useDialogState<void>()
-  const [selectedNewMachines, setSelectedNewMachines] = useState<string[]>([])
-  const [isAdding, setIsAdding] = useState(false)
-  const [isRemoving, setIsRemoving] = useState(false)
+  const { t } = useTranslation(['distributedStorage', 'machines', 'common']);
+  const [searchText, setSearchText] = useState('');
+  const [selectedMachines, setSelectedMachines] = useState<string[]>([]);
+  const addModal = useDialogState<void>();
+  const [selectedNewMachines, setSelectedNewMachines] = useState<string[]>([]);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const {
     data: assignedMachines = [],
@@ -63,16 +58,14 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
     image.imageName,
     pool.poolName,
     teamName,
-    true,
-  )
+    true
+  );
 
-  const {
-    data: availableMachines = [],
-    isLoading: loadingAvailable,
-  } = useAvailableMachinesForClone(teamName, addModal.isOpen)
+  const { data: availableMachines = [], isLoading: loadingAvailable } =
+    useAvailableMachinesForClone(teamName, addModal.isOpen);
 
-  const assignMutation = useUpdateCloneMachineAssignments()
-  const removeMutation = useUpdateCloneMachineRemovals()
+  const assignMutation = useUpdateCloneMachineAssignments();
+  const removeMutation = useUpdateCloneMachineRemovals();
 
   const columns = useMemo(
     () =>
@@ -80,31 +73,31 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
         t,
         cloneName: clone.cloneName,
       }),
-    [clone.cloneName, t],
-  )
+    [clone.cloneName, t]
+  );
 
   const filteredMachines = useMemo(
     () =>
       assignedMachines.filter(
         (machine: CloneMachine) =>
           machine.machineName.toLowerCase().includes(searchText.toLowerCase()) ||
-          machine.bridgeName.toLowerCase().includes(searchText.toLowerCase()),
+          machine.bridgeName.toLowerCase().includes(searchText.toLowerCase())
       ),
-    [assignedMachines, searchText],
-  )
+    [assignedMachines, searchText]
+  );
 
   const handleAddMachines = () => {
-    addModal.open()
-    setSelectedNewMachines([])
-  }
+    addModal.open();
+    setSelectedNewMachines([]);
+  };
 
   const handleAssignMachines = async () => {
     if (selectedNewMachines.length === 0) {
-      message.warning(t('machines:validation.noMachinesSelected'))
-      return
+      message.warning(t('machines:validation.noMachinesSelected'));
+      return;
     }
 
-    setIsAdding(true)
+    setIsAdding(true);
     try {
       await assignMutation.mutateAsync({
         teamName,
@@ -113,21 +106,21 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
         snapshotName: snapshot.snapshotName,
         cloneName: clone.cloneName,
         machineNames: selectedNewMachines.join(','),
-      })
+      });
 
-      addModal.close()
-      refetchMachines()
+      addModal.close();
+      refetchMachines();
     } catch {
       // handled via showMessage in mutation
     } finally {
-      setIsAdding(false)
+      setIsAdding(false);
     }
-  }
+  };
 
   const handleRemoveMachines = () => {
     if (selectedMachines.length === 0) {
-      message.warning(t('machines:validation.noMachinesSelected'))
-      return
+      message.warning(t('machines:validation.noMachinesSelected'));
+      return;
     }
 
     Modal.confirm({
@@ -145,7 +138,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
         'data-testid': 'clone-manager-confirm-remove-cancel',
       },
       onOk: async () => {
-        setIsRemoving(true)
+        setIsRemoving(true);
         try {
           await removeMutation.mutateAsync({
             teamName,
@@ -154,18 +147,18 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
             snapshotName: snapshot.snapshotName,
             cloneName: clone.cloneName,
             machineNames: selectedMachines.join(','),
-          })
+          });
 
-          setSelectedMachines([])
-          refetchMachines()
+          setSelectedMachines([]);
+          refetchMachines();
         } catch {
           // handled upstream
         } finally {
-          setIsRemoving(false)
+          setIsRemoving(false);
         }
       },
-    })
-  }
+    });
+  };
 
   const handleExport = () => {
     const csvContent = [
@@ -177,27 +170,27 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
       ]),
     ]
       .map((row) => row.join(','))
-      .join('\n')
+      .join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `clone-${clone.cloneName}-machines.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `clone-${clone.cloneName}-machines.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
 
-    message.success(t('common:actions.exportSuccess'))
-  }
+    message.success(t('common:actions.exportSuccess'));
+  };
 
   const rowSelection = {
     selectedRowKeys: selectedMachines,
     onChange: (selectedRowKeys: React.Key[]) => {
-      setSelectedMachines(selectedRowKeys as string[])
+      setSelectedMachines(selectedRowKeys as string[]);
     },
-  }
+  };
 
   return (
     <ManagerCard data-testid="clone-manager-container" bordered={false}>
@@ -278,5 +271,5 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
         t={t}
       />
     </ManagerCard>
-  )
-}
+  );
+};
