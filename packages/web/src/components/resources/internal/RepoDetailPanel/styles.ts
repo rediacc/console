@@ -1,6 +1,6 @@
-import styled from 'styled-components'
-import { Tag, Empty, Card, Alert, Typography } from 'antd'
-import { FolderOutlined } from '@/utils/optimizedIcons'
+import styled from 'styled-components';
+import { Tag, Empty, Card, Alert, Typography } from 'antd';
+import { FolderOutlined } from '@/utils/optimizedIcons';
 import {
   DetailPanelSurface,
   DetailPanelHeader,
@@ -18,9 +18,9 @@ import {
   DetailPanelDivider,
   DetailPanelSectionHeader,
   DetailPanelSectionTitle,
-} from '../detailPanelPrimitives'
+} from '../detailPanelPrimitives';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 const TAG_VARIANTS = {
   team: {
@@ -35,7 +35,7 @@ const TAG_VARIANTS = {
     background: 'var(--color-bg-tertiary)',
     color: 'var(--color-text-primary)',
   },
-} as const
+} as const;
 
 const STATUS_TONES = {
   success: 'var(--color-success)',
@@ -43,7 +43,7 @@ const STATUS_TONES = {
   error: 'var(--color-error)',
   info: 'var(--color-info)',
   neutral: 'var(--color-border-secondary)',
-} as const
+} as const;
 
 export {
   DetailPanelSurface as PanelWrapper,
@@ -59,12 +59,12 @@ export {
   DetailPanelFieldValue as ValueText,
   DetailPanelFieldMonospaceValue as MonospaceValue,
   DetailPanelSectionCard as SectionCard,
-}
+};
 
 export const HeaderIcon = styled(FolderOutlined)`
   font-size: ${({ theme }) => theme.fontSize.XXXXL}px;
   color: var(--color-success);
-`
+`;
 
 export const StyledTag = styled(Tag)<{ $variant: keyof typeof TAG_VARIANTS }>`
   && {
@@ -78,15 +78,11 @@ export const StyledTag = styled(Tag)<{ $variant: keyof typeof TAG_VARIANTS }>`
     align-items: center;
     gap: ${({ theme }) => theme.spacing.XS}px;
   }
-`
-
-export const ContentWrapper = styled.div`
-  padding: ${({ theme }) => theme.spacing.PAGE_CARD_PADDING}px;
-`
+`;
 
 export const EmptyState = styled(Empty)`
   margin-top: ${({ theme }) => theme.spacing.XXXL}px;
-`
+`;
 
 export const SectionDivider = styled(DetailPanelDivider).attrs({
   orientation: 'left',
@@ -97,30 +93,30 @@ export const SectionDivider = styled(DetailPanelDivider).attrs({
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const Section = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.LG}px;
-`
+`;
 
-type StackGap = 'XS' | 'SM' | 'MD' | 'LG' | 'XL'
+type StackGap = 'XS' | 'SM' | 'MD' | 'LG' | 'XL';
 
 export const Stack = styled.div<{ $gap?: StackGap }>`
   display: flex;
   flex-direction: column;
   width: 100%;
   gap: ${({ theme, $gap = 'SM' }) => theme.spacing[$gap]}px;
-`
+`;
 
 export const SectionHeader = styled(DetailPanelSectionHeader)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const SectionTitle = styled(DetailPanelSectionTitle)`
   && {
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
-`
+`;
 
 export const StatusTag = styled(Tag)<{ $tone?: keyof typeof STATUS_TONES }>`
   && {
@@ -131,30 +127,30 @@ export const StatusTag = styled(Tag)<{ $tone?: keyof typeof STATUS_TONES }>`
     background-color: ${({ $tone = 'neutral' }) => STATUS_TONES[$tone]};
     color: ${({ $tone = 'neutral' }) => ($tone === 'neutral' ? 'var(--color-text-primary)' : 'var(--color-text-inverse)')};
   }
-`
+`;
 
 export const AlertWrapper = styled(Alert)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const VolumeDescription = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
 
 export const VolumeList = styled.ul`
   margin: ${({ theme }) => `${theme.spacing.SM}px 0`};
   padding-left: ${({ theme }) => theme.spacing.LG}px;
-`
+`;
 
 export const ServicesList = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.MD}px;
   width: 100%;
-`
+`;
 
 export const ServiceCard = styled(Card)<{ $state: 'active' | 'failed' | 'other' }>`
   && {
@@ -162,61 +158,61 @@ export const ServiceCard = styled(Card)<{ $state: 'active' | 'failed' | 'other' 
       ${({ $state }) => {
         switch ($state) {
           case 'active':
-            return 'var(--color-success)'
+            return 'var(--color-success)';
           case 'failed':
-            return 'var(--color-error)'
+            return 'var(--color-error)';
           default:
-            return 'var(--color-border-secondary)'
+            return 'var(--color-border-secondary)';
         }
       }};
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
-`
+`;
 
 export const ServiceHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-`
+`;
 
 export const ServiceMetaGrid = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.MD}px;
-`
+`;
 
 export const ServiceMetaItem = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.XS}px;
-`
+`;
 
 export const ServiceMetaLabel = styled(Text)`
   && {
     font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
     color: var(--color-text-secondary);
   }
-`
+`;
 
 export const ServiceMetaValue = styled(Text)`
   && {
     font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
   }
-`
+`;
 
 export const DiskUsageMeta = styled(Text)`
   && {
     font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
     color: var(--color-text-secondary);
   }
-`
+`;
 
-export const PathsCard = styled(SectionCard)``
+export const PathsCard = styled(SectionCard)``;
 
-export const ActivityCard = styled(SectionCard)``
+export const ActivityCard = styled(SectionCard)``;
 
 export const ActivityMetrics = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`
+`;
