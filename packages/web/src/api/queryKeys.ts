@@ -39,7 +39,8 @@ export const QUERY_KEYS = {
   // Queue
   queue: {
     items: (filters?: unknown) => ['queue-items', filters] as const,
-    next: (machineName: string, itemCount: number) => ['queue-next', machineName, itemCount] as const,
+    next: (machineName: string, itemCount: number) =>
+      ['queue-next', machineName, itemCount] as const,
     itemsByBridge: (bridgeName: string) => ['queue-items-bridge', bridgeName] as const,
     itemTrace: (taskId: string | null) => ['queue-item-trace', taskId] as const,
   },
@@ -139,7 +140,8 @@ export const QUERY_KEYS = {
 
   // Distributed Storage (re-exported from distributedStorage.ts)
   distributedStorage: {
-    clusters: (teamFilter?: string | string[]) => ['distributed-storage-clusters', teamFilter] as const,
+    clusters: (teamFilter?: string | string[]) =>
+      ['distributed-storage-clusters', teamFilter] as const,
     pools: (teamFilter?: string | string[]) => ['distributed-storage-pools', teamFilter] as const,
     images: (poolName?: string, teamName?: string) =>
       ['distributed-storage-images', poolName, teamName] as const,

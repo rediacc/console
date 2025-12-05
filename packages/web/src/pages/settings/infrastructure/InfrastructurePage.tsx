@@ -766,9 +766,13 @@ const InfrastructurePage: React.FC = () => {
         onCancel={closeUnifiedModal}
         resourceType={unifiedModal.state.data?.resourceType || 'region'}
         mode={unifiedModal.state.data?.mode || 'create'}
-        existingData={unifiedModal.state.data?.data as Partial<Region> | Partial<Bridge> | undefined}
+        existingData={
+          unifiedModal.state.data?.data as Partial<Region> | Partial<Bridge> | undefined
+        }
         onSubmit={handleUnifiedModalSubmit}
-        onUpdateVault={unifiedModal.state.data?.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
+        onUpdateVault={
+          unifiedModal.state.data?.mode === 'edit' ? handleUnifiedVaultUpdate : undefined
+        }
         isSubmitting={
           createRegionMutation.isPending ||
           updateRegionNameMutation.isPending ||

@@ -41,4 +41,3 @@ export async function askConfirm(message: string, defaultValue = false): Promise
   ]);
   return answer;
 }
-

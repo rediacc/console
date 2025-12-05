@@ -11,7 +11,10 @@ export interface MutationConfig<TVariables, TResult = unknown, TTransformed = TV
   errorMessage?: string;
   transformData?: (data: TVariables) => TTransformed | Promise<TTransformed>;
   operationName?: string;
-  additionalInvalidateKeys?: string[] | QueryKey[] | ((variables: TVariables) => string[] | QueryKey[]);
+  additionalInvalidateKeys?:
+    | string[]
+    | QueryKey[]
+    | ((variables: TVariables) => string[] | QueryKey[]);
   disableTelemetry?: boolean;
 }
 

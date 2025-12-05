@@ -24,7 +24,12 @@ export const useCreateMachine = createMutation<{
 }>({
   request: ({ teamName, bridgeName, machineName, machineVault }) =>
     api.machines.create(teamName, machineName, bridgeName, machineVault),
-  invalidateKeys: [QUERY_KEY_STRINGS.machines, QUERY_KEY_STRINGS.teams, QUERY_KEY_STRINGS.bridges, QUERY_KEY_STRINGS.dropdown],
+  invalidateKeys: [
+    QUERY_KEY_STRINGS.machines,
+    QUERY_KEY_STRINGS.teams,
+    QUERY_KEY_STRINGS.bridges,
+    QUERY_KEY_STRINGS.dropdown,
+  ],
   successMessage: (vars) => `Machine "${vars.machineName}" created successfully`,
   errorMessage: 'Failed to create machine',
   transformData: ({ teamName, bridgeName, machineName, machineVault }) => ({

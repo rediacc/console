@@ -84,6 +84,6 @@ export const useConfirmDialog = () => {
     confirm,
     confirmDelete,
     contextHolder,
-    modal // Expose raw modal instance for advanced use cases (modal.error, modal.info, etc.)
+    modal, // Expose raw modal instance for advanced use cases (modal.error, modal.info, etc.)
   };
 };

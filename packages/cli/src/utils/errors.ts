@@ -22,4 +22,3 @@ export function handleError(error: unknown): never {
   outputService.error(`Error: ${message}`);
   process.exit(exitCode);
 }
-

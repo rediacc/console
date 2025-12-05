@@ -12,10 +12,7 @@ import { QUERY_KEYS } from '@/api/queryKeys';
  * @param queryClient - The React Query client instance
  * @param bridgeName - Optional bridge name to invalidate bridge-specific queue caches
  */
-export const invalidateQueueCaches = (
-  queryClient: QueryClient,
-  bridgeName?: string
-) => {
+export const invalidateQueueCaches = (queryClient: QueryClient, bridgeName?: string) => {
   queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
   if (bridgeName) {
     queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.itemsByBridge(bridgeName) });
@@ -75,7 +72,7 @@ export const invalidateQueries = (
   queryClient: QueryClient,
   keys: readonly (readonly string[])[]
 ) => {
-  keys.forEach(key => {
+  keys.forEach((key) => {
     queryClient.invalidateQueries({ queryKey: key });
   });
 };

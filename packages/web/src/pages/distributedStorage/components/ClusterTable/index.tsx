@@ -35,9 +35,12 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   const manageMachinesModal = useDialogState<DistributedStorageCluster>();
   const auditTrace = useTraceModal();
 
-  const handleManageMachines = useCallback((cluster: DistributedStorageCluster) => {
-    manageMachinesModal.open(cluster);
-  }, [manageMachinesModal]);
+  const handleManageMachines = useCallback(
+    (cluster: DistributedStorageCluster) => {
+      manageMachinesModal.open(cluster);
+    },
+    [manageMachinesModal]
+  );
 
   const handleAuditTrace = useCallback(
     (cluster: DistributedStorageCluster) => {

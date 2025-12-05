@@ -4,7 +4,12 @@ import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps, TooltipProps } from 'antd';
 import { MoreOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import i18n from '@/i18n/config';
-import { createStatusRenderer, type StatusConfig, renderTimestampElement, VersionTag } from './renderers';
+import {
+  createStatusRenderer,
+  type StatusConfig,
+  renderTimestampElement,
+  VersionTag,
+} from './renderers';
 
 const { Text } = Typography;
 
