@@ -1,0 +1,881 @@
+{
+  "cluster": [
+    {
+      "name": "ceph_cluster_create",
+      "description": "Creates a new Ceph cluster across multiple nodes",
+      "category": "cluster",
+      "showInMenu": true,
+      "requiresMachine": false,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster to create"
+        },
+        {
+          "name": "nodes",
+          "label": "Nodes",
+          "type": "string",
+          "required": true,
+          "description": "Comma-separated list of node names (minimum 3)"
+        },
+        {
+          "name": "osd_device",
+          "label": "OSD Device",
+          "type": "string",
+          "required": false,
+          "default": "/dev/sdb",
+          "description": "Storage device for OSDs"
+        },
+        {
+          "name": "health_check_timeout",
+          "label": "Health Check Timeout",
+          "type": "number",
+          "required": false,
+          "default": 300,
+          "description": "Timeout in seconds for health check"
+        }
+      ]
+    },
+    {
+      "name": "ceph_cluster_status",
+      "description": "Displays current cluster status and health",
+      "category": "cluster",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to check from (defaults to current machine)"
+        }
+      ]
+    },
+    {
+      "name": "ceph_cluster_dashboard",
+      "description": "Retrieves dashboard access information",
+      "category": "cluster",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to check from (defaults to current machine)"
+        }
+      ]
+    },
+    {
+      "name": "ceph_cluster_destroy",
+      "description": "Destroys an entire Ceph cluster",
+      "category": "cluster",
+      "showInMenu": true,
+      "requiresMachine": false,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster to destroy"
+        },
+        {
+          "name": "nodes",
+          "label": "Nodes",
+          "type": "string",
+          "required": true,
+          "description": "Comma-separated list of nodes"
+        },
+        {
+          "name": "force",
+          "label": "Force",
+          "type": "boolean",
+          "required": true,
+          "default": false,
+          "description": "Must be true for safety"
+        }
+      ]
+    }
+  ],
+  "pool": [
+    {
+      "name": "ceph_pool_create",
+      "description": "Creates a new storage pool in an existing cluster",
+      "category": "pool",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool to create"
+        },
+        {
+          "name": "pool_pg_num",
+          "label": "PG Number",
+          "type": "number",
+          "required": false,
+          "default": 32,
+          "description": "Number of placement groups"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    },
+    {
+      "name": "ceph_pool_list",
+      "description": "Lists all pools in a cluster",
+      "category": "pool",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    },
+    {
+      "name": "ceph_pool_delete",
+      "description": "Deletes a pool from the cluster",
+      "category": "pool",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool to delete"
+        },
+        {
+          "name": "force",
+          "label": "Force",
+          "type": "boolean",
+          "required": true,
+          "default": false,
+          "description": "Must be true for safety"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    }
+  ],
+  "image": [
+    {
+      "name": "ceph_image_create",
+      "description": "Creates a new RBD image in a pool",
+      "category": "image",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool"
+        },
+        {
+          "name": "image_name",
+          "label": "Image Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the image to create"
+        },
+        {
+          "name": "size",
+          "label": "Size",
+          "type": "string",
+          "required": false,
+          "default": "10G",
+          "description": "Size of the image (e.g., 10G, 100G)"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    },
+    {
+      "name": "ceph_image_list",
+      "description": "Lists RBD images in one or all pools",
+      "category": "image",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": false,
+          "description": "Specific pool to list (all pools if omitted)"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        },
+        {
+          "name": "detailed",
+          "label": "Detailed",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Show detailed information"
+        }
+      ]
+    },
+    {
+      "name": "ceph_image_info",
+      "description": "Shows detailed information about a specific RBD image",
+      "category": "image",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool"
+        },
+        {
+          "name": "image_name",
+          "label": "Image Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the image"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    },
+    {
+      "name": "ceph_image_delete",
+      "description": "Deletes an RBD image from a pool",
+      "category": "image",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool"
+        },
+        {
+          "name": "image_name",
+          "label": "Image Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the image to delete"
+        },
+        {
+          "name": "force",
+          "label": "Force",
+          "type": "boolean",
+          "required": true,
+          "default": false,
+          "description": "Must be true for safety"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    },
+    {
+      "name": "ceph_image_resize",
+      "description": "Resizes an existing RBD image",
+      "category": "image",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool"
+        },
+        {
+          "name": "image_name",
+          "label": "Image Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the image"
+        },
+        {
+          "name": "new_size",
+          "label": "New Size",
+          "type": "string",
+          "required": true,
+          "description": "New size for the image (e.g., 20G)"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    }
+  ],
+  "snapshot": [
+    {
+      "name": "ceph_snapshot_create",
+      "description": "Creates a snapshot of an RBD image",
+      "category": "snapshot",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool"
+        },
+        {
+          "name": "image_name",
+          "label": "Image Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the image"
+        },
+        {
+          "name": "snapshot_name",
+          "label": "Snapshot Name",
+          "type": "string",
+          "required": true,
+          "description": "Name for the snapshot"
+        },
+        {
+          "name": "protect",
+          "label": "Protect",
+          "type": "boolean",
+          "required": false,
+          "default": true,
+          "description": "Auto-protect for cloning"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    },
+    {
+      "name": "ceph_snapshot_list",
+      "description": "Lists all snapshots of an RBD image",
+      "category": "snapshot",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool"
+        },
+        {
+          "name": "image_name",
+          "label": "Image Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the image"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        },
+        {
+          "name": "show_children",
+          "label": "Show Children",
+          "type": "boolean",
+          "required": false,
+          "default": true,
+          "description": "Show clones of each snapshot"
+        }
+      ]
+    },
+    {
+      "name": "ceph_snapshot_delete",
+      "description": "Deletes a snapshot from an RBD image",
+      "category": "snapshot",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool"
+        },
+        {
+          "name": "image_name",
+          "label": "Image Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the image"
+        },
+        {
+          "name": "snapshot_name",
+          "label": "Snapshot Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the snapshot"
+        },
+        {
+          "name": "force",
+          "label": "Force",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Force deletion even with clones"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    },
+    {
+      "name": "ceph_snapshot_rollback",
+      "description": "Rolls back an RBD image to a previous snapshot",
+      "category": "snapshot",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool"
+        },
+        {
+          "name": "image_name",
+          "label": "Image Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the image"
+        },
+        {
+          "name": "snapshot_name",
+          "label": "Snapshot Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the snapshot"
+        },
+        {
+          "name": "force",
+          "label": "Force",
+          "type": "boolean",
+          "required": true,
+          "default": false,
+          "description": "Must be true for safety (data loss warning)"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    }
+  ],
+  "clone": [
+    {
+      "name": "ceph_clone_image",
+      "description": "Creates a clone from an RBD image snapshot",
+      "category": "clone",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool"
+        },
+        {
+          "name": "source_image",
+          "label": "Source Image",
+          "type": "string",
+          "required": true,
+          "description": "Source image name"
+        },
+        {
+          "name": "clone_name",
+          "label": "Clone Name",
+          "type": "string",
+          "required": true,
+          "description": "Name for the clone"
+        },
+        {
+          "name": "source_snapshot_name",
+          "label": "Source Snapshot",
+          "type": "string",
+          "required": false,
+          "description": "Use existing snapshot"
+        },
+        {
+          "name": "cow_enabled",
+          "label": "Enable COW",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Enable copy-on-write device"
+        },
+        {
+          "name": "cow_size",
+          "label": "COW Size",
+          "type": "string",
+          "required": false,
+          "default": "1024MB",
+          "description": "Size of COW backing store"
+        },
+        {
+          "name": "mount_point",
+          "label": "Mount Point",
+          "type": "string",
+          "required": false,
+          "description": "Mount COW device at this path"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    },
+    {
+      "name": "ceph_clone_list",
+      "description": "Lists all clones and their relationships",
+      "category": "clone",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    },
+    {
+      "name": "ceph_clone_cleanup",
+      "description": "Cleans up a clone and its resources",
+      "category": "clone",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool"
+        },
+        {
+          "name": "clone_name",
+          "label": "Clone Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the clone"
+        },
+        {
+          "name": "force",
+          "label": "Force",
+          "type": "boolean",
+          "required": true,
+          "default": false,
+          "description": "Must be true for safety"
+        },
+        {
+          "name": "cleanup_snapshot",
+          "label": "Cleanup Snapshot",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Delete parent snapshot"
+        },
+        {
+          "name": "node",
+          "label": "Node",
+          "type": "string",
+          "required": false,
+          "description": "Node to execute from (defaults to current machine)"
+        }
+      ]
+    }
+  ],
+  "client": [
+    {
+      "name": "ceph_client_mount",
+      "description": "Mounts a Ceph RBD image on a client machine",
+      "category": "client",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "cluster_name",
+          "label": "Cluster Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the cluster"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pool"
+        },
+        {
+          "name": "image_name",
+          "label": "Image Name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the image to mount"
+        },
+        {
+          "name": "mount_point",
+          "label": "Mount Point",
+          "type": "string",
+          "required": false,
+          "default": "/mnt/distributed",
+          "description": "Mount location"
+        },
+        {
+          "name": "filesystem",
+          "label": "Filesystem",
+          "type": "select",
+          "required": false,
+          "default": "btrfs",
+          "options": ["btrfs", "ext4", "xfs"],
+          "description": "Filesystem type"
+        },
+        {
+          "name": "storage_nodes",
+          "label": "Storage Nodes",
+          "type": "string",
+          "required": true,
+          "description": "Comma-separated list of storage nodes"
+        }
+      ]
+    },
+    {
+      "name": "ceph_client_unmount",
+      "description": "Unmounts Ceph storage from a client machine",
+      "category": "client",
+      "showInMenu": true,
+      "requiresMachine": true,
+      "parameters": [
+        {
+          "name": "mount_point",
+          "label": "Mount Point",
+          "type": "string",
+          "required": false,
+          "default": "/mnt/distributed",
+          "description": "Mount location"
+        },
+        {
+          "name": "pool_name",
+          "label": "Pool Name",
+          "type": "string",
+          "required": false,
+          "description": "Pool name for specific unmount"
+        },
+        {
+          "name": "image_name",
+          "label": "Image Name",
+          "type": "string",
+          "required": false,
+          "description": "Image name for specific unmount"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,572 @@
+{
+  "actions": {
+    "addToQueue": "Add to Queue",
+    "advanced": "Advanced",
+    "back": "Back",
+    "cancel": "Cancel",
+    "clearSelection": "Clear Selection",
+    "close": "Close",
+    "create": "Create",
+    "createResource": "Create {{resource}}",
+    "delete": "Delete",
+    "edit": "Edit",
+    "editResource": "Edit {{resource}}",
+    "editVault": "Edit Vault",
+    "exitFullscreen": "Exit Fullscreen",
+    "fullscreen": "Fullscreen",
+    "manage": "Manage",
+    "refresh": "Refresh",
+    "remote": "Remote",
+    "remove": "Remove",
+    "reset": "Reset",
+    "retry": "Retry",
+    "runFunction": "Run Function",
+    "save": "Save",
+    "search": "Search",
+    "trace": "Trace",
+    "viewTrace": "View Trace",
+    "export": "Export",
+    "exportSuccess": "Export successful"
+  },
+  "actionsColumn": "Actions",
+  "statusColumn": "Status",
+  "dateColumn": "Date",
+  "viewDetails": "View Details",
+  "close": "Close",
+  "copiedToClipboard": "Copied to clipboard",
+  "copyFailed": "Failed to copy to clipboard",
+  "current": "Current",
+  "dashboard": {
+    "availablePlans": "Available Plans",
+    "comparePlansDescription": "Compare features and pricing across different subscription tiers",
+    "currentPlan": "Current Plan",
+    "enterprisePlanDescription": "You're on our highest tier plan with all features unlocked",
+    "upgradeOptions": "Upgrade Options"
+  },
+  "export": "Export",
+  "exportCSV": "Export as CSV",
+  "exportJSON": "Export as JSON",
+  "fieldGenerator": {
+    "applied": "Values applied successfully",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "comingSoon": "coming soon",
+    "copied": "Copied!",
+    "copy": "Copy",
+    "copyError": "Failed to copy to clipboard",
+    "generate": "Generate",
+    "generationError": "Failed to generate. Please try again.",
+    "generationSuccess": "Generated successfully",
+    "keySize": "Key Size",
+    "keyType": "Key Type",
+    "moreSecure": "more secure",
+    "regenerate": "Regenerate",
+    "title": {
+      "repo_credential": "Generate Repository Credential",
+      "ssh_keys": "Generate SSH Key Pair"
+    },
+    "tooltip": "Generate value"
+  },
+  "fields": {
+    "vault": "Vault Configuration"
+  },
+  "general": {
+    "cancel": "Cancel",
+    "defaultsApplied": "Default values applied",
+    "important": "Important",
+    "loading": "Loading...",
+    "showingRecords": "Showing records {{start}}-{{end}} of {{total}}",
+    "unknown": "Unknown",
+    "vaultVersion": "Vault Version",
+    "versionFormat": "v{{version}}"
+  },
+  "language": {
+    "ar": "Arabic",
+    "de": "German",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "ja": "Japanese",
+    "select": "Select Language",
+    "tr": "Turkish",
+    "zh": "Chinese"
+  },
+  "last30Days": "Last 30 Days",
+  "last7Days": "Last 7 Days",
+  "lastMonth": "Last Month",
+  "messages": {
+    "error": "Error",
+    "invalidEmail": "Invalid email address",
+    "loading": "Loading...",
+    "required": "This field is required",
+    "success": "Success"
+  },
+  "navigation": {
+    "architecture": "Architecture",
+    "audit": "Audit",
+    "dashboard": "Dashboard",
+    "distributedStorage": "Distributed Storage",
+    "logout": "Logout",
+    "mainNavigation": "Main navigation",
+    "queue": "Queue",
+    "machines": "Machines",
+    "credentials": "Credentials",
+    "storage": "Storage",
+    "organization": "Organization",
+    "organizationUsers": "Users",
+    "organizationTeams": "Teams",
+    "organizationAccess": "Access",
+    "settings": "Settings",
+    "settingsProfile": "Profile",
+    "settingsCompany": "Company",
+    "settingsInfrastructure": "Infrastructure",
+    "storageCloud": "Cloud",
+    "storageDistributed": "Distributed",
+    "distributedStorageClusters": "Clusters",
+    "distributedStoragePools": "Pools",
+    "distributedStorageMachines": "Machines"
+  },
+  "nestedObjectEditor": {
+    "Active": "Active",
+    "Add": "Add",
+    "Add New Entry": "Add New Entry",
+    "Array": "Array",
+    "Container Images Detected": "Container Images Detected",
+    "Delete this entry?": "Delete this entry?",
+    "Enter key name": "Enter key name",
+    "False": "False",
+    "Fields": "Fields",
+    "Hide JSON": "Hide JSON",
+    "Image": "Image",
+    "JSON Error": "JSON Error",
+    "No": "No",
+    "No entries": "No entries",
+    "Object": "Object",
+    "Plugin Configuration Detected": "Plugin Configuration Detected",
+    "Raw JSON Editor": "Raw JSON Editor",
+    "Show JSON": "Show JSON",
+    "True": "True",
+    "Uniform Structure": "Uniform Structure",
+    "Uniform Structure Detected": "Uniform Structure Detected",
+    "Yes": "Yes"
+  },
+  "no": "No",
+  "noMatchingResults": "No matching results",
+  "none": "None",
+  "notifications": {
+    "clearAll": "Clear all",
+    "empty": "No notifications",
+    "markAllRead": "Mark all as read",
+    "title": "Notifications",
+    "types": {
+      "success": "Success",
+      "error": "Error",
+      "warning": "Warning",
+      "info": "Information"
+    }
+  },
+  "refresh": "Refresh",
+  "status": {
+    "initializing": "Initializing...",
+    "label": "Status",
+    "processing": "Processing",
+    "running": "Running",
+    "waitingForExecution": "Waiting for execution"
+  },
+  "table": {
+    "actions": "Actions",
+    "showingRecords": "Showing records {{start}}-{{end}} of {{total}}"
+  },
+  "theme": {
+    "dark": "Dark",
+    "light": "Light",
+    "switchToDark": "Switch to dark mode",
+    "switchToLight": "Switch to light mode"
+  },
+  "thisMonth": "This Month",
+  "today": "Today",
+  "total": "Total",
+  "uiMode": {
+    "expert": "Expert",
+    "simple": "Simple",
+    "switching": "Switching to {{mode}} mode..."
+  },
+  "utilized": "Utilized",
+  "vaultEditor": {
+    "advanced": "Advanced",
+    "enterJsonArray": "Enter JSON array",
+    "enterJsonObject": "Enter JSON object",
+    "example": "Example:",
+    "expertModeDescription": "Direct JSON editing can break system functionality if not done correctly. Only modify if you understand the vault schema and implications.",
+    "expertModeOnly": "Expert Mode Only",
+    "exportJson": "Export JSON",
+    "extraFields": "Extra Fields (Not in Schema)",
+    "extraFieldsTooltip": "These fields were imported but are not defined in the schema",
+    "extraFieldsWarning": "Warning",
+    "extraFieldsWarningDescription": "These fields are not defined in the schema and will be stored under 'extraFields' in the JSON structure.",
+    "failedToParseJson": "Failed to parse JSON:",
+    "failedToSerialize": "Failed to serialize data to JSON",
+    "fields": {
+      "BRIDGE": {
+        "description": "Bridge configuration for network connectivity",
+        "ip": {
+          "description": "IP address of the bridge server",
+          "label": "IP Address"
+        }
+      },
+      "CLONE": {
+        "description": "Configure RBD clone settings",
+        "features": {
+          "description": "RBD features for the clone",
+          "label": "Features"
+        },
+        "parent_image": {
+          "description": "Name of the parent image",
+          "label": "Parent Image"
+        },
+        "parent_pool": {
+          "description": "Pool containing the parent image",
+          "label": "Parent Pool"
+        },
+        "parent_snapshot": {
+          "description": "Name of the parent snapshot",
+          "label": "Parent Snapshot"
+        },
+        "size": {
+          "description": "Size of the clone image",
+          "label": "Clone Size"
+        }
+      },
+      "CLUSTER": {
+        "config": {
+          "description": "Additional cluster configuration options",
+          "label": "Configuration"
+        },
+        "description": "Configure Ceph distributed storage cluster settings",
+        "fsid": {
+          "description": "Unique identifier for the Ceph cluster (UUID format)",
+          "label": "Filesystem ID"
+        },
+        "mds": {
+          "description": "List of MDS (Metadata Server) nodes",
+          "label": "MDS Nodes"
+        },
+        "mgrs": {
+          "description": "List of manager nodes in the cluster",
+          "label": "Manager Nodes"
+        },
+        "monitors": {
+          "description": "List of monitor nodes in the cluster",
+          "label": "Monitor Nodes"
+        },
+        "osds": {
+          "description": "List of OSD (Object Storage Daemon) nodes",
+          "label": "OSD Nodes"
+        }
+      },
+      "COMPANY": {
+        "DOCKER_JSON_CONF": {
+          "description": "Docker registry authentication configuration",
+          "label": "Docker Configuration"
+        },
+        "LOG_FILE": {
+          "description": "Path to the system log file",
+          "label": "Log File Path"
+        },
+        "PLUGINS": {
+          "description": "Plugin configurations with container images and activation status",
+          "label": "Plugins"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "Base64-encoded SSH private key for company operations",
+          "label": "SSH Private Key"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "SSH public key for company operations",
+          "label": "SSH Public Key"
+        },
+        "UNIVERSAL_USER_ID": {
+          "description": "Universal user ID for system operations",
+          "label": "Universal User ID"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "description": "Universal user name for system operations",
+          "label": "Universal User Name"
+        },
+        "description": "Company configuration for organization-wide settings"
+      },
+      "IMAGE": {
+        "data_pool": {
+          "description": "Separate pool for storing image data",
+          "label": "Data Pool"
+        },
+        "description": "Configure RBD image settings",
+        "features": {
+          "description": "RBD features to enable for the image",
+          "label": "Features"
+        },
+        "object_size": {
+          "description": "Size of objects within the image",
+          "label": "Object Size"
+        },
+        "size": {
+          "description": "Size of the RBD image (e.g., 10G, 1T)",
+          "label": "Image Size"
+        },
+        "stripe_count": {
+          "description": "Number of stripes for the image",
+          "label": "Stripe Count"
+        },
+        "stripe_unit": {
+          "description": "Stripe unit size for the image",
+          "label": "Stripe Unit"
+        }
+      },
+      "MACHINE": {
+        "datastore": {
+          "description": "Directory path for storing data. If located on a BTRFS filesystem, it will utilize native features. Otherwise, a BTRFS storage pool file will be created and mounted here to enable snapshots and compression",
+          "label": "Datastore Path"
+        },
+        "description": "Machine configuration for SSH access and storage",
+        "host_entry": {
+          "description": "SSH known host entry for security verification",
+          "label": "Host Entry"
+        },
+        "ip": {
+          "description": "IP address of the machine",
+          "label": "IP Address"
+        },
+        "port": {
+          "description": "SSH port number",
+          "label": "SSH Port"
+        },
+        "ssh_key_configured": {
+          "description": "Check this if the SSH public key is already installed on the target machine",
+          "label": "SSH key already configured"
+        },
+        "ssh_password": {
+          "description": "Temporary password for initial SSH key setup only. Leave empty if SSH key is already configured. This password is used once to copy the public key and should be removed afterwards for security.",
+          "label": "SSH Password"
+        },
+        "user": {
+          "description": "SSH username for connection",
+          "label": "Username"
+        }
+      },
+      "POOL": {
+        "application": {
+          "description": "Application type for the pool (e.g., rbd, cephfs)",
+          "label": "Application"
+        },
+        "crush_rule": {
+          "description": "CRUSH rule name for data placement",
+          "label": "CRUSH Rule"
+        },
+        "description": "Configure Ceph storage pool settings",
+        "min_size": {
+          "description": "Minimum number of replicas required for I/O",
+          "label": "Minimum Size"
+        },
+        "pg_num": {
+          "description": "Number of placement groups for the pool",
+          "label": "Placement Groups"
+        },
+        "pgp_num": {
+          "description": "Number of placement groups for placement purposes",
+          "label": "PGP Number"
+        },
+        "size": {
+          "description": "Number of replicas for objects in the pool",
+          "label": "Replication Size"
+        }
+      },
+      "REGION": {
+        "code": {
+          "description": "Short code for the region",
+          "label": "Region Code"
+        },
+        "description": "Region configuration for geographic distribution",
+        "name": {
+          "description": "Name of the geographic region",
+          "label": "Region Name"
+        }
+      },
+      "REPO": {
+        "credential": {
+          "description": "Repository access password (32 characters, alphanumeric + special chars)",
+          "label": "Credential"
+        },
+        "description": "Repository configuration for backup storage",
+        "encryption": {
+          "description": "Enable encryption for repository",
+          "label": "Enable Encryption"
+        },
+        "name": {
+          "description": "Repository name identifier",
+          "label": "Repository Name"
+        },
+        "retention": {
+          "description": "Retention policy settings",
+          "label": "Retention Policy"
+        },
+        "schedule": {
+          "description": "Cron expression for automated backups",
+          "label": "Backup Schedule"
+        }
+      },
+      "SNAPSHOT": {
+        "description": "Configure RBD snapshot settings",
+        "protected": {
+          "description": "Whether the snapshot is protected from deletion",
+          "label": "Protected"
+        },
+        "size": {
+          "description": "Size of the snapshot",
+          "label": "Snapshot Size"
+        },
+        "timestamp": {
+          "description": "Creation timestamp of the snapshot",
+          "label": "Timestamp"
+        }
+      },
+      "STORAGE": {
+        "description": {
+          "description": "Optional description of this storage configuration",
+          "label": "Description"
+        },
+        "entityDescription": "Storage configuration for backup destinations",
+        "name": {
+          "description": "Unique name for this storage configuration",
+          "label": "Storage Name"
+        },
+        "noVersioning": {
+          "description": "Disable version control for this storage",
+          "label": "Disable Versioning"
+        },
+        "parameters": {
+          "description": "Additional rclone parameters for advanced configuration",
+          "label": "Additional Parameters"
+        },
+        "provider": {
+          "description": "Select the storage provider type",
+          "label": "Storage Provider"
+        }
+      },
+      "TEAM": {
+        "SSH_PRIVATE_KEY": {
+          "description": "Base64-encoded SSH private key for team operations",
+          "label": "SSH Private Key"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "SSH public key for team operations",
+          "label": "SSH Public Key"
+        },
+        "description": "Team configuration for organizational structure",
+        "name": {
+          "description": "Name of the team",
+          "label": "Team Name"
+        },
+        "teamDescription": {
+          "description": "Description of team purpose and responsibilities",
+          "label": "Team Description"
+        }
+      },
+      "USER": {
+        "SSH_PRIVATE_KEY": {
+          "description": "Base64-encoded SSH private key for user operations",
+          "label": "SSH Private Key"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "SSH public key for user operations",
+          "label": "SSH Public Key"
+        },
+        "description": "User configuration for personal settings"
+      }
+    },
+    "fields.CLONE.description": "Configure RBD clone settings",
+    "fields.CLUSTER.description": "Configure Ceph distributed storage cluster settings",
+    "fields.IMAGE.description": "Configure RBD image settings",
+    "fields.POOL.description": "Configure Ceph storage pool settings",
+    "fields.SNAPSHOT.description": "Configure RBD snapshot settings",
+    "fieldsMovedFromExtra": "{{count}} field(s) restored from extraFields: {{fields}}",
+    "fieldsMovedToExtra": "{{count}} field(s) moved to extraFields: {{fields}}",
+    "formatJson": "Format JSON",
+    "importJson": "Import JSON",
+    "invalidFormat": "Invalid format. {{description}}",
+    "invalidJsonFormat": "Invalid JSON format",
+    "isRequired": "{{field}} is required",
+    "jsonError": "JSON Error",
+    "maxLength": "Maximum length is {{length}}",
+    "maxValue": "Maximum value is {{value}}",
+    "minLength": "Minimum length is {{length}}",
+    "minValue": "Minimum value is {{value}}",
+    "mustBeArray": "Must be an array",
+    "mustBeValidJson": "Must be valid JSON",
+    "mustBeValidJsonArray": "Must be valid JSON array",
+    "noChangesToSave": "No changes to save",
+    "optionalFields": "Optional Fields",
+    "pleaseFixErrors": "Please fix validation errors before saving",
+    "portPlaceholder": "Port number (1-65535)",
+    "providerFields": "{{provider}} Configuration",
+    "providerRequiredFields": "Required fields for {{provider}}",
+    "rawJsonEditor": "Raw JSON Editor (Expert Mode)",
+    "rawJsonTooltip": "Direct JSON editing - Use with caution!",
+    "requiredFields": "Required Fields",
+    "resetToFormValues": "Reset to Form Values",
+    "saveVaultConfiguration": "Save Vault Configuration",
+    "hostEntryHelp": "Optional. SSH known host entry will be detected automatically.",
+    "hostEntryPlaceholder": "Auto-populated during connection test",
+    "sshPasswordPlaceholder": "Optional: for initial SSH key setup",
+    "sshPasswordRequiredWhenNoKey": "SSH password is required for initial key setup",
+    "systemCompatibility": {
+      "available": "Available",
+      "btrfsAvailable": "BTRFS Available",
+      "compatibilityStatus": "Compatibility Status",
+      "compatible": "Compatible",
+      "incompatible": "Incompatible",
+      "kernelVersion": "Kernel Version",
+      "knownIssues": "Known Issues",
+      "no": "No",
+      "notInstalled": "Not Installed",
+      "operatingSystem": "Operating System",
+      "osSetup": "OS Setup",
+      "passwordRequired": "Password Required",
+      "recommendations": "Recommendations",
+      "setupCompleted": "Setup Completed",
+      "setupRequired": "Setup Required",
+      "sudoAvailable": "Sudo Available",
+      "systemInfo": "System Information",
+      "title": "System Compatibility",
+      "unknown": "Unknown",
+      "warning": "Warning",
+      "yes": "Yes"
+    },
+    "missingSshKeysWarning": "Missing SSH Keys",
+    "missingSshKeysDescription": "The team vault is missing SSH_PRIVATE_KEY and/or SSH_PUBLIC_KEY. Bridge SSH authentication will fail. Please generate or add SSH keys to this vault.",
+    "testConnection": {
+      "button": "Test Connection",
+      "description": "Test SSH connection and configure SSH key authentication automatically",
+      "failed": "SSH connection failed",
+      "initiated": "SSH connection test has been initiated. Please check the queue for results.",
+      "label": "Test Connection",
+      "missingFields": "Please fill in IP address, username, and password before testing",
+      "required": "Connection test required before creating the machine.",
+      "success": "SSH connection successful",
+      "testing": "Testing connection..."
+    },
+    "unknownEntityDescription": "Entity type \"{{type}}\" is not defined in the vault definitions.",
+    "unknownEntityType": "Unknown Entity Type",
+    "unsavedChanges": "Unsaved changes",
+    "validationErrors": "Validation Errors:",
+    "vaultConfiguration": "Vault Configuration",
+    "vaultVersion": "Vault Version:",
+    "versionAutoIncrement": "Version will auto-increment on save",
+    "versionWillIncrement": "Version will increment to {{version}}"
+  },
+  "warnings": {
+    "sandboxEnvironment": "Sandbox Environment",
+    "sandboxMessage": "Data may be reset during updates. For testing only."
+  },
+  "yes": "Yes",
+  "yesterday": "Yesterday"
+}

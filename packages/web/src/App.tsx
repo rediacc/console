@@ -1,0 +1,336 @@
+import React, { useEffect, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectIsAuthenticated } from '@/store/auth/authSelectors';
+import { RootState } from '@/store/store';
+import { loginSuccess } from '@/store/auth/authSlice';
+import { getAuthData, migrateFromLocalStorage } from '@/utils/auth';
+import { AppProviders } from '@/components/app/AppProviders';
+import { ThemedToaster } from '@/components/app/ThemedToaster';
+import { SessionExpiredDialog } from '@/components/app/SessionExpiredDialog';
+import { TelemetryProvider } from '@/components/common/TelemetryProvider';
+import { InteractionTracker } from '@/components/app/InteractionTracker';
+import { ErrorBoundary } from '@/components/app/ErrorBoundary';
+import { initializeApiClient } from '@/api/init';
+import AuthLayout from '@/components/layout/AuthLayout';
+import MainLayout from '@/components/layout/MainLayout';
+import LoginPage from '@/pages/login';
+import { getBasePath } from '@/utils/basePath';
+import { featureFlags } from '@/config/featureFlags';
+import { GlobalStyles } from '@/styles/GlobalStyles';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { LoadingState } from '@/styles/primitives';
+
+// Lazy load heavy pages
+const DashboardPage = lazy(() => import('@/pages/dashboard'));
+const MachinesPage = lazy(() => import('@/pages/machines/MachinesPage'));
+const MachineReposPage = lazy(() => import('@/pages/resources/MachineReposPage'));
+const RepoContainersPage = lazy(() => import('@/pages/resources/RepoContainersPage'));
+const DistributedStoragePage = lazy(
+  () => import('@/pages/distributedStorage/DistributedStoragePage')
+);
+const QueuePage = lazy(() => import('@/pages/queue/QueuePage'));
+const ArchitecturePage = lazy(() => import('@/pages/architecture/ArchitecturePage'));
+const AuditPage = lazy(() => import('@/pages/audit/AuditPage'));
+const CredentialsPage = lazy(() => import('@/pages/credentials/CredentialsPage'));
+const StoragePage = lazy(() => import('@/pages/storage/StoragePage'));
+const UsersPage = lazy(() => import('@/pages/organization/users/UsersPage'));
+const TeamsPage = lazy(() => import('@/pages/organization/teams/TeamsPage'));
+const AccessPage = lazy(() => import('@/pages/organization/access/AccessPage'));
+const ProfilePage = lazy(() => import('@/pages/settings/profile/ProfilePage'));
+const CompanyPage = lazy(() => import('@/pages/settings/company/CompanyPage'));
+const InfrastructurePage = lazy(() => import('@/pages/settings/infrastructure/InfrastructurePage'));
+
+// Loading component
+const PageLoader: React.FC = () => {
+  return (
+    <LoadingState data-testid="page-loader" $justify="center" $align="center" $paddingY="XXXL">
+      <LoadingWrapper loading centered minHeight={400}>
+        <div />
+      </LoadingWrapper>
+    </LoadingState>
+  );
+};
+
+// Component to handle GitHub Pages 404 redirect via sessionStorage
+const RedirectHandler: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if we were redirected from a 404 page
+    const redirectPath = sessionStorage.getItem('redirect_path');
+
+    if (redirectPath) {
+      // Clear the redirect path immediately to prevent loops
+      sessionStorage.removeItem('redirect_path');
+
+      // Navigate to the intended path
+      navigate(redirectPath, { replace: true });
+    }
+  }, [navigate]);
+
+  return null;
+};
+
+const AppContent: React.FC = () => {
+  const dispatch = useDispatch();
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const showSessionExpiredDialog = useSelector(
+    (state: RootState) => state.auth.showSessionExpiredDialog
+  );
+  const stayLoggedOutMode = useSelector((state: RootState) => state.auth.stayLoggedOutMode);
+  const [, setFeatureFlagVersion] = React.useState(0);
+
+  useEffect(() => {
+    const initialize = async () => {
+      // Initialize API client with correct URL
+      await initializeApiClient();
+
+      // Initialize feature flags after API connection is established
+      // This determines if we're in local development mode or production
+      featureFlags.updateDevelopmentState();
+
+      // Migrate any existing localStorage data to secure memory storage
+      await migrateFromLocalStorage();
+
+      // Check for existing auth data on mount
+      const authData = await getAuthData();
+      if (authData.token && authData.email) {
+        // Token exists in secure storage, restore session (token not stored in Redux for security)
+        dispatch(
+          loginSuccess({
+            user: { email: authData.email, company: authData.company || undefined },
+            company: authData.company || undefined,
+          })
+        );
+      }
+    };
+
+    initialize();
+  }, [dispatch]);
+
+  useEffect(() => {
+    const unsubscribe = featureFlags.subscribe(() => {
+      setFeatureFlagVersion((version) => version + 1);
+    });
+    return unsubscribe;
+  }, []);
+
+  return (
+    <AppProviders>
+      <GlobalStyles />
+      <BrowserRouter basename={getBasePath()}>
+        <RedirectHandler />
+        <TelemetryProvider>
+          <ErrorBoundary>
+            <InteractionTracker>
+              <Routes>
+                {/* Auth routes */}
+                <Route element={<AuthLayout />}>
+                  <Route path="/login" element={<LoginPage />} />
+                </Route>
+
+                {/* Protected routes */}
+                <Route
+                  element={
+                    isAuthenticated || showSessionExpiredDialog || stayLoggedOutMode ? (
+                      <MainLayout />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  }
+                >
+                  <Route path="/" element={<Navigate to="/machines" replace />} />
+
+                  {/* Dashboard */}
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <DashboardPage />
+                      </Suspense>
+                    }
+                  />
+
+                  {/* Organization */}
+                  <Route
+                    path="/machines"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <MachinesPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route path="/resources" element={<Navigate to="/machines" replace />} />
+                  <Route
+                    path="/credentials"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <CredentialsPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/storage"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <StoragePage />
+                      </Suspense>
+                    }
+                  />
+
+                  {/* Organization redirects */}
+                  <Route
+                    path="/organization"
+                    element={<Navigate to="/organization/users" replace />}
+                  />
+                  <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
+
+                  {/* Organization */}
+                  <Route
+                    path="/organization/users"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <UsersPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/organization/teams"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <TeamsPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/organization/access"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AccessPage />
+                      </Suspense>
+                    }
+                  />
+
+                  {/* Settings */}
+                  <Route
+                    path="/settings/profile"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProfilePage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/settings/company"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <CompanyPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/settings/infrastructure"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <InfrastructurePage />
+                      </Suspense>
+                    }
+                  />
+
+                  {/* Machine Repos */}
+                  <Route
+                    path="/machines/:machineName/repos"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <MachineReposPage />
+                      </Suspense>
+                    }
+                  />
+
+                  {/* Repo Containers */}
+                  <Route
+                    path="/machines/:machineName/repos/:repoName/containers"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RepoContainersPage />
+                      </Suspense>
+                    }
+                  />
+
+                  {/* Distributed Storage */}
+                  <Route
+                    path="/distributed-storage"
+                    element={<Navigate to="/distributed-storage/clusters" replace />}
+                  />
+                  <Route
+                    path="/distributed-storage/clusters"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <DistributedStoragePage view="clusters" />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/distributed-storage/pools"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <DistributedStoragePage view="pools" />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/distributed-storage/machines"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <DistributedStoragePage view="machines" />
+                      </Suspense>
+                    }
+                  />
+
+                  {/* Queue */}
+                  <Route
+                    path="/queue"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <QueuePage />
+                      </Suspense>
+                    }
+                  />
+
+                  {/* Audit */}
+                  <Route
+                    path="/audit"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AuditPage />
+                      </Suspense>
+                    }
+                  />
+
+                  {/* Architecture */}
+                  <Route
+                    path="/architecture"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ArchitecturePage />
+                      </Suspense>
+                    }
+                  />
+                </Route>
+              </Routes>
+            </InteractionTracker>
+          </ErrorBoundary>
+        </TelemetryProvider>
+      </BrowserRouter>
+      <ThemedToaster />
+      <SessionExpiredDialog />
+    </AppProviders>
+  );
+};
+
+const App: React.FC = () => {
+  return <AppContent />;
+};
+
+export default App;

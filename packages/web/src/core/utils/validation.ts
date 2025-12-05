@@ -1,0 +1,317 @@
+import { z } from 'zod';
+
+// Resource name schema factory
+const createResourceNameSchema = (resourceType: string) =>
+  z
+    .string()
+    .min(1, `${resourceType} name is required`)
+    .max(100, `${resourceType} name must be less than 100 characters`);
+
+// Resource name schemas
+const resourceTypes = [
+  'Team',
+  'Region',
+  'Bridge',
+  'Machine',
+  'Repo',
+  'Storage',
+  'Cluster',
+  'Pool',
+  'Image',
+  'Snapshot',
+  'Clone',
+] as const;
+export const [
+  teamNameSchema,
+  regionNameSchema,
+  bridgeNameSchema,
+  machineNameSchema,
+  repoNameSchema,
+  storageNameSchema,
+  clusterNameSchema,
+  poolNameSchema,
+  imageNameSchema,
+  snapshotNameSchema,
+  cloneNameSchema,
+] = resourceTypes.map((type) => createResourceNameSchema(type));
+
+// User schemas
+export const emailSchema = z.string().min(1, 'Email is required').email('Invalid email address');
+
+export const passwordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(100, 'Password must be less than 100 characters');
+
+// Vault schema
+export const vaultSchema = z
+  .string()
+  .min(2, 'Vault must be valid JSON')
+  .refine((val) => {
+    try {
+      JSON.parse(val);
+      return true;
+    } catch {
+      return false;
+    }
+  }, 'Vault must be valid JSON');
+
+// Form schemas factory
+const withVault = (fields: Record<string, z.ZodSchema>, vaultFieldName: string) =>
+  z.object({ ...fields, [vaultFieldName]: vaultSchema.optional().default('{}') });
+
+// Create schemas using configuration
+const resourceSchemas = {
+  team: { teamName: teamNameSchema },
+  region: { regionName: regionNameSchema },
+  bridge: { regionName: regionNameSchema, bridgeName: bridgeNameSchema },
+  machine: {
+    teamName: teamNameSchema,
+    regionName: regionNameSchema,
+    bridgeName: bridgeNameSchema,
+    machineName: machineNameSchema,
+  },
+  repo: { teamName: teamNameSchema, repoName: repoNameSchema },
+  storage: { teamName: teamNameSchema, storageName: storageNameSchema },
+  cluster: { clusterName: clusterNameSchema },
+  pool: { teamName: teamNameSchema, clusterName: clusterNameSchema, poolName: poolNameSchema },
+  image: { teamName: teamNameSchema, poolName: poolNameSchema, imageName: imageNameSchema },
+  snapshot: {
+    teamName: teamNameSchema,
+    poolName: poolNameSchema,
+    imageName: imageNameSchema,
+    snapshotName: snapshotNameSchema,
+  },
+  clone: {
+    teamName: teamNameSchema,
+    poolName: poolNameSchema,
+    imageName: imageNameSchema,
+    snapshotName: snapshotNameSchema,
+    cloneName: cloneNameSchema,
+  },
+} as const;
+
+export const createTeamSchema = withVault(resourceSchemas.team, 'teamVault');
+export const createRegionSchema = withVault(resourceSchemas.region, 'regionVault');
+export const createBridgeSchema = withVault(resourceSchemas.bridge, 'bridgeVault');
+export const createMachineSchema = withVault(resourceSchemas.machine, 'machineVault');
+// Special schema for repo creation with conditional machine selection and size
+export const createRepoSchema = withVault(
+  {
+    ...resourceSchemas.repo,
+    machineName: z.string().optional(), // Optional - required only when creating physical storage
+    size: z
+      .string()
+      .optional()
+      .refine((val) => {
+        // Skip validation if empty or undefined
+        if (!val || val.trim() === '') return true;
+
+        // Validate format
+        const match = val.match(/^(\d+)([GT])$/);
+        if (!match) return false;
+
+        const num = parseInt(match[1]);
+        return num > 0;
+      }, 'Invalid size format (e.g., 10G, 100G, 1T)'), // Optional - required only when creating physical storage
+    repoGuid: z
+      .union([
+        z
+          .string()
+          .length(0), // Allow empty string
+        z
+          .string()
+          .uuid('Invalid GUID format'), // Or valid UUID
+      ])
+      .optional(), // Optional repo GUID
+  },
+  'repoVault'
+).refine(
+  (data) => {
+    if (!data) return true;
+    // If repoGuid is provided (credential-only mode), machine and size are not required
+    // Otherwise, both machine and size must be provided for physical storage creation
+    const isCredentialOnlyMode = typeof data.repoGuid === 'string' && data.repoGuid.trim() !== '';
+    if (isCredentialOnlyMode) {
+      return true; // No additional requirements in credential-only mode
+    }
+    // In normal mode, both machine and size are required
+    return (
+      typeof data.machineName === 'string' &&
+      data.machineName.trim() !== '' &&
+      typeof data.size === 'string' &&
+      data.size.trim() !== ''
+    );
+  },
+  {
+    message: 'Machine and size are required when creating new repo storage',
+    path: ['machineName'], // Show error on machine field
+  }
+);
+export const createStorageSchema = withVault(resourceSchemas.storage, 'storageVault');
+export const createClusterSchema = withVault(resourceSchemas.cluster, 'clusterVault');
+export const createPoolSchema = withVault(resourceSchemas.pool, 'poolVault');
+export const createImageSchema = withVault(resourceSchemas.image, 'imageVault');
+export const createSnapshotSchema = withVault(resourceSchemas.snapshot, 'snapshotVault');
+export const createCloneSchema = withVault(resourceSchemas.clone, 'cloneVault');
+
+export const createUserSchema = z.object({
+  newUserEmail: emailSchema,
+  newUserPassword: passwordSchema,
+});
+
+export const loginSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+});
+
+// Queue schemas
+export const queueItemSchema = z.object({
+  teamName: teamNameSchema,
+  machineName: machineNameSchema,
+  bridgeName: bridgeNameSchema,
+  queueVault: vaultSchema,
+  priority: z.number().min(1).max(5).optional().default(3),
+});
+
+// Edit schemas - factory function for single field schemas
+const createEditSchema = <T extends z.ZodSchema>(schema: T, fieldName: string) =>
+  z.object({ [fieldName]: schema });
+
+export const editTeamSchema = createEditSchema(teamNameSchema, 'teamName');
+export const editRegionSchema = createEditSchema(regionNameSchema, 'regionName');
+export const editBridgeSchema = createEditSchema(bridgeNameSchema, 'bridgeName');
+export const editMachineSchema = z.object(resourceSchemas.machine);
+export const editRepoSchema = createEditSchema(repoNameSchema, 'repoName');
+export const editStorageSchema = createEditSchema(storageNameSchema, 'storageName');
+
+// Type exports
+export type CreateTeamForm = z.infer<typeof createTeamSchema>;
+export type CreateRegionForm = z.infer<typeof createRegionSchema>;
+export type CreateBridgeForm = z.infer<typeof createBridgeSchema>;
+export type CreateMachineForm = z.infer<typeof createMachineSchema>;
+export type CreateRepoForm = z.infer<typeof createRepoSchema>;
+export type CreateStorageForm = z.infer<typeof createStorageSchema>;
+export type CreateClusterForm = z.infer<typeof createClusterSchema>;
+export type CreatePoolForm = z.infer<typeof createPoolSchema>;
+export type CreateImageForm = z.infer<typeof createImageSchema>;
+export type CreateSnapshotForm = z.infer<typeof createSnapshotSchema>;
+export type CreateCloneForm = z.infer<typeof createCloneSchema>;
+export type CreateUserForm = z.infer<typeof createUserSchema>;
+export type LoginForm = z.infer<typeof loginSchema>;
+export type QueueItemForm = z.infer<typeof queueItemSchema>;
+export type EditTeamForm = z.infer<typeof editTeamSchema>;
+export type EditRegionForm = z.infer<typeof editRegionSchema>;
+export type EditBridgeForm = z.infer<typeof editBridgeSchema>;
+export type EditMachineForm = z.infer<typeof editMachineSchema>;
+export type EditRepoForm = z.infer<typeof editRepoSchema>;
+export type EditStorageForm = z.infer<typeof editStorageSchema>;
+
+// ============================================
+// Validation Utility Functions
+// ============================================
+
+/**
+ * Validate SSH public key format
+ * Supports RSA, Ed25519, and ECDSA key types
+ * @param key - SSH public key string to validate
+ * @returns True if the key is in valid SSH public key format
+ */
+export function isValidSSHPublicKey(key: string): boolean {
+  const pattern =
+    /^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .*/;
+  return pattern.test(key);
+}
+
+/**
+ * Validate repo credential format
+ * Repo credentials must be exactly 32 characters with alphanumeric and special characters
+ * @param credential - Repo credential string to validate
+ * @returns True if the credential is in valid format
+ */
+export function isValidRepoCredential(credential: string): boolean {
+  const pattern = /^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]{32}$/;
+  return pattern.test(credential);
+}
+
+/**
+ * Validate GUID/UUID format
+ * @param value - String to validate
+ * @returns True if the string is a valid GUID
+ */
+export function isValidGuid(value: string): boolean {
+  const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return guidRegex.test(value);
+}
+
+/**
+ * Validate priority value (1-5)
+ * @param priority - Priority value to validate
+ * @returns True if the priority is valid (1-5)
+ */
+export function isValidPriority(priority: number): boolean {
+  return Number.isInteger(priority) && priority >= 1 && priority <= 5;
+}
+
+/**
+ * Validate JSON string
+ * @param jsonString - String to validate as JSON
+ * @returns True if the string is valid JSON
+ */
+export function isValidJson(jsonString: string): boolean {
+  try {
+    JSON.parse(jsonString);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validate email format
+ * @param email - Email string to validate
+ * @returns True if the email is in valid format
+ */
+export function isValidEmail(email: string): boolean {
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailPattern.test(email);
+}
+
+/**
+ * Validate size format (e.g., "10G", "100G", "1T")
+ * @param size - Size string to validate
+ * @returns True if the size is in valid format
+ */
+export function isValidSizeFormat(size: string): boolean {
+  if (!size || size.trim() === '') return false;
+
+  const match = size.match(/^(\d+)([GT])$/);
+  if (!match) return false;
+
+  const num = parseInt(match[1]);
+  return num > 0;
+}
+
+/**
+ * Validate resource name (1-100 characters)
+ * @param name - Resource name to validate
+ * @returns True if the name is valid
+ */
+export function isValidResourceName(name: string): boolean {
+  return name.length >= 1 && name.length <= 100;
+}
+
+/**
+ * Validate password requirements
+ * @param password - Password to validate
+ * @returns Object with isValid and optional error message
+ */
+export function validatePassword(password: string): { isValid: boolean; error?: string } {
+  if (password.length < 8) {
+    return { isValid: false, error: 'Password must be at least 8 characters' };
+  }
+  if (password.length > 100) {
+    return { isValid: false, error: 'Password must be less than 100 characters' };
+  }
+  return { isValid: true };
+}

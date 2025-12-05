@@ -1,0 +1,328 @@
+{
+  "accessControl": {
+    "expertOnlyMessage": "Wechseln Sie in den Expertenmodus, um diese Seite anzuzeigen.",
+    "expertOnlyTitle": "Expertenmodus erforderlich"
+  },
+  "actions": {
+    "activate": "Aktivieren",
+    "addMember": "Mitglied hinzufügen",
+    "addPermission": "Berechtigung hinzufügen",
+    "assignUser": "Benutzer zuweisen",
+    "changePassword": "Kennwort ändern",
+    "configureVault": "Vault konfigurieren",
+    "createGroup": "Gruppe erstellen",
+    "createTeam": "Team erstellen",
+    "createUser": "Benutzer erstellen",
+    "deactivate": "Deaktivieren",
+    "edit": "Bearbeiten",
+    "members": "Mitglieder",
+    "permissions": "Berechtigungen",
+    "resetAuth": "Authentifizierung zurücksetzen",
+    "token": "Token",
+    "trace": "Verfolgen",
+    "twoFactorAuth": "Zwei-Faktor-Authentifizierung"
+  },
+  "architecture": {
+    "bridges": "Brücken",
+    "clearAll": "Alles löschen",
+    "fetchError": "Architekturdaten konnten nicht abgerufen werden",
+    "filterEntities": "Entitäten filtern",
+    "legend": "Legende",
+    "machines": "Maschinen",
+    "noData": "Keine Architekturdaten verfügbar",
+    "noEntitiesSelected": "Keine Entitäten ausgewählt. Bitte wählen Sie mindestens einen Entitätstyp zur Anzeige aus.",
+    "nodeBridge": "Brücke",
+    "nodeCompany": "Unternehmen",
+    "nodeMachine": "Maschine",
+    "nodeRegion": "Region",
+    "nodeRepo": "Repository",
+    "nodeStorage": "Lagerung",
+    "nodeTeam": "Team",
+    "nodeUser": "Benutzer",
+    "regions": "Regionen",
+    "repos": "Repositories",
+    "schedules": "Zeitpläne",
+    "selectAll": "Wählen Sie „Alle“ aus",
+    "selectEntities": "Wählen Sie die anzuzeigenden Entitätstypen aus",
+    "storages": "Speicher",
+    "teams": "Mannschaften",
+    "title": "Unternehmensarchitektur",
+    "users": "Benutzer",
+    "viewForce": "Gewalt",
+    "viewHierarchy": "Hierarchie",
+    "viewRadial": "Radial"
+  },
+  "audit": {
+    "columns": {
+      "action": "Aktion",
+      "details": "Details",
+      "entityName": "Entitätsname",
+      "entityType": "Entitätstyp",
+      "timestamp": "Zeitstempel",
+      "user": "Benutzer"
+    },
+    "empty": {
+      "clearFilters": "Filter löschen und Datumsbereich erweitern",
+      "noLogsInRange": "Für den ausgewählten Datumsbereich wurden keine Überwachungsprotokolle gefunden",
+      "noMatchingFilters": "Keine Protokolle entsprechen Ihren aktuellen Filtern"
+    },
+    "errors": {
+      "loadDescription": "Beim Laden der Prüfprotokolle ist ein Fehler aufgetreten. Bitte versuchen Sie, Ihren Datumsbereich zu aktualisieren oder anzupassen.",
+      "loadTitle": "Audit-Protokolle können nicht geladen werden",
+      "tryAgain": "Versuchen Sie es erneut",
+      "unableToLoad": "Überwachungsprotokolle können nicht geladen werden"
+    },
+    "export": {
+      "noData": "Es sind keine Daten zum Exportieren verfügbar",
+      "successCSV": "{{count}} Audit-Logs in CSV exportiert",
+      "successJSON": "{{count}} Audit-Logs nach JSON exportiert",
+      "tooltip": "Exportieren Sie Audit-Protokolle als CSV oder JSON"
+    },
+    "filters": {
+      "actions": "Aktionen",
+      "allEntities": "Alle Entitäten",
+      "dateRange": "Datumsbereich",
+      "entityType": "Entitätstyp",
+      "export": "Export",
+      "search": "Suchen",
+      "searchPlaceholder": "In Protokollen suchen..."
+    },
+    "pagination": {
+      "showing": "Es werden {{start}}–{{end}} von {{total}} Protokollen angezeigt"
+    },
+    "subtitle": "Verfolgen Sie alle Aktivitäten und Änderungen in Ihrer Organisation",
+    "title": "Audit-Protokolle"
+  },
+  "company": {
+    "errors": {
+      "blockRequestsFailed": "Der Blockierungsstatus der Benutzeranfrage konnte nicht aktualisiert werden",
+      "importFailed": "Firmendaten konnten nicht importiert werden",
+      "noExportData": "Es wurden keine Exportdaten zurückgegeben",
+      "vaultUpdateFailed": "Die Tresorkonfiguration konnte nicht aktualisiert werden"
+    },
+    "success": {
+      "errorCount": "{{count}} Fehler",
+      "importComplete": "Import abgeschlossen: {{summary}}",
+      "importedCount": "{{count}} Artikel importiert",
+      "requestsBlocked": "Benutzeranfragen erfolgreich blockiert",
+      "requestsBlockedWithTerminations": "Benutzeranfragen blockiert. {{count}} aktive Sitzungen wurden beendet.",
+      "requestsUnblocked": "Benutzeranfragen wurden erfolgreich entsperrt",
+      "skippedCount": "{{count}} Elemente übersprungen",
+      "vaultUpdated": "Die Tresorkonfiguration wurde erfolgreich aktualisiert"
+    }
+  },
+  "dangerZone": {
+    "blockUserRequests": {
+      "blockButton": "Benutzeranfragen blockieren",
+      "confirmBlock": {
+        "confirm": "Sind Sie sicher, dass Sie fortfahren möchten?",
+        "description": "Diese Aktion wird:",
+        "effect1": "Blockieren Sie alle Nicht-Administratorbenutzer vom System",
+        "effect2": "Beenden Sie alle aktiven Benutzersitzungen (außer Administratoren)",
+        "effect3": "Erfordern eine manuelle Entsperrung, damit Benutzer wieder Zugriff erhalten",
+        "okText": "Ja, Benutzer blockieren",
+        "title": "Benutzeranfragen blockieren"
+      },
+      "confirmUnblock": {
+        "description": "Dadurch können alle Benutzer wieder Anfragen an das System stellen. Bist du sicher?",
+        "okText": "Ja, entsperren",
+        "title": "Benutzeranfragen entsperren"
+      },
+      "description": "Blockieren Sie, dass alle Benutzer, die keine Administratoren sind, Anfragen an das System stellen. Dadurch werden alle aktiven Benutzersitzungen außer Administratoren sofort beendet. Benutzer müssen manuell entsperrt werden, um wieder Zugriff zu erhalten.",
+      "title": "Benutzeranfragen blockieren",
+      "unblockButton": "Benutzeranfragen entsperren"
+    },
+    "exportData": {
+      "button": "Unternehmensdaten exportieren",
+      "description": "Exportieren Sie alle Unternehmensdaten, einschließlich Benutzer, Teams, Berechtigungen, Regionen, Bridges, Maschinen, Repositorys, Speicherkonfigurationen und Zeitpläne. Dieser Export kann für Sicherungs- oder Migrationszwecke verwendet werden.",
+      "downloading": "Export wird vorbereitet...",
+      "error": "Firmendaten konnten nicht exportiert werden",
+      "success": "Unternehmensdaten erfolgreich exportiert",
+      "title": "Unternehmensdaten exportieren"
+    },
+    "exportVaults": {
+      "button": "Alle Tresore exportieren",
+      "description": "Laden Sie alle Tresorkonfigurationen des Unternehmens herunter, einschließlich Teams, Regionen, Brücken, Maschinen, Repositorys, Speicher und Zeitpläne. Dieser Export enthält vertrauliche Anmeldeinformationen und sollte sicher gehandhabt werden.",
+      "error": "Der Export der Tresore ist fehlgeschlagen",
+      "success": "Tresore wurden erfolgreich exportiert",
+      "title": "Alle Tresore exportieren"
+    },
+    "importData": {
+      "button": "Unternehmensdaten importieren",
+      "description": "Importieren Sie Unternehmensdaten aus einer zuvor exportierten Datei. Sie können vorhandene Elemente überspringen oder mit den importierten Daten überschreiben.",
+      "error": "Firmendaten konnten nicht importiert werden",
+      "modal": {
+        "cancel": "Stornieren",
+        "fileRequired": "Bitte wählen Sie eine Datei zum Importieren aus",
+        "import": "Import",
+        "importMode": "Importmodus",
+        "importing": "Importieren...",
+        "invalidFile": "Ungültiges Dateiformat. Bitte wählen Sie eine gültige Firmendaten-Exportdatei aus.",
+        "modeOverride": "Vorhandene Elemente überschreiben",
+        "modeOverrideDesc": "Ersetzen Sie vorhandene Elemente durch importierte Daten",
+        "modeSkip": "Vorhandene Elemente überspringen",
+        "modeSkipDesc": "Importieren Sie nur Elemente, die noch nicht vorhanden sind",
+        "selectFile": "Wählen Sie Datei aus",
+        "title": "Unternehmensdaten importieren",
+        "warning": "Warnung",
+        "warningText": "Durch den Import von Daten wird Ihre Unternehmenskonfiguration geändert. Stellen Sie sicher, dass Sie über ein Backup verfügen, bevor Sie fortfahren."
+      },
+      "success": "Firmendaten erfolgreich importiert",
+      "title": "Unternehmensdaten importieren"
+    },
+    "title": "Gefahrenzone",
+    "updateMasterPassword": {
+      "button": "Verschlüsselungseinstellungen",
+      "description": "Konfigurieren Sie das clientseitige Verschlüsselungskennwort, das alle vertraulichen Tresordaten in Ihrer Organisation schützt. Dieses Passwort wird von allen Benutzern gemeinsam genutzt und ist aus Gründen der Sicherheit niemals für Rediacc zugänglich.",
+      "effect1": "Verschlüsseln Sie alle Tresore erneut mit dem neuen Passwort",
+      "effect2": "Alle Benutzer abmelden (außer Ihnen)",
+      "effect3": "Fordern Sie alle Benutzer auf, sich nach Abschluss erneut anzumelden",
+      "error": {
+        "fetchVaults": "Aktuelle Tresore konnten nicht abgerufen werden",
+        "noVaults": "Es wurden keine Tresore zum Aktualisieren gefunden",
+        "partialSuccess": "{{updated}} Tresore wurden erfolgreich aktualisiert, aber {{failed}} ist fehlgeschlagen. Weitere Informationen finden Sie in den Protokollen.",
+        "updateFailed": "Die Tresore konnten nicht mit dem neuen Verschlüsselungskennwort aktualisiert werden"
+      },
+      "modal": {
+        "cancel": "Stornieren",
+        "confirmPasswordLabel": "Bestätigen Sie das Master-Passwort",
+        "confirmPasswordMatch": "Passwörter stimmen nicht überein",
+        "confirmPasswordPlaceholder": "Bestätigen Sie das neue Master-Passwort",
+        "confirmPasswordRequired": "Bitte bestätigen Sie das Master-Passwort",
+        "importantNote": "Nach der Aktualisierung des Verschlüsselungskennworts müssen alle Benutzer das neue gemeinsame Kennwort verwenden, um auf die Tresorkonfigurationen zuzugreifen. Dieses Passwort sollte sicher an alle autorisierten Benutzer weitergegeben werden. Hinweis: Globale Bridges mit RequestToken müssen manuell entsperrt werden.",
+        "importantNoteCreate": "Nach dem Erstellen des Verschlüsselungskennworts benötigen alle Benutzer dieses gemeinsame Kennwort, um auf die Tresorkonfigurationen zugreifen zu können. Verteilen Sie es sicher an alle autorisierten Unternehmensmitglieder – Rediacc hat keinen Zugriff auf dieses Passwort.",
+        "importantNoteRemove": "Nach dem Entfernen des Verschlüsselungskennworts sind die Tresorkonfigurationen ohne clientseitige Verschlüsselung zugänglich. Berücksichtigen Sie die Auswirkungen auf die Sicherheit Ihrer sensiblen Daten.",
+        "newPasswordLabel": "Neues Master-Passwort",
+        "newPasswordMinLength": "Das Passwort muss mindestens 12 Zeichen lang sein",
+        "newPasswordPattern": "Das Passwort muss Großbuchstaben, Kleinbuchstaben, Zahlen und Sonderzeichen enthalten",
+        "newPasswordPlaceholder": "Geben Sie ein neues Master-Passwort ein",
+        "newPasswordRequired": "Bitte geben Sie das neue Master-Passwort ein",
+        "operationCreate": "Erstellen Sie ein Master-Passwort",
+        "operationRemove": "Master-Passwort entfernen",
+        "operationType": "Wählen Sie Operation aus",
+        "operationUpdate": "Master-Passwort aktualisieren",
+        "submit": "Vorgang ausführen",
+        "submitCreate": "Erstellen Sie ein Verschlüsselungskennwort",
+        "submitRemove": "Verschlüsselungskennwort entfernen",
+        "submitUpdate": "Verschlüsselungskennwort aktualisieren",
+        "title": "Konfiguration des Verschlüsselungskennworts",
+        "warningDescription": "Sie sind dabei, das Master-Passwort für Ihr gesamtes Unternehmen zu ändern. Dies wird:",
+        "warningDescriptionCreate": "Sie sind dabei, ein Master-Passwort für Ihr gesamtes Unternehmen zu erstellen. Dies wird:",
+        "warningDescriptionRemove": "Sie sind dabei, das Master-Passwort für Ihr gesamtes Unternehmen zu entfernen. Dies wird:",
+        "warningDescriptionUpdate": "Sie sind dabei, das Master-Passwort für Ihr gesamtes Unternehmen zu aktualisieren. Dies wird:",
+        "warningEffect1": "Sperren Sie das System während des Betriebs vorübergehend",
+        "warningEffect2": "Melden Sie alle aktiven Benutzer außer Ihnen ab",
+        "warningEffect3": "Verschlüsseln Sie alle Tresordaten erneut mit dem neuen Passwort",
+        "warningEffect3Create": "Verschlüsseln Sie alle Tresordaten mit dem Master-Passwort",
+        "warningEffect3Remove": "Alle Tresordaten entschlüsseln (Tresore werden unverschlüsselt gespeichert)",
+        "warningEffect3Update": "Verschlüsseln Sie alle Tresordaten erneut mit dem neuen Passwort",
+        "warningEffect4": "Erfordert eine manuelle Neukonfiguration aller Brücken",
+        "warningPermanent": "Diese Aktion ist dauerhaft und kann nicht rückgängig gemacht werden.",
+        "warningSecure": "Haben Sie Ihr neues Passwort sicher gespeichert?",
+        "warningSecureRemove": "Sind Sie sicher, dass Sie die Verschlüsselung aus allen Tresoren entfernen möchten?",
+        "warningTitle": "⚠️ Kritischer Sicherheitsvorgang"
+      },
+      "success": {
+        "loginNow": "Gehen Sie zu „Jetzt anmelden“.",
+        "nextSteps": "Nächste Schritte:",
+        "redirecting": "Weiterleitung zur Anmeldeseite in",
+        "seconds": "Sekunden",
+        "step1": "Alle Benutzer müssen sich erneut mit ihren vorhandenen Anmeldeinformationen anmelden",
+        "step2": "Geben Sie das neue Verschlüsselungskennwort sicher an alle autorisierten Benutzer in Ihrer Organisation weiter",
+        "step2Remove": "Informieren Sie Administratoren darüber, dass Tresore jetzt unverschlüsselt sind",
+        "step3": "Ihre eigenen Bridges müssen manuell mit dem neuen Verschlüsselungskennwort neu konfiguriert werden",
+        "step3Remove": "Ihre eigenen Bridges müssen ohne clientseitige Verschlüsselung manuell neu konfiguriert werden",
+        "step4": "Aktualisieren Sie das Passwortverwaltungssystem Ihres Unternehmens mit dem neuen gemeinsamen Verschlüsselungspasswort",
+        "step4Remove": "Entfernen Sie das Verschlüsselungskennwort aus dem Kennwortverwaltungssystem Ihres Unternehmens",
+        "systemReady": "Das System ist nun entsperrt und betriebsbereit.",
+        "title": "Vorgang erfolgreich abgeschlossen",
+        "titleCreate": "Verschlüsselungskennwort erfolgreich erstellt",
+        "titleRemove": "Verschlüsselungskennwort erfolgreich entfernt",
+        "titleUpdate": "Verschlüsselungskennwort erfolgreich aktualisiert"
+      },
+      "title": "Verschlüsselungskennworteinstellungen",
+      "warning": "Bewahren Sie das neue Passwort an einem sicheren Ort auf – es kann bei Verlust nicht wiederhergestellt werden."
+    }
+  },
+  "regionsInfrastructure": {
+    "title": "Regionen & Infrastruktur"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "Aktionen",
+      "groupName": "Gruppenname",
+      "permissions": "Berechtigungen",
+      "users": "Benutzer"
+    },
+    "teams": {
+      "actions": "Aktionen",
+      "machines": "Maschinen",
+      "members": "Mitglieder",
+      "repos": "Repositories",
+      "storage": "Lagerung",
+      "teamName": "Teamname",
+      "vaultVersion": "Vault-Version"
+    },
+    "users": {
+      "actions": "Aktionen",
+      "email": "E-Mail",
+      "lastActive": "Zuletzt aktiv",
+      "permissionGroup": "Berechtigungsgruppe",
+      "status": "Status"
+    }
+  },
+  "userSessions": {
+    "active": "Aktiv",
+    "activeSessions": "Aktive Sitzungen",
+    "averageDuration": "Durchschnittliche Dauer",
+    "columns": {
+      "actions": "Aktionen",
+      "createdAt": "Anmeldezeit",
+      "duration": "Dauer",
+      "ipAddress": "IP-Adresse",
+      "lastActivity": "Letzte Aktivität",
+      "sessionName": "Sitzung",
+      "status": "Status",
+      "user": "Benutzer",
+      "userAgent": "Benutzeragent"
+    },
+    "confirmTerminate": "Sitzung beenden",
+    "confirmTerminateOther": "Sind Sie sicher, dass Sie die Sitzung für {{email}} beenden möchten?",
+    "confirmTerminateSelf": "Dies ist Ihre aktuelle Sitzung. Wenn Sie es beenden, werden Sie abgemeldet. Bist du sicher?",
+    "currentSession": "Du",
+    "fork": "Gabel",
+    "forkToken": "Dies ist ein Fork-Token (untergeordnete Sitzung)",
+    "hasChildren": "{{count}} untergeordnete Sitzungen",
+    "inactive": "Inaktiv",
+    "minutes": "Minuten",
+    "notAvailable": "N / A",
+    "searchPlaceholder": "Suche nach E-Mail, IP oder Sitzungsname ...",
+    "selfTerminateWarning": "Ihre Sitzung wird beendet. Sie müssen sich erneut anmelden.",
+    "terminate": "Beenden",
+    "title": "Benutzersitzungen",
+    "totalCount": "Gesamt: {{count}} Sitzungen",
+    "totalSessions": "Gesamtzahl der Sitzungen",
+    "uniqueUsers": "Einzigartige Benutzer"
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "Sind Sie sicher, dass Sie „{{email}}“ aktivieren möchten?",
+      "confirmTitle": "Benutzer aktivieren"
+    },
+    "deactivate": {
+      "confirmDescription": "Sind Sie sicher, dass Sie „{{email}}“ deaktivieren möchten?",
+      "confirmTitle": "Benutzer deaktivieren"
+    }
+  },
+  "vaultProtocol": {
+    "errors": {
+      "disableFailed": "Die Tresorverschlüsselung konnte nicht deaktiviert werden",
+      "enableFailed": "Die Tresorverschlüsselung konnte nicht aktiviert werden",
+      "noCompanySelected": "Kein Unternehmen ausgewählt. Bitte wählen Sie ein Unternehmen aus, bevor Sie die Verschlüsselung aktualisieren."
+    },
+    "success": {
+      "disabled": "Tresorverschlüsselung deaktiviert. Master-Passwörter sind nicht mehr erforderlich.",
+      "enabled": "Die Tresorverschlüsselung wurde erfolgreich aktiviert. Alle Benutzer müssen nun dieses Master-Passwort verwenden."
+    }
+  }
+}

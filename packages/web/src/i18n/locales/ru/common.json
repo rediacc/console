@@ -1,0 +1,574 @@
+{
+  "actions": {
+    "addToQueue": "Добавить в очередь",
+    "advanced": "Передовой",
+    "back": "Назад",
+    "cancel": "Отмена",
+    "clearSelection": "Очистить выбор",
+    "close": "Закрывать",
+    "create": "Создавать",
+    "createResource": "Создать {{ресурс}}",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "editResource": "Редактировать {{ресурс}}",
+    "editVault": "Редактировать хранилище",
+    "exitFullscreen": "Выход из полноэкранного режима",
+    "export": "Экспорт",
+    "exportSuccess": "Экспорт успешный",
+    "fullscreen": "Полноэкранный",
+    "manage": "Управлять",
+    "refresh": "Обновить",
+    "remote": "Удаленный",
+    "remove": "Удалять",
+    "reset": "Перезагрузить",
+    "retry": "Повторить попытку",
+    "runFunction": "Функция запуска",
+    "save": "Сохранять",
+    "search": "Поиск",
+    "trace": "След",
+    "viewTrace": "Посмотреть трассировку"
+  },
+  "actionsColumn": "Действия",
+  "close": "Закрывать",
+  "copiedToClipboard": "Скопировано в буфер обмена",
+  "copyFailed": "Не удалось скопировать в буфер обмена",
+  "current": "Текущий",
+  "dashboard": {
+    "availablePlans": "Доступные планы",
+    "comparePlansDescription": "Сравните функции и цены на разных уровнях подписки.",
+    "currentPlan": "Текущий план",
+    "enterprisePlanDescription": "Вы используете наш план самого высокого уровня со всеми разблокированными функциями.",
+    "upgradeOptions": "Варианты обновления"
+  },
+  "dateColumn": "Дата",
+  "export": "Экспорт",
+  "exportCSV": "Экспортировать в формате CSV",
+  "exportJSON": "Экспортировать в формате JSON",
+  "fieldGenerator": {
+    "applied": "Значения успешно применены",
+    "apply": "Применять",
+    "cancel": "Отмена",
+    "comingSoon": "вскоре",
+    "copied": "Скопировано!",
+    "copy": "Копировать",
+    "copyError": "Не удалось скопировать в буфер обмена",
+    "generate": "Генерировать",
+    "generationError": "Не удалось сгенерировать. Пожалуйста, попробуйте еще раз.",
+    "generationSuccess": "Сгенерировано успешно",
+    "keySize": "Размер ключа",
+    "keyType": "Тип ключа",
+    "moreSecure": "более безопасный",
+    "regenerate": "Регенерировать",
+    "title": {
+      "repo_credential": "Создать учетные данные репозитория",
+      "ssh_keys": "Создать пару ключей SSH"
+    },
+    "tooltip": "Создание ценности"
+  },
+  "fields": {
+    "vault": "Конфигурация хранилища"
+  },
+  "general": {
+    "cancel": "Отмена",
+    "defaultsApplied": "Применены значения по умолчанию",
+    "important": "Важный",
+    "loading": "Загрузка...",
+    "showingRecords": "Показаны записи {{start}}-{{end}} из {{total}}",
+    "unknown": "Неизвестный",
+    "vaultVersion": "Версия хранилища",
+    "versionFormat": "v{{версия}}"
+  },
+  "language": {
+    "ar": "арабский",
+    "de": "немецкий",
+    "en": "Английский",
+    "es": "испанский",
+    "fr": "Французский",
+    "ja": "японский",
+    "select": "Выберите язык",
+    "tr": "турецкий",
+    "zh": "китайский"
+  },
+  "last30Days": "Последние 30 дней",
+  "last7Days": "Последние 7 дней",
+  "lastMonth": "В прошлом месяце",
+  "messages": {
+    "error": "Ошибка",
+    "invalidEmail": "Неверный адрес электронной почты",
+    "loading": "Загрузка...",
+    "required": "Это поле обязательно к заполнению",
+    "success": "Успех"
+  },
+  "navigation": {
+    "architecture": "Архитектура",
+    "audit": "Аудит",
+    "credentials": "Учетные данные",
+    "dashboard": "Панель управления",
+    "distributedStorage": "Распределенное хранилище",
+    "logout": "Выход из системы",
+    "machines": "Машины",
+    "mainNavigation": "Основная навигация",
+    "marketplace": "Торговая площадка",
+    "organization": "Организация",
+    "organizationAccess": "Доступ",
+    "organizationTeams": "Команды",
+    "organizationUsers": "Пользователи",
+    "queue": "Очередь",
+    "settings": "Настройки",
+    "settingsCompany": "Компания",
+    "settingsInfrastructure": "Инфраструктура",
+    "settingsProfile": "Профиль",
+    "storage": "Хранилище",
+    "storageCloud": "Cloud",
+    "storageDistributed": "Distributed",
+    "distributedStorageClusters": "Кластеры",
+    "distributedStoragePools": "Пулы",
+    "distributedStorageMachines": "Машины",
+    "system": "Система"
+  },
+  "nestedObjectEditor": {
+    "Active": "Активный",
+    "Add": "Добавлять",
+    "Add New Entry": "Добавить новую запись",
+    "Array": "Множество",
+    "Container Images Detected": "Обнаружены образы контейнеров",
+    "Delete this entry?": "Удалить эту запись?",
+    "Enter key name": "Введите имя ключа",
+    "False": "ЛОЖЬ",
+    "Fields": "Поля",
+    "Hide JSON": "Скрыть JSON",
+    "Image": "Изображение",
+    "JSON Error": "Ошибка JSON",
+    "No": "Нет",
+    "No entries": "Нет записей",
+    "Object": "Объект",
+    "Plugin Configuration Detected": "Обнаружена конфигурация плагина",
+    "Raw JSON Editor": "Редактор необработанного JSON",
+    "Show JSON": "Показать JSON",
+    "True": "Истинный",
+    "Uniform Structure": "Единая структура",
+    "Uniform Structure Detected": "Обнаружена однородная структура",
+    "Yes": "Да"
+  },
+  "no": "Нет",
+  "noMatchingResults": "Нет соответствующих результатов",
+  "none": "Никто",
+  "notifications": {
+    "clearAll": "Очистить все",
+    "empty": "Нет уведомлений",
+    "markAllRead": "Отметить все как прочитанное",
+    "title": "Уведомления",
+    "types": {
+      "error": "Ошибка",
+      "info": "Информация",
+      "success": "Успех",
+      "warning": "Предупреждение"
+    }
+  },
+  "refresh": "Обновить",
+  "status": {
+    "initializing": "Инициализация...",
+    "label": "Статус",
+    "processing": "Обработка",
+    "running": "Бег",
+    "waitingForExecution": "Ожидание исполнения"
+  },
+  "statusColumn": "Статус",
+  "table": {
+    "actions": "Действия",
+    "showingRecords": "Показаны записи {{start}}-{{end}} из {{total}}"
+  },
+  "theme": {
+    "dark": "Темный",
+    "light": "Свет",
+    "switchToDark": "Переключиться в темный режим",
+    "switchToLight": "Переключиться в светлый режим"
+  },
+  "thisMonth": "В этом месяце",
+  "today": "Сегодня",
+  "total": "Общий",
+  "uiMode": {
+    "expert": "Эксперт",
+    "simple": "Простой",
+    "switching": "Переключение в режим {{mode}}..."
+  },
+  "utilized": "использовано",
+  "vaultEditor": {
+    "advanced": "Передовой",
+    "enterJsonArray": "Введите массив JSON",
+    "enterJsonObject": "Введите объект JSON",
+    "example": "Пример:",
+    "expertModeDescription": "Прямое редактирование JSON может нарушить функциональность системы, если оно выполнено неправильно. Вносите изменения только в том случае, если вы понимаете схему хранилища и ее последствия.",
+    "expertModeOnly": "Только экспертный режим",
+    "exportJson": "Экспорт JSON",
+    "extraFields": "Дополнительные поля (нет в схеме)",
+    "extraFieldsTooltip": "Эти поля были импортированы, но не определены в схеме.",
+    "extraFieldsWarning": "Предупреждение",
+    "extraFieldsWarningDescription": "Эти поля не определены в схеме и будут храниться в разделе extraFields в структуре JSON.",
+    "failedToParseJson": "Не удалось разобрать JSON:",
+    "failedToSerialize": "Не удалось сериализовать данные в JSON.",
+    "fields": {
+      "BRIDGE": {
+        "description": "Конфигурация моста для сетевого подключения",
+        "ip": {
+          "description": "IP-адрес сервера моста",
+          "label": "IP-адрес"
+        }
+      },
+      "CLONE": {
+        "description": "Настройка параметров клонирования RBD",
+        "features": {
+          "description": "Возможности RBD для клона",
+          "label": "Функции"
+        },
+        "parent_image": {
+          "description": "Имя родительского изображения",
+          "label": "Родительское изображение"
+        },
+        "parent_pool": {
+          "description": "Пул, содержащий родительское изображение",
+          "label": "Родительский пул"
+        },
+        "parent_snapshot": {
+          "description": "Имя родительского снимка",
+          "label": "Родительский снимок"
+        },
+        "size": {
+          "description": "Размер изображения-клона",
+          "label": "Размер клона"
+        }
+      },
+      "CLUSTER": {
+        "config": {
+          "description": "Дополнительные параметры конфигурации кластера",
+          "label": "Конфигурация"
+        },
+        "description": "Настройка параметров кластера распределенного хранилища Ceph",
+        "fsid": {
+          "description": "Уникальный идентификатор кластера Ceph (формат UUID)",
+          "label": "Идентификатор файловой системы"
+        },
+        "mds": {
+          "description": "Список узлов MDS (сервер метаданных)",
+          "label": "MDS-узлы"
+        },
+        "mgrs": {
+          "description": "Список узлов-менеджеров в кластере",
+          "label": "Менеджер узлов"
+        },
+        "monitors": {
+          "description": "Список узлов монитора в кластере",
+          "label": "Мониторинг узлов"
+        },
+        "osds": {
+          "description": "Список узлов OSD (Object Storage Daemon)",
+          "label": "Узлы экранного меню"
+        }
+      },
+      "COMPANY": {
+        "DOCKER_JSON_CONF": {
+          "description": "Конфигурация аутентификации реестра Docker",
+          "label": "Конфигурация докера"
+        },
+        "LOG_FILE": {
+          "description": "Путь к файлу системного журнала",
+          "label": "Путь к файлу журнала"
+        },
+        "PLUGINS": {
+          "description": "Конфигурации плагинов с образами контейнеров и статусом активации",
+          "label": "Плагины"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "Закрытый ключ SSH в кодировке Base64 для операций компании",
+          "label": "Закрытый ключ SSH"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "Открытый ключ SSH для операций компании",
+          "label": "Открытый ключ SSH"
+        },
+        "UNIVERSAL_USER_ID": {
+          "description": "Универсальный идентификатор пользователя для операций в системе",
+          "label": "Универсальный идентификатор пользователя"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "description": "Универсальное имя пользователя для системных операций",
+          "label": "Универсальное имя пользователя"
+        },
+        "description": "Конфигурация компании для настроек всей организации"
+      },
+      "IMAGE": {
+        "data_pool": {
+          "description": "Отдельный пул для хранения данных изображения",
+          "label": "Пул данных"
+        },
+        "description": "Настройка параметров изображения RBD",
+        "features": {
+          "description": "Функции RBD для включения изображения",
+          "label": "Функции"
+        },
+        "object_size": {
+          "description": "Размер объектов на изображении",
+          "label": "Размер объекта"
+        },
+        "size": {
+          "description": "Размер изображения RBD (например, 10G, 1T)",
+          "label": "Размер изображения"
+        },
+        "stripe_count": {
+          "description": "Количество полосок на изображении",
+          "label": "Количество полос"
+        },
+        "stripe_unit": {
+          "description": "Размер полосы для изображения",
+          "label": "Полосатый блок"
+        }
+      },
+      "MACHINE": {
+        "datastore": {
+          "description": "Путь к каталогу для хранения данных. Если он расположен в файловой системе BTRFS, он будет использовать собственные функции. В противном случае здесь будет создан и смонтирован файл пула носителей BTRFS для включения моментальных снимков и сжатия.",
+          "label": "Путь к хранилищу данных"
+        },
+        "description": "Конфигурация машины для доступа и хранения по SSH",
+        "host_entry": {
+          "description": "Запись известного хоста SSH для проверки безопасности",
+          "label": "Вход хоста"
+        },
+        "ip": {
+          "description": "IP-адрес машины",
+          "label": "IP-адрес"
+        },
+        "port": {
+          "description": "Номер SSH-порта",
+          "label": "SSH-порт"
+        },
+        "ssh_key_configured": {
+          "description": "Установите этот флажок, если открытый ключ SSH уже установлен на целевом компьютере.",
+          "label": "SSH-ключ уже настроен"
+        },
+        "ssh_password": {
+          "description": "Временный пароль только для первоначальной настройки ключа SSH. Оставьте пустым, если ключ SSH уже настроен. Этот пароль используется один раз для копирования открытого ключа и впоследствии должен быть удален в целях безопасности.",
+          "label": "Пароль SSH (временный)"
+        },
+        "user": {
+          "description": "Имя пользователя SSH для подключения",
+          "label": "Имя пользователя"
+        }
+      },
+      "POOL": {
+        "application": {
+          "description": "Тип приложения для пула (например, rbd, cephs)",
+          "label": "Приложение"
+        },
+        "crush_rule": {
+          "description": "Имя правила CRUSH для размещения данных",
+          "label": "Правило раздавить"
+        },
+        "description": "Настройка параметров пула хранения Ceph",
+        "min_size": {
+          "description": "Минимальное количество реплик, необходимое для ввода-вывода",
+          "label": "Минимальный размер"
+        },
+        "pg_num": {
+          "description": "Количество групп размещения в пуле",
+          "label": "Группы размещения"
+        },
+        "pgp_num": {
+          "description": "Количество групп размещения для целей размещения",
+          "label": "Номер PGP"
+        },
+        "size": {
+          "description": "Количество реплик объектов в пуле",
+          "label": "Размер репликации"
+        }
+      },
+      "REGION": {
+        "code": {
+          "description": "Краткий код региона",
+          "label": "Код региона"
+        },
+        "description": "Конфигурация региона для географического распределения",
+        "name": {
+          "description": "Название географического региона",
+          "label": "Название региона"
+        }
+      },
+      "REPO": {
+        "credential": {
+          "description": "Пароль доступа к репозиторию (32 символа, буквенно-цифровой + специальные символы)",
+          "label": "Пароль доступа"
+        },
+        "description": "Конфигурация репозитория для хранения резервных копий",
+        "encryption": {
+          "description": "Включить шифрование для репозитория",
+          "label": "Включить шифрование"
+        },
+        "name": {
+          "description": "Идентификатор имени репозитория",
+          "label": "Имя репозитория"
+        },
+        "retention": {
+          "description": "Параметры политики хранения",
+          "label": "Политика хранения"
+        },
+        "schedule": {
+          "description": "Выражение Cron для автоматического резервного копирования",
+          "label": "Расписание резервного копирования"
+        }
+      },
+      "SNAPSHOT": {
+        "description": "Настройка параметров моментального снимка RBD",
+        "protected": {
+          "description": "Защищен ли снимок от удаления",
+          "label": "Защищено"
+        },
+        "size": {
+          "description": "Размер снимка",
+          "label": "Размер снимка"
+        },
+        "timestamp": {
+          "description": "Временная метка создания снимка",
+          "label": "Временная метка"
+        }
+      },
+      "STORAGE": {
+        "description": {
+          "description": "Необязательное описание этой конфигурации хранилища.",
+          "label": "Описание"
+        },
+        "entityDescription": "Конфигурация хранилища для мест назначения резервного копирования",
+        "name": {
+          "description": "Уникальное имя для этой конфигурации хранилища.",
+          "label": "Имя хранилища"
+        },
+        "noVersioning": {
+          "description": "Отключить контроль версий для этого хранилища",
+          "label": "Отключить управление версиями"
+        },
+        "parameters": {
+          "description": "Дополнительные параметры rclone для расширенной настройки",
+          "label": "Дополнительные параметры"
+        },
+        "provider": {
+          "description": "Выберите тип поставщика хранилища",
+          "label": "Поставщик хранилища"
+        }
+      },
+      "TEAM": {
+        "SSH_PRIVATE_KEY": {
+          "description": "Закрытый ключ SSH в кодировке Base64 для командных операций.",
+          "label": "Закрытый ключ SSH"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "Открытый ключ SSH для командных операций",
+          "label": "Открытый ключ SSH"
+        },
+        "description": "Конфигурация команды для организационной структуры",
+        "name": {
+          "description": "Название команды",
+          "label": "Название команды"
+        },
+        "teamDescription": {
+          "description": "Описание целей и обязанностей команды",
+          "label": "Описание команды"
+        }
+      },
+      "USER": {
+        "SSH_PRIVATE_KEY": {
+          "description": "Закрытый ключ SSH в кодировке Base64 для пользовательских операций.",
+          "label": "Закрытый ключ SSH"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "Открытый ключ SSH для пользовательских операций",
+          "label": "Открытый ключ SSH"
+        },
+        "description": "Конфигурация пользователя для личных настроек"
+      }
+    },
+    "fields.CLONE.description": "Настройка параметров клонирования RBD",
+    "fields.CLUSTER.description": "Настройка параметров кластера распределенного хранилища Ceph",
+    "fields.IMAGE.description": "Настройка параметров изображения RBD",
+    "fields.POOL.description": "Настройка параметров пула хранения Ceph",
+    "fields.SNAPSHOT.description": "Настройка параметров моментального снимка RBD",
+    "fieldsMovedFromExtra": "{{count}} полей восстановлено из extraFields: {{fields}}",
+    "fieldsMovedToExtra": "Поля ({{count}}) перемещены в extraFields: {{fields}}",
+    "formatJson": "Формат JSON",
+    "hostEntryHelp": "Необязательный. Запись известного хоста SSH будет обнаружена автоматически.",
+    "hostEntryPlaceholder": "Автоматически заполняется во время проверки соединения",
+    "importJson": "Импортировать JSON",
+    "invalidFormat": "Неверный формат. {{описание}}",
+    "invalidJsonFormat": "Неверный формат JSON",
+    "isRequired": "{{поле}} обязательно",
+    "jsonError": "Ошибка JSON",
+    "maxLength": "Максимальная длина — {{length}}.",
+    "maxValue": "Максимальное значение — {{value}}.",
+    "minLength": "Минимальная длина – {{length}}.",
+    "minValue": "Минимальное значение — {{value}}.",
+    "missingSshKeysDescription": "В групповом хранилище отсутствует SSH_PRIVATE_KEY и/или SSH_PUBLIC_KEY. Аутентификация моста SSH не удастся. Пожалуйста, сгенерируйте или добавьте ключи SSH в это хранилище.",
+    "missingSshKeysWarning": "Отсутствуют ключи SSH",
+    "mustBeArray": "Должен быть массив",
+    "mustBeValidJson": "Должен быть действительный JSON",
+    "mustBeValidJsonArray": "Должен быть действительный массив JSON.",
+    "noChangesToSave": "Нет изменений для сохранения",
+    "optionalFields": "Необязательные поля",
+    "pleaseFixErrors": "Пожалуйста, исправьте ошибки проверки перед сохранением.",
+    "portPlaceholder": "Номер порта (1-65535)",
+    "providerFields": "Конфигурация {{provider}}",
+    "providerRequiredFields": "Обязательные поля для {{provider}}",
+    "rawJsonEditor": "Редактор Raw JSON (экспертный режим)",
+    "rawJsonTooltip": "Прямое редактирование JSON. Используйте с осторожностью!",
+    "requiredFields": "Обязательные поля",
+    "resetToFormValues": "Сброс до значений формы",
+    "saveVaultConfiguration": "Сохранить конфигурацию хранилища",
+    "sshPasswordPlaceholder": "Необязательно: для первоначальной настройки ключа SSH.",
+    "sshPasswordRequiredWhenNoKey": "Пароль SSH необходим для первоначальной настройки ключа.",
+    "systemCompatibility": {
+      "available": "Доступный",
+      "btrfsAvailable": "БТРФС доступен",
+      "compatibilityStatus": "Статус совместимости",
+      "compatible": "Совместимый",
+      "incompatible": "Несовместимый",
+      "kernelVersion": "Версия ядра",
+      "knownIssues": "Известные проблемы",
+      "no": "Нет",
+      "notInstalled": "Не установлено",
+      "operatingSystem": "Операционная система",
+      "osSetup": "Настройка ОС",
+      "passwordRequired": "Требуется пароль",
+      "recommendations": "Рекомендации",
+      "setupCompleted": "Настройка завершена",
+      "setupRequired": "Требуется настройка",
+      "sudoAvailable": "Судо доступно",
+      "systemInfo": "Информация о системе",
+      "title": "Совместимость системы",
+      "unknown": "Неизвестный",
+      "warning": "Предупреждение",
+      "yes": "Да"
+    },
+    "testConnection": {
+      "button": "Тестовое соединение",
+      "description": "Проверьте соединение SSH и автоматически настройте аутентификацию по ключу SSH.",
+      "failed": "SSH-соединение не удалось",
+      "initiated": "Начат тест соединения SSH. Пожалуйста, проверьте очередь на наличие результатов.",
+      "label": "Тестовое соединение",
+      "missingFields": "Пожалуйста, заполните IP-адрес, имя пользователя и пароль перед тестированием.",
+      "required": "Перед созданием машины требуется проверка подключения.",
+      "success": "SSH-соединение успешно",
+      "testing": "Тестирование соединения..."
+    },
+    "unknownEntityDescription": "Тип объекта \"{{type}}\" не определен в определениях хранилища.",
+    "unknownEntityType": "Неизвестный тип объекта",
+    "unsavedChanges": "Несохраненные изменения",
+    "validationErrors": "Ошибки проверки:",
+    "vaultConfiguration": "Конфигурация хранилища",
+    "vaultVersion": "Версия хранилища:",
+    "versionAutoIncrement": "Версия будет автоматически увеличиваться при сохранении",
+    "versionWillIncrement": "Версия увеличится до {{version}}."
+  },
+  "viewDetails": "Посмотреть детали",
+  "warnings": {
+    "sandboxEnvironment": "Песочница",
+    "sandboxMessage": "Данные могут быть сброшены во время обновлений. Только для тестирования."
+  },
+  "yes": "Да",
+  "yesterday": "Вчера"
+}

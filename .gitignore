@@ -5,6 +5,7 @@ node_modules/
 dist/
 bin/
 packages/*/dist
+*.tsbuildinfo
 
 # Editor directories and files
 .vscode/*
@@ -58,4 +59,3 @@ screenshots/
 playwright/*.py/
 playwright/**/*.png
 playwright_env/
-*.png

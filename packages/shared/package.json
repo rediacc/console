@@ -1,0 +1,89 @@
+{
+  "name": "@rediacc/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./queue": {
+      "types": "./dist/queue/index.d.ts",
+      "default": "./dist/queue/index.js"
+    },
+    "./queue/*": {
+      "types": "./dist/queue/*.d.ts",
+      "default": "./dist/queue/*.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    },
+    "./types/*": {
+      "types": "./dist/types/*.d.ts",
+      "default": "./dist/types/*.js"
+    },
+    "./error-parser": {
+      "types": "./dist/error-parser/index.d.ts",
+      "default": "./dist/error-parser/index.js"
+    },
+    "./error-parser/*": {
+      "types": "./dist/error-parser/*.d.ts",
+      "default": "./dist/error-parser/*.js"
+    },
+    "./formatters": {
+      "types": "./dist/formatters/index.d.ts",
+      "default": "./dist/formatters/index.js"
+    },
+    "./formatters/*": {
+      "types": "./dist/formatters/*.d.ts",
+      "default": "./dist/formatters/*.js"
+    },
+    "./queue-vault": {
+      "types": "./dist/queue-vault/index.d.ts",
+      "default": "./dist/queue-vault/index.js"
+    },
+    "./queue-vault/*": {
+      "types": "./dist/queue-vault/*.d.ts",
+      "default": "./dist/queue-vault/*.js"
+    },
+    "./api": {
+      "types": "./dist/api/index.d.ts",
+      "default": "./dist/api/index.js"
+    },
+    "./api/*": {
+      "types": "./dist/api/*.d.ts",
+      "default": "./dist/api/*.js"
+    },
+    "./endpoints": {
+      "types": "./dist/endpoints/index.d.ts",
+      "default": "./dist/endpoints/index.js"
+    },
+    "./endpoints/*": {
+      "types": "./dist/endpoints/*.d.ts",
+      "default": "./dist/endpoints/*.js"
+    },
+    "./encryption": {
+      "types": "./dist/encryption/index.d.ts",
+      "default": "./dist/encryption/index.js"
+    },
+    "./encryption/*": {
+      "types": "./dist/encryption/*.d.ts",
+      "default": "./dist/encryption/*.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.10",
+    "typescript": "^5.9.3"
+  }
+}

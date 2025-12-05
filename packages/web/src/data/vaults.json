@@ -1,0 +1,463 @@
+{
+  "entities": {
+    "MACHINE": {
+      "descriptionKey": "fields.MACHINE.description",
+      "required": ["ip", "user", "datastore"],
+      "optional": ["port", "host_entry", "ssh_password", "ssh_key_configured"],
+      "fields": {
+        "ip": {
+          "type": "string",
+          "format": "ipv4",
+          "example": "IP address of the machine. Example: 192.168.1.100"
+        },
+        "user": {
+          "type": "string",
+          "example": "Username for SSH access. Example: ubuntu"
+        },
+        "datastore": {
+          "type": "string",
+          "example": "Storage path. If BTRFS: uses existing. Otherwise: creates BTRFS pool at {path}.pool",
+          "description": "Path for data storage. If this path exists on a BTRFS filesystem, it will be used as-is. Otherwise, a BTRFS storage pool will be created (file: {path}.pool) and mounted at this location for advanced features like snapshots and compression.",
+          "default": "/mnt/datastore"
+        },
+        "port": {
+          "type": "number",
+          "example": "SSH port number. Example: 22"
+        },
+        "host_entry": {
+          "type": "string",
+          "example": "SSH known host entry. Example: 192.168.1.100 ssh-rsa AAAAB3NzaC1yc2E..."
+        },
+        "ssh_key_configured": {
+          "type": "boolean",
+          "example": "Whether SSH key is set up. Example: false"
+        },
+        "ssh_password": {
+          "type": "string",
+          "sensitive": true,
+          "example": "SSH password (sensitive). Example: MyPassword123"
+        }
+      }
+    },
+    "REPO": {
+      "descriptionKey": "fields.REPO.description",
+      "required": ["credential"],
+      "optional": [],
+      "fields": {
+        "credential": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]{32}$",
+          "minLength": 16,
+          "maxLength": 256,
+          "example": "Repository access token (32 chars). Example: ABC123DEF456GHI789JKL012MNO345PQ"
+        }
+      }
+    },
+    "BRIDGE": {
+      "descriptionKey": "fields.BRIDGE.description",
+      "required": [],
+      "optional": [],
+      "fields": {}
+    },
+    "STORAGE": {
+      "descriptionKey": "fields.STORAGE.entityDescription",
+      "required": ["provider"],
+      "optional": ["description", "noVersioning", "parameters"],
+      "dynamicFields": true,
+      "providerSchema": "storageProviders.json",
+      "fields": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "s3",
+            "azureblob",
+            "azurefiles",
+            "b2",
+            "box",
+            "cloudinary",
+            "drive",
+            "dropbox",
+            "fichier",
+            "filefabric",
+            "filescom",
+            "ftp",
+            "gcs",
+            "gofile",
+            "googlephotos",
+            "hdfs",
+            "hidrive",
+            "http",
+            "iclouddrive",
+            "imagekit",
+            "internetarchive",
+            "jottacloud",
+            "koofr",
+            "linkbox",
+            "local",
+            "mailru",
+            "mega",
+            "netstorage",
+            "onedrive",
+            "opendrive",
+            "oracleobjectstorage",
+            "pcloud",
+            "pikpak",
+            "premiumizeme",
+            "protondrive",
+            "putio",
+            "qingstor",
+            "quatrix",
+            "seafile",
+            "sftp",
+            "sharefile",
+            "sia",
+            "smb",
+            "storj",
+            "sugarsync",
+            "swift",
+            "ulozto",
+            "uptobox",
+            "webdav",
+            "yandex",
+            "zoho"
+          ],
+          "example": "Storage provider name. Example: s3",
+          "description": "Storage provider type"
+        },
+        "description": {
+          "type": "string",
+          "example": "Storage description. Example: My backup storage",
+          "description": "Optional description of this storage configuration"
+        },
+        "noVersioning": {
+          "type": "boolean",
+          "description": "Disable versioning for this storage"
+        },
+        "parameters": {
+          "type": "string",
+          "example": "Extra rclone flags. Example: --transfers 4",
+          "description": "Additional rclone parameters"
+        }
+      }
+    },
+    "REGION": {
+      "descriptionKey": "fields.REGION.description",
+      "required": [],
+      "optional": ["code", "location"],
+      "fields": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z]{2}-[a-z]+-[0-9]$",
+          "example": "Region code. Example: us-east-1"
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "country": {
+              "type": "string",
+              "example": "Country code. Example: US"
+            },
+            "city": {
+              "type": "string",
+              "example": "City name. Example: New York"
+            },
+            "latitude": {
+              "type": "number"
+            },
+            "longitude": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "TEAM": {
+      "descriptionKey": "fields.TEAM.description",
+      "required": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY"],
+      "optional": [],
+      "fields": {
+        "SSH_PRIVATE_KEY": {
+          "type": "string",
+          "sensitive": true,
+          "format": "base64",
+          "example": "Base64 encoded private key. Example: LS0tLS1CRUdJTi0tLS0t"
+        },
+        "SSH_PUBLIC_KEY": {
+          "type": "string",
+          "format": "base64",
+          "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
+          "example": "Public SSH key. Example: ssh-rsa AAAAB3NzaC1yc2E... mykey"
+        }
+      }
+    },
+    "USER": {
+      "descriptionKey": "fields.USER.description",
+      "required": [],
+      "optional": [],
+      "fields": {}
+    },
+    "COMPANY": {
+      "descriptionKey": "fields.COMPANY.description",
+      "required": ["UNIVERSAL_USER_ID", "UNIVERSAL_USER_NAME", "DOCKER_JSON_CONF"],
+      "optional": ["LOG_FILE", "PLUGINS"],
+      "fields": {
+        "UNIVERSAL_USER_ID": {
+          "type": "string",
+          "pattern": "^[0-9]+$",
+          "example": "Numeric user ID. Example: 1000"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "type": "string",
+          "pattern": "^[a-z_][a-z0-9_-]*$",
+          "example": "Unix username. Example: myuser"
+        },
+        "DOCKER_JSON_CONF": {
+          "type": "object",
+          "properties": {
+            "insecure-registries": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": ["Registry URLs. Example: http://192.168.1.10:5000"]
+            },
+            "registry-mirrors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": ["Registry URLs. Example: http://192.168.1.10:5000"]
+            },
+            "runtimes": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "PLUGINS": {
+          "type": "object",
+          "description": "Plugin configurations with container images",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "image": {
+                "type": "string",
+                "pattern": "^[a-z0-9.-]+(:[0-9]+)?/[a-z0-9._-]+(/[a-z0-9._-]+)*:[a-z0-9._-]+$",
+                "description": "Container image path with tag",
+                "example": "Docker image path. Example: myregistry.com:5000/myplugin:v1.0"
+              },
+              "active": {
+                "type": "boolean",
+                "description": "Whether the plugin is active",
+                "default": true
+              }
+            },
+            "required": ["image", "active"]
+          },
+          "example": {
+            "MyPlugin": {
+              "image": "Plugin docker image. Example: registry.com:5000/myplugin:v1.0",
+              "active": true
+            },
+            "AnotherPlugin": {
+              "image": "Another plugin image. Example: registry.com:5000/plugin2:v2.0",
+              "active": false
+            }
+          }
+        }
+      }
+    },
+    "CLUSTER": {
+      "descriptionKey": "fields.CLUSTER.description",
+      "required": [],
+      "optional": ["monitors", "mgrs", "osds", "mds", "fsid", "config"],
+      "fields": {
+        "monitors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "Monitor nodes. Example: [\"node1\", \"node2\", \"node3\"]"
+        },
+        "mgrs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "Manager nodes. Example: [\"node1\", \"node2\"]"
+        },
+        "osds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "OSD nodes. Example: [\"node1\", \"node2\", \"node3\", \"node4\"]"
+        },
+        "mds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "MDS nodes. Example: [\"node1\", \"node2\"]"
+        },
+        "fsid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "example": "Cluster UUID. Example: a7f64266-0894-4f1e-a635-d0aeaca0e993"
+        },
+        "config": {
+          "type": "object",
+          "example": "Additional cluster configuration"
+        }
+      }
+    },
+    "POOL": {
+      "descriptionKey": "fields.POOL.description",
+      "required": [],
+      "optional": ["pg_num", "pgp_num", "size", "min_size", "crush_rule", "application"],
+      "fields": {
+        "pg_num": {
+          "type": "number",
+          "example": "Number of placement groups. Example: 128"
+        },
+        "pgp_num": {
+          "type": "number",
+          "example": "Number of placement groups for placement. Example: 128"
+        },
+        "size": {
+          "type": "number",
+          "example": "Number of replicas. Example: 3"
+        },
+        "min_size": {
+          "type": "number",
+          "example": "Minimum number of replicas. Example: 2"
+        },
+        "crush_rule": {
+          "type": "string",
+          "example": "CRUSH rule name. Example: replicated_rule"
+        },
+        "application": {
+          "type": "string",
+          "example": "Pool application. Example: rbd"
+        }
+      }
+    },
+    "IMAGE": {
+      "descriptionKey": "fields.IMAGE.description",
+      "required": [],
+      "optional": ["size", "features", "object_size", "stripe_unit", "stripe_count", "data_pool"],
+      "fields": {
+        "size": {
+          "type": "string",
+          "format": "size",
+          "example": "Image size. Example: 10G"
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "RBD features. Example: [\"layering\", \"exclusive-lock\", \"object-map\", \"fast-diff\", \"deep-flatten\"]"
+        },
+        "object_size": {
+          "type": "string",
+          "example": "Object size. Example: 4M"
+        },
+        "stripe_unit": {
+          "type": "string",
+          "example": "Stripe unit. Example: 4M"
+        },
+        "stripe_count": {
+          "type": "number",
+          "example": "Stripe count. Example: 1"
+        },
+        "data_pool": {
+          "type": "string",
+          "example": "Data pool name. Example: rbd_data"
+        }
+      }
+    },
+    "SNAPSHOT": {
+      "descriptionKey": "fields.SNAPSHOT.description",
+      "required": [],
+      "optional": ["protected", "timestamp", "size"],
+      "fields": {
+        "protected": {
+          "type": "boolean",
+          "example": "Protection status. Example: true"
+        },
+        "timestamp": {
+          "type": "string",
+          "example": "Creation timestamp. Example: 2024-01-15T10:30:00Z"
+        },
+        "size": {
+          "type": "string",
+          "format": "size",
+          "example": "Snapshot size. Example: 10G"
+        }
+      }
+    },
+    "CLONE": {
+      "descriptionKey": "fields.CLONE.description",
+      "required": [],
+      "optional": ["parent_pool", "parent_image", "parent_snapshot", "features", "size"],
+      "fields": {
+        "parent_pool": {
+          "type": "string",
+          "example": "Parent pool name. Example: rbd"
+        },
+        "parent_image": {
+          "type": "string",
+          "example": "Parent image name. Example: base-image"
+        },
+        "parent_snapshot": {
+          "type": "string",
+          "example": "Parent snapshot name. Example: snap1"
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "RBD features. Example: [\"layering\", \"exclusive-lock\"]"
+        },
+        "size": {
+          "type": "string",
+          "format": "size",
+          "example": "Clone size. Example: 20G"
+        }
+      }
+    }
+  },
+  "commonTypes": {
+    "ipAddress": {
+      "type": "string",
+      "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+    },
+    "port": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "size": {
+      "type": "string",
+      "pattern": "^[0-9]+[KMGT]$"
+    },
+    "cronExpression": {
+      "type": "string"
+    }
+  }
+}
