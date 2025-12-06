@@ -1,5 +1,6 @@
 import React, { Component, ReactNode } from 'react';
-import { Result, Button } from 'antd';
+import { Result } from 'antd';
+import { RediaccButton as Button } from '@/components/ui';
 import { ReloadOutlined, BugOutlined } from '@ant-design/icons';
 import { telemetryService } from '@/services/telemetryService';
 import { FallbackContainer, ErrorDetails, ErrorSummary, ErrorContent } from './styles';
@@ -138,7 +139,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               </Button>,
               <Button
                 key="reload"
-                type="primary"
+                variant="primary"
                 onClick={this.handleReload}
                 icon={<ReloadOutlined />}
               >

@@ -6,13 +6,13 @@
  */
 
 import styled from 'styled-components';
-import { Select, Space, Typography, Table } from 'antd';
+import { Table } from 'antd';
 import type { TableProps } from 'antd';
 import type { ComponentType } from 'react';
-import { IconButton } from '@/styles/primitives';
 import type { StatusVariant } from '@/styles/primitives';
-
-const { Text } = Typography;
+import { RediaccButton as Button, RediaccStack } from '@/components/ui';
+import { RediaccText } from '@/components/ui/Text';
+import { RediaccSelect } from '@/components/ui/Form/Select';
 
 // =============================================================================
 // SPACING TYPES
@@ -46,11 +46,6 @@ export const CenteredState = styled.div<CenteredStateProps>`
   ${({ $muted, theme }) => $muted && `color: ${theme.colors.textSecondary};`}
 `;
 
-/**
- * Empty state wrapper - alias for CenteredState
- */
-export const EmptyState = styled(CenteredState)``;
-
 // =============================================================================
 // STAT DISPLAY COMPONENTS
 // =============================================================================
@@ -65,7 +60,7 @@ export interface StatLabelProps {
 /**
  * Label for stat values (e.g., "Total Items", "Active")
  */
-export const StatLabel = styled(Text)<StatLabelProps>`
+export const StatLabel = styled(RediaccText)<StatLabelProps>`
   && {
     font-size: ${({ $size = 'SM', theme }) => {
       const sizes = { XS: theme.fontSize.XS, SM: theme.fontSize.CAPTION, BASE: theme.fontSize.SM };
@@ -90,7 +85,7 @@ export interface StatValueProps {
  * @example
  * <StatValue $variant="success" $size="LG">42</StatValue>
  */
-export const StatValue = styled(Text)<StatValueProps>`
+export const StatValue = styled(RediaccText)<StatValueProps>`
   && {
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
     font-size: ${({ $size = 'LG', theme }) => {
@@ -221,9 +216,9 @@ export const HeaderSection = styled.div<HeaderSectionProps>`
 `;
 
 /**
- * Content stack using antd Space
+ * Content stack using RediaccStack
  */
-export const ContentStack = styled(Space).attrs({ orientation: 'vertical', size: 'large' })`
+export const ContentStack = styled(RediaccStack).attrs({ direction: 'vertical', gap: 'lg' })`
   width: 100%;
 `;
 
@@ -258,7 +253,9 @@ export interface TableActionButtonProps {
  * @example
  * <TableActionButton icon={<EditOutlined />} />
  */
-export const TableActionButton = styled(IconButton)<TableActionButtonProps>`
+export const TableActionButton = styled(Button).attrs<TableActionButtonProps>((props) => ({
+  iconOnly: !props.$hasLabel,
+}))<TableActionButtonProps>`
   && {
     ${({ $hasLabel, theme }) =>
       $hasLabel
@@ -318,29 +315,13 @@ export interface ModalSelectProps {
  *   <Select.Option value="1">Option 1</Select.Option>
  * </ModalSelect>
  */
-export const ModalSelect = styled(Select)<ModalSelectProps>`
-  &.ant-select {
-    width: 100%;
-
-    .ant-select-selector {
-      min-height: ${({ $compact, theme }) =>
-        $compact ? theme.dimensions.INPUT_HEIGHT_SM : theme.dimensions.INPUT_HEIGHT}px;
-      border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-      background-color: ${({ theme }) => theme.colors.inputBg};
-      border-color: ${({ theme }) => theme.colors.inputBorder};
-      padding: 0 ${({ theme }) => theme.spacing.SM}px;
-      transition: ${({ theme }) => theme.transitions.DEFAULT};
-    }
-
-    &.ant-select-focused .ant-select-selector {
-      border-color: ${({ theme }) => theme.colors.primary};
-      box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary};
-    }
-  }
-`;
+export const ModalSelect = styled(RediaccSelect).attrs<ModalSelectProps>((props) => ({
+  size: props.$compact ? 'sm' : 'md',
+  fullWidth: true,
+}))<ModalSelectProps>``;
 
 // =============================================================================
-// RE-EXPORTS FROM PRIMITIVES
+// RE-EXPORTS FROM PRIMITIVES AND UI COMPONENTS
 // =============================================================================
 
 // Re-export commonly used primitives for convenience
@@ -348,12 +329,8 @@ export {
   PageContainer,
   PageCard,
   ContentSection,
-  ActionButton,
-  IconButton,
   SectionHeaderRow,
   ActionBar,
-  StatusBadge,
-  StatusTag,
 } from '@/styles/primitives';
 
 export type { StatusVariant } from '@/styles/primitives';

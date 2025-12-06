@@ -2,15 +2,18 @@
  * Card components
  *
  * Building blocks for card-based layouts:
+ * - PageCard: Main card wrapper for page content
  * - CardContent, CardHeader, CardTitle, CardDescription, CardActions
  * - CardHeaderRow for legacy compatibility
  */
 
 import styled from 'styled-components';
-import { Typography } from 'antd';
+import { Typography, Card } from 'antd';
 import { SectionHeaderRow as PrimitiveHeaderRow } from '@/styles/primitives';
 
 const { Title, Text } = Typography;
+
+export const PageCard = styled(Card).attrs({ className: 'page-card' })``;
 
 export const CardContent = styled.div`
   display: flex;

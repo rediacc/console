@@ -9,6 +9,6 @@ interface DefaultsBannerProps {
 
 export const DefaultsBanner: React.FC<DefaultsBannerProps> = ({ title, content }) => (
   <DefaultsWrapper>
-    <DefaultsAlert message={title} description={content} type="info" showIcon />
+    <DefaultsAlert message={title} description={content} variant="info" showIcon />
   </DefaultsWrapper>
 );

@@ -28,10 +28,10 @@ export function registerTeamCommands(program: Command): void {
       update: (payload) =>
         api.teams.updateVault(
           payload.teamName as string,
-          payload.teamVault as string,
+          payload.vaultContent as string,
           payload.vaultVersion as number
         ),
-      vaultFieldName: 'teamVault',
+      vaultFieldName: 'vaultContent',
     },
   });
 

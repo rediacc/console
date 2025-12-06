@@ -1,19 +1,17 @@
 import styled from 'styled-components';
-import { Card, Button, Input, Tag, Statistic, Typography } from 'antd';
-import {
-  TableContainer as BaseTableContainer,
-  CardTitle as PrimitiveCardTitle,
-  FlexColumn,
-} from '@/styles/primitives';
-import { InlineStack } from '@/components/common/styled';
-
-const { Text } = Typography;
+import { Statistic } from 'antd';
+import { RediaccInput } from '@/components/ui/Form/Input';
+import { RediaccButton } from '@/components/ui/Button';
+import { RediaccTag } from '@/components/ui/Tag';
+import { RediaccText } from '@/components/ui/Text';
+import { FlexColumn } from '@/styles/primitives';
+import { CardTitle, RediaccCard } from '@/components/ui';
 
 export const TabContainer = styled(FlexColumn).attrs({
   $gap: 'LG',
 })``;
 
-export const StyledCard = styled(Card)`
+export const StyledCard = styled(RediaccCard)`
   border: 1px solid var(--color-border-secondary);
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   box-shadow: ${({ theme }) => theme.shadows.CARD};
@@ -44,11 +42,9 @@ export const StatSuffix = styled.span`
 
 export const TableCard = styled(StyledCard)``;
 
-export const CardTitleRow = styled(InlineStack)``;
+export const CardTitleText = CardTitle;
 
-export const CardTitleText = PrimitiveCardTitle;
-
-export const RefreshButton = styled(Button)`
+export const RefreshButton = styled(RediaccButton)`
   && {
     display: inline-flex;
     align-items: center;
@@ -59,15 +55,15 @@ export const RefreshButton = styled(Button)`
   }
 `;
 
-export const SearchInput = styled(Input)`
+export const SearchInput = styled(RediaccInput)`
   && {
     width: min(320px, 100%);
   }
 `;
 
-export const TableWrapper = styled(BaseTableContainer)``;
-
-export const SessionTag = styled(Tag)`
+export const SessionTag = styled(RediaccTag).attrs({
+  size: 'sm',
+})`
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
@@ -79,9 +75,11 @@ export const CellText = styled.span<{ $muted?: boolean }>`
   color: ${({ $muted, theme }) => ($muted ? theme.colors.textTertiary : theme.colors.textPrimary)};
 `;
 
-export const SummaryText = styled(Text)`
+export const SummaryText = styled(RediaccText).attrs({
+  size: 'xs',
+  color: 'secondary',
+})`
   && {
     font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;

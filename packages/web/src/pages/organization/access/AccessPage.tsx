@@ -8,7 +8,7 @@ import {
   Tabs,
   Card,
   List,
-  Select,
+  Select as AntSelect,
   Popconfirm,
   Result,
 } from 'antd';
@@ -47,8 +47,8 @@ import {
   ListSubtitle as AccessListSubtitle,
   ModalStack,
   InlineFormRow,
+  RediaccSelect as Select,
 } from '@/components/ui';
-import { FullWidthSelect } from '@/pages/system/styles';
 import { showMessage } from '@/utils/messages';
 import { RootState } from '@/store/store';
 
@@ -414,7 +414,8 @@ const AccessPage: React.FC = () => {
               children: (
                 <ModalStack>
                   <InlineFormRow>
-                    <FullWidthSelect
+                    <Select
+                      fullWidth
                       placeholder={t('access.modals.permissionPlaceholder', {
                         defaultValue: 'Select permission to add',
                       })}
@@ -429,7 +430,7 @@ const AccessPage: React.FC = () => {
                       data-testid="permission-select-add"
                     >
                       {availablePermissions.map((perm) => (
-                        <Select.Option
+                        <AntSelect.Option
                           key={perm.name}
                           value={perm.name}
                           label={perm.name}
@@ -437,9 +438,9 @@ const AccessPage: React.FC = () => {
                           data-testid={`permission-option-${perm.name}`}
                         >
                           {perm.name}
-                        </Select.Option>
+                        </AntSelect.Option>
                       ))}
-                    </FullWidthSelect>
+                    </Select>
                     <Tooltip title={tSystem('actions.addPermission')}>
                       <Button
                         type="primary"
@@ -478,7 +479,8 @@ const AccessPage: React.FC = () => {
         okButtonProps={{ 'data-testid': 'modal-assign-user-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-assign-user-cancel' }}
       >
-        <FullWidthSelect
+        <Select
+          fullWidth
           placeholder={t('access.modals.userPlaceholder', { defaultValue: 'Select user' })}
           value={selectedUser}
           onChange={(value) => setSelectedUser((value as string) || '')}

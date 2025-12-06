@@ -24,16 +24,16 @@ export const useBridges = (regionName?: string) => {
 export const useCreateBridge = createMutation<{
   regionName: string;
   bridgeName: string;
-  bridgeVault?: string;
+  vaultContent?: string;
 }>({
-  request: ({ regionName, bridgeName, bridgeVault }) =>
-    api.bridges.create(regionName, bridgeName, bridgeVault),
+  request: ({ regionName, bridgeName, vaultContent }) =>
+    api.bridges.create(regionName, bridgeName, vaultContent),
   invalidateKeys: ['bridges', 'regions', 'dropdown-data'],
   successMessage: (vars) => `Bridge "${vars.bridgeName}" created successfully`,
   errorMessage: 'Failed to create bridge',
   transformData: (data) => ({
     ...data,
-    bridgeVault: data.bridgeVault || '{}',
+    vaultContent: data.vaultContent || '{}',
   }),
   operationName: 'bridges.create',
 });
@@ -56,14 +56,14 @@ export const useUpdateBridgeName = createMutation<{
 export const useUpdateBridgeVault = createVaultUpdateMutation<{
   regionName: string;
   bridgeName: string;
-  bridgeVault: string;
+  vaultContent: string;
   vaultVersion: number;
 }>(
   'Bridge',
   (data) =>
-    api.bridges.updateVault(data.regionName, data.bridgeName, data.bridgeVault, data.vaultVersion),
+    api.bridges.updateVault(data.regionName, data.bridgeName, data.vaultContent, data.vaultVersion),
   'bridgeName',
-  'bridgeVault'
+  'vaultContent'
 );
 
 // Delete bridge

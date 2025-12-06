@@ -1,12 +1,12 @@
-import styled, { css } from 'styled-components';
-import { Button, Tag, Typography } from 'antd';
+import styled from 'styled-components';
 import { InfoCircleOutlined, UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons';
 import {
   ContentStack as BaseContentStack,
   ActionGroup as BaseActionGroup,
 } from '@/components/common/styled';
-
-const { Text } = Typography;
+import { RediaccButton } from '@/components/ui/Button';
+import { RediaccTag } from '@/components/ui/Tag';
+import { RediaccText } from '@/components/ui/Text';
 
 export const ContentStack = BaseContentStack;
 
@@ -20,25 +20,26 @@ export const VersionBanner = styled.div`
   background-color: ${({ theme }) => theme.colors.bgSecondary};
 `;
 
-export const VersionLabel = styled(Text)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  }
-`;
+export const VersionLabel = styled(RediaccText).attrs({
+  size: 'sm',
+  weight: 'semibold',
+})``;
 
-export const VersionTag = styled(Tag)`
+export const VersionTag = styled(RediaccTag).attrs({
+  size: 'sm',
+})`
   && {
     margin: 0;
-    font-size: ${({ theme }) => theme.fontSize.XS}px;
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
 `;
 
-export const VersionDescription = styled(Text)`
+export const VersionDescription = styled(RediaccText).attrs({
+  size: 'xs',
+  color: 'secondary',
+})`
   && {
     font-size: ${({ theme }) => theme.fontSize.XS}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
 
@@ -51,11 +52,12 @@ export const ValidationAlert = styled.div`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
 `;
 
-export const ValidationTitle = styled(Text)`
+export const ValidationTitle = styled(RediaccText).attrs({
+  weight: 'semibold',
+})`
   && {
     display: block;
     margin-bottom: ${({ theme }) => theme.spacing.XS}px;
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
 `;
 
@@ -82,37 +84,12 @@ export const FooterBar = styled.div`
 export const FileActions = BaseActionGroup;
 export const ActionGroup = BaseActionGroup;
 
-const baseButtonStyles = css`
-  min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_SM}px;
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-  font-size: ${({ theme }) => theme.fontSize.SM}px;
-`;
-
-export const FileActionButton = styled(Button)`
+export const FileActionButton = styled(RediaccButton).attrs({
+  size: 'sm',
+})`
   && {
-    ${baseButtonStyles}
-  }
-`;
-
-export const CancelButton = styled(Button)`
-  && {
-    ${baseButtonStyles}
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  }
-`;
-
-export const SaveButton = styled(Button)`
-  && {
-    ${baseButtonStyles}
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    background-color: ${({ theme }) => theme.colors.primary};
-    border-color: ${({ theme }) => theme.colors.primary};
-
-    &:hover,
-    &:focus {
-      background-color: ${({ theme }) => theme.colors.primaryHover};
-      border-color: ${({ theme }) => theme.colors.primaryHover};
-    }
+    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_SM}px;
+    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   }
 `;
 
@@ -124,10 +101,12 @@ export const UnsavedChangesText = styled.span`
   font-size: ${({ theme }) => theme.fontSize.XS}px;
 `;
 
-export const UnsavedVersionHint = styled(Text)`
+export const UnsavedVersionHint = styled(RediaccText).attrs({
+  size: 'xs',
+  color: 'secondary',
+})`
   && {
     font-size: ${({ theme }) => theme.fontSize.XS}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
 

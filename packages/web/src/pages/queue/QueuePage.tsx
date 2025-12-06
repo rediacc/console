@@ -1,9 +1,10 @@
 import React, { useMemo, useCallback } from 'react';
-import { Typography, Space, Modal, Tag, Tabs, Tooltip, Dropdown } from 'antd';
+import { Modal, Tabs, Tooltip, Dropdown, Space } from 'antd';
 import styled, { useTheme as useStyledTheme } from 'styled-components';
 import type { ColumnsType } from 'antd/es/table';
 import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay';
 import { renderTimestamp, renderBoolean } from '@/components/common/columns';
+import { RediaccTag } from '@/components/ui/Tag';
 import {
   ThunderboltOutlined,
   DesktopOutlined,
@@ -61,9 +62,14 @@ import {
 import type { QueueItem } from '@rediacc/shared/types';
 import type { ParsedError } from '@rediacc/shared/error-parser';
 import { renderQueueStatus, renderPriority } from '@/utils/queueRenderers';
-import { PageWrapper } from '@/components/ui';
 import {
-  IconButton,
+  PageWrapper,
+  RediaccButton as Button,
+  RediaccText as Text,
+  RediaccText,
+  RediaccStack,
+} from '@/components/ui';
+import {
   FiltersCard,
   FiltersGrid,
   FilterSelect,
@@ -78,19 +84,16 @@ import {
   TabLabel,
   TabCount,
   FilterCheckbox,
-  CaptionText,
 } from '@/styles/primitives';
 
-const { Text } = Typography;
-
-const PriorityTooltipHeading = styled(Text)`
+const PriorityTooltipHeading = styled(RediaccText)`
   && {
     margin: 0 0 ${({ theme }) => theme.spacing.XS / 2}px 0;
     display: block;
   }
 `;
 
-const FullWidthSpace = styled(Space)`
+const FullWidthSpace = styled(RediaccStack).attrs({ direction: 'vertical', gap: 2 })`
   && {
     width: 100%;
   }
@@ -103,14 +106,14 @@ const TooltipContent = styled.div`
   min-width: 240px;
 `;
 
-const TooltipErrorText = styled(CaptionText)<{ $isLast?: boolean }>`
+const TooltipErrorText = styled(Text).attrs({ size: 'sm' })<{ $isLast?: boolean }>`
   && {
     display: block;
     margin-bottom: ${({ theme, $isLast }) => ($isLast ? 0 : theme.spacing.XS / 2)}px;
   }
 `;
 
-const TooltipFooterNote = styled(CaptionText)`
+const TooltipFooterNote = styled(Text).attrs({ size: 'sm' })`
   && {
     display: block;
     margin-top: ${({ theme }) => theme.spacing.XS}px;
@@ -123,46 +126,46 @@ const TooltipContentSection = styled.div`
   width: 100%;
 `;
 
-const TooltipPrimaryRow = styled(Space)`
+const TooltipPrimaryRow = styled(RediaccStack).attrs({ direction: 'horizontal', gap: 4 })`
   && {
     width: 100%;
     margin-bottom: ${({ theme }) => theme.spacing.XS / 2}px;
   }
 `;
 
-const SeverityPill = styled(Tag)`
+const SeverityPill = styled(RediaccTag)<{ $color?: string }>`
   && {
     margin: 0;
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     line-height: 1.2;
+    ${({ $color }) => $color && `background-color: ${$color}; border-color: ${$color}; color: white;`}
   }
 `;
 
-const TruncatedErrorText = styled(CaptionText)`
+const TruncatedErrorText = styled(Text).attrs({ size: 'sm', color: 'muted' })`
   && {
     display: inline-flex;
     flex: 1;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 `;
 
-const AdditionalErrorsNote = styled(CaptionText)`
+const AdditionalErrorsNote = styled(Text).attrs({ size: 'xs', color: 'muted' })`
   && {
-    font-size: ${({ theme }) => theme.fontSize.XS}px;
     font-style: italic;
   }
 `;
 
-const RetrySummaryTag = styled(Tag)`
+const RetrySummaryTag = styled(RediaccTag)<{ $color?: string }>`
   && {
     margin: 0;
+    ${({ $color }) => $color && `background-color: ${$color}; border-color: ${$color}; color: white;`}
   }
 `;
 
-const AgeValue = styled(Text)<{ $tone?: string }>`
+const AgeValue = styled(RediaccText)<{ $tone?: string }>`
   && {
     color: ${({ $tone, theme }) => $tone || theme.colors.textPrimary};
   }
@@ -458,9 +461,9 @@ const QueuePage: React.FC = () => {
       key: 'taskId',
       width: 200,
       render: (id: string) => (
-        <Text code copyable>
+        <RediaccText code copyable>
           {id}
-        </Text>
+        </RediaccText>
       ),
     },
     {
@@ -478,17 +481,17 @@ const QueuePage: React.FC = () => {
       render: (priorityLabel: string | undefined, record: QueueItem) => {
         const tooltipContent = (
           <TooltipContent>
-            <PriorityTooltipHeading strong>{priorityLabel}</PriorityTooltipHeading>
-            <CaptionText as="div">
+            <PriorityTooltipHeading weight="bold">{priorityLabel}</PriorityTooltipHeading>
+            <Text variant="caption" as="div">
               {record.priority === 1
                 ? t('queue:priorityTooltipP1')
                 : t('queue:priorityTooltipTier')}
-            </CaptionText>
+            </Text>
           </TooltipContent>
         );
         return (
           renderPriority(priorityLabel, record.priority, tooltipContent) || (
-            <Text type="secondary">-</Text>
+            <Text color="secondary">-</Text>
           )
         );
       },
@@ -553,7 +556,7 @@ const QueuePage: React.FC = () => {
       key: 'retryCount',
       width: 280,
       render: (retryCount: number | undefined, record: QueueItem) => {
-        if (!retryCount && retryCount !== 0) return <Text type="secondary">-</Text>;
+        if (!retryCount && retryCount !== 0) return <Text color="secondary">-</Text>;
 
         const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT;
         const retryColor =
@@ -567,7 +570,7 @@ const QueuePage: React.FC = () => {
         const { allErrors, primaryError } = parseFailureReason(record.lastFailureReason);
 
         return (
-          <FullWidthSpace orientation="vertical" size={2}>
+          <FullWidthSpace>
             {/* Error messages with severity badges */}
             {allErrors.length > 0 && (
               <Tooltip
@@ -591,19 +594,17 @@ const QueuePage: React.FC = () => {
               >
                 <TooltipContentSection>
                   {/* Show primary (highest severity) error */}
-                  <TooltipPrimaryRow size={4}>
+                  <TooltipPrimaryRow>
                     {primaryError?.severity && (
-                      <SeverityPill color={getSeverityColor(primaryError.severity)}>
+                      <SeverityPill $color={getSeverityColor(primaryError.severity)}>
                         {primaryError.severity}
                       </SeverityPill>
                     )}
-                    <TruncatedErrorText $muted as="span">
-                      {primaryError?.message}
-                    </TruncatedErrorText>
+                    <TruncatedErrorText as="span">{primaryError?.message}</TruncatedErrorText>
                   </TooltipPrimaryRow>
                   {/* Show count of additional errors if any */}
                   {allErrors.length > 1 && (
-                    <AdditionalErrorsNote $muted>
+                    <AdditionalErrorsNote>
                       +{allErrors.length - 1} more{' '}
                       {allErrors.length - 1 === 1 ? 'message' : 'messages'}
                     </AdditionalErrorsNote>
@@ -613,7 +614,7 @@ const QueuePage: React.FC = () => {
             )}
 
             {/* Retry count badge */}
-            <RetrySummaryTag color={retryColor} icon={icon}>
+            <RetrySummaryTag $color={retryColor} icon={icon}>
               {retryCount}/{maxRetries} retries
             </RetrySummaryTag>
           </FullWidthSpace>
@@ -626,7 +627,7 @@ const QueuePage: React.FC = () => {
       dataIndex: 'createdBy',
       key: 'createdBy',
       width: 150,
-      render: (createdBy: string | undefined) => createdBy || <Text type="secondary">-</Text>,
+      render: (createdBy: string | undefined) => createdBy || <Text color="secondary">-</Text>,
     },
     {
       title: 'Age',
@@ -671,9 +672,9 @@ const QueuePage: React.FC = () => {
       render: (_: unknown, record: QueueItem) => (
         <Space size="small">
           <Tooltip title="Trace">
-            <IconButton
-              size="small"
-              type="primary"
+            <Button
+              size="sm"
+              iconOnly
               icon={<HistoryOutlined />}
               onClick={() => handleViewTrace(record.taskId)}
               data-testid={`queue-trace-button-${record.taskId}`}
@@ -684,9 +685,10 @@ const QueuePage: React.FC = () => {
             record.healthStatus !== 'CANCELLED' &&
             record.healthStatus !== 'CANCELLING' && (
               <Tooltip title="Cancel">
-                <IconButton
-                  size="small"
+                <Button
+                  size="sm"
                   danger
+                  iconOnly
                   icon={<CloseCircleOutlined />}
                   onClick={() => handleCancelQueueItem(record.taskId)}
                   loading={cancelQueueItemMutation.isPending}
@@ -703,11 +705,11 @@ const QueuePage: React.FC = () => {
   return (
     <PageWrapper data-testid="queue-page-container">
       {contextHolder}
-      <FiltersCard size="small" data-testid="queue-filters-card">
-        <FiltersGrid orientation="vertical">
+      <FiltersCard size="sm" data-testid="queue-filters-card">
+        <FiltersGrid direction="vertical">
           <Space size={8} wrap>
             <FilterSelect
-              size="small"
+              size="sm"
               $minWidth={150}
               placeholder="Team"
               value={filters.teamName || undefined}
@@ -721,7 +723,7 @@ const QueuePage: React.FC = () => {
               data-testid="queue-filter-team"
             />
             <FilterSelect
-              size="small"
+              size="sm"
               $minWidth={150}
               placeholder="Machine"
               value={filters.machineName || undefined}
@@ -734,7 +736,7 @@ const QueuePage: React.FC = () => {
               data-testid="queue-filter-machine"
             />
             <FilterSelect
-              size="small"
+              size="sm"
               $minWidth={130}
               placeholder="Region"
               value={filters.regionName || undefined}
@@ -744,7 +746,7 @@ const QueuePage: React.FC = () => {
               data-testid="queue-filter-region"
             />
             <FilterSelect
-              size="small"
+              size="sm"
               $minWidth={130}
               placeholder="Bridge"
               value={filters.bridgeName || undefined}
@@ -754,7 +756,6 @@ const QueuePage: React.FC = () => {
               data-testid="queue-filter-bridge"
             />
             <FilterRangePicker
-              size="small"
               value={dateRangeValue}
               onChange={handleDateRangeChange}
               allowClear
@@ -762,7 +763,7 @@ const QueuePage: React.FC = () => {
               data-testid="queue-filter-date"
             />
             <FilterSelect
-              size="small"
+              size="sm"
               mode="multiple"
               $minWidth={160}
               placeholder="Status"
@@ -780,7 +781,7 @@ const QueuePage: React.FC = () => {
               data-testid="queue-filter-status"
             />
             <FilterInput
-              size="small"
+              size="sm"
               placeholder="Task ID (GUID)"
               prefix={<SearchOutlined />}
               value={filters.taskIdFilter}
@@ -841,8 +842,9 @@ const QueuePage: React.FC = () => {
 
           <Space size={4}>
             <Tooltip title={t('common:actions.refresh')}>
-              <IconButton
-                size="small"
+              <Button
+                size="sm"
+                iconOnly
                 icon={<ReloadOutlined />}
                 onClick={() => refetch()}
                 loading={isFetching}
@@ -862,8 +864,9 @@ const QueuePage: React.FC = () => {
               }}
             >
               <Tooltip title={t('common:export')}>
-                <IconButton
-                  size="small"
+                <Button
+                  size="sm"
+                  iconOnly
                   icon={<ExportOutlined />}
                   data-testid="queue-export-dropdown"
                 />

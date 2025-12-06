@@ -1,9 +1,10 @@
 import React from 'react';
-import { Form, Input } from 'antd';
+import { Form } from 'antd';
 import type { Rule } from 'antd/es/form';
 import styled from 'styled-components';
+import { RediaccInput } from '@/components/ui';
 
-const CenteredInput = styled(Input)`
+const CenteredInput = styled(RediaccInput)`
   text-align: center;
   letter-spacing: 0.5em;
   font-family: monospace;
@@ -24,8 +25,8 @@ export interface OTPCodeFieldProps {
   lengthMessage?: string;
   /** Custom format message */
   formatMessage?: string;
-  /** Input size (default: 'large') */
-  size?: 'small' | 'middle' | 'large';
+  /** Input size (default: 'md') */
+  size?: 'sm' | 'md';
   /** data-testid attribute */
   'data-testid'?: string;
 }
@@ -48,7 +49,7 @@ export const OTPCodeField: React.FC<OTPCodeFieldProps> = ({
   requiredMessage,
   lengthMessage = 'Code must be 6 digits',
   formatMessage = 'Code must contain only digits',
-  size = 'large',
+  size = 'md',
   'data-testid': dataTestId,
 }) => {
   const rules: Rule[] = [];

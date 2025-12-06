@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Input, Switch, Popconfirm, Empty, Row, Col } from 'antd';
+import { Input, Popconfirm, Empty, Row, Col } from 'antd';
+import { RediaccSwitch } from '@/components/ui/Form';
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -264,7 +265,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
         (structureInfo.hasImagePattern || looksLikeImageReference(imageValue))
       ) {
         return (
-          <ImagePatternCard size="small">
+          <ImagePatternCard size="sm">
             <Row gutter={16}>
               <Col span={18}>
                 <InlineFormItem label={<InlineLabel>{t('nestedObjectEditor.Image')}</InlineLabel>}>
@@ -287,7 +288,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               </Col>
               <Col span={6}>
                 <InlineFormItem label={<InlineLabel>{t('nestedObjectEditor.Active')}</InlineLabel>}>
-                  <Switch
+                  <RediaccSwitch
                     checked={activeValue}
                     onChange={(checked) =>
                       handleUpdateEntry(index, {
@@ -325,7 +326,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
 
     if (typeof entry.value === 'boolean') {
       return (
-        <Switch
+        <RediaccSwitch
           checked={entry.value}
           onChange={(checked) => handleUpdateEntry(index, { value: checked })}
           disabled={readOnly}
@@ -341,7 +342,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
     if (typeof entry.value === 'number') {
       return (
         <NumericInput
-          value={entry.value}
+          value={String(entry.value)}
           onChange={(event) =>
             handleUpdateEntry(index, { value: Number(event.currentTarget.value) })
           }
@@ -371,7 +372,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
     <EditorContainer>
       {(title || description || structureInfo.isUniform) && (
         <SummaryCard>
-          {title && <SummaryTitle level={5}>{title}</SummaryTitle>}
+          {title && <SummaryTitle>{title}</SummaryTitle>}
           {description && (
             <SummaryDescription>
               <InfoCircleOutlined /> {description}
@@ -379,14 +380,14 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
           )}
           {structureInfo.isUniform && (
             <SummaryBadgeRow>
-              <UniformTag color="success">{t('nestedObjectEditor.Uniform Structure')}</UniformTag>
+              <UniformTag variant="success">{t('nestedObjectEditor.Uniform Structure')}</UniformTag>
               {structureInfo.keys && (
                 <FieldsBadge>
                   {t('nestedObjectEditor.Fields')}: {structureInfo.keys.join(', ')}
                 </FieldsBadge>
               )}
               {structureInfo.hasImagePattern && (
-                <UniformTag color="processing">
+                <UniformTag variant="info">
                   {t('nestedObjectEditor.Container Images Detected')}
                 </UniformTag>
               )}
@@ -398,7 +399,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
       <EditorStack>
         {!readOnly && (
           <AddEntryCard
-            size="small"
+            size="sm"
             title={<CardHeading>{t('nestedObjectEditor.Add New Entry')}</CardHeading>}
           >
             <EntryActionsRow>
@@ -413,7 +414,6 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                 />
               </KeyInputWrapper>
               <PrimaryActionButton
-                type="primary"
                 icon={<PlusOutlined />}
                 onClick={handleAddEntry}
                 disabled={!newKey.trim()}
@@ -449,15 +449,15 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               key: entry.key,
               label: (
                 <EntryHeader>
-                  <KeyTag color="processing">{entry.key}</KeyTag>
+                  <KeyTag variant="info">{entry.key}</KeyTag>
                   {isRecordLike(entry.value) && (
-                    <TypeTag color="success">{t('nestedObjectEditor.Object')}</TypeTag>
+                    <TypeTag variant="success">{t('nestedObjectEditor.Object')}</TypeTag>
                   )}
                   {Array.isArray(entry.value) && (
-                    <TypeTag color="warning">{t('nestedObjectEditor.Array')}</TypeTag>
+                    <TypeTag variant="warning">{t('nestedObjectEditor.Array')}</TypeTag>
                   )}
                   {typeof entry.value === 'boolean' && (
-                    <TypeTag color={entry.value ? 'success' : 'default'}>
+                    <TypeTag variant={entry.value ? 'success' : 'default'}>
                       {entry.value ? t('nestedObjectEditor.True') : t('nestedObjectEditor.False')}
                     </TypeTag>
                   )}
@@ -472,10 +472,10 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                     cancelText={t('nestedObjectEditor.No')}
                   >
                     <PanelDeleteButton
-                      type="text"
+                      variant="text"
                       danger
                       icon={<DeleteOutlined />}
-                      size="small"
+                      size="sm"
                       data-testid={
                         dataTestId
                           ? `${dataTestId}-delete-${entry.key}`
@@ -492,7 +492,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
 
         {showRawJson && (
           <RawJsonCard
-            size="small"
+            size="sm"
             title={
               <RawJsonTitle>
                 <CodeOutlined />

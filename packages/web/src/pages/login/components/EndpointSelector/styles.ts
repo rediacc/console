@@ -1,11 +1,13 @@
 import styled from 'styled-components';
-import { Select, Typography, Space } from 'antd';
+import { Typography } from 'antd';
 import { LoadingOutlined, ApiOutlined, DeleteOutlined } from '@/utils/optimizedIcons';
 import { FlexRow } from '@/styles/primitives';
+import { RediaccSelect } from '@/components/ui/Form';
+import { RediaccStack } from '@/components/ui';
 
 const { Text: AntText } = Typography;
 
-export const StyledSelect = styled(Select)`
+export const StyledSelect = styled(RediaccSelect)`
   && .ant-select-selector {
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     padding: ${({ theme }) => `${theme.spacing.XS}px ${theme.spacing.SM}px`};
@@ -137,7 +139,7 @@ export const SpinnerWrapper = styled.span`
   align-items: center;
 `;
 
-export const FormActions = styled(Space)`
+export const FormActions = styled(RediaccStack).attrs({ direction: 'horizontal' })`
   && {
     width: 100%;
     justify-content: flex-end;

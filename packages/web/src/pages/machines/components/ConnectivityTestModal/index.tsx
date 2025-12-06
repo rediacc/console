@@ -15,11 +15,13 @@ import { usePingFunction } from '@/services/pingService';
 import { ModalSize } from '@/types/modal';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import type { QueueItemCompletionResult } from '@/services/helloService';
+import { RediaccButton as Button } from '@/components/ui';
+import { InlineStack } from '@/components/common/styled';
+import { ModalContentStack, ModalFooterActions } from '@/styles/primitives';
 import {
   StyledModal,
   ModalContent,
   TitleStack,
-  ContentStack,
   ProgressSection,
   ProgressBar,
   ProgressNote,
@@ -30,14 +32,10 @@ import {
   SummaryLabel,
   SummaryValue,
   StyledTable,
-  MachineCell,
   MachineName,
   StatusIcon,
   ResourceTag,
   MessageText,
-  ModalFooterActions,
-  PrimaryActionButton,
-  SecondaryIconButton,
 } from './styles';
 
 interface ConnectivityTestModalProps {
@@ -252,10 +250,10 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
         };
 
         return (
-          <MachineCell data-testid={`connectivity-machine-${name}`}>
+          <InlineStack data-testid={`connectivity-machine-${name}`}>
             <StatusIcon $variant={record.status}>{renderIcon()}</StatusIcon>
             <MachineName>{name}</MachineName>
-          </MachineCell>
+          </InlineStack>
         );
       },
     },
@@ -304,11 +302,10 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       open={open}
       onCancel={onClose}
       className={ModalSize.ExtraLarge}
-      destroyOnHidden
+      destroyOnClose
       footer={
         <ModalFooterActions>
-          <PrimaryActionButton
-            type="primary"
+          <Button
             icon={<SyncOutlined />}
             onClick={runAllTests}
             disabled={isRunning || machines.length === 0}
@@ -316,9 +313,10 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             data-testid="connectivity-run-test-button"
           >
             {isRunning ? t('machines:testing') : t('machines:runTest')}
-          </PrimaryActionButton>
+          </Button>
           <Tooltip title="Close">
-            <SecondaryIconButton
+            <Button
+              iconOnly
               icon={<CloseCircleOutlined />}
               onClick={onClose}
               data-testid="connectivity-close-button"
@@ -329,7 +327,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       }
     >
       <ModalContent>
-        <ContentStack>
+        <ModalContentStack>
           {isRunning && (
             <ProgressSection data-testid="connectivity-progress-container">
               <ProgressBar
@@ -349,7 +347,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
 
           <InfoAlert
             message={t('machines:connectivityTestDescription')}
-            type="info"
+            variant="info"
             showIcon
             icon={<WifiOutlined />}
             data-testid="connectivity-info-alert"
@@ -407,7 +405,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
               </SummaryMetrics>
             </SummaryContainer>
           )}
-        </ContentStack>
+        </ModalContentStack>
       </ModalContent>
     </StyledModal>
   );

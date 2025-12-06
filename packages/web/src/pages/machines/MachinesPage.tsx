@@ -28,24 +28,25 @@ import { QueueFunction } from '@/api/queries/queue';
 import type { QueueActionParams } from '@/services/queueActionService';
 import { FUNCTION_DEFINITIONS } from '@/services/functionsService';
 import { useTheme } from 'styled-components';
-import { SectionStack, SectionHeading } from '@/components/ui';
 import {
-  PageContainer as PageWrapper,
+  SectionStack,
+  SectionHeading,
+  PageWrapper,
   PageCard,
   SectionStack as HeaderSection,
   SectionHeaderRow as HeaderRow,
   ControlStack as TeamControls,
   InputSlot as TeamSelectorWrapper,
   ActionBar as ButtonGroup,
-  ActionButton,
   ContentSection,
-} from '@/styles/primitives';
+  RediaccButton as Button,
+} from '@/components/ui';
 
 interface MachineFormValues extends Record<string, unknown> {
   teamName: string;
   machineName: string;
   bridgeName: string;
-  machineVault?: string;
+  vaultContent?: string;
   autoSetup?: boolean;
 }
 
@@ -173,7 +174,7 @@ const MachinesPage: React.FC = () => {
                 },
                 priority: 3,
                 addedVia: 'machine-creation-auto-setup',
-                machineVault: formData.machineVault || '{}',
+                machineVault: formData.vaultContent || '{}',
               });
 
               if (result.success) {
@@ -211,12 +212,12 @@ const MachinesPage: React.FC = () => {
             });
           }
 
-          const vaultData = formData.machineVault;
+          const vaultData = formData.vaultContent;
           if (vaultData && vaultData !== currentResource.vaultContent) {
             await updateMachineVaultMutation.mutateAsync({
               teamName: currentResource.teamName,
               machineName: newName || currentName,
-              machineVault: vaultData,
+              vaultContent: vaultData,
               vaultVersion: currentResource.vaultVersion + 1,
             });
           }
@@ -250,7 +251,7 @@ const MachinesPage: React.FC = () => {
         await updateMachineVaultMutation.mutateAsync({
           teamName: currentResource.teamName,
           machineName: currentResource.machineName,
-          machineVault: vault,
+          vaultContent: vault,
           vaultVersion: version,
         });
         closeUnifiedModal();
@@ -283,13 +284,13 @@ const MachinesPage: React.FC = () => {
           addedVia: 'machine-table',
           teamVault: teamData?.vaultContent || '{}',
           machineVault: currentResource.vaultContent || '{}',
-          repoVault: '{}',
+          vaultContent: '{}',
         };
 
         if (repoParam) {
           const repo = repos.find((item) => item.repoGuid === repoParam);
           queuePayload.repoGuid = repo?.repoGuid || repoParam;
-          queuePayload.repoVault = repo?.repoVault || '{}';
+          queuePayload.vaultContent = repo?.vaultContent || '{}';
         }
 
         if (functionData.function.name === 'pull') {
@@ -411,7 +412,7 @@ const MachinesPage: React.FC = () => {
         addedVia: 'machine-table-quick',
         teamVault: teamData?.vaultContent || '{}',
         machineVault: machine.vaultContent || '{}',
-        repoVault: '{}',
+        vaultContent: '{}',
       };
 
       try {
@@ -481,8 +482,8 @@ const MachinesPage: React.FC = () => {
                 {selectedTeams.length > 0 && (
                   <ButtonGroup>
                     <Tooltip title={t('machines:createMachine')}>
-                      <ActionButton
-                        $variant="primary"
+                      <Button
+                        iconOnly
                         icon={<PlusOutlined />}
                         data-testid="machines-create-machine-button"
                         onClick={() => openUnifiedModal('create')}
@@ -490,7 +491,8 @@ const MachinesPage: React.FC = () => {
                       />
                     </Tooltip>
                     <Tooltip title={t('machines:connectivityTest')}>
-                      <ActionButton
+                      <Button
+                        iconOnly
                         icon={<WifiOutlined />}
                         data-testid="machines-connectivity-test-button"
                         onClick={() => connectivityTest.open()}
@@ -499,7 +501,8 @@ const MachinesPage: React.FC = () => {
                       />
                     </Tooltip>
                     <Tooltip title={t('common:actions.refresh')}>
-                      <ActionButton
+                      <Button
+                        iconOnly
                         icon={<ReloadOutlined />}
                         data-testid="machines-refresh-button"
                         onClick={handleRefreshMachines}

@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Button, Space, Tag, Typography, Alert, Tooltip } from 'antd';
+import { Button as AntButton, Space, Tag, Alert, Tooltip } from 'antd';
 import {
   DoubleLeftOutlined,
   ReloadOutlined,
@@ -9,6 +9,7 @@ import {
   CloudDownloadOutlined,
 } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import { RediaccText as Text } from '@/components/ui';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { useMachines } from '@/api/queries/machines';
@@ -21,8 +22,9 @@ import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileB
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { useRepoCreation } from '@/hooks/useRepoCreation';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
-import { IconButton } from '@/styles/primitives';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccButton as Button } from '@/components/ui';
+import { ActionGroup } from '@/components/common/styled';
 import {
   PageWrapper,
   FullHeightCard,
@@ -31,7 +33,6 @@ import {
   HeaderRow,
   TitleColumn,
   TitleRow,
-  TagRow,
   ActionsRow,
   HeaderTitleText,
   SplitLayout,
@@ -40,8 +41,6 @@ import {
   CenteredState,
   ErrorWrapper,
 } from './styles';
-
-const { Text } = Typography;
 
 interface ContainerData {
   id: string;
@@ -268,7 +267,7 @@ const MachineReposPage: React.FC = () => {
             <LoadingWrapper loading centered minHeight={160}>
               <div />
             </LoadingWrapper>
-            <Text type="secondary">{t('common:general.loading')}</Text>
+            <Text color="secondary">{t('common:general.loading')}</Text>
           </CenteredState>
         </FullHeightCard>
       </PageWrapper>
@@ -285,9 +284,9 @@ const MachineReposPage: React.FC = () => {
             description={
               <ErrorWrapper>
                 <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
-                <Button type="primary" onClick={handleBackToMachines}>
+                <AntButton type="primary" onClick={handleBackToMachines}>
                   {t('machines:backToMachines')}
-                </Button>
+                </AntButton>
               </ErrorWrapper>
             }
             type="error"
@@ -322,7 +321,8 @@ const MachineReposPage: React.FC = () => {
             <TitleColumn>
               <TitleRow>
                 <Tooltip title={t('machines:backToMachines')}>
-                  <IconButton
+                  <Button
+                    iconOnly
                     icon={<DoubleLeftOutlined />}
                     onClick={handleBackToMachines}
                     aria-label={t('machines:backToMachines')}
@@ -338,40 +338,41 @@ const MachineReposPage: React.FC = () => {
                   </Space>
                 </HeaderTitleText>
               </TitleRow>
-              <TagRow>
-                <Tag color="green">
+              <ActionGroup>
+                <Tag color="success">
                   {t('machines:team')}: {machine?.teamName}
                 </Tag>
                 <Tag color="blue">
                   {t('machines:bridge')}: {machine?.bridgeName}
                 </Tag>
                 {machine?.regionName && (
-                  <Tag color="purple">
+                  <Tag color="default">
                     {t('machines:region')}: {machine.regionName}
                   </Tag>
                 )}
-              </TagRow>
+              </ActionGroup>
             </TitleColumn>
 
             <ActionsRow>
               <Tooltip title={t('machines:createRepo')}>
-                <IconButton
-                  type="primary"
+                <Button
+                  iconOnly
                   icon={<PlusOutlined />}
                   onClick={handleCreateRepo}
                   data-testid="machine-repos-create-repo-button"
                 />
               </Tooltip>
               <Tooltip title={t('functions:functions.pull.name')}>
-                <IconButton
-                  type="primary"
+                <Button
+                  iconOnly
                   icon={<CloudDownloadOutlined />}
                   onClick={handlePull}
                   data-testid="machine-repos-pull-button"
                 />
               </Tooltip>
               <Tooltip title={t('common:actions.refresh')}>
-                <IconButton
+                <Button
+                  iconOnly
                   icon={<ReloadOutlined />}
                   onClick={handleRefresh}
                   data-testid="machine-repos-refresh-button"

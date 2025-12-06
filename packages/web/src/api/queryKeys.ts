@@ -5,7 +5,7 @@
  * Using this registry ensures consistency, prevents typos, and makes cache
  * invalidation more reliable and maintainable.
  *
- * Pattern follows the structure from distributedStorage.ts with DS_QUERY_KEYS.
+ * Pattern follows the structure from ceph.ts with CEPH_QUERY_KEYS.
  * Each resource has its own namespace with query key factory functions.
  *
  * @example
@@ -138,19 +138,16 @@ export const QUERY_KEYS = {
     data: (context?: string) => ['dropdown-data', context] as const,
   },
 
-  // Distributed Storage (re-exported from distributedStorage.ts)
-  distributedStorage: {
-    clusters: (teamFilter?: string | string[]) =>
-      ['distributed-storage-clusters', teamFilter] as const,
-    pools: (teamFilter?: string | string[]) => ['distributed-storage-pools', teamFilter] as const,
-    images: (poolName?: string, teamName?: string) =>
-      ['distributed-storage-images', poolName, teamName] as const,
+  // Ceph (re-exported from ceph.ts)
+  ceph: {
+    clusters: (teamFilter?: string | string[]) => ['ceph-clusters', teamFilter] as const,
+    pools: (teamFilter?: string | string[]) => ['ceph-pools', teamFilter] as const,
+    images: (poolName?: string, teamName?: string) => ['ceph-images', poolName, teamName] as const,
     snapshots: (imageName?: string, poolName?: string, teamName?: string) =>
-      ['distributed-storage-snapshots', imageName, poolName, teamName] as const,
+      ['ceph-snapshots', imageName, poolName, teamName] as const,
     clones: (snapshotName?: string, imageName?: string, poolName?: string, teamName?: string) =>
-      ['distributed-storage-clones', snapshotName, imageName, poolName, teamName] as const,
-    clusterMachines: (clusterName: string) =>
-      ['distributed-storage-cluster-machines', clusterName] as const,
+      ['ceph-clones', snapshotName, imageName, poolName, teamName] as const,
+    clusterMachines: (clusterName: string) => ['ceph-cluster-machines', clusterName] as const,
     machineAssignmentStatus: (machineName: string, teamName: string) =>
       ['machine-assignment-status', machineName, teamName] as const,
     availableMachinesForClone: (teamName: string) =>

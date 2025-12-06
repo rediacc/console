@@ -25,9 +25,9 @@ import { useLocalizedFunctions } from '@/services/functionsService';
 import { useRepos } from '@/api/queries/repos';
 import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
 import { MachineVaultStatusPanel } from '../MachineVaultStatusPanel';
-import { AssignToClusterModal } from '@/pages/distributedStorage/components/AssignToClusterModal';
-import { RemoveFromClusterModal } from '@/pages/distributedStorage/components/RemoveFromClusterModal';
-import { ViewAssignmentStatusModal } from '@/pages/distributedStorage/components/ViewAssignmentStatusModal';
+import { AssignToClusterModal } from '@/pages/ceph/components/AssignToClusterModal';
+import { RemoveFromClusterModal } from '@/pages/ceph/components/RemoveFromClusterModal';
+import { ViewAssignmentStatusModal } from '@/pages/ceph/components/ViewAssignmentStatusModal';
 import { featureFlags } from '@/config/featureFlags';
 import { getMachineRepos as coreGetMachineRepos } from '@/core';
 import type { DeployedRepo } from '@/core/services/machine';
@@ -57,7 +57,8 @@ import {
   GroupHeaderTag,
   StyledTag,
 } from './styles';
-import type { TagVariant } from './styles';
+// Local type for group variants - maps to preset prop
+type GroupVariant = 'repo' | 'bridge' | 'team' | 'region' | 'status' | 'grand';
 
 type GroupByMode = 'machine' | 'bridge' | 'team' | 'region' | 'repo' | 'status' | 'grand';
 
@@ -286,7 +287,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               onClick={() => setSelectedRowKeys([])}
               data-testid="machine-bulk-clear-selection"
               aria-label={t('common:actions.clearSelection')}
-            />
+            >
+              Clear
+            </Button>
           </Tooltip>
         </Space>
         <Space size="middle">
@@ -333,7 +336,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         <Space wrap size="small">
           <Tooltip title={t('machines:machine')}>
             <ViewToggleButton
-              type={groupBy === 'machine' ? 'primary' : 'default'}
+              variant={groupBy === 'machine' ? 'primary' : 'default'}
               icon={<DesktopOutlined />}
               onClick={() => setGroupBy('machine')}
               data-testid="machine-view-toggle-machine"
@@ -345,7 +348,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
           <Tooltip title={t('machines:groupByBridge')}>
             <ViewToggleButton
-              type={groupBy === 'bridge' ? 'primary' : 'default'}
+              variant={groupBy === 'bridge' ? 'primary' : 'default'}
               icon={<CloudServerOutlined />}
               onClick={() => setGroupBy('bridge')}
               data-testid="machine-view-toggle-bridge"
@@ -355,7 +358,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
           <Tooltip title={t('machines:groupByTeam')}>
             <ViewToggleButton
-              type={groupBy === 'team' ? 'primary' : 'default'}
+              variant={groupBy === 'team' ? 'primary' : 'default'}
               icon={<TeamOutlined />}
               onClick={() => setGroupBy('team')}
               data-testid="machine-view-toggle-team"
@@ -366,7 +369,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           {isExpertMode && (
             <Tooltip title={t('machines:groupByRegion')}>
               <ViewToggleButton
-                type={groupBy === 'region' ? 'primary' : 'default'}
+                variant={groupBy === 'region' ? 'primary' : 'default'}
                 icon={<GlobalOutlined />}
                 onClick={() => setGroupBy('region')}
                 data-testid="machine-view-toggle-region"
@@ -377,7 +380,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
           <Tooltip title={t('machines:groupByRepo')}>
             <ViewToggleButton
-              type={groupBy === 'repo' ? 'primary' : 'default'}
+              variant={groupBy === 'repo' ? 'primary' : 'default'}
               icon={<InboxOutlined />}
               onClick={() => setGroupBy('repo')}
               data-testid="machine-view-toggle-repo"
@@ -387,7 +390,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
           <Tooltip title={t('machines:groupByStatus')}>
             <ViewToggleButton
-              type={groupBy === 'status' ? 'primary' : 'default'}
+              variant={groupBy === 'status' ? 'primary' : 'default'}
               icon={<DashboardOutlined />}
               onClick={() => setGroupBy('status')}
               data-testid="machine-view-toggle-status"
@@ -397,7 +400,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
           <Tooltip title={t('machines:groupByGrand')}>
             <ViewToggleButton
-              type={groupBy === 'grand' ? 'primary' : 'default'}
+              variant={groupBy === 'grand' ? 'primary' : 'default'}
               icon={<BranchesOutlined />}
               onClick={() => setGroupBy('grand')}
               data-testid="machine-view-toggle-grand"
@@ -504,7 +507,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       return <EmptyState description={t('resources:repos.noRepos')} />;
     }
 
-    const variantMap: Record<GroupByMode, TagVariant> = {
+    const variantMap: Record<GroupByMode, GroupVariant> = {
       machine: 'repo',
       bridge: 'bridge',
       team: 'team',
@@ -514,7 +517,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       grand: 'grand',
     };
 
-    const indicatorColors: Record<TagVariant, string> = {
+    const indicatorColors: Record<GroupVariant, string> = {
       team: 'var(--color-success)',
       bridge: 'var(--color-primary)',
       region: 'var(--color-info)',
@@ -581,7 +584,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
                   <Tooltip title={t('machines:viewRepos')}>
                     <GroupRowActionButton
-                      type="primary"
+                      variant="primary"
                       icon={<RightOutlined />}
                       onClick={(e) => {
                         e.stopPropagation();

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { Form, Button, Typography, Alert, Tooltip, Modal } from 'antd';
+import { Form, Alert, Tooltip, Modal } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import {
   UserOutlined,
@@ -11,6 +11,7 @@ import {
   SafetyCertificateOutlined,
 } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import { RediaccText as Text } from '@/components/ui';
 import { loginSuccess } from '@/store/auth/authSlice';
 import { saveAuthData } from '@/utils/auth';
 import { hashPassword } from '@/utils/auth';
@@ -22,7 +23,6 @@ import VersionSelector from '@/pages/login/components/VersionSelector';
 import EndpointSelector from '@/pages/login/components/EndpointSelector';
 import logoBlack from '@/assets/logo_black.png';
 import logoWhite from '@/assets/logo_white.png';
-import { spacing } from '@/utils/styleConstants';
 import { ModalSize } from '@/types/modal';
 import { featureFlags } from '@/config/featureFlags';
 import {
@@ -46,6 +46,7 @@ import InsecureConnectionWarning from '@/components/common/InsecureConnectionWar
 import { isSecureContext } from '@/utils/secureContext';
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import type { ApiResponse, AuthLoginResult } from '@rediacc/shared/types';
+import { RediaccButton as Button } from '@/components/ui';
 import {
   LoginContainer,
   LogoContainer,
@@ -55,22 +56,18 @@ import {
   MasterPasswordFormItem,
   AdvancedOptionsContainer,
   AdvancedOptionsButton,
-  LoginButton,
   RegisterContainer,
   RegisterLink,
   SelectorsContainer,
   TFAModalTitle,
   TFACodeInput,
   TFAButtonContainer,
-  TFAVerifyButton,
   StyledInput,
   StyledPasswordInput,
   FullWidthStack,
   LargeGapFormItem,
   NoMarginFormItem,
 } from './styles';
-
-const { Text } = Typography;
 
 interface LoginForm {
   email: string;
@@ -481,7 +478,7 @@ const LoginPage: React.FC = () => {
     <>
       <SandboxWarning />
       <LoginContainer>
-        <FullWidthStack orientation="vertical" size={spacing('XL')}>
+        <FullWidthStack direction="vertical" gap="xl">
           <LogoContainer>
             <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Rediacc Logo" />
           </LogoContainer>
@@ -489,14 +486,11 @@ const LoginPage: React.FC = () => {
           {error && (
             <StyledAlert
               message={error}
-              type="error"
+              variant="error"
               showIcon
               closable
               onClose={() => setError(null)}
               data-testid="login-error-alert"
-              id="login-error-message"
-              role="alert"
-              aria-live="polite"
             />
           )}
 
@@ -524,7 +518,6 @@ const LoginPage: React.FC = () => {
                 id="login-email-input"
                 prefix={<UserOutlined />}
                 placeholder={t('auth:login.emailPlaceholder')}
-                size="large"
                 autoComplete="email"
                 data-testid="login-email-input"
                 aria-label={t('auth:login.email')}
@@ -544,7 +537,6 @@ const LoginPage: React.FC = () => {
                 id="login-password-input"
                 prefix={<LockOutlined />}
                 placeholder={t('auth:login.passwordPlaceholder')}
-                size="large"
                 autoComplete="current-password"
                 data-testid="login-password-input"
                 aria-label={t('auth:login.password')}
@@ -579,7 +571,6 @@ const LoginPage: React.FC = () => {
                     id="login-master-password-input"
                     prefix={<KeyOutlined />}
                     placeholder={t('auth:login.masterPasswordPlaceholder')}
-                    size="large"
                     autoComplete="off"
                     data-testid="login-master-password-input"
                     aria-label={t('auth:login.masterPassword')}
@@ -598,8 +589,8 @@ const LoginPage: React.FC = () => {
               ) && (
                 <AdvancedOptionsContainer>
                   <AdvancedOptionsButton
-                    type="text"
-                    size="small"
+                    variant="text"
+                    size="sm"
                     onClick={() => {
                       setShowAdvancedOptions(true);
                       setTimeout(() => {
@@ -620,23 +611,23 @@ const LoginPage: React.FC = () => {
                     : undefined
                 }
               >
-                <LoginButton
-                  type="primary"
+                <Button
+                  variant="primary"
                   htmlType="submit"
-                  size="large"
-                  block
+                  size="md"
+                  fullWidth
                   loading={loading}
                   disabled={!isConnectionSecure}
                   data-testid="login-submit-button"
                 >
                   {loading ? t('auth:login.signingIn') : t('auth:login.signIn')}
-                </LoginButton>
+                </Button>
               </Tooltip>
             </LargeGapFormItem>
           </Form>
 
           <RegisterContainer>
-            <Text type="secondary">
+            <Text color="secondary">
               {t('auth:login.noAccount')}{' '}
               <RegisterLink
                 onClick={() => setShowRegistration(true)}
@@ -682,7 +673,7 @@ const LoginPage: React.FC = () => {
         footer={null}
         className={ModalSize.Medium}
       >
-        <FullWidthStack orientation="vertical" size={spacing('MD')}>
+        <FullWidthStack direction="vertical" gap="md">
           <Alert
             message={t('login.twoFactorAuth.required')}
             description={t('login.twoFactorAuth.description')}
@@ -702,7 +693,7 @@ const LoginPage: React.FC = () => {
               ]}
             >
               <TFACodeInput
-                size="large"
+                size="middle"
                 placeholder={t('login.twoFactorAuth.codePlaceholder')}
                 value={twoFACode}
                 onChange={(e) => setTwoFACode(e.target.value)}
@@ -723,15 +714,15 @@ const LoginPage: React.FC = () => {
                 >
                   {t('common:general.cancel')}
                 </Button>
-                <TFAVerifyButton
-                  type="primary"
+                <Button
+                  variant="primary"
                   htmlType="submit"
                   loading={verifyTFAMutation.isPending}
                   disabled={twoFACode.length !== 6}
                   data-testid="tfa-verify-button"
                 >
                   {t('login.twoFactorAuth.verify')}
-                </TFAVerifyButton>
+                </Button>
               </TFAButtonContainer>
             </NoMarginFormItem>
           </Form>

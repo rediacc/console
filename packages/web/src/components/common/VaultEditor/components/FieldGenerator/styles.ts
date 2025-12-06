@@ -1,6 +1,7 @@
 import styled from 'styled-components';
-import { Radio, Button, Space } from 'antd';
 import { InlineStack } from '@/components/common/styled';
+import { RediaccButton, RediaccStack } from '@/components/ui';
+import { RediaccRadioGroup, RediaccRadioButton } from '@/components/ui/Form';
 
 export const PopoverContainer = styled.div`
   width: 400px;
@@ -14,14 +15,14 @@ export const OptionLabel = styled.label`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export const OptionGroup = styled(Radio.Group)`
+export const OptionGroup = styled(RediaccRadioGroup)`
   && {
     display: block;
     margin-top: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 
-export const OptionRadio = styled(Radio)`
+export const OptionRadio = styled(RediaccRadioButton)`
   && {
     display: block;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
@@ -56,7 +57,7 @@ export const ValueContent = styled.div`
   line-height: ${({ theme }) => theme.lineHeight.NORMAL};
 `;
 
-export const ActionRow = styled(Space)`
+export const ActionRow = styled(RediaccStack).attrs({ direction: 'horizontal' })`
   && {
     margin-top: ${({ theme }) => theme.spacing.MD}px;
     width: 100%;
@@ -64,15 +65,19 @@ export const ActionRow = styled(Space)`
   }
 `;
 
-export const ControlButton = styled(Button)`
+export const ControlButton = styled(RediaccButton).attrs({
+  size: 'sm',
+})`
   && {
     min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
 `;
 
-export const GeneratorButton = styled(Button)`
+export const GeneratorButton = styled(RediaccButton).attrs({
+  iconOnly: true,
+  size: 'sm',
+})`
   && {
     color: ${({ theme }) => theme.colors.primary};
     min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
@@ -83,14 +88,16 @@ export const GeneratorButton = styled(Button)`
 
 export const TitleStack = InlineStack;
 
-export const CopyButton = styled(Button)`
+export const CopyButton = styled(RediaccButton).attrs({
+  size: 'sm',
+})`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     font-size: ${({ theme }) => theme.fontSize.XS}px;
   }
 `;
 
-export const OptionsStack = styled(Space)`
+export const OptionsStack = styled(RediaccStack).attrs({ direction: 'vertical' })`
   && {
     width: 100%;
   }

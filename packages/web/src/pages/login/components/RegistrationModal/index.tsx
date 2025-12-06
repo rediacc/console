@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Form, Input, Alert, Checkbox } from 'antd';
+import { Form, Input, Alert } from 'antd';
+import { RediaccCheckbox as Checkbox } from '@/components/ui/Form';
 import {
   UserOutlined,
   LockOutlined,
@@ -16,6 +17,7 @@ import { apiConnectionService } from '@/services/apiConnectionService';
 import { Turnstile } from '@/pages/login/components/Turnstile';
 import { LanguageLink } from '@/pages/login/components/LanguageLink';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { RediaccButton as Button } from '@/components/ui';
 import {
   StyledModal,
   VerticalStack,
@@ -23,8 +25,6 @@ import {
   TermsRow,
   TermsField,
   CaptchaWrapper,
-  SubmitButton,
-  VerificationButton,
   CodeInput,
   SuccessContainer,
   SuccessIcon,
@@ -423,17 +423,16 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       </TermsRow>
 
       <FormField $noMargin>
-        <SubmitButton
-          type="primary"
+        <Button
           htmlType="submit"
-          block
-          size="large"
+          fullWidth
+          size="md"
           loading={loading}
           disabled={isCaptchaEnabled && !ciMode && !turnstileToken}
           data-testid="registration-submit-button"
         >
           {t('auth:registration.createAccount')}
-        </SubmitButton>
+        </Button>
       </FormField>
     </Form>
   );
@@ -446,7 +445,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       requiredMark={false}
       data-testid="registration-verification-form"
     >
-      <VerticalStack orientation="vertical">
+      <VerticalStack direction="vertical">
         <Alert
           message={t('auth:registration.verificationRequired')}
           description={t('auth:registration.verificationDescription')}
@@ -465,7 +464,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           ]}
         >
           <CodeInput
-            size="large"
+            size="md"
             placeholder={t('auth:registration.activationCodePlaceholder')}
             autoComplete="off"
             maxLength={6}
@@ -474,16 +473,15 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         </FormField>
 
         <FormField $noMargin>
-          <VerificationButton
-            type="primary"
+          <Button
             htmlType="submit"
-            block
-            size="large"
+            fullWidth
+            size="md"
             loading={loading}
             data-testid="registration-verify-button"
           >
             {t('auth:registration.verifyAccount')}
-          </VerificationButton>
+          </Button>
         </FormField>
       </VerticalStack>
     </Form>
@@ -497,7 +495,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       <SuccessTitle data-testid="registration-success-title">
         {t('auth:registration.successTitle')}
       </SuccessTitle>
-      <SuccessDescription type="secondary" data-testid="registration-success-description">
+      <SuccessDescription color="secondary" data-testid="registration-success-description">
         {t('auth:registration.successDescription')}
       </SuccessDescription>
     </SuccessContainer>
@@ -522,10 +520,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       open={open}
       onCancel={handleClose}
       footer={null}
-      destroyOnHidden
+      destroyOnClose
       data-testid="registration-modal"
     >
-      <VerticalStack orientation="vertical">
+      <VerticalStack direction="vertical">
         <StepsWrapper
           current={currentStep}
           size="small"

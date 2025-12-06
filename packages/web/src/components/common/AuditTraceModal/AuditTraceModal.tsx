@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Tag, Typography, Space, Alert, Button, Dropdown, message } from 'antd';
+import { Table, Tag, Typography, Space, Button, Dropdown, message } from 'antd';
 import {
   PlusCircleOutlined,
   EditOutlined,
@@ -23,7 +23,7 @@ import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit';
 import { formatTimestampAsIs } from '@/core';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { CaptionText } from '@/styles/primitives';
+import { RediaccText as Text, RediaccAlert as Alert } from '@/components/ui';
 import {
   StyledModal,
   SummaryContainer,
@@ -36,7 +36,7 @@ import { createSorter, createDateSorter } from '@/core';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { IconWrapper } from '@/components/ui';
 
-const { Text } = Typography;
+const { Text: AntText } = Typography;
 
 export interface AuditTraceModalProps {
   open: boolean;
@@ -267,44 +267,15 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       width: 200,
       sorter: createDateSorter<AuditTraceRecord>('timestamp'),
       render: (timestamp: string, record: AuditTraceRecord, index: number) => (
-        <Space orientation="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
-          <Text>{formatTimestampAsIs(timestamp, 'datetime')}</Text>
-          <CaptionText $muted>{record.timeAgo}</CaptionText>
+        <Space direction="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
+          <AntText>{formatTimestampAsIs(timestamp, 'datetime')}</AntText>
+          <Text variant="caption" muted>
+            {record.timeAgo}
+          </Text>
         </Space>
       ),
     },
   ];
-
-  // Alternative timeline view (commented out for now, may be used in future)
-  // const renderTimelineView = () => {
-  //   if (!data?.records || data.records.length === 0) {
-  //     return <Empty description={t('audit.noRecords')} data-testid="audit-trace-empty-state" />
-  //   }
-  //
-  //   return (
-  //     <Timeline mode="left" data-testid="audit-trace-timeline">
-  //       {data.records.map((record, index) => (
-  //         <Timeline.Item
-  //           key={index}
-  //           dot={getIcon(record.iconHint)}
-  //           color={getActionColor(record.actionType)}
-  //           data-testid={`audit-trace-timeline-item-${index}`}
-  //         >
-  //           <Space orientation="vertical" size={0}>
-  //             <Space>
-  //               <Text strong>{record.actionType}</Text>
-  //               <Text type="secondary">{record.timeAgo}</Text>
-  //             </Space>
-  //             <Paragraph style={{ margin: 0 }}>{record.details}</Paragraph>
-  //             <Text type="secondary" style={{ fontSize: 12 }}>
-  //               {t('audit.by')} {record.performedBy || t('audit.system')}
-  //             </Text>
-  //           </Space>
-  //         </Timeline.Item>
-  //       ))}
-  //     </Timeline>
-  //   )
-  // }
 
   return (
     <StyledModal
@@ -318,7 +289,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       onCancel={onCancel}
       width={DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_XL}
       footer={null}
-      destroyOnHidden
+      destroyOnClose
       data-testid="audit-trace-modal"
     >
       {isLoading ? (
@@ -336,7 +307,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
         <Alert
           message={t('audit.error')}
           description={error instanceof Error ? error.message : t('audit.errorLoading')}
-          type="error"
+          variant="error"
           showIcon
           data-testid="audit-trace-error-alert"
         />
@@ -348,17 +319,19 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
               <SummaryRow>
                 <SummaryStats>
                   <StatItem data-testid="audit-trace-total-records">
-                    <Text type="secondary">{t('audit.totalRecords')}</Text>
+                    <AntText color="secondary">{t('audit.totalRecords')}</AntText>
                     <StatValue>{data.summary.totalAuditRecords}</StatValue>
                   </StatItem>
                   <StatItem data-testid="audit-trace-visible-records">
-                    <Text type="secondary">{t('audit.visibleRecords')}</Text>
+                    <AntText color="secondary">{t('audit.visibleRecords')}</AntText>
                     <StatValue>{data.summary.visibleAuditRecords}</StatValue>
                   </StatItem>
                   {data.summary.lastActivity && (
                     <StatItem data-testid="audit-trace-last-activity">
-                      <Text type="secondary">{t('audit.lastActivity')}</Text>
-                      <Text strong>{new Date(data.summary.lastActivity).toLocaleDateString()}</Text>
+                      <AntText color="secondary">{t('audit.lastActivity')}</AntText>
+                      <AntText strong>
+                        {new Date(data.summary.lastActivity).toLocaleDateString()}
+                      </AntText>
                     </StatItem>
                   )}
                 </SummaryStats>

@@ -68,7 +68,7 @@
   "deleteWarning": "Êtes-vous sûr de vouloir supprimer la machine \"{{name}}\" ? Cette action ne peut pas être annulée.",
   "description": "Description (facultatif)",
   "descriptionPlaceholder": "Ajouter une description personnalisée pour cet élément de file d'attente",
-  "distributedStorageCluster": "Stockage distribué",
+  "cephCluster": "Stockage distribué",
   "editMachine": "Modifier l'appareil",
   "experimental": "expérimentale",
   "failed": "Échoué",

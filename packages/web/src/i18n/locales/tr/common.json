@@ -104,7 +104,7 @@
     "audit": "Denetim",
     "credentials": "Kimlik Bilgileri",
     "dashboard": "Gösterge Tablosu",
-    "distributedStorage": "Dağıtılmış Depolama",
+    "ceph": "Dağıtılmış Depolama",
     "logout": "Oturumu Kapat",
     "machines": "Makineler",
     "mainNavigation": "Ana navigasyon",
@@ -120,9 +120,9 @@
     "storage": "Depolama",
     "storageCloud": "Bulut",
     "storageDistributed": "Dağıtılmış",
-    "distributedStorageClusters": "Kümeler",
-    "distributedStoragePools": "Havuzlar",
-    "distributedStorageMachines": "Makineler"
+    "cephClusters": "Kümeler",
+    "cephPools": "Havuzlar",
+    "cephMachines": "Makineler"
   },
   "nestedObjectEditor": {
     "Active": "Aktif",

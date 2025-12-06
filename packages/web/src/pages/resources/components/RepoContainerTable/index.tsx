@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { Alert, Space, Typography } from 'antd';
+import { Alert, Space } from 'antd';
 
 import type { MenuProps } from 'antd';
 
@@ -59,9 +59,7 @@ import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
-import { CaptionText } from '@/styles/primitives';
-
-const { Text } = Typography;
+import { RediaccText as Text } from '@/components/ui';
 
 interface PortMapping {
   host: string;
@@ -396,7 +394,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
 
       repoGuid: repoData?.repoGuid,
 
-      repoVault: grandRepoVault,
+      vaultContent: grandRepoVault,
 
       repoNetworkId: repoData?.repoNetworkId,
 
@@ -545,7 +543,11 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         <Space>
           {stateColumn.render?.(state, record, index) as React.ReactNode}
 
-          {record.status && <CaptionText $muted>{record.status}</CaptionText>}
+          {record.status && (
+            <Text variant="caption" muted>
+              {record.status}
+            </Text>
+          )}
         </Space>
       ),
     },
@@ -565,21 +567,21 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
 
       render: (_: unknown, record: Container) => {
         if (!record.port_mappings || record.port_mappings.length === 0) {
-          return <Text type="secondary">-</Text>;
+          return <Text color="secondary">-</Text>;
         }
 
         return (
-          <Space orientation="vertical" size={0}>
+          <Space direction="vertical" size={4}>
             {record.port_mappings.slice(0, 2).map((pm, idx) => (
-              <CaptionText key={idx}>
+              <Text key={idx} variant="caption">
                 {pm.host_port}:{pm.container_port}/{pm.protocol}
-              </CaptionText>
+              </Text>
             ))}
 
             {record.port_mappings.length > 2 && (
-              <CaptionText $muted $size={11}>
+              <Text variant="caption" muted size="xs">
                 +{record.port_mappings.length - 2} more
-              </CaptionText>
+              </Text>
             )}
           </Space>
         );
@@ -769,7 +771,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         </S.ContainersSection>
       ) : (
         <S.EmptyState data-testid="no-containers">
-          <Text type="secondary">{t('resources:containers.noContainers')}</Text>
+          <Text color="secondary">{t('resources:containers.noContainers')}</Text>
         </S.EmptyState>
       )}
 

@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import {
   Space,
-  Typography,
   DatePicker,
   Select,
   Table,
@@ -14,6 +13,7 @@ import {
   Alert,
   Tooltip,
 } from 'antd';
+import { RediaccText as Text } from '@/components/ui';
 import {
   ReloadOutlined,
   SearchOutlined,
@@ -42,7 +42,8 @@ import {
   downloadJSON,
   generateTimestampedFilename,
 } from '@/core';
-import { FilterCard, TableCard, CompactButton } from '@/styles/primitives';
+import { PageCard } from '@/styles/primitives';
+import { RediaccButton as Button } from '@/components/ui';
 import {
   PageWrapper,
   ContentStack,
@@ -55,7 +56,6 @@ import {
 } from './styles';
 import { buildAuditColumns } from './columns';
 
-const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const AuditPage = () => {
@@ -193,8 +193,8 @@ const AuditPage = () => {
     <PageWrapper>
       <ContentStack>
         {/* Filters */}
-        <FilterCard data-testid="audit-filter-card">
-          <Space orientation="vertical" size="large">
+        <PageCard data-testid="audit-filter-card">
+          <Space direction="vertical" size="large">
             <Row gutter={[24, 16]}>
               <Col xs={24} sm={24} md={8}>
                 <FilterField>
@@ -315,7 +315,7 @@ const AuditPage = () => {
               </Col>
             </Row>
           </Space>
-        </FilterCard>
+        </PageCard>
 
         {/* Error Display */}
         {isError && (
@@ -326,15 +326,15 @@ const AuditPage = () => {
             closable
             showIcon
             action={
-              <CompactButton size="small" onClick={() => refetch()} loading={isLoading}>
+              <Button size="sm" onClick={() => refetch()} loading={isLoading}>
                 {t('system:audit.errors.tryAgain')}
-              </CompactButton>
+              </Button>
             }
           />
         )}
 
         {/* Audit Logs Table */}
-        <TableCard data-testid="audit-table-card">
+        <PageCard data-testid="audit-table-card">
           <Table
             data-testid="audit-table"
             columns={columns}
@@ -358,8 +358,8 @@ const AuditPage = () => {
               emptyText: (
                 <Empty
                   description={
-                    <Space orientation="vertical" align="center">
-                      <Text type="secondary">
+                    <Space direction="vertical" align="center">
+                      <Text color="secondary">
                         {isError
                           ? t('system:audit.errors.unableToLoad')
                           : filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0
@@ -377,7 +377,7 @@ const AuditPage = () => {
               ),
             }}
           />
-        </TableCard>
+        </PageCard>
       </ContentStack>
     </PageWrapper>
   );

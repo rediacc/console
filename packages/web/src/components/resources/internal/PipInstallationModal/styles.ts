@@ -1,13 +1,13 @@
 import styled from 'styled-components';
-import { Typography, Button, Space } from 'antd';
-
-const { Text } = Typography;
+import { RediaccButton } from '@/components/ui/Button';
+import { RediaccText } from '@/components/ui/Text';
+import { RediaccStack } from '@/components/ui';
 
 export const CommandContainer = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const CommandDescription = styled(Text)`
+export const CommandDescription = styled(RediaccText)`
   display: block;
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
 `;
@@ -22,7 +22,10 @@ export const CommandBox = styled.div`
   justify-content: space-between;
 `;
 
-export const CommandCode = styled(Text)<{ $isComment?: boolean; $isCommand?: boolean }>`
+export const CommandCode = styled(RediaccText).attrs({ size: 'sm' })<{
+  $isComment?: boolean;
+  $isCommand?: boolean;
+}>`
   && {
     background: transparent;
     border: none;
@@ -33,15 +36,14 @@ export const CommandCode = styled(Text)<{ $isComment?: boolean; $isCommand?: boo
           ? theme.colors.primary
           : theme.colors.textPrimary};
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
 `;
 
-export const CopyButton = styled(Button)`
+export const CopyButton = styled(RediaccButton).attrs({ size: 'sm' })`
   margin-left: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const ContentSpace = styled(Space)`
+export const ContentSpace = styled(RediaccStack).attrs({ direction: 'vertical' })`
   width: 100%;
 `;
 

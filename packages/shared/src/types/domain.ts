@@ -17,7 +17,7 @@ export interface Machine {
   vaultContent?: string;
   vaultStatus?: string;
   vaultStatusTime?: string;
-  distributedStorageClusterName?: string;
+  cephClusterName?: string;
   assignmentStatus?: MachineAssignmentStatus;
 }
 
@@ -27,7 +27,6 @@ export interface Repo {
   teamName: string;
   vaultVersion: number;
   vaultContent?: string;
-  repoVault?: string;
   grandGuid?: string;
   parentGuid?: string;
   repoTag?: string;
@@ -90,38 +89,37 @@ export interface Storage {
   vaultContent?: string;
 }
 
-export interface DistributedStorageCluster {
+export interface CephCluster {
   clusterName: string;
   teamName?: string;
   vaultVersion: number;
   assignedMachineCount?: number;
   poolCount?: number;
-  clusterVault?: string;
+  vaultContent?: string;
 }
 
-export interface DistributedStoragePool {
+export interface CephPool {
   poolName: string;
   clusterName: string;
   teamName: string;
   vaultVersion?: number;
   rbdImageCount?: number;
-  poolVault?: string;
+  vaultContent?: string;
   poolGuid?: string;
 }
 
-export interface DistributedStorageRbdImage {
+export interface CephRbdImage {
   imageName: string;
   poolName: string;
   teamName: string;
   clusterName: string;
   machineName?: string;
   snapshotCount?: number;
-  imageVault?: string;
   imageGuid?: string;
   vaultContent?: string;
 }
 
-export interface DistributedStorageRbdSnapshot {
+export interface CephRbdSnapshot {
   snapshotName: string;
   imageName: string;
   poolName: string;
@@ -129,12 +127,11 @@ export interface DistributedStorageRbdSnapshot {
   clusterName: string;
   createdDate?: string;
   cloneCount?: number;
-  snapshotVault?: string;
   snapshotGuid?: string;
   vaultContent?: string;
 }
 
-export interface DistributedStorageRbdClone {
+export interface CephRbdClone {
   cloneName: string;
   snapshotName: string;
   imageName: string;
@@ -142,11 +139,10 @@ export interface DistributedStorageRbdClone {
   teamName: string;
   clusterName: string;
   snapshotCreatedDate?: string;
-  cloneVault?: string;
   vaultContent?: string;
 }
 
-export interface DistributedStorageMachineAssignmentStatus {
+export interface CephMachineAssignmentStatus {
   machineName: string;
   teamName: string;
   assignmentType: string;
@@ -154,7 +150,7 @@ export interface DistributedStorageMachineAssignmentStatus {
   status: string;
 }
 
-export interface DistributedStorageAvailableMachine {
+export interface CephAvailableMachine {
   machineName: string;
   status: string;
   description: string;
@@ -162,13 +158,13 @@ export interface DistributedStorageAvailableMachine {
   regionName?: string;
 }
 
-export interface DistributedStorageCloneMachine {
+export interface CephCloneMachine {
   machineName: string;
   bridgeName: string;
   assignmentId: number;
 }
 
-export interface DistributedStorageMachineAssignmentValidation {
+export interface CephMachineAssignmentValidation {
   machineName: string;
   isValid: boolean;
   error?: string;
@@ -279,7 +275,7 @@ export interface CompanyQueueStats {
   machineIssues?: QueueMachineIssue[];
 }
 
-export interface DistributedStorageTeamBreakdown {
+export interface CephTeamBreakdown {
   teamName: string;
   totalMachines: number;
   availableMachines: number;
@@ -288,7 +284,7 @@ export interface DistributedStorageTeamBreakdown {
   cloneMachines: number;
 }
 
-export interface CompanyDistributedStorageStats {
+export interface CompanyCephStats {
   total_machines: number;
   available_machines: number;
   cluster_assigned_machines: number;
@@ -302,7 +298,7 @@ export interface CompanyDistributedStorageStats {
   total_clusters?: number;
   active_clusters?: number;
   avg_machines_per_cluster?: number;
-  team_breakdown: DistributedStorageTeamBreakdown[];
+  team_breakdown: CephTeamBreakdown[];
 }
 
 export interface CompanyDashboardData {
@@ -313,7 +309,7 @@ export interface CompanyDashboardData {
   featureAccess: CompanyFeatureAccess | null;
   planLimits: CompanyPlanLimits | null;
   queueStats?: CompanyQueueStats;
-  distributedStorageStats?: CompanyDistributedStorageStats;
+  cephStats?: CompanyCephStats;
   allActiveSubscriptions?: CompanySubscriptionDetail[];
 }
 

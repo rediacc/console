@@ -1,9 +1,7 @@
 import styled from 'styled-components';
-import { Button, Typography } from 'antd';
 import { FlexRow } from '@/styles/primitives';
 import { InlineStack, FlexBetween } from '@/components/common/styled';
-
-const { Text } = Typography;
+import { RediaccText, RediaccButton } from '@/components/ui';
 
 export const NotificationDropdown = styled.div`
   background-color: var(--color-bg-primary);
@@ -20,7 +18,7 @@ export const NotificationHeader = styled(FlexBetween)`
   background-color: var(--color-bg-secondary);
 `;
 
-export const NotificationTitle = styled(Text)`
+export const NotificationTitle = styled(RediaccText)`
   font-size: ${({ theme }) => theme.fontSize.LG}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
 `;
@@ -100,7 +98,7 @@ export const NotificationTitleContent = styled(InlineStack)`
   flex: 1;
 `;
 
-export const NotificationText = styled(Text)<{ $isRead: boolean }>`
+export const NotificationText = styled(RediaccText)<{ $isRead: boolean }>`
   font-weight: ${({ theme, $isRead }) =>
     $isRead ? theme.fontWeight.NORMAL : theme.fontWeight.SEMIBOLD};
 `;
@@ -109,12 +107,12 @@ export const NotificationTag = styled.span`
   margin-left: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const NotificationCloseButton = styled(Button)`
+export const NotificationCloseButton = styled(RediaccButton)`
   margin-left: auto;
   flex-shrink: 0;
 `;
 
-export const NotificationMessage = styled(Text)`
+export const NotificationMessage = styled(RediaccText)`
   display: block;
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
   word-break: break-word;
@@ -122,7 +120,7 @@ export const NotificationMessage = styled(Text)`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export const NotificationTimestamp = styled(Text)`
+export const NotificationTimestamp = styled(RediaccText)`
   font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
@@ -131,7 +129,7 @@ export const EmptyWrapper = styled.div`
   padding: ${({ theme }) => `${theme.spacing.XXL}px 0`};
 `;
 
-export const BellButton = styled(Button)`
+export const BellButton = styled(RediaccButton)`
   &:hover {
     background-color: var(--color-bg-tertiary);
     color: var(--color-primary);

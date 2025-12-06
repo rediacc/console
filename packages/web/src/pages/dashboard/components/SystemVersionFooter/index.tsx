@@ -58,7 +58,7 @@ const SystemVersionFooter: React.FC = () => {
         <VersionValue data-testid="api-version">{apiVersion}</VersionValue>
         <EnvironmentTag
           $isProduction={isProduction}
-          color={isProduction ? 'green' : 'orange'}
+          variant={isProduction ? 'success' : 'warning'}
           data-testid="environment-tag"
         >
           {environment}

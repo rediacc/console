@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Row, Col, Progress } from 'antd';
+import { Row, Col, Progress, Tooltip } from 'antd';
 import type { ListProps } from 'antd';
 import {
   DoubleRightOutlined,
@@ -23,16 +23,16 @@ import { calculateResourcePercent } from '@/core';
 import { parseVaultStatus } from '@/core/services/machine';
 import { abbreviatePath } from '@/utils/pathUtils';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { DistributedStorageSection } from '../DistributedStorageSection';
+import { CephSection } from '../CephSection';
 import { featureFlags } from '@/config/featureFlags';
 import { useTraceModal } from '@/hooks/useDialogState';
 import {
   PanelWrapper,
-  StickyHeader,
+  Header,
   HeaderRow,
-  HeaderTitleGroup,
+  TitleGroup,
   HeaderIcon,
-  MachineName,
+  PanelTitle,
   CollapseButton,
   TagRow,
   StyledTag,
@@ -44,16 +44,16 @@ import {
   SectionDivider,
   SectionHeader,
   SectionTitle,
+  SubduedText,
   IconWrapper,
   SectionBlock,
   InfoCard,
   FullWidthStack,
-  InlineField,
+  FieldRow,
   FieldLabel,
   FieldValue,
   FieldValueMonospace,
   FieldValueStrong,
-  SecondaryText,
   MetricCard,
   CardHeader,
   CardTitle,
@@ -174,7 +174,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
   onClose,
   splitView = false,
 }) => {
-  const { t } = useTranslation(['machines', 'resources', 'common', 'distributedStorage']);
+  const { t } = useTranslation(['machines', 'resources', 'common', 'ceph']);
   const auditTrace = useTraceModal();
 
   const vaultData = useMemo<VaultData | null>(() => {
@@ -222,16 +222,16 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
   return (
     <>
       <PanelWrapper $splitView={splitView} $visible={visible}>
-        <StickyHeader data-testid="vault-status-header">
+        <Header data-testid="vault-status-header">
           <HeaderRow>
-            <HeaderTitleGroup>
+            <TitleGroup>
               <HeaderIcon />
-              <MachineName level={4} data-testid="vault-status-machine-name">
+              <PanelTitle level={4} data-testid="vault-status-machine-name">
                 {machine.machineName}
-              </MachineName>
-            </HeaderTitleGroup>
+              </PanelTitle>
+            </TitleGroup>
             <CollapseButton
-              type="text"
+              variant="text"
               icon={<DoubleRightOutlined />}
               onClick={handleClose}
               data-testid="vault-status-collapse"
@@ -273,15 +273,15 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
           {machine.vaultStatusTime && (
             <TimestampWrapper>
-              <Timestamp
-                title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}
-                data-testid="vault-status-last-updated"
-              >
-                {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
-              </Timestamp>
+              <Tooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
+                <Timestamp data-testid="vault-status-last-updated">
+                  {t('machines:lastUpdated')}:{' '}
+                  {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
+                </Timestamp>
+              </Tooltip>
             </TimestampWrapper>
           )}
-        </StickyHeader>
+        </Header>
 
         <ContentWrapper data-testid="vault-status-content">
           {!vaultData ? (
@@ -307,9 +307,9 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                 <SystemContainersSection containers={vaultData.system_containers} t={t} />
               )}
 
-              {featureFlags.isEnabled('distributedStorage') && machine && (
+              {featureFlags.isEnabled('ceph') && machine && (
                 <SectionBlock data-testid="vault-status-distributed-storage">
-                  <DistributedStorageSection
+                  <CephSection
                     machine={machine}
                     onViewDetails={() =>
                       auditTrace.open({
@@ -356,36 +356,36 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
       </SectionTitle>
     </SectionHeader>
 
-    <InfoCard size="small" data-testid="vault-status-system-info-card">
+    <InfoCard size="sm" data-testid="vault-status-system-info-card">
       <FullWidthStack>
-        <InlineField>
+        <FieldRow>
           <FieldLabel>{t('resources:repos.hostname')}:</FieldLabel>
           <FieldValue data-testid="vault-status-hostname">{system.hostname}</FieldValue>
-        </InlineField>
-        <InlineField>
+        </FieldRow>
+        <FieldRow>
           <FieldLabel>{t('resources:repos.uptime')}:</FieldLabel>
           <FieldValue data-testid="vault-status-uptime">{system.uptime}</FieldValue>
-        </InlineField>
-        <InlineField>
+        </FieldRow>
+        <FieldRow>
           <FieldLabel>{t('resources:repos.osName')}:</FieldLabel>
           <FieldValue data-testid="vault-status-os-name">{system.os_name}</FieldValue>
-        </InlineField>
-        <InlineField>
+        </FieldRow>
+        <FieldRow>
           <FieldLabel>{t('resources:repos.kernel')}:</FieldLabel>
           <FieldValue data-testid="vault-status-kernel">{system.kernel}</FieldValue>
-        </InlineField>
-        <InlineField>
+        </FieldRow>
+        <FieldRow>
           <FieldLabel>{t('resources:repos.cpu')}:</FieldLabel>
           <FieldValue data-testid="vault-status-cpu">
             {system.cpu_count} × {system.cpu_model}
           </FieldValue>
-        </InlineField>
-        <InlineField>
+        </FieldRow>
+        <FieldRow>
           <FieldLabel>{t('resources:repos.systemTime')}:</FieldLabel>
           <FieldValue data-testid="vault-status-system-time">
             {system.system_time_human} ({system.timezone})
           </FieldValue>
-        </InlineField>
+        </FieldRow>
       </FullWidthStack>
     </InfoCard>
   </SectionBlock>
@@ -414,7 +414,7 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
 
       <Row gutter={[16, 16]}>
         <Col span={24} lg={8}>
-          <MetricCard size="small" data-testid="vault-status-memory-card">
+          <MetricCard size="sm" data-testid="vault-status-memory-card">
             <CardHeader>
               <IconWrapper $color="var(--color-info)">
                 <DatabaseOutlined />
@@ -422,17 +422,17 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               <CardTitle level={5}>{t('resources:repos.memory')}</CardTitle>
             </CardHeader>
             <Progress percent={Math.round(memoryPercent)} strokeColor="var(--color-info)" />
-            <SecondaryText>
+            <SubduedText>
               {t('resources:repos.used')}: {system.memory.used} / {system.memory.total}
-            </SecondaryText>
-            <SecondaryText>
+            </SubduedText>
+            <SubduedText>
               {t('resources:repos.available')}: {system.memory.available}
-            </SecondaryText>
+            </SubduedText>
           </MetricCard>
         </Col>
 
         <Col span={24} lg={8}>
-          <MetricCard size="small" data-testid="vault-status-disk-card">
+          <MetricCard size="sm" data-testid="vault-status-disk-card">
             <CardHeader>
               <IconWrapper $color="var(--color-warning)">
                 <HddOutlined />
@@ -440,17 +440,17 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               <CardTitle level={5}>{t('resources:repos.disk')}</CardTitle>
             </CardHeader>
             <Progress percent={diskPercent} strokeColor={diskStroke} />
-            <SecondaryText>
+            <SubduedText>
               {t('resources:repos.used')}: {system.disk.used} / {system.disk.total}
-            </SecondaryText>
-            <SecondaryText>
+            </SubduedText>
+            <SubduedText>
               {t('resources:repos.available')}: {system.disk.available}
-            </SecondaryText>
+            </SubduedText>
           </MetricCard>
         </Col>
 
         <Col span={24} lg={8}>
-          <MetricCard size="small" data-testid="vault-status-datastore-card">
+          <MetricCard size="sm" data-testid="vault-status-datastore-card">
             <CardHeader>
               <IconWrapper $color="var(--color-success)">
                 <DatabaseOutlined />
@@ -458,20 +458,20 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               <CardTitle level={5}>{t('resources:repos.datastore')}</CardTitle>
             </CardHeader>
             {system.datastore.path && (
-              <InlineField>
+              <FieldRow>
                 <FieldLabel>{t('common:general.path')}:</FieldLabel>
                 <FieldValueMonospace copyable={{ text: system.datastore.path }}>
                   {abbreviatePath(system.datastore.path, 40)}
                 </FieldValueMonospace>
-              </InlineField>
+              </FieldRow>
             )}
             <Progress percent={datastorePercent} strokeColor={datastoreStroke} />
-            <SecondaryText>
+            <SubduedText>
               {t('resources:repos.used')}: {system.datastore.used} / {system.datastore.total}
-            </SecondaryText>
-            <SecondaryText>
+            </SubduedText>
+            <SubduedText>
               {t('resources:repos.available')}: {system.datastore.available}
-            </SecondaryText>
+            </SubduedText>
           </MetricCard>
         </Col>
       </Row>
@@ -498,19 +498,19 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
       </SectionDivider>
 
       {network.default_gateway && (
-        <InfoCard size="small" data-testid="vault-status-gateway-card">
+        <InfoCard size="sm" data-testid="vault-status-gateway-card">
           <FullWidthStack>
-            <InlineField>
+            <FieldRow>
               <FieldLabel>{t('resources:repos.defaultGateway')}:</FieldLabel>
               <FieldValue data-testid="vault-status-gateway">{network.default_gateway}</FieldValue>
-            </InlineField>
+            </FieldRow>
             {network.default_interface && (
-              <InlineField>
+              <FieldRow>
                 <FieldLabel>{t('resources:repos.defaultInterface')}:</FieldLabel>
                 <FieldValue data-testid="vault-status-interface">
                   {network.default_interface}
                 </FieldValue>
-              </InlineField>
+              </FieldRow>
             )}
           </FullWidthStack>
         </InfoCard>
@@ -521,16 +521,16 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
         data-testid="vault-status-network-list"
         renderItem={
           ((iface: NetworkInterface) => (
-            <ListCard size="small" data-testid={`vault-status-network-${iface.name}`}>
+            <ListCard size="sm" data-testid={`vault-status-network-${iface.name}`}>
               <CardHeader>
-                <HeaderTitleGroup>
+                <TitleGroup>
                   <IconWrapper $color="var(--color-info)">
                     <CompassOutlined />
                   </IconWrapper>
                   <FieldValueStrong data-testid={`vault-status-network-name-${iface.name}`}>
                     {iface.name}
                   </FieldValueStrong>
-                </HeaderTitleGroup>
+                </TitleGroup>
                 <StatusTag
                   $tone={iface.state === 'UP' ? 'success' : 'default'}
                   data-testid={`vault-status-network-state-${iface.name}`}
@@ -590,16 +590,16 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
       data-testid="vault-status-block-devices-list"
       renderItem={
         ((device: BlockDevice) => (
-          <ListCard size="small" data-testid={`vault-status-block-device-${device.name}`}>
+          <ListCard size="sm" data-testid={`vault-status-block-device-${device.name}`}>
             <CardHeader>
-              <HeaderTitleGroup>
+              <TitleGroup>
                 <IconWrapper $color="var(--color-warning)">
                   <HddOutlined />
                 </IconWrapper>
                 <FieldValueStrong data-testid={`vault-status-device-path-${device.name}`}>
                   {device.path}
                 </FieldValueStrong>
-              </HeaderTitleGroup>
+              </TitleGroup>
               <CardTagGroup>
                 <StatusTag data-testid={`vault-status-device-type-${device.name}`}>
                   {device.type}
@@ -625,11 +625,11 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
                     {device.partitions.map((part: BlockDevicePartition) => (
                       <PartitionRow key={`${device.name}-${part.name}`}>
                         <CodeOutlined />
-                        <SecondaryText as="span">
+                        <SubduedText as="span">
                           {part.name}: {part.size_human}
                           {part.filesystem && ` (${part.filesystem})`}
                           {part.mountpoint && ` • ${part.mountpoint}`}
-                        </SecondaryText>
+                        </SubduedText>
                       </PartitionRow>
                     ))}
                   </IndentedBlock>
@@ -661,16 +661,16 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
       data-testid="vault-status-containers-list"
       renderItem={
         ((container: Container) => (
-          <ListCard size="small" data-testid={`vault-status-container-${container.id}`}>
+          <ListCard size="sm" data-testid={`vault-status-container-${container.id}`}>
             <CardHeader>
-              <HeaderTitleGroup>
+              <TitleGroup>
                 <IconWrapper $color="var(--color-secondary)">
                   <ContainerOutlined />
                 </IconWrapper>
                 <FieldValueStrong data-testid={`vault-status-container-name-${container.id}`}>
                   {container.name}
                 </FieldValueStrong>
-              </HeaderTitleGroup>
+              </TitleGroup>
               <StatusTag
                 $tone={container.state === 'running' ? 'success' : 'default'}
                 data-testid={`vault-status-container-state-${container.id}`}
@@ -680,7 +680,7 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
             </CardHeader>
 
             <CardBodyStack>
-              {container.image && <SecondaryText ellipsis>{container.image}</SecondaryText>}
+              {container.image && <SubduedText ellipsis>{container.image}</SubduedText>}
               {container.cpu_percent && (
                 <KeyValueRow>
                   <FieldLabel>CPU:</FieldLabel>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Dropdown, Button, List, Empty, Space, Tag } from 'antd';
+import { Badge, Dropdown, List, Empty, Space, Tag } from 'antd';
 import {
   BellOutlined,
   CloseOutlined,
@@ -39,6 +39,7 @@ import {
   EmptyWrapper,
   BellButton,
 } from './styles';
+import { RediaccButton } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -112,27 +113,27 @@ const NotificationBell: React.FC = () => {
   const dropdownContent = (
     <NotificationDropdown className="notification-dropdown" data-testid="notification-dropdown">
       <NotificationHeader>
-        <NotificationTitle strong>{t('notifications.title', 'Notifications')}</NotificationTitle>
+        <NotificationTitle>{t('notifications.title', 'Notifications')}</NotificationTitle>
         {notifications.length > 0 && (
           <Space>
-            <Button
-              type="link"
-              size="small"
+            <RediaccButton
+              size="sm"
               onClick={handleMarkAllAsRead}
               disabled={unreadCount === 0}
               data-testid="notification-mark-all-read"
+              style={{ padding: '0 8px', fontSize: '13px' }}
             >
               {t('notifications.markAllRead', 'Mark all as read')}
-            </Button>
-            <Button
-              type="link"
-              size="small"
-              danger
+            </RediaccButton>
+            <RediaccButton
+              size="sm"
+              variant="danger"
               onClick={handleClearAll}
               data-testid="notification-clear-all"
+              style={{ padding: '0 8px', fontSize: '13px' }}
             >
               {t('notifications.clearAll', 'Clear all')}
-            </Button>
+            </RediaccButton>
           </Space>
         )}
       </NotificationHeader>
@@ -167,11 +168,12 @@ const NotificationBell: React.FC = () => {
                         {getIcon(notification.type)}
                       </NotificationTitleContent>
                       <NotificationCloseButton
-                        type="text"
-                        size="small"
+                        size="sm"
+                        iconOnly
                         icon={<CloseOutlined />}
                         onClick={(e) => handleClear(notification.id, e)}
                         data-testid={`notification-close-${index}`}
+                        aria-label="Close notification"
                       />
                     </NotificationTitleRow>
                   }
@@ -180,7 +182,7 @@ const NotificationBell: React.FC = () => {
                       <NotificationMessage className="notification-message">
                         {notification.message}
                       </NotificationMessage>
-                      <NotificationTimestamp type="secondary">
+                      <NotificationTimestamp>
                         {dayjs(notification.timestamp).fromNow()}
                       </NotificationTimestamp>
                     </div>
@@ -205,11 +207,11 @@ const NotificationBell: React.FC = () => {
         popupRender={() => dropdownContent}
       >
         <BellButton
-          type="default"
-          shape="circle"
-          size="large"
+          iconOnly
           icon={<BellOutlined />}
+          aria-label="Notifications"
           data-testid="notification-bell"
+          style={{ borderRadius: '50%', width: '40px', height: '40px' }}
         />
       </Dropdown>
     </Badge>

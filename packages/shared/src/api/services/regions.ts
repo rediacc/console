@@ -13,7 +13,11 @@ export function createRegionsService(client: ApiClient) {
       });
     },
 
-    create: (regionName: string) => client.post(endpoints.regions.createRegion, { regionName }),
+    create: (regionName: string, vaultContent?: string) =>
+      client.post(endpoints.regions.createRegion, {
+        regionName,
+        vaultContent: vaultContent ?? '{}',
+      }),
 
     rename: (currentName: string, newName: string) =>
       client.post(endpoints.regions.updateRegionName, {

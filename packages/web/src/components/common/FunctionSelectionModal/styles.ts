@@ -1,22 +1,15 @@
 import styled, { css } from 'styled-components';
-import { Typography, Tag, Alert, InputNumber, Select, Input } from 'antd';
+import { BaseModal, ContentCard, FlexColumn, FlexRow, scrollbarStyles } from '@/styles/primitives';
 import {
-  BaseModal,
-  ContentCard,
-  SearchInput as BaseSearchInput,
-  FlexColumn,
-  FlexRow,
-  CaptionText,
-  SecondaryText,
-  SubmitButton,
-  scrollbarStyles,
-  RoundedAlert,
-} from '@/styles/primitives';
+  RediaccSearchInput as UnifiedSearchInput,
+  RediaccInputNumber,
+  RediaccSelect,
+  RediaccInput,
+} from '@/components/ui/Form';
 import { ContentStack } from '@/components/common/styled';
 import type { StyledTheme } from '@/styles/styledTheme';
 import { InfoCircleOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons';
-
-const { Text } = Typography;
+import { RediaccText as Text, RediaccTag, RediaccAlert } from '@/components/ui';
 
 const resolvePriorityTokens = (priority: number, theme: StyledTheme) => {
   const configs: Record<number, { color: string; bg: string; border: string }> = {
@@ -60,7 +53,7 @@ export const StyledModal = styled(BaseModal)`
 export const FunctionListCard = ContentCard;
 export const ConfigCard = ContentCard;
 
-export const SearchInput = styled(BaseSearchInput)`
+export const SearchInput = styled(UnifiedSearchInput)`
   && {
     margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   }
@@ -80,13 +73,13 @@ export const CategorySection = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const CategoryTitle = styled(Text)`
+export const CategoryTitle = styled(Text).attrs({
+  size: 'lg',
+  weight: 'semibold',
+})`
   && {
     display: block;
     margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-    font-size: ${({ theme }) => theme.fontSize.LG}px;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
 `;
 
@@ -124,19 +117,19 @@ export const FunctionOption = styled.button.attrs({ type: 'button' })<{
   }
 `;
 
-export const QuickTaskTag = styled(Tag)`
+export const QuickTaskTag = styled(RediaccTag).attrs({
+  variant: 'warning',
+  size: 'sm',
+})`
   && {
     margin-left: ${({ theme }) => theme.spacing.SM}px;
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    border: 1px solid ${({ theme }) => theme.colors.warning};
-    background-color: ${({ theme }) => theme.colors.bgWarning};
-    color: ${({ theme }) => theme.colors.warning};
-    line-height: 1.2;
   }
 `;
 
-export const FunctionDescriptionText = CaptionText;
+export const FunctionDescriptionText = styled(Text).attrs({
+  variant: 'caption',
+  color: 'muted',
+})``;
 
 export { ContentStack };
 
@@ -151,15 +144,15 @@ export const PushAlertsRow = styled.div<{ $hasWarning: boolean }>`
   }
 `;
 
-export const PushAlertCard = styled(Alert)`
+export const PushAlertCard = styled(RediaccAlert)<{ $variant?: string }>`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     border-width: 1px;
     height: 100%;
   }
 
-  ${({ theme, type }) =>
-    type === 'info'
+  ${({ theme, $variant }) =>
+    $variant === 'info'
       ? css`
           border-color: ${theme.colors.info};
         `
@@ -168,7 +161,9 @@ export const PushAlertCard = styled(Alert)`
         `}
 `;
 
-export const AlertBodyText = CaptionText;
+export const AlertBodyText = styled(Text).attrs({
+  variant: 'caption',
+})``;
 
 export const AlertLinkWrapper = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
@@ -183,9 +178,7 @@ export const AlertLink = styled.a`
   }
 `;
 
-export const LineageTag = styled(Tag).attrs<{ $variant: 'parent' | 'source' | 'destination' }>({
-  bordered: true,
-})<{ $variant: 'parent' | 'source' | 'destination' }>`
+export const LineageTag = styled(RediaccTag)<{ $variant: 'parent' | 'source' | 'destination' }>`
   && {
     ${({ theme, $variant }) => {
       const tokens = resolveLineageTokens($variant, theme);
@@ -200,7 +193,9 @@ export const LineageTag = styled(Tag).attrs<{ $variant: 'parent' | 'source' | 'd
   }
 `;
 
-export const LineageSeparator = SecondaryText;
+export const LineageSeparator = styled(Text).attrs({
+  color: 'secondary',
+})``;
 
 export const HelpTooltipIcon = styled(InfoCircleOutlined)`
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
@@ -218,13 +213,13 @@ export const SizeInputGroup = styled(FlexRow).attrs({ $gap: 'SM' })`
   width: 100%;
 `;
 
-export const SizeValueInput = styled(InputNumber)`
+export const SizeValueInput = styled(RediaccInputNumber)`
   && {
     flex: 1 1 65%;
   }
 `;
 
-export const SizeUnitSelect = styled(Select)`
+export const SizeUnitSelect = styled(RediaccSelect)`
   && {
     flex: 0 0 35%;
   }
@@ -232,7 +227,7 @@ export const SizeUnitSelect = styled(Select)`
 
 export const CheckboxGroupStack = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
-export const AdditionalOptionsInput = styled(Input)`
+export const AdditionalOptionsInput = styled(RediaccInput)`
   && {
     margin-top: ${({ theme }) => theme.spacing.SM}px;
   }
@@ -242,11 +237,12 @@ export const PriorityPopoverContent = styled.div`
   max-width: 400px;
 `;
 
-export const PriorityPopoverHeader = styled(Text)`
+export const PriorityPopoverHeader = styled(Text).attrs({
+  weight: 'semibold',
+})`
   && {
     display: block;
     margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
 `;
 
@@ -254,7 +250,7 @@ export const PriorityLegendRow = styled(FlexRow).attrs({ $gap: 'SM' })`
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const PriorityLegendTag = styled(Tag)<{ $level: number }>`
+export const PriorityLegendTag = styled(RediaccTag)<{ $level: number }>`
   && {
     ${({ theme, $level }) => {
       const tokens = resolvePriorityTokens($level, theme);
@@ -269,14 +265,16 @@ export const PriorityLegendTag = styled(Tag)<{ $level: number }>`
   }
 `;
 
-export const PriorityLegendText = CaptionText;
+export const PriorityLegendText = styled(Text).attrs({
+  variant: 'caption',
+})``;
 
 export const PriorityTagWrapper = styled.div`
   text-align: center;
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const PriorityStatusTag = styled(Tag)<{ $priority: number }>`
+export const PriorityStatusTag = styled(RediaccTag)<{ $priority: number }>`
   && {
     ${({ theme, $priority }) => {
       const tokens = resolvePriorityTokens($priority, theme);
@@ -288,6 +286,13 @@ export const PriorityStatusTag = styled(Tag)<{ $priority: number }>`
     }}
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
+  }
+`;
+
+const RoundedAlert = styled(RediaccAlert)`
+  && {
+    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+    padding: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
 
@@ -306,5 +311,3 @@ export const PriorityAlertDetail = styled.div`
   font-style: italic;
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
-
-export const PrimarySubmitButton = SubmitButton;

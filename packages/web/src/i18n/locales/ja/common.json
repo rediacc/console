@@ -104,7 +104,7 @@
     "audit": "監査",
     "credentials": "認証情報",
     "dashboard": "ダッシュボード",
-    "distributedStorage": "分散ストレージ",
+    "ceph": "分散ストレージ",
     "logout": "ログアウト",
     "machines": "マシン",
     "mainNavigation": "メインナビゲーション",
@@ -121,9 +121,9 @@
     "storage": "ストレージ",
     "storageCloud": "Cloud",
     "storageDistributed": "Distributed",
-    "distributedStorageClusters": "クラスター",
-    "distributedStoragePools": "プール",
-    "distributedStorageMachines": "マシン",
+    "cephClusters": "クラスター",
+    "cephPools": "プール",
+    "cephMachines": "マシン",
     "system": "システム"
   },
   "nestedObjectEditor": {

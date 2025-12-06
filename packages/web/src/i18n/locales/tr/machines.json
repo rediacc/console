@@ -68,7 +68,7 @@
   "deleteWarning": "\"{{name}}\" makinesini silmek istediğinizden emin misiniz? Bu eylem geri alınamaz.",
   "description": "Açıklama (isteğe bağlı)",
   "descriptionPlaceholder": "Bu kuyruk öğesi için özel bir açıklama ekleyin",
-  "distributedStorageCluster": "Dağıtılmış Depolama",
+  "cephCluster": "Dağıtılmış Depolama",
   "editMachine": "Makine Düzenleme",
   "experimental": "deneysel",
   "failed": "Başarısız",

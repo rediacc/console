@@ -1,9 +1,8 @@
 import styled from 'styled-components';
-import { Typography, Button } from 'antd';
 import { BaseModal, ModalBody } from '@/styles/primitives';
 import { InlineStack } from '@/components/common/styled';
-
-const { Title, Text } = Typography;
+import { RediaccText } from '@/components/ui/Text';
+import { RediaccButton } from '@/components/ui/Button';
 
 export const StyledModal = styled(BaseModal)`
   .ant-modal-content {
@@ -13,7 +12,7 @@ export const StyledModal = styled(BaseModal)`
 
 export const TitleStack = InlineStack;
 
-export const DangerTitle = styled(Title).attrs({ level: 4 })`
+export const DangerTitle = styled(RediaccText).attrs({ size: 'xl', weight: 'semibold' })`
   && {
     margin: 0;
     color: ${({ theme }) => theme.colors.error};
@@ -24,11 +23,7 @@ export const ContentStack = styled(ModalBody)`
   gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const DescriptionText = styled(Text)`
-  && {
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
+export const DescriptionText = styled(RediaccText).attrs({ color: 'secondary' })``;
 
 export const CountdownCard = styled.div`
   background: ${({ theme }) => theme.colors.bgSecondary};
@@ -38,14 +33,13 @@ export const CountdownCard = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
 `;
 
-export const CountdownText = styled(Text)`
+export const CountdownText = styled(RediaccText).attrs({ weight: 'semibold' })`
   && {
     color: ${({ theme }) => theme.colors.error};
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
 `;
 
-export const FooterButton = styled(Button)`
+export const FooterButton = styled(RediaccButton)`
   && {
     min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_LG}px;
   }
