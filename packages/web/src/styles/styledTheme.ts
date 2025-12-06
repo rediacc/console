@@ -54,6 +54,11 @@ export interface StyledTheme {
     iconGrand: string;
     iconFork: string;
     iconSystem: string;
+
+    // Button colors (theme-aware for proper contrast)
+    buttonPrimary: string;
+    buttonPrimaryHover: string;
+    buttonPrimaryText: string;
   };
 
   // Spacing
@@ -157,6 +162,9 @@ const createTheme = (mode: ThemeMode): StyledTheme => {
       iconGrand: colorTokens.primary,
       iconFork: colorTokens.secondary,
       iconSystem: colorTokens.accent,
+      buttonPrimary: palette.buttonPrimary,
+      buttonPrimaryHover: palette.buttonPrimaryHover,
+      buttonPrimaryText: palette.buttonPrimaryText,
     },
     ...sharedThemeValues,
   };

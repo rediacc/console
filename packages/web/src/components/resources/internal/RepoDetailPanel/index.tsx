@@ -21,23 +21,23 @@ import { useMachines } from '@/api/queries/machines';
 import { abbreviatePath } from '@/utils/pathUtils';
 import {
   PanelWrapper,
-  StickyHeader,
+  Header,
   HeaderRow,
-  HeaderTitleGroup,
+  TitleGroup,
   HeaderIcon,
   PanelTitle,
   CollapseButton,
-  TagRow,
+  TagGroup,
   StyledTag,
   ContentWrapper,
   EmptyState,
   SectionHeader,
   SectionTitle,
   SectionCard,
-  InlineField,
-  LabelText,
-  ValueText,
-  MonospaceValue,
+  FieldRow,
+  FieldLabel,
+  FieldValue,
+  FieldValueMonospace,
   SectionDivider,
   Section,
   StatusTag,
@@ -220,16 +220,16 @@ export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
 
   return (
     <PanelWrapper $splitView={splitView} $visible={visible} data-testid="repo-detail-panel">
-      <StickyHeader>
+      <Header>
         <HeaderRow>
-          <HeaderTitleGroup>
+          <TitleGroup>
             <HeaderIcon />
             <PanelTitle level={4} data-testid={`repo-detail-title-${repo.repoName}`}>
               {repo.repoName}
             </PanelTitle>
-          </HeaderTitleGroup>
+          </TitleGroup>
           <CollapseButton
-            type="text"
+            variant="text"
             icon={<DoubleRightOutlined />}
             onClick={onClose}
             data-testid="repo-detail-collapse"
@@ -237,7 +237,7 @@ export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
           />
         </HeaderRow>
 
-        <TagRow>
+        <TagGroup>
           <StyledTag
             $variant="team"
             icon={<AppstoreOutlined />}
@@ -260,8 +260,8 @@ export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
           >
             {t('resources:repos.vaultVersion')}: {repo.vaultVersion}
           </StyledTag>
-        </TagRow>
-      </StickyHeader>
+        </TagGroup>
+      </Header>
 
       <ContentWrapper data-testid="repo-detail-content">
         {!repoData ? (
@@ -306,17 +306,17 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
         <SectionTitle level={5}>{t('resources:repos.repoInfo')}</SectionTitle>
       </SectionHeader>
 
-      <SectionCard size="small" data-testid="repo-detail-info-card">
+      <SectionCard size="sm" data-testid="repo-detail-info-card">
         <Stack>
-          <InlineField>
-            <LabelText>{t('resources:repos.repoGuid')}:</LabelText>
-            <MonospaceValue copyable data-testid={`repo-detail-guid-${repo.repoName}`}>
+          <FieldRow>
+            <FieldLabel>{t('resources:repos.repoGuid')}:</FieldLabel>
+            <FieldValueMonospace copyable data-testid={`repo-detail-guid-${repo.repoName}`}>
               {repo.repoGuid}
-            </MonospaceValue>
-          </InlineField>
+            </FieldValueMonospace>
+          </FieldRow>
 
-          <InlineField>
-            <LabelText>{t('resources:repos.status')}:</LabelText>
+          <FieldRow>
+            <FieldLabel>{t('resources:repos.status')}:</FieldLabel>
             <Space>
               {repoData.mounted ? (
                 <StatusTag
@@ -343,22 +343,22 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
                 </StatusTag>
               )}
             </Space>
-          </InlineField>
+          </FieldRow>
 
           {repoData.has_rediaccfile && (
-            <InlineField>
-              <LabelText>{t('resources:repos.rediaccfile')}:</LabelText>
+            <FieldRow>
+              <FieldLabel>{t('resources:repos.rediaccfile')}:</FieldLabel>
               <StatusTag $tone="info" data-testid={`repo-detail-rediaccfile-${repo.repoName}`}>
                 {t('resources:repos.hasRediaccfile')}
               </StatusTag>
-            </InlineField>
+            </FieldRow>
           )}
 
           {repoData.docker_running &&
             repoData.volume_status &&
             repoData.volume_status !== 'none' && (
-              <InlineField>
-                <LabelText>Docker Volumes:</LabelText>
+              <FieldRow>
+                <FieldLabel>Docker Volumes:</FieldLabel>
                 {repoData.volume_status === 'safe' ? (
                   <StatusTag
                     $tone="success"
@@ -377,7 +377,7 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
                     {repoData.external_volumes} External, {repoData.internal_volumes} Internal
                   </StatusTag>
                 )}
-              </InlineField>
+              </FieldRow>
             )}
         </Stack>
       </SectionCard>
@@ -398,24 +398,24 @@ const ExternalVolumeWarning: React.FC<SectionProps> = ({ repo, panelData }) => {
 
   return (
     <AlertWrapper
-      type="warning"
+      variant="warning"
       showIcon
       icon={<WarningOutlined />}
       message="External Docker Volumes Detected"
       description={
         <VolumeDescription>
-          <ValueText>The following volumes are stored outside the repo:</ValueText>
+          <FieldValue>The following volumes are stored outside the repo:</FieldValue>
           <VolumeList>
             {repoData.external_volume_names.map((vol) => (
               <li key={vol}>
-                <ValueText code>{vol}</ValueText>
+                <FieldValue code>{vol}</FieldValue>
               </li>
             ))}
           </VolumeList>
-          <ValueText type="secondary">
+          <FieldValue type="secondary">
             <strong>Warning:</strong> If this repo is cloned, these volumes will be orphaned. Use
-            bind mounts to <ValueText code>$REPO_PATH</ValueText> instead.
-          </ValueText>
+            bind mounts to <FieldValue code>$REPO_PATH</FieldValue> instead.
+          </FieldValue>
         </VolumeDescription>
       }
       data-testid={`repo-detail-volume-warning-alert-${repo.repoName}`}
@@ -438,35 +438,35 @@ const StorageSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
 
       <Row gutter={[16, 16]}>
         <Col span={24}>
-          <SectionCard size="small" data-testid={`repo-detail-storage-info-card-${repo.repoName}`}>
+          <SectionCard size="sm" data-testid={`repo-detail-storage-info-card-${repo.repoName}`}>
             <Stack>
-              <InlineField>
-                <LabelText>{t('resources:repos.imageSize')}:</LabelText>
-                <ValueText>{repoData.size_human}</ValueText>
-              </InlineField>
-              <InlineField>
-                <LabelText>{t('resources:repos.lastModified')}:</LabelText>
-                <ValueText>{repoData.modified_human}</ValueText>
-              </InlineField>
+              <FieldRow>
+                <FieldLabel>{t('resources:repos.imageSize')}:</FieldLabel>
+                <FieldValue>{repoData.size_human}</FieldValue>
+              </FieldRow>
+              <FieldRow>
+                <FieldLabel>{t('resources:repos.lastModified')}:</FieldLabel>
+                <FieldValue>{repoData.modified_human}</FieldValue>
+              </FieldRow>
             </Stack>
           </SectionCard>
         </Col>
 
         {repoData.mounted && repoData.disk_space && (
           <Col span={24}>
-            <SectionCard size="small" data-testid={`repo-detail-disk-usage-card-${repo.repoName}`}>
+            <SectionCard size="sm" data-testid={`repo-detail-disk-usage-card-${repo.repoName}`}>
               <Stack>
-                <InlineField>
+                <FieldRow>
                   <Space>
                     <IconWrapper $color="var(--color-success)">
                       <DatabaseOutlined />
                     </IconWrapper>
-                    <ValueText strong>{t('resources:repos.diskUsage')}</ValueText>
+                    <FieldValue strong>{t('resources:repos.diskUsage')}</FieldValue>
                   </Space>
-                </InlineField>
-                <ValueText>
+                </FieldRow>
+                <FieldValue>
                   {repoData.disk_space.used} / {repoData.disk_space.total}
-                </ValueText>
+                </FieldValue>
                 <Progress
                   percent={diskPercent}
                   status={diskPercent > 90 ? 'exception' : 'normal'}
@@ -497,27 +497,27 @@ const FilePathsSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
         {t('resources:repos.filePaths')}
       </SectionDivider>
 
-      <PathsCard size="small" data-testid={`repo-detail-file-paths-card-${repo.repoName}`}>
+      <PathsCard size="sm" data-testid={`repo-detail-file-paths-card-${repo.repoName}`}>
         <Stack>
-          <InlineField>
-            <LabelText>{t('resources:repos.imagePath')}:</LabelText>
-            <MonospaceValue
+          <FieldRow>
+            <FieldLabel>{t('resources:repos.imagePath')}:</FieldLabel>
+            <FieldValueMonospace
               copyable={{ text: repoData.image_path }}
               data-testid={`repo-detail-image-path-${repo.repoName}`}
             >
               {abbreviatePath(repoData.image_path, 45)}
-            </MonospaceValue>
-          </InlineField>
+            </FieldValueMonospace>
+          </FieldRow>
           {repoData.mount_path && (
-            <InlineField>
-              <LabelText>{t('resources:repos.mountPath')}:</LabelText>
-              <MonospaceValue
+            <FieldRow>
+              <FieldLabel>{t('resources:repos.mountPath')}:</FieldLabel>
+              <FieldValueMonospace
                 copyable={{ text: repoData.mount_path }}
                 data-testid={`repo-detail-mount-path-${repo.repoName}`}
               >
                 {abbreviatePath(repoData.mount_path, 45)}
-              </MonospaceValue>
-            </InlineField>
+              </FieldValueMonospace>
+            </FieldRow>
           )}
         </Stack>
       </PathsCard>
@@ -537,19 +537,19 @@ const ActivitySection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
         {t('resources:repos.activity')}
       </SectionDivider>
 
-      <ActivityCard size="small" data-testid={`repo-detail-activity-card-${repo.repoName}`}>
+      <ActivityCard size="sm" data-testid={`repo-detail-activity-card-${repo.repoName}`}>
         <ActivityMetrics>
           {repoData.docker_running && (
-            <InlineField>
-              <LabelText>{t('resources:repos.containers')}:</LabelText>
-              <ValueText>{repoData.container_count}</ValueText>
-            </InlineField>
+            <FieldRow>
+              <FieldLabel>{t('resources:repos.containers')}:</FieldLabel>
+              <FieldValue>{repoData.container_count}</FieldValue>
+            </FieldRow>
           )}
           {repoData.has_services && (
-            <InlineField>
-              <LabelText>{t('resources:repos.services')}:</LabelText>
-              <ValueText>{repoData.service_count}</ValueText>
-            </InlineField>
+            <FieldRow>
+              <FieldLabel>{t('resources:repos.services')}:</FieldLabel>
+              <FieldValue>{repoData.service_count}</FieldValue>
+            </FieldRow>
           )}
         </ActivityMetrics>
       </ActivityCard>
@@ -585,12 +585,12 @@ const ServicesSection: React.FC<SectionProps> = ({ repo, panelData, t }) => (
             <Row gutter={[16, 8]}>
               <Col span={24}>
                 <ServiceHeader>
-                  <ValueText
+                  <FieldValue
                     strong
                     data-testid={`repo-detail-service-name-${repo.repoName}-${service.name}`}
                   >
                     {service.name}
-                  </ValueText>
+                  </FieldValue>
                   <StatusTag
                     $tone={
                       state === 'active' ? 'success' : state === 'failed' ? 'error' : 'neutral'

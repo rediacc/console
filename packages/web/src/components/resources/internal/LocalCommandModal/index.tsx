@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Checkbox, Button, Typography, message, Radio } from 'antd';
-import type { CheckboxChangeEvent } from 'antd/es/checkbox';
-import type { RadioChangeEvent } from 'antd/es/radio';
+import { Form, Input, Button, Typography, message } from 'antd';
+import { RediaccCheckbox as Checkbox, RediaccRadio as Radio, type CheckboxChangeEvent, type RadioChangeEvent } from '@/components/ui/Form';
 import {
   CopyOutlined,
   CodeOutlined,

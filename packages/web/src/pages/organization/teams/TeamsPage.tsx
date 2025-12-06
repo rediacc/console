@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Button, Tooltip, List, Popconfirm, Tabs, Card, Space, Tag, Modal } from 'antd';
+import { Tooltip, List, Popconfirm, Tabs, Card, Space, Modal } from 'antd';
 import { UserOutlined, DeleteOutlined, PlusOutlined } from '@/utils/optimizedIcons';
+import { RediaccButton as Button } from '@/components/ui/Button';
+import { RediaccTag as Tag } from '@/components/ui/Tag';
 import { useTranslation } from 'react-i18next';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal, {
@@ -32,8 +34,8 @@ import {
   ListSubtitle,
   InlineFormRow,
   ModalStack,
+  RediaccSelect as Select,
 } from '@/components/ui';
-import { FullWidthSelect } from '@/pages/system/styles';
 import { getTeamColumns } from './data';
 
 const TeamsPage: React.FC = () => {
@@ -58,7 +60,7 @@ const TeamsPage: React.FC = () => {
   const addTeamMemberMutation = useAddTeamMember();
   const removeTeamMemberMutation = useRemoveTeamMember();
 
-  const handleUnifiedModalSubmit = async (data: Partial<Team> & { teamVault?: string }) => {
+  const handleUnifiedModalSubmit = async (data: Partial<Team> & { vaultContent?: string }) => {
     try {
       if (unifiedModal.mode === 'create') {
         if (!data.teamName) {
@@ -66,7 +68,7 @@ const TeamsPage: React.FC = () => {
         }
         await createTeamMutation.mutateAsync({
           teamName: data.teamName,
-          teamVault: data.teamVault,
+          vaultContent: data.vaultContent,
         });
       } else if (unifiedModal.state.data) {
         const existingData = unifiedModal.state.data;
@@ -81,10 +83,10 @@ const TeamsPage: React.FC = () => {
           });
         }
 
-        if (data.teamVault && data.teamVault !== existingData.vaultContent) {
+        if (data.vaultContent && data.vaultContent !== existingData.vaultContent) {
           await updateTeamVaultMutation.mutateAsync({
             teamName: data.teamName || existingData.teamName,
-            teamVault: data.teamVault,
+            vaultContent: data.vaultContent,
             vaultVersion: (existingData.vaultVersion ?? 0) + 1,
           });
         }
@@ -101,7 +103,7 @@ const TeamsPage: React.FC = () => {
     try {
       await updateTeamVaultMutation.mutateAsync({
         teamName: unifiedModal.state.data.teamName,
-        teamVault: vault,
+        vaultContent: vault,
         vaultVersion: version,
       });
     } catch {
@@ -287,7 +289,8 @@ const TeamsPage: React.FC = () => {
               children: (
                 <ModalStack>
                   <InlineFormRow>
-                    <FullWidthSelect
+                    <Select
+                      fullWidth
                       showSearch
                       placeholder={t('teams.manageMembers.selectUser', {
                         defaultValue: 'Select user',

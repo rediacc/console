@@ -1,11 +1,8 @@
 import styled from 'styled-components';
-import { Form, Divider, Alert, InputNumber, Select } from 'antd';
-import {
-  FullWidthSelect as PrimitiveFullWidthSelect,
-  FlexColumn,
-  FlexRow,
-} from '@/styles/primitives';
+import { Form, InputNumber } from 'antd';
+import { FlexColumn, FlexRow } from '@/styles/primitives';
 import { FlexBetween } from '@/components/common/styled';
+import { RediaccAlert, RediaccDivider, RediaccSelect } from '@/components/ui';
 
 export const FormWrapper = styled(FlexColumn).attrs({ $gap: 'SM' })`
   height: 100%;
@@ -15,7 +12,7 @@ export const StyledForm = styled(Form)`
   flex-shrink: 0;
 `;
 
-export const SectionDivider = styled(Divider)`
+export const SectionDivider = styled(RediaccDivider)`
   margin: ${({ theme }) => `${theme.spacing.SM}px 0`};
 `;
 
@@ -34,7 +31,7 @@ export const DefaultsWrapper = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const DefaultsAlert = styled(Alert)`
+export const DefaultsAlert = styled(RediaccAlert)`
   margin: 0;
 `;
 
@@ -48,10 +45,8 @@ export const SizeNumberInput = styled(InputNumber)`
   }
 `;
 
-export const SizeUnitSelect = styled(Select)`
+export const SizeUnitSelect = styled(RediaccSelect)`
   && {
     flex: 0 0 35%;
   }
 `;
-
-export const FullWidthSelect = PrimitiveFullWidthSelect;

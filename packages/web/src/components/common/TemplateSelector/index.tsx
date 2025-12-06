@@ -255,7 +255,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   </TemplateDescription>
 
                   <DetailsButton
-                    type="link"
+                    variant="link"
                     size="small"
                     data-testid={`resource-modal-template-details-button-${template.name}`}
                     icon={<InfoCircleOutlined />}

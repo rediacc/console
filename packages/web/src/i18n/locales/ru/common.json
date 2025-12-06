@@ -104,7 +104,7 @@
     "audit": "Аудит",
     "credentials": "Учетные данные",
     "dashboard": "Панель управления",
-    "distributedStorage": "Распределенное хранилище",
+    "ceph": "Распределенное хранилище",
     "logout": "Выход из системы",
     "machines": "Машины",
     "mainNavigation": "Основная навигация",
@@ -121,9 +121,9 @@
     "storage": "Хранилище",
     "storageCloud": "Cloud",
     "storageDistributed": "Distributed",
-    "distributedStorageClusters": "Кластеры",
-    "distributedStoragePools": "Пулы",
-    "distributedStorageMachines": "Машины",
+    "cephClusters": "Кластеры",
+    "cephPools": "Пулы",
+    "cephMachines": "Машины",
     "system": "Система"
   },
   "nestedObjectEditor": {

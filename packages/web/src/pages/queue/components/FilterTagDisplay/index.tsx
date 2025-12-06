@@ -112,7 +112,7 @@ const FilterTagDisplay: React.FC<FilterTagDisplayProps> = ({
         <React.Fragment key={filter.key}>{renderFilterTag(filter)}</React.Fragment>
       ))}
       {showClearAll && onClearAll && (
-        <ClearButton type="link" size="small" onClick={onClearAll}>
+        <ClearButton variant="link" size="small" onClick={onClearAll}>
           {clearAllText}
         </ClearButton>
       )}

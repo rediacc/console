@@ -1,10 +1,11 @@
 import styled from 'styled-components';
-import { Form, Tabs, Typography } from 'antd';
-import { BaseModal, FlexColumn, FlexRow, CaptionText } from '@/styles/primitives';
+import { Form, Typography } from 'antd';
+import { BaseModal, FlexColumn, FlexRow } from '@/styles/primitives';
+import { RediaccText, RediaccTabs } from '@/components/ui';
 import { ActionsRow as CommonActionsRow } from '@/components/common/styled';
 import { ModalSize } from '@/types/modal';
 
-const { Text, Paragraph } = Typography;
+const { Paragraph } = Typography;
 
 export const StyledModal = styled(BaseModal).attrs({
   className: `${ModalSize.Large} local-command-modal`,
@@ -16,9 +17,10 @@ export const StyledModal = styled(BaseModal).attrs({
   }
 `;
 
-export const Description = styled(Text)`
+export const Description = styled(RediaccText).attrs({
+  color: 'secondary',
+})`
   && {
-    color: ${({ theme }) => theme.colors.textSecondary};
     display: block;
   }
 `;
@@ -33,15 +35,16 @@ export const SettingsForm = styled(Form)`
   }
 `;
 
-export const CheckboxHelper = styled(Text)`
+export const CheckboxHelper = styled(RediaccText).attrs({
+  size: 'sm',
+  color: 'secondary',
+})`
   && {
     margin-left: ${({ theme }) => theme.spacing.SM}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
 `;
 
-export const TabsWrapper = styled(Tabs)`
+export const TabsWrapper = styled(RediaccTabs)`
   && {
     .ant-tabs-nav {
       margin-bottom: ${({ theme }) => theme.spacing.MD}px;
@@ -60,9 +63,10 @@ export const PreviewHeader = styled(FlexRow).attrs({ $justify: 'space-between' }
   gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const PreviewTitle = styled(Text)`
+export const PreviewTitle = styled(RediaccText).attrs({
+  weight: 'semibold',
+})`
   && {
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
     color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
@@ -71,15 +75,15 @@ export const PreviewError = styled(FlexColumn).attrs({ $gap: 'XS' })`
   padding: ${({ theme }) => theme.spacing.SM}px 0;
 `;
 
-export const PreviewErrorText = styled(Text)`
-  && {
-    color: ${({ theme }) => theme.colors.error};
-  }
-`;
+export const PreviewErrorText = styled(RediaccText).attrs({
+  color: 'danger',
+})``;
 
-export const PreviewHelper = styled(CaptionText)`
+export const PreviewHelper = styled(RediaccText).attrs({
+  size: 'xs',
+  color: 'secondary',
+})`
   && {
-    color: ${({ theme }) => theme.colors.textSecondary};
     font-size: ${({ theme }) => theme.fontSize.XS}px;
   }
 `;
@@ -99,10 +103,12 @@ export const PreviewMetaRow = styled.div`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const PreviewMetaText = styled(CaptionText)`
+export const PreviewMetaText = styled(RediaccText).attrs({
+  size: 'xs',
+  color: 'secondary',
+})`
   && {
     font-size: ${({ theme }) => theme.fontSize.XS}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
 

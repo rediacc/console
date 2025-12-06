@@ -1,26 +1,29 @@
 import styled from 'styled-components';
-import { Tag, Empty, Card, Alert, Typography } from 'antd';
+import { Typography } from 'antd';
 import { FolderOutlined } from '@/utils/optimizedIcons';
+import { RediaccTag } from '@/components/ui/Tag';
+import { RediaccText } from '@/components/ui/Text';
+import { RediaccCard, RediaccAlert, RediaccEmpty } from '@/components/ui';
 import {
-  DetailPanelSurface,
-  DetailPanelHeader,
-  DetailPanelHeaderRow,
-  DetailPanelTitleGroup,
-  DetailPanelTitle,
-  DetailPanelCollapseButton,
-  DetailPanelTagGroup,
-  DetailPanelBody,
-  DetailPanelFieldRow,
-  DetailPanelFieldLabel,
-  DetailPanelFieldValue,
-  DetailPanelFieldMonospaceValue,
-  DetailPanelSectionCard,
-  DetailPanelDivider,
-  DetailPanelSectionHeader,
-  DetailPanelSectionTitle,
-} from '../detailPanelPrimitives';
+  PanelWrapper,
+  Header,
+  HeaderRow,
+  TitleGroup,
+  PanelTitle,
+  CollapseButton,
+  TagGroup,
+  ContentWrapper,
+  FieldRow,
+  FieldLabel,
+  FieldValue,
+  FieldValueMonospace,
+  SectionCard,
+  SectionDivider as BaseSectionDivider,
+  SectionHeader as BaseSectionHeader,
+  SectionTitle as BaseSectionTitle,
+} from '../sharedDetailPanelAliases';
 
-const { Text } = Typography;
+export { PanelWrapper, PanelTitle, CollapseButton, ContentWrapper };
 
 const TAG_VARIANTS = {
   team: {
@@ -45,44 +48,36 @@ const STATUS_TONES = {
   neutral: 'var(--color-border-secondary)',
 } as const;
 
-export const PanelWrapper = DetailPanelSurface;
-export const StickyHeader = DetailPanelHeader;
-export const HeaderRow = DetailPanelHeaderRow;
-export const HeaderTitleGroup = DetailPanelTitleGroup;
-export const PanelTitle = DetailPanelTitle;
-export const CollapseButton = DetailPanelCollapseButton;
-export const TagRow = DetailPanelTagGroup;
-export const ContentWrapper = DetailPanelBody;
-export const InlineField = DetailPanelFieldRow;
-export const LabelText = DetailPanelFieldLabel;
-export const ValueText = DetailPanelFieldValue;
-export const MonospaceValue = DetailPanelFieldMonospaceValue;
-export const SectionCard = DetailPanelSectionCard;
+export { Header, HeaderRow, TitleGroup, TagGroup, FieldRow, FieldLabel, FieldValue, FieldValueMonospace, SectionCard };
 
 export const HeaderIcon = styled(FolderOutlined)`
   font-size: ${({ theme }) => theme.fontSize.XXXXXXL}px;
   color: var(--color-success);
 `;
 
-export const StyledTag = styled(Tag)<{ $variant: keyof typeof TAG_VARIANTS }>`
+export const StyledTag = styled(RediaccTag).attrs<{ $variant: keyof typeof TAG_VARIANTS }>(
+  ({ $variant }) => {
+    const presetMap: Record<keyof typeof TAG_VARIANTS, string> = {
+      team: 'team',
+      machine: 'machine',
+      version: 'neutral',
+    };
+    return {
+      preset: presetMap[$variant] as any,
+      borderless: true,
+    };
+  }
+)<{ $variant: keyof typeof TAG_VARIANTS }>`
   && {
-    border: none;
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    padding: 0 ${({ theme }) => theme.spacing.SM}px;
-    font-weight: 500;
-    background-color: ${({ $variant }) => TAG_VARIANTS[$variant].background};
-    color: ${({ $variant }) => TAG_VARIANTS[$variant].color};
-    display: inline-flex;
-    align-items: center;
     gap: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 
-export const EmptyState = styled(Empty)`
+export const EmptyState = styled(RediaccEmpty)`
   margin-top: ${({ theme }) => theme.spacing.XXXL}px;
 `;
 
-export const SectionDivider = styled(DetailPanelDivider)`
+export const SectionDivider = styled(BaseSectionDivider)`
   && {
     margin: ${({ theme }) => `${theme.spacing.XL}px 0`};
   }
@@ -104,28 +99,28 @@ export const Stack = styled.div<{ $gap?: StackGap }>`
   gap: ${({ theme, $gap = 'SM' }) => theme.spacing[$gap]}px;
 `;
 
-export const SectionHeader = styled(DetailPanelSectionHeader)`
+export const SectionHeader = styled(BaseSectionHeader)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const SectionTitle = styled(DetailPanelSectionTitle)`
+export const SectionTitle = styled(BaseSectionTitle)`
   && {
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
 `;
 
-export const StatusTag = styled(Tag)<{ $tone?: keyof typeof STATUS_TONES }>`
+export const StatusTag = styled(RediaccTag).attrs<{ $tone?: keyof typeof STATUS_TONES }>(
+  ({ $tone = 'neutral' }) => ({
+    variant: $tone as any,
+    borderless: true,
+  })
+)<{ $tone?: keyof typeof STATUS_TONES }>`
   && {
-    border: none;
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    font-weight: 500;
-    padding: 0 ${({ theme }) => theme.spacing.SM}px;
-    background-color: ${({ $tone = 'neutral' }) => STATUS_TONES[$tone]};
-    color: ${({ $tone = 'neutral' }) => ($tone === 'neutral' ? 'var(--color-text-primary)' : 'var(--color-text-inverse)')};
   }
 `;
 
-export const AlertWrapper = styled(Alert)`
+export const AlertWrapper = styled(RediaccAlert)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
@@ -148,7 +143,7 @@ export const ServicesList = styled.div`
   width: 100%;
 `;
 
-export const ServiceCard = styled(Card)<{ $state: 'active' | 'failed' | 'other' }>`
+export const ServiceCard = styled(RediaccCard)<{ $state: 'active' | 'failed' | 'other' }>`
   && {
     border-left: 4px solid
       ${({ $state }) => {
@@ -183,29 +178,35 @@ export const ServiceMetaItem = styled.div`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const ServiceMetaLabel = styled(Text)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-    color: var(--color-text-secondary);
-  }
-`;
-
-export const ServiceMetaValue = styled(Text)`
+export const ServiceMetaLabel = styled(RediaccText).attrs({
+  size: 'xs',
+  color: 'secondary',
+})`
   && {
     font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
   }
 `;
 
-export const DiskUsageMeta = styled(Text)`
+export const ServiceMetaValue = styled(RediaccText).attrs({
+  size: 'xs',
+})`
   && {
     font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-    color: var(--color-text-secondary);
   }
 `;
 
-export const PathsCard = styled(SectionCard)``;
+export const DiskUsageMeta = styled(RediaccText).attrs({
+  size: 'xs',
+  color: 'secondary',
+})`
+  && {
+    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  }
+`;
 
-export const ActivityCard = styled(SectionCard)``;
+export { SectionCard as PathsCard };
+
+export { SectionCard as ActivityCard };
 
 export const ActivityMetrics = styled.div`
   display: flex;

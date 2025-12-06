@@ -10,7 +10,7 @@ import { createMachinesService } from './machines';
 import { createReposService } from './repos';
 import { createStorageService } from './storage';
 import { createQueueService } from './queue';
-import { createDistributedStorageService } from './distributedStorage';
+import { createCephService } from './ceph';
 import { createAuditService } from './audit';
 
 export function createApiServices(client: ApiClient) {
@@ -26,7 +26,7 @@ export function createApiServices(client: ApiClient) {
     repos: createReposService(client),
     storage: createStorageService(client),
     queue: createQueueService(client),
-    distributedStorage: createDistributedStorageService(client),
+    ceph: createCephService(client),
     audit: createAuditService(client),
   };
 }

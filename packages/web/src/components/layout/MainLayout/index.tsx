@@ -40,13 +40,13 @@ import {
   MenuToggleButton,
   LogoWrapper,
   Logo,
-  UserMenuButton,
   StyledContent,
   TransitionOverlay,
   TransitionIcon,
   TransitionText,
   ContentWrapper,
 } from './styles';
+import { RediaccButton } from '@/components/ui';
 
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -231,9 +231,7 @@ const MainLayout: React.FC = () => {
           <StyledHeader $isDark={theme === 'dark'}>
             <HeaderLeft>
               <MenuToggleButton
-                type="text"
-                shape="circle"
-                size="large"
+                iconOnly
                 icon={<MenuOutlined />}
                 onClick={handleSidebarToggle}
                 data-testid="sidebar-toggle-button"
@@ -243,6 +241,7 @@ const MainLayout: React.FC = () => {
                     : t('navigation.collapseSidebar', { defaultValue: 'Collapse sidebar' })
                 }
                 aria-pressed={collapsed}
+                style={{ borderRadius: '50%', width: '40px', height: '40px' }}
               />
               <LogoWrapper
                 onClick={() => {
@@ -274,13 +273,13 @@ const MainLayout: React.FC = () => {
                 )}
                 overlayStyle={{ minWidth: 300 }}
               >
-                <UserMenuButton
-                  type="primary"
-                  shape="circle"
-                  size="large"
-                  aria-label={t('navigation.userMenu', { defaultValue: 'Open user menu' })}
+                <RediaccButton
+                  variant="primary"
+                  iconOnly
                   icon={<UserOutlined />}
+                  aria-label={t('navigation.userMenu', { defaultValue: 'Open user menu' })}
                   data-testid="user-menu-button"
+                  style={{ borderRadius: '50%', width: '40px', height: '40px' }}
                 />
               </Dropdown>
             </HeaderRight>

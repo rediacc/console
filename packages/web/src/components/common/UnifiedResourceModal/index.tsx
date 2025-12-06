@@ -38,14 +38,13 @@ import {
 import { z } from 'zod';
 import { ModalSize } from '@/types/modal';
 import { featureFlags } from '@/config/featureFlags';
+import { RediaccButton } from '@/components/ui';
 import {
   TitleStack,
   TitleText,
   SubtitleText,
   SecondaryLabel,
   FooterLeftActions,
-  ActionButton,
-  PrimaryActionButton,
   AutoSetupCheckbox,
   UploadIcon,
   DownloadIcon,
@@ -139,7 +138,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   preselectedFunction,
   creationContext,
 }) => {
-  const { t } = useTranslation(['resources', 'machines', 'common', 'distributedStorage', 'system']);
+  const { t } = useTranslation(['resources', 'machines', 'common', 'ceph', 'system']);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const isExpertMode = uiMode === 'expert';
   const { data: dropdownData } = useDropdownData();
@@ -189,11 +188,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     team: { key: 'teams', createKey: 'resources:teams.createTeam' },
     region: { key: 'regions', createKey: 'system:regions.createRegion' },
     bridge: { key: 'bridges', createKey: 'system:bridges.createBridge' },
-    cluster: { key: 'clusters', createKey: 'distributedStorage:clusters.createCluster' },
-    pool: { key: 'pools', createKey: 'distributedStorage:pools.createPool' },
-    image: { key: 'images', createKey: 'distributedStorage:images.createImage' },
-    snapshot: { key: 'snapshots', createKey: 'distributedStorage:snapshots.createSnapshot' },
-    clone: { key: 'clones', createKey: 'distributedStorage:clones.createClone' },
+    cluster: { key: 'clusters', createKey: 'ceph:clusters.createCluster' },
+    pool: { key: 'pools', createKey: 'ceph:pools.createPool' },
+    image: { key: 'images', createKey: 'ceph:images.createImage' },
+    snapshot: { key: 'snapshots', createKey: 'ceph:snapshots.createSnapshot' },
+    clone: { key: 'clones', createKey: 'ceph:clones.createClone' },
   } as const;
 
   // Helper functions
@@ -219,7 +218,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
               teamName: z.string().optional(),
               regionName: z.string().optional(),
               bridgeName: z.string().optional(),
-              machineVault: z.string().optional().default('{}'),
+              vaultContent: z.string().optional().default('{}'),
             })
           : createMachineSchema,
       repo: createRepoSchema,
@@ -253,7 +252,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         teamName: z.string().min(1, 'Team name is required'),
         repoName: z.string().min(1, 'Repo name is required'),
         repoGuid: z.string().min(1, 'Repo GUID is required'),
-        repoVault: z.string().optional().default('{}'),
+        vaultContent: z.string().optional().default('{}'),
       });
     }
 
@@ -281,13 +280,13 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           imageName: existingData.imageName,
           snapshotName: existingData.snapshotName,
         }),
-        [`${resourceType}Vault`]: existingData.vaultContent || '{}',
+        vaultContent: existingData.vaultContent || '{}',
       };
     }
 
     const baseDefaults: ResourceFormValues = {
       teamName: uiMode === 'simple' ? 'Private Team' : '',
-      [`${resourceType}Vault`]: '{}',
+      vaultContent: '{}',
       [`${resourceType}Name`]: '',
     };
 
@@ -295,21 +294,22 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       machine: {
         regionName: uiMode === 'simple' ? 'Default Region' : '',
         bridgeName: uiMode === 'simple' ? 'Global Bridges' : '',
-        machineVault: '{}',
+        vaultContent: '{}',
       },
       repo: {
         machineName: '',
         size: '',
         repoGuid: '', // Add default for repoGuid
+        vaultContent: '{}',
       },
-      team: { teamName: '', teamVault: '{}' },
-      region: { regionName: '', regionVault: '{}' },
-      bridge: { regionName: '', bridgeName: '', bridgeVault: '{}' },
-      cluster: { clusterName: '', clusterVault: '{}' },
-      pool: { clusterName: '', poolName: '', poolVault: '{}' },
-      image: { poolName: '', imageName: '', imageVault: '{}' },
-      snapshot: { poolName: '', imageName: '', snapshotName: '', snapshotVault: '{}' },
-      clone: { poolName: '', imageName: '', snapshotName: '', cloneName: '', cloneVault: '{}' },
+      team: { teamName: '', vaultContent: '{}' },
+      region: { regionName: '', vaultContent: '{}' },
+      bridge: { regionName: '', bridgeName: '', vaultContent: '{}' },
+      cluster: { clusterName: '', vaultContent: '{}' },
+      pool: { clusterName: '', poolName: '', vaultContent: '{}' },
+      image: { poolName: '', imageName: '', vaultContent: '{}' },
+      snapshot: { poolName: '', imageName: '', snapshotName: '', vaultContent: '{}' },
+      clone: { poolName: '', imageName: '', snapshotName: '', cloneName: '', vaultContent: '{}' },
     };
 
     // Merge existingData to override defaults if provided
@@ -471,7 +471,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           imageName: existingData.imageName,
           snapshotName: existingData.snapshotName,
         }),
-        [`${resourceType}Vault`]: existingData.vaultContent || '{}',
+        vaultContent: existingData.vaultContent || '{}',
       });
     }
   }, [open, mode, existingData, resourceType, form]);
@@ -734,8 +734,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
       fields.push({
         name: 'clusterName',
-        label: t('distributedStorage:pools.cluster'),
-        placeholder: t('distributedStorage:pools.selectCluster'),
+        label: t('ceph:pools.cluster'),
+        placeholder: t('ceph:pools.selectCluster'),
         required: true,
         type: 'select' as const,
         options: teamClusters.map((cluster: ClusterOption) => ({
@@ -753,8 +753,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
       fields.push({
         name: 'poolName',
-        label: t('distributedStorage:images.pool'),
-        placeholder: t('distributedStorage:images.selectPool'),
+        label: t('ceph:images.pool'),
+        placeholder: t('ceph:images.selectPool'),
         required: true,
         type: 'select' as const,
         options: teamPools.map((pool: PoolOption) => ({
@@ -769,8 +769,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       if (mode === 'create') {
         fields.push({
           name: 'machineName',
-          label: t('distributedStorage:images.machine'),
-          placeholder: t('distributedStorage:images.selectMachine'),
+          label: t('ceph:images.machine'),
+          placeholder: t('ceph:images.selectMachine'),
           required: true,
           type: 'select' as const,
           options: availableMachines.map((machine) => ({
@@ -791,8 +791,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       if (!existingData?.poolName) {
         fields.push({
           name: 'poolName',
-          label: t('distributedStorage:snapshots.pool'),
-          placeholder: t('distributedStorage:snapshots.selectPool'),
+          label: t('ceph:snapshots.pool'),
+          placeholder: t('ceph:snapshots.selectPool'),
           required: true,
           type: 'select' as const,
           options: teamPools.map((pool: PoolOption) => ({
@@ -805,8 +805,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
       fields.push({
         name: 'imageName',
-        label: t('distributedStorage:snapshots.image'),
-        placeholder: t('distributedStorage:snapshots.selectImage'),
+        label: t('ceph:snapshots.image'),
+        placeholder: t('ceph:snapshots.selectImage'),
         required: true,
         type: 'select' as const,
         options: poolImages.map((image: { imageName: string }) => ({
@@ -827,8 +827,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       if (!existingData?.poolName) {
         fields.push({
           name: 'poolName',
-          label: t('distributedStorage:clones.pool'),
-          placeholder: t('distributedStorage:clones.selectPool'),
+          label: t('ceph:clones.pool'),
+          placeholder: t('ceph:clones.selectPool'),
           required: true,
           type: 'select' as const,
           options: teamPools.map((pool: PoolOption) => ({
@@ -842,8 +842,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       if (!existingData?.imageName) {
         fields.push({
           name: 'imageName',
-          label: t('distributedStorage:clones.image'),
-          placeholder: t('distributedStorage:clones.selectImage'),
+          label: t('ceph:clones.image'),
+          placeholder: t('ceph:clones.selectImage'),
           required: true,
           type: 'select' as const,
           options: poolImages.map((image: { imageName: string }) => ({
@@ -856,8 +856,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
       fields.push({
         name: 'snapshotName',
-        label: t('distributedStorage:clones.snapshot'),
-        placeholder: t('distributedStorage:clones.selectSnapshot'),
+        label: t('ceph:clones.snapshot'),
+        placeholder: t('ceph:clones.selectSnapshot'),
         required: true,
         type: 'select' as const,
         options: imageSnapshots.map((snapshot: { snapshotName: string }) => ({
@@ -878,7 +878,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
   // Helper functions
   const getEntityType = () => resourceType.toUpperCase();
-  const getVaultFieldName = () => `${resourceType}Vault`;
+  const getVaultFieldName = () => 'vaultContent';
 
   const createFunctionSubtitle = (): React.ReactNode => {
     if (!existingData) {
@@ -895,7 +895,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     return (
       <Space size="small">
         <Text type="secondary">{t('machines:team')}:</Text>
-        <Text strong>{teamLabel}</Text>
+        <Text weight="bold">{teamLabel}</Text>
         {['machine', 'repo', 'storage'].includes(resourceType) && resourceName && (
           <>
             <SecondaryLabel type="secondary">
@@ -908,7 +908,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
               )}
               :
             </SecondaryLabel>
-            <Text strong>{resourceName}</Text>
+            <Text weight="bold">{resourceName}</Text>
           </>
         )}
       </Space>
@@ -1212,14 +1212,14 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                         return false;
                       }}
                     >
-                      <ActionButton
+                      <RediaccButton
                         data-testid="resource-modal-import-button"
                         icon={<UploadIcon />}
                       >
                         {t('common:vaultEditor.importJson')}
-                      </ActionButton>
+                      </RediaccButton>
                     </Upload>
-                    <ActionButton
+                    <RediaccButton
                       data-testid="resource-modal-export-button"
                       icon={<DownloadIcon />}
                       onClick={() => {
@@ -1229,7 +1229,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                       }}
                     >
                       {t('common:vaultEditor.exportJson')}
-                    </ActionButton>
+                    </RediaccButton>
                   </Space>
                 </FooterLeftActions>,
               ]
@@ -1246,35 +1246,38 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                 </AutoSetupCheckbox>,
               ]
             : []),
-          <ActionButton key="cancel" data-testid="resource-modal-cancel-button" onClick={onCancel}>
+          <RediaccButton
+            key="cancel"
+            data-testid="resource-modal-cancel-button"
+            onClick={onCancel}
+          >
             {t('general.cancel')}
-          </ActionButton>,
+          </RediaccButton>,
           ...(mode === 'create' && existingData && onUpdateVault
             ? [
-                <ActionButton
+                <RediaccButton
                   key="vault"
                   data-testid="resource-modal-vault-button"
                   onClick={() => vaultModal.open()}
                 >
                   {t('general.vault')}
-                </ActionButton>,
+                </RediaccButton>,
               ]
             : []),
           ...(showFunctions
             ? [
-                <ActionButton
+                <RediaccButton
                   key="functions"
                   data-testid="resource-modal-functions-button"
                   onClick={() => functionModal.open()}
                 >
                   {t(`${resourceType}s.${resourceType}Functions`)}
-                </ActionButton>,
+                </RediaccButton>,
               ]
             : []),
-          <PrimaryActionButton
+          <RediaccButton
             key="submit"
             data-testid="resource-modal-ok-button"
-            type="primary"
             loading={isSubmitting}
             disabled={mode === 'create' && resourceType === 'machine' && !testConnectionSuccess}
             onClick={() => {
@@ -1284,7 +1287,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             }}
           >
             {mode === 'create' ? t('general.create') : t('general.save')}
-          </PrimaryActionButton>,
+          </RediaccButton>,
         ]}
         className={ModalSize.Fullscreen}
       >

@@ -74,7 +74,7 @@ interface CredentialsLocationState {
 
 type RepoFormValues = {
   repoName?: string;
-  repoVault?: string;
+  vaultContent?: string;
   teamName?: string;
   [key: string]: unknown;
 };
@@ -170,7 +170,7 @@ const CredentialsPage: React.FC = () => {
 
               {forks.length > 0 && (
                 <div style={{ marginTop: 16 }}>
-                  <Text strong>{t('repos.affectedForks')}</Text>
+                  <Text weight="bold">{t('repos.affectedForks')}</Text>
                   <InlineList>
                     {forks.map((fork) => (
                       <li key={fork.repoGuid}>
@@ -183,11 +183,11 @@ const CredentialsPage: React.FC = () => {
               )}
 
               <div style={{ marginTop: 16 }}>
-                <Text strong>{t('repos.affectedMachines')}</Text>
+                <Text weight="bold">{t('repos.affectedMachines')}</Text>
                 <InlineList>
                   {affectedMachines.map((machine) => (
                     <li key={machine.machineName}>
-                      <Text strong>{machine.machineName}</Text>
+                      <Text weight="bold">{machine.machineName}</Text>
                       <Text type="secondary"> ({machine.repoNames.join(', ')})</Text>
                     </li>
                   ))}
@@ -195,7 +195,7 @@ const CredentialsPage: React.FC = () => {
               </div>
 
               <Alert
-                type="warning"
+                variant="warning"
                 message={t('repos.removeDeploymentsFirst')}
                 showIcon
                 icon={<WarningOutlined />}
@@ -217,13 +217,13 @@ const CredentialsPage: React.FC = () => {
               <Text>{t('repos.confirmDelete', { repoName: repo.repoName })}</Text>
 
               <Alert
-                type="warning"
+                variant="warning"
                 message={t('repos.machinesWillLoseAccess')}
                 description={
                   <InlineList>
                     {affectedMachines.map((machine) => (
                       <li key={machine.machineName}>
-                        <Text strong>{machine.machineName}</Text>
+                        <Text weight="bold">{machine.machineName}</Text>
                       </li>
                     ))}
                   </InlineList>
@@ -310,12 +310,12 @@ const CredentialsPage: React.FC = () => {
               });
             }
 
-            const vaultData = data.repoVault;
+            const vaultData = data.vaultContent;
             if (vaultData && vaultData !== currentResource.vaultContent) {
               await updateRepoVaultMutation.mutateAsync({
                 teamName: currentResource.teamName,
                 repoName: newName || currentName,
-                repoVault: vaultData,
+                vaultContent: vaultData,
                 vaultVersion: currentResource.vaultVersion + 1,
               });
             }
@@ -349,7 +349,7 @@ const CredentialsPage: React.FC = () => {
           await updateRepoVaultMutation.mutateAsync({
             teamName: currentResource.teamName,
             repoName: currentResource.repoName,
-            repoVault: vault,
+            vaultContent: vault,
             vaultVersion: version,
           });
           refetchRepos();
@@ -406,7 +406,7 @@ const CredentialsPage: React.FC = () => {
           teamVault:
             teams.find((team) => team.teamName === currentResource.teamName)?.vaultContent || '{}',
           repoGuid: currentResource.repoGuid,
-          repoVault: currentResource.vaultContent || '{}',
+          vaultContent: currentResource.vaultContent || '{}',
           repoNetworkId: currentResource.repoNetworkId,
           repoNetworkMode: currentResource.repoNetworkMode,
           repoTag: currentResource.repoTag,

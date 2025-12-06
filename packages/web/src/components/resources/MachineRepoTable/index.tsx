@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Tag, Space, Typography, Button, Tooltip, Input } from 'antd';
+import { Typography, Button, Tooltip, Input } from 'antd';
 import type { TableProps } from 'antd';
 import type { MenuProps } from 'antd';
 import { isAxiosError } from 'axios';
 import styled, { useTheme as useStyledTheme } from 'styled-components';
+import { RediaccAlert, RediaccStack, RediaccTag } from '@/components/ui';
 import {
   CheckCircleOutlined,
   FunctionOutlined,
@@ -103,7 +104,7 @@ const TableStateContainer = styled.div`
   padding: ${({ theme }) => theme.spacing.LG}px;
 `;
 
-const FullWidthStack = styled(Space)`
+const FullWidthStack = styled(RediaccStack).attrs({ direction: 'vertical' })`
   width: 100%;
 `;
 
@@ -111,7 +112,7 @@ const SmallText = styled(Text)`
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
 `;
 
-const GrandTag = styled(Tag)`
+const GrandTag = styled(RediaccTag)`
   margin-left: ${({ theme }) => theme.spacing.XS}px;
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   border: none;
@@ -119,7 +120,7 @@ const GrandTag = styled(Tag)`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-const InlineTag = styled(Tag)`
+const InlineTag = styled(RediaccTag)`
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   border: none;
   background-color: ${({ theme }) => theme.colors.bgSecondary};
@@ -134,7 +135,7 @@ const InfoTag = styled(InlineTag)`
   margin-right: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-const SectionAlert = styled(Alert)`
+const SectionAlert = styled(RediaccAlert)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
@@ -714,7 +715,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
       addedVia: 'machine-Repo-list-quick',
       machineVault: machine.vaultContent || '{}',
       repoGuid: RepoData.repoGuid,
-      repoVault: grandRepoVault,
+      vaultContent: grandRepoVault,
       repoNetworkId: RepoData.repoNetworkId,
       repoNetworkMode: RepoData.repoNetworkMode,
       repoTag: RepoData.repoTag,
@@ -784,7 +785,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             addedVia: 'machine-Repo-list-delete-clone',
             machineVault: machine.vaultContent || '{}',
             repoGuid: context.repoGuid,
-            repoVault: grandRepoVault,
+            vaultContent: grandRepoVault,
             repoNetworkId: context.repoNetworkId,
           });
 
@@ -852,7 +853,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
               </ul>
             </>
           )}
-          <Alert message={t('resources:repos.promoteWarning')} type="warning" showIcon />
+          <Alert message={t('resources:repos.promoteWarning')} variant="warning" showIcon />
         </ModalContent>
       ),
       okText: t('resources:repos.promoteButton'),
@@ -1071,7 +1072,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           <Alert
             message={t('resources:repos.deleteGrandWarning')}
             description={t('resources:repos.deleteGrandWarningDesc', { name: Repo.name })}
-            type="warning"
+            variant="warning"
             showIcon
           />
           <Typography.Text strong>
@@ -1121,7 +1122,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             addedVia: 'machine-Repo-list-delete-grand',
             machineVault: machine.vaultContent || '{}',
             repoGuid: context.repoGuid,
-            repoVault: grandRepoVault,
+            vaultContent: grandRepoVault,
             repoNetworkId: context.repoNetworkId,
           });
 
@@ -1179,7 +1180,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
 
       const finalParams = { ...functionData.params };
       const repoGuid = RepoData.repoGuid;
-      const repoVault = grandRepoVault;
+      const vaultContent = grandRepoVault;
 
       // Handle fork function (local push on same machine)
       if (functionData.function.name === 'fork') {
@@ -1213,7 +1214,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             addedVia: 'machine-Repo-list-fork',
             machineVault: machine.vaultContent || '{}',
             repoGuid: RepoData.repoGuid,
-            repoVault: grandRepoVault,
+            vaultContent: grandRepoVault,
             repoNetworkId: newRepo.repoNetworkId,
             repoNetworkMode: newRepo.repoNetworkMode,
             repoTag: newRepo.repoTag,
@@ -1287,7 +1288,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
               machineVault: machine.vaultContent || '{}',
               destinationMachineVault: destinationMachine.vaultContent || '{}',
               repoGuid,
-              repoVault,
+              vaultContent,
               repoNetworkId: newRepo.repoNetworkId,
               repoNetworkMode: newRepo.repoNetworkMode,
               repoTag: newRepo.repoTag,
@@ -1349,7 +1350,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
               machineVault: machine.vaultContent || '{}',
               destinationStorageVault: destinationStorage.vaultContent || '{}',
               repoGuid,
-              repoVault,
+              vaultContent,
               repoNetworkId: RepoData.repoNetworkId,
               repoNetworkMode: RepoData.repoNetworkMode,
               repoTag: RepoData.repoTag,
@@ -1387,7 +1388,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         addedVia: 'machine-Repo-list',
         machineVault: machine.vaultContent || '{}',
         repoGuid,
-        repoVault,
+        vaultContent,
         repoNetworkId: RepoData.repoNetworkId,
         repoNetworkMode: RepoData.repoNetworkMode,
         repoTag: RepoData.repoTag,
@@ -1991,7 +1992,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         <Alert
           message={t('common:messages.error')}
           description={error}
-          type="error"
+          variant="error"
           showIcon
           action={
             <Tooltip title={t('common:actions.retry')}>
@@ -2063,7 +2064,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
 
           return missingSSHKeys ? (
             <SectionAlert
-              type="warning"
+              variant="warning"
               showIcon
               closable
               message={t('common:vaultEditor.missingSshKeysWarning')}

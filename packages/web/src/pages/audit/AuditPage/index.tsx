@@ -42,7 +42,8 @@ import {
   downloadJSON,
   generateTimestampedFilename,
 } from '@/core';
-import { FilterCard, TableCard, CompactButton } from '@/styles/primitives';
+import { PageCard } from '@/styles/primitives';
+import { RediaccButton as Button } from '@/components/ui';
 import {
   PageWrapper,
   ContentStack,
@@ -193,7 +194,7 @@ const AuditPage = () => {
     <PageWrapper>
       <ContentStack>
         {/* Filters */}
-        <FilterCard data-testid="audit-filter-card">
+        <PageCard data-testid="audit-filter-card">
           <Space orientation="vertical" size="large">
             <Row gutter={[24, 16]}>
               <Col xs={24} sm={24} md={8}>
@@ -315,26 +316,26 @@ const AuditPage = () => {
               </Col>
             </Row>
           </Space>
-        </FilterCard>
+        </PageCard>
 
         {/* Error Display */}
         {isError && (
           <Alert
             message={t('system:audit.errors.loadTitle')}
             description={error?.message || t('system:audit.errors.loadDescription')}
-            type="error"
+            variant="error"
             closable
             showIcon
             action={
-              <CompactButton size="small" onClick={() => refetch()} loading={isLoading}>
+              <Button size="sm" onClick={() => refetch()} loading={isLoading}>
                 {t('system:audit.errors.tryAgain')}
-              </CompactButton>
+              </Button>
             }
           />
         )}
 
         {/* Audit Logs Table */}
-        <TableCard data-testid="audit-table-card">
+        <PageCard data-testid="audit-table-card">
           <Table
             data-testid="audit-table"
             columns={columns}
@@ -377,7 +378,7 @@ const AuditPage = () => {
               ),
             }}
           />
-        </TableCard>
+        </PageCard>
       </ContentStack>
     </PageWrapper>
   );

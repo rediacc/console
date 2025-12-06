@@ -72,10 +72,10 @@ import {
   ErrorWrapper,
 } from '@/components/ui';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccInput as Input } from '@/components/ui';
 import {
   ModalAlert,
   TokenCopyRow,
-  FullWidthInput,
   ACTIONS_COLUMN_WIDTH,
 } from '@/pages/system/styles';
 import { useSelector } from 'react-redux';
@@ -137,8 +137,7 @@ const InfrastructurePage: React.FC = () => {
   type UnifiedFormData = {
     regionName?: string;
     bridgeName?: string;
-    regionVault?: string;
-    bridgeVault?: string;
+    vaultContent?: string;
     vaultVersion?: number;
     [key: string]: unknown;
   };
@@ -153,7 +152,7 @@ const InfrastructurePage: React.FC = () => {
           if (modalData.mode === 'create') {
             await createRegionMutation.mutateAsync({
               regionName: data.regionName as string,
-              regionVault: data.regionVault,
+              regionVault: data.vaultContent,
             });
           } else if (modalData.data) {
             if (data.regionName && data.regionName !== modalData.data.regionName) {
@@ -162,11 +161,11 @@ const InfrastructurePage: React.FC = () => {
                 newRegionName: data.regionName,
               });
             }
-            const vaultData = data.regionVault;
+            const vaultData = data.vaultContent;
             if (vaultData && vaultData !== modalData.data.vaultContent) {
               await updateRegionVaultMutation.mutateAsync({
                 regionName: (data.regionName || modalData.data.regionName) as string,
-                regionVault: vaultData,
+                vaultContent: vaultData,
                 vaultVersion: (modalData.data.vaultVersion ?? 0) + 1,
               });
             }
@@ -177,7 +176,7 @@ const InfrastructurePage: React.FC = () => {
             await createBridgeMutation.mutateAsync({
               regionName: data.regionName as string,
               bridgeName: data.bridgeName as string,
-              bridgeVault: data.bridgeVault,
+              vaultContent: data.vaultContent,
             });
           } else if (modalData.data) {
             const bridgeData = modalData.data as Partial<Bridge>;
@@ -188,12 +187,12 @@ const InfrastructurePage: React.FC = () => {
                 newBridgeName: data.bridgeName,
               });
             }
-            const vaultData = data.bridgeVault;
+            const vaultData = data.vaultContent;
             if (vaultData && vaultData !== bridgeData.vaultContent) {
               await updateBridgeVaultMutation.mutateAsync({
                 regionName: (data.regionName || bridgeData.regionName) as string,
                 bridgeName: (data.bridgeName || bridgeData.bridgeName) as string,
-                bridgeVault: vaultData,
+                vaultContent: vaultData,
                 vaultVersion: (bridgeData.vaultVersion ?? 0) + 1,
               });
             }
@@ -214,7 +213,7 @@ const InfrastructurePage: React.FC = () => {
       if (modalData.resourceType === 'region') {
         await updateRegionVaultMutation.mutateAsync({
           regionName: modalData.data.regionName as string,
-          regionVault: vault,
+          vaultContent: vault,
           vaultVersion: version,
         });
       } else {
@@ -222,7 +221,7 @@ const InfrastructurePage: React.FC = () => {
         await updateBridgeVaultMutation.mutateAsync({
           regionName: bridgeData.regionName as string,
           bridgeName: bridgeData.bridgeName as string,
-          bridgeVault: vault,
+          vaultContent: vault,
           vaultVersion: version,
         });
       }
@@ -697,7 +696,7 @@ const InfrastructurePage: React.FC = () => {
                   <Alert
                     message={t('bridges.accessDenied')}
                     description={t('bridges.accessDeniedDescription')}
-                    type="error"
+                    variant="error"
                     showIcon
                   />
                 </ErrorWrapper>
@@ -710,7 +709,7 @@ const InfrastructurePage: React.FC = () => {
                   <Alert
                     message={t('bridges.noToken')}
                     description={t('bridges.noTokenDescription')}
-                    type="info"
+                    variant="info"
                     showIcon
                   />
                 </ErrorWrapper>
@@ -722,14 +721,14 @@ const InfrastructurePage: React.FC = () => {
                 <ModalAlert
                   message={t('bridges.tokenHeading')}
                   description={t('bridges.tokenDescription')}
-                  type="warning"
+                  variant="warning"
                   showIcon
                 />
 
                 <div>
                   <Typography.Text strong>{t('bridges.tokenLabel')}</Typography.Text>
                   <TokenCopyRow>
-                    <FullWidthInput value={token} readOnly autoComplete="off" />
+                    <Input fullWidth value={token} readOnly autoComplete="off" />
                     <Button
                       icon={<KeyOutlined />}
                       onClick={() => {
@@ -744,7 +743,7 @@ const InfrastructurePage: React.FC = () => {
                 <ModalAlert
                   message={tCommon('general.important')}
                   description={t('bridges.tokenImportant')}
-                  type="info"
+                  variant="info"
                   showIcon
                 />
               </ModalStackLarge>
@@ -809,7 +808,7 @@ const InfrastructurePage: React.FC = () => {
                 description={t('bridges.resetAuthWarning', {
                   bridge: resetAuthModal.state.data.bridgeName,
                 })}
-                type="warning"
+                variant="warning"
                 showIcon
               />
 

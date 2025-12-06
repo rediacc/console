@@ -62,7 +62,7 @@ import { featureFlags } from '@/config/featureFlags';
 interface StorageFormValues extends Record<string, unknown> {
   storageName: string;
   teamName: string;
-  storageVault?: string;
+  vaultContent?: string;
 }
 
 interface StorageFunctionParams {
@@ -175,12 +175,12 @@ const StoragePage: React.FC = () => {
               });
             }
 
-            const vaultData = data.storageVault;
+            const vaultData = data.vaultContent;
             if (vaultData && vaultData !== currentResource.vaultContent) {
               await updateStorageVaultMutation.mutateAsync({
                 teamName: currentResource.teamName,
                 storageName: newName || currentName,
-                storageVault: vaultData,
+                vaultContent: vaultData,
                 vaultVersion: currentResource.vaultVersion + 1,
               });
             }
@@ -211,7 +211,7 @@ const StoragePage: React.FC = () => {
           await updateStorageVaultMutation.mutateAsync({
             teamName: currentResource.teamName,
             storageName: currentResource.storageName,
-            storageVault: vault,
+            vaultContent: vault,
             vaultVersion: version,
           });
           refetchStorage();

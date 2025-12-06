@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Button, Space, Tag, Typography, Alert, Tooltip } from 'antd';
+import { Button as AntButton, Space, Tag, Typography, Alert, Tooltip } from 'antd';
 import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
@@ -12,8 +12,9 @@ import { Machine, PluginContainer } from '@/types';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { useQueueTraceModal } from '@/hooks/useDialogState';
-import { IconButton } from '@/styles/primitives';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccButton as Button } from '@/components/ui';
+import { ActionGroup } from '@/components/common/styled';
 import {
   PageWrapper,
   FullHeightCard,
@@ -22,7 +23,6 @@ import {
   HeaderRow,
   TitleColumn,
   TitleRow,
-  TagRow,
   ActionsRow,
   SplitLayout,
   ListPanel,
@@ -194,12 +194,12 @@ const RepoContainersPage: React.FC = () => {
             description={
               <ErrorWrapper>
                 <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
-                <Button type="primary" onClick={handleBackToMachines}>
+                <AntButton type="primary" onClick={handleBackToMachines}>
                   {t('machines:backToMachines')}
-                </Button>
+                </AntButton>
               </ErrorWrapper>
             }
-            type="error"
+            variant="error"
             showIcon
           />
         </FullHeightCard>
@@ -217,12 +217,12 @@ const RepoContainersPage: React.FC = () => {
             description={
               <ErrorWrapper>
                 <p>{t('machines:repoNotFoundDescription', { repoName: repoName, machineName })}</p>
-                <Button type="primary" onClick={handleBackToRepos}>
+                <AntButton type="primary" onClick={handleBackToRepos}>
                   {t('machines:backToRepos')}
-                </Button>
+                </AntButton>
               </ErrorWrapper>
             }
-            type="error"
+            variant="error"
             showIcon
           />
         </FullHeightCard>
@@ -266,7 +266,8 @@ const RepoContainersPage: React.FC = () => {
             <TitleColumn>
               <TitleRow>
                 <Tooltip title={t('machines:backToRepos')}>
-                  <IconButton
+                  <Button
+                    iconOnly
                     icon={<DoubleLeftOutlined />}
                     onClick={handleBackToRepos}
                     aria-label={t('machines:backToRepos')}
@@ -282,7 +283,7 @@ const RepoContainersPage: React.FC = () => {
                   </Space>
                 </HeaderTitleText>
               </TitleRow>
-              <TagRow>
+              <ActionGroup>
                 <Tag color="purple">
                   {t('machines:machine')}: {actualMachine.machineName}
                 </Tag>
@@ -297,12 +298,13 @@ const RepoContainersPage: React.FC = () => {
                     {t('machines:region')}: {actualMachine.regionName}
                   </Tag>
                 )}
-              </TagRow>
+              </ActionGroup>
             </TitleColumn>
 
             <ActionsRow>
               <Tooltip title={t('common:actions.refresh')}>
-                <IconButton
+                <Button
+                  iconOnly
                   icon={<ReloadOutlined />}
                   onClick={handleRefresh}
                   data-testid="repo-containers-refresh-button"

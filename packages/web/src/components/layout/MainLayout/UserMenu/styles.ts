@@ -1,10 +1,9 @@
 import styled from 'styled-components';
-import { Avatar, Badge, Typography, Button, Segmented, Divider } from 'antd';
+import { Avatar, Segmented } from 'antd';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { FlexColumn } from '@/styles/primitives';
 import { InlineStack, FlexBetween } from '@/components/common/styled';
-
-const { Text } = Typography;
+import { RediaccText, RediaccButton, RediaccBadge, RediaccDivider } from '@/components/ui';
 
 export const MenuContainer = styled(FlexColumn).attrs({ $gap: 'MD' })`
   width: 320px;
@@ -22,17 +21,17 @@ export const UserDetails = styled.div`
   min-width: 0;
 `;
 
-export const UserEmail = styled(Text)`
+export const UserEmail = styled(RediaccText).attrs({ weight: 'semibold' })`
   display: block;
 `;
 
-export const CompanyName = styled(Text)`
+export const CompanyName = styled(RediaccText)`
   font-size: 12px;
   color: var(--color-text-secondary);
   display: block;
 `;
 
-export const PlanBadge = styled(Badge)`
+export const PlanBadge = styled(RediaccBadge)`
   .ant-badge-count {
     background-color: var(--color-primary);
     font-size: ${DESIGN_TOKENS.FONT_SIZE.XS}px;
@@ -46,11 +45,11 @@ export const PlanBadge = styled(Badge)`
   }
 `;
 
-export const MenuDivider = styled(Divider)`
+export const MenuDivider = styled(RediaccDivider)`
   margin: 0;
 `;
 
-export const SectionLabel = styled(Text)`
+export const SectionLabel = styled(RediaccText)`
   font-size: 12px;
   color: var(--color-text-secondary);
 `;
@@ -62,23 +61,23 @@ export const ModeSegmented = styled(Segmented)`
 
 export const AppearanceRow = styled(FlexBetween)``;
 
-export const SectionTitle = styled(Text)`
+export const SectionTitle = styled(RediaccText).attrs({ weight: 'semibold' })`
   display: block;
 `;
 
-export const SectionDescription = styled(Text)`
+export const SectionDescription = styled(RediaccText)`
   font-size: 12px;
   color: var(--color-text-secondary);
 `;
 
 export const LanguageSection = styled.div``;
 
-export const LanguageTitle = styled(Text)`
+export const LanguageTitle = styled(RediaccText).attrs({ weight: 'semibold' })`
   display: block;
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const LogoutButton = styled(Button)`
+export const LogoutButton = styled(RediaccButton)`
   width: 100%;
   justify-content: flex-start;
   gap: ${({ theme }) => theme.spacing.SM}px;

@@ -1,9 +1,10 @@
 import React from 'react';
-import { Form, Input } from 'antd';
+import { Form } from 'antd';
 import type { Rule } from 'antd/es/form';
 import styled from 'styled-components';
+import { RediaccInput } from '@/components/ui';
 
-const CenteredInput = styled(Input)`
+const CenteredInput = styled(RediaccInput)`
   text-align: center;
   letter-spacing: 0.5em;
   font-family: monospace;

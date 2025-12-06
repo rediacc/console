@@ -105,7 +105,7 @@
     "architecture": "Architecture",
     "audit": "Audit",
     "dashboard": "Dashboard",
-    "distributedStorage": "Distributed Storage",
+    "ceph": "Distributed Storage",
     "logout": "Logout",
     "mainNavigation": "Main navigation",
     "queue": "Queue",
@@ -122,9 +122,9 @@
     "settingsInfrastructure": "Infrastructure",
     "storageCloud": "Cloud",
     "storageDistributed": "Distributed",
-    "distributedStorageClusters": "Clusters",
-    "distributedStoragePools": "Pools",
-    "distributedStorageMachines": "Machines"
+    "cephClusters": "Clusters",
+    "cephPools": "Pools",
+    "cephMachines": "Machines"
   },
   "nestedObjectEditor": {
     "Active": "Active",

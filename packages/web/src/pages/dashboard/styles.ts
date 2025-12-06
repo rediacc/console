@@ -1,10 +1,10 @@
 import styled from 'styled-components';
-import { Card, Space, Typography, Badge, Progress, List, Timeline } from 'antd';
+import { Typography, Timeline } from 'antd';
 import { Link as RouterLink } from 'react-router-dom';
+import { RediaccText as UnifiedText, RediaccCard, RediaccBadge, RediaccProgress, RediaccList, RediaccStack } from '@/components/ui';
 import {
   PageContainer,
   scrollbarStyles,
-  SecondaryText,
   FlexRow,
   FlexColumn,
 } from '@/styles/primitives';
@@ -19,18 +19,16 @@ import {
   Divider,
 } from '@/components/common/styled';
 
-const { Text } = Typography;
-
 export const PageWrapper = PageContainer;
 
 // Re-export from common/styled
 export { ContentStack, CenteredState, FlexBetween, InlineStack, StatRow, Divider };
 
-export const DashboardCard = styled(Card)`
+export const DashboardCard = styled(RediaccCard)`
   width: 100%;
 `;
 
-export const SectionDescription = SecondaryText;
+export const SectionDescription = styled(UnifiedText).attrs({ color: 'secondary' })``;
 
 export const ResourceTile = styled.div`
   padding: ${({ theme }) => theme.spacing.MD}px;
@@ -49,22 +47,19 @@ export const TileHeader = styled(FlexRow).attrs({ $justify: 'space-between', $ga
   width: 100%;
 `;
 
-export const TileMeta = styled(Text)`
+export const TileMeta = styled(UnifiedText).attrs({ color: 'secondary', weight: 'medium' })`
   && {
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
+    display: inline-block;
   }
 `;
 
-export const ResourceProgress = styled(Progress)`
+export const ResourceProgress = styled(RediaccProgress)`
   margin: ${({ theme }) => theme.spacing.SM}px 0;
 `;
 
-export const SectionLabel = styled(Text)`
+export const SectionLabel = styled(UnifiedText).attrs({ color: 'secondary', size: 'sm' })`
   && {
     display: block;
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
     letter-spacing: ${({ theme }) => theme.letterSpacing.WIDE};
   }
 `;
@@ -99,7 +94,7 @@ export const LicenseHeader = styled(FlexRow).attrs({ $justify: 'space-between', 
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const StatList = styled(Space).attrs({ orientation: 'vertical', size: 'middle' })`
+export const StatList = styled(RediaccStack).attrs({ direction: 'vertical', gap: 'md' })`
   width: 100%;
 `;
 
@@ -118,7 +113,7 @@ export const InlineLink = styled(RouterLink)`
 
 export const QueueBadgeRow = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
-export const QueueBadge = styled(Badge)<{ $variant?: 'error' | 'warning' | 'info' | 'muted' }>`
+export const QueueBadge = styled(RediaccBadge)<{ $variant?: 'error' | 'warning' | 'info' | 'muted' }>`
   .ant-scroll-number {
     background-color: ${({ theme, $variant }) => {
       switch ($variant) {
@@ -142,9 +137,9 @@ export const TimelineWrapper = styled(Timeline)`
   width: 100%;
 `;
 
-const { Item: AntListItem } = List;
+const { Item: AntListItem } = RediaccList;
 
-export const BorderlessList = styled(List)`
+export const BorderlessList = styled(RediaccList)`
   width: 100%;
 
   .ant-list-item {
@@ -161,14 +156,7 @@ export const BorderlessListItem = styled(AntListItem)`
   }
 `;
 
-export const AuditMeta = styled(Text)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
-
-export { EmptyStateWrapper as EmptyState } from '@/styles/primitives';
+export const AuditMeta = styled(UnifiedText).attrs({ size: 'sm', color: 'secondary' })``;
 
 export const SectionFooter = styled(FlexRow).attrs({ $justify: 'space-between' })`
   width: 100%;
@@ -177,14 +165,14 @@ export const SectionFooter = styled(FlexRow).attrs({ $justify: 'space-between' }
   border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
 `;
 
-export const PlanCountBadge = styled(Badge)`
+export const PlanCountBadge = styled(RediaccBadge)`
   .ant-scroll-number {
     background-color: ${({ theme }) => theme.colors.textPrimary};
     color: ${({ theme }) => theme.colors.bgPrimary};
   }
 `;
 
-export const QuantityBadge = styled(Badge)`
+export const QuantityBadge = styled(RediaccBadge)`
   .ant-scroll-number {
     background-color: ${({ theme }) => theme.colors.success};
     color: ${({ theme }) => theme.colors.bgPrimary};

@@ -229,7 +229,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     >
       <Tooltip title={t('fieldGenerator.tooltip')}>
         <GeneratorButton
-          type="text"
+          variant="text"
           icon={<KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
           size="small"
           data-testid={props['data-testid'] || 'vault-editor-field-generator'}

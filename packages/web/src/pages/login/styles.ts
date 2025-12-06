@@ -1,13 +1,11 @@
 import styled from 'styled-components';
-import { Button, Input, Form } from 'antd';
+import { Form } from 'antd';
+import { RediaccInput as Input, RediaccPasswordInput as PasswordInput } from '@/components/ui/Form';
+import { RediaccButton } from '@/components/ui/Button';
 import {
   fadeInAnimation,
-  LargeInput,
-  LargePasswordInput,
-  LargeSubmitButton,
   ErrorAlert,
   FullWidthSpace as BaseFullWidthSpace,
-  SubmitButton,
   FlexRow,
 } from '@/styles/primitives';
 
@@ -71,26 +69,15 @@ export const AdvancedOptionsContainer = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const AdvancedOptionsButton = styled(Button)`
-  color: ${({ theme }) => theme.colors.textTertiary};
-  font-size: ${({ theme }) => theme.fontSize.SM}px;
-  height: auto;
-  padding: ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.spacing.SM}px;
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-  transition: ${({ theme }) => theme.transitions.DEFAULT};
-
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.bgHover};
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
-
-export const LoginButton = styled(LargeSubmitButton)`
+export const AdvancedOptionsButton = styled(RediaccButton).attrs({ variant: 'text', size: 'sm' })`
   && {
-    box-shadow: ${({ theme }) => theme.shadows.BUTTON_DEFAULT};
+    color: ${({ theme }) => theme.colors.textTertiary};
+    height: auto;
+    padding: ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.spacing.SM}px;
 
-    &:active:not(:disabled) {
-      transform: translateY(0);
+    &:hover {
+      background-color: ${({ theme }) => theme.colors.bgHover};
+      color: ${({ theme }) => theme.colors.textSecondary};
     }
   }
 `;
@@ -152,18 +139,17 @@ export const TFAModalTitle = styled(FlexRow).attrs({ $gap: 'SM' })`
   }
 `;
 
-export const TFACodeInput = styled(Input)`
-  text-align: center;
-  font-size: ${({ theme }) => theme.fontSize.XL}px;
-  letter-spacing: ${({ theme }) => theme.spacing.SM}px;
+export const TFACodeInput = styled(RediaccInput).attrs({ centered: true })`
+  && {
+    font-size: ${({ theme }) => theme.fontSize.XL}px;
+    letter-spacing: ${({ theme }) => theme.spacing.SM}px;
+  }
 `;
 
 export const TFAButtonContainer = styled(FlexRow).attrs({ $justify: 'flex-end', $gap: 'SM' })`
   width: 100%;
 `;
 
-export const TFAVerifyButton = styled(SubmitButton)``;
-
-// Use primitives for large inputs
-export const StyledInput = LargeInput;
-export const StyledPasswordInput = LargePasswordInput;
+// Use unified Form components with medium size (no wrapper needed)
+export const StyledInput = RediaccInput;
+export const StyledPasswordInput = PasswordInput;

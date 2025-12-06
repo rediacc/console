@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { Space } from 'antd';
+import { RediaccStack } from '@/components/ui';
 
-export const ContentSpace = styled(Space)`
+export const ContentSpace = styled(RediaccStack).attrs({ direction: 'vertical' })`
   width: 100%;
 `;
 
@@ -10,7 +10,7 @@ export const SourceLabel = styled.div`
   font-weight: 500;
 `;
 
-export const SourceContainer = styled(Space)`
+export const SourceContainer = styled(RediaccStack).attrs({ direction: 'horizontal' })`
   width: 100%;
   justify-content: space-between;
 `;

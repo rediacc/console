@@ -104,7 +104,7 @@
     "audit": "Auditoría",
     "credentials": "Credenciales",
     "dashboard": "Panel",
-    "distributedStorage": "Almacenamiento distribuido",
+    "ceph": "Almacenamiento distribuido",
     "logout": "Cerrar sesión",
     "machines": "Máquinas",
     "mainNavigation": "Navegación principal",
@@ -121,9 +121,9 @@
     "storage": "Almacenamiento",
     "storageCloud": "Cloud",
     "storageDistributed": "Distributed",
-    "distributedStorageClusters": "Clústeres",
-    "distributedStoragePools": "Pools",
-    "distributedStorageMachines": "Máquinas",
+    "cephClusters": "Clústeres",
+    "cephPools": "Pools",
+    "cephMachines": "Máquinas",
     "system": "Sistema"
   },
   "nestedObjectEditor": {

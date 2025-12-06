@@ -893,7 +893,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
 
         {/* Info message */}
         <Alert
-          type="info"
+          variant="info"
           message={t('resources:remoteFiles.info')}
           showIcon
           data-testid="file-browser-info-alert"

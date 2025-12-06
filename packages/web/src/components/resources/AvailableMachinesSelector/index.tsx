@@ -4,7 +4,7 @@ import type { DefaultOptionType } from 'antd/es/select';
 import { CloudServerOutlined, CheckCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import type { Machine } from '@/types';
-import { useAvailableMachinesForClone } from '@/api/queries/distributedStorage';
+import { useAvailableMachinesForClone } from '@/api/queries/ceph';
 import MachineAssignmentStatusBadge from '../MachineAssignmentStatusBadge';
 import {
   StyledSelect,
@@ -15,11 +15,10 @@ import {
   TeamTag,
   BridgeTag,
   StatusContainer,
-  StatusTag,
   StatusIcon,
-  StatusText,
   EmptyDescription,
 } from './styles';
+import { RediaccText as Text, RediaccTag as Tag } from '@/components/ui';
 
 const { Option } = Select;
 
@@ -74,7 +73,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
 
   const renderMachineOption = (machine: Machine) => {
     const isAssigned =
-      machine.distributedStorageClusterName ||
+      machine.cephClusterName ||
       machine.assignmentStatus?.assignmentType !== 'AVAILABLE';
     const isDisabled = !allowSelectAssigned && isAssigned;
 
@@ -102,17 +101,17 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
           {showAssignmentStatus && (
             <StatusContainer>
               {isAssigned ? (
-                machine.distributedStorageClusterName ? (
-                  <StatusTag
-                    $variant="cluster"
+                machine.cephClusterName ? (
+                  <Tag
+                    variant="primary"
                     data-testid={`available-machines-cluster-tag-${machine.machineName}`}
                   >
                     <StatusIcon as={WarningOutlined} />
-                    <StatusText>
+                    <Text variant="caption">
                       {t('machines:assignmentStatus.cluster')}:{' '}
-                      {machine.distributedStorageClusterName}
-                    </StatusText>
-                  </StatusTag>
+                      {machine.cephClusterName}
+                    </Text>
+                  </Tag>
                 ) : machine.assignmentStatus ? (
                   <MachineAssignmentStatusBadge
                     assignmentType={machine.assignmentStatus.assignmentType}
@@ -121,13 +120,13 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                   />
                 ) : null
               ) : (
-                <StatusTag
-                  $variant="available"
+                <Tag
+                  variant="success"
                   data-testid={`available-machines-available-tag-${machine.machineName}`}
                 >
                   <StatusIcon as={CheckCircleOutlined} />
-                  <StatusText>{t('machines:assignmentStatus.available')}</StatusText>
-                </StatusTag>
+                  <Text variant="caption">{t('machines:assignmentStatus.available')}</Text>
+                </Tag>
               )}
             </StatusContainer>
           )}

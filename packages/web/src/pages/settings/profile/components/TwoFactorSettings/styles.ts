@@ -1,14 +1,15 @@
 import styled from 'styled-components';
-import { Space, Alert, Typography, Input, Form } from 'antd';
+import { Space, Typography, Form } from 'antd';
 import { SafetyCertificateOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import {
-  PrimaryButton as PrimitivePrimaryButton,
   StyledIcon,
   NeutralStack,
   FlexRow,
 } from '@/styles/primitives';
 import { InlineStack } from '@/components/common/styled';
+import { RediaccInput } from '@/components/ui/Form/Input';
+import { RediaccAlert } from '@/components/ui';
 
 type SpacingKey = keyof typeof DESIGN_TOKENS.SPACING;
 
@@ -57,7 +58,7 @@ export const QRCodeContainer = styled.div`
   display: inline-flex;
 `;
 
-export const ManualSetupAlert = styled(Alert)`
+export const ManualSetupAlert = styled(RediaccAlert)`
   width: 100%;
 `;
 
@@ -66,15 +67,16 @@ export const SecretInputRow = styled(Space.Compact)`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const SecretInput = styled(Input)`
+export const SecretInput = styled(RediaccInput)`
   && {
     font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   }
 `;
 
-export const CenteredCodeInput = styled(Input)`
+export const CenteredCodeInput = styled(RediaccInput).attrs({
+  centered: true,
+})`
   && {
-    text-align: center;
     font-size: ${({ theme }) => theme.fontSize.XL}px;
     letter-spacing: ${DESIGN_TOKENS.LETTER_SPACING.WIDE};
   }
@@ -89,9 +91,7 @@ export const FormActionRow = styled(FlexRow).attrs<{ $align?: 'space-between' | 
   width: 100%;
 `;
 
-export const PrimaryButton = PrimitivePrimaryButton;
-
-export const AlertSpacer = styled(Alert)`
+export const AlertSpacer = styled(RediaccAlert)`
   margin-bottom: ${({ theme }) => theme.spacing.LG}px;
 `;
 

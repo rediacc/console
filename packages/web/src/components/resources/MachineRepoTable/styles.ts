@@ -2,7 +2,8 @@ import styled, { css } from 'styled-components';
 import { Table as AntTable } from 'antd';
 import type { TableProps } from 'antd';
 import type { ComponentType } from 'react';
-import { ExpandIcon as BaseExpandIcon, CaptionText } from '@/styles/primitives';
+import { ExpandIcon as BaseExpandIcon } from '@/styles/primitives';
+import { RediaccText } from '@/components/ui/Text';
 
 const withAlpha = (color: string, alphaHex: string) =>
   color.startsWith('#') ? `${color}${alphaHex}` : color;
@@ -134,4 +135,6 @@ export const ExpandIcon = styled(BaseExpandIcon).attrs<{
   width: 12px;
 `;
 
-export const PortText = styled(CaptionText)``;
+export const PortText = styled(RediaccText).attrs({
+  size: 'xs',
+})``;

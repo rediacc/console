@@ -3,11 +3,11 @@ import { Modal, Space, message, Upload, Tooltip } from 'antd';
 import type { RcFile } from 'antd/es/upload';
 import { CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import { RediaccButton } from '@/components/ui';
 import VaultEditor from '../VaultEditor';
 import { ModalSize } from '@/types/modal';
 import {
   ActionGroup,
-  CancelButton,
   ContentStack,
   DownloadIcon,
   FileActionButton,
@@ -25,7 +25,6 @@ import {
   VersionLabel,
   VersionTag,
   WarningIcon,
-  SaveButton,
 } from './styles';
 
 interface VaultEditorModalProps {
@@ -209,7 +208,8 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               </>
             )}
             <Tooltip title={t('actions.cancel')}>
-              <CancelButton
+              <RediaccButton
+                iconOnly
                 icon={<CloseOutlined />}
                 onClick={onCancel}
                 data-testid="vault-modal-cancel-button"
@@ -217,8 +217,8 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               />
             </Tooltip>
             <Tooltip title={t('vaultEditor.saveVaultConfiguration')}>
-              <SaveButton
-                type="primary"
+              <RediaccButton
+                iconOnly
                 icon={<SaveOutlined />}
                 onClick={handleSave}
                 loading={loading}

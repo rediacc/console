@@ -1,17 +1,17 @@
 import styled from 'styled-components';
-import { Card, Breadcrumb, Typography } from 'antd';
+import { Breadcrumb, Typography } from 'antd';
 import { PageContainer, SectionStack, SectionHeaderRow, FlexRow } from '@/styles/primitives';
 import {
   ActionsRow,
   CenteredState as BaseCenteredState,
-  ActionGroup,
 } from '@/components/common/styled';
+import { RediaccCard } from '@/components/ui';
 
 export const PageWrapper = styled(PageContainer)`
   height: 100%;
 `;
 
-export const FullHeightCard = styled(Card)`
+export const FullHeightCard = styled(RediaccCard)`
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -47,8 +47,6 @@ export const HeaderTitleText = styled(Title)`
     margin: 0;
   }
 `;
-
-export const TagRow = styled(ActionGroup)``;
 
 export { ActionsRow };
 

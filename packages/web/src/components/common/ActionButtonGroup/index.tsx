@@ -203,7 +203,7 @@ export function ActionButtonGroup<T>({
 
         const buttonElement = (
           <TableActionButton
-            type={config.variant || 'default'}
+            variant={config.variant === 'primary' ? 'primary' : undefined}
             icon={config.icon}
             danger={config.danger}
             disabled={isDisabled}

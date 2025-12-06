@@ -14,7 +14,7 @@ interface RepoCreationData {
   machineName?: string;
   size?: string;
   repoGuid?: string;
-  repoVault?: string;
+  vaultContent?: string;
   tmpl?: string;
   keep_open?: boolean;
 }
@@ -84,7 +84,7 @@ export function useRepoCreation(machines: Machine[]): UseRepoCreationReturn {
           const repoList = await api.repos.list(data.teamName);
           const createdRepo = repoList.find((repo) => repo.repoName === data.repoName);
 
-          const repoVault = createdRepo?.repoVault || data.repoVault || '{}';
+          const repoVault = createdRepo?.vaultContent || data.vaultContent || '{}';
           const repoGuid = createdRepo?.repoGuid || '';
 
           if (!repoGuid) {

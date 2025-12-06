@@ -34,7 +34,7 @@ const SandboxWarning: React.FC = () => {
   return (
     <SandboxBanner
       banner
-      type="warning"
+      variant="warning"
       showIcon={false}
       closable={false}
       message={

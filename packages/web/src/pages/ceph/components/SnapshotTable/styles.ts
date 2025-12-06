@@ -1,0 +1,52 @@
+import styled from 'styled-components';
+import { CameraOutlined } from '@ant-design/icons';
+import {
+  FlexColumn,
+  FlexRow,
+  StyledIcon,
+  IconActionButton,
+} from '@/styles/primitives';
+import { RediaccTag } from '@/components/ui';
+import { TableWrapper, NameCell, NameText as BaseNameText } from '../../styles/tableAliases';
+
+export const Container = styled(FlexColumn).attrs({ $gap: 'MD' })`
+  padding: ${({ theme }) => theme.spacing.MD}px;
+  background: var(--color-fill-quaternary);
+  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+`;
+
+export const Title = styled.h4`
+  margin: 0;
+  font-size: ${({ theme }) => theme.fontSize.H4}px;
+  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const ActionsRow = styled(FlexRow).attrs({ $gap: 'XS', $justify: 'flex-start' })``;
+
+export { TableWrapper, NameCell };
+
+export const NameIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: CameraOutlined,
+  $size: 'MD',
+  $color: theme.colors.primary,
+}))``;
+
+export const NameText = styled(BaseNameText)`
+  font-size: ${({ theme }) => theme.fontSize.BASE}px;
+`;
+
+export const VaultTag = styled(RediaccTag).attrs({
+  variant: 'neutral',
+  size: 'sm',
+})``;
+
+export const GuidText = styled.span`
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const ExpandButton = styled(IconActionButton)`
+  margin-right: ${({ theme }) => theme.spacing.SM}px;
+`;

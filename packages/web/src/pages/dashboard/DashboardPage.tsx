@@ -27,8 +27,9 @@ import {
 import { useDashboard } from '@/api/queries/dashboard';
 import type { QueueTeamIssue, QueueMachineIssue } from '@rediacc/shared/types';
 import { useRecentAuditLogs } from '@/api/queries/audit';
-import DistributedStorageDashboardWidget from '@/pages/dashboard/components/DistributedStorageDashboardWidget';
+import CephDashboardWidget from '@/pages/dashboard/components/CephDashboardWidget';
 import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
+import { EmptyStateWrapper } from '@/styles/primitives';
 import { createSorter } from '@/core';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
@@ -60,7 +61,6 @@ import {
   BorderlessList,
   BorderlessListItem,
   AuditMeta,
-  EmptyState,
   SectionFooter,
   PlanCountBadge,
   QuantityBadge,
@@ -182,7 +182,7 @@ const DashboardPage: React.FC = () => {
         <Alert
           message="Error"
           description="Failed to load dashboard data. Please try again later."
-          type="error"
+          variant="error"
           showIcon
           icon={<AlertOutlined />}
           data-testid="dashboard-error-alert"
@@ -221,7 +221,7 @@ const DashboardPage: React.FC = () => {
           <Alert
             message="Subscription Expiring Soon"
             description={`Your ${dashboard.activeSubscription.planCode} subscription expires in ${dashboard.activeSubscription.daysRemaining} days.`}
-            type="warning"
+            variant="warning"
             showIcon
             icon={<ClockCircleOutlined />}
             data-testid="dashboard-alert-subscription-expiring"
@@ -232,7 +232,7 @@ const DashboardPage: React.FC = () => {
           <Alert
             message="Resource Limits Reached"
             description={`${accountHealth.resourcesAtLimit} resource type(s) have reached their limits. Consider upgrading your plan to continue scaling.`}
-            type="error"
+            variant="error"
             showIcon
             icon={<ExclamationCircleOutlined />}
             data-testid="dashboard-alert-resource-limits"
@@ -269,7 +269,7 @@ const DashboardPage: React.FC = () => {
                         <TileHeader>
                           <InlineStack>
                             {resourceIcons[resource.resourceType]}
-                            <Text strong>{resource.resourceType}s</Text>
+                            <Text weight="bold">{resource.resourceType}s</Text>
                           </InlineStack>
                           <TileMeta>
                             {resource.currentUsage} /{' '}
@@ -379,7 +379,7 @@ const DashboardPage: React.FC = () => {
                           >
                             <LicenseHeader>
                               <InlineStack>
-                                <Text strong>{sub.planCode}</Text>
+                                <Text weight="bold">{sub.planCode}</Text>
                                 <QuantityBadge count={`×${sub.quantity}`} />
                                 {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
                               </InlineStack>
@@ -515,7 +515,7 @@ const DashboardPage: React.FC = () => {
                   {queueStats.hasStaleItems === 1 && (
                     <Alert
                       message={`${queueStats.staleCount || 0} stale items`}
-                      type="warning"
+                      variant="warning"
                       showIcon
                       icon={<WarningOutlined />}
                       data-testid="dashboard-alert-stale-items"
@@ -524,7 +524,7 @@ const DashboardPage: React.FC = () => {
                   {queueStats.hasOldPendingItems === 1 && (
                     <Alert
                       message={`Oldest: ${Math.floor((queueStats.oldestPendingAgeMinutes || 0) / 60)}h`}
-                      type="info"
+                      variant="info"
                       showIcon
                       icon={<FieldTimeOutlined />}
                       data-testid="dashboard-alert-old-pending"
@@ -561,7 +561,7 @@ const DashboardPage: React.FC = () => {
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={8}>
                 <ResourceTile>
-                  <Text strong>Today&apos;s Activity</Text>
+                  <Text weight="bold">Today&apos;s Activity</Text>
                   <StatList>
                     <StatRow>
                       <StatLabel>Created</StatLabel>
@@ -595,7 +595,7 @@ const DashboardPage: React.FC = () => {
                 <StatList>
                   {teamIssues.length > 0 && (
                     <div>
-                      <Text strong style={{ marginBottom: theme.spacing.SM }}>
+                      <Text weight="bold" style={{ marginBottom: theme.spacing.SM }}>
                         <TeamOutlined /> Team Queue Status
                       </Text>
                       <BorderlessList
@@ -607,7 +607,7 @@ const DashboardPage: React.FC = () => {
                           return (
                             <BorderlessListItem>
                               <FlexBetween>
-                                <Text strong>{teamIssue.teamName}</Text>
+                                <Text weight="bold">{teamIssue.teamName}</Text>
                                 <InlineStack>
                                   {(teamIssue.staleItems || 0) > 0 && (
                                     <Tag color="warning">
@@ -627,7 +627,7 @@ const DashboardPage: React.FC = () => {
 
                   {machineIssues.length > 0 && (
                     <div>
-                      <Text strong style={{ marginBottom: theme.spacing.SM }}>
+                      <Text weight="bold" style={{ marginBottom: theme.spacing.SM }}>
                         <DesktopOutlined /> Machine Queue Status
                       </Text>
                       <HorizontalScroll>
@@ -646,7 +646,7 @@ const DashboardPage: React.FC = () => {
                   {featureAccess?.hasAdvancedAnalytics === 1 &&
                     queueStats.highestPriorityPending !== null && (
                       <ResourceTile>
-                        <Text strong>
+                        <Text weight="bold">
                           <ThunderboltOutlined /> Priority Breakdown
                         </Text>
                         <QueueBadgeRow>
@@ -691,8 +691,8 @@ const DashboardPage: React.FC = () => {
           </DashboardCard>
         )}
 
-        {featureAccess?.hasAdvancedAnalytics === 1 && dashboard.distributedStorageStats && (
-          <DistributedStorageDashboardWidget stats={dashboard.distributedStorageStats} />
+        {featureAccess?.hasAdvancedAnalytics === 1 && dashboard.cephStats && (
+          <CephDashboardWidget stats={dashboard.cephStats} />
         )}
 
         {accountHealth ? (
@@ -730,7 +730,7 @@ const DashboardPage: React.FC = () => {
               </StatList>
 
               <SectionFooter>
-                <Text strong>{accountHealth.upgradeRecommendation}</Text>
+                <Text weight="bold">{accountHealth.upgradeRecommendation}</Text>
               </SectionFooter>
             </StatList>
           </DashboardCard>
@@ -763,11 +763,11 @@ const DashboardPage: React.FC = () => {
           data-testid="dashboard-card-recent-activity"
         >
           {auditLoading ? (
-            <EmptyState>
+            <EmptyStateWrapper>
               <LoadingWrapper loading centered minHeight={120}>
                 <div />
               </LoadingWrapper>
-            </EmptyState>
+            </EmptyStateWrapper>
           ) : auditLogs && auditLogs.length > 0 ? (
             <TimelineWrapper
               items={auditLogs
@@ -785,7 +785,7 @@ const DashboardPage: React.FC = () => {
                     <StatList size="small">
                       <FlexBetween>
                         <InlineStack>
-                          <Text strong>{log.action.replace(/_/g, ' ')}</Text>
+                          <Text weight="bold">{log.action.replace(/_/g, ' ')}</Text>
                           <Tag>{log.entity}</Tag>
                         </InlineStack>
                         <AuditMeta>{formatTimestamp(log.timestamp)}</AuditMeta>
@@ -805,9 +805,9 @@ const DashboardPage: React.FC = () => {
                 }))}
             />
           ) : (
-            <EmptyState>
+            <EmptyStateWrapper>
               <Empty description="No recent activity" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-            </EmptyState>
+            </EmptyStateWrapper>
           )}
         </DashboardCard>
 

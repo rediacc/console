@@ -1,14 +1,15 @@
 import React from 'react';
-import { Tag, Tooltip, Typography } from 'antd';
+import { Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import styled from 'styled-components';
+import { RediaccTag } from '@/components/ui';
 
 const { Text } = Typography;
 
 /**
  * Styled version tag used across column renderers
  */
-export const VersionTag = styled(Tag)`
+export const VersionTag = styled(RediaccTag)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     border-color: ${({ theme }) => theme.colors.info};

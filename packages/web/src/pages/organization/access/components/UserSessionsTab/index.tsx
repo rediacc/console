@@ -23,6 +23,8 @@ import {
   createStatusColumn,
   createTruncatedColumn,
 } from '@/components/common/columns';
+import { InlineStack } from '@/components/common/styled';
+import { TableContainer } from '@/styles/primitives';
 import {
   TabContainer,
   StatCard,
@@ -30,11 +32,9 @@ import {
   StatMetric,
   StatSuffix,
   TableCard,
-  CardTitleRow,
   CardTitleText,
   RefreshButton,
   SearchInput,
-  TableWrapper,
   SessionTag,
   CellText,
   SummaryText,
@@ -141,7 +141,7 @@ const UserSessionsTab: React.FC = () => {
         <Tooltip title={t('userSessions.terminate')}>
           <Button
             data-testid={`sessions-terminate-${record.requestId}`}
-            type="link"
+            variant="link"
             danger
             icon={<CloseCircleOutlined />}
             disabled={!record.isActive}
@@ -287,7 +287,7 @@ const UserSessionsTab: React.FC = () => {
 
       <TableCard
         title={
-          <CardTitleRow>
+          <InlineStack>
             <CardTitleText>{t('userSessions.title')}</CardTitleText>
             <Tooltip title={t('common:actions.refresh')}>
               <RefreshButton
@@ -298,7 +298,7 @@ const UserSessionsTab: React.FC = () => {
                 aria-label={t('common:actions.refresh')}
               />
             </Tooltip>
-          </CardTitleRow>
+          </InlineStack>
         }
         extra={
           <SearchInput
@@ -311,7 +311,7 @@ const UserSessionsTab: React.FC = () => {
           />
         }
       >
-        <TableWrapper>
+        <TableContainer>
           <Table
             data-testid="sessions-table"
             columns={columns}
@@ -332,7 +332,7 @@ const UserSessionsTab: React.FC = () => {
               }) as React.HTMLAttributes<HTMLTableRowElement>
             }
           />
-        </TableWrapper>
+        </TableContainer>
       </TableCard>
     </TabContainer>
   );

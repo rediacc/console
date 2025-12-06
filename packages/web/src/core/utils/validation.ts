@@ -56,9 +56,9 @@ const vaultSchema = z
     }
   }, 'Vault must be valid JSON');
 
-// Form schemas factory
-const withVault = (fields: Record<string, z.ZodSchema>, vaultFieldName: string) =>
-  z.object({ ...fields, [vaultFieldName]: vaultSchema.optional().default('{}') });
+// Form schemas factory - always uses 'vaultContent' for consistency with API
+const withVault = (fields: Record<string, z.ZodSchema>) =>
+  z.object({ ...fields, vaultContent: vaultSchema.optional().default('{}') });
 
 // Create schemas using configuration
 const resourceSchemas = {
@@ -91,13 +91,13 @@ const resourceSchemas = {
   },
 } as const;
 
-export const createTeamSchema = withVault(resourceSchemas.team, 'teamVault');
-export const createRegionSchema = withVault(resourceSchemas.region, 'regionVault');
-export const createBridgeSchema = withVault(resourceSchemas.bridge, 'bridgeVault');
-export const createMachineSchema = withVault(resourceSchemas.machine, 'machineVault');
+export const createTeamSchema = withVault(resourceSchemas.team);
+export const createRegionSchema = withVault(resourceSchemas.region);
+export const createBridgeSchema = withVault(resourceSchemas.bridge);
+export const createMachineSchema = withVault(resourceSchemas.machine);
 // Special schema for repo creation with conditional machine selection and size
-export const createRepoSchema = withVault(
-  {
+export const createRepoSchema = z
+  .object({
     ...resourceSchemas.repo,
     machineName: z.string().optional(), // Optional - required only when creating physical storage
     size: z
@@ -116,44 +116,41 @@ export const createRepoSchema = withVault(
       }, 'Invalid size format (e.g., 10G, 100G, 1T)'), // Optional - required only when creating physical storage
     repoGuid: z
       .union([
-        z
-          .string()
-          .length(0), // Allow empty string
-        z
-          .string()
-          .uuid('Invalid GUID format'), // Or valid UUID
+        z.string().length(0), // Allow empty string
+        z.string().uuid('Invalid GUID format'), // Or valid UUID
       ])
       .optional(), // Optional repo GUID
-  },
-  'repoVault'
-).refine(
-  (data) => {
-    if (!data) return true;
-    // If repoGuid is provided (credential-only mode), machine and size are not required
-    // Otherwise, both machine and size must be provided for physical storage creation
-    const isCredentialOnlyMode = typeof data.repoGuid === 'string' && data.repoGuid.trim() !== '';
-    if (isCredentialOnlyMode) {
-      return true; // No additional requirements in credential-only mode
+    vaultContent: vaultSchema.optional().default('{}'),
+  })
+  .refine(
+    (data) => {
+      if (!data) return true;
+      // If repoGuid is provided (credential-only mode), machine and size are not required
+      // Otherwise, both machine and size must be provided for physical storage creation
+      const isCredentialOnlyMode =
+        typeof data.repoGuid === 'string' && data.repoGuid.trim() !== '';
+      if (isCredentialOnlyMode) {
+        return true; // No additional requirements in credential-only mode
+      }
+      // In normal mode, both machine and size are required
+      return (
+        typeof data.machineName === 'string' &&
+        data.machineName.trim() !== '' &&
+        typeof data.size === 'string' &&
+        data.size.trim() !== ''
+      );
+    },
+    {
+      message: 'Machine and size are required when creating new repo storage',
+      path: ['machineName'], // Show error on machine field
     }
-    // In normal mode, both machine and size are required
-    return (
-      typeof data.machineName === 'string' &&
-      data.machineName.trim() !== '' &&
-      typeof data.size === 'string' &&
-      data.size.trim() !== ''
-    );
-  },
-  {
-    message: 'Machine and size are required when creating new repo storage',
-    path: ['machineName'], // Show error on machine field
-  }
-);
-export const createStorageSchema = withVault(resourceSchemas.storage, 'storageVault');
-export const createClusterSchema = withVault(resourceSchemas.cluster, 'clusterVault');
-export const createPoolSchema = withVault(resourceSchemas.pool, 'poolVault');
-export const createImageSchema = withVault(resourceSchemas.image, 'imageVault');
-export const createSnapshotSchema = withVault(resourceSchemas.snapshot, 'snapshotVault');
-export const createCloneSchema = withVault(resourceSchemas.clone, 'cloneVault');
+  );
+export const createStorageSchema = withVault(resourceSchemas.storage);
+export const createClusterSchema = withVault(resourceSchemas.cluster);
+export const createPoolSchema = withVault(resourceSchemas.pool);
+export const createImageSchema = withVault(resourceSchemas.image);
+export const createSnapshotSchema = withVault(resourceSchemas.snapshot);
+export const createCloneSchema = withVault(resourceSchemas.clone);
 
 export const createUserSchema = z.object({
   newUserEmail: emailSchema,

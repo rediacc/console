@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Alert, Space, Typography, Radio, Tooltip, Statistic, Row, Col, Select } from 'antd';
+import { Alert, Space, Typography, Tooltip, Statistic, Row, Col, Select } from 'antd';
+import { RediaccRadio as Radio } from '@/components/ui/Form';
 import {
   FullscreenOutlined,
   FullscreenExitOutlined,
@@ -18,7 +19,8 @@ import { useTranslation } from 'react-i18next';
 import { useCompanyArchitecture } from '@/api/queries/architecture';
 import { useTheme } from '@/context/ThemeContext';
 import * as d3 from 'd3';
-import { SectionCard, IconButton, CompactIconButton } from '@/styles/primitives';
+import { PageCard } from '@/components/ui';
+import { RediaccButton as Button } from '@/components/ui';
 import { getArchitecturePalette } from './architectureTheme';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import type { CompanyDataGraph, CompanyGraphNode } from '@rediacc/shared/types';
@@ -683,12 +685,13 @@ const ArchitecturePage: React.FC = () => {
         <Alert
           message={t('messages.error', { ns: 'common' })}
           description={error instanceof Error ? error.message : t('architecture.fetchError')}
-          type="error"
+          variant="error"
           showIcon
           action={
             <Tooltip title={t('actions.retry', { ns: 'common' })}>
-              <CompactIconButton
-                size="small"
+              <Button
+                size="sm"
+                iconOnly
                 icon={<ReloadOutlined />}
                 onClick={() => refetch()}
                 aria-label={t('actions.retry', { ns: 'common' })}
@@ -703,7 +706,7 @@ const ArchitecturePage: React.FC = () => {
   if (!data) {
     return (
       <PageWrapper>
-        <Alert message={t('architecture.noData')} type="info" showIcon />
+        <Alert message={t('architecture.noData')} variant="info" showIcon />
       </PageWrapper>
     );
   }
@@ -723,10 +726,10 @@ const ArchitecturePage: React.FC = () => {
     <PageWrapper data-testid="architecture-page">
       <ContentStack>
         {/* Header */}
-        <SectionCard>
+        <PageCard>
           <HeaderStack>
             <HeaderRow>
-              <SectionTitleText level={4}>{t('architecture.title')}</SectionTitleText>
+              <SectionTitleText>{t('architecture.title')}</SectionTitleText>
               <ActionGroup>
                 <Radio.Group
                   value={viewMode}
@@ -744,7 +747,8 @@ const ArchitecturePage: React.FC = () => {
                   </Radio.Button>
                 </Radio.Group>
                 <Tooltip title={t('actions.refresh', { ns: 'common' })}>
-                  <IconButton
+                  <Button
+                    iconOnly
                     icon={<ReloadOutlined />}
                     onClick={() => refetch()}
                     data-testid="architecture-refresh-button"
@@ -757,7 +761,8 @@ const ArchitecturePage: React.FC = () => {
                       : t('actions.fullscreen', { ns: 'common' })
                   }
                 >
-                  <IconButton
+                  <Button
+                    iconOnly
                     icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
                     onClick={toggleFullscreen}
                     data-testid="architecture-fullscreen-button"
@@ -769,7 +774,7 @@ const ArchitecturePage: React.FC = () => {
             <FiltersRow>
               <FilterLabel>
                 <FilterOutlined />
-                <Text strong>{t('architecture.filterEntities', { ns: 'system' })}</Text>
+                <Text weight="bold">{t('architecture.filterEntities', { ns: 'system' })}</Text>
               </FilterLabel>
               <FilterSelectWrapper>
                 <Select
@@ -798,18 +803,20 @@ const ArchitecturePage: React.FC = () => {
               </FilterSelectWrapper>
               <FilterActions>
                 <Tooltip title={t('architecture.selectAll', { ns: 'system' })}>
-                  <CompactIconButton
+                  <Button
+                    iconOnly
+                    size="sm"
                     icon={<CheckOutlined />}
-                    size="small"
                     onClick={() => setSelectedEntityTypes(entityTypes.map((t) => t.value))}
                     data-testid="architecture-select-all-button"
                     aria-label={t('architecture.selectAll', { ns: 'system' })}
                   />
                 </Tooltip>
                 <Tooltip title={t('architecture.clearAll', { ns: 'system' })}>
-                  <CompactIconButton
+                  <Button
+                    iconOnly
+                    size="sm"
                     icon={<MinusCircleOutlined />}
-                    size="small"
                     onClick={() => setSelectedEntityTypes([])}
                     data-testid="architecture-clear-all-button"
                     aria-label={t('architecture.clearAll', { ns: 'system' })}
@@ -871,10 +878,10 @@ const ArchitecturePage: React.FC = () => {
               </Col>
             </Row>
           </HeaderStack>
-        </SectionCard>
+        </PageCard>
 
         {/* Visualization */}
-        <SectionCard>
+        <PageCard>
           <VisualizationContainer
             ref={containerRef}
             data-testid="architecture-visualization-container"
@@ -889,10 +896,10 @@ const ArchitecturePage: React.FC = () => {
             )}
             <VisualizationCanvas ref={svgRef} data-testid="architecture-svg" />
           </VisualizationContainer>
-        </SectionCard>
+        </PageCard>
 
         {/* Legend */}
-        <SectionCard title={t('architecture.legend')}>
+        <PageCard title={t('architecture.legend')}>
           <LegendGrid>
             {Object.entries({
               company: t('architecture.nodeCompany'),
@@ -910,7 +917,7 @@ const ArchitecturePage: React.FC = () => {
               </LegendItem>
             ))}
           </LegendGrid>
-        </SectionCard>
+        </PageCard>
       </ContentStack>
     </PageWrapper>
   );

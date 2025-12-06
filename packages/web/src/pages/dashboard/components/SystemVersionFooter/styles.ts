@@ -1,9 +1,8 @@
 import styled from 'styled-components';
-import { Tag, Typography } from 'antd';
+import { RediaccTag } from '@/components/ui';
 import { FlexRow } from '@/styles/primitives';
 import { InlineStack } from '@/components/common/styled';
-
-const { Text } = Typography;
+import { RediaccText } from '@/components/ui';
 
 // Use FlexRow from primitives
 export const FooterContainer = styled(FlexRow).attrs({
@@ -21,14 +20,14 @@ export const VersionItem = styled(InlineStack).attrs({ $align: 'center' })`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const VersionLabel = styled(Text)`
+export const VersionLabel = styled(RediaccText)`
   && {
     color: ${({ theme }) => theme.colors.textMuted};
     font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
 `;
 
-export const VersionValue = styled(Text)`
+export const VersionValue = styled(RediaccText)`
   && {
     color: ${({ theme }) => theme.colors.textSecondary};
     font-size: ${({ theme }) => theme.fontSize.SM}px;
@@ -41,7 +40,7 @@ export const Separator = styled.span`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
 `;
 
-export const EnvironmentTag = styled(Tag)<{ $isProduction: boolean }>`
+export const EnvironmentTag = styled(RediaccTag)<{ $isProduction: boolean }>`
   && {
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     margin: 0;
@@ -49,7 +48,7 @@ export const EnvironmentTag = styled(Tag)<{ $isProduction: boolean }>`
   }
 `;
 
-export const UptimeText = styled(Text)`
+export const UptimeText = styled(RediaccText)`
   && {
     color: ${({ theme }) => theme.colors.textMuted};
     font-size: ${({ theme }) => theme.fontSize.XS}px;

@@ -13,11 +13,11 @@ export function createBridgesService(client: ApiClient) {
       });
     },
 
-    create: (regionName: string, bridgeName: string, bridgeVault?: string) =>
+    create: (regionName: string, bridgeName: string, vaultContent?: string) =>
       client.post(endpoints.bridges.createBridge, {
         regionName,
         bridgeName,
-        bridgeVault,
+        vaultContent: vaultContent ?? '{}',
       }),
 
     rename: (regionName: string, currentName: string, newName: string) =>

@@ -1,19 +1,15 @@
 import styled, { keyframes } from 'styled-components';
-import { Typography, Progress, Alert, Space, Tag, Button } from 'antd';
 import {
   BaseModal,
   BaseTable,
   ModalBody,
-  ModalContentStack,
-  ModalFooterActions as PrimitiveModalFooterActions,
-  PrimaryButton as PrimitivePrimaryButton,
-  StatusTag,
-  StatusVariant,
   FlexColumn,
 } from '@/styles/primitives';
-import { ActionGroup, InlineStack } from '@/components/common/styled';
-
-const { Text } = Typography;
+import { ActionGroup } from '@/components/common/styled';
+import { RediaccTag } from '@/components/ui/Tag';
+import { RediaccText } from '@/components/ui/Text';
+import { RediaccAlert, RediaccStack, RediaccProgress } from '@/components/ui';
+import type { TagVariant } from '@/components/ui/Tag';
 
 const pulse = keyframes`
   0% {
@@ -37,9 +33,7 @@ export const ModalContent = styled(ModalBody)`
   width: 100%;
 `;
 
-export const ContentStack = styled(ModalContentStack)``;
-
-export const TitleStack = styled(Space)`
+export const TitleStack = styled(RediaccStack).attrs({ direction: 'horizontal' })`
   && {
     display: inline-flex;
     align-items: center;
@@ -53,32 +47,11 @@ export const TitleStack = styled(Space)`
   }
 `;
 
-export const ModalFooterActions = styled(PrimitiveModalFooterActions)``;
-
-export const PrimaryActionButton = styled(PrimitivePrimaryButton)`
-  && {
-    min-width: ${({ theme }) => theme.spacing.XXL * 2}px;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-  }
-`;
-
-export const SecondaryIconButton = styled(Button)`
-  && {
-    min-width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-  }
-`;
-
 export const ProgressSection = styled(FlexColumn).attrs({
   $gap: 'XS',
 })``;
 
-export const ProgressBar = styled(Progress)`
+export const ProgressBar = styled(RediaccProgress)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
 
@@ -92,14 +65,9 @@ export const ProgressBar = styled(Progress)`
   }
 `;
 
-export const ProgressNote = styled(Text)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.XS}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
+export const ProgressNote = styled(RediaccText).attrs({ size: 'xs', color: 'secondary' })``;
 
-export const InfoAlert = styled(Alert)`
+export const InfoAlert = styled(RediaccAlert)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
@@ -120,13 +88,9 @@ export const SummaryMetric = styled(FlexColumn).attrs({
   $gap: 'XS',
 })``;
 
-export const SummaryLabel = styled(Text)`
-  && {
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
+export const SummaryLabel = styled(RediaccText).attrs({ color: 'secondary' })``;
 
-export const SummaryValue = styled(Text)<{ $variant?: StatusVariant }>`
+export const SummaryValue = styled(RediaccText).attrs({ weight: 'semibold' })<{ $variant?: TagVariant }>`
   && {
     color: ${({ theme, $variant }) =>
       $variant === 'success'
@@ -134,7 +98,6 @@ export const SummaryValue = styled(Text)<{ $variant?: StatusVariant }>`
         : $variant === 'error'
           ? theme.colors.error
           : theme.colors.textPrimary};
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
 `;
 
@@ -153,13 +116,7 @@ export const StyledTable = styled(BaseTable)`
   }
 `;
 
-export const MachineCell = styled(InlineStack)``;
-
-export const MachineName = styled(Text)`
-  && {
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  }
-`;
+export const MachineName = styled(RediaccText).attrs({ weight: 'semibold' })``;
 
 export const StatusIcon = styled.span<{ $variant: 'testing' | 'success' | 'failed' | 'pending' }>`
   display: inline-flex;
@@ -183,22 +140,19 @@ export const StatusIcon = styled.span<{ $variant: 'testing' | 'success' | 'faile
   }
 `;
 
-export const ResourceTag = styled(Tag)`
+export const ResourceTag = styled(RediaccTag).attrs({ variant: 'neutral' })`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    border-color: ${({ theme }) => theme.colors.borderSecondary};
-    color: ${({ theme }) => theme.colors.textPrimary};
-    background-color: ${({ theme }) => theme.colors.bgSecondary};
   }
 `;
 
-export const StatusPill = styled(StatusTag)`
+export const StatusPill = styled(RediaccTag)`
   && {
     text-transform: capitalize;
   }
 `;
 
-export const MessageText = styled(Text)<{ $isError?: boolean }>`
+export const MessageText = styled(RediaccText)<{ $isError?: boolean }>`
   && {
     color: ${({ theme, $isError }) => ($isError ? theme.colors.error : theme.colors.textPrimary)};
   }

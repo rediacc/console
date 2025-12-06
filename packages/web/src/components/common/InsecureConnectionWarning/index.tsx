@@ -14,7 +14,7 @@ const InsecureConnectionWarning: React.FC<InsecureConnectionWarningProps> = ({ o
 
   return (
     <WarningAlert
-      type="error"
+      variant="error"
       showIcon
       icon={<LockOutlined />}
       closable={!!onClose}

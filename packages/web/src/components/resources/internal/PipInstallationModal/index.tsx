@@ -136,7 +136,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
       <Alert
         message={t('resources:pipInstall.quickInstallTitle')}
         description={t('resources:pipInstall.quickInstallDesc')}
-        type="info"
+        variant="info"
         showIcon
         icon={<RocketOutlined />}
         data-testid="pip-install-quick-alert"
@@ -191,7 +191,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
             ))}
           </NotesList>
         }
-        type="warning"
+        variant="warning"
         data-testid="pip-install-platform-alert"
       />
 
@@ -260,7 +260,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
     <ContentSpace orientation="vertical" size="large">
       <Alert
         message={t('resources:pipInstall.commonIssues')}
-        type="info"
+        variant="info"
         showIcon
         data-testid="pip-install-issues-alert"
       />
@@ -350,7 +350,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
             </Text>
           </ContentSpace>
         }
-        type="info"
+        variant="info"
         data-testid="pip-install-help-alert"
       />
     </ContentSpace>

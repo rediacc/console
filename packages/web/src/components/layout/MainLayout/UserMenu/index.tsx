@@ -54,7 +54,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       <UserInfo>
         <UserAvatar icon={<UserOutlined />} size={DESIGN_TOKENS.DIMENSIONS.ICON_XXL} />
         <UserDetails>
-          <UserEmail strong>{user?.email}</UserEmail>
+          <UserEmail>{user?.email}</UserEmail>
           {company && <CompanyName>{company}</CompanyName>}
           {companyData?.activeSubscription && (
             <PlanBadge count={companyData.activeSubscription.planCode ?? 'UNKNOWN'} />
@@ -102,7 +102,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
       <AppearanceRow>
         <div>
-          <SectionTitle strong>
+          <SectionTitle>
             {t('appearance.label', { defaultValue: 'Appearance' })}
           </SectionTitle>
           <SectionDescription>
@@ -115,14 +115,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       <MenuDivider />
 
       <LanguageSection>
-        <LanguageTitle strong>{t('language.label', { defaultValue: 'Language' })}</LanguageTitle>
+        <LanguageTitle>{t('language.label', { defaultValue: 'Language' })}</LanguageTitle>
         <LanguageSelector iconOnly={false} />
       </LanguageSection>
 
       <MenuDivider />
 
       <LogoutButton
-        type="text"
+        variant="danger"
         icon={<LogoutOutlined />}
         onClick={onLogout}
         data-testid="main-logout-button"

@@ -1,28 +1,35 @@
 import styled from 'styled-components';
-import { Typography, Tag, Badge, Card, Empty, List } from 'antd';
+import { Typography } from 'antd';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { RediaccTag } from '@/components/ui/Tag';
+import { RediaccText } from '@/components/ui/Text';
+import { RediaccCard, RediaccBadge, RediaccEmpty, RediaccList } from '@/components/ui';
 import {
-  DetailPanelSecondaryTextBlock,
-  DetailPanelSurface,
-  DetailPanelHeader,
-  DetailPanelHeaderRow,
-  DetailPanelTitleGroup,
-  DetailPanelTitle,
-  DetailPanelCollapseButton,
-  DetailPanelTagGroup,
-  DetailPanelBody,
-  DetailPanelFieldRow,
-  DetailPanelFieldLabel,
-  DetailPanelFieldValue,
-  DetailPanelFieldStrongValue,
-  DetailPanelFieldMonospaceValue,
-  DetailPanelDivider,
-  DetailPanelSectionHeader,
-  DetailPanelSectionTitle,
-} from '../detailPanelPrimitives';
+  PanelWrapper,
+  Header,
+  HeaderRow,
+  TitleGroup,
+  PanelTitle,
+  CollapseButton,
+  TagGroup,
+  ContentWrapper,
+  FieldRow,
+  FieldLabel,
+  FieldValue,
+  FieldValueStrong,
+  FieldValueMonospace,
+  SectionDivider,
+  SectionHeader,
+  SectionTitle,
+  SubduedText,
+} from '../sharedDetailPanelAliases';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
+
+export { PanelWrapper, Header, HeaderRow, TitleGroup, PanelTitle, CollapseButton, ContentWrapper };
+
+export { IconWrapper } from '@/components/ui';
 
 const TAG_VARIANTS = {
   team: {
@@ -47,45 +54,38 @@ const TAG_VARIANTS = {
   },
 } as const;
 
-export {
-  DetailPanelSurface as PanelWrapper,
-  DetailPanelHeader as StickyHeader,
-  DetailPanelHeaderRow as HeaderRow,
-  DetailPanelTitleGroup as HeaderTitleGroup,
-  DetailPanelTitle as MachineName,
-  DetailPanelCollapseButton as CollapseButton,
-  DetailPanelBody as ContentWrapper,
-  DetailPanelFieldRow as InlineField,
-  DetailPanelFieldLabel as FieldLabel,
-  DetailPanelFieldValue as FieldValue,
-  DetailPanelFieldStrongValue as FieldValueStrong,
-  DetailPanelFieldMonospaceValue as FieldValueMonospace,
-};
+export { TagGroup, FieldRow, FieldLabel, FieldValue, FieldValueStrong, FieldValueMonospace };
 
 export const HeaderIcon = styled(CloudServerOutlined)`
   font-size: ${DESIGN_TOKENS.DIMENSIONS.ICON_XL}px;
   color: var(--color-primary);
 `;
 
-export const TagRow = styled(DetailPanelTagGroup)`
+export const TagRow = styled(TagGroup)`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const StyledTag = styled(Tag)<{ $variant: keyof typeof TAG_VARIANTS }>`
+export const StyledTag = styled(RediaccTag).attrs<{ $variant: keyof typeof TAG_VARIANTS }>(
+  ({ $variant }) => {
+    const presetMap: Record<keyof typeof TAG_VARIANTS, string> = {
+      team: 'team',
+      bridge: 'bridge',
+      region: 'region',
+      queue: 'team',
+      version: 'neutral',
+    };
+    return {
+      preset: presetMap[$variant] as any,
+      borderless: true,
+    };
+  }
+)<{ $variant: keyof typeof TAG_VARIANTS }>`
   && {
-    border: none;
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    padding: 0 ${({ theme }) => theme.spacing.SM}px;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
     gap: ${({ theme }) => theme.spacing.XS}px;
-    background-color: ${({ $variant }) => TAG_VARIANTS[$variant].background};
-    color: ${({ $variant }) => TAG_VARIANTS[$variant].color};
   }
 `;
 
-export const QueueBadge = styled(Badge)`
+export const QueueBadge = styled(RediaccBadge)`
   && .ant-badge-count {
     background-color: var(--color-success);
     color: var(--color-text-inverse);
@@ -96,37 +96,26 @@ export const TimestampWrapper = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const Timestamp = styled(Text)`
+export const Timestamp = styled(RediaccText).attrs({
+  size: 'xs',
+  color: 'secondary',
+})`
   && {
     font-size: ${DESIGN_TOKENS.FONT_SIZE.CAPTION}px;
-    color: var(--color-text-secondary);
   }
 `;
 
-export const EmptyState = styled(Empty)`
+export const EmptyState = styled(RediaccEmpty)`
   margin-top: ${({ theme }) => theme.spacing.XXXL}px;
 `;
 
-export const SectionDivider = styled(DetailPanelDivider)`
-  && {
-    margin: ${({ theme }) => `${theme.spacing.XL}px 0`};
-  }
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
-
-export const SectionHeader = styled(DetailPanelSectionHeader)`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-`;
-
-export const SectionTitle = styled(DetailPanelSectionTitle)``;
+export { SectionDivider, SectionHeader, SectionTitle, SubduedText };
 
 export const SectionBlock = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.XL}px;
 `;
 
-export const InfoCard = styled(Card)`
+export const InfoCard = styled(RediaccCard)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     margin-bottom: ${({ theme }) => theme.spacing.LG}px;
@@ -140,9 +129,7 @@ export const FullWidthStack = styled.div`
   width: 100%;
 `;
 
-export const SecondaryText = styled(DetailPanelSecondaryTextBlock)``;
-
-export const MetricCard = styled(Card)`
+export const MetricCard = styled(RediaccCard)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     margin-bottom: ${({ theme }) => theme.spacing.LG}px;
@@ -187,33 +174,37 @@ const STATUS_TONES = {
   },
 } as const;
 
-export const StatusTag = styled(Tag)<{ $tone?: keyof typeof STATUS_TONES }>`
+export const StatusTag = styled(RediaccTag).attrs<{ $tone?: keyof typeof STATUS_TONES }>(
+  ({ $tone = 'default' }) => {
+    const variantMap: Record<keyof typeof STATUS_TONES, string> = {
+      success: 'success',
+      info: 'info',
+      warning: 'warning',
+      default: 'neutral',
+    };
+    return {
+      variant: variantMap[$tone] as any,
+      borderless: true,
+    };
+  }
+)<{ $tone?: keyof typeof STATUS_TONES }>``;
+
+export const AddressTag = styled(RediaccTag).attrs({
+  variant: 'info',
+  borderless: true,
+})`
   && {
-    border: none;
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    padding: 0 ${({ theme }) => theme.spacing.SM}px;
-    font-weight: 500;
-    background-color: ${({ $tone = 'default' }) => STATUS_TONES[$tone].background};
-    color: ${({ $tone = 'default' }) => STATUS_TONES[$tone].color};
   }
 `;
 
-export const AddressTag = styled(Tag)`
-  && {
-    border: none;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    background-color: var(--color-info);
-    color: var(--color-text-inverse);
-  }
-`;
-
-export const StyledList = styled(List)`
+export const StyledList = styled(RediaccList)`
   && {
     margin-bottom: ${({ theme }) => theme.spacing.LG}px;
   }
 `;
 
-export const ListCard = styled(Card)`
+export const ListCard = styled(RediaccCard)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
@@ -247,5 +238,3 @@ export const PartitionRow = styled.div`
   font-size: ${DESIGN_TOKENS.FONT_SIZE.CAPTION}px;
   color: var(--color-text-secondary);
 `;
-
-export { IconWrapper } from '@/components/ui';

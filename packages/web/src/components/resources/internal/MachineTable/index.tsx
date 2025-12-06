@@ -25,9 +25,9 @@ import { useLocalizedFunctions } from '@/services/functionsService';
 import { useRepos } from '@/api/queries/repos';
 import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
 import { MachineVaultStatusPanel } from '../MachineVaultStatusPanel';
-import { AssignToClusterModal } from '@/pages/distributedStorage/components/AssignToClusterModal';
-import { RemoveFromClusterModal } from '@/pages/distributedStorage/components/RemoveFromClusterModal';
-import { ViewAssignmentStatusModal } from '@/pages/distributedStorage/components/ViewAssignmentStatusModal';
+import { AssignToClusterModal } from '@/pages/ceph/components/AssignToClusterModal';
+import { RemoveFromClusterModal } from '@/pages/ceph/components/RemoveFromClusterModal';
+import { ViewAssignmentStatusModal } from '@/pages/ceph/components/ViewAssignmentStatusModal';
 import { featureFlags } from '@/config/featureFlags';
 import { getMachineRepos as coreGetMachineRepos } from '@/core';
 import type { DeployedRepo } from '@/core/services/machine';
@@ -57,7 +57,8 @@ import {
   GroupHeaderTag,
   StyledTag,
 } from './styles';
-import type { TagVariant } from './styles';
+// Local type for group variants - maps to preset prop
+type GroupVariant = 'repo' | 'bridge' | 'team' | 'region' | 'status' | 'grand';
 
 type GroupByMode = 'machine' | 'bridge' | 'team' | 'region' | 'repo' | 'status' | 'grand';
 
@@ -504,7 +505,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       return <EmptyState description={t('resources:repos.noRepos')} />;
     }
 
-    const variantMap: Record<GroupByMode, TagVariant> = {
+    const variantMap: Record<GroupByMode, GroupVariant> = {
       machine: 'repo',
       bridge: 'bridge',
       team: 'team',
@@ -514,7 +515,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       grand: 'grand',
     };
 
-    const indicatorColors: Record<TagVariant, string> = {
+    const indicatorColors: Record<GroupVariant, string> = {
       team: 'var(--color-success)',
       bridge: 'var(--color-primary)',
       region: 'var(--color-info)',

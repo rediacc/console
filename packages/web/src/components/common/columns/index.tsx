@@ -273,7 +273,7 @@ export const createActionColumn = <T,>(
 
     return (
       <Dropdown menu={menu} trigger={['click']}>
-        <Button icon={options.buttonIcon || <MoreOutlined />} type="text">
+        <Button icon={options.buttonIcon || <MoreOutlined />} variant="text">
           {options.buttonLabel}
         </Button>
       </Dropdown>

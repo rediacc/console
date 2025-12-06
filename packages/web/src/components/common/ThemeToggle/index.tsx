@@ -12,7 +12,7 @@ export const ThemeToggle: React.FC = () => {
 
   return (
     <ToggleButton
-      type="text"
+      variant="text"
       icon={theme === 'light' ? <SunOutlined /> : <MoonOutlined />}
       onClick={toggleTheme}
       aria-label={switchText}

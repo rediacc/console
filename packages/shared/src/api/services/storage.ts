@@ -13,8 +13,12 @@ export function createStorageService(client: ApiClient) {
       });
     },
 
-    create: (teamName: string, storageName: string) =>
-      client.post(endpoints.storage.createStorage, { teamName, storageName }),
+    create: (teamName: string, storageName: string, vaultContent?: string) =>
+      client.post(endpoints.storage.createStorage, {
+        teamName,
+        storageName,
+        vaultContent: vaultContent ?? '{}',
+      }),
 
     rename: (teamName: string, currentName: string, newName: string) =>
       client.post(endpoints.storage.updateStorageName, {

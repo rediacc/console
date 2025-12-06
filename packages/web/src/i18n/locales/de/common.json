@@ -104,7 +104,7 @@
     "audit": "Prüfung",
     "credentials": "Anmeldeinformationen",
     "dashboard": "Armaturenbrett",
-    "distributedStorage": "Verteilter Speicher",
+    "ceph": "Verteilter Speicher",
     "logout": "Abmelden",
     "machines": "Maschinen",
     "mainNavigation": "Hauptnavigation",
@@ -121,9 +121,9 @@
     "storage": "Speicher",
     "storageCloud": "Cloud",
     "storageDistributed": "Distributed",
-    "distributedStorageClusters": "Cluster",
-    "distributedStoragePools": "Pools",
-    "distributedStorageMachines": "Maschinen",
+    "cephClusters": "Cluster",
+    "cephPools": "Pools",
+    "cephMachines": "Maschinen",
     "system": "System"
   },
   "nestedObjectEditor": {

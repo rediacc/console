@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Steps, Upload, Button, Table, Checkbox, Space, Typography, Tag, Tooltip } from 'antd';
+import { Steps, Upload, Button, Table, Space, Typography, Tag, Tooltip } from 'antd';
+import { RediaccCheckbox as Checkbox } from '@/components/ui/Form';
 import {
   CloudOutlined,
   InfoCircleOutlined,
@@ -86,7 +87,7 @@ const UploadStep: React.FC<UploadStepProps> = ({
           <Paragraph>{t('resources:storage.import.uploadPrompt')}</Paragraph>
         </div>
       }
-      type="info"
+      variant="info"
       showIcon
       icon={<InfoCircleOutlined />}
     />
@@ -106,7 +107,7 @@ const UploadStep: React.FC<UploadStepProps> = ({
       <p className="ant-upload-hint">{t('resources:storage.import.supportedFormats')}</p>
     </Upload.Dragger>
 
-    {parsingError && <ErrorAlert message={parsingError} type="error" showIcon />}
+    {parsingError && <ErrorAlert message={parsingError} variant="error" showIcon />}
   </UploadStepWrapper>
 );
 
@@ -121,7 +122,7 @@ const SelectionStep: React.FC<SelectionStepProps> = ({ t, importStatuses, column
     <StandardAlert
       message={t('resources:storage.import.selectStorages')}
       description={t('resources:storage.import.selectDescription')}
-      type="info"
+      variant="info"
       showIcon
     />
 
@@ -161,7 +162,7 @@ const ResultStep: React.FC<ResultStepProps> = ({ t, importStatuses, columns, isI
         <StandardAlert
           message={t('resources:storage.import.complete')}
           description={t('resources:storage.import.completeDescription')}
-          type="success"
+          variant="success"
           showIcon
         />
 
@@ -381,7 +382,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
         await createStorageMutation.mutateAsync({
           teamName,
           storageName: config.name,
-          storageVault,
+          vaultContent: storageVault,
         });
 
         setImportStatuses((prev) => {

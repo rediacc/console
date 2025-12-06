@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Tooltip, Modal, Form } from 'antd';
+import { Tooltip, Modal, Form } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +18,7 @@ import TwoFactorSettings from '@/pages/settings/profile/components/TwoFactorSett
 import { ModalSize } from '@/types/modal';
 import { useDialogState, useModalForm } from '@/hooks';
 import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields';
-import { PageWrapper, SectionStack, SectionHeading } from '@/components/ui';
+import { RediaccButton as Button, PageWrapper, SectionStack, SectionHeading } from '@/components/ui';
 import {
   CardContent,
   CardHeader,
@@ -54,7 +54,7 @@ const ProfilePage: React.FC = () => {
 
   const handleUpdateUserVault = async (vault: string, version: number) => {
     await updateUserVaultMutation.mutateAsync({
-      userVault: vault,
+      vaultContent: vault,
       vaultVersion: version,
     });
     userVaultModal.close();
@@ -116,7 +116,7 @@ const ProfilePage: React.FC = () => {
         <SettingsCard>
           <CardContent>
             <CardHeader>
-              <IconWrapper $size="lg">
+              <IconWrapper $size="md">
                 <UserOutlined />
               </IconWrapper>
               <CardTitle level={4}>{t('personal.title')}</CardTitle>
@@ -128,13 +128,12 @@ const ProfilePage: React.FC = () => {
               {featureFlags.isEnabled('personalVaultConfiguration') && (
                 <Tooltip title={t('personal.configureVault')}>
                   <Button
-                    type="primary"
                     icon={<SettingOutlined />}
                     onClick={() => {
                       refetchUserVault();
                       userVaultModal.open();
                     }}
-                    size="large"
+                    size="md"
                     data-testid="system-user-vault-button"
                     aria-label={t('personal.configureVault')}
                   />
@@ -142,20 +141,18 @@ const ProfilePage: React.FC = () => {
               )}
               <Tooltip title={tSystem('actions.changePassword')}>
                 <Button
-                  type="primary"
                   icon={<KeyOutlined />}
                   onClick={openChangePassword}
-                  size="large"
+                  size="md"
                   data-testid="system-change-password-button"
                   aria-label={tSystem('actions.changePassword')}
                 />
               </Tooltip>
               <Tooltip title={tSystem('actions.twoFactorAuth')}>
                 <Button
-                  type="primary"
                   icon={<SafetyCertificateOutlined />}
                   onClick={() => twoFactorModal.open()}
-                  size="large"
+                  size="md"
                   data-testid="system-two-factor-button"
                   aria-label={tSystem('actions.twoFactorAuth')}
                 />
@@ -217,7 +214,7 @@ const ProfilePage: React.FC = () => {
                 </li>
               </RequirementsList>
             }
-            type="info"
+            variant="info"
             showIcon
           />
 
@@ -261,7 +258,6 @@ const ProfilePage: React.FC = () => {
             <ModalActions>
               <Button onClick={closeChangePassword}>{tCommon('actions.cancel')}</Button>
               <Button
-                type="primary"
                 htmlType="submit"
                 loading={updateUserPasswordMutation.isPending}
               >

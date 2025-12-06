@@ -11,7 +11,7 @@ export interface QueueActionParams {
   addedVia: string;
   machineVault: string;
   repoGuid?: string;
-  repoVault?: string;
+  vaultContent?: string;
   repoNetworkId?: number;
   repoNetworkMode?: string;
   repoTag?: string;
@@ -19,10 +19,10 @@ export interface QueueActionParams {
   storageVault?: string;
   sourceMachineVault?: string;
   sourceStorageVault?: string;
-  sourceRepoVault?: string;
+  sourceVaultContent?: string;
   destinationMachineVault?: string;
   destinationStorageVault?: string;
-  destinationRepoVault?: string;
+  destinationVaultContent?: string;
   teamVault?: string;
 }
 
@@ -59,7 +59,7 @@ export class QueueActionService {
       teamVault,
       machineVault: params.machineVault,
       repositoryGuid: params.repoGuid,
-      repositoryVault: params.repoVault,
+      repositoryVault: params.vaultContent,
       repositoryNetworkId: params.repoNetworkId,
       repositoryNetworkMode: params.repoNetworkMode,
       repositoryTag: params.repoTag,
@@ -67,10 +67,10 @@ export class QueueActionService {
       storageVault: params.storageVault,
       sourceMachineVault: params.sourceMachineVault,
       sourceStorageVault: params.sourceStorageVault,
-      sourceRepositoryVault: params.sourceRepoVault,
+      sourceRepositoryVault: params.sourceVaultContent,
       destinationMachineVault: params.destinationMachineVault,
       destinationStorageVault: params.destinationStorageVault,
-      destinationRepositoryVault: params.destinationRepoVault,
+      destinationRepositoryVault: params.destinationVaultContent,
     });
 
     const response = await this.deps.createQueueItem({

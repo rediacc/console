@@ -16,9 +16,9 @@ import type {
   CompanyFeatureAccess,
   CompanyPlanLimits,
   CompanyQueueStats,
-  CompanyDistributedStorageStats,
+  CompanyCephStats,
   CompanySubscriptionDetail,
-  DistributedStorageTeamBreakdown,
+  CephTeamBreakdown,
   QueueTeamIssue,
   QueueMachineIssue,
 } from '../../types';
@@ -254,16 +254,16 @@ function parseDashboard(response: ApiResponse): CompanyDashboardData {
   const featureAccess = parseObject<CompanyFeatureAccess>(normalized.featureAccess);
   const planLimits = parseObject<CompanyPlanLimits>(normalized.planLimits);
   const queueStats = parseObject<CompanyQueueStats>(normalized.queueStats);
-  const distributedStorageStats = parseObject<CompanyDistributedStorageStats>(
-    normalized.distributedStorageStats
+  const cephStats = parseObject<CompanyCephStats>(
+    normalized.cephStats
   );
   const allActiveSubscriptions = parseObjectArray<CompanySubscriptionDetail>(
     normalized.allActiveSubscriptions
   );
 
-  if (distributedStorageStats && distributedStorageStats.team_breakdown) {
-    distributedStorageStats.team_breakdown = parseObjectArray<DistributedStorageTeamBreakdown>(
-      distributedStorageStats.team_breakdown
+  if (cephStats && cephStats.team_breakdown) {
+    cephStats.team_breakdown = parseObjectArray<CephTeamBreakdown>(
+      cephStats.team_breakdown
     );
   }
 
@@ -280,7 +280,7 @@ function parseDashboard(response: ApiResponse): CompanyDashboardData {
     featureAccess: featureAccess ?? null,
     planLimits: planLimits ?? null,
     queueStats: queueStats ?? undefined,
-    distributedStorageStats: distributedStorageStats ?? undefined,
+    cephStats: cephStats ?? undefined,
     allActiveSubscriptions,
   };
 }

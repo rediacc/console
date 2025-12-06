@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Button,
   Tooltip,
   Row,
   Col,
@@ -38,6 +37,7 @@ import { encryptString, decryptString } from '@/utils/encryption';
 import { showMessage } from '@/utils/messages';
 import { useDialogState } from '@/hooks/useDialogState';
 import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields';
+import { RediaccButton as Button } from '@/components/ui';
 import {
   useCompanyVault,
   useUpdateCompanyVault,
@@ -149,7 +149,7 @@ const CompanyPage: React.FC = () => {
 
   const handleUpdateCompanyVault = async (vault: string, version: number) => {
     await updateCompanyVaultMutation.mutateAsync({
-      companyVault: vault,
+      vaultContent: vault,
       vaultVersion: version,
     });
     companyVaultModal.close();
@@ -346,7 +346,7 @@ const CompanyPage: React.FC = () => {
         <SettingsCard>
           <CardContent>
             <CardHeader>
-              <IconWrapper $size="lg">
+              <IconWrapper $size="md">
                 <BankOutlined />
               </IconWrapper>
               <CardTitle level={4}>{t('company.title')}</CardTitle>
@@ -358,10 +358,9 @@ const CompanyPage: React.FC = () => {
               <CardActions>
                 <Tooltip title={t('company.configureVault')}>
                   <Button
-                    type="primary"
                     icon={<SettingOutlined />}
                     onClick={() => companyVaultModal.open()}
-                    size="large"
+                    size="md"
                     data-testid="system-company-vault-button"
                     aria-label={t('company.configureVault')}
                   />
@@ -422,8 +421,7 @@ const CompanyPage: React.FC = () => {
                       >
                         <Tooltip title={tSystem('dangerZone.blockUserRequests.blockButton')}>
                           <Button
-                            type="primary"
-                            danger
+                            variant="danger"
                             icon={<LockOutlined />}
                             loading={blockUserRequestsMutation.isPending}
                             aria-label={tSystem('dangerZone.blockUserRequests.blockButton')}
@@ -441,7 +439,6 @@ const CompanyPage: React.FC = () => {
                       >
                         <Tooltip title={tSystem('dangerZone.blockUserRequests.unblockButton')}>
                           <Button
-                            type="primary"
                             icon={<UnlockOutlined />}
                             loading={blockUserRequestsMutation.isPending}
                             aria-label={tSystem('dangerZone.blockUserRequests.unblockButton')}
@@ -467,7 +464,6 @@ const CompanyPage: React.FC = () => {
                     <RightAlign>
                       <Tooltip title={tSystem('dangerZone.exportVaults.button')}>
                         <Button
-                          type="primary"
                           icon={<DownloadOutlined />}
                           onClick={handleExportVaults}
                           loading={exportVaultsQuery.isFetching}
@@ -494,7 +490,6 @@ const CompanyPage: React.FC = () => {
                     <RightAlign>
                       <Tooltip title={tSystem('dangerZone.exportData.button')}>
                         <Button
-                          type="primary"
                           icon={<ExportOutlined />}
                           onClick={handleExportCompanyData}
                           loading={exportCompanyDataQuery.isFetching}
@@ -521,8 +516,7 @@ const CompanyPage: React.FC = () => {
                     <RightAlign>
                       <Tooltip title={tSystem('dangerZone.importData.button')}>
                         <Button
-                          type="primary"
-                          danger
+                          variant="danger"
                           icon={<ImportOutlined />}
                           onClick={() => importModal.open()}
                           data-testid="system-import-data-button"
@@ -558,8 +552,7 @@ const CompanyPage: React.FC = () => {
                     <RightAlign>
                       <Tooltip title={tSystem('dangerZone.updateMasterPassword.button')}>
                         <Button
-                          type="primary"
-                          danger
+                          variant="danger"
                           icon={<KeyOutlined />}
                           onClick={handleOpenMasterPasswordModal}
                           data-testid="system-update-master-password-button"
@@ -667,7 +660,7 @@ const CompanyPage: React.FC = () => {
                 </DangerText>
               </Space>
             }
-            type="warning"
+            variant="warning"
             showIcon
           />
 
@@ -717,7 +710,7 @@ const CompanyPage: React.FC = () => {
                     : ''
               }`
             )}
-            type="info"
+            variant="info"
             showIcon
           />
 
@@ -734,8 +727,7 @@ const CompanyPage: React.FC = () => {
                 {tSystem('dangerZone.updateMasterPassword.modal.cancel')}
               </Button>
               <Button
-                type="primary"
-                danger
+                variant="danger"
                 htmlType="submit"
                 loading={updateVaultsMutation.isPending}
                 disabled={updateVaultsMutation.isPending}
@@ -806,9 +798,8 @@ const CompanyPage: React.FC = () => {
               </CenteredBlock>
 
               <Button
-                type="primary"
-                size="large"
-                block
+                size="md"
+                fullWidth
                 onClick={() => {
                   dispatch(logout());
                   navigate('/login');
@@ -837,7 +828,7 @@ const CompanyPage: React.FC = () => {
           <ModalAlert
             message={tSystem('dangerZone.importData.modal.warning')}
             description={tSystem('dangerZone.importData.modal.warningText')}
-            type="warning"
+            variant="warning"
             showIcon
           />
 
@@ -895,7 +886,6 @@ const CompanyPage: React.FC = () => {
                 {tSystem('dangerZone.importData.modal.cancel')}
               </Button>
               <Button
-                type="primary"
                 htmlType="submit"
                 loading={importCompanyDataMutation.isPending}
                 disabled={!importFile}

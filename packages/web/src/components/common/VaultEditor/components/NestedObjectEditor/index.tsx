@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Input, Switch, Popconfirm, Empty, Row, Col } from 'antd';
+import { Input, Popconfirm, Empty, Row, Col } from 'antd';
+import { RediaccSwitch } from '@/components/ui/Form';
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -264,7 +265,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
         (structureInfo.hasImagePattern || looksLikeImageReference(imageValue))
       ) {
         return (
-          <ImagePatternCard size="small">
+          <ImagePatternCard size="sm">
             <Row gutter={16}>
               <Col span={18}>
                 <InlineFormItem label={<InlineLabel>{t('nestedObjectEditor.Image')}</InlineLabel>}>
@@ -287,7 +288,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               </Col>
               <Col span={6}>
                 <InlineFormItem label={<InlineLabel>{t('nestedObjectEditor.Active')}</InlineLabel>}>
-                  <Switch
+                  <RediaccSwitch
                     checked={activeValue}
                     onChange={(checked) =>
                       handleUpdateEntry(index, {
@@ -325,7 +326,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
 
     if (typeof entry.value === 'boolean') {
       return (
-        <Switch
+        <RediaccSwitch
           checked={entry.value}
           onChange={(checked) => handleUpdateEntry(index, { value: checked })}
           disabled={readOnly}
@@ -413,7 +414,6 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                 />
               </KeyInputWrapper>
               <PrimaryActionButton
-                type="primary"
                 icon={<PlusOutlined />}
                 onClick={handleAddEntry}
                 disabled={!newKey.trim()}
@@ -472,7 +472,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                     cancelText={t('nestedObjectEditor.No')}
                   >
                     <PanelDeleteButton
-                      type="text"
+                      variant="text"
                       danger
                       icon={<DeleteOutlined />}
                       size="small"
