@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Table, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { ColumnsType } from 'antd/es/table';
@@ -7,7 +7,7 @@ import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { ManageClusterMachinesModal } from '../ManageClusterMachinesModal';
 import { buildClusterColumns } from './columns';
 import { ClusterMachines } from './components/ClusterMachines';
-import { useTraceModal, useExpandableTable } from '@/hooks';
+import { useTraceModal, useExpandableTable, useDialogState } from '@/hooks';
 import { TableContainer, CreateClusterButton } from './styles';
 import { confirmAction } from '@/utils/confirmations';
 import { EmptyStatePanel } from '@/styles/primitives';
@@ -32,14 +32,15 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   const { t } = useTranslation(['distributedStorage', 'common', 'machines']);
   const [modal, contextHolder] = Modal.useModal();
   const { expandedRowKeys, toggleRow, setExpandedRowKeys } = useExpandableTable();
-  const [selectedCluster, setSelectedCluster] = useState<DistributedStorageCluster | null>(null);
-  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const manageMachinesModal = useDialogState<DistributedStorageCluster>();
   const auditTrace = useTraceModal();
 
-  const handleManageMachines = useCallback((cluster: DistributedStorageCluster) => {
-    setSelectedCluster(cluster);
-    setAssignModalOpen(true);
-  }, []);
+  const handleManageMachines = useCallback(
+    (cluster: DistributedStorageCluster) => {
+      manageMachinesModal.open(cluster);
+    },
+    [manageMachinesModal]
+  );
 
   const handleAuditTrace = useCallback(
     (cluster: DistributedStorageCluster) => {
@@ -173,23 +174,18 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
         entityName={auditTrace.entityName}
       />
 
-      {selectedCluster && (
+      {manageMachinesModal.state.data && (
         <ManageClusterMachinesModal
-          open={assignModalOpen}
-          clusterName={selectedCluster.clusterName}
-          teamName={selectedCluster.teamName || ''}
+          open={manageMachinesModal.isOpen}
+          clusterName={manageMachinesModal.state.data.clusterName}
+          teamName={manageMachinesModal.state.data.teamName || ''}
           onCancel={() => {
-            setAssignModalOpen(false);
-            setSelectedCluster(null);
+            manageMachinesModal.close();
           }}
           onSuccess={() => {
-            if (!selectedCluster) {
-              return;
-            }
-            setAssignModalOpen(false);
-            const clusterName = selectedCluster.clusterName;
-            setSelectedCluster(null);
-            if (expandedRowKeys.includes(clusterName)) {
+            const clusterName = manageMachinesModal.state.data?.clusterName;
+            manageMachinesModal.close();
+            if (clusterName && expandedRowKeys.includes(clusterName)) {
               setExpandedRowKeys([]);
               setTimeout(() => {
                 setExpandedRowKeys([clusterName]);

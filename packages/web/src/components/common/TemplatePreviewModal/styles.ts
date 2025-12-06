@@ -1,9 +1,18 @@
 import styled from 'styled-components';
-import { Tabs, Card, Space, Tag, Alert, Divider, List, Typography } from 'antd';
+import { Tabs, Space, Tag, Divider, List, Typography } from 'antd';
 import {
   BaseModal,
-  PrimaryButton as PrimitivePrimaryButton,
-  SecondaryButton as PrimitiveSecondaryButton,
+  PrimaryButton,
+  SecondaryButton,
+  ContentCard,
+  LoadingContainer as BaseLoadingContainer,
+  LoadingText as BaseLoadingText,
+  RoundedAlert as BaseRoundedAlert,
+  FlexColumn,
+  FlexRow,
+  SecondaryText,
+  MonoText,
+  NoMarginTitle,
 } from '@/styles/primitives';
 
 const { Title, Text, Paragraph } = Typography;
@@ -19,12 +28,7 @@ export const StyledModal = styled(BaseModal)`
   }
 `;
 
-export const TitleStack = styled(Space)`
-  && {
-    align-items: center;
-    gap: ${({ theme }) => theme.spacing.MD}px;
-  }
-`;
+export const TitleStack = styled(FlexRow).attrs({ $gap: 'MD' })``;
 
 export const TemplateAvatar = styled.img`
   width: ${({ theme }) => theme.dimensions.ICON_XXL}px;
@@ -40,12 +44,7 @@ export const TemplateIconWrapper = styled.span`
   color: ${({ theme }) => theme.colors.primary};
 `;
 
-export const TemplateHeading = styled(Title)`
-  && {
-    margin: 0;
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-`;
+export const TemplateHeading = styled(NoMarginTitle)``;
 
 export const DifficultyTag = styled(Tag)`
   && {
@@ -66,10 +65,7 @@ export const OverviewScroll = styled.div`
   overflow: auto;
 `;
 
-export const DescriptionCard = styled(Card)`
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  box-shadow: ${({ theme }) => theme.shadows.CARD};
-
+export const DescriptionCard = styled(ContentCard)`
   .ant-card-body {
     max-height: calc(90vh - 420px);
     overflow: auto;
@@ -77,7 +73,7 @@ export const DescriptionCard = styled(Card)`
   }
 `;
 
-export const FeatureCard = styled(DescriptionCard)``;
+export const FeatureCard = DescriptionCard;
 
 export const CardTitle = styled(Text)`
   && {
@@ -114,22 +110,17 @@ export const FeatureText = styled(Text)`
   }
 `;
 
-export const LoadingContainer = styled.div`
+export const LoadingContainer = styled(BaseLoadingContainer)`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing.XXXL}px;
   gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const LoadingText = styled.div`
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const LoadingText = BaseLoadingText;
 
-export const FilesLayout = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.MD}px;
+export const FilesLayout = styled(FlexRow).attrs({ $gap: 'MD' })`
   height: calc(90vh - 340px);
 `;
 
@@ -143,16 +134,16 @@ export const FilePreviewColumn = styled.div`
   height: 100%;
 `;
 
-export const FileListCard = styled(Card)`
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  box-shadow: ${({ theme }) => theme.shadows.CARD};
+export const FileListCard = styled(ContentCard)`
+  && {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 
-  .ant-card-body {
-    padding: 0;
-    height: calc(100% - 44px);
+    .ant-card-body {
+      padding: 0;
+      height: calc(100% - 44px);
+    }
   }
 `;
 
@@ -168,11 +159,7 @@ export const FileListItem = styled(List.Item)<{ $active?: boolean }>`
   }
 `;
 
-export const FileMeta = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+export const FileMeta = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
 export const FileName = styled(Text)`
   && {
@@ -181,18 +168,18 @@ export const FileName = styled(Text)`
   }
 `;
 
-export const FilePreviewCard = styled(Card)`
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  box-shadow: ${({ theme }) => theme.shadows.CARD};
-
-  .ant-card-body {
-    padding: ${({ theme }) => theme.spacing.MD}px;
+export const FilePreviewCard = styled(ContentCard)`
+  && {
+    height: 100%;
     display: flex;
     flex-direction: column;
-    gap: ${({ theme }) => theme.spacing.SM}px;
+
+    .ant-card-body {
+      padding: ${({ theme }) => theme.spacing.MD}px;
+      display: flex;
+      flex-direction: column;
+      gap: ${({ theme }) => theme.spacing.SM}px;
+    }
   }
 `;
 
@@ -203,12 +190,7 @@ export const FilePreviewHeader = styled(Space)`
   }
 `;
 
-export const FilePath = styled(Text)`
-  && {
-    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-`;
+export const FilePath = styled(MonoText)``;
 
 export const FilePreviewBody = styled.div`
   flex: 1 1 auto;
@@ -222,27 +204,15 @@ export const SecurityScroll = styled.div`
   overflow: auto;
 `;
 
-export const SecurityCard = styled(Card)`
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  box-shadow: ${({ theme }) => theme.shadows.CARD};
-
+export const SecurityCard = styled(ContentCard)`
   .ant-card-body {
     padding: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
 
-export const AlertStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-`;
+export const AlertStack = styled(FlexColumn).attrs({ $gap: 'MD' })``;
 
-export const RoundedAlert = styled(Alert)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    padding: ${({ theme }) => theme.spacing.MD}px;
-  }
-`;
+export const RoundedAlert = BaseRoundedAlert;
 
 export const Checklist = styled.ul`
   margin-left: ${({ theme }) => theme.spacing.MD}px;
@@ -262,11 +232,7 @@ export const BodyParagraph = styled(Paragraph)`
   }
 `;
 
-export const BodyText = styled(Text)`
-  && {
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
+export const BodyText = SecondaryText;
 
 export const SectionDivider = styled(Divider)`
   && {
@@ -280,23 +246,21 @@ export const SecurityTitle = styled(Title).attrs({ level: 5 })`
   }
 `;
 
-export const PrimaryActionButton = styled(PrimitivePrimaryButton)`
+export const PrimaryActionButton = styled(PrimaryButton)`
   && {
     min-width: 160px;
   }
 `;
 
-export const SecondaryActionButton = styled(PrimitiveSecondaryButton)`
+export const SecondaryActionButton = styled(SecondaryButton)`
   && {
     margin-right: ${({ theme }) => theme.spacing.SM}px;
     min-width: 120px;
   }
 `;
 
-export const IconLabel = styled.span`
+export const IconLabel = styled(FlexRow).attrs({ $gap: 'XS' })`
   display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
@@ -304,8 +268,4 @@ export const SuccessIcon = styled(IconLabel)`
   color: ${({ theme }) => theme.colors.success};
 `;
 
-export const AlertDescription = styled(Text)`
-  && {
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
+export const AlertDescription = SecondaryText;

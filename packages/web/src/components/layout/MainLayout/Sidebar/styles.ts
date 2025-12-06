@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { Layout } from 'antd';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { FlexColumn } from '@/styles/primitives';
 
 const { Sider } = Layout;
 
@@ -23,9 +24,7 @@ export const StyledSider = styled(Sider)<{ $sidebarWidth: number; $isDrawer?: bo
   }
 `;
 
-export const SidebarContent = styled.div<{ $isDrawer?: boolean }>`
-  display: flex;
-  flex-direction: column;
+export const SidebarContent = styled(FlexColumn)<{ $isDrawer?: boolean }>`
   height: 100%;
   overflow: hidden;
   padding-top: ${({ theme, $isDrawer }) =>
@@ -86,10 +85,7 @@ export const MenuLabel = styled.span<{ $isActive: boolean; $collapsed: boolean }
   flex: 1;
 `;
 
-export const TooltipContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XS}px;
+export const TooltipContent = styled(FlexColumn).attrs({ $gap: 'XS' })`
   background-color: var(--color-bg-primary);
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   padding: ${({ theme }) => theme.spacing.SM}px;

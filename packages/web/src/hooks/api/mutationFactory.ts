@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { showMessage } from '@/utils/messages';
 import { minifyJSON } from '@/utils/json';
@@ -6,12 +6,22 @@ import { telemetryService } from '@/services/telemetryService';
 
 export interface MutationConfig<TVariables, TResult = unknown, TTransformed = TVariables> {
   request: (data: TTransformed) => Promise<TResult>;
-  invalidateKeys: string[] | ((variables: TVariables) => string[]);
-  successMessage: (variables: TVariables) => string;
+  invalidateKeys: string[] | QueryKey[] | ((variables: TVariables) => string[] | QueryKey[]);
+  successMessage: string | ((variables: TVariables) => string);
   errorMessage?: string;
   transformData?: (data: TVariables) => TTransformed | Promise<TTransformed>;
   operationName?: string;
+  additionalInvalidateKeys?:
+    | string[]
+    | QueryKey[]
+    | ((variables: TVariables) => string[] | QueryKey[]);
+  disableTelemetry?: boolean;
 }
+
+// Helper to normalize query keys to the format expected by queryClient
+const normalizeQueryKey = (key: string | QueryKey): QueryKey => {
+  return typeof key === 'string' ? [key] : key;
+};
 
 export const createMutation =
   <TVariables, TResult = unknown, TTransformed = TVariables>(
@@ -19,17 +29,20 @@ export const createMutation =
   ) =>
   () => {
     const queryClient = useQueryClient();
+    const enableTelemetry = !config.disableTelemetry;
 
     return useMutation({
       mutationFn: async (data: TVariables) => {
-        const startTime = performance.now();
+        const startTime = enableTelemetry ? performance.now() : 0;
         const operationName = config.operationName ?? 'mutation';
 
-        telemetryService.trackEvent('data.mutation_start', {
-          'mutation.operation': operationName,
-          'mutation.has_transform': Boolean(config.transformData),
-          'mutation.data_size': JSON.stringify(data).length,
-        });
+        if (enableTelemetry) {
+          telemetryService.trackEvent('data.mutation_start', {
+            'mutation.operation': operationName,
+            'mutation.has_transform': Boolean(config.transformData),
+            'mutation.data_size': JSON.stringify(data).length,
+          });
+        }
 
         try {
           const transformed = config.transformData
@@ -37,27 +50,31 @@ export const createMutation =
             : (data as unknown as TTransformed);
           const response = await config.request(transformed);
 
-          const duration = performance.now() - startTime;
-          telemetryService.trackEvent('data.mutation_success', {
-            'mutation.operation': operationName,
-            'mutation.duration_ms': duration,
-            'mutation.response_status': 'success',
-            'mutation.invalidated_keys_count': Array.isArray(config.invalidateKeys)
-              ? config.invalidateKeys.length
-              : 1,
-          });
+          if (enableTelemetry) {
+            const duration = performance.now() - startTime;
+            telemetryService.trackEvent('data.mutation_success', {
+              'mutation.operation': operationName,
+              'mutation.duration_ms': duration,
+              'mutation.response_status': 'success',
+              'mutation.invalidated_keys_count': Array.isArray(config.invalidateKeys)
+                ? config.invalidateKeys.length
+                : 1,
+            });
+          }
 
           return response;
         } catch (error) {
-          const duration = performance.now() - startTime;
-          const errorType =
-            isAxiosError(error) && error.response ? error.response.status : 'network_error';
-          telemetryService.trackEvent('data.mutation_error', {
-            'mutation.operation': operationName,
-            'mutation.duration_ms': duration,
-            'mutation.error': error instanceof Error ? error.message : 'unknown_error',
-            'mutation.error_type': errorType,
-          });
+          if (enableTelemetry) {
+            const duration = performance.now() - startTime;
+            const errorType =
+              isAxiosError(error) && error.response ? error.response.status : 'network_error';
+            telemetryService.trackEvent('data.mutation_error', {
+              'mutation.operation': operationName,
+              'mutation.duration_ms': duration,
+              'mutation.error': error instanceof Error ? error.message : 'unknown_error',
+              'mutation.error_type': errorType,
+            });
+          }
           throw error;
         }
       },
@@ -67,14 +84,34 @@ export const createMutation =
             ? config.invalidateKeys(variables)
             : config.invalidateKeys;
 
-        telemetryService.trackEvent('data.cache_invalidation', {
-          'cache.invalidated_keys': keys.join(','),
-          'cache.key_count': keys.length,
-          'cache.operation': config.operationName ?? 'mutation',
-        });
+        if (enableTelemetry) {
+          const keyStrings = keys.map((k) => (typeof k === 'string' ? k : JSON.stringify(k)));
+          telemetryService.trackEvent('data.cache_invalidation', {
+            'cache.invalidated_keys': keyStrings.join(','),
+            'cache.key_count': keys.length,
+            'cache.operation': config.operationName ?? 'mutation',
+          });
+        }
 
-        keys.forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
-        showMessage('success', config.successMessage(variables));
+        keys.forEach((key) => queryClient.invalidateQueries({ queryKey: normalizeQueryKey(key) }));
+
+        // Handle additional invalidation keys
+        if (config.additionalInvalidateKeys) {
+          const additionalKeys =
+            typeof config.additionalInvalidateKeys === 'function'
+              ? config.additionalInvalidateKeys(variables)
+              : config.additionalInvalidateKeys;
+
+          additionalKeys.forEach((key) =>
+            queryClient.invalidateQueries({ queryKey: normalizeQueryKey(key) })
+          );
+        }
+
+        const successMsg =
+          typeof config.successMessage === 'function'
+            ? config.successMessage(variables)
+            : config.successMessage;
+        showMessage('success', successMsg);
       },
       onError: (error: unknown) => {
         const message = error instanceof Error ? error.message : undefined;

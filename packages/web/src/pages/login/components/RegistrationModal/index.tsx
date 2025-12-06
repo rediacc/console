@@ -15,6 +15,7 @@ import apiClient, { api } from '@/api/client';
 import { apiConnectionService } from '@/services/apiConnectionService';
 import { Turnstile } from '@/pages/login/components/Turnstile';
 import { LanguageLink } from '@/pages/login/components/LanguageLink';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import {
   StyledModal,
   VerticalStack,
@@ -69,8 +70,18 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
 }) => {
   const { t, i18n } = useTranslation(['auth', 'common']);
   const [currentStep, setCurrentStep] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    execute: executeRegistration,
+    isExecuting: isRegistering,
+    error: registrationError,
+    resetError: resetRegistrationError,
+  } = useAsyncAction();
+  const {
+    execute: executeVerification,
+    isExecuting: isVerifying,
+    error: verificationError,
+    resetError: resetVerificationError,
+  } = useAsyncAction();
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   // Default to true (CI mode) - this is safer as it allows form submission
   // If CI mode is actually disabled, the check will set it to false
@@ -86,6 +97,11 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   const [registrationForm] = Form.useForm<RegistrationForm>();
   const [verificationForm] = Form.useForm<VerificationForm>();
+
+  // Combined loading state for backward compatibility
+  const loading = isRegistering || isVerifying;
+  // Combined error state
+  const error = registrationError || verificationError;
 
   // Check if CI mode is enabled (for testing/e2e)
   React.useEffect(() => {
@@ -136,60 +152,62 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const handleRegistration = async (values: RegistrationForm) => {
     // Check Turnstile token only if captcha is enabled and not in CI mode
     if (isCaptchaEnabled && !ciMode && !turnstileToken) {
-      setError(t('auth:registration.captchaRequired', 'Please complete the captcha'));
+      showMessage('error', t('auth:registration.captchaRequired', 'Please complete the captcha'));
       return;
     }
 
     // Check terms acceptance
     if (!values.termsAccepted) {
-      setError(t('auth:registration.termsRequired', 'You must accept the terms and conditions'));
+      showMessage(
+        'error',
+        t('auth:registration.termsRequired', 'You must accept the terms and conditions')
+      );
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    const result = await executeRegistration(
+      async () => {
+        // Hash the password
+        const passwordHash = await hashPassword(values.password);
 
-    try {
-      // Hash the password
-      const passwordHash = await hashPassword(values.password);
+        // Call CreateNewCompany with headers and captcha token
+        await api.company.registerCompany(
+          values.companyName,
+          values.email,
+          passwordHash,
+          turnstileToken || undefined,
+          i18n.language || 'en'
+        );
 
-      // Call CreateNewCompany with headers and captcha token
-      await api.company.registerCompany(
-        values.companyName,
-        values.email,
-        passwordHash,
-        turnstileToken || undefined,
-        i18n.language || 'en'
-      );
+        return {
+          email: values.email,
+          companyName: values.companyName,
+          passwordHash: passwordHash,
+          password: values.password, // Store for auto-login if needed
+        };
+      },
+      {
+        successMessage: t('auth:registration.registrationSuccess'),
+        errorMessage: t('auth:registration.registrationFailed'),
+        onError: () => {
+          // Reset Turnstile token on error (widget will auto-reset)
+          setTurnstileToken(null);
+        },
+      }
+    );
 
+    if (result.success && result.data) {
       // Store registration data for verification step
-      setRegistrationData({
-        email: values.email,
-        companyName: values.companyName,
-        passwordHash: passwordHash,
-        password: values.password, // Store for auto-login if needed
-      });
-
+      setRegistrationData(result.data);
       // Move to verification step
       setCurrentStep(1);
-      showMessage('success', t('auth:registration.registrationSuccess'));
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : t('auth:registration.registrationFailed');
-      setError(errorMessage);
-      showMessage('error', errorMessage);
-
-      // Reset Turnstile token on error (widget will auto-reset)
-      setTurnstileToken(null);
-    } finally {
-      setLoading(false);
     }
   };
 
   // Turnstile handlers
   const onTurnstileSuccess = (token: string) => {
     setTurnstileToken(token);
-    setError(null); // Clear error when captcha is completed
+    resetRegistrationError(); // Clear error when captcha is completed
   };
 
   const onTurnstileExpire = () => {
@@ -204,24 +222,30 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const handleVerification = async (values: VerificationForm) => {
     if (!registrationData) return;
 
-    setLoading(true);
-    setError(null);
+    const result = await executeVerification(
+      async () => {
+        // Use the updated activateUser method with authentication
+        const response = await apiClient.activateUser(
+          registrationData.email,
+          values.activationCode,
+          registrationData.passwordHash
+        );
 
-    try {
-      // Use the updated activateUser method with authentication
-      const response = await apiClient.activateUser(
-        registrationData.email,
-        values.activationCode,
-        registrationData.passwordHash
-      );
+        if (response.failure !== 0) {
+          throw new Error(response.errors?.join('; ') || 'Activation failed');
+        }
 
-      if (response.failure !== 0) {
-        throw new Error(response.errors?.join('; ') || 'Activation failed');
+        return response;
+      },
+      {
+        successMessage: t('auth:registration.activationSuccess'),
+        errorMessage: t('auth:registration.activationFailed'),
       }
+    );
 
+    if (result.success) {
       // Move to success step
       setCurrentStep(2);
-      showMessage('success', t('auth:registration.activationSuccess'));
 
       // Call completion callback if provided (for auto-login)
       if (onRegistrationComplete && registrationData?.password) {
@@ -233,19 +257,13 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
       // Close modal immediately after success
       handleClose();
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : t('auth:registration.activationFailed');
-      setError(errorMessage);
-      showMessage('error', errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleClose = () => {
     setCurrentStep(0);
-    setError(null);
+    resetRegistrationError();
+    resetVerificationError();
     setRegistrationData(null);
     setTurnstileToken(null);
     registrationForm.resetFields();
@@ -525,7 +543,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             type="error"
             showIcon
             closable
-            onClose={() => setError(null)}
+            onClose={() => {
+              resetRegistrationError();
+              resetVerificationError();
+            }}
             data-testid="registration-error-alert"
           />
         )}

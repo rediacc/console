@@ -1,7 +1,13 @@
 import styled from 'styled-components';
 import { Card, Space, Typography, Badge, Progress, List, Timeline } from 'antd';
 import { Link as RouterLink } from 'react-router-dom';
-import { PageContainer } from '@/styles/primitives';
+import {
+  PageContainer,
+  scrollbarStyles,
+  SecondaryText,
+  FlexRow,
+  FlexColumn,
+} from '@/styles/primitives';
 import {
   ContentStack,
   CenteredState,
@@ -24,12 +30,7 @@ export const DashboardCard = styled(Card)`
   width: 100%;
 `;
 
-export const SectionDescription = styled(Text)`
-  && {
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-  }
-`;
+export const SectionDescription = SecondaryText;
 
 export const ResourceTile = styled.div`
   padding: ${({ theme }) => theme.spacing.MD}px;
@@ -44,12 +45,8 @@ export const ResourceTile = styled.div`
   }
 `;
 
-export const TileHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+export const TileHeader = styled(FlexRow).attrs({ $justify: 'space-between', $gap: 'SM' })`
   width: 100%;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const TileMeta = styled(Text)`
@@ -82,15 +79,7 @@ export const ScrollContainer = styled.div`
   max-height: 200px;
   overflow-y: auto;
   padding-right: ${({ theme }) => theme.spacing.XS}px;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: ${({ theme }) => theme.colors.borderSecondary};
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-  }
+  ${scrollbarStyles}
 `;
 
 export const HorizontalScroll = styled.div`
@@ -106,12 +95,8 @@ export const LicenseItem = styled.div`
   width: 100%;
 `;
 
-export const LicenseHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+export const LicenseHeader = styled(FlexRow).attrs({ $justify: 'space-between', $gap: 'SM' })`
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const StatList = styled(Space).attrs({ orientation: 'vertical', size: 'middle' })`
@@ -131,11 +116,7 @@ export const InlineLink = styled(RouterLink)`
   }
 `;
 
-export const QueueBadgeRow = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+export const QueueBadgeRow = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
 export const QueueBadge = styled(Badge)<{ $variant?: 'error' | 'warning' | 'info' | 'muted' }>`
   .ant-scroll-number {
@@ -189,10 +170,7 @@ export const AuditMeta = styled(Text)`
 
 export { EmptyStateWrapper as EmptyState } from '@/styles/primitives';
 
-export const SectionFooter = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+export const SectionFooter = styled(FlexRow).attrs({ $justify: 'space-between' })`
   width: 100%;
   margin-top: ${({ theme }) => theme.spacing.MD}px;
   padding-top: ${({ theme }) => theme.spacing.SM}px;

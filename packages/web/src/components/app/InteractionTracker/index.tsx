@@ -242,5 +242,3 @@ function extractFormContext(form: HTMLFormElement): FormContext {
     testId,
   };
 }
-
-export default InteractionTracker;

@@ -112,16 +112,12 @@ const MachineReposPage: React.FC = () => {
   // Remote file browser modal state
   const fileBrowserModal = useDialogState<Machine>();
 
-  // Unified resource modal state (kept as useState due to complex prefilled data needs)
-  const [unifiedModalState, setUnifiedModalState] = useState<{
-    open: boolean;
+  // Unified resource modal state
+  const unifiedModal = useDialogState<{
     mode: 'create' | 'edit' | 'vault';
     data?: Record<string, unknown>;
     creationContext?: 'credentials-only' | 'normal';
-  }>({
-    open: false,
-    mode: 'create',
-  });
+  }>();
 
   // Fetch all machines to find our specific machine if not passed via state
   const {
@@ -164,8 +160,7 @@ const MachineReposPage: React.FC = () => {
     if (!machine) return;
 
     // Open the Repo creation modal with prefilled machine
-    setUnifiedModalState({
-      open: true,
+    unifiedModal.open({
       mode: 'create',
       data: {
         machineName: machine.machineName,
@@ -186,7 +181,7 @@ const MachineReposPage: React.FC = () => {
     const result = await createRepo(data);
 
     if (result.success) {
-      setUnifiedModalState({ open: false, mode: 'create' });
+      unifiedModal.close();
 
       // If we have a taskId, open the queue trace modal
       if (result.taskId) {
@@ -452,13 +447,13 @@ const MachineReposPage: React.FC = () => {
       )}
 
       <UnifiedResourceModal
-        open={unifiedModalState.open}
-        onCancel={() => setUnifiedModalState({ open: false, mode: 'create' })}
+        open={unifiedModal.isOpen}
+        onCancel={() => unifiedModal.close()}
         resourceType="repo"
-        mode={unifiedModalState.mode}
-        existingData={unifiedModalState.data}
+        mode={unifiedModal.state.data?.mode || 'create'}
+        existingData={unifiedModal.state.data?.data}
         teamFilter={machine?.teamName ? [machine.teamName] : undefined}
-        creationContext={unifiedModalState.creationContext}
+        creationContext={unifiedModal.state.data?.creationContext}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onSubmit={handleUnifiedModalSubmit as any}
       />

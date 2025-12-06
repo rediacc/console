@@ -6,14 +6,11 @@ import {
   WarningOutlined,
   ExclamationCircleOutlined,
 } from '@/utils/optimizedIcons';
+import { FlexColumn, FlexRow } from '@/styles/primitives';
 
 const { Text } = Typography;
 
-export const EditorContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-`;
+export const EditorContainer = styled(FlexColumn).attrs({ $gap: 'MD' })``;
 
 export const InfoBanner = styled(Alert)`
   && {
@@ -36,10 +33,10 @@ export const FieldItem = styled(Form.Item)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const FieldLabelStack = styled(Space)`
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+export const FieldLabelStack = styled(FlexRow).attrs({
+  $gap: 'XS',
+  $align: 'center',
+})``;
 
 export const FieldInfoIcon = styled(InfoCircleOutlined)`
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
@@ -132,10 +129,10 @@ export const DangerAlertIcon = styled(ExclamationCircleOutlined)`
   font-size: ${({ theme }) => theme.fontSize.BASE}px;
 `;
 
-export const FormatActions = styled.div`
+export const FormatActions = styled(FlexRow).attrs({
+  $justify: 'flex-end',
+})`
   margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-  display: flex;
-  justify-content: flex-end;
 `;
 
 export const FormatButton = styled(Button)`

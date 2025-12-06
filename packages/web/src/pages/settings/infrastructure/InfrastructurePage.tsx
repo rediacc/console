@@ -81,6 +81,7 @@ import {
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { createSorter } from '@/core';
+import { createVersionColumn } from '@/components/common/columns';
 
 const InfrastructurePage: React.FC = () => {
   const { t } = useTranslation('resources');
@@ -96,12 +97,11 @@ const InfrastructurePage: React.FC = () => {
     isCloudManaged: boolean;
   }>();
   const auditTrace = useTraceModal();
-  const [unifiedModalState, setUnifiedModalState] = useState<{
-    open: boolean;
+  const unifiedModal = useDialogState<{
     resourceType: 'region' | 'bridge';
     mode: 'create' | 'edit';
     data?: Partial<Region> | Partial<Bridge> | null;
-  }>({ open: false, resourceType: 'region', mode: 'create' });
+  }>();
 
   const { data: regions, isLoading: regionsLoading } = useRegions(true);
   const regionsList: Region[] = useMemo(() => regions || [], [regions]);
@@ -127,11 +127,11 @@ const InfrastructurePage: React.FC = () => {
     mode: 'create' | 'edit',
     data?: Partial<Region> | Partial<Bridge> | null
   ) => {
-    setUnifiedModalState({ open: true, resourceType, mode, data });
+    unifiedModal.open({ resourceType, mode, data });
   };
 
   const closeUnifiedModal = () => {
-    setUnifiedModalState({ open: false, resourceType: 'region', mode: 'create', data: null });
+    unifiedModal.close();
   };
 
   type UnifiedFormData = {
@@ -144,40 +144,43 @@ const InfrastructurePage: React.FC = () => {
   };
 
   const handleUnifiedModalSubmit = async (data: UnifiedFormData) => {
+    const modalData = unifiedModal.state.data;
+    if (!modalData) return;
+
     try {
-      switch (unifiedModalState.resourceType) {
+      switch (modalData.resourceType) {
         case 'region':
-          if (unifiedModalState.mode === 'create') {
+          if (modalData.mode === 'create') {
             await createRegionMutation.mutateAsync({
               regionName: data.regionName as string,
               regionVault: data.regionVault,
             });
-          } else if (unifiedModalState.data) {
-            if (data.regionName && data.regionName !== unifiedModalState.data.regionName) {
+          } else if (modalData.data) {
+            if (data.regionName && data.regionName !== modalData.data.regionName) {
               await updateRegionNameMutation.mutateAsync({
-                currentRegionName: unifiedModalState.data.regionName as string,
+                currentRegionName: modalData.data.regionName as string,
                 newRegionName: data.regionName,
               });
             }
             const vaultData = data.regionVault;
-            if (vaultData && vaultData !== unifiedModalState.data.vaultContent) {
+            if (vaultData && vaultData !== modalData.data.vaultContent) {
               await updateRegionVaultMutation.mutateAsync({
-                regionName: (data.regionName || unifiedModalState.data.regionName) as string,
+                regionName: (data.regionName || modalData.data.regionName) as string,
                 regionVault: vaultData,
-                vaultVersion: (unifiedModalState.data.vaultVersion ?? 0) + 1,
+                vaultVersion: (modalData.data.vaultVersion ?? 0) + 1,
               });
             }
           }
           break;
         case 'bridge':
-          if (unifiedModalState.mode === 'create') {
+          if (modalData.mode === 'create') {
             await createBridgeMutation.mutateAsync({
               regionName: data.regionName as string,
               bridgeName: data.bridgeName as string,
               bridgeVault: data.bridgeVault,
             });
-          } else if (unifiedModalState.data) {
-            const bridgeData = unifiedModalState.data as Partial<Bridge>;
+          } else if (modalData.data) {
+            const bridgeData = modalData.data as Partial<Bridge>;
             if (data.bridgeName && data.bridgeName !== bridgeData.bridgeName) {
               await updateBridgeNameMutation.mutateAsync({
                 regionName: bridgeData.regionName as string,
@@ -204,17 +207,18 @@ const InfrastructurePage: React.FC = () => {
   };
 
   const handleUnifiedVaultUpdate = async (vault: string, version: number) => {
-    if (!unifiedModalState.data) return;
+    const modalData = unifiedModal.state.data;
+    if (!modalData?.data) return;
 
     try {
-      if (unifiedModalState.resourceType === 'region') {
+      if (modalData.resourceType === 'region') {
         await updateRegionVaultMutation.mutateAsync({
-          regionName: unifiedModalState.data.regionName as string,
+          regionName: modalData.data.regionName as string,
           regionVault: vault,
           vaultVersion: version,
         });
       } else {
-        const bridgeData = unifiedModalState.data as Partial<Bridge>;
+        const bridgeData = modalData.data as Partial<Bridge>;
         await updateBridgeVaultMutation.mutateAsync({
           regionName: bridgeData.regionName as string,
           bridgeName: bridgeData.bridgeName as string,
@@ -297,14 +301,14 @@ const InfrastructurePage: React.FC = () => {
       : []),
     ...(featureFlags.isEnabled('vaultVersionColumns')
       ? [
-          {
+          createVersionColumn<Region>({
             title: t('general.vaultVersion'),
             dataIndex: 'vaultVersion',
             key: 'vaultVersion',
             width: 120,
             sorter: createSorter<Region>('vaultVersion'),
-            render: (version: number) => <Tag>{tCommon('general.versionFormat', { version })}</Tag>,
-          },
+            formatVersion: (version: number) => tCommon('general.versionFormat', { version }),
+          }),
         ]
       : []),
     {
@@ -431,14 +435,14 @@ const InfrastructurePage: React.FC = () => {
     },
     ...(featureFlags.isEnabled('vaultVersionColumns')
       ? [
-          {
+          createVersionColumn<Bridge>({
             title: t('general.vaultVersion'),
             dataIndex: 'vaultVersion',
             key: 'vaultVersion',
             width: 120,
             sorter: createSorter<Bridge>('vaultVersion'),
-            render: (version: number) => <Tag>{tCommon('general.versionFormat', { version })}</Tag>,
-          },
+            formatVersion: (version: number) => tCommon('general.versionFormat', { version }),
+          }),
         ]
       : []),
     {
@@ -758,13 +762,17 @@ const InfrastructurePage: React.FC = () => {
       />
 
       <UnifiedResourceModal
-        open={unifiedModalState.open}
+        open={unifiedModal.isOpen}
         onCancel={closeUnifiedModal}
-        resourceType={unifiedModalState.resourceType}
-        mode={unifiedModalState.mode}
-        existingData={unifiedModalState.data as Partial<Region> | Partial<Bridge> | undefined}
+        resourceType={unifiedModal.state.data?.resourceType || 'region'}
+        mode={unifiedModal.state.data?.mode || 'create'}
+        existingData={
+          unifiedModal.state.data?.data as Partial<Region> | Partial<Bridge> | undefined
+        }
         onSubmit={handleUnifiedModalSubmit}
-        onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
+        onUpdateVault={
+          unifiedModal.state.data?.mode === 'edit' ? handleUnifiedVaultUpdate : undefined
+        }
         isSubmitting={
           createRegionMutation.isPending ||
           updateRegionNameMutation.isPending ||

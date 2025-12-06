@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { Card, Statistic } from 'antd';
 import { ReloadOutlined } from '@/utils/optimizedIcons';
-import { StyledIcon } from '@/styles/primitives';
+import { FlexRow, StyledIcon } from '@/styles/primitives';
 
 export const SummaryCard = styled(Card)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
@@ -11,10 +11,7 @@ export const LoadingCard = styled(Card)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const LoadingContent = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
+export const LoadingContent = styled(FlexRow).attrs({ $justify: 'center' })`
   padding: ${({ theme }) => theme.spacing.LG}px 0;
 `;
 

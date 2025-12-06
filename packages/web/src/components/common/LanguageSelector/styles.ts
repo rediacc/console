@@ -29,8 +29,4 @@ export const LanguageSelect = styled(Select)`
   }
 `;
 
-export const LanguageOption = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+export { InlineStack as LanguageOption } from '@/components/common/styled';

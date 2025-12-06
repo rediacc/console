@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { Typography } from 'antd';
-import { BaseModal, BaseTable, ModalTitleRow, PillTag } from '@/styles/primitives';
+import { BaseModal, BaseTable, FlexRow, ModalTitleRow, PillTag } from '@/styles/primitives';
+import { InlineStack } from '@/components/common/styled';
 import { InfoCircleOutlined } from '@/utils/optimizedIcons';
 import { ModalSize } from '@/types/modal';
 
@@ -8,13 +9,7 @@ const { Text } = Typography;
 
 export const StyledModal = styled(BaseModal).attrs({
   className: `${ModalSize.Large} view-assignment-status-modal`,
-})`
-  .ant-modal-body {
-    display: flex;
-    flex-direction: column;
-    gap: ${({ theme }) => theme.spacing.LG}px;
-  }
-`;
+})``;
 
 export const TitleStack = styled(ModalTitleRow)``;
 
@@ -22,16 +17,11 @@ export const InfoIcon = styled(InfoCircleOutlined)`
   color: ${({ theme }) => theme.colors.info};
 `;
 
-export const SummaryRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.LG}px;
+export const SummaryRow = styled(FlexRow).attrs({ $gap: 'LG', $wrap: true })`
   margin-bottom: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const SummaryItem = styled.div`
-  display: inline-flex;
-  align-items: center;
+export const SummaryItem = styled(InlineStack)`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
@@ -55,11 +45,7 @@ export const MachinesTable = styled(BaseTable)`
   }
 `;
 
-export const MachineNameRow = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const MachineNameRow = styled(InlineStack)``;
 
 export const MachineNameText = styled(Text)`
   && {

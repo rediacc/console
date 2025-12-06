@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { showMessage } from '@/utils/messages';
 import { minifyJSON } from '@/utils/json';
 import { createErrorHandler } from '@/utils/mutationUtils';
+import { invalidateQueueCaches, invalidateAllQueueCaches } from '@/utils/cacheUtils';
+import { QUERY_KEYS } from '@/api/queryKeys';
 import i18n from '@/i18n/config';
 import { api } from '@/api/client';
 import type { QueueTrace, QueueListResult } from '@rediacc/shared/types';
@@ -52,7 +54,7 @@ export interface QueueFilters {
 // Get queue items with advanced filtering
 export const useQueueItems = (filters: QueueFilters = {}) => {
   return useQuery<QueueListResult>({
-    queryKey: ['queue-items', filters],
+    queryKey: QUERY_KEYS.queue.items(filters),
     queryFn: async () => {
       const { teamName, ...rest } = filters;
       return api.queue.list(teamName, rest);
@@ -64,7 +66,7 @@ export const useQueueItems = (filters: QueueFilters = {}) => {
 // Get next queue items for machine
 export const useNextQueueItems = (machineName: string, itemCount: number = 5) => {
   return useQuery({
-    queryKey: ['queue-next', machineName, itemCount],
+    queryKey: QUERY_KEYS.queue.next(machineName, itemCount),
     queryFn: async () => {
       return api.queue.getNext(machineName, itemCount);
     },
@@ -113,8 +115,7 @@ export const useCreateQueueItem = () => {
       return response;
     },
     onSuccess: (response, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['queue-items'] });
-      queryClient.invalidateQueries({ queryKey: ['queue-items-bridge', variables.bridgeName] });
+      invalidateQueueCaches(queryClient, variables.bridgeName);
       const message = response.taskId
         ? i18n.t('queue:success.createdWithId', { taskId: response.taskId })
         : i18n.t('queue:success.created');
@@ -138,7 +139,7 @@ export const useUpdateQueueItemResponse = () => {
       return api.queue.updateResponse(minifiedData.taskId, minifiedData.responseVault);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['queue-items'] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
       showMessage('success', i18n.t('queue:success.responseUpdated', { taskId: variables.taskId }));
     },
     onError: createErrorHandler(i18n.t('queue:errors.updateFailed')),
@@ -168,7 +169,7 @@ export const useCompleteQueueItem = () => {
       );
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['queue-items'] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
       const status = variables.finalStatus || 'COMPLETED';
       const message =
         status === 'FAILED'
@@ -191,8 +192,7 @@ export const useUpdateQueueItemPriority = () => {
       return api.queue.updatePriority(data.taskId, priority);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['queue-items'] });
-      queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] });
+      invalidateAllQueueCaches(queryClient);
       showMessage(
         'success',
         i18n.t('queue:success.priorityUpdated', {
@@ -214,8 +214,7 @@ export const useUpdateQueueItemProtection = () => {
       return api.queue.updateProtection(data.taskId, data.protection);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['queue-items'] });
-      queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] });
+      invalidateAllQueueCaches(queryClient);
       const message = variables.protection
         ? i18n.t('queue:success.protectionEnabled', { taskId: variables.taskId })
         : i18n.t('queue:success.protectionDisabled', { taskId: variables.taskId });
@@ -234,8 +233,7 @@ export const useCancelQueueItem = () => {
       return api.queue.cancel(taskId);
     },
     onSuccess: (_, taskId) => {
-      queryClient.invalidateQueries({ queryKey: ['queue-items'] });
-      queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] });
+      invalidateAllQueueCaches(queryClient);
       showMessage('success', i18n.t('queue:success.cancellationInitiated', { taskId }));
     },
     onError: createErrorHandler(i18n.t('queue:errors.cancelFailed')),
@@ -251,8 +249,7 @@ export const useDeleteQueueItem = () => {
       return api.queue.delete(taskId);
     },
     onSuccess: (_, taskId) => {
-      queryClient.invalidateQueries({ queryKey: ['queue-items'] });
-      queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] });
+      invalidateAllQueueCaches(queryClient);
       showMessage('success', i18n.t('queue:success.deleted', { taskId }));
     },
     onError: createErrorHandler(i18n.t('queue:errors.deleteFailed')),
@@ -268,8 +265,8 @@ export const useRetryFailedQueueItem = () => {
       return api.queue.retry(taskId);
     },
     onSuccess: (_, taskId) => {
-      queryClient.invalidateQueries({ queryKey: ['queue-items'] });
-      queryClient.invalidateQueries({ queryKey: ['queue-item-trace', taskId] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.itemTrace(taskId) });
       showMessage('success', i18n.t('queue:success.queuedForRetry', { taskId }));
     },
     onError: createErrorHandler(i18n.t('queue:errors.retryFailed')),
@@ -279,7 +276,7 @@ export const useRetryFailedQueueItem = () => {
 // Get queue item trace
 export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true) => {
   return useQuery<QueueTrace | null>({
-    queryKey: ['queue-item-trace', taskId],
+    queryKey: QUERY_KEYS.queue.itemTrace(taskId),
     queryFn: async () => {
       if (!taskId) return null;
       const trace = await api.queue.getTrace(taskId);

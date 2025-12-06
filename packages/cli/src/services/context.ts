@@ -80,4 +80,3 @@ class ContextService {
 }
 
 export const contextService = new ContextService();
-export default contextService;

@@ -9,6 +9,7 @@ import {
   PillTag,
   StyledIcon,
 } from '@/styles/primitives';
+import { InlineStack } from '@/components/common/styled';
 
 export const CreatePoolButton = styled(Button)`
   && {
@@ -25,11 +26,7 @@ export const ClusterCard = styled(Card)`
   }
 `;
 
-export const CardHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const CardHeader = styled(InlineStack)``;
 
 export const CardIcon = styled(StyledIcon).attrs(({ theme }) => ({
   as: CloudServerOutlined,

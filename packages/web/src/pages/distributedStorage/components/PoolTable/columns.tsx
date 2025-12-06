@@ -9,7 +9,7 @@ import {
 import type { DistributedStoragePool } from '@/api/queries/distributedStorage';
 import { createSorter } from '@/core';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
-import { VersionTag, createActionColumn } from '@/components/common/columns';
+import { createActionColumn, createVersionColumn } from '@/components/common/columns';
 import { getPoolFunctionMenuItems } from './menus';
 import { PoolNameCell, ExpandIcon, PoolIcon, PoolNameText } from './styles';
 
@@ -47,17 +47,14 @@ export const buildPoolColumns = ({
       );
     },
   },
-  {
+  createVersionColumn<DistributedStoragePool>({
     title: t('common:general.vaultVersion'),
     dataIndex: 'vaultVersion',
     key: 'vaultVersion',
     width: 140,
-    align: 'center',
     sorter: createSorter<DistributedStoragePool>('vaultVersion'),
-    render: (version: number) => (
-      <VersionTag>{t('common:general.versionFormat', { version })}</VersionTag>
-    ),
-  },
+    formatVersion: (version: number) => t('common:general.versionFormat', { version }),
+  }),
   createActionColumn<DistributedStoragePool>({
     width: 320,
     renderActions: (record) => (

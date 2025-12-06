@@ -4,12 +4,13 @@ import {
   createVaultUpdateMutation,
   createMutation,
 } from '@/hooks/api/mutationFactory';
+import { QUERY_KEY_STRINGS } from '@/api/queryKeys';
 import type { Machine } from '@/types';
 import { api } from '@/api/client';
 
 // Get machines for a team, multiple teams, or all machines
 export const useMachines = createResourceQuery<Machine>({
-  queryKey: 'machines',
+  queryKey: QUERY_KEY_STRINGS.machines,
   fetcher: (teamFilter) => api.machines.list(teamFilter),
   operationName: 'machines.list',
 });
@@ -23,7 +24,12 @@ export const useCreateMachine = createMutation<{
 }>({
   request: ({ teamName, bridgeName, machineName, machineVault }) =>
     api.machines.create(teamName, machineName, bridgeName, machineVault),
-  invalidateKeys: ['machines', 'teams', 'bridges', 'dropdown-data'],
+  invalidateKeys: [
+    QUERY_KEY_STRINGS.machines,
+    QUERY_KEY_STRINGS.teams,
+    QUERY_KEY_STRINGS.bridges,
+    QUERY_KEY_STRINGS.dropdown,
+  ],
   successMessage: (vars) => `Machine "${vars.machineName}" created successfully`,
   errorMessage: 'Failed to create machine',
   transformData: ({ teamName, bridgeName, machineName, machineVault }) => ({
@@ -43,7 +49,7 @@ export const useUpdateMachineName = createMutation<{
 }>({
   request: ({ teamName, currentMachineName, newMachineName }) =>
     api.machines.rename(teamName, currentMachineName, newMachineName),
-  invalidateKeys: ['machines', 'dropdown-data'],
+  invalidateKeys: [QUERY_KEY_STRINGS.machines, QUERY_KEY_STRINGS.dropdown],
   successMessage: (vars) => `Machine renamed to "${vars.newMachineName}"`,
   errorMessage: 'Failed to update machine name',
   operationName: 'machines.rename',
@@ -57,7 +63,7 @@ export const useUpdateMachineBridge = createMutation<{
 }>({
   request: ({ teamName, machineName, newBridgeName }) =>
     api.machines.assignBridge(teamName, machineName, newBridgeName),
-  invalidateKeys: ['machines', 'bridges'],
+  invalidateKeys: [QUERY_KEY_STRINGS.machines, QUERY_KEY_STRINGS.bridges],
   successMessage: (vars) =>
     `Machine "${vars.machineName}" reassigned to bridge "${vars.newBridgeName}"`,
   errorMessage: 'Failed to update machine bridge',
@@ -87,5 +93,5 @@ export const useDeleteMachine = createResourceMutation<{
   'delete',
   (variables) => api.machines.delete(variables.teamName, variables.machineName),
   'machineName',
-  ['teams', 'bridges']
+  [QUERY_KEY_STRINGS.teams, QUERY_KEY_STRINGS.bridges]
 );

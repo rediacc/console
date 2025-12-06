@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { Select, Typography, Space } from 'antd';
 import { LoadingOutlined, ApiOutlined, DeleteOutlined } from '@/utils/optimizedIcons';
+import { FlexRow } from '@/styles/primitives';
 
 const { Text: AntText } = Typography;
 
@@ -55,25 +56,17 @@ export const LoadingText = styled(AntText)`
   opacity: 0.6;
 `;
 
-export const OptionWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+// Use FlexRow from primitives
+export const OptionWrapper = styled(FlexRow).attrs({ $justify: 'space-between', $gap: 8 })`
   font-size: ${({ theme }) => theme.fontSize.XS}px;
-  gap: 8px;
   margin-right: 20px;
 `;
 
-export const OptionLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
+// Use FlexRow from primitives
+export const OptionLeft = styled(FlexRow).attrs({ $gap: 6 })``;
 
-export const OptionRight = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
+// Use FlexRow from primitives
+export const OptionRight = styled(FlexRow).attrs({ $gap: 8 })`
   margin-left: auto;
 `;
 
@@ -119,11 +112,8 @@ export const EmojiIcon = styled.span`
   margin-right: 4px;
 `;
 
-export const LabelContent = styled.span`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
+// Use FlexRow from primitives
+export const LabelContent = styled(FlexRow).attrs({ $gap: 6 })``;
 
 export const DeleteEndpointIcon = styled(DeleteOutlined)`
   font-size: ${({ theme }) => theme.fontSize.XS}px;
