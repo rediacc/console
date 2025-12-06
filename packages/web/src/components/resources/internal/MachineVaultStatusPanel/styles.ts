@@ -45,21 +45,19 @@ export const TagRow = styled(TagGroup)`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const StyledTag = styled(RediaccTag).attrs<{ $variant: TagVariantKey }>(
-  ({ $variant }) => {
-    const presetMap: Record<TagVariantKey, TagPreset | 'neutral'> = {
-      team: 'team',
-      bridge: 'bridge',
-      region: 'region',
-      queue: 'team',
-      version: 'neutral',
-    };
-    return {
-      preset: presetMap[$variant] as TagPreset,
-      borderless: true,
-    };
-  }
-)<{ $variant: TagVariantKey }>`
+export const StyledTag = styled(RediaccTag).attrs<{ $variant: TagVariantKey }>(({ $variant }) => {
+  const presetMap: Record<TagVariantKey, TagPreset | 'neutral'> = {
+    team: 'team',
+    bridge: 'bridge',
+    region: 'region',
+    queue: 'team',
+    version: 'neutral',
+  };
+  return {
+    preset: presetMap[$variant] as TagPreset,
+    borderless: true,
+  };
+})<{ $variant: TagVariantKey }>`
   && {
     gap: ${({ theme }) => theme.spacing.XS}px;
   }

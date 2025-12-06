@@ -45,19 +45,17 @@ export const HeaderIcon = styled(FolderOutlined)`
   color: var(--color-success);
 `;
 
-export const StyledTag = styled(RediaccTag).attrs<{ $variant: TagVariantKey }>(
-  ({ $variant }) => {
-    const presetMap: Record<TagVariantKey, TagPreset | 'neutral'> = {
-      team: 'team',
-      machine: 'machine',
-      version: 'neutral',
-    };
-    return {
-      preset: presetMap[$variant] as TagPreset,
-      borderless: true,
-    };
-  }
-)<{ $variant: TagVariantKey }>`
+export const StyledTag = styled(RediaccTag).attrs<{ $variant: TagVariantKey }>(({ $variant }) => {
+  const presetMap: Record<TagVariantKey, TagPreset | 'neutral'> = {
+    team: 'team',
+    machine: 'machine',
+    version: 'neutral',
+  };
+  return {
+    preset: presetMap[$variant] as TagPreset,
+    borderless: true,
+  };
+})<{ $variant: TagVariantKey }>`
   && {
     gap: ${({ theme }) => theme.spacing.XS}px;
   }
