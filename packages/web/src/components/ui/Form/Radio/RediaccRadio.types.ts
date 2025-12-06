@@ -5,7 +5,7 @@ export { RadioChangeEvent };
 
 export interface RediaccRadioButtonProps {
   /** Button value */
-  value?: any;
+  value?: string | number;
   /** Disabled state */
   disabled?: boolean;
   /** Button label content */
@@ -20,9 +20,9 @@ export interface RediaccRadioButtonProps {
 
 export interface RediaccRadioGroupProps {
   /** Selected value */
-  value?: any;
+  value?: string | number;
   /** Default selected value (uncontrolled mode) */
-  defaultValue?: any;
+  defaultValue?: string | number;
   /** Change event handler */
   onChange?: (e: RadioChangeEvent) => void;
   /** Disabled state for all buttons */

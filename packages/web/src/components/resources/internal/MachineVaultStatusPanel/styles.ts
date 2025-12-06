@@ -3,6 +3,7 @@ import { Typography } from 'antd';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { RediaccTag } from '@/components/ui/Tag';
+import type { TagPreset, TagVariant } from '@/components/ui/Tag';
 import { RediaccText } from '@/components/ui/Text';
 import { RediaccCard, RediaccBadge, RediaccEmpty, RediaccList } from '@/components/ui';
 import {
@@ -31,28 +32,7 @@ export { PanelWrapper, Header, HeaderRow, TitleGroup, PanelTitle, CollapseButton
 
 export { IconWrapper } from '@/components/ui';
 
-const TAG_VARIANTS = {
-  team: {
-    background: 'var(--color-success)',
-    color: 'var(--color-text-inverse)',
-  },
-  bridge: {
-    background: 'var(--color-primary)',
-    color: 'var(--color-text-inverse)',
-  },
-  region: {
-    background: 'var(--color-info)',
-    color: 'var(--color-text-inverse)',
-  },
-  queue: {
-    background: 'var(--color-success)',
-    color: 'var(--color-text-inverse)',
-  },
-  version: {
-    background: 'var(--color-bg-tertiary)',
-    color: 'var(--color-text-primary)',
-  },
-} as const;
+type TagVariantKey = 'team' | 'bridge' | 'region' | 'queue' | 'version';
 
 export { TagGroup, FieldRow, FieldLabel, FieldValue, FieldValueStrong, FieldValueMonospace };
 
@@ -65,9 +45,9 @@ export const TagRow = styled(TagGroup)`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const StyledTag = styled(RediaccTag).attrs<{ $variant: keyof typeof TAG_VARIANTS }>(
+export const StyledTag = styled(RediaccTag).attrs<{ $variant: TagVariantKey }>(
   ({ $variant }) => {
-    const presetMap: Record<keyof typeof TAG_VARIANTS, string> = {
+    const presetMap: Record<TagVariantKey, TagPreset | 'neutral'> = {
       team: 'team',
       bridge: 'bridge',
       region: 'region',
@@ -75,11 +55,11 @@ export const StyledTag = styled(RediaccTag).attrs<{ $variant: keyof typeof TAG_V
       version: 'neutral',
     };
     return {
-      preset: presetMap[$variant] as any,
+      preset: presetMap[$variant] as TagPreset,
       borderless: true,
     };
   }
-)<{ $variant: keyof typeof TAG_VARIANTS }>`
+)<{ $variant: TagVariantKey }>`
   && {
     gap: ${({ theme }) => theme.spacing.XS}px;
   }
@@ -155,39 +135,22 @@ export const CardTagGroup = styled.div`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-const STATUS_TONES = {
-  success: {
-    background: 'var(--color-success)',
-    color: 'var(--color-text-inverse)',
-  },
-  info: {
-    background: 'var(--color-info)',
-    color: 'var(--color-text-inverse)',
-  },
-  warning: {
-    background: 'var(--color-warning)',
-    color: 'var(--color-text-inverse)',
-  },
-  default: {
-    background: 'var(--color-bg-tertiary)',
-    color: 'var(--color-text-primary)',
-  },
-} as const;
+type StatusToneKey = 'success' | 'info' | 'warning' | 'default';
 
-export const StatusTag = styled(RediaccTag).attrs<{ $tone?: keyof typeof STATUS_TONES }>(
+export const StatusTag = styled(RediaccTag).attrs<{ $tone?: StatusToneKey }>(
   ({ $tone = 'default' }) => {
-    const variantMap: Record<keyof typeof STATUS_TONES, string> = {
+    const variantMap: Record<StatusToneKey, TagVariant> = {
       success: 'success',
       info: 'info',
       warning: 'warning',
       default: 'neutral',
     };
     return {
-      variant: variantMap[$tone] as any,
+      variant: variantMap[$tone],
       borderless: true,
     };
   }
-)<{ $tone?: keyof typeof STATUS_TONES }>``;
+)<{ $tone?: StatusToneKey }>``;
 
 export const AddressTag = styled(RediaccTag).attrs({
   variant: 'info',

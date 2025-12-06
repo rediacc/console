@@ -35,6 +35,7 @@ import type {
  * // Centered input
  * <RediaccInput centered placeholder="123456" />
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RediaccInput = forwardRef<any, RediaccInputProps>(
   (
     {
@@ -120,6 +121,7 @@ RediaccInput.displayName = 'RediaccInput';
  * // Small size password input
  * <RediaccPasswordInput size="small" placeholder="New password" />
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RediaccPasswordInput = forwardRef<any, RediaccPasswordInputProps>(
   (
     {
@@ -205,6 +207,7 @@ RediaccPasswordInput.displayName = 'RediaccPasswordInput';
  * // Full-width with character count
  * <RediaccTextArea fullWidth showCount maxLength={500} />
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RediaccTextArea = forwardRef<any, RediaccTextAreaProps>(
   (
     {
@@ -286,6 +289,7 @@ RediaccTextArea.displayName = 'RediaccTextArea';
  * // Full-width with precision
  * <RediaccInputNumber fullWidth precision={2} />
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RediaccInputNumber = forwardRef<any, RediaccInputNumberProps>(
   (
     {
@@ -297,7 +301,7 @@ export const RediaccInputNumber = forwardRef<any, RediaccInputNumberProps>(
       disabled = false,
       prefix,
       suffix,
-      allowClear = false,
+      allowClear: _allowClear = false,
       maxLength,
       autoFocus = false,
       name,
@@ -380,6 +384,7 @@ RediaccInputNumber.displayName = 'RediaccInputNumber';
  * // Full-width with loading state
  * <RediaccSearchInput fullWidth loading={isSearching} onSearch={handleSearch} />
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RediaccSearchInput = forwardRef<any, RediaccSearchInputProps>(
   (
     {

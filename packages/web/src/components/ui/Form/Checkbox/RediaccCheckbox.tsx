@@ -24,6 +24,7 @@ import type { RediaccCheckboxProps } from './RediaccCheckbox.types';
  * // Disabled checkbox
  * <RediaccCheckbox disabled>Can't change this</RediaccCheckbox>
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RediaccCheckbox = forwardRef<any, RediaccCheckboxProps>(
   (
     {

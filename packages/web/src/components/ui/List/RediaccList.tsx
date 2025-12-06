@@ -28,11 +28,13 @@ function RediaccListInner<T>(
       $split={split}
       split={split}
       dataSource={dataSource}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       renderItem={renderItem as any}
       header={header}
       footer={footer}
       loading={loading}
       locale={locale}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       rowKey={rowKey as any}
       {...rest}
     />

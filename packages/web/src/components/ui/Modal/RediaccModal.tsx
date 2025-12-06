@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { StyledRediaccModal, resolveModalWidth } from './RediaccModal.styles';
 import type { RediaccModalProps } from './RediaccModal.types';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RediaccModal = forwardRef<any, RediaccModalProps>(
   (
     {
@@ -29,6 +30,7 @@ export const RediaccModal = forwardRef<any, RediaccModalProps>(
     },
     ref
   ) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const Component = StyledRediaccModal as any;
     return (
       <Component

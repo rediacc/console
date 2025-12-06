@@ -29,6 +29,7 @@ import type { RediaccTextProps } from './RediaccText.types';
  *   This text will be truncated after 3 lines
  * </RediaccText>
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RediaccText = forwardRef<any, RediaccTextProps>(
   (
     {
@@ -70,7 +71,9 @@ export const RediaccText = forwardRef<any, RediaccTextProps>(
         className={className}
         style={style}
         onClick={onClick}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         copyable={copyable as any}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ellipsis={ellipsis as any}
         {...rest}
       >

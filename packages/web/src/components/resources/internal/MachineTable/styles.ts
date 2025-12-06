@@ -195,16 +195,16 @@ export const StatusIcon = styled.span<{ $status: 'online' | 'offline' | 'unknown
   justify-content: center;
 `;
 
-export const StyledTag = styled(RediaccTag).attrs<{ $preset?: string; $variant?: string }>(
+export const StyledTag = styled(RediaccTag).attrs<{ $preset?: TagPreset; $variant?: TagPreset }>(
   ({ $preset, $variant }) => ({
-    preset: ($preset || $variant) as any,
+    preset: $preset || $variant,
     borderless: true,
   })
-)<{ $preset?: string; $variant?: string }>``;
+)<{ $preset?: TagPreset; $variant?: TagPreset }>``;
 
 export const GroupHeaderTag = styled(RediaccTag).attrs<{ $preset?: string; $variant?: string }>(
   ({ $preset, $variant }) => ({
-    preset: ($preset || $variant) as any,
+    preset: ($preset || $variant) as TagPreset,
     borderless: true,
     size: 'md' as const,
   })

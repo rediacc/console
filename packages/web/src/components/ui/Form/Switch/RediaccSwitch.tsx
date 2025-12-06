@@ -28,6 +28,7 @@ import type { RediaccSwitchProps } from './RediaccSwitch.types';
  * // Loading state
  * <RediaccSwitch loading checked={isLoading} onChange={handleToggle} />
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RediaccSwitch = forwardRef<any, RediaccSwitchProps>(
   (
     {

@@ -42,6 +42,7 @@ import type { RediaccSelectProps } from './RediaccSelect.types';
  *   <RediaccSelect.Option value="2">Option 2</RediaccSelect.Option>
  * </RediaccSelect>
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RediaccSelect = forwardRef<any, RediaccSelectProps>(
   (
     {
@@ -88,6 +89,7 @@ export const RediaccSelect = forwardRef<any, RediaccSelectProps>(
         mode={mode}
         suffixIcon={suffixIcon}
         popupMatchSelectWidth={popupMatchSelectWidth}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         tagRender={tagRender as any}
         {...rest}
       >

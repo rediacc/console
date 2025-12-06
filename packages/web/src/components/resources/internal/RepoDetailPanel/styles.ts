@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { FolderOutlined } from '@/utils/optimizedIcons';
 import { RediaccTag } from '@/components/ui/Tag';
+import type { TagPreset, TagVariant } from '@/components/ui/Tag';
 import { RediaccText } from '@/components/ui/Text';
 import { RediaccCard, RediaccAlert, RediaccEmpty } from '@/components/ui';
 import {
@@ -24,28 +25,8 @@ import {
 
 export { PanelWrapper, PanelTitle, CollapseButton, ContentWrapper };
 
-const TAG_VARIANTS = {
-  team: {
-    background: 'var(--color-success)',
-    color: 'var(--color-text-inverse)',
-  },
-  machine: {
-    background: 'var(--color-primary)',
-    color: 'var(--color-text-inverse)',
-  },
-  version: {
-    background: 'var(--color-bg-tertiary)',
-    color: 'var(--color-text-primary)',
-  },
-} as const;
-
-const STATUS_TONES = {
-  success: 'var(--color-success)',
-  warning: 'var(--color-warning)',
-  error: 'var(--color-error)',
-  info: 'var(--color-info)',
-  neutral: 'var(--color-border-secondary)',
-} as const;
+type TagVariantKey = 'team' | 'machine' | 'version';
+type StatusToneKey = 'success' | 'warning' | 'error' | 'info' | 'neutral';
 
 export {
   Header,
@@ -64,19 +45,19 @@ export const HeaderIcon = styled(FolderOutlined)`
   color: var(--color-success);
 `;
 
-export const StyledTag = styled(RediaccTag).attrs<{ $variant: keyof typeof TAG_VARIANTS }>(
+export const StyledTag = styled(RediaccTag).attrs<{ $variant: TagVariantKey }>(
   ({ $variant }) => {
-    const presetMap: Record<keyof typeof TAG_VARIANTS, string> = {
+    const presetMap: Record<TagVariantKey, TagPreset | 'neutral'> = {
       team: 'team',
       machine: 'machine',
       version: 'neutral',
     };
     return {
-      preset: presetMap[$variant] as any,
+      preset: presetMap[$variant] as TagPreset,
       borderless: true,
     };
   }
-)<{ $variant: keyof typeof TAG_VARIANTS }>`
+)<{ $variant: TagVariantKey }>`
   && {
     gap: ${({ theme }) => theme.spacing.XS}px;
   }
@@ -118,12 +99,12 @@ export const SectionTitle = styled(BaseSectionTitle)`
   }
 `;
 
-export const StatusTag = styled(RediaccTag).attrs<{ $tone?: keyof typeof STATUS_TONES }>(
+export const StatusTag = styled(RediaccTag).attrs<{ $tone?: StatusToneKey }>(
   ({ $tone = 'neutral' }) => ({
-    variant: $tone as any,
+    variant: $tone as TagVariant,
     borderless: true,
   })
-)<{ $tone?: keyof typeof STATUS_TONES }>`
+)<{ $tone?: StatusToneKey }>`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }

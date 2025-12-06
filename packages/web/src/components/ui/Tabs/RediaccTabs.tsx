@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { StyledRediaccTabs, mapVariantToAntType } from './RediaccTabs.styles';
 import type { RediaccTabsProps } from './RediaccTabs.types';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RediaccTabs = forwardRef<any, RediaccTabsProps>(
   (
     {

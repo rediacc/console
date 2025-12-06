@@ -3,6 +3,7 @@ import { Empty } from 'antd';
 import { StyledRediaccEmpty, EmptyTitle, EmptyAction } from './RediaccEmpty.styles';
 import type { RediaccEmptyProps } from './RediaccEmpty.types';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const RediaccEmptyComponent = forwardRef<any, RediaccEmptyProps>(
   ({ variant = 'default', size = 'md', title, description, image, action, ...rest }, ref) => {
     // Build description with optional title
@@ -13,6 +14,7 @@ const RediaccEmptyComponent = forwardRef<any, RediaccEmptyProps>(
       </>
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const Component = StyledRediaccEmpty as any;
     return (
       <Component

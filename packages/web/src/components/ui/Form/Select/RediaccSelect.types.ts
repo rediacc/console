@@ -8,6 +8,7 @@ export interface RediaccSelectOption<T = string> {
   disabled?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface RediaccSelectProps<T = any> {
   /** Select size: sm (28px), md (32px), lg (40px) */
   size?: SelectSize;
@@ -18,6 +19,7 @@ export interface RediaccSelectProps<T = any> {
   /** Selected value */
   value?: T;
   /** Change handler */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChange?: (value: T, option?: any) => void;
   /** Select options */
   options?: Array<RediaccSelectOption<T>>;
@@ -32,6 +34,7 @@ export interface RediaccSelectProps<T = any> {
   /** Enable search functionality */
   showSearch?: boolean;
   /** Custom filter function or boolean to enable/disable filtering */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   filterOption?: boolean | ((input: string, option: any) => boolean);
   /** Controlled search value */
   searchValue?: string;
@@ -66,6 +69,7 @@ export interface RediaccSelectProps<T = any> {
   /** Whether dropdown width matches select width */
   popupMatchSelectWidth?: boolean;
   /** Custom placeholder for hidden tags in multiple mode */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   maxTagPlaceholder?: ReactNode | ((omittedValues: any[]) => ReactNode);
   /** Inline styles */
   style?: CSSProperties;
@@ -74,6 +78,7 @@ export interface RediaccSelectProps<T = any> {
   /** Custom tag render function for multiple mode */
   tagRender?: (props: {
     label: ReactNode;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     value: any;
     closable: boolean;
     onClose: () => void;

@@ -27,7 +27,7 @@ export interface RediaccCheckboxProps {
   /** Name attribute for forms */
   name?: string;
   /** Value attribute */
-  value?: any;
+  value?: string | number | boolean;
   /** Auto focus on mount */
   autoFocus?: boolean;
   /** ID attribute */

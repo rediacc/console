@@ -14,6 +14,7 @@ import type { RediaccDatePickerProps, RediaccRangePickerProps } from './RediaccD
  *   placeholder={['Start date', 'End date']}
  * />
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const RediaccRangePicker = forwardRef<any, RediaccRangePickerProps>(
   (
     {
@@ -91,6 +92,7 @@ RediaccRangePicker.displayName = 'RediaccRangePicker';
  * // With time selection
  * <RediaccDatePicker showTime value={dateTime} onChange={setDateTime} />
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const RediaccDatePickerBase = forwardRef<any, RediaccDatePickerProps>(
   (
     {

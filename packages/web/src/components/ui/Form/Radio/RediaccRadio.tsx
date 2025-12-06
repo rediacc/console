@@ -13,6 +13,7 @@ import type { RediaccRadioGroupProps, RediaccRadioButtonProps } from './RediaccR
  *   <RediaccRadio.Button value="b">Option B</RediaccRadio.Button>
  * </RediaccRadio.Group>
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const RediaccRadioButton = forwardRef<any, RediaccRadioButtonProps>(
   (
     { value, disabled = false, children, className, style, 'data-testid': dataTestId, ...rest },
@@ -58,6 +59,7 @@ RediaccRadioButton.displayName = 'RediaccRadioButton';
  *   </RediaccRadio.Button>
  * </RediaccRadio.Group>
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const RediaccRadioGroup = forwardRef<any, RediaccRadioGroupProps>(
   (
     {

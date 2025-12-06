@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { StyledRediaccAlert, mapVariantToAntType } from './RediaccAlert.styles';
 import type { RediaccAlertProps } from './RediaccAlert.types';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RediaccAlert = forwardRef<any, RediaccAlertProps>(
   (
     {
