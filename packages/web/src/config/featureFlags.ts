@@ -52,7 +52,7 @@
  * requiresLocalhost?: boolean
  *   - Feature only visible when connected to localhost API
  *   - Use for beta/development features not ready for production
- *   - Example: marketplace, distributedStorage, queue
+ *   - Example: marketplace, ceph, queue
  *
  * requiresPowerMode?: boolean
  *   - Feature revealed by Ctrl+Shift+E on production domains
@@ -74,7 +74,7 @@
  *
  * // Check if feature is enabled
  * import { featureFlags } from '@/config/featureFlags'
- * if (featureFlags.isEnabled('distributedStorage')) {
+ * if (featureFlags.isEnabled('ceph')) {
  *   // Show feature
  * }
  *
@@ -152,13 +152,13 @@ class FeatureFlags {
    * This is the single source of truth for all beta features
    */
   private flags: Record<string, FeatureFlag> = {
-    // Distributed Storage - Beta feature
-    distributedStorage: {
+    // Ceph Storage - Beta feature
+    ceph: {
       requiresLocalhost: true, // Hide in production builds
       requiresExpertMode: true,
       localhostOnly: true,
       description:
-        'Distributed storage cluster management - allows creating and managing storage clusters',
+        'Ceph storage cluster management - allows creating and managing storage clusters',
     },
 
     // Assign to Cluster - Beta feature (menu item in MachineTable)

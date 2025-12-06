@@ -19,7 +19,7 @@ export function registerMachineCommands(program: Command): void {
           payload.teamName as string,
           payload.machineName as string,
           payload.bridgeName as string,
-          payload.machineVault as string | undefined
+          payload.vaultContent as string | undefined
         ),
       rename: (payload) =>
         api.machines.rename(
@@ -45,10 +45,10 @@ export function registerMachineCommands(program: Command): void {
         api.machines.updateVault(
           payload.teamName as string,
           payload.machineName as string,
-          payload.machineVault as string,
+          payload.vaultContent as string,
           payload.vaultVersion as number
         ),
-      vaultFieldName: 'machineVault',
+      vaultFieldName: 'vaultContent',
     },
   });
 

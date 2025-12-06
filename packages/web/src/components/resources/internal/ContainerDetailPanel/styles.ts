@@ -1,48 +1,48 @@
 import styled from 'styled-components';
-import { Card, Typography } from 'antd';
+import { RediaccText } from '@/components/ui/Text';
+import { RediaccCard } from '@/components/ui';
 import {
-  DetailPanelSecondaryTextBlock,
-  DetailPanelSurface,
-  DetailPanelHeader,
-  DetailPanelHeaderRow,
-  DetailPanelTitleGroup,
-  DetailPanelTitle,
-  DetailPanelCollapseButton,
-  DetailPanelTagGroup,
-  DetailPanelBody,
-  DetailPanelSectionHeader,
-  DetailPanelSectionTitle,
-  DetailPanelSectionCard,
-  DetailPanelFieldList,
-  DetailPanelFieldRow,
-  DetailPanelFieldLabel,
-  DetailPanelFieldValue,
-  DetailPanelFieldStrongValue,
-  DetailPanelFieldMonospaceValue,
-  DetailPanelDivider,
-} from '../detailPanelPrimitives';
-
-const { Text } = Typography;
+  PanelWrapper,
+  Header,
+  HeaderRow,
+  TitleGroup,
+  PanelTitle,
+  CollapseButton,
+  TagGroup,
+  ContentWrapper,
+  SectionHeader,
+  SectionTitle,
+  SectionCard,
+  FieldList,
+  FieldRow,
+  FieldLabel,
+  FieldValue,
+  FieldValueStrong,
+  FieldValueMonospace,
+  SectionDivider,
+  SubduedText,
+} from '../sharedDetailPanelAliases';
 
 export {
-  DetailPanelSurface as DetailPanel,
-  DetailPanelHeader as Header,
-  DetailPanelHeaderRow as HeaderTop,
-  DetailPanelTitleGroup as TitleGroup,
-  DetailPanelTitle as PanelTitle,
-  DetailPanelCollapseButton as CollapseButton,
-  DetailPanelTagGroup as TagGroup,
-  DetailPanelBody as PanelContent,
-  DetailPanelSectionHeader as SectionHeader,
-  DetailPanelSectionTitle as SectionTitle,
-  DetailPanelSectionCard as SectionCard,
-  DetailPanelFieldList as FieldList,
-  DetailPanelFieldRow as FieldRow,
-  DetailPanelFieldLabel as FieldLabel,
-  DetailPanelFieldValue as FieldValue,
-  DetailPanelFieldStrongValue as FieldValueStrong,
-  DetailPanelFieldMonospaceValue as FieldValueMonospace,
-  DetailPanelDivider as SectionDivider,
+  PanelWrapper,
+  Header,
+  HeaderRow,
+  TitleGroup,
+  PanelTitle,
+  CollapseButton,
+  TagGroup,
+  ContentWrapper,
+  SectionHeader,
+  SectionTitle,
+  SectionCard,
+  FieldList,
+  FieldRow,
+  FieldLabel,
+  FieldValue,
+  FieldValueStrong,
+  FieldValueMonospace,
+  SectionDivider,
+  SubduedText,
 };
 
 export const DividerLabel = styled.span`
@@ -58,26 +58,24 @@ export const MetricsGrid = styled.div`
   gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const MetricCard = styled(Card).attrs({ size: 'small' })`
+export const MetricCard = styled(RediaccCard).attrs({ size: 'sm' })`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
 `;
 
-export const MetricLabel = styled(Text)`
-  && {
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-  }
-`;
+export const MetricLabel = styled(RediaccText).attrs({
+  size: 'sm',
+  color: 'secondary',
+})``;
 
-export const MetricValue = styled(Text)<{ $isWarning?: boolean }>`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.LG}px;
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-    color: ${({ theme, $isWarning }) => ($isWarning ? theme.colors.error : theme.colors.textPrimary)};
-  }
-`;
+export const MetricValue = styled(RediaccText).attrs<{ $isWarning?: boolean }>(
+  ({ $isWarning }) => ({
+    size: 'lg',
+    weight: 'semibold',
+    color: $isWarning ? 'danger' : 'primary',
+  })
+)<{ $isWarning?: boolean }>``;
 
 export const SectionStack = styled.div`
   display: flex;
@@ -85,11 +83,10 @@ export const SectionStack = styled.div`
   gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const InlineText = styled(Text)`
+export const InlineText = styled(RediaccText).attrs({
+  size: 'sm',
+})`
   && {
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
     color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
-
-export const SubduedText = styled(DetailPanelSecondaryTextBlock)``;

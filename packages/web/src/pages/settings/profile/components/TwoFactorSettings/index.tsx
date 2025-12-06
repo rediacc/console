@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Input, Typography, Result, Tabs, Card } from 'antd';
+import { Modal, Form, Typography, Result, Tabs, Card } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import type { TFunction } from 'i18next';
 import {
@@ -20,6 +20,8 @@ import { ModalSize } from '@/types/modal';
 import { useDialogState } from '@/hooks/useDialogState';
 import { OTPCodeField } from '@/pages/settings/profile/components/OTPCodeField';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccButton as Button, RediaccText as Text } from '@/components/ui';
+import { RediaccPasswordInput } from '@/components/ui/Form/Input';
 import {
   FullWidthStack,
   CenteredStack,
@@ -30,7 +32,6 @@ import {
   SecretInputRow,
   SecretInput,
   FormActionRow,
-  PrimaryButton,
   AlertSpacer,
   CardContent,
   FormItemNoMargin,
@@ -38,7 +39,7 @@ import {
   ModalTitleWrapper,
 } from './styles';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 
 interface TwoFactorSettingsProps {
   open: boolean;
@@ -273,7 +274,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
           <QRCodeContainer>
             <QRCode value={otpUrl} size={200} data-testid="tfa-settings-qr-code" />
           </QRCodeContainer>
-          <Text type="secondary">{t('twoFactorAuth.scanQRCode')}</Text>
+          <Text color="secondary">{t('twoFactorAuth.scanQRCode')}</Text>
         </CenteredStack>
       ),
     },
@@ -296,7 +297,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
               </SecretInputRow>
             </FullWidthStack>
           }
-          type="info"
+          variant="info"
           data-testid="tfa-settings-manual-setup-alert"
         />
       ),
@@ -308,7 +309,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
       <CenteredStack>
         <StatusIcon />
         <SectionTitle level={4}>{t('twoFactorAuth.verification.title')}</SectionTitle>
-        <Paragraph type="secondary">{t('twoFactorAuth.verification.subtitle')}</Paragraph>
+        <Paragraph color="secondary">{t('twoFactorAuth.verification.subtitle')}</Paragraph>
       </CenteredStack>
 
       <Tabs data-testid="tfa-settings-setup-tabs" items={tabItems} />
@@ -329,14 +330,13 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
             <Button onClick={onCancel} data-testid="tfa-settings-verification-cancel-button">
               {t('common:general.cancel')}
             </Button>
-            <PrimaryButton
-              type="primary"
+            <Button
               htmlType="submit"
               loading={isSubmitting}
               data-testid="tfa-settings-verification-submit-button"
             >
               {t('twoFactorAuth.verification.submit')}
-            </PrimaryButton>
+            </Button>
           </FormActionRow>
         </FormItemNoMargin>
       </Form>
@@ -360,21 +360,15 @@ const SuccessContent: React.FC<SuccessContentProps> = ({ t, onDone }) => (
         <AlertSpacer
           message={t('twoFactorAuth.enableSuccess.verified')}
           description={t('twoFactorAuth.enableSuccess.verifiedDescription')}
-          type="success"
+          variant="success"
           showIcon
           icon={<CheckCircleOutlined />}
           data-testid="tfa-settings-success-alert"
         />
 
-        <PrimaryButton
-          type="primary"
-          size="large"
-          block
-          onClick={onDone}
-          data-testid="tfa-settings-success-done-button"
-        >
+        <Button size="md" fullWidth onClick={onDone} data-testid="tfa-settings-success-done-button">
           {t('twoFactorAuth.done')}
-        </PrimaryButton>
+        </Button>
       </FullWidthStack>
     }
   />
@@ -394,7 +388,7 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
       <SectionTitle level={4}>
         {isEnabled ? t('twoFactorAuth.status.enabled') : t('twoFactorAuth.status.disabled')}
       </SectionTitle>
-      <Paragraph type="secondary">
+      <Paragraph color="secondary">
         {isEnabled
           ? t('twoFactorAuth.status.enabledDescription')
           : t('twoFactorAuth.status.disabledDescription')}
@@ -415,10 +409,9 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
 
     {isEnabled ? (
       <Button
-        type="primary"
-        danger
-        size="large"
-        block
+        variant="danger"
+        size="md"
+        fullWidth
         icon={<WarningOutlined />}
         onClick={onDisable}
         data-testid="tfa-settings-disable-button"
@@ -426,16 +419,15 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
         {t('twoFactorAuth.disable')}
       </Button>
     ) : (
-      <PrimaryButton
-        type="primary"
-        size="large"
-        block
+      <Button
+        size="md"
+        fullWidth
         icon={<CheckCircleOutlined />}
         onClick={onEnable}
         data-testid="tfa-settings-enable-button"
       >
         {t('twoFactorAuth.enable')}
-      </PrimaryButton>
+      </Button>
     )}
   </FullWidthStack>
 );
@@ -469,7 +461,7 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
       <AlertSpacer
         message={t('twoFactorAuth.enableModal.warning')}
         description={t('twoFactorAuth.enableModal.warningDescription')}
-        type="warning"
+        variant="warning"
         showIcon
         data-testid="tfa-settings-enable-warning-alert"
       />
@@ -479,10 +471,10 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
         label={t('twoFactorAuth.enableModal.passwordLabel')}
         rules={[{ required: true, message: t('twoFactorAuth.enableModal.passwordRequired') }]}
       >
-        <Input.Password
+        <RediaccPasswordInput
           prefix={<KeyOutlined />}
           placeholder={t('twoFactorAuth.enableModal.passwordPlaceholder')}
-          size="large"
+          size="md"
           autoComplete="off"
           data-testid="tfa-settings-enable-password-input"
         />
@@ -493,14 +485,13 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
           <Button onClick={onCancel} data-testid="tfa-settings-enable-cancel-button">
             {t('common:general.cancel')}
           </Button>
-          <PrimaryButton
-            type="primary"
+          <Button
             htmlType="submit"
             loading={isSubmitting}
             data-testid="tfa-settings-enable-submit-button"
           >
             {t('twoFactorAuth.enableModal.submit')}
-          </PrimaryButton>
+          </Button>
         </FormActionRow>
       </FormItemNoMargin>
     </Form>
@@ -536,7 +527,7 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
       <AlertSpacer
         message={t('twoFactorAuth.disableModal.warning')}
         description={t('twoFactorAuth.disableModal.warningDescription')}
-        type="error"
+        variant="error"
         showIcon
         data-testid="tfa-settings-disable-warning-alert"
       />
@@ -546,10 +537,10 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
         label={t('twoFactorAuth.disableModal.passwordLabel')}
         rules={[{ required: true, message: t('twoFactorAuth.disableModal.passwordRequired') }]}
       >
-        <Input.Password
+        <RediaccPasswordInput
           prefix={<KeyOutlined />}
           placeholder={t('twoFactorAuth.disableModal.passwordPlaceholder')}
-          size="large"
+          size="md"
           autoComplete="off"
           data-testid="tfa-settings-disable-password-input"
         />
@@ -571,8 +562,7 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
             {t('common:general.cancel')}
           </Button>
           <Button
-            type="primary"
-            danger
+            variant="danger"
             htmlType="submit"
             loading={isSubmitting}
             data-testid="tfa-settings-disable-submit-button"

@@ -1,13 +1,11 @@
 import styled from 'styled-components';
-import { Card, Collapse, Typography, Tag, Button, Input, Form } from 'antd';
-import {
-  PrimaryButton as PrimitivePrimaryButton,
-  SecondaryButton as PrimitiveSecondaryButton,
-  FlexColumn,
-} from '@/styles/primitives';
+import { Collapse, Form } from 'antd';
+import { FlexColumn } from '@/styles/primitives';
 import { InlineStack, ActionGroup } from '@/components/common/styled';
-
-const { Title, Text } = Typography;
+import { RediaccButton as Button, RediaccCard } from '@/components/ui';
+import { RediaccText } from '@/components/ui/Text';
+import { RediaccTag } from '@/components/ui/Tag';
+import { RediaccInput } from '@/components/ui/Form';
 
 export const EditorContainer = styled.div`
   width: 100%;
@@ -22,24 +20,25 @@ export const SummaryCard = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.CARD};
 `;
 
-export const SummaryTitle = styled(Title)`
+export const SummaryTitle = styled(RediaccText).attrs({
+  size: 'lg',
+  weight: 'semibold',
+})`
   && {
     margin: 0;
     margin-bottom: ${({ theme }) => theme.spacing.XS}px;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: ${({ theme }) => theme.fontSize.H5}px;
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
+    display: block;
   }
 `;
 
-export const SummaryDescription = styled(Text)`
+export const SummaryDescription = styled(RediaccText).attrs({
+  size: 'sm',
+  color: 'secondary',
+})`
   && {
     display: flex;
     align-items: center;
     gap: ${({ theme }) => theme.spacing.XS}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    line-height: ${({ theme }) => theme.lineHeight.NORMAL};
   }
 `;
 
@@ -50,20 +49,21 @@ export const SummaryBadgeRow = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const UniformTag = styled(Tag)`
+export const UniformTag = styled(RediaccTag)`
   && {
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   }
 `;
 
-export const FieldsBadge = styled(Text)`
+export const FieldsBadge = styled(RediaccText).attrs({
+  variant: 'caption',
+  color: 'secondary',
+})`
   && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
     font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
     background-color: ${({ theme }) => theme.colors.bgSecondary};
     padding: ${({ theme }) => `${theme.spacing.XS}px ${theme.spacing.SM}px`};
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
 
@@ -71,7 +71,7 @@ export const EditorStack = styled(FlexColumn).attrs({ $gap: 'LG' })`
   width: 100%;
 `;
 
-export const AddEntryCard = styled(Card)`
+export const AddEntryCard = styled(RediaccCard)`
   && {
     background-color: ${({ theme }) => theme.colors.bgSecondary};
     border: 1px solid ${({ theme }) => theme.colors.borderPrimary};
@@ -80,11 +80,12 @@ export const AddEntryCard = styled(Card)`
   }
 `;
 
-export const CardHeading = styled(Text)`
+export const CardHeading = styled(RediaccText).attrs({
+  size: 'sm',
+  weight: 'semibold',
+})`
   && {
     color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
 `;
 
@@ -95,23 +96,26 @@ export const KeyInputWrapper = styled.div`
   min-width: 220px;
 `;
 
-export const KeyInput = styled(Input)`
+export const KeyInput = styled(RediaccInput).attrs({
+  size: 'sm',
+  fullWidth: true,
+})`
   && {
-    width: 100%;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
 `;
 
-export const PrimaryActionButton = styled(PrimitivePrimaryButton).attrs({
-  $size: 'SM',
+export const PrimaryActionButton = styled(Button).attrs({
+  variant: 'primary',
+  size: 'sm',
 })`
   && {
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   }
 `;
 
-export const SecondaryActionButton = styled(PrimitiveSecondaryButton).attrs({
-  $size: 'SM',
+export const SecondaryActionButton = styled(Button).attrs({
+  size: 'sm',
 })``;
 
 export const CollapseWrapper = styled(Collapse)`
@@ -125,31 +129,32 @@ export const EntryHeader = styled(InlineStack)`
   flex-wrap: wrap;
 `;
 
-export const KeyTag = styled(Tag)`
+export const KeyTag = styled(RediaccTag).attrs({
+  size: 'md',
+})`
   && {
     font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    padding: ${({ theme }) => `${theme.spacing.XS}px ${theme.spacing.SM}px`};
   }
 `;
 
-export const TypeTag = styled(Tag)`
+export const TypeTag = styled(RediaccTag).attrs({
+  size: 'sm',
+})`
   && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   }
 `;
 
 export const PanelActions = InlineStack;
 
-export const PanelDeleteButton = styled(Button)`
+export const PanelDeleteButton = styled(Button).attrs({ iconOnly: true, variant: 'danger' })`
   && {
     padding: 0;
   }
 `;
 
-export const RawJsonCard = styled(Card)`
+export const RawJsonCard = styled(RediaccCard)`
   && {
     background-color: ${({ theme }) => theme.colors.bgSecondary};
     border: 1px solid ${({ theme }) => theme.colors.borderPrimary};
@@ -158,30 +163,32 @@ export const RawJsonCard = styled(Card)`
   }
 `;
 
-export const RawJsonTitle = styled(Text)`
+export const RawJsonTitle = styled(RediaccText).attrs({
+  size: 'sm',
+  weight: 'semibold',
+})`
   && {
     display: flex;
     align-items: center;
     gap: ${({ theme }) => theme.spacing.XS}px;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
 `;
 
-export const RawJsonError = styled(Text)`
+export const RawJsonError = styled(RediaccText).attrs({
+  color: 'danger',
+})`
   && {
     display: block;
     margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-    color: ${({ theme }) => theme.colors.error};
   }
 `;
 
-export const InlineLabel = styled(Text)`
+export const InlineLabel = styled(RediaccText).attrs({
+  size: 'sm',
+  weight: 'medium',
+})`
   && {
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
     color: ${({ theme }) => theme.colors.textPrimary};
-    font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   }
 `;
 
@@ -189,7 +196,7 @@ export const InlineFormItem = styled(Form.Item)`
   margin-bottom: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const ImagePatternCard = styled(Card)`
+export const ImagePatternCard = styled(RediaccCard)`
   && {
     margin-top: ${({ theme }) => theme.spacing.SM}px;
     background-color: ${({ theme }) => theme.colors.bgTertiary};
@@ -199,7 +206,7 @@ export const ImagePatternCard = styled(Card)`
   }
 `;
 
-export const NumericInput = styled(Input)`
+export const NumericInput = styled(RediaccInput)`
   && {
     width: 100%;
     max-width: 200px;

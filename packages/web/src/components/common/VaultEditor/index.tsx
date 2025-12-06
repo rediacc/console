@@ -2,19 +2,18 @@ import React, { useState, useEffect, useMemo, useCallback, useRef, type JSX } fr
 import { useTheme } from 'styled-components';
 import {
   Form,
-  Switch,
   Space,
   Alert,
   Card,
-  Tag,
   Tooltip,
   message,
   Divider,
-  Typography,
   Col,
   Descriptions,
   Select,
 } from 'antd';
+import { RediaccSwitch } from '@/components/ui/Form';
+import { RediaccTag as Tag } from '@/components/ui';
 import type { FormInstance } from 'antd';
 import {
   InfoCircleOutlined,
@@ -44,6 +43,7 @@ import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { useTeams } from '@/api/queries/teams';
 import { featureFlags } from '@/config/featureFlags';
+import { RediaccText as Text } from '@/components/ui';
 import {
   EditorContainer,
   InfoBanner,
@@ -76,8 +76,6 @@ import {
   FullWidthPasswordInput,
   FullWidthTextArea,
 } from './styles';
-
-const { Text } = Typography;
 
 type NestedFieldDefinition = React.ComponentProps<typeof NestedObjectEditor>['fieldDefinition'];
 
@@ -1201,7 +1199,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           initialValue={field.default}
           valuePropName="checked"
         >
-          <Switch data-testid={`vault-editor-field-${fieldName}`} />
+          <RediaccSwitch data-testid={`vault-editor-field-${fieldName}`} />
         </FieldFormItem>
       );
     }
@@ -1448,7 +1446,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   return (
     <EditorContainer>
       {uiMode !== 'simple' && (
-        <InfoBanner message={t(`vaultEditor.${entityDef.descriptionKey}`)} type="info" showIcon />
+        <InfoBanner
+          message={t(`vaultEditor.${entityDef.descriptionKey}`)}
+          variant="info"
+          showIcon
+        />
       )}
 
       {/* Warning for TEAM vault without SSH keys */}
@@ -1456,7 +1458,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         <InfoBanner
           message={t('vaultEditor.missingSshKeysWarning')}
           description={t('vaultEditor.missingSshKeysDescription')}
-          type="warning"
+          variant="warning"
           showIcon
         />
       )}
@@ -1526,17 +1528,17 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                       />
                     }
                   >
-                    <FullWidthStack orientation="vertical" size="small">
+                    <FullWidthStack direction="vertical" gap="sm">
                       {!testConnectionSuccess && (
                         <InlineInfoAlert
                           message={t('vaultEditor.testConnection.required')}
-                          type="info"
+                          variant="info"
                           showIcon
                           icon={<InfoCircleOutlined />}
                         />
                       )}
                       <TestConnectionButton
-                        type="primary"
+                        variant="primary"
                         icon={<WifiOutlined />}
                         loading={isCreatingQueueItem || isTestingConnection}
                         data-testid="vault-editor-test-connection"
@@ -1619,7 +1621,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {entityType === 'MACHINE' && form.getFieldValue('kernel_compatibility') && (
                 <Col xs={24} lg={12}>
                   <FieldItem
-                    label={<Text strong>{t('vaultEditor.systemCompatibility.title')}</Text>}
+                    label={<Text weight="bold">{t('vaultEditor.systemCompatibility.title')}</Text>}
                     colon={false}
                   >
                     {(() => {
@@ -1680,7 +1682,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                       };
 
                       return (
-                        <FullWidthStack orientation="vertical">
+                        <FullWidthStack direction="vertical">
                           <Descriptions bordered size="small" column={1}>
                             <Descriptions.Item
                               label={t('vaultEditor.systemCompatibility.operatingSystem')}
@@ -1697,23 +1699,36 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                               label={t('vaultEditor.systemCompatibility.btrfsAvailable')}
                             >
                               {compatibility.btrfs_available ? (
-                                <Tag color="success">
+                                <Tag variant="success">
                                   {t('vaultEditor.systemCompatibility.yes')}
                                 </Tag>
                               ) : (
-                                <Tag color="warning">{t('vaultEditor.systemCompatibility.no')}</Tag>
+                                <Tag variant="warning">
+                                  {t('vaultEditor.systemCompatibility.no')}
+                                </Tag>
                               )}
                             </Descriptions.Item>
                             <Descriptions.Item
                               label={t('vaultEditor.systemCompatibility.sudoAvailable')}
                             >
-                              <Tag color={sudoConfigValue.color}>{sudoConfigValue.text}</Tag>
+                              <Tag
+                                variant={
+                                  sudoConfigValue.color as
+                                    | 'default'
+                                    | 'success'
+                                    | 'error'
+                                    | 'warning'
+                                    | 'primary'
+                                }
+                              >
+                                {sudoConfigValue.text}
+                              </Tag>
                             </Descriptions.Item>
                             {osSetupCompleted !== null && (
                               <Descriptions.Item
                                 label={t('vaultEditor.systemCompatibility.osSetup')}
                               >
-                                <Tag color={osSetupCompleted ? 'success' : 'warning'}>
+                                <Tag variant={osSetupCompleted ? 'success' : 'warning'}>
                                   {osSetupCompleted
                                     ? t('vaultEditor.systemCompatibility.setupCompleted')
                                     : t('vaultEditor.systemCompatibility.setupRequired')}
@@ -1727,7 +1742,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                             icon={config.icon}
                             message={
                               <Space>
-                                <Text strong>
+                                <Text weight="bold">
                                   {t('vaultEditor.systemCompatibility.compatibilityStatus')}:
                                 </Text>
                                 <StatusHighlightText $status={config.statusVariant}>
@@ -1740,7 +1755,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                                 {compatibility.compatibility_issues &&
                                   compatibility.compatibility_issues.length > 0 && (
                                     <ListSection>
-                                      <Text strong>
+                                      <Text weight="bold">
                                         {t('vaultEditor.systemCompatibility.knownIssues')}:
                                       </Text>
                                       <IssueList>
@@ -1755,7 +1770,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                                 {compatibility.recommendations &&
                                   compatibility.recommendations.length > 0 && (
                                     <ListSection>
-                                      <Text strong>
+                                      <Text weight="bold">
                                         {t('vaultEditor.systemCompatibility.recommendations')}:
                                       </Text>
                                       <RecommendationList>
@@ -1833,7 +1848,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   description={t(`storageProviders:storageProviders.${selectedProvider}.helpText`, {
                     defaultValue: providerFields.description,
                   })}
-                  type="info"
+                  variant="info"
                   showIcon
                   icon={<QuestionCircleOutlined />}
                 />
@@ -1881,14 +1896,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 <Divider>
                   <Space>
                     <TipsDividerIcon />
-                    <Text strong>
+                    <Text weight="bold">
                       {t('storageProviders:common.tips', { defaultValue: 'Tips' })}
                     </Text>
                   </Space>
                 </Divider>
                 <TipsAlert
                   message={
-                    <FullWidthStack orientation="vertical">
+                    <FullWidthStack direction="vertical">
                       {[1, 2, 3, 4]
                         .map((index) => {
                           const tip = t(
@@ -1904,7 +1919,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                         .filter(Boolean)}
                     </FullWidthStack>
                   }
-                  type="info"
+                  variant="info"
                   showIcon
                   icon={<InfoCircleOutlined />}
                 />
@@ -1931,7 +1946,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 <ExtraFieldsAlert
                   message={t('vaultEditor.extraFieldsWarning')}
                   description={t('vaultEditor.extraFieldsWarningDescription')}
-                  type="warning"
+                  variant="warning"
                   showIcon
                 />
                 <Card size="small">
@@ -1961,7 +1976,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 <SectionAlert
                   message={t('vaultEditor.expertModeOnly')}
                   description={t('vaultEditor.expertModeDescription')}
-                  type="error"
+                  variant="error"
                   showIcon
                   icon={<DangerAlertIcon />}
                 />
@@ -1970,15 +1985,15 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   <SectionAlert
                     message={t('vaultEditor.jsonError')}
                     description={rawJsonError}
-                    type="error"
+                    variant="error"
                     showIcon
                   />
                 )}
 
                 <FormatActions>
                   <FormatButton
-                    size="small"
-                    type="default"
+                    size="sm"
+                    variant="default"
                     onClick={() => formatJsonRef.current?.()}
                     data-testid="vault-editor-format-json"
                   >

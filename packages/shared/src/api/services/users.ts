@@ -88,7 +88,7 @@ export function createUsersService(client: ApiClient) {
 
     updateVault: (vault: string, vaultVersion: number) =>
       client.post(endpoints.users.updateUserVault, {
-        userVault: vault,
+        vaultContent: vault,
         vaultVersion,
       }),
 

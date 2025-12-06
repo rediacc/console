@@ -19,16 +19,14 @@ import { getBasePath } from '@/utils/basePath';
 import { featureFlags } from '@/config/featureFlags';
 import { GlobalStyles } from '@/styles/GlobalStyles';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { LoadingState } from '@/styles/primitives';
+import { LoadingState } from '@/components/ui/utils';
 
 // Lazy load heavy pages
 const DashboardPage = lazy(() => import('@/pages/dashboard'));
 const MachinesPage = lazy(() => import('@/pages/machines/MachinesPage'));
 const MachineReposPage = lazy(() => import('@/pages/resources/MachineReposPage'));
 const RepoContainersPage = lazy(() => import('@/pages/resources/RepoContainersPage'));
-const DistributedStoragePage = lazy(
-  () => import('@/pages/distributedStorage/DistributedStoragePage')
-);
+const CephPage = lazy(() => import('@/pages/ceph/CephPage'));
 const QueuePage = lazy(() => import('@/pages/queue/QueuePage'));
 const ArchitecturePage = lazy(() => import('@/pages/architecture/ArchitecturePage'));
 const AuditPage = lazy(() => import('@/pages/audit/AuditPage'));
@@ -258,32 +256,29 @@ const AppContent: React.FC = () => {
                     }
                   />
 
-                  {/* Distributed Storage */}
+                  {/* Ceph */}
+                  <Route path="/ceph" element={<Navigate to="/ceph/clusters" replace />} />
                   <Route
-                    path="/distributed-storage"
-                    element={<Navigate to="/distributed-storage/clusters" replace />}
-                  />
-                  <Route
-                    path="/distributed-storage/clusters"
+                    path="/ceph/clusters"
                     element={
                       <Suspense fallback={<PageLoader />}>
-                        <DistributedStoragePage view="clusters" />
+                        <CephPage view="clusters" />
                       </Suspense>
                     }
                   />
                   <Route
-                    path="/distributed-storage/pools"
+                    path="/ceph/pools"
                     element={
                       <Suspense fallback={<PageLoader />}>
-                        <DistributedStoragePage view="pools" />
+                        <CephPage view="pools" />
                       </Suspense>
                     }
                   />
                   <Route
-                    path="/distributed-storage/machines"
+                    path="/ceph/machines"
                     element={
                       <Suspense fallback={<PageLoader />}>
-                        <DistributedStoragePage view="machines" />
+                        <CephPage view="machines" />
                       </Suspense>
                     }
                   />

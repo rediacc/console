@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Button } from 'antd';
+import { RediaccButton } from '@/components/ui/Button';
 import type { StyledTheme } from '@/styles/styledTheme';
 
 type ResourceType = 'machine' | 'repo' | 'container';
@@ -66,11 +66,8 @@ export const CollapsedPanel = styled.div`
   gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const ToggleButton = styled(Button)`
+export const ToggleButton = styled(RediaccButton).attrs({ iconOnly: true })`
   && {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
 `;

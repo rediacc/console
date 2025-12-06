@@ -1,6 +1,6 @@
 import React from 'react';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
-import { useMachineAssignmentStatus } from '@/api/queries/distributedStorage';
+import { useMachineAssignmentStatus } from '@/api/queries/ceph';
 import MachineAssignmentStatusBadge from '../MachineAssignmentStatusBadge';
 import type { Machine, MachineAssignmentType } from '@/types';
 import { StatusCellWrapper } from './styles';
@@ -27,16 +27,16 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
   const { data, isLoading } = useMachineAssignmentStatus(
     machine.machineName,
     machine.teamName,
-    !machine.distributedStorageClusterName // Only fetch if not already assigned to cluster
+    !machine.cephClusterName // Only fetch if not already assigned to cluster
   );
 
-  // If machine already has distributedStorageClusterName, we know it's assigned to a cluster
-  if (machine.distributedStorageClusterName) {
+  // If machine already has cephClusterName, we know it's assigned to a cluster
+  if (machine.cephClusterName) {
     return (
       <StatusCellWrapper data-testid="machine-status-cell-cluster">
         <MachineAssignmentStatusBadge
           assignmentType="CLUSTER"
-          assignmentDetails={`Assigned to cluster: ${machine.distributedStorageClusterName}`}
+          assignmentDetails={`Assigned to cluster: ${machine.cephClusterName}`}
           size="small"
         />
       </StatusCellWrapper>

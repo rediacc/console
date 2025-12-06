@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Tag, Space, Typography, Button, Tooltip, Input } from 'antd';
+import { Typography, Button, Tooltip, Input, Space, Alert } from 'antd';
 import type { TableProps } from 'antd';
 import type { MenuProps } from 'antd';
 import { isAxiosError } from 'axios';
 import styled, { useTheme as useStyledTheme } from 'styled-components';
+import { RediaccAlert, RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
 import {
   CheckCircleOutlined,
   FunctionOutlined,
@@ -32,6 +33,7 @@ import {
   EyeOutlined,
 } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import { RediaccText as Text } from '@/components/ui';
 import { useDialogState } from '@/hooks/useDialogState';
 import * as S from './styles';
 import { type QueueFunction } from '@/api/queries/queue';
@@ -78,8 +80,6 @@ import {
   getGrandVaultForOperation,
 } from '@/core';
 
-const { Text } = Typography;
-
 const RepoTableComponent = S.StyledTable as React.ComponentType<TableProps<RepoTableRow>>;
 const SystemTableComponent = S.StyledTable as React.ComponentType<TableProps<Container>>;
 
@@ -103,7 +103,7 @@ const TableStateContainer = styled.div`
   padding: ${({ theme }) => theme.spacing.LG}px;
 `;
 
-const FullWidthStack = styled(Space)`
+const FullWidthStack = styled(RediaccStack).attrs({ direction: 'vertical' })`
   width: 100%;
 `;
 
@@ -111,7 +111,7 @@ const SmallText = styled(Text)`
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
 `;
 
-const GrandTag = styled(Tag)`
+const GrandTag = styled(RediaccTag)`
   margin-left: ${({ theme }) => theme.spacing.XS}px;
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   border: none;
@@ -119,7 +119,7 @@ const GrandTag = styled(Tag)`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-const InlineTag = styled(Tag)`
+const InlineTag = styled(RediaccTag)`
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   border: none;
   background-color: ${({ theme }) => theme.colors.bgSecondary};
@@ -134,7 +134,7 @@ const InfoTag = styled(InlineTag)`
   margin-right: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-const SectionAlert = styled(Alert)`
+const SectionAlert = styled(RediaccAlert)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
@@ -714,7 +714,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
       addedVia: 'machine-Repo-list-quick',
       machineVault: machine.vaultContent || '{}',
       repoGuid: RepoData.repoGuid,
-      repoVault: grandRepoVault,
+      vaultContent: grandRepoVault,
       repoNetworkId: RepoData.repoNetworkId,
       repoNetworkMode: RepoData.repoNetworkMode,
       repoTag: RepoData.repoTag,
@@ -784,7 +784,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             addedVia: 'machine-Repo-list-delete-clone',
             machineVault: machine.vaultContent || '{}',
             repoGuid: context.repoGuid,
-            repoVault: grandRepoVault,
+            vaultContent: grandRepoVault,
             repoNetworkId: context.repoNetworkId,
           });
 
@@ -1046,7 +1046,9 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
                 count: context.childClones.length,
               })}
             </Typography.Paragraph>
-            <Typography.Paragraph strong>{t('resources:repos.clonesList')}</Typography.Paragraph>
+            <RediaccText as="p" weight="bold">
+              {t('resources:repos.clonesList')}
+            </RediaccText>
             <ul>
               {context.childClones.map((clone) => (
                 <li key={clone.repoGuid}>{clone.repoName}</li>
@@ -1074,9 +1076,9 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             type="warning"
             showIcon
           />
-          <Typography.Text strong>
+          <RediaccText weight="bold">
             {t('resources:repos.deleteGrandConfirmPrompt', { name: Repo.name })}
-          </Typography.Text>
+          </RediaccText>
           <ConfirmationInput
             type="text"
             placeholder={Repo.name}
@@ -1121,7 +1123,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             addedVia: 'machine-Repo-list-delete-grand',
             machineVault: machine.vaultContent || '{}',
             repoGuid: context.repoGuid,
-            repoVault: grandRepoVault,
+            vaultContent: grandRepoVault,
             repoNetworkId: context.repoNetworkId,
           });
 
@@ -1179,7 +1181,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
 
       const finalParams = { ...functionData.params };
       const repoGuid = RepoData.repoGuid;
-      const repoVault = grandRepoVault;
+      const vaultContent = grandRepoVault;
 
       // Handle fork function (local push on same machine)
       if (functionData.function.name === 'fork') {
@@ -1213,7 +1215,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             addedVia: 'machine-Repo-list-fork',
             machineVault: machine.vaultContent || '{}',
             repoGuid: RepoData.repoGuid,
-            repoVault: grandRepoVault,
+            vaultContent: grandRepoVault,
             repoNetworkId: newRepo.repoNetworkId,
             repoNetworkMode: newRepo.repoNetworkMode,
             repoTag: newRepo.repoTag,
@@ -1287,7 +1289,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
               machineVault: machine.vaultContent || '{}',
               destinationMachineVault: destinationMachine.vaultContent || '{}',
               repoGuid,
-              repoVault,
+              vaultContent,
               repoNetworkId: newRepo.repoNetworkId,
               repoNetworkMode: newRepo.repoNetworkMode,
               repoTag: newRepo.repoTag,
@@ -1349,7 +1351,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
               machineVault: machine.vaultContent || '{}',
               destinationStorageVault: destinationStorage.vaultContent || '{}',
               repoGuid,
-              repoVault,
+              vaultContent,
               repoNetworkId: RepoData.repoNetworkId,
               repoNetworkMode: RepoData.repoNetworkMode,
               repoTag: RepoData.repoTag,
@@ -1387,7 +1389,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         addedVia: 'machine-Repo-list',
         machineVault: machine.vaultContent || '{}',
         repoGuid,
-        repoVault,
+        vaultContent,
         repoNetworkId: RepoData.repoNetworkId,
         repoNetworkMode: RepoData.repoNetworkMode,
         repoTag: RepoData.repoTag,
@@ -1537,7 +1539,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
               index
             ) as React.ReactNode
           }
-          {record.status && <SmallText type="secondary">{record.status}</SmallText>}
+          {record.status && <SmallText color="secondary">{record.status}</SmallText>}
         </Space>
       ),
     },
@@ -1565,7 +1567,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         // If we have structured port mappings, use them
         if (portMappings && Array.isArray(portMappings) && portMappings.length > 0) {
           return (
-            <Space orientation="vertical" size={0}>
+            <Space direction="vertical" size={4}>
               {portMappings.map((mapping, index) => (
                 <SmallText key={index}>
                   {mapping.host_port ? (
@@ -2027,7 +2029,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
       {/* Machine Name Title when in grouped view */}
       {hideSystemInfo && (
         <S.MachineHeader data-testid="machine-repo-list-machine-header">
-          <Space orientation="vertical" size={4}>
+          <Space direction="vertical" size="small">
             <Space>
               <S.MachineIcon as={DesktopOutlined} />
               <S.MachineTitle
@@ -2063,7 +2065,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
 
           return missingSSHKeys ? (
             <SectionAlert
-              type="warning"
+              variant="warning"
               showIcon
               closable
               message={t('common:vaultEditor.missingSshKeysWarning')}
@@ -2151,7 +2153,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         data-testid="machine-repo-list-function-modal"
         subtitle={
           selectedRepo && (
-            <FullWidthStack direction="vertical" size="small">
+            <FullWidthStack direction="vertical" gap="sm">
               <Space>
                 <Text>{t('resources:repos.Repo')}:</Text>
                 <InlineTag>{selectedRepo.name}</InlineTag>
@@ -2171,12 +2173,12 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
                     if (parentRepo) {
                       return (
                         <Space>
-                          <SmallText type="secondary">
+                          <SmallText color="secondary">
                             {t('resources:repos.parentRepo', { defaultValue: 'Parent Repo' })}:
                           </SmallText>
                           <InlineTag>{parentRepo.repoName}</InlineTag>
-                          <SmallText type="secondary">→</SmallText>
-                          <SmallText type="secondary">{t('common:current')}:</SmallText>
+                          <SmallText color="secondary">→</SmallText>
+                          <SmallText color="secondary">{t('common:current')}:</SmallText>
                           <InlineTag>{selectedRepo.name}</InlineTag>
                         </Space>
                       );

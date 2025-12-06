@@ -76,14 +76,14 @@ export function createQueueService(client: ApiClient) {
       teamName: string,
       machineName: string | undefined,
       bridgeName: string,
-      queueVault: string,
+      vaultContent: string,
       priority = 3
     ): Promise<QueueCreateResult> => {
       const response = await client.post(endpoints.queue.createQueueItem, {
         teamName,
         machineName,
         bridgeName,
-        queueVault,
+        vaultContent,
         priority,
       });
       return parseQueueCreateResult(response);
@@ -91,20 +91,20 @@ export function createQueueService(client: ApiClient) {
 
     updateResponse: async (
       taskId: string,
-      responseVault: string,
+      vaultContent: string,
       vaultVersion?: number
     ): Promise<void> => {
-      const payload: Record<string, unknown> = { taskId, responseVault };
+      const payload: Record<string, unknown> = { taskId, vaultContent };
       if (vaultVersion !== undefined) {
         payload.vaultVersion = vaultVersion;
       }
       await client.post(endpoints.queue.updateQueueItemResponse, payload);
     },
 
-    complete: async (taskId: string, finalVault: string, finalStatus: string): Promise<void> => {
+    complete: async (taskId: string, vaultContent: string, finalStatus: string): Promise<void> => {
       await client.post(endpoints.queue.updateQueueItemToCompleted, {
         taskId,
-        finalVault,
+        vaultContent,
         finalStatus,
       });
     },

@@ -61,6 +61,10 @@ const themeColors = {
     shadowMd: '0 4px 12px rgba(0, 0, 0, 0.15)',
     shadowLg: '0 6px 16px rgba(0, 0, 0, 0.12)',
     tooltipBg: 'rgba(0, 0, 0, 0.85)',
+    // Primary button colors (dark on light background)
+    buttonPrimary: '#1a1a1a',
+    buttonPrimaryHover: '#0a0a0a',
+    buttonPrimaryText: '#ffffff',
   },
   dark: {
     bgPrimary: '#0a0a0a',
@@ -83,6 +87,10 @@ const themeColors = {
     shadowMd: '0 4px 12px rgba(0, 0, 0, 0.4)',
     shadowLg: '0 6px 16px rgba(0, 0, 0, 0.4)',
     tooltipBg: 'rgba(0, 0, 0, 0.95)',
+    // Primary button colors (light on dark background - inverted for contrast)
+    buttonPrimary: '#fafafa',
+    buttonPrimaryHover: '#ffffff',
+    buttonPrimaryText: '#1a1a1a',
   },
 };
 

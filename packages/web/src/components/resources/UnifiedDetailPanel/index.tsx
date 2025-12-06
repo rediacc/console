@@ -155,7 +155,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
         <CollapsedPanel data-testid="unified-detail-collapsed">
           <Tooltip title="Expand Panel" placement="left">
             <ToggleButton
-              type="text"
+              variant="text"
               icon={<DoubleLeftOutlined />}
               onClick={onToggleCollapse}
               data-testid="unified-detail-expand-button"

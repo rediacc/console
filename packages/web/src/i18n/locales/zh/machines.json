@@ -69,7 +69,7 @@
   "deleteWarning": "您确定要删除机器 \"{{name}}\" 吗？此操作无法撤销。",
   "description": "描述（可选）",
   "descriptionPlaceholder": "为此队列项添加自定义描述",
-  "distributedStorageCluster": "分布式存储",
+  "cephCluster": "分布式存储",
   "editMachine": "编辑机器",
   "experimental": "实验性的",
   "failed": "失败",

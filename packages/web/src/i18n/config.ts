@@ -13,7 +13,7 @@ import enQueue from './locales/en/queue.json';
 import enSettings from './locales/en/settings.json';
 import enStorageProviders from './locales/en/storageProviders.json';
 import enFunctions from './locales/en/functions.json';
-import enDistributedStorage from './locales/en/distributedStorage.json';
+import enCeph from './locales/en/ceph.json';
 import enOrganization from './locales/en/organization.json';
 import enMarketplace from './locales/en/marketplace.json';
 
@@ -31,7 +31,7 @@ const initialResources = {
     settings: enSettings,
     storageProviders: enStorageProviders,
     functions: enFunctions,
-    distributedStorage: enDistributedStorage,
+    ceph: enCeph,
     organization: enOrganization,
     marketplace: enMarketplace,
   },
@@ -63,9 +63,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/es/storageProviders.json')).default;
         resources.functions = (await import('./locales/es/functions.json')).default;
         resources.marketplace = (await import('./locales/es/marketplace.json')).default;
-        resources.distributedStorage = (
-          await import('./locales/es/distributedStorage.json')
-        ).default;
+        resources.ceph = (await import('./locales/es/ceph.json')).default;
         resources.organization = (await import('./locales/es/organization.json')).default;
         break;
       case 'tr':
@@ -79,9 +77,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/tr/storageProviders.json')).default;
         resources.functions = (await import('./locales/tr/functions.json')).default;
         resources.marketplace = (await import('./locales/tr/marketplace.json')).default;
-        resources.distributedStorage = (
-          await import('./locales/tr/distributedStorage.json')
-        ).default;
+        resources.ceph = (await import('./locales/tr/ceph.json')).default;
         resources.organization = (await import('./locales/tr/organization.json')).default;
         break;
       case 'fr':
@@ -95,9 +91,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/fr/storageProviders.json')).default;
         resources.functions = (await import('./locales/fr/functions.json')).default;
         resources.marketplace = (await import('./locales/fr/marketplace.json')).default;
-        resources.distributedStorage = (
-          await import('./locales/fr/distributedStorage.json')
-        ).default;
+        resources.ceph = (await import('./locales/fr/ceph.json')).default;
         resources.organization = (await import('./locales/fr/organization.json')).default;
         break;
       case 'de':
@@ -111,9 +105,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/de/storageProviders.json')).default;
         resources.functions = (await import('./locales/de/functions.json')).default;
         resources.marketplace = (await import('./locales/de/marketplace.json')).default;
-        resources.distributedStorage = (
-          await import('./locales/de/distributedStorage.json')
-        ).default;
+        resources.ceph = (await import('./locales/de/ceph.json')).default;
         resources.organization = (await import('./locales/de/organization.json')).default;
         break;
       case 'zh':
@@ -127,9 +119,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/zh/storageProviders.json')).default;
         resources.functions = (await import('./locales/zh/functions.json')).default;
         resources.marketplace = (await import('./locales/zh/marketplace.json')).default;
-        resources.distributedStorage = (
-          await import('./locales/zh/distributedStorage.json')
-        ).default;
+        resources.ceph = (await import('./locales/zh/ceph.json')).default;
         resources.organization = (await import('./locales/zh/organization.json')).default;
         break;
       case 'ja':
@@ -143,9 +133,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/ja/storageProviders.json')).default;
         resources.functions = (await import('./locales/ja/functions.json')).default;
         resources.marketplace = (await import('./locales/ja/marketplace.json')).default;
-        resources.distributedStorage = (
-          await import('./locales/ja/distributedStorage.json')
-        ).default;
+        resources.ceph = (await import('./locales/ja/ceph.json')).default;
         resources.organization = (await import('./locales/ja/organization.json')).default;
         break;
       case 'ar':
@@ -159,9 +147,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/ar/storageProviders.json')).default;
         resources.functions = (await import('./locales/ar/functions.json')).default;
         resources.marketplace = (await import('./locales/ar/marketplace.json')).default;
-        resources.distributedStorage = (
-          await import('./locales/ar/distributedStorage.json')
-        ).default;
+        resources.ceph = (await import('./locales/ar/ceph.json')).default;
         resources.organization = (await import('./locales/ar/organization.json')).default;
         break;
       case 'ru':
@@ -175,9 +161,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/ru/storageProviders.json')).default;
         resources.functions = (await import('./locales/ru/functions.json')).default;
         resources.marketplace = (await import('./locales/ru/marketplace.json')).default;
-        resources.distributedStorage = (
-          await import('./locales/ru/distributedStorage.json')
-        ).default;
+        resources.ceph = (await import('./locales/ru/ceph.json')).default;
         resources.organization = (await import('./locales/ru/organization.json')).default;
         break;
     }
@@ -213,7 +197,7 @@ i18n
       'settings',
       'storageProviders',
       'functions',
-      'distributedStorage',
+      'ceph',
       'marketplace',
       'organization',
     ],

@@ -1,0 +1,47 @@
+import { forwardRef } from 'react';
+import { StyledRediaccAlert, mapVariantToAntType } from './RediaccAlert.styles';
+import type { RediaccAlertProps } from './RediaccAlert.types';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const RediaccAlert = forwardRef<any, RediaccAlertProps>(
+  (
+    {
+      variant = 'info',
+      size = 'md',
+      showIcon = true,
+      closable = false,
+      banner = false,
+      rounded = true,
+      message,
+      description,
+      icon,
+      action,
+      onClose,
+      children,
+      ...rest
+    },
+    ref
+  ) => {
+    return (
+      <StyledRediaccAlert
+        ref={ref}
+        type={mapVariantToAntType(variant)}
+        $variant={variant}
+        $size={size}
+        $rounded={rounded}
+        $banner={banner}
+        showIcon={showIcon}
+        closable={closable}
+        banner={banner}
+        message={message ?? children}
+        description={description}
+        icon={icon}
+        action={action}
+        onClose={onClose}
+        {...rest}
+      />
+    );
+  }
+);
+
+RediaccAlert.displayName = 'RediaccAlert';

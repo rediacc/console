@@ -1,21 +1,20 @@
 import styled from 'styled-components';
-import { Space, Typography, Button } from 'antd';
 import { FilterOutlined } from '@/utils/optimizedIcons';
 import { PageContainer, StyledIcon } from '@/styles/primitives';
 import { ContentStack } from '@/components/common/styled';
-
-const { Text } = Typography;
+import { RediaccText as UnifiedText, RediaccStack } from '@/components/ui';
+import { RediaccButton } from '@/components/ui/Button';
 
 export const PageWrapper = PageContainer;
 
 // Re-export from common/styled
 export { ContentStack };
 
-export const FilterField = styled(Space).attrs({ orientation: 'vertical', size: 'small' })`
+export const FilterField = styled(RediaccStack).attrs({ direction: 'vertical', gap: 'sm' })`
   width: 100%;
 `;
 
-export const FilterLabel = styled(Text)`
+export const FilterLabel = styled(UnifiedText)`
   && {
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
@@ -29,27 +28,22 @@ export const PlaceholderLabel = styled(FilterLabel)`
   }
 `;
 
-export const ActionButtonFull = styled(Button)`
-  width: 100%;
-  min-height: ${({ theme }) => theme.spacing.XXXL}px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+export const ActionButtonFull = styled(RediaccButton)`
+  && {
+    width: 100%;
+    min-height: ${({ theme }) => theme.spacing.XXXL}px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 `;
 
-export const LinkButton = styled(Button).attrs({ type: 'link' })`
-  padding: 0;
-  height: auto;
+export const LinkButton = styled(RediaccButton).attrs({ variant: 'link' })`
+  && {
+    padding: 0;
+    height: auto;
+  }
 `;
-
-// Use HeaderRow from common/styled (space-between layout with MD gap)
-export { HeaderRow as TableHeader } from '@/components/common/styled';
-
-// Use ActionGroup from common/styled (flex-wrap with SM gap)
-export { ActionGroup as TableActions } from '@/components/common/styled';
-
-// Use CenteredState from common/styled
-export { CenteredState as NoResults } from '@/components/common/styled';
 
 export const FilterHintIcon = styled(FilterOutlined)`
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
@@ -70,5 +64,7 @@ export const ActionIcon = styled(StyledIcon).attrs<{ $color: string }>(({ $color
   $color,
 }))<{ $color: string }>``;
 
-// Use CaptionText from primitives
-export { CaptionText as DescriptionText } from '@/styles/primitives';
+// Use Text from unified component with description variant
+export const DescriptionText = styled(UnifiedText).attrs({
+  variant: 'caption',
+})``;

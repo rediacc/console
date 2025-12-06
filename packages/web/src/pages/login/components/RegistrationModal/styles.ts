@@ -1,8 +1,10 @@
 import styled from 'styled-components';
-import { Form, Space, Steps, Button, Input, Typography } from 'antd';
+import { Form, Steps, Typography } from 'antd';
+import { RediaccInput } from '@/components/ui/Form';
 import { BaseModal, FlexRow } from '@/styles/primitives';
+import { RediaccText, RediaccStack } from '@/components/ui';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 export const StyledModal = styled(BaseModal)`
   .ant-modal-body {
@@ -10,7 +12,7 @@ export const StyledModal = styled(BaseModal)`
   }
 `;
 
-export const VerticalStack = styled(Space)`
+export const VerticalStack = styled(RediaccStack).attrs({ direction: 'vertical' })`
   && {
     width: 100%;
   }
@@ -37,22 +39,8 @@ export const CaptchaWrapper = styled.div`
   flex: 0 0 auto;
 `;
 
-export const SubmitButton = styled(Button)`
+export const CodeInput = styled(RediaccInput).attrs({ centered: true })`
   && {
-    margin-top: ${({ theme }) => theme.spacing.XS}px;
-    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
-  }
-`;
-
-export const VerificationButton = styled(SubmitButton)`
-  && {
-    height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
-  }
-`;
-
-export const CodeInput = styled(Input)`
-  && {
-    text-align: center;
     font-size: ${({ theme }) => theme.fontSize.H4}px;
     letter-spacing: ${({ theme }) => theme.spacing.SM}px;
   }
@@ -75,7 +63,7 @@ export const SuccessTitle = styled(Title).attrs({ level: 4 })`
   }
 `;
 
-export const SuccessDescription = styled(Text)`
+export const SuccessDescription = styled(RediaccText)`
   && {
     color: ${({ theme }) => theme.colors.textSecondary};
   }

@@ -187,8 +187,8 @@ export const useUserVault = () => {
 };
 
 // Update current user's vault
-export const useUpdateUserVault = createMutation<{ userVault: string; vaultVersion: number }>({
-  request: ({ userVault, vaultVersion }) => api.users.updateVault(userVault, vaultVersion),
+export const useUpdateUserVault = createMutation<{ vaultContent: string; vaultVersion: number }>({
+  request: ({ vaultContent, vaultVersion }) => api.users.updateVault(vaultContent, vaultVersion),
   invalidateKeys: ['user-vault'],
   successMessage: () => i18n.t('organization:users.success.userVaultUpdated'),
   errorMessage: i18n.t('organization:users.errors.userVaultUpdateFailed'),

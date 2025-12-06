@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Checkbox, Button, Typography, message, Radio } from 'antd';
-import type { CheckboxChangeEvent } from 'antd/es/checkbox';
-import type { RadioChangeEvent } from 'antd/es/radio';
+import { Form, Input, Button, message } from 'antd';
+import {
+  RediaccCheckbox as Checkbox,
+  RediaccRadio as Radio,
+  type CheckboxChangeEvent,
+  type RadioChangeEvent,
+} from '@/components/ui/Form';
 import {
   CopyOutlined,
   CodeOutlined,
@@ -11,6 +15,7 @@ import {
   FileTextOutlined,
 } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import { RediaccText as Text } from '@/components/ui';
 import { createFreshForkToken } from '@/services/forkTokenService';
 import type { PluginContainer } from '@/types';
 import {
@@ -31,8 +36,6 @@ import {
   ActionsRow,
 } from './styles';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
-
-const { Text } = Typography;
 
 type CommandTab = 'vscode' | 'terminal' | 'desktop';
 type OperatingSystem = 'unix' | 'windows';
@@ -264,7 +267,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             children: (
               <Form layout="vertical">
                 <Form.Item help={t('resources:localCommandBuilder.vscodeHelp')}>
-                  <Text type="secondary">
+                  <Text color="secondary">
                     {t('resources:localCommandBuilder.vscodeDescription')}
                   </Text>
                 </Form.Item>
@@ -298,7 +301,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             children: (
               <Form layout="vertical">
                 <Form.Item help={t('resources:localCommandBuilder.desktopHelp')}>
-                  <Text type="secondary">
+                  <Text color="secondary">
                     {t('resources:localCommandBuilder.desktopDescription')}
                   </Text>
                 </Form.Item>
@@ -334,7 +337,6 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
           code
           copyable={{
             text: getCommand(),
-            icon: <CopyOutlined />,
             onCopy: copyToClipboard,
           }}
         >

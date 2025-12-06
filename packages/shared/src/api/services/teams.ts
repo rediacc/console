@@ -13,8 +13,11 @@ export function createTeamsService(client: ApiClient) {
       });
     },
 
-    create: async (teamName: string): Promise<Team | null> => {
-      const response = await client.post<Team>(endpoints.teams.createTeam, { teamName });
+    create: async (teamName: string, vaultContent?: string): Promise<Team | null> => {
+      const response = await client.post<Team>(endpoints.teams.createTeam, {
+        teamName,
+        vaultContent: vaultContent ?? '{}',
+      });
       return parseFirst(response, {
         extractor: responseExtractors.primaryOrSecondary,
       });

@@ -23,14 +23,14 @@ export const useCreateRepo = createMutation<{
   teamName: string;
   repoName: string;
   repoTag?: string; // Optional repo tag (defaults to 'latest')
-  repoVault?: string;
+  vaultContent?: string;
   parentRepoName?: string; // Optional parent repo name
   repoGuid?: string; // Optional repo GUID
 }>({
-  request: ({ teamName, repoName, repoTag, repoVault, parentRepoName, repoGuid }) =>
+  request: ({ teamName, repoName, repoTag, vaultContent, parentRepoName, repoGuid }) =>
     api.repos.create(teamName, repoName, {
       repoTag,
-      repoVault,
+      vaultContent,
       parentRepoName,
       repoGuid,
     }),
@@ -40,7 +40,7 @@ export const useCreateRepo = createMutation<{
   errorMessage: 'Failed to create repo',
   transformData: (data) => ({
     ...data,
-    repoVault: data.repoVault || '{}',
+    vaultContent: data.vaultContent || '{}',
     repoTag: data.repoTag || 'latest',
   }),
   operationName: 'repos.create',
@@ -79,17 +79,17 @@ export const useUpdateRepoTag = createMutation<{
 export const useUpdateRepoVault = createMutation<{
   teamName: string;
   repoName: string;
-  repoVault: string;
+  vaultContent: string;
   vaultVersion: number;
 }>({
-  request: ({ teamName, repoName, repoVault, vaultVersion }) =>
-    api.repos.updateVault(teamName, repoName, repoVault, vaultVersion),
+  request: ({ teamName, repoName, vaultContent, vaultVersion }) =>
+    api.repos.updateVault(teamName, repoName, vaultContent, vaultVersion),
   invalidateKeys: ['repos'],
   successMessage: (vars) => `Repo vault updated for "${vars.repoName}"`,
   errorMessage: 'Failed to update repo vault',
   transformData: (data) => ({
     ...data,
-    repoVault: minifyJSON(data.repoVault),
+    vaultContent: minifyJSON(data.vaultContent),
   }),
   operationName: 'repos.updateVault',
 });

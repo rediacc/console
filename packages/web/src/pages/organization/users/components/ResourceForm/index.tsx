@@ -76,7 +76,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
             render={({ field: controllerField }) => (
               <TextInput
                 {...controllerField}
-                type={field.type || 'text'}
+                type={field.type === 'email' ? 'email' : 'text'}
                 placeholder={field.placeholder}
                 disabled={field.disabled}
                 autoComplete="off"

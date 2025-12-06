@@ -68,7 +68,7 @@
   "deleteWarning": "¿Está seguro de que desea eliminar la máquina \"{{name}}\"? Esta acción no se puede deshacer.",
   "description": "Descripción (opcional)",
   "descriptionPlaceholder": "Agregue una descripción personalizada para este elemento de la cola",
-  "distributedStorageCluster": "Almacenamiento distribuido",
+  "cephCluster": "Almacenamiento distribuido",
   "editMachine": "Editar máquina",
   "experimental": "experimental",
   "failed": "Fallida",

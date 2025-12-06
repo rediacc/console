@@ -23,10 +23,10 @@ export function registerRegionCommands(program: Command): void {
       update: (payload) =>
         api.regions.updateVault(
           payload.regionName as string,
-          payload.regionVault as string,
+          payload.vaultContent as string,
           payload.vaultVersion as number
         ),
-      vaultFieldName: 'regionVault',
+      vaultFieldName: 'vaultContent',
     },
   });
 }

@@ -35,10 +35,10 @@ export function registerBridgeCommands(program: Command): void {
         api.bridges.updateVault(
           payload.regionName as string,
           payload.bridgeName as string,
-          payload.bridgeVault as string,
+          payload.vaultContent as string,
           payload.vaultVersion as number
         ),
-      vaultFieldName: 'bridgeVault',
+      vaultFieldName: 'vaultContent',
     },
   });
 

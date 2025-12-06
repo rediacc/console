@@ -1,9 +1,8 @@
 import React from 'react';
-import { Tag, Tooltip, Typography } from 'antd';
+import { Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import styled from 'styled-components';
-
-const { Text } = Typography;
+import { RediaccTag as Tag, RediaccText as Text } from '@/components/ui';
 
 /**
  * Styled version tag used across column renderers
@@ -53,7 +52,7 @@ export const renderTimestampElement = (
   format: string = 'YYYY-MM-DD HH:mm:ss'
 ): React.ReactNode => {
   if (!timestamp) {
-    return <Text type="secondary">-</Text>;
+    return <Text color="secondary">-</Text>;
   }
   return dayjs(timestamp).format(format);
 };
@@ -71,7 +70,7 @@ export const renderTruncatedId = (
   showEllipsis: boolean = true
 ): React.ReactNode => {
   if (!id) {
-    return <Text type="secondary">-</Text>;
+    return <Text color="secondary">-</Text>;
   }
 
   const truncated = id.substring(0, length);
@@ -95,7 +94,7 @@ export const renderCopyableId = (
   length: number = 8
 ): React.ReactNode => {
   if (!id) {
-    return <Text type="secondary">-</Text>;
+    return <Text color="secondary">-</Text>;
   }
 
   return (
@@ -116,7 +115,7 @@ export const renderVersionTag = (
   formatFn?: (version: number) => string
 ): React.ReactNode => {
   if (version === null || version === undefined) {
-    return <Text type="secondary">-</Text>;
+    return <Text color="secondary">-</Text>;
   }
 
   const label = formatFn ? formatFn(version) : `v${version}`;
@@ -191,7 +190,7 @@ export const renderBoolean = (
   noText: string = 'No'
 ): React.ReactNode => {
   if (value === null || value === undefined) {
-    return <Text type="secondary">-</Text>;
+    return <Text color="secondary">-</Text>;
   }
-  return value ? <Tag color="success">{yesText}</Tag> : <Tag>{noText}</Tag>;
+  return value ? <Tag variant="success">{yesText}</Tag> : <Tag>{noText}</Tag>;
 };

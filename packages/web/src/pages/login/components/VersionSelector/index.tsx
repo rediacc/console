@@ -21,7 +21,7 @@ const VersionSelector: React.FC = () => {
     fetchVersion();
   }, []);
 
-  return <VersionText type="secondary">{loading ? '...' : displayVersion}</VersionText>;
+  return <VersionText color="secondary">{loading ? '...' : displayVersion}</VersionText>;
 };
 
 export default VersionSelector;

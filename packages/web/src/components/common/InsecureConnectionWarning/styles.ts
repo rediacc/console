@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { Alert } from 'antd';
+import { RediaccAlert } from '@/components/ui';
 
-export const WarningAlert = styled(Alert)`
+export const WarningAlert = styled(RediaccAlert)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     border: 2px solid ${({ theme }) => theme.colors.error};

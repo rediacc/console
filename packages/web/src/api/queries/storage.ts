@@ -26,15 +26,16 @@ export const useStorage = (teamFilter?: string | string[]) => {
 export const useCreateStorage = createMutation<{
   teamName: string;
   storageName: string;
-  storageVault?: string;
+  vaultContent?: string;
 }>({
-  request: ({ teamName, storageName }) => api.storage.create(teamName, storageName),
+  request: ({ teamName, storageName, vaultContent }) =>
+    api.storage.create(teamName, storageName, vaultContent),
   invalidateKeys: ['storage', 'teams'],
   successMessage: (vars) => `Storage "${vars.storageName}" created successfully`,
   errorMessage: 'Failed to create storage',
   transformData: (data) => ({
     ...data,
-    storageVault: data.storageVault || '{}',
+    vaultContent: data.vaultContent || '{}',
   }),
   operationName: 'storage.create',
 });
@@ -57,14 +58,14 @@ export const useUpdateStorageName = createMutation<{
 export const useUpdateStorageVault = createVaultUpdateMutation<{
   teamName: string;
   storageName: string;
-  storageVault: string;
+  vaultContent: string;
   vaultVersion: number;
 }>(
   'Storage',
   (data) =>
-    api.storage.updateVault(data.teamName, data.storageName, data.storageVault, data.vaultVersion),
+    api.storage.updateVault(data.teamName, data.storageName, data.vaultContent, data.vaultVersion),
   'storageName',
-  'storageVault'
+  'vaultContent'
 );
 
 // Delete storage

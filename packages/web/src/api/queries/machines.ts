@@ -20,10 +20,10 @@ export const useCreateMachine = createMutation<{
   teamName: string;
   bridgeName: string;
   machineName: string;
-  machineVault?: string;
+  vaultContent?: string;
 }>({
-  request: ({ teamName, bridgeName, machineName, machineVault }) =>
-    api.machines.create(teamName, machineName, bridgeName, machineVault),
+  request: ({ teamName, bridgeName, machineName, vaultContent }) =>
+    api.machines.create(teamName, machineName, bridgeName, vaultContent),
   invalidateKeys: [
     QUERY_KEY_STRINGS.machines,
     QUERY_KEY_STRINGS.teams,
@@ -32,11 +32,11 @@ export const useCreateMachine = createMutation<{
   ],
   successMessage: (vars) => `Machine "${vars.machineName}" created successfully`,
   errorMessage: 'Failed to create machine',
-  transformData: ({ teamName, bridgeName, machineName, machineVault }) => ({
+  transformData: ({ teamName, bridgeName, machineName, vaultContent }) => ({
     teamName,
     bridgeName,
     machineName,
-    machineVault: machineVault || '{}',
+    vaultContent: vaultContent || '{}',
   }),
   operationName: 'machines.create',
 });
@@ -74,14 +74,14 @@ export const useUpdateMachineBridge = createMutation<{
 export const useUpdateMachineVault = createVaultUpdateMutation<{
   teamName: string;
   machineName: string;
-  machineVault: string;
+  vaultContent: string;
   vaultVersion: number;
 }>(
   'Machine',
   (data) =>
-    api.machines.updateVault(data.teamName, data.machineName, data.machineVault, data.vaultVersion),
+    api.machines.updateVault(data.teamName, data.machineName, data.vaultContent, data.vaultVersion),
   'machineName',
-  'machineVault'
+  'vaultContent'
 );
 
 // Delete machine

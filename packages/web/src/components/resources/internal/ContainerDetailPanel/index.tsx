@@ -14,14 +14,14 @@ import {
 } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import {
-  DetailPanel,
+  PanelWrapper,
   Header,
-  HeaderTop,
+  HeaderRow,
   TitleGroup,
   PanelTitle,
   CollapseButton,
   TagGroup,
-  PanelContent,
+  ContentWrapper,
   SectionHeader,
   SectionTitle,
   SectionCard,
@@ -145,14 +145,14 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
   };
 
   return (
-    <DetailPanel
+    <PanelWrapper
       $splitView={splitView}
       $visible={visible}
       className="container-detail-panel"
       data-testid="container-detail-panel"
     >
       <Header data-testid="container-detail-header">
-        <HeaderTop>
+        <HeaderRow>
           <TitleGroup>
             <IconWrapper $tone={isPlugin ? 'info' : 'success'} $size="lg">
               {isPlugin ? <ApiOutlined /> : <AppstoreOutlined />}
@@ -162,13 +162,13 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             </PanelTitle>
           </TitleGroup>
           <CollapseButton
-            type="text"
+            variant="text"
             icon={<DoubleRightOutlined />}
             onClick={onClose}
             data-testid="container-detail-collapse"
             aria-label="Collapse Panel"
           />
-        </HeaderTop>
+        </HeaderRow>
         <TagGroup>
           <Tag
             color={container.state === 'running' ? 'success' : 'default'}
@@ -183,7 +183,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         </TagGroup>
       </Header>
 
-      <PanelContent data-testid="container-detail-content">
+      <ContentWrapper data-testid="container-detail-content">
         <SectionStack>
           <SectionHeader data-testid="container-detail-info-section">
             <IconWrapper $tone="success" $size="md">
@@ -270,7 +270,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             <FieldRow>
               <FieldLabel>{t('resources:containers.networks')}:</FieldLabel>
               <FieldValue>
-                <Tag color="purple" data-testid="container-detail-network-tag">
+                <Tag color="default" data-testid="container-detail-network-tag">
                   {container.networks}
                 </Tag>
               </FieldValue>
@@ -315,7 +315,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             )}
           </SectionStack>
         </SectionCard>
-      </PanelContent>
-    </DetailPanel>
+      </ContentWrapper>
+    </PanelWrapper>
   );
 };

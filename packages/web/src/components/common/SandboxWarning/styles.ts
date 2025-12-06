@@ -1,8 +1,8 @@
 import styled from 'styled-components';
-import { Alert } from 'antd';
 import { InlineStack } from '@/components/common/styled';
+import { RediaccAlert } from '@/components/ui';
 
-export const SandboxBanner = styled(Alert)`
+export const SandboxBanner = styled(RediaccAlert)`
   && {
     position: fixed;
     top: 0;

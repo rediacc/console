@@ -1,9 +1,8 @@
 import styled from 'styled-components';
-import { Button, Typography } from 'antd';
+import { RediaccButton } from '@/components/ui/Button';
+import { RediaccText } from '@/components/ui/Text';
 
-const { Text } = Typography;
-
-export const TriggerButton = styled(Button)`
+export const TriggerButton = styled(RediaccButton)`
   && {
     display: inline-flex;
     align-items: center;
@@ -11,12 +10,7 @@ export const TriggerButton = styled(Button)`
     min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     padding: 0 ${({ theme }) => theme.spacing.SM}px;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
 `;
 
-export const MenuLabel = styled(Text)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-  }
-`;
+export const MenuLabel = styled(RediaccText).attrs({ size: 'sm' })``;

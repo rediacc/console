@@ -7,7 +7,8 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { useUpdateUserLanguage } from '@/api/queries/users';
 import type { RootState } from '@/store/store';
-import { LanguageButton, LanguageSelect, LanguageOption } from './styles';
+import { InlineStack } from '@/components/common/styled';
+import { LanguageButton, LanguageSelect } from './styles';
 const { Option } = Select;
 
 interface Language {
@@ -56,8 +57,6 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
     }
   };
 
-  const currentLanguage = languages.find((lang) => lang.code === i18n.language) || languages[0];
-
   if (iconOnly) {
     const menuItems = languages.map((lang) => ({
       key: lang.code,
@@ -72,10 +71,8 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
     return (
       <Dropdown menu={{ items: menuItems }} placement="bottomRight" trigger={['click']}>
         <LanguageButton
-          type="text"
           icon={<GlobalOutlined />}
           aria-label={t('language.switch')}
-          title={`${currentLanguage.flag} ${currentLanguage.name}`}
           data-testid="language-selector-icon"
         />
       </Dropdown>
@@ -92,9 +89,9 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
     >
       {languages.map((lang) => (
         <Option key={lang.code} value={lang.code} data-testid={`language-option-${lang.code}`}>
-          <LanguageOption>
+          <InlineStack>
             {lang.flag} {lang.name}
-          </LanguageOption>
+          </InlineStack>
         </Option>
       ))}
     </LanguageSelect>

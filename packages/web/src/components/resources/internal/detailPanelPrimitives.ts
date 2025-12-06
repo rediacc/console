@@ -1,7 +1,10 @@
 import styled from 'styled-components';
-import { Typography, Button, Card, Divider } from 'antd';
+import { Typography } from 'antd';
+import { RediaccButton } from '@/components/ui/Button';
+import { RediaccText } from '@/components/ui/Text';
+import { RediaccCard, RediaccDivider } from '@/components/ui';
 
-const { Text, Title } = Typography;
+const { Title } = Typography;
 
 const PANEL_WIDTH = 520;
 
@@ -50,20 +53,16 @@ const InlineField = styled.div`
   width: 100%;
 `;
 
-const LabelText = styled(Text)`
+const LabelText = styled(RediaccText).attrs({ size: 'xs', color: 'secondary' })`
   && {
     margin: 0;
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
     letter-spacing: ${({ theme }) => theme.letterSpacing.NORMAL};
   }
 `;
 
-const ValueText = styled(Text)`
+const ValueText = styled(RediaccText).attrs({ size: 'sm' })`
   && {
     margin: 0;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    color: ${({ theme }) => theme.colors.textPrimary};
     word-break: break-word;
   }
 `;
@@ -115,11 +114,8 @@ export const DetailPanelTitle = styled(Title).attrs({ level: 4 })`
   }
 `;
 
-export const DetailPanelCollapseButton = styled(Button)`
+export const DetailPanelCollapseButton = styled(RediaccButton).attrs({ iconOnly: true })`
   && {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
 `;
@@ -149,7 +145,7 @@ export const DetailPanelSectionTitle = styled(Title).attrs({ level: 5 })`
   }
 `;
 
-export const DetailPanelSectionCard = styled(Card).attrs({ size: 'small' })`
+export const DetailPanelSectionCard = styled(RediaccCard).attrs({ size: 'sm' })`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     background-color: ${({ theme }) => theme.colors.bgSecondary};
@@ -187,16 +183,17 @@ export const DetailPanelFieldMonospaceValue = styled(MonospaceValueText)`
   word-break: break-word;
 `;
 
-export const DetailPanelDivider = styled(Divider)`
+export const DetailPanelDivider = styled(RediaccDivider)`
   && {
     margin: ${({ theme }) => `${theme.spacing.LG}px 0`};
   }
 `;
 
-export const DetailPanelSecondaryTextBlock = styled(Text)`
+export const DetailPanelSecondaryTextBlock = styled(RediaccText).attrs({
+  size: 'xs',
+  color: 'muted',
+})`
   && {
     margin: 0;
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-    color: ${({ theme }) => theme.colors.textMuted};
   }
 `;

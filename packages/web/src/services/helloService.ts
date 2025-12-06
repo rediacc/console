@@ -16,7 +16,7 @@ export interface HelloFunctionParams {
   addedVia?: string;
   machineVault?: string;
   teamVault?: string;
-  repoVault?: string;
+  vaultContent?: string;
 }
 
 export interface HelloFunctionResult {
@@ -349,7 +349,7 @@ async function buildHelloQueueVault(
     addedVia: params.addedVia || DEFAULT_ADDED_VIA,
     machineVault: params.machineVault || DEFAULT_VAULT,
     teamVault: teamVault,
-    repoVault: params.repoVault || DEFAULT_VAULT,
+    repositoryVault: params.vaultContent || DEFAULT_VAULT,
   });
 }
 

@@ -33,10 +33,10 @@ export const useTeamMembers = (teamName: string) => {
 export type { Team, TeamMember };
 
 // Create team
-export const useCreateTeam = createResourceMutation<{ teamName: string; teamVault?: string }>(
+export const useCreateTeam = createResourceMutation<{ teamName: string; vaultContent?: string }>(
   'Team',
   'create',
-  (variables) => api.teams.create(variables.teamName),
+  (variables) => api.teams.create(variables.teamName, variables.vaultContent),
   'teamName'
 );
 
@@ -52,13 +52,13 @@ export const useUpdateTeamName = createMutation<{ currentTeamName: string; newTe
 // Update team vault
 export const useUpdateTeamVault = createVaultUpdateMutation<{
   teamName: string;
-  teamVault: string;
+  vaultContent: string;
   vaultVersion: number;
 }>(
   'Team',
-  (data) => api.teams.updateVault(data.teamName, data.teamVault, data.vaultVersion),
+  (data) => api.teams.updateVault(data.teamName, data.vaultContent, data.vaultVersion),
   'teamName',
-  'teamVault'
+  'vaultContent'
 );
 
 // Delete team

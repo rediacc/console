@@ -5,7 +5,7 @@ import type { ApiClient } from './types';
 
 export interface CreateRepoOptions {
   repoTag?: string;
-  repoVault?: string;
+  vaultContent?: string;
   parentRepoName?: string;
   parentRepoTag?: string;
   repoGuid?: string;
@@ -14,7 +14,6 @@ export interface CreateRepoOptions {
 const mapRepo = (repo: Repo): Repo => ({
   ...repo,
   repoTag: repo.repoTag || 'latest',
-  repoVault: repo.repoVault || '{}',
 });
 
 const normalizeTeamParam = (teamName: string | string[]): string =>
@@ -41,7 +40,7 @@ export function createReposService(client: ApiClient) {
       const payload: Record<string, unknown> = {
         teamName,
         repoName,
-        repoVault: options.repoVault,
+        vaultContent: options.vaultContent ?? '{}',
       };
       // Only include optional params if they have non-empty values
       if (options.repoTag) {
@@ -103,7 +102,7 @@ export function createReposService(client: ApiClient) {
       await client.post(endpoints.repos.updateRepoVault, {
         teamName,
         repoName,
-        repoVault: vault,
+        vaultContent: vault,
         vaultVersion,
       });
     },

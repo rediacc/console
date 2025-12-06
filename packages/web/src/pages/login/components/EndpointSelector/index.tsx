@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Modal, Form, Input, Button } from 'antd';
+import { Modal, Form, Input, Select } from 'antd';
 import styled from 'styled-components';
 import { PlusOutlined } from '@/utils/optimizedIcons';
 import { endpointService, Endpoint } from '@/services/endpointService';
@@ -9,6 +9,7 @@ import apiClient from '@/api/client';
 import axios from 'axios';
 import { useDialogState } from '@/hooks/useDialogState';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { RediaccButton as Button } from '@/components/ui';
 import {
   StyledSelect,
   LoadingText,
@@ -31,10 +32,10 @@ import {
   FormActions,
 } from './styles';
 
-const { Option } = StyledSelect;
+const { Option } = Select;
 
 const FormActionsRow = styled(Form.Item)`
-  margin-bottom: 0;
+ margin-bottom: 0;
 `;
 
 interface EndpointHealth {
@@ -318,7 +319,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
   // Show loading state
   if (loading) {
-    return <LoadingText type="secondary">Loading...</LoadingText>;
+    return <LoadingText color="secondary">Loading...</LoadingText>;
   }
 
   // If no endpoint selected and we have endpoints, show the first one
@@ -331,12 +332,12 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           value={displayValue}
           onChange={handleEndpointChange}
           // onDropdownVisibleChange={(open) => {
-          //   if (open && endpoints.length > 0) {
-          //     // Check health when dropdown opens
-          //     checkAllEndpointsHealth(endpoints);
-          //   }
+          // if (open && endpoints.length > 0) {
+          // // Check health when dropdown opens
+          // checkAllEndpointsHealth(endpoints);
+          // }
           // }}
-          size="small"
+          size="sm"
           suffixIcon={<EndpointSuffixIcon />}
           popupMatchSelectWidth={false}
           data-testid="endpoint-selector"
@@ -481,7 +482,11 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
               >
                 Cancel
               </Button>
-              <Button type="primary" htmlType="submit" data-testid="custom-endpoint-submit-button">
+              <Button
+                variant="primary"
+                htmlType="submit"
+                data-testid="custom-endpoint-submit-button"
+              >
                 Add Endpoint
               </Button>
             </FormActions>

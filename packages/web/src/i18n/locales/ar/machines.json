@@ -68,7 +68,7 @@
   "deleteWarning": "هل أنت متأكد أنك تريد حذف الجهاز \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
   "description": "الوصف (اختياري)",
   "descriptionPlaceholder": "أضف وصفًا مخصصًا لعنصر قائمة الانتظار هذا",
-  "distributedStorageCluster": "التخزين الموزع",
+  "cephCluster": "التخزين الموزع",
   "editMachine": "آلة التحرير",
   "experimental": "تجريبي",
   "failed": "فشل",

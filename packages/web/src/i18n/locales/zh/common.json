@@ -105,7 +105,7 @@
     "audit": "审计",
     "credentials": "凭据",
     "dashboard": "仪表板",
-    "distributedStorage": "分布式存储",
+    "ceph": "分布式存储",
     "logout": "退出",
     "machines": "机器",
     "mainNavigation": "主导航",
@@ -122,9 +122,9 @@
     "storage": "存储",
     "storageCloud": "Cloud",
     "storageDistributed": "Distributed",
-    "distributedStorageClusters": "集群",
-    "distributedStoragePools": "存储池",
-    "distributedStorageMachines": "机器",
+    "cephClusters": "集群",
+    "cephPools": "存储池",
+    "cephMachines": "机器",
     "system": "系统"
   },
   "nestedObjectEditor": {

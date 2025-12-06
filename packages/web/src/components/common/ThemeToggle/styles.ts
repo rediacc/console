@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { Button } from 'antd';
+import { RediaccButton } from '@/components/ui/Button';
 
-export const ToggleButton = styled(Button)`
+export const ToggleButton = styled(RediaccButton)`
   && {
     min-width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
     min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;

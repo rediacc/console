@@ -268,7 +268,7 @@ export const buildMachineTableColumns = ({
                     ? [
                         {
                           key: 'assignCluster',
-                          label: record.distributedStorageClusterName
+                          label: record.cephClusterName
                             ? t('machines:changeClusterAssignment')
                             : t('machines:assignToCluster'),
                           icon: <CloudServerOutlined />,

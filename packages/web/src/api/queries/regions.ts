@@ -33,10 +33,13 @@ export const useRegionBridges = (regionName: string) => {
 export type { Region };
 
 // Create region
-export const useCreateRegion = createResourceMutation<{ regionName: string; regionVault?: string }>(
+export const useCreateRegion = createResourceMutation<{
+  regionName: string;
+  vaultContent?: string;
+}>(
   'Region',
   'create',
-  (variables) => api.regions.create(variables.regionName),
+  (variables) => api.regions.create(variables.regionName, variables.vaultContent),
   'regionName'
 );
 
@@ -56,13 +59,13 @@ export const useUpdateRegionName = createMutation<{
 // Update region vault
 export const useUpdateRegionVault = createVaultUpdateMutation<{
   regionName: string;
-  regionVault: string;
+  vaultContent: string;
   vaultVersion: number;
 }>(
   'Region',
-  (data) => api.regions.updateVault(data.regionName, data.regionVault, data.vaultVersion),
+  (data) => api.regions.updateVault(data.regionName, data.vaultContent, data.vaultVersion),
   'regionName',
-  'regionVault'
+  'vaultContent'
 );
 
 // Delete region

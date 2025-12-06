@@ -23,6 +23,8 @@ import {
   createStatusColumn,
   createTruncatedColumn,
 } from '@/components/common/columns';
+import { InlineStack } from '@/components/common/styled';
+import { TableContainer } from '@/styles/primitives';
 import {
   TabContainer,
   StatCard,
@@ -30,11 +32,9 @@ import {
   StatMetric,
   StatSuffix,
   TableCard,
-  CardTitleRow,
   CardTitleText,
   RefreshButton,
   SearchInput,
-  TableWrapper,
   SessionTag,
   CellText,
   SummaryText,
@@ -163,7 +163,7 @@ const UserSessionsTab: React.FC = () => {
         <Space size="small">
           <CellText>{email}</CellText>
           {email === user?.email && (
-            <SessionTag color="blue" data-testid="sessions-current-session-tag">
+            <SessionTag variant="primary" data-testid="sessions-current-session-tag">
               {t('userSessions.currentSession')}
             </SessionTag>
           )}
@@ -185,7 +185,11 @@ const UserSessionsTab: React.FC = () => {
             <CellText>{name}</CellText>
             {record.parentRequestId && (
               <Tooltip title={t('userSessions.forkToken')}>
-                <SessionTag color="blue" icon={<LinkOutlined />} data-testid="sessions-fork-tag">
+                <SessionTag
+                  variant="primary"
+                  icon={<LinkOutlined />}
+                  data-testid="sessions-fork-tag"
+                >
                   {t('userSessions.fork')}
                 </SessionTag>
               </Tooltip>
@@ -193,7 +197,7 @@ const UserSessionsTab: React.FC = () => {
             {childCount > 0 && (
               <Tooltip title={t('userSessions.hasChildren', { count: childCount })}>
                 <SessionTag
-                  color="purple"
+                  variant="warning"
                   icon={<BranchesOutlined />}
                   data-testid="sessions-child-tag"
                 >
@@ -287,31 +291,38 @@ const UserSessionsTab: React.FC = () => {
 
       <TableCard
         title={
-          <CardTitleRow>
-            <CardTitleText>{t('userSessions.title')}</CardTitleText>
-            <Tooltip title={t('common:actions.refresh')}>
-              <RefreshButton
-                data-testid="sessions-refresh-button"
-                icon={<ReloadOutlined />}
-                onClick={() => refetch()}
-                loading={isLoading}
-                aria-label={t('common:actions.refresh')}
-              />
-            </Tooltip>
-          </CardTitleRow>
-        }
-        extra={
-          <SearchInput
-            data-testid="sessions-search-input"
-            placeholder={t('userSessions.searchPlaceholder')}
-            prefix={<SearchOutlined />}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            autoComplete="off"
-          />
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '16px',
+            }}
+          >
+            <InlineStack>
+              <CardTitleText>{t('userSessions.title')}</CardTitleText>
+              <Tooltip title={t('common:actions.refresh')}>
+                <RefreshButton
+                  data-testid="sessions-refresh-button"
+                  icon={<ReloadOutlined />}
+                  onClick={() => refetch()}
+                  loading={isLoading}
+                  aria-label={t('common:actions.refresh')}
+                />
+              </Tooltip>
+            </InlineStack>
+            <SearchInput
+              data-testid="sessions-search-input"
+              placeholder={t('userSessions.searchPlaceholder')}
+              prefix={<SearchOutlined />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
         }
       >
-        <TableWrapper>
+        <TableContainer>
           <Table
             data-testid="sessions-table"
             columns={columns}
@@ -332,7 +343,7 @@ const UserSessionsTab: React.FC = () => {
               }) as React.HTMLAttributes<HTMLTableRowElement>
             }
           />
-        </TableWrapper>
+        </TableContainer>
       </TableCard>
     </TabContainer>
   );

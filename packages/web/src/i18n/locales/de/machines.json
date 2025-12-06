@@ -68,7 +68,7 @@
   "deleteWarning": "Sind Sie sicher, dass Sie die Maschine „{{name}}“ löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
   "description": "Beschreibung (optional)",
   "descriptionPlaceholder": "Fügen Sie eine benutzerdefinierte Beschreibung für dieses Warteschlangenelement hinzu",
-  "distributedStorageCluster": "Verteilter Speicher",
+  "cephCluster": "Verteilter Speicher",
   "editMachine": "Maschine bearbeiten",
   "experimental": "Experimental-",
   "failed": "Fehlgeschlagen",

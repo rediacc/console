@@ -47,13 +47,13 @@ export class CliQueueService {
       addedVia: 'cli',
       teamVault: vaults.teamVault,
       machineVault: vaults.machineVault,
-      repositoryVault: vaults.repoVault,
+      repositoryVault: vaults.vaultContent,
       companyVault: vaults.companyVault,
       storageVault: vaults.storageVault,
       bridgeVault: vaults.bridgeVault,
       repositoryGuid: context.params.repo as string | undefined,
-      repositoryNetworkId: (vaults.repoVault as { repoNetworkId?: number })?.repoNetworkId,
-      repositoryNetworkMode: (vaults.repoVault as { networkMode?: string })?.networkMode,
+      repositoryNetworkId: (vaults.vaultContent as { repoNetworkId?: number })?.repoNetworkId,
+      repositoryNetworkMode: (vaults.vaultContent as { networkMode?: string })?.networkMode,
       storageName: (context.params.to || context.params.from) as string | undefined,
     };
 
@@ -67,7 +67,7 @@ export class CliQueueService {
     companyVault?: VaultData;
     teamVault?: VaultData;
     machineVault?: VaultData;
-    repoVault?: VaultData;
+    vaultContent?: VaultData;
     storageVault?: VaultData;
     bridgeVault?: VaultData;
   }> {
@@ -75,7 +75,7 @@ export class CliQueueService {
       companyVault?: VaultData;
       teamVault?: VaultData;
       machineVault?: VaultData;
-      repoVault?: VaultData;
+      vaultContent?: VaultData;
       storageVault?: VaultData;
       bridgeVault?: VaultData;
     } = {};
@@ -121,15 +121,15 @@ export class CliQueueService {
         const repoGuid = context.params.repo as string;
         const repos = await api.repos.list(context.teamName);
         const repo = repos.find((r: Repo) => r.repoGuid === repoGuid);
-        const repoVault = this.parseVaultContent(repo?.vaultContent);
-        if (repoVault) {
+        const vaultContent = this.parseVaultContent(repo?.vaultContent);
+        if (vaultContent) {
           if (repo?.repoNetworkId !== undefined) {
-            (repoVault as Record<string, unknown>).repoNetworkId = repo.repoNetworkId;
+            (vaultContent as Record<string, unknown>).repoNetworkId = repo.repoNetworkId;
           }
           if (repo?.repoNetworkMode) {
-            (repoVault as Record<string, unknown>).networkMode = repo.repoNetworkMode;
+            (vaultContent as Record<string, unknown>).networkMode = repo.repoNetworkMode;
           }
-          vaults.repoVault = repoVault;
+          vaults.vaultContent = vaultContent;
         }
       } catch {
         // Repository vault fetch failed

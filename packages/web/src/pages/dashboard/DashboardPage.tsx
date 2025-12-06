@@ -1,5 +1,5 @@
 import React from 'react';
-import { Col, Row, Alert, Tag, Typography, Statistic, Empty, Tooltip, Table } from 'antd';
+import { Col, Row, Alert, Tag, Statistic, Empty, Tooltip, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useTheme as useStyledTheme } from 'styled-components';
 import {
@@ -27,11 +27,13 @@ import {
 import { useDashboard } from '@/api/queries/dashboard';
 import type { QueueTeamIssue, QueueMachineIssue } from '@rediacc/shared/types';
 import { useRecentAuditLogs } from '@/api/queries/audit';
-import DistributedStorageDashboardWidget from '@/pages/dashboard/components/DistributedStorageDashboardWidget';
+import CephDashboardWidget from '@/pages/dashboard/components/CephDashboardWidget';
 import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
+import { EmptyStateWrapper } from '@/styles/primitives';
 import { createSorter } from '@/core';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccText as Text } from '@/components/ui';
 import {
   PageWrapper,
   ContentStack,
@@ -60,14 +62,11 @@ import {
   BorderlessList,
   BorderlessListItem,
   AuditMeta,
-  EmptyState,
   SectionFooter,
   PlanCountBadge,
   QuantityBadge,
   HorizontalScroll,
 } from './styles';
-
-const { Text } = Typography;
 
 const resourceIcons: Record<string, React.ReactNode> = {
   Machine: <DesktopOutlined />,
@@ -157,8 +156,8 @@ const DashboardPage: React.FC = () => {
       render: (_: unknown, record: QueueMachineIssue) => (
         <InlineStack>
           {(record.staleItems || 0) > 0 && <Tag color="warning">{record.staleItems} stale</Tag>}
-          <Tag color="blue">{record.pendingItems || 0} pending</Tag>
-          <Tag color="processing">{record.activeItems || 0} active</Tag>
+          <Tag color="processing">{record.pendingItems || 0} pending</Tag>
+          <Tag color="blue">{record.activeItems || 0} active</Tag>
         </InlineStack>
       ),
     },
@@ -269,7 +268,7 @@ const DashboardPage: React.FC = () => {
                         <TileHeader>
                           <InlineStack>
                             {resourceIcons[resource.resourceType]}
-                            <Text strong>{resource.resourceType}s</Text>
+                            <Text weight="bold">{resource.resourceType}s</Text>
                           </InlineStack>
                           <TileMeta>
                             {resource.currentUsage} /{' '}
@@ -352,7 +351,7 @@ const DashboardPage: React.FC = () => {
                     <SectionTitle level={4}>{activeSubscriptions.length} Total</SectionTitle>
                   </div>
                   <ScrollContainer>
-                    <StatList size="small">
+                    <StatList gap="sm">
                       {activeSubscriptions.map((sub, index) => {
                         const percent = (() => {
                           const startDate = new Date(sub.startDate);
@@ -379,8 +378,8 @@ const DashboardPage: React.FC = () => {
                           >
                             <LicenseHeader>
                               <InlineStack>
-                                <Text strong>{sub.planCode}</Text>
-                                <QuantityBadge count={`×${sub.quantity}`} />
+                                <Text weight="bold">{sub.planCode}</Text>
+                                <QuantityBadge count={sub.quantity} />
                                 {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
                               </InlineStack>
                               <StatLabel
@@ -402,7 +401,7 @@ const DashboardPage: React.FC = () => {
                               <ResourceProgress
                                 percent={percent}
                                 showInfo={false}
-                                size="small"
+                                size="sm"
                                 strokeColor={strokeColor}
                                 data-testid={`dashboard-progress-subscription-${sub.planCode}`}
                               />
@@ -511,7 +510,7 @@ const DashboardPage: React.FC = () => {
               </Row>
 
               {(queueStats.hasStaleItems === 1 || queueStats.hasOldPendingItems === 1) && (
-                <StatList size="small">
+                <StatList gap="sm">
                   {queueStats.hasStaleItems === 1 && (
                     <Alert
                       message={`${queueStats.staleCount || 0} stale items`}
@@ -561,7 +560,7 @@ const DashboardPage: React.FC = () => {
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={8}>
                 <ResourceTile>
-                  <Text strong>Today&apos;s Activity</Text>
+                  <Text weight="bold">Today&apos;s Activity</Text>
                   <StatList>
                     <StatRow>
                       <StatLabel>Created</StatLabel>
@@ -595,11 +594,11 @@ const DashboardPage: React.FC = () => {
                 <StatList>
                   {teamIssues.length > 0 && (
                     <div>
-                      <Text strong style={{ marginBottom: theme.spacing.SM }}>
+                      <Text weight="bold" style={{ marginBottom: theme.spacing.SM }}>
                         <TeamOutlined /> Team Queue Status
                       </Text>
                       <BorderlessList
-                        size="small"
+                        size="sm"
                         dataSource={teamIssues}
                         data-testid="dashboard-list-team-issues"
                         renderItem={(team) => {
@@ -607,15 +606,17 @@ const DashboardPage: React.FC = () => {
                           return (
                             <BorderlessListItem>
                               <FlexBetween>
-                                <Text strong>{teamIssue.teamName}</Text>
+                                <Text weight="bold">{teamIssue.teamName}</Text>
                                 <InlineStack>
                                   {(teamIssue.staleItems || 0) > 0 && (
                                     <Tag color="warning">
                                       <WarningOutlined /> {teamIssue.staleItems} stale
                                     </Tag>
                                   )}
-                                  <Tag color="blue">{teamIssue.pendingItems || 0} pending</Tag>
-                                  <Tag color="processing">{teamIssue.activeItems || 0} active</Tag>
+                                  <Tag color="processing">
+                                    {teamIssue.pendingItems || 0} pending
+                                  </Tag>
+                                  <Tag color="blue">{teamIssue.activeItems || 0} active</Tag>
                                 </InlineStack>
                               </FlexBetween>
                             </BorderlessListItem>
@@ -627,7 +628,7 @@ const DashboardPage: React.FC = () => {
 
                   {machineIssues.length > 0 && (
                     <div>
-                      <Text strong style={{ marginBottom: theme.spacing.SM }}>
+                      <Text weight="bold" style={{ marginBottom: theme.spacing.SM }}>
                         <DesktopOutlined /> Machine Queue Status
                       </Text>
                       <HorizontalScroll>
@@ -646,7 +647,7 @@ const DashboardPage: React.FC = () => {
                   {featureAccess?.hasAdvancedAnalytics === 1 &&
                     queueStats.highestPriorityPending !== null && (
                       <ResourceTile>
-                        <Text strong>
+                        <Text weight="bold">
                           <ThunderboltOutlined /> Priority Breakdown
                         </Text>
                         <QueueBadgeRow>
@@ -691,8 +692,8 @@ const DashboardPage: React.FC = () => {
           </DashboardCard>
         )}
 
-        {featureAccess?.hasAdvancedAnalytics === 1 && dashboard.distributedStorageStats && (
-          <DistributedStorageDashboardWidget stats={dashboard.distributedStorageStats} />
+        {featureAccess?.hasAdvancedAnalytics === 1 && dashboard.cephStats && (
+          <CephDashboardWidget stats={dashboard.cephStats} />
         )}
 
         {accountHealth ? (
@@ -713,7 +714,7 @@ const DashboardPage: React.FC = () => {
                 </Tag>
               </FlexBetween>
 
-              <StatList size="small">
+              <StatList gap="sm">
                 <InlineStack>
                   {accountHealth.resourcesAtLimit > 0 ? (
                     <ExclamationCircleOutlined style={{ color: theme.colors.warning }} />
@@ -730,7 +731,7 @@ const DashboardPage: React.FC = () => {
               </StatList>
 
               <SectionFooter>
-                <Text strong>{accountHealth.upgradeRecommendation}</Text>
+                <Text weight="bold">{accountHealth.upgradeRecommendation}</Text>
               </SectionFooter>
             </StatList>
           </DashboardCard>
@@ -763,11 +764,11 @@ const DashboardPage: React.FC = () => {
           data-testid="dashboard-card-recent-activity"
         >
           {auditLoading ? (
-            <EmptyState>
+            <EmptyStateWrapper>
               <LoadingWrapper loading centered minHeight={120}>
                 <div />
               </LoadingWrapper>
-            </EmptyState>
+            </EmptyStateWrapper>
           ) : auditLogs && auditLogs.length > 0 ? (
             <TimelineWrapper
               items={auditLogs
@@ -782,10 +783,10 @@ const DashboardPage: React.FC = () => {
                   key: index,
                   dot: getActionIcon(log.action),
                   children: (
-                    <StatList size="small">
+                    <StatList gap="sm">
                       <FlexBetween>
                         <InlineStack>
-                          <Text strong>{log.action.replace(/_/g, ' ')}</Text>
+                          <Text weight="bold">{log.action.replace(/_/g, ' ')}</Text>
                           <Tag>{log.entity}</Tag>
                         </InlineStack>
                         <AuditMeta>{formatTimestamp(log.timestamp)}</AuditMeta>
@@ -805,9 +806,9 @@ const DashboardPage: React.FC = () => {
                 }))}
             />
           ) : (
-            <EmptyState>
+            <EmptyStateWrapper>
               <Empty description="No recent activity" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-            </EmptyState>
+            </EmptyStateWrapper>
           )}
         </DashboardCard>
 

@@ -5,13 +5,16 @@
  * - PageWrapper: Main container for all pages
  * - SectionStack: Vertical stack for grouping related content
  * - SectionHeading: Heading for page sections
+ * - SectionHeaderRow: Row for section headers with actions
  */
 
 import styled from 'styled-components';
 import { Typography } from 'antd';
-import { PageContainer } from '@/styles/primitives';
+import { PageContainer, SectionHeaderRow as PrimitiveSectionHeaderRow } from '@/styles/primitives';
 
 const { Title } = Typography;
+
+export const SectionHeaderRow = PrimitiveSectionHeaderRow;
 
 /**
  * PageWrapper - Main container for all pages

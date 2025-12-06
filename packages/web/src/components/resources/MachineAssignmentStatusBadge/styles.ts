@@ -1,11 +1,11 @@
 import styled from 'styled-components';
-import { StatusBadge, StatusTag } from '@/styles/primitives';
+import { RediaccTag } from '@/components/ui';
 
-export const AssignmentBadge = styled(StatusBadge)`
+export const AssignmentBadge = styled(RediaccTag)`
   text-transform: none;
 `;
 
-export const AssignmentTag = styled(StatusTag)`
+export const AssignmentTag = styled(RediaccTag)`
   && {
     text-transform: none;
   }

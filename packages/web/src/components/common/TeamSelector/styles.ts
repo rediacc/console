@@ -1,8 +1,9 @@
 import styled from 'styled-components';
-import { Select, Tag, Input } from 'antd';
+import { RediaccInput, RediaccSelect } from '@/components/ui/Form';
+import { RediaccTag } from '@/components/ui/Tag';
 import { InlineStack } from '@/components/common/styled';
 
-export const TeamSelect = styled(Select)`
+export const TeamSelect = styled(RediaccSelect)`
   && {
     width: 100%;
   }
@@ -13,15 +14,14 @@ export const TeamSelect = styled(Select)`
   }
 `;
 
-export const TeamTag = styled(Tag)`
+export const TeamTag = styled(RediaccTag).attrs({
+  preset: 'team',
+})`
   && {
     margin-right: ${({ theme }) => theme.spacing.XS}px;
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     display: inline-flex;
     align-items: center;
-    background-color: ${({ theme }) => theme.colors.primaryBg};
-    color: ${({ theme }) => theme.colors.primary};
-    border: 1px solid ${({ theme }) => theme.colors.primary};
   }
 `;
 
@@ -33,7 +33,7 @@ export const DropdownMenuWrapper = styled.div`
   border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
 `;
 
-export const SearchInput = styled(Input)`
+export const SearchInput = styled(RediaccInput)`
   && {
     .ant-input-prefix {
       color: ${({ theme }) => theme.colors.textSecondary};

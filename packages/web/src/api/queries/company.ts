@@ -30,16 +30,16 @@ export const useCompanyVault = () => {
 };
 
 // Update company vault configuration
-export const useUpdateCompanyVault = createMutation<{ companyVault: string; vaultVersion: number }>(
+export const useUpdateCompanyVault = createMutation<{ vaultContent: string; vaultVersion: number }>(
   {
-    request: ({ companyVault, vaultVersion }) =>
-      api.company.updateVault(companyVault, vaultVersion),
+    request: ({ vaultContent, vaultVersion }) =>
+      api.company.updateVault(vaultContent, vaultVersion),
     invalidateKeys: ['company-vault'],
     successMessage: () => i18n.t('system:company.success.vaultUpdated'),
     errorMessage: i18n.t('system:company.errors.vaultUpdateFailed'),
     transformData: (data) => ({
       ...data,
-      companyVault: minifyJSON(data.companyVault),
+      vaultContent: minifyJSON(data.vaultContent),
     }),
     operationName: 'company.updateVault',
   }

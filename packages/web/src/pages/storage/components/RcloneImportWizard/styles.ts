@@ -1,11 +1,12 @@
 import styled from 'styled-components';
-import { Modal, Alert, Typography } from 'antd';
+import { Typography } from 'antd';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { LoadingState as BaseLoadingState } from '@/styles/primitives';
+import { RediaccText, RediaccAlert, RediaccModal } from '@/components/ui';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
-export const WizardModal = styled(Modal).attrs({
+export const WizardModal = styled(RediaccModal).attrs({
   width: DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_XL,
 })`
   && {
@@ -40,15 +41,15 @@ export const UploadStepWrapper = styled.div`
   padding: ${({ theme }) => `${theme.spacing.LG}px 0`};
 `;
 
-export const InstructionsAlert = styled(Alert)`
+export const InstructionsAlert = styled(RediaccAlert)`
   margin-bottom: ${({ theme }) => theme.spacing.LG}px;
 `;
 
-export const StandardAlert = styled(Alert)`
+export const StandardAlert = styled(RediaccAlert)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const ErrorAlert = styled(Alert)`
+export const ErrorAlert = styled(RediaccAlert)`
   margin-top: ${({ theme }) => theme.spacing.MD}px;
 `;
 
@@ -66,7 +67,7 @@ export const LoadingTitle = styled(Title)`
   }
 `;
 
-export const StatusMessage = styled(Text)`
+export const StatusMessage = styled(RediaccText)`
   && {
     font-size: ${DESIGN_TOKENS.FONT_SIZE.CAPTION}px;
     color: var(--color-text-secondary);

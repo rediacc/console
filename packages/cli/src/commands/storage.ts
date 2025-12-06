@@ -11,7 +11,11 @@ export function registerStorageCommands(program: Command): void {
     operations: {
       list: (params) => api.storage.list(params?.teamName as string),
       create: (payload) =>
-        api.storage.create(payload.teamName as string, payload.storageName as string),
+        api.storage.create(
+          payload.teamName as string,
+          payload.storageName as string,
+          payload.vaultContent as string | undefined
+        ),
       rename: (payload) =>
         api.storage.rename(
           payload.teamName as string,
@@ -30,10 +34,10 @@ export function registerStorageCommands(program: Command): void {
         api.storage.updateVault(
           payload.teamName as string,
           payload.storageName as string,
-          payload.storageVault as string,
+          payload.vaultContent as string,
           payload.vaultVersion as number
         ),
-      vaultFieldName: 'storageVault',
+      vaultFieldName: 'vaultContent',
     },
   });
 }

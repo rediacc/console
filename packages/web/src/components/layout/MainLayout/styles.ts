@@ -1,11 +1,11 @@
 import styled from 'styled-components';
-import { Layout, Button, Avatar, Typography } from 'antd';
+import { Layout, Avatar } from 'antd';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { FlexRow } from '@/styles/primitives';
 import { InlineStack } from '@/components/common/styled';
+import { RediaccText, RediaccButton } from '@/components/ui';
 
 const { Header, Content } = Layout;
-const { Text } = Typography;
 
 export const HEADER_HEIGHT = DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT;
 
@@ -36,7 +36,7 @@ export const HeaderLeft = styled(FlexRow).attrs({ $gap: 'MD' })``;
 
 export const HeaderRight = styled(InlineStack)``;
 
-export const MenuToggleButton = styled(Button)`
+export const MenuToggleButton = styled(RediaccButton)`
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   font-size: 18px;
   color: var(--color-text-primary);
@@ -59,8 +59,6 @@ export const Logo = styled.img`
   margin-top: -${({ theme }) => theme.spacing.XS}px;
   margin-left: -${({ theme }) => theme.spacing.XS}px;
 `;
-
-export const UserMenuButton = styled(Button)``;
 
 export const UserAvatar = styled(Avatar)`
   background: var(--color-primary-hover);
@@ -95,7 +93,7 @@ export const TransitionIcon = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const TransitionText = styled(Text)`
+export const TransitionText = styled(RediaccText)`
   font-size: 18px;
   color: var(--color-text-secondary);
 `;

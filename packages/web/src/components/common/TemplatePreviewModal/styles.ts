@@ -1,21 +1,24 @@
 import styled from 'styled-components';
-import { Tabs, Space, Tag, Divider, List, Typography } from 'antd';
+import { Typography } from 'antd';
 import {
   BaseModal,
-  PrimaryButton,
-  SecondaryButton,
   ContentCard,
   LoadingContainer as BaseLoadingContainer,
   LoadingText as BaseLoadingText,
-  RoundedAlert as BaseRoundedAlert,
   FlexColumn,
   FlexRow,
-  SecondaryText,
-  MonoText,
-  NoMarginTitle,
 } from '@/styles/primitives';
+import {
+  RediaccText as Text,
+  RediaccAlert,
+  RediaccStack,
+  RediaccDivider,
+  RediaccList,
+  RediaccTabs,
+} from '@/components/ui';
+import { RediaccTag } from '@/components/ui/Tag';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title } = Typography;
 
 export const StyledModal = styled(BaseModal)`
   .ant-modal {
@@ -44,17 +47,17 @@ export const TemplateIconWrapper = styled.span`
   color: ${({ theme }) => theme.colors.primary};
 `;
 
-export const TemplateHeading = styled(NoMarginTitle)``;
-
-export const DifficultyTag = styled(Tag)`
+// Use RediaccTag for consistent styling
+export const DifficultyTag = styled(RediaccTag).attrs({
+  size: 'md',
+})`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
     margin-top: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 
-export const StyledTabs = styled(Tabs)`
+export const StyledTabs = styled(RediaccTabs)`
   .ant-tabs-nav {
     margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   }
@@ -75,12 +78,10 @@ export const DescriptionCard = styled(ContentCard)`
 
 export const FeatureCard = DescriptionCard;
 
-export const CardTitle = styled(Text)`
-  && {
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-`;
+export const CardTitle = styled(Text).attrs({
+  size: 'xl',
+  weight: 'semibold',
+})``;
 
 export const MarkdownContent = styled.div`
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -91,13 +92,13 @@ export const MarkdownContent = styled.div`
   }
 `;
 
-export const FeatureList = styled(Space)`
+export const FeatureList = styled(RediaccStack).attrs({ direction: 'vertical' })`
   && {
     width: 100%;
   }
 `;
 
-export const FeatureItem = styled(Space)`
+export const FeatureItem = styled(RediaccStack).attrs({ direction: 'horizontal' })`
   && {
     width: 100%;
     align-items: center;
@@ -147,7 +148,7 @@ export const FileListCard = styled(ContentCard)`
   }
 `;
 
-export const FileListItem = styled(List.Item)<{ $active?: boolean }>`
+export const FileListItem = styled(RediaccList.Item)<{ $active?: boolean }>`
   padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
   cursor: pointer;
   background-color: ${({ theme, $active }) => ($active ? theme.colors.primaryBg : 'transparent')};
@@ -161,9 +162,10 @@ export const FileListItem = styled(List.Item)<{ $active?: boolean }>`
 
 export const FileMeta = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
-export const FileName = styled(Text)`
+export const FileName = styled(Text).attrs({
+  weight: 'medium',
+})`
   && {
-    font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
     color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
@@ -183,14 +185,18 @@ export const FilePreviewCard = styled(ContentCard)`
   }
 `;
 
-export const FilePreviewHeader = styled(Space)`
+export const FilePreviewHeader = styled(RediaccStack).attrs({ direction: 'horizontal' })`
   && {
     align-items: center;
     justify-content: space-between;
   }
 `;
 
-export const FilePath = styled(MonoText)``;
+export const FilePath = styled(Text)`
+  && {
+    font-family: monospace;
+  }
+`;
 
 export const FilePreviewBody = styled.div`
   flex: 1 1 auto;
@@ -212,7 +218,12 @@ export const SecurityCard = styled(ContentCard)`
 
 export const AlertStack = styled(FlexColumn).attrs({ $gap: 'MD' })``;
 
-export const RoundedAlert = BaseRoundedAlert;
+export const RoundedAlert = styled(RediaccAlert)`
+  && {
+    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+    padding: ${({ theme }) => theme.spacing.MD}px;
+  }
+`;
 
 export const Checklist = styled.ul`
   margin-left: ${({ theme }) => theme.spacing.MD}px;
@@ -225,16 +236,20 @@ export const ChecklistItem = styled.li`
   line-height: ${({ theme }) => theme.lineHeight.RELAXED};
 `;
 
-export const BodyParagraph = styled(Paragraph)`
+export const BodyParagraph = styled(Text)`
   && {
+    display: block;
     color: ${({ theme }) => theme.colors.textPrimary};
     line-height: ${({ theme }) => theme.lineHeight.RELAXED};
   }
 `;
 
-export const BodyText = SecondaryText;
+// BodyText accepts weight prop to allow both regular and bold text
+export const BodyText = styled(Text).attrs({
+  color: 'muted',
+})``;
 
-export const SectionDivider = styled(Divider)`
+export const SectionDivider = styled(RediaccDivider)`
   && {
     margin: ${({ theme }) => `${theme.spacing.LG}px 0`};
   }
@@ -243,19 +258,6 @@ export const SectionDivider = styled(Divider)`
 export const SecurityTitle = styled(Title).attrs({ level: 5 })`
   && {
     color: ${({ theme }) => theme.colors.textPrimary};
-  }
-`;
-
-export const PrimaryActionButton = styled(PrimaryButton)`
-  && {
-    min-width: 160px;
-  }
-`;
-
-export const SecondaryActionButton = styled(SecondaryButton)`
-  && {
-    margin-right: ${({ theme }) => theme.spacing.SM}px;
-    min-width: 120px;
   }
 `;
 
@@ -268,4 +270,6 @@ export const SuccessIcon = styled(IconLabel)`
   color: ${({ theme }) => theme.colors.success};
 `;
 
-export const AlertDescription = SecondaryText;
+export const AlertDescription = styled(Text).attrs({
+  color: 'secondary',
+})``;

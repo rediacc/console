@@ -1,9 +1,10 @@
 import styled, { css } from 'styled-components';
-import { Card, Input, Space, Button } from 'antd';
-import { EmptyStateTitle, EmptyStateDescription } from '@/styles/primitives';
+import { RediaccSearchInput as UnifiedSearchInput } from '@/components/ui/Form';
+import { RediaccText as Text, RediaccCard, RediaccStack } from '@/components/ui';
+import { RediaccButton } from '@/components/ui/Button';
 import { ActionGroup } from '@/components/common/styled';
 
-export const ContainerCard = styled(Card)`
+export const ContainerCard = styled(RediaccCard)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.XL}px;
     border-color: ${({ theme }) => theme.colors.borderSecondary};
@@ -55,7 +56,7 @@ export const ActionsGroup = styled(ActionGroup)`
   }
 `;
 
-export const SearchInput = styled(Input.Search)`
+export const SearchInput = styled(UnifiedSearchInput)`
   && {
     width: 300px;
     min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
@@ -69,19 +70,27 @@ export const SearchInput = styled(Input.Search)`
   }
 `;
 
-export const EmptyDescriptionStack = styled(Space).attrs({
-  orientation: 'vertical',
+export const EmptyDescriptionStack = styled(RediaccStack).attrs({
+  direction: 'vertical',
   align: 'center',
-  size: 'middle' as const,
+  gap: 'md',
 })`
   text-align: center;
   padding: ${({ theme }) => theme.spacing.LG}px;
 `;
 
-export { EmptyStateTitle as EmptyTitle, EmptyStateDescription as EmptySubtitle };
+export const EmptyTitle = styled(Text).attrs({
+  size: 'xl',
+  weight: 'semibold',
+})``;
 
-export const EmptyActions = styled(Space).attrs({
-  size: 'small' as const,
+export const EmptySubtitle = styled(Text).attrs({
+  variant: 'caption',
+})``;
+
+export const EmptyActions = styled(RediaccStack).attrs({
+  direction: 'horizontal',
+  gap: 'sm',
 })`
   display: flex;
   justify-content: center;
@@ -93,7 +102,7 @@ const actionButtonStyles = css`
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
 `;
 
-export const CreateButton = styled(Button)`
+export const CreateButton = styled(RediaccButton)`
   && {
     ${actionButtonStyles};
     display: inline-flex;
@@ -102,7 +111,9 @@ export const CreateButton = styled(Button)`
   }
 `;
 
-export const RefreshButton = styled(Button)`
+export const RefreshButton = styled(RediaccButton).attrs({
+  iconOnly: true,
+})`
   && {
     ${actionButtonStyles};
   }

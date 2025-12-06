@@ -9,7 +9,6 @@ import {
   Slider,
   Empty,
   Typography,
-  Button,
   Select,
   Tooltip,
   Checkbox,
@@ -64,9 +63,9 @@ import {
   PriorityAlert,
   PriorityAlertNote,
   PriorityAlertDetail,
-  PrimarySubmitButton,
 } from './styles';
 import { ModalHeader, ModalTitle, ModalSubtitle } from '@/styles/primitives';
+import { RediaccButton, RediaccText as Text } from '@/components/ui';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;
@@ -81,7 +80,7 @@ const toFunctionParamValue = (value: unknown): FunctionParamValue | undefined =>
   return undefined;
 };
 
-const { Text, Paragraph } = Typography;
+const { Paragraph } = Typography;
 const QUICK_TASK_NAMES = ['ping', 'hello', 'ssh_test', 'health_check'];
 
 interface FunctionSelectionModalProps {
@@ -509,12 +508,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
         onCancel={handleCancel}
         className={ModalSize.ExtraLarge}
         footer={[
-          <Button key="cancel" onClick={handleCancel} data-testid="function-modal-cancel">
+          <RediaccButton key="cancel" onClick={handleCancel} data-testid="function-modal-cancel">
             {t('common:actions.cancel')}
-          </Button>,
-          <PrimarySubmitButton
+          </RediaccButton>,
+          <RediaccButton
             key="submit"
-            type="primary"
+            htmlType="submit"
             onClick={handleSubmit}
             disabled={
               !selectedFunction ||
@@ -525,7 +524,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
             data-testid="function-modal-submit"
           >
             {t('common:actions.addToQueue')}
-          </PrimarySubmitButton>,
+          </RediaccButton>,
         ]}
         data-testid="function-modal"
       >
@@ -536,7 +535,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
             so this modal is ONLY shown for "Advanced" which always needs the function list. */}
           {!preselectedFunction && (
             <Col span={10}>
-              <FunctionListCard title={t('functions:availableFunctions')} size="small">
+              <FunctionListCard title={t('functions:availableFunctions')} size="sm">
                 <SearchInput
                   placeholder={t('functions:searchFunctions')}
                   value={functionSearchTerm}
@@ -550,7 +549,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       key={category}
                       data-testid={`function-modal-category-${category}`}
                     >
-                      <CategoryTitle strong>{categories[category]?.name || category}</CategoryTitle>
+                      <CategoryTitle>{categories[category]?.name || category}</CategoryTitle>
                       {funcs.map((func) => {
                         const isQuickTask =
                           QUICK_TASK_NAMES.includes(func.name) ||
@@ -565,14 +564,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             data-testid={`function-modal-item-${func.name}`}
                           >
                             <FunctionItemHeader>
-                              <Text strong>{func.name}</Text>
+                              <Text weight="bold">{func.name}</Text>
                               {isQuickTask && (
                                 <QuickTaskTag>⚡ {t('functions:quickTaskBadge')}</QuickTaskTag>
                               )}
                             </FunctionItemHeader>
-                            <FunctionDescriptionText type="secondary">
-                              {func.description}
-                            </FunctionDescriptionText>
+                            <FunctionDescriptionText>{func.description}</FunctionDescriptionText>
                           </FunctionOption>
                         );
                       })}
@@ -588,7 +585,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
               <ContentStack>
                 <ConfigCard
                   title={`${t('functions:configure')}: ${selectedFunction.name}`}
-                  size="small"
+                  size="sm"
                 >
                   <Paragraph>{selectedFunction.description}</Paragraph>
 
@@ -597,18 +594,19 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                     {selectedFunction.name === 'push' && functionParams.dest && (
                       <PushAlertsRow $hasWarning={functionParams.state === 'online'}>
                         <PushAlertCard
-                          type="info"
+                          $variant="info"
+                          variant="info"
                           showIcon
                           message="Push Operation Details"
                           description={
-                            <Space orientation="vertical" size="small">
+                            <Space direction="vertical" size="small">
                               <div>
-                                <Text strong>Destination Filename: </Text>
+                                <Text weight="bold">Destination Filename: </Text>
                                 <Text code>{functionParams.dest}</Text>
                               </div>
                               {additionalContext?.parentRepo && (
                                 <div>
-                                  <Text strong>Repo Lineage: </Text>
+                                  <Text weight="bold">Repo Lineage: </Text>
                                   <Space>
                                     <LineageTag $variant="parent">
                                       {additionalContext.parentRepo}
@@ -626,7 +624,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               )}
                               {!additionalContext?.parentRepo && additionalContext?.sourceRepo && (
                                 <div>
-                                  <Text strong>Source Repo: </Text>
+                                  <Text weight="bold">Source Repo: </Text>
                                   <LineageTag $variant="source">
                                     {additionalContext.sourceRepo}
                                   </LineageTag>
@@ -645,11 +643,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                         />
                         {functionParams.state === 'online' && (
                           <PushAlertCard
-                            type="warning"
+                            $variant="warning"
+                            variant="warning"
                             showIcon
                             message={t('functions:onlinePushWarningTitle')}
                             description={
-                              <Space orientation="vertical" size="small">
+                              <Space direction="vertical" size="small">
                                 <AlertBodyText>
                                   {t('functions:onlinePushWarningMessage')}
                                 </AlertBodyText>
@@ -1160,7 +1159,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 t('functions:priorityLowestDescription')
                               )
                             }
-                            type={
+                            variant={
                               functionPriority === 1
                                 ? 'error'
                                 : functionPriority === 2

@@ -1,14 +1,14 @@
 import styled from 'styled-components';
-import { Space, Typography } from 'antd';
 import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
 import { ContentStack, CenteredState, ActionGroup } from '@/components/common/styled';
+import { RediaccText as Text, RediaccStack } from '@/components/ui';
 
 export const PageWrapper = PageContainer;
 
 // Re-export from common/styled
 export { ContentStack, ActionGroup };
 
-export const HeaderStack = styled(Space).attrs({ orientation: 'vertical', size: 'middle' })`
+export const HeaderStack = styled(RediaccStack).attrs({ direction: 'vertical', gap: 'md' })`
   width: 100%;
 `;
 
@@ -91,9 +91,7 @@ export const LegendIcon = styled.div<{ $color: string }>`
   background-color: ${({ $color }) => $color};
 `;
 
-const { Title } = Typography;
-
-export const SectionTitleText = styled(Title)`
+export const SectionTitleText = styled(Text).attrs({ size: 'xl', weight: 'semibold' })`
   && {
     margin: 0;
     color: ${({ theme }) => theme.colors.textPrimary};

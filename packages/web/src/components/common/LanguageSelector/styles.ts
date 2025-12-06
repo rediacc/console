@@ -1,8 +1,8 @@
 import styled from 'styled-components';
-import { Select } from 'antd';
-import { IconButton } from '@/styles/primitives';
+import { RediaccButton as Button } from '@/components/ui';
+import { RediaccSelect } from '@/components/ui/Form';
 
-export const LanguageButton = styled(IconButton)`
+export const LanguageButton = styled(Button).attrs({ iconOnly: true })`
   && {
     color: ${({ theme }) => theme.colors.textPrimary};
 
@@ -13,7 +13,7 @@ export const LanguageButton = styled(IconButton)`
   }
 `;
 
-export const LanguageSelect = styled(Select)`
+export const LanguageSelect = styled(RediaccSelect)`
   &.ant-select {
     width: 140px;
 
@@ -28,5 +28,3 @@ export const LanguageSelect = styled(Select)`
     }
   }
 `;
-
-export { InlineStack as LanguageOption } from '@/components/common/styled';

@@ -68,7 +68,7 @@
   "deleteWarning": "マシン「{{name}}」を削除してもよろしいですか? この操作は元に戻すことができません。",
   "description": "説明 (オプション)",
   "descriptionPlaceholder": "このキューアイテムのカスタム説明を追加します",
-  "distributedStorageCluster": "分散ストレージ",
+  "cephCluster": "分散ストレージ",
   "editMachine": "マシンの編集",
   "experimental": "実験的な",
   "failed": "失敗した",

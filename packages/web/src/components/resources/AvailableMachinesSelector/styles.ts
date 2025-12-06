@@ -1,26 +1,17 @@
 import styled from 'styled-components';
-import { Select, Typography } from 'antd';
-import { PillTag, FlexRow, CaptionText } from '@/styles/primitives';
+import { Typography } from 'antd';
+import { RediaccTag } from '@/components/ui/Tag';
+import { RediaccSelect } from '@/components/ui/Form/Select';
+import { FlexRow } from '@/styles/primitives';
 
-const { Text } = Typography;
+const { Text: AntText } = Typography;
 
-export const StyledSelect = styled(Select)`
-  && {
-    width: 100%;
-  }
-
+export const StyledSelect = styled(RediaccSelect).attrs({
+  size: 'sm',
+  fullWidth: true,
+})`
   && .ant-select-selector {
-    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_SM}px;
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    background-color: ${({ theme }) => theme.colors.inputBg};
-    border-color: ${({ theme }) => theme.colors.inputBorder};
-    transition: ${({ theme }) => theme.transitions.DEFAULT};
     padding: 0 ${({ theme }) => theme.spacing.SM}px;
-  }
-
-  &&.ant-select-focused .ant-select-selector {
-    border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary};
   }
 `;
 
@@ -45,7 +36,7 @@ export const MachineIcon = styled.span`
   font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
 `;
 
-export const MachineName = styled(Text)<{ $dimmed?: boolean }>`
+export const MachineName = styled(AntText)<{ $dimmed?: boolean }>`
   && {
     color: ${({ theme }) => theme.colors.textPrimary};
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
@@ -53,20 +44,20 @@ export const MachineName = styled(Text)<{ $dimmed?: boolean }>`
   }
 `;
 
-export const TeamTag = styled(PillTag).attrs({
-  $variant: 'success',
-  $size: 'SM',
-  $borderless: true,
+export const TeamTag = styled(RediaccTag).attrs({
+  preset: 'team',
+  size: 'sm',
+  borderless: true,
 })`
   && {
     padding: 0 ${({ theme }) => theme.spacing.SM}px;
   }
 `;
 
-export const BridgeTag = styled(PillTag).attrs({
-  $variant: 'bridge',
-  $size: 'SM',
-  $borderless: true,
+export const BridgeTag = styled(RediaccTag).attrs({
+  preset: 'bridge',
+  size: 'sm',
+  borderless: true,
 })`
   && {
     padding: 0 ${({ theme }) => theme.spacing.SM}px;
@@ -77,20 +68,10 @@ export const StatusContainer = styled(FlexRow)`
   margin-left: auto;
 `;
 
-export const StatusTag = styled(PillTag).attrs({
-  $size: 'SM',
-})<{ $variant: 'cluster' | 'available' }>``;
-
 export const StatusIcon = styled.span`
   display: inline-flex;
   align-items: center;
   font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
-`;
-
-export const StatusText = styled(CaptionText)`
-  && {
-    color: inherit;
-  }
 `;
 
 export const SpinnerWrapper = styled(FlexRow).attrs({ $justify: 'center' })`
@@ -98,7 +79,7 @@ export const SpinnerWrapper = styled(FlexRow).attrs({ $justify: 'center' })`
   padding: ${({ theme }) => theme.spacing.LG}px 0;
 `;
 
-export const EmptyDescription = styled(Text)`
+export const EmptyDescription = styled(AntText)`
   && {
     color: ${({ theme }) => theme.colors.textSecondary};
   }

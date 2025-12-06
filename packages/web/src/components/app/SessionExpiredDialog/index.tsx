@@ -93,7 +93,7 @@ export const SessionExpiredDialog: React.FC = () => {
         </FooterButton>,
         <FooterButton
           key="login"
-          type="primary"
+          variant="primary"
           onClick={handleContinueToLogin}
           icon={<LogoutOutlined />}
         >

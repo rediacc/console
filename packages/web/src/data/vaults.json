@@ -18,7 +18,7 @@
           "type": "string",
           "example": "Storage path. If BTRFS: uses existing. Otherwise: creates BTRFS pool at {path}.pool",
           "description": "Path for data storage. If this path exists on a BTRFS filesystem, it will be used as-is. Otherwise, a BTRFS storage pool will be created (file: {path}.pool) and mounted at this location for advanced features like snapshots and compression.",
-          "default": "/mnt/datastore"
+          "default": "/mnt/rediacc"
         },
         "port": {
           "type": "number",

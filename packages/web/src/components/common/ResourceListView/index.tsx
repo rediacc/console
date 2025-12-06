@@ -13,10 +13,10 @@ import {
   EmptyTitle,
   EmptySubtitle,
   EmptyActions,
-  CreateButton,
   RefreshButton,
   TableWrapper,
 } from './styles';
+import { RediaccButton } from '@/components/ui';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 export { COLUMN_WIDTHS, COLUMN_RESPONSIVE } from './columnConstants';
 
@@ -128,8 +128,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
                   <EmptyActions>
                     {onCreateNew && (
                       <Tooltip title={createButtonText}>
-                        <CreateButton
-                          type="primary"
+                        <RediaccButton
                           icon={<PlusOutlined />}
                           onClick={onCreateNew}
                           data-testid="resource-list-create-new"

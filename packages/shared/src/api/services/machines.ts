@@ -25,12 +25,12 @@ export function createMachinesService(client: ApiClient) {
     getAssignmentStatus: (machineName: string, teamName: string) =>
       client.get(endpoints.machines.getMachineAssignmentStatus, { machineName, teamName }),
 
-    create: (teamName: string, machineName: string, bridgeName: string, machineVault?: string) =>
+    create: (teamName: string, machineName: string, bridgeName: string, vaultContent?: string) =>
       client.post(endpoints.machines.createMachine, {
         teamName,
         machineName,
         bridgeName,
-        machineVault: machineVault ?? '{}',
+        vaultContent: vaultContent ?? '{}',
       }),
 
     rename: (teamName: string, currentName: string, newName: string) =>
@@ -112,8 +112,8 @@ export function createMachinesService(client: ApiClient) {
         machineNames,
       }),
 
-    updateDistributedStorage: (teamName: string, machineName: string, clusterName: string | null) =>
-      client.post(endpoints.machines.updateMachineDistributedStorage, {
+    updateCeph: (teamName: string, machineName: string, clusterName: string | null) =>
+      client.post(endpoints.machines.updateMachineCeph, {
         teamName,
         machineName,
         clusterName,

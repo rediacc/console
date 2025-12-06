@@ -1,14 +1,10 @@
 import styled from 'styled-components';
-import { Button, Typography } from 'antd';
 import {
   LargeModal,
   ModeSegmented as BaseModeSegmented,
-  SpacedAlert as BaseSpacedAlert,
   FullWidthSpace as BaseFullWidthSpace,
   CenteredContent,
   NoMarginTitle as BaseNoMarginTitle,
-  CaptionText as BaseCaptionText,
-  StatusTagSmall,
   ScrollContainer as BaseScrollContainer,
   SectionMargin as BaseSectionMargin,
   CenteredFooter as BaseCenteredFooter,
@@ -23,13 +19,19 @@ import {
   ItalicText,
   TitleText,
 } from '@/styles/primitives';
-
-const { Text } = Typography;
+import { RediaccText as Text, RediaccTag, RediaccAlert } from '@/components/ui';
+import { RediaccButton } from '@/components/ui/Button';
 
 // Re-export from primitives
 export const StyledModal = LargeModal;
 export const ModeSegmented = BaseModeSegmented;
-export const SpacedAlert = BaseSpacedAlert;
+
+// Local styled components
+export const SpacedAlert = styled(RediaccAlert)`
+  && {
+    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
+  }
+`;
 export const FullWidthSpace = BaseFullWidthSpace;
 export const CenteredMessage = CenteredContent;
 export const NoMarginTitle = BaseNoMarginTitle;
@@ -42,8 +44,13 @@ export const ModalTitleContainer = BaseModalTitleContainer;
 export const ModalTitleLeft = BaseModalTitleLeft;
 export const ModalTitleRight = BaseModalTitleRight;
 export const LastFetchedText = BaseLastFetchedText;
-export const SmallStatusTag = StatusTagSmall;
-export const CaptionText = BaseCaptionText;
+export const SmallStatusTag = styled(RediaccTag).attrs({
+  size: 'sm',
+})``;
+export const CaptionText = styled(Text).attrs({
+  variant: 'caption',
+  color: 'muted',
+})``;
 
 export const NoteWrapper = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
@@ -66,9 +73,11 @@ export const ItalicCaption = styled(ItalicText)`
   }
 `;
 
-export const CodeText = styled(Text)`
+export const CodeText = styled(Text).attrs({
+  size: 'xs',
+})`
   && {
-    font-size: ${({ theme }) => theme.fontSize.XS}px;
+    font-family: monospace;
   }
 `;
 
@@ -80,7 +89,7 @@ export const ScrollItem = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const ActionButton = styled(Button)<{ $bold?: boolean; $large?: boolean }>`
+export const ActionButton = styled(RediaccButton)<{ $bold?: boolean; $large?: boolean }>`
   && {
     font-weight: ${({ theme, $bold }) => ($bold ? theme.fontWeight.SEMIBOLD : theme.fontWeight.MEDIUM)};
     font-size: ${({ theme, $large }) => ($large ? theme.fontSize.SM : theme.fontSize.CAPTION)}px;
