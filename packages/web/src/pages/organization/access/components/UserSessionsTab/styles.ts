@@ -3,15 +3,15 @@ import { Card, Button, Input, Tag, Statistic, Typography } from 'antd';
 import {
   TableContainer as BaseTableContainer,
   CardTitle as PrimitiveCardTitle,
+  FlexColumn,
 } from '@/styles/primitives';
+import { InlineStack } from '@/components/common/styled';
 
 const { Text } = Typography;
 
-export const TabContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.LG}px;
-`;
+export const TabContainer = styled(FlexColumn).attrs({
+  $gap: 'LG',
+})``;
 
 export const StyledCard = styled(Card)`
   border: 1px solid var(--color-border-secondary);
@@ -44,11 +44,7 @@ export const StatSuffix = styled.span`
 
 export const TableCard = styled(StyledCard)``;
 
-export const CardTitleRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const CardTitleRow = styled(InlineStack)``;
 
 export const CardTitleText = PrimitiveCardTitle;
 

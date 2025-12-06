@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { Select, Tag, Input } from 'antd';
+import { InlineStack } from '@/components/common/styled';
 
 export const TeamSelect = styled(Select)`
   && {
@@ -40,15 +41,10 @@ export const SearchInput = styled(Input)`
   }
 `;
 
-export const OptionLabel = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
+export const OptionLabel = styled(InlineStack)`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export const OptionIcon = styled.span`
-  display: inline-flex;
-  align-items: center;
+export const OptionIcon = styled(InlineStack)`
   color: ${({ theme }) => theme.colors.primary};
 `;

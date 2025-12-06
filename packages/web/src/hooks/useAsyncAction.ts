@@ -42,6 +42,10 @@ export interface UseAsyncActionReturn {
   ) => Promise<AsyncActionResult<T>>;
   /** Whether an action is currently executing */
   isExecuting: boolean;
+  /** Last error message (null if no error) */
+  error: string | null;
+  /** Reset error state */
+  resetError: () => void;
 }
 
 /**
@@ -70,6 +74,7 @@ export interface UseAsyncActionReturn {
  */
 export function useAsyncAction(): UseAsyncActionReturn {
   const [isExecuting, setIsExecuting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const execute = useCallback(
     async <T>(
@@ -77,6 +82,7 @@ export function useAsyncAction(): UseAsyncActionReturn {
       config?: AsyncActionConfig
     ): Promise<AsyncActionResult<T>> => {
       setIsExecuting(true);
+      setError(null);
 
       try {
         const data = await operation();
@@ -92,6 +98,8 @@ export function useAsyncAction(): UseAsyncActionReturn {
         const errorMessage =
           error instanceof Error ? error.message : config?.errorMessage || 'An error occurred';
 
+        setError(errorMessage);
+
         if (!config?.skipErrorMessage) {
           showMessage('error', config?.errorMessage || errorMessage);
         }
@@ -106,7 +114,11 @@ export function useAsyncAction(): UseAsyncActionReturn {
     []
   );
 
-  return { execute, isExecuting };
+  const resetError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  return { execute, isExecuting, error, resetError };
 }
 
 /**

@@ -9,6 +9,7 @@ import {
   PillTag,
   StyledIcon,
 } from '@/styles/primitives';
+import { InlineStack } from '@/components/common/styled';
 
 export const TableContainer = styled(BaseTableContainer)`
   .cluster-row {
@@ -65,11 +66,7 @@ export const ManageMachinesButton = styled(Button)`
   }
 `;
 
-export const MachineManageCell = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const MachineManageCell = styled(InlineStack)``;
 
 export const ExpandedRowContainer = styled.div`
   padding: ${({ theme }) => theme.spacing.MD}px;

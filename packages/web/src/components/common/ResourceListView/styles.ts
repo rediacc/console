@@ -1,6 +1,7 @@
 import styled, { css } from 'styled-components';
 import { Card, Input, Space, Button } from 'antd';
 import { EmptyStateTitle, EmptyStateDescription } from '@/styles/primitives';
+import { ActionGroup } from '@/components/common/styled';
 
 export const ContainerCard = styled(Card)`
   && {
@@ -47,11 +48,7 @@ export const FiltersSlot = styled.div`
   align-items: center;
 `;
 
-export const ActionsGroup = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-
+export const ActionsGroup = styled(ActionGroup)`
   @media (max-width: 768px) {
     width: 100%;
     justify-content: flex-end;

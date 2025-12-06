@@ -1,4 +1,4 @@
-import { Space, Badge, Tag, Tooltip, Button, Popconfirm } from 'antd';
+import { Space, Badge, Tooltip, Button, Popconfirm } from 'antd';
 import type { TableProps } from 'antd';
 import {
   TeamOutlined,
@@ -13,6 +13,11 @@ import {
 import { featureFlags } from '@/config/featureFlags';
 import type { Team } from '@/api/queries/teams';
 import type { TFunction } from 'i18next';
+import {
+  createCountColumn,
+  createVersionColumn,
+  createTruncatedColumn,
+} from '@/components/common/columns';
 
 interface GetTeamColumnsParams {
   tSystem: TFunction<'system'>;
@@ -33,19 +38,62 @@ export const getTeamColumns = ({
   onDelete,
   isDeleting,
 }: GetTeamColumnsParams): TableProps<Team>['columns'] => {
+  const teamNameColumn = createTruncatedColumn<Team>({
+    title: tSystem('tables.teams.teamName'),
+    dataIndex: 'teamName',
+    key: 'teamName',
+    width: 150,
+    maxLength: 20,
+    renderWrapper: (content) => (
+      <Space>
+        <TeamOutlined />
+        <strong>{content}</strong>
+      </Space>
+    ),
+  });
+
+  const memberCountColumn = createCountColumn<Team>({
+    title: tSystem('tables.teams.members'),
+    dataIndex: 'memberCount',
+    key: 'memberCount',
+    width: 100,
+    sorter: true,
+    renderValue: (count: number) => (
+      <Badge count={count} showZero>
+        <UserOutlined />
+      </Badge>
+    ),
+  });
+
+  const machineCountColumn = createCountColumn<Team>({
+    title: tSystem('tables.teams.machines'),
+    dataIndex: 'machineCount',
+    key: 'machineCount',
+    width: 100,
+    icon: <DesktopOutlined />,
+    sorter: true,
+  });
+
+  const repoCountColumn = createCountColumn<Team>({
+    title: tSystem('tables.teams.repos'),
+    dataIndex: 'repoCount',
+    key: 'repoCount',
+    width: 120,
+    icon: <DatabaseOutlined />,
+    sorter: true,
+  });
+
+  const storageCountColumn = createCountColumn<Team>({
+    title: tSystem('tables.teams.storage'),
+    dataIndex: 'storageCount',
+    key: 'storageCount',
+    width: 120,
+    icon: <CloudServerOutlined />,
+    sorter: true,
+  });
+
   const columns: TableProps<Team>['columns'] = [
-    {
-      title: tSystem('tables.teams.teamName'),
-      dataIndex: 'teamName',
-      key: 'teamName',
-      width: 150,
-      render: (text: string) => (
-        <Space>
-          <TeamOutlined />
-          <strong>{text}</strong>
-        </Space>
-      ),
-    },
+    teamNameColumn,
     // Combined Stats column for mobile (show only on xs, hide on sm)
     {
       title: tSystem('tables.teams.stats', { defaultValue: 'Stats' }),
@@ -83,69 +131,24 @@ export const getTeamColumns = ({
       ),
     },
     // Separate columns for desktop (show on sm and above)
-    {
-      title: tSystem('tables.teams.members'),
-      dataIndex: 'memberCount',
-      key: 'memberCount',
-      width: 100,
-      responsive: ['sm'],
-      render: (count: number) => (
-        <Badge count={count} showZero>
-          <UserOutlined />
-        </Badge>
-      ),
-    },
-    {
-      title: tSystem('tables.teams.machines'),
-      dataIndex: 'machineCount',
-      key: 'machineCount',
-      width: 100,
-      responsive: ['sm'],
-      render: (count: number) => (
-        <Space>
-          <DesktopOutlined />
-          <span>{count}</span>
-        </Space>
-      ),
-    },
-    {
-      title: tSystem('tables.teams.repos'),
-      dataIndex: 'repoCount',
-      key: 'repoCount',
-      width: 120,
-      responsive: ['sm'],
-      render: (count: number) => (
-        <Space>
-          <DatabaseOutlined />
-          <span>{count || 0}</span>
-        </Space>
-      ),
-    },
-    {
-      title: tSystem('tables.teams.storage'),
-      dataIndex: 'storageCount',
-      key: 'storageCount',
-      width: 120,
-      responsive: ['sm'],
-      render: (count: number) => (
-        <Space>
-          <CloudServerOutlined />
-          <span>{count || 0}</span>
-        </Space>
-      ),
-    },
+    { ...memberCountColumn, responsive: ['sm'] },
+    { ...machineCountColumn, responsive: ['sm'] },
+    { ...repoCountColumn, responsive: ['sm'] },
+    { ...storageCountColumn, responsive: ['sm'] },
   ];
 
   if (featureFlags.isEnabled('vaultVersionColumns')) {
-    columns.push({
-      title: tSystem('tables.teams.vaultVersion'),
-      dataIndex: 'vaultVersion',
-      key: 'vaultVersion',
-      width: 120,
-      render: (version: number) => (
-        <Tag>{tCommon('general.versionFormat', { defaultValue: 'v{{version}}', version })}</Tag>
-      ),
-    });
+    columns.push(
+      createVersionColumn<Team>({
+        title: tSystem('tables.teams.vaultVersion'),
+        dataIndex: 'vaultVersion',
+        key: 'vaultVersion',
+        width: 120,
+        sorter: true,
+        formatVersion: (version: number) =>
+          tCommon('general.versionFormat', { defaultValue: 'v{{version}}', version }),
+      })
+    );
   }
 
   columns.push({

@@ -36,15 +36,15 @@ export const [
 ] = resourceTypes.map((type) => createResourceNameSchema(type));
 
 // User schemas
-export const emailSchema = z.string().min(1, 'Email is required').email('Invalid email address');
+const emailSchema = z.string().min(1, 'Email is required').email('Invalid email address');
 
-export const passwordSchema = z
+const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
   .max(100, 'Password must be less than 100 characters');
 
 // Vault schema
-export const vaultSchema = z
+const vaultSchema = z
   .string()
   .min(2, 'Vault must be valid JSON')
   .refine((val) => {

@@ -1,7 +1,11 @@
 import styled from 'styled-components';
 import { Card, Breadcrumb, Typography } from 'antd';
-import { PageContainer, SectionStack, SectionHeaderRow } from '@/styles/primitives';
-import { ActionsRow, CenteredState as BaseCenteredState } from '@/components/common/styled';
+import { PageContainer, SectionStack, SectionHeaderRow, FlexRow } from '@/styles/primitives';
+import {
+  ActionsRow,
+  CenteredState as BaseCenteredState,
+  ActionGroup,
+} from '@/components/common/styled';
 
 export const PageWrapper = styled(PageContainer)`
   height: 100%;
@@ -30,10 +34,9 @@ export const TitleColumn = styled.div`
   min-width: 0;
 `;
 
-export const TitleRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.MD}px;
+export const TitleRow = styled(FlexRow).attrs({
+  $gap: 'MD',
+})`
   margin-bottom: ${({ theme }) => theme.spacing.SM}px;
 `;
 
@@ -45,11 +48,7 @@ export const HeaderTitleText = styled(Title)`
   }
 `;
 
-export const TagRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const TagRow = styled(ActionGroup)``;
 
 export { ActionsRow };
 

@@ -43,7 +43,7 @@ const UsersPage: React.FC = () => {
   const { t: tSystem } = useTranslation('system');
   const { t: tCommon } = useTranslation('common');
 
-  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const createUserModal = useDialogState();
   const assignPermissionModal = useDialogState<User>();
   const [selectedUserGroup, setSelectedUserGroup] = useState('');
   const auditTrace = useTraceModal();
@@ -92,7 +92,7 @@ const UsersPage: React.FC = () => {
         email: data.newUserEmail,
         password: data.newUserPassword,
       });
-      setIsCreateUserModalOpen(false);
+      createUserModal.close();
       userForm.reset();
     } catch {
       // handled by mutation
@@ -296,7 +296,7 @@ const UsersPage: React.FC = () => {
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => setIsCreateUserModalOpen(true)}
+                onClick={() => createUserModal.open()}
                 data-testid="system-create-user-button"
                 aria-label={tSystem('actions.createUser')}
               />
@@ -307,9 +307,9 @@ const UsersPage: React.FC = () => {
 
       <Modal
         title={t('users.modals.createTitle', { defaultValue: 'Create User' })}
-        open={isCreateUserModalOpen}
+        open={createUserModal.isOpen}
         onCancel={() => {
-          setIsCreateUserModalOpen(false);
+          createUserModal.close();
           userForm.reset();
         }}
         footer={null}
@@ -321,7 +321,7 @@ const UsersPage: React.FC = () => {
           submitText={tCommon('actions.create', { defaultValue: 'Create' })}
           cancelText={tCommon('actions.cancel', { defaultValue: 'Cancel' })}
           onCancel={() => {
-            setIsCreateUserModalOpen(false);
+            createUserModal.close();
             userForm.reset();
           }}
           loading={createUserMutation.isPending}

@@ -43,14 +43,13 @@ const TeamsPage: React.FC = () => {
 
   const { data: dropdownData } = useDropdownData();
   const { data: teams = [], isLoading: teamsLoading } = useTeams();
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-  const manageTeamModal = useDialogState();
+  const manageTeamModal = useDialogState<Team>();
   const [selectedMemberEmail, setSelectedMemberEmail] = useState('');
   const auditTrace = useTraceModal();
   const unifiedModal = useFormModal<ExistingResourceData>();
 
   const { data: teamMembers = [], isLoading: membersLoading } = useTeamMembers(
-    selectedTeam?.teamName || ''
+    manageTeamModal.state.data?.teamName || ''
   );
   const createTeamMutation = useCreateTeam();
   const updateTeamNameMutation = useUpdateTeamName();
@@ -119,11 +118,11 @@ const TeamsPage: React.FC = () => {
   };
 
   const handleAddTeamMember = async () => {
-    if (!selectedTeam || !selectedMemberEmail) return;
+    if (!manageTeamModal.state.data || !selectedMemberEmail) return;
 
     try {
       await addTeamMemberMutation.mutateAsync({
-        teamName: selectedTeam.teamName,
+        teamName: manageTeamModal.state.data.teamName,
         newUserEmail: selectedMemberEmail,
       });
       setSelectedMemberEmail('');
@@ -133,11 +132,11 @@ const TeamsPage: React.FC = () => {
   };
 
   const handleRemoveTeamMember = async (userEmail: string) => {
-    if (!selectedTeam) return;
+    if (!manageTeamModal.state.data) return;
 
     try {
       await removeTeamMemberMutation.mutateAsync({
-        teamName: selectedTeam.teamName,
+        teamName: manageTeamModal.state.data.teamName,
         removeUserEmail: userEmail,
       });
     } catch {
@@ -150,8 +149,7 @@ const TeamsPage: React.FC = () => {
     tCommon,
     onEdit: (team) => unifiedModal.openEdit(team as ExistingResourceData),
     onManageMembers: (team) => {
-      setSelectedTeam(team);
-      manageTeamModal.open();
+      manageTeamModal.open(team);
     },
     onTrace: (team) =>
       auditTrace.open({
@@ -198,13 +196,12 @@ const TeamsPage: React.FC = () => {
 
       <Modal
         title={t('teams.manageMembers.title', {
-          defaultValue: `Manage Team Members${selectedTeam ? ` - ${selectedTeam.teamName}` : ''}`,
-          teamName: selectedTeam?.teamName,
+          defaultValue: `Manage Team Members${manageTeamModal.state.data ? ` - ${manageTeamModal.state.data.teamName}` : ''}`,
+          teamName: manageTeamModal.state.data?.teamName,
         })}
         open={manageTeamModal.isOpen}
         onCancel={() => {
           manageTeamModal.close();
-          setSelectedTeam(null);
           setSelectedMemberEmail('');
         }}
         footer={null}

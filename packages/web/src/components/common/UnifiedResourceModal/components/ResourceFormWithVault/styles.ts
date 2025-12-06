@@ -1,11 +1,13 @@
 import styled from 'styled-components';
 import { Form, Divider, Alert, InputNumber, Select } from 'antd';
-import { FullWidthSelect as PrimitiveFullWidthSelect } from '@/styles/primitives';
+import {
+  FullWidthSelect as PrimitiveFullWidthSelect,
+  FlexColumn,
+  FlexRow,
+} from '@/styles/primitives';
+import { FlexBetween } from '@/components/common/styled';
 
-export const FormWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
+export const FormWrapper = styled(FlexColumn).attrs({ $gap: 'SM' })`
   height: 100%;
 `;
 
@@ -21,10 +23,7 @@ export const VaultSection = styled.div`
   flex-shrink: 0;
 `;
 
-export const ImportExportRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+export const ImportExportRow = styled(FlexBetween)`
   padding-top: ${({ theme }) => theme.spacing.MD}px;
   border-top: 1px solid var(--color-border-secondary);
 `;
@@ -39,10 +38,8 @@ export const DefaultsAlert = styled(Alert)`
   margin: 0;
 `;
 
-export const SizeInputGroup = styled.div`
-  display: flex;
+export const SizeInputGroup = styled(FlexRow).attrs({ $gap: 'SM' })`
   width: 100%;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const SizeNumberInput = styled(InputNumber)`

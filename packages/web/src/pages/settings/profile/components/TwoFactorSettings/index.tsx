@@ -21,7 +21,6 @@ import { useDialogState } from '@/hooks/useDialogState';
 import { OTPCodeField } from '@/pages/settings/profile/components/OTPCodeField';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {
-  LoadingContainer,
   FullWidthStack,
   CenteredStack,
   StatusIcon,
@@ -235,11 +234,9 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
 export default TwoFactorSettings;
 
 const LoadingState = () => (
-  <LoadingContainer data-testid="tfa-settings-loading">
-    <LoadingWrapper loading centered minHeight={160}>
-      <div />
-    </LoadingWrapper>
-  </LoadingContainer>
+  <LoadingWrapper loading centered minHeight={160} data-testid="tfa-settings-loading">
+    <div />
+  </LoadingWrapper>
 );
 
 interface VerificationContentProps {

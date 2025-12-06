@@ -1,7 +1,10 @@
 import styled, { css } from 'styled-components';
 import { Alert, Button, Card, Divider, Typography } from 'antd';
+import { ContentStack, ActionsRow } from '@/components/common/styled';
 
 const { Text } = Typography;
+
+export { ContentStack, ActionsRow };
 
 export const SectionDivider = styled(Divider)`
   && {
@@ -30,13 +33,6 @@ export const SectionCard = styled(Card)`
   }
 `;
 
-export const ContentStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-  width: 100%;
-`;
-
 export const AssignmentLabel = styled(Text)`
   && {
     display: block;
@@ -58,12 +54,6 @@ export const AlertWrapper = styled(Alert)`
 export const AlertMessage = styled.span`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
   color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-export const ActionsRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 const actionButtonStyles = css`

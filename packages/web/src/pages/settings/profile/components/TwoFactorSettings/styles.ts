@@ -6,7 +6,9 @@ import {
   PrimaryButton as PrimitivePrimaryButton,
   StyledIcon,
   NeutralStack,
+  FlexRow,
 } from '@/styles/primitives';
+import { InlineStack } from '@/components/common/styled';
 
 type SpacingKey = keyof typeof DESIGN_TOKENS.SPACING;
 
@@ -78,11 +80,12 @@ export const CenteredCodeInput = styled(Input)`
   }
 `;
 
-export const FormActionRow = styled.div<{ $align?: 'space-between' | 'flex-end' }>`
-  display: flex;
-  justify-content: ${({ $align = 'flex-end' }) => $align};
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
+export const FormActionRow = styled(FlexRow).attrs<{ $align?: 'space-between' | 'flex-end' }>(
+  ({ $align = 'flex-end' }) => ({
+    $justify: $align,
+    $gap: 'SM',
+  })
+)<{ $align?: 'space-between' | 'flex-end' }>`
   width: 100%;
 `;
 
@@ -106,8 +109,4 @@ export const ModalTitleIcon = styled(StyledIcon).attrs({
   $color: 'var(--color-primary)',
 })``;
 
-export const ModalTitleWrapper = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const ModalTitleWrapper = styled(InlineStack).attrs({ as: 'span' })``;

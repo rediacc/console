@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { Alert } from 'antd';
+import { InlineStack } from '@/components/common/styled';
 
 export const SandboxBanner = styled(Alert)`
   && {
@@ -20,10 +21,7 @@ export const SandboxBanner = styled(Alert)`
   }
 `;
 
-export const BannerMessage = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
+export const BannerMessage = styled(InlineStack)`
   text-align: center;
   padding: ${({ theme }) => `${theme.spacing.XS}px 0`};
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};

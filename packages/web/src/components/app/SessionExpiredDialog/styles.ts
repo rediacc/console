@@ -1,6 +1,7 @@
 import styled from 'styled-components';
-import { Typography, Space, Button } from 'antd';
+import { Typography, Button } from 'antd';
 import { BaseModal, ModalBody } from '@/styles/primitives';
+import { InlineStack } from '@/components/common/styled';
 
 const { Title, Text } = Typography;
 
@@ -10,12 +11,7 @@ export const StyledModal = styled(BaseModal)`
   }
 `;
 
-export const TitleStack = styled(Space)`
-  && {
-    align-items: center;
-    gap: ${({ theme }) => theme.spacing.SM}px;
-  }
-`;
+export const TitleStack = InlineStack;
 
 export const DangerTitle = styled(Title).attrs({ level: 4 })`
   && {

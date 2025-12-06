@@ -4,7 +4,10 @@
       "WebFetch(domain:ant.design)",
       "WebFetch(domain:github.com)",
       "WebSearch",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(npm run lint:unused:*)"
     ],
     "deny": [],
     "ask": []

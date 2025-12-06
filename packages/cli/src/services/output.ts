@@ -177,4 +177,3 @@ class OutputService {
 }
 
 export const outputService = new OutputService();
-export default outputService;

@@ -1,26 +1,21 @@
 import styled from 'styled-components';
 import { Input, Select, Button } from 'antd';
+import { FlexColumn } from '@/styles/primitives';
+import { ActionGroup } from '@/components/common/styled';
 
-export const Container = styled.div`
+export const Container = styled(FlexColumn).attrs({
+  $gap: 'SM',
+})`
   padding: ${({ theme }) => theme.spacing.PAGE_CONTAINER}px 0;
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const ToolbarStack = styled.div`
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
+export const ToolbarStack = styled(FlexColumn).attrs({
+  $gap: 'SM',
+})`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const FilterControls = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const FilterControls = styled(ActionGroup)``;
 
 export const FilterInput = styled(Input)`
   && {

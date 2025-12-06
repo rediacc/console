@@ -3,20 +3,30 @@ import { Spin, Empty } from 'antd';
 import styled from 'styled-components';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
-const CenteredContainer = styled.div`
+const CenteredContainer = styled.div<{ $minHeight?: number }>`
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 200px;
+  min-height: ${({ $minHeight }) => $minHeight || 200}px;
   padding: ${DESIGN_TOKENS.SPACING.LG}px;
+  gap: ${DESIGN_TOKENS.SPACING.SM}px;
 `;
 
 const FullHeightContainer = styled.div`
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100%;
   width: 100%;
+  gap: ${DESIGN_TOKENS.SPACING.SM}px;
+`;
+
+const LoadingText = styled.div`
+  margin-top: ${DESIGN_TOKENS.SPACING.SM}px;
+  color: var(--color-text-secondary);
+  text-align: center;
 `;
 
 export interface LoadingWrapperProps {
@@ -32,7 +42,7 @@ export interface LoadingWrapperProps {
   emptyDescription?: string;
   /** Spin size */
   size?: 'small' | 'default' | 'large';
-  /** Custom loading tip */
+  /** Custom loading tip (text shown next to or below spinner) */
   tip?: string;
   /** Whether to center the loading spinner */
   centered?: boolean;
@@ -40,6 +50,10 @@ export interface LoadingWrapperProps {
   fullHeight?: boolean;
   /** Minimum height for loading state */
   minHeight?: number;
+  /** Show loading text below spinner (when centered/fullHeight) */
+  showTextBelow?: boolean;
+  /** Custom data-testid for the loading container */
+  'data-testid'?: string;
 }
 
 /**
@@ -67,7 +81,7 @@ export interface LoadingWrapperProps {
  *   <Content />
  * </LoadingWrapper>
  */
-export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
+const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
   loading,
   children,
   isEmpty = false,
@@ -78,13 +92,16 @@ export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
   centered = false,
   fullHeight = false,
   minHeight,
+  showTextBelow = false,
+  'data-testid': dataTestId,
 }) => {
   if (loading) {
     if (centered || fullHeight) {
       const Container = fullHeight ? FullHeightContainer : CenteredContainer;
       return (
-        <Container style={minHeight ? { minHeight } : undefined}>
-          <Spin size={size} tip={tip} />
+        <Container $minHeight={minHeight} data-testid={dataTestId}>
+          <Spin size={size} tip={!showTextBelow ? tip : undefined} />
+          {showTextBelow && tip && <LoadingText>{tip}</LoadingText>}
         </Container>
       );
     }
@@ -104,4 +121,5 @@ export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
   return <>{children}</>;
 };
 
+export { LoadingWrapper };
 export default LoadingWrapper;

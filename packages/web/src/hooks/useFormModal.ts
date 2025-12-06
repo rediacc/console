@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 /**
  * Form modal modes
@@ -58,6 +58,14 @@ export interface UseFormModalReturn<T> {
  *   onCancel={cloneModal.close}
  * />
  */
+/**
+ * WARNING: Do not remove useMemo from return value!
+ *
+ * This hook returns a memoized object to prevent infinite render loops.
+ * Without useMemo, a new object is created on every render, which causes
+ * useEffect dependencies to trigger repeatedly, leading to "Maximum update
+ * depth exceeded" errors.
+ */
 export function useFormModal<T = unknown>(
   defaultMode: FormModalMode = 'create'
 ): UseFormModalReturn<T> {
@@ -106,16 +114,19 @@ export function useFormModal<T = unknown>(
     }));
   }, []);
 
-  return {
-    state,
-    openCreate,
-    openEdit,
-    openVault,
-    close,
-    setData,
-    isOpen: state.open,
-    mode: state.mode,
-  };
+  return useMemo(
+    () => ({
+      state,
+      openCreate,
+      openEdit,
+      openVault,
+      close,
+      setData,
+      isOpen: state.open,
+      mode: state.mode,
+    }),
+    [state, openCreate, openEdit, openVault, close, setData]
+  );
 }
 
 /**
@@ -142,6 +153,14 @@ export interface UseExtendedFormModalReturn<T> extends UseFormModalReturn<T> {
  * const resourceModal = useExtendedFormModal<Resource>('normal')
  *
  * resourceModal.openWithFunction(resource, 'backup')
+ */
+/**
+ * WARNING: Do not remove useMemo from return value!
+ *
+ * This hook returns a memoized object to prevent infinite render loops.
+ * Without useMemo, a new object is created on every render, which causes
+ * useEffect dependencies to trigger repeatedly, leading to "Maximum update
+ * depth exceeded" errors.
  */
 export function useExtendedFormModal<T = unknown>(
   creationContext?: 'credentials-only' | 'normal'
@@ -215,16 +234,19 @@ export function useExtendedFormModal<T = unknown>(
     }));
   }, []);
 
-  return {
-    state,
-    openCreate,
-    openEdit,
-    openVault,
-    openWithFunction,
-    close,
-    setData,
-    isOpen: state.open,
-    mode: state.mode,
-    preselectedFunction: state.preselectedFunction,
-  };
+  return useMemo(
+    () => ({
+      state,
+      openCreate,
+      openEdit,
+      openVault,
+      openWithFunction,
+      close,
+      setData,
+      isOpen: state.open,
+      mode: state.mode,
+      preselectedFunction: state.preselectedFunction,
+    }),
+    [state, openCreate, openEdit, openVault, openWithFunction, close, setData]
+  );
 }

@@ -3,6 +3,7 @@ import { Button, Typography } from 'antd';
 import {
   BaseModal,
   BaseTable,
+  FlexColumn,
   ModalContentStack,
   ModalTitleRow,
   PaddedEmpty,
@@ -10,20 +11,14 @@ import {
   FormLabel,
   AlertCard,
 } from '@/styles/primitives';
-import { ModalSelect } from '@/components/common/styled';
+import { InlineStack, ModalSelect } from '@/components/common/styled';
 import { ModalSize } from '@/types/modal';
 
 const { Text } = Typography;
 
 export const StyledModal = styled(BaseModal).attrs({
   className: `${ModalSize.Large} assign-clone-machines-modal`,
-})`
-  .ant-modal-body {
-    display: flex;
-    flex-direction: column;
-    gap: ${({ theme }) => theme.spacing.LG}px;
-  }
-`;
+})``;
 
 export const TitleStack = styled(ModalTitleRow)``;
 
@@ -43,11 +38,7 @@ export const ManageTabContainer = TabStack;
 export const InfoAlert = styled(AlertCard).attrs({ $variant: 'info' })``;
 export const WarningAlert = styled(AlertCard).attrs({ $variant: 'warning' })``;
 
-export const FieldGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+export const FieldGroup = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
 export const FieldLabel = FormLabel;
 
@@ -63,11 +54,7 @@ export const MachinesTable = styled(BaseTable)`
   }
 `;
 
-export const MachineNameRow = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const MachineNameRow = styled(InlineStack)``;
 
 export const MachineNameText = styled(Text)`
   && {

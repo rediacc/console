@@ -1,22 +1,23 @@
 import styled from 'styled-components';
 import { Tag, Typography } from 'antd';
+import { FlexRow } from '@/styles/primitives';
+import { InlineStack } from '@/components/common/styled';
 
 const { Text } = Typography;
 
-export const FooterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: ${({ theme }) => theme.spacing.MD}px;
+// Use FlexRow from primitives
+export const FooterContainer = styled(FlexRow).attrs({
+  $gap: 'MD',
+  $justify: 'center',
+  $wrap: true,
+})`
   padding: ${({ theme }) => theme.spacing.MD}px 0;
   margin-top: ${({ theme }) => theme.spacing.LG}px;
   border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  flex-wrap: wrap;
 `;
 
-export const VersionItem = styled.div`
-  display: inline-flex;
-  align-items: center;
+// Use InlineStack from common/styled
+export const VersionItem = styled(InlineStack).attrs({ $align: 'center' })`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 

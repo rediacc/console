@@ -1,5 +1,7 @@
 import styled from 'styled-components';
 import { Button, Typography } from 'antd';
+import { FlexRow } from '@/styles/primitives';
+import { InlineStack, FlexBetween } from '@/components/common/styled';
 
 const { Text } = Typography;
 
@@ -12,10 +14,7 @@ export const NotificationDropdown = styled.div`
   border: 1px solid var(--color-border-secondary);
 `;
 
-export const NotificationHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+export const NotificationHeader = styled(FlexBetween)`
   padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
   border-bottom: 1px solid var(--color-border-secondary);
   background-color: var(--color-bg-secondary);
@@ -90,18 +89,14 @@ export const NotificationIconWrapper = styled.div<{
   }
 `;
 
-export const NotificationTitleRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+export const NotificationTitleRow = styled(FlexRow).attrs({
+  $gap: 'XS',
+  $justify: 'space-between',
+})`
   width: 100%;
-  gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const NotificationTitleContent = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
+export const NotificationTitleContent = styled(InlineStack)`
   flex: 1;
 `;
 
@@ -137,21 +132,17 @@ export const EmptyWrapper = styled.div`
 `;
 
 export const BellButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
   &:hover {
     background-color: var(--color-bg-tertiary);
     color: var(--color-primary);
   }
-  
+
   &:focus,
   &:active,
   &:focus-visible {
     background-color: var(--color-bg-tertiary);
   }
-  
+
   .anticon {
     font-size: 24px;
   }

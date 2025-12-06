@@ -3,6 +3,8 @@ import { Typography } from 'antd';
 import {
   BaseModal,
   BaseTable,
+  FlexColumn,
+  FlexRow,
   ModalContentStack,
   ModalTitleRow,
   PillTag,
@@ -10,20 +12,14 @@ import {
   FormLabel,
   AlertCard,
 } from '@/styles/primitives';
-import { ModalSelect } from '@/components/common/styled';
+import { InlineStack, ModalSelect } from '@/components/common/styled';
 import { ModalSize } from '@/types/modal';
 
 const { Text } = Typography;
 
 export const StyledModal = styled(BaseModal).attrs<{ $size: ModalSize }>(({ $size }) => ({
   className: `${$size} assign-to-cluster-modal`,
-}))<{ $size: ModalSize }>`
-  .ant-modal-body {
-    display: flex;
-    flex-direction: column;
-    gap: ${({ theme }) => theme.spacing.LG}px;
-  }
-`;
+}))<{ $size: ModalSize }>``;
 
 export const TitleStack = styled(ModalTitleRow)``;
 
@@ -37,16 +33,10 @@ export const ClusterAlert = styled(AlertCard).attrs({ $variant: 'warning' })`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const MachineDetailsSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const MachineDetailsSection = styled(FlexColumn).attrs({ $gap: 'SM' })``;
 
-export const DetailRow = styled.div`
-  display: inline-flex;
+export const DetailRow = styled(InlineStack).attrs({ $align: 'flex-start' })`
   gap: ${({ theme }) => theme.spacing.XS}px;
-  align-items: baseline;
 `;
 
 export const DetailLabel = styled(Text)`
@@ -62,11 +52,7 @@ export const DetailValue = styled(Text)`
   }
 `;
 
-export const FieldGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+export const FieldGroup = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
 export const FieldLabel = FormLabel;
 
@@ -74,11 +60,7 @@ export const StyledSelect = ModalSelect;
 
 export const HelperText = PrimitiveHelperText;
 
-export const LoadingWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const LoadingWrapper = styled(FlexRow).attrs({ $gap: 'SM' })``;
 
 export const MachinesTable = styled(BaseTable)`
   .ant-table-tbody > tr > td {
@@ -86,11 +68,7 @@ export const MachinesTable = styled(BaseTable)`
   }
 `;
 
-export const MachineNameRow = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const MachineNameRow = styled(InlineStack)``;
 
 export const MachineNameText = styled(Text)`
   && {

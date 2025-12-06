@@ -92,4 +92,3 @@ class NodeCryptoProvider implements ICryptoProvider {
 }
 
 export const nodeCryptoProvider = new NodeCryptoProvider();
-export default nodeCryptoProvider;

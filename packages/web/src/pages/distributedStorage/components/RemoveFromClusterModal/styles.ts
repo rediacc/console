@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { Typography } from 'antd';
 import { BaseModal, BaseTable, ModalTitleRow, PillTag, AlertCard } from '@/styles/primitives';
+import { InlineStack } from '@/components/common/styled';
 import { WarningOutlined } from '@/utils/optimizedIcons';
 import { ModalSize } from '@/types/modal';
 
@@ -8,13 +9,7 @@ const { Text } = Typography;
 
 export const StyledModal = styled(BaseModal).attrs({
   className: `${ModalSize.Medium} remove-from-cluster-modal`,
-})`
-  .ant-modal-body {
-    display: flex;
-    flex-direction: column;
-    gap: ${({ theme }) => theme.spacing.LG}px;
-  }
-`;
+})``;
 
 export const TitleStack = styled(ModalTitleRow)``;
 
@@ -35,11 +30,7 @@ export const MachinesTable = styled(BaseTable)`
   }
 `;
 
-export const MachineNameRow = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const MachineNameRow = styled(InlineStack)``;
 
 export const MachineNameText = styled(Text)`
   && {

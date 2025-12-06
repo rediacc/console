@@ -1,4 +1,4 @@
-import styled, { css } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import {
   Card,
   Button,
@@ -15,12 +15,98 @@ import {
   Badge,
   Empty,
   Alert,
+  Segmented,
+  Row,
 } from 'antd';
 import type { TableProps } from 'antd';
 import type { ComponentType } from 'react';
 import type { StyledTheme } from '@/styles/styledTheme';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { RightOutlined } from '@/utils/optimizedIcons';
+
+// ============================================
+// SHARED ANIMATIONS
+// ============================================
+
+export const fadeInAnimation = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+export const pulseAnimation = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+`;
+
+// ============================================
+// SHARED CSS HELPERS
+// ============================================
+
+export const scrollbarStyles = css`
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.colors.borderSecondary};
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${({ theme }) => theme.colors.textSecondary};
+  }
+`;
+
+export const inputFocusStyles = css`
+  &:focus,
+  &.ant-input-affix-wrapper-focused {
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary};
+    outline: none;
+  }
+
+  &.ant-input-status-error,
+  &.ant-input-affix-wrapper-status-error {
+    border-color: ${({ theme }) => theme.colors.error};
+    box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.error};
+  }
+`;
+
+export const inputPrefixStyles = css`
+  .ant-input-prefix {
+    margin-left: 14px;
+    margin-right: ${({ theme }) => theme.spacing.SM}px;
+    color: ${({ theme }) => theme.colors.textTertiary};
+    font-size: ${({ theme }) => theme.fontSize.LG}px;
+    transition: color 0.2s ease;
+
+    .anticon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .ant-input-suffix {
+    margin-right: 14px;
+  }
+
+  &:hover .ant-input-prefix,
+  &:focus .ant-input-prefix,
+  &.ant-input-affix-wrapper-focused .ant-input-prefix {
+    color: ${({ theme }) => theme.colors.primary};
+  }
+`;
 
 const { Text } = Typography;
 const GenericTable = Table as ComponentType<TableProps<unknown>>;
@@ -455,7 +541,7 @@ export const SectionStack = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.PAGE_SECTION_GAP}px;
 `;
 
-const FlexColumn = styled.div<{ $gap?: SpacingValue; $align?: string; $justify?: string }>`
+const InternalFlexColumn = styled.div<{ $gap?: SpacingValue; $align?: string; $justify?: string }>`
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -464,7 +550,7 @@ const FlexColumn = styled.div<{ $gap?: SpacingValue; $align?: string; $justify?:
   justify-content: ${({ $justify }) => $justify || 'flex-start'};
 `;
 
-export const NeutralStack = styled(FlexColumn)``;
+export const NeutralStack = styled(InternalFlexColumn)``;
 
 export const SectionHeaderRow = styled.div`
   display: flex;
@@ -940,4 +1026,413 @@ export const BaseTable = styled(GenericTable)<{ $isInteractive?: boolean }>`
     }
   `
       : ''}
+`;
+
+// ============================================
+// ADDITIONAL CARD VARIANTS
+// ============================================
+
+export const ContentCard = styled(Card)`
+  && {
+    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+    box-shadow: ${({ theme }) => theme.shadows.CARD};
+    border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  }
+`;
+
+export const FeatureCard = styled(ContentCard)`
+  && {
+    height: 100%;
+  }
+`;
+
+export const SelectableCard = styled(Card)<{
+  $selected?: boolean;
+  $variant?: 'default' | 'dashed';
+}>`
+  && {
+    border-color: ${({ theme, $selected }) => ($selected ? theme.colors.primary : theme.colors.borderSecondary)};
+    border-width: ${({ $selected }) => ($selected ? '2px' : '1px')};
+    border-style: ${({ $variant }) => ($variant === 'dashed' ? 'dashed' : 'solid')};
+    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+    cursor: pointer;
+    transition: ${({ theme }) => theme.transitions.HOVER};
+
+    &:hover {
+      border-color: ${({ theme }) => theme.colors.primary};
+      box-shadow: ${({ theme }) => theme.shadows.SM};
+    }
+  }
+`;
+
+export const SpacedCard = styled(Card)`
+  && {
+    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
+  }
+`;
+
+// ============================================
+// ADDITIONAL TEXT VARIANTS
+// ============================================
+
+export const TitleText = styled(Text)<{ $level?: 1 | 2 | 3 | 4 | 5 }>`
+  && {
+    margin: 0;
+    font-size: ${({ theme, $level = 4 }) => {
+      // Map level to available font sizes
+      const sizes: Record<number, number> = {
+        1: theme.fontSize.XXXXXXL, // Largest available
+        2: theme.fontSize.XL,
+        3: theme.fontSize.LG,
+        4: theme.fontSize.H4,
+        5: theme.fontSize.H5,
+      };
+      return sizes[$level] || theme.fontSize.H4;
+    }}px;
+    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
+    color: ${({ theme }) => theme.colors.textPrimary};
+    line-height: ${({ theme }) => theme.lineHeight.TIGHT};
+  }
+`;
+
+export const SecondaryText = styled(Text)`
+  && {
+    color: ${({ theme }) => theme.colors.textSecondary};
+  }
+`;
+
+export const DescriptionText = styled(Text)`
+  && {
+    font-size: ${({ theme }) => theme.fontSize.SM}px;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    line-height: ${({ theme }) => theme.lineHeight.RELAXED};
+  }
+`;
+
+export const MonoText = styled(Text)`
+  && {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+    font-size: ${({ theme }) => theme.fontSize.SM}px;
+  }
+`;
+
+export const ItalicText = styled(Text)`
+  && {
+    font-style: italic;
+    color: ${({ theme }) => theme.colors.textSecondary};
+  }
+`;
+
+export const NoMarginTitle = styled(Typography.Title)`
+  && {
+    margin: 0;
+  }
+`;
+
+// ============================================
+// ADDITIONAL BUTTON VARIANTS
+// ============================================
+
+export const SubmitButton = styled(PrimaryButton)`
+  && {
+    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
+  }
+`;
+
+export const LargeSubmitButton = styled(PrimaryButton)`
+  && {
+    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_LG}px;
+    font-size: ${({ theme }) => theme.fontSize.BASE}px;
+  }
+`;
+
+export const SmallActionButton = styled(ActionButton)`
+  && {
+    min-width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
+    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
+  }
+`;
+
+export const CreateButton = styled(PrimaryButton)`
+  && {
+    min-width: ${({ theme }) => theme.spacing.XXXL}px;
+  }
+`;
+
+export const GhostButton = styled(ButtonSurface).attrs({ $variant: 'ghost' })``;
+
+export const LinkButton = styled(ButtonSurface).attrs({ $variant: 'link' })``;
+
+export const DangerButton = styled(ButtonSurface).attrs({ $variant: 'danger' })``;
+
+// ============================================
+// ADDITIONAL LAYOUT PATTERNS
+// ============================================
+
+export const FlexRow = styled.div<{
+  $gap?: SpacingValue;
+  $align?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
+  $justify?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around';
+  $wrap?: boolean;
+}>`
+  display: flex;
+  flex-direction: row;
+  align-items: ${({ $align = 'center' }) => $align};
+  justify-content: ${({ $justify = 'flex-start' }) => $justify};
+  gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'SM')}px;
+  ${({ $wrap }) => $wrap && 'flex-wrap: wrap;'}
+`;
+
+export const FlexColumn = styled.div<{
+  $gap?: SpacingValue;
+  $align?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
+}>`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'MD')}px;
+  align-items: ${({ $align = 'stretch' }) => $align};
+`;
+
+export const ContentStack = styled(FlexColumn).attrs({ $gap: 'MD' })``;
+
+export const HeaderRow = styled(FlexRow).attrs({ $justify: 'space-between', $wrap: true })`
+  width: 100%;
+`;
+
+export const CenteredContent = styled.div`
+  text-align: center;
+`;
+
+export const CenteredRow = styled(Row)`
+  text-align: center;
+`;
+
+export const FullWidthSpace = styled(Space)`
+  width: 100%;
+`;
+
+// ============================================
+// SCROLLABLE CONTAINERS
+// ============================================
+
+export const ScrollContainer = styled.div<{ $maxHeight?: number }>`
+  max-height: ${({ $maxHeight }) => ($maxHeight ? `${$maxHeight}px` : '400px')};
+  overflow-y: auto;
+  ${scrollbarStyles}
+`;
+
+export const ConsoleOutput = styled.div<{ $height?: number }>`
+  background-color: ${({ theme }) => theme.colors.bgSecondary};
+  border: 1px solid ${({ theme }) => theme.colors.borderPrimary};
+  border-radius: ${({ theme }) => theme.borderRadius.SM}px;
+  padding: ${({ theme }) => theme.spacing.SM}px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  height: ${({ $height }) => ($height ? `${$height}px` : '400px')};
+  overflow-y: auto;
+  ${scrollbarStyles}
+`;
+
+// ============================================
+// MODAL VARIANTS
+// ============================================
+
+export const FadeInModal = styled(BaseModal)`
+  .ant-modal-content {
+    animation: ${fadeInAnimation} 0.3s ease-in-out;
+  }
+`;
+
+export const LargeModal = styled(FadeInModal)`
+  &.ant-modal {
+    max-width: 1200px;
+    width: 1200px;
+  }
+
+  .ant-modal-body {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+`;
+
+export const ModalTitleContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  gap: ${({ theme }) => theme.spacing.MD}px;
+  padding-right: ${({ theme }) => theme.spacing.XL}px;
+`;
+
+export const ModalTitleLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.SM}px;
+  flex: 1;
+  min-width: 0;
+`;
+
+export const ModalTitleRight = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: ${({ theme }) => theme.spacing.XS}px;
+  flex-shrink: 0;
+`;
+
+// ============================================
+// INPUT VARIANTS
+// ============================================
+
+export const LargeInput = styled(Input)`
+  && {
+    height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_LG}px;
+    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+    font-size: ${({ theme }) => theme.fontSize.BASE}px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &.ant-input-affix-wrapper {
+      padding: 0;
+    }
+
+    input.ant-input {
+      padding: 0 14px;
+      height: 100%;
+    }
+
+    ${inputPrefixStyles}
+    ${inputFocusStyles}
+  }
+`;
+
+export const LargePasswordInput = styled(Input.Password)`
+  && {
+    height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_LG}px;
+    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+    font-size: ${({ theme }) => theme.fontSize.BASE}px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+
+    &.ant-input-affix-wrapper {
+      padding: 0;
+    }
+
+    input.ant-input {
+      padding: 0 14px;
+      height: 100%;
+    }
+
+    ${inputPrefixStyles}
+
+    .ant-input-suffix {
+      margin-left: ${({ theme }) => theme.spacing.SM}px;
+
+      .ant-input-password-icon {
+        color: ${({ theme }) => theme.colors.textTertiary};
+        font-size: ${({ theme }) => theme.fontSize.LG}px;
+        transition: ${({ theme }) => theme.transitions.DEFAULT};
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+
+        &:hover {
+          color: ${({ theme }) => theme.colors.textSecondary};
+          background-color: ${({ theme }) => theme.colors.bgHover};
+        }
+      }
+    }
+
+    ${inputFocusStyles}
+  }
+`;
+
+export const SearchInput = styled(Input.Search)`
+  && {
+    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
+  }
+`;
+
+// ============================================
+// ALERT VARIANTS
+// ============================================
+
+export const SpacedAlert = styled(Alert)`
+  && {
+    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
+  }
+`;
+
+export const RoundedAlert = styled(Alert)`
+  && {
+    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+    padding: ${({ theme }) => theme.spacing.MD}px;
+  }
+`;
+
+export const ErrorAlert = styled(AlertCard).attrs({ $variant: 'error' })``;
+
+export const WarningAlert = styled(AlertCard).attrs({ $variant: 'warning' })``;
+
+export const InfoAlert = styled(AlertCard).attrs({ $variant: 'info' })``;
+
+// ============================================
+// TAG VARIANTS
+// ============================================
+
+export const SmallTag = styled(PillTag).attrs({ $size: 'SM' })``;
+
+export const StatusTagSmall = styled(StatusTag)`
+  && {
+    font-size: ${({ theme }) => theme.fontSize.XS}px;
+    line-height: 1.2;
+  }
+`;
+
+// ============================================
+// LOADING COMPONENTS
+// ============================================
+
+export const LoadingContainer = styled.div`
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing.XXXL}px 0;
+`;
+
+export const LoadingText = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.MD}px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+// ============================================
+// MISC COMPONENTS
+// ============================================
+
+export const ModeSegmented = styled(Segmented)`
+  min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+`;
+
+export const LastFetchedText = styled.span`
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  white-space: nowrap;
+`;
+
+export const SectionMargin = styled.div<{ $top?: number; $bottom?: number }>`
+  ${({ $top }) => ($top !== undefined ? `margin-top: ${$top}px;` : '')}
+  ${({ $bottom }) => ($bottom !== undefined ? `margin-bottom: ${$bottom}px;` : '')}
+`;
+
+export const CenteredFooter = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.MD}px;
+  text-align: center;
+`;
+
+export const InfoList = styled.ul<{ $top?: number; $bottom?: number }>`
+  padding-left: ${({ theme }) => theme.spacing.LG}px;
+  ${({ $top }) => ($top !== undefined ? `margin-top: ${$top}px;` : '')}
+  ${({ $bottom }) => ($bottom !== undefined ? `margin-bottom: ${$bottom}px;` : '')}
 `;

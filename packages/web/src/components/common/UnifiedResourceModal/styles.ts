@@ -1,14 +1,11 @@
 import styled from 'styled-components';
 import { Checkbox, Collapse, Tag, Typography } from 'antd';
 import { UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons';
-import { StyledIcon } from '@/styles/primitives';
+import { StyledIcon, FlexColumn } from '@/styles/primitives';
 
 const { Text } = Typography;
 
-export const TitleStack = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
+export const TitleStack = FlexColumn;
 
 export const TitleText = styled(Text)`
   && {

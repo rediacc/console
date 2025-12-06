@@ -582,5 +582,3 @@ export const useInteractionTracking = () => {
     trackDownload,
   };
 };
-
-export default TelemetryProvider;

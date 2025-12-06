@@ -174,4 +174,3 @@ export class AuthError extends Error {
 }
 
 export const authService = new AuthService();
-export default authService;

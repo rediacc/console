@@ -1,20 +1,18 @@
 import styled from 'styled-components';
 import { Space, Typography } from 'antd';
 import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
-import { ContentStack, CenteredState, ActionsRow } from '@/components/common/styled';
+import { ContentStack, CenteredState, ActionGroup } from '@/components/common/styled';
 
 export const PageWrapper = PageContainer;
 
 // Re-export from common/styled
-export { ContentStack };
+export { ContentStack, ActionGroup };
 
 export const HeaderStack = styled(Space).attrs({ orientation: 'vertical', size: 'middle' })`
   width: 100%;
 `;
 
 export const HeaderRow = SectionHeaderRow;
-
-export const ActionGroup = ActionsRow;
 
 export const FiltersRow = styled.div`
   display: flex;

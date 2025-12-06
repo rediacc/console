@@ -1,67 +1,54 @@
 import styled, { css } from 'styled-components';
-import { Card, Input, Typography, Tag, Button, Alert, InputNumber, Select } from 'antd';
-import { BaseModal } from '@/styles/primitives';
+import { Typography, Tag, Alert, InputNumber, Select, Input } from 'antd';
+import {
+  BaseModal,
+  ContentCard,
+  SearchInput as BaseSearchInput,
+  FlexColumn,
+  FlexRow,
+  CaptionText,
+  SecondaryText,
+  SubmitButton,
+  scrollbarStyles,
+  RoundedAlert,
+} from '@/styles/primitives';
+import { ContentStack } from '@/components/common/styled';
 import type { StyledTheme } from '@/styles/styledTheme';
 import { InfoCircleOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons';
 
 const { Text } = Typography;
 
 const resolvePriorityTokens = (priority: number, theme: StyledTheme) => {
-  switch (priority) {
-    case 1:
-      return {
-        color: theme.colors.error,
-        bg: theme.colors.bgError,
-        border: theme.colors.error,
-      };
-    case 2:
-      return {
-        color: theme.colors.warning,
-        bg: theme.colors.bgWarning,
-        border: theme.colors.warning,
-      };
-    case 3:
-      return {
-        color: theme.colors.info,
-        bg: theme.colors.bgInfo,
-        border: theme.colors.info,
-      };
-    case 4:
-      return {
-        color: theme.colors.primary,
-        bg: theme.colors.primaryBg,
-        border: theme.colors.primary,
-      };
-    default:
-      return {
-        color: theme.colors.success,
-        bg: theme.colors.bgSuccess,
-        border: theme.colors.success,
-      };
-  }
+  const configs: Record<number, { color: string; bg: string; border: string }> = {
+    1: { color: theme.colors.error, bg: theme.colors.bgError, border: theme.colors.error },
+    2: { color: theme.colors.warning, bg: theme.colors.bgWarning, border: theme.colors.warning },
+    3: { color: theme.colors.info, bg: theme.colors.bgInfo, border: theme.colors.info },
+    4: { color: theme.colors.primary, bg: theme.colors.primaryBg, border: theme.colors.primary },
+  };
+  return (
+    configs[priority] || {
+      color: theme.colors.success,
+      bg: theme.colors.bgSuccess,
+      border: theme.colors.success,
+    }
+  );
 };
 
 const resolveLineageTokens = (variant: 'parent' | 'source' | 'destination', theme: StyledTheme) => {
-  switch (variant) {
-    case 'parent':
-      return {
-        color: theme.colors.info,
-        bg: theme.colors.bgInfo,
-        border: theme.colors.info,
-      };
-    case 'source':
-      return {
-        color: theme.colors.success,
-        bg: theme.colors.bgSuccess,
-        border: theme.colors.success,
-      };
-    default:
-      return {
-        color: theme.colors.primary,
-        bg: theme.colors.primaryBg,
-        border: theme.colors.primary,
-      };
-  }
+  const configs = {
+    parent: { color: theme.colors.info, bg: theme.colors.bgInfo, border: theme.colors.info },
+    source: {
+      color: theme.colors.success,
+      bg: theme.colors.bgSuccess,
+      border: theme.colors.success,
+    },
+    destination: {
+      color: theme.colors.primary,
+      bg: theme.colors.primaryBg,
+      border: theme.colors.primary,
+    },
+  };
+  return configs[variant] || configs.destination;
 };
 
 export const StyledModal = styled(BaseModal)`
@@ -70,23 +57,12 @@ export const StyledModal = styled(BaseModal)`
   }
 `;
 
-const CardBase = styled(Card)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.XL}px;
-    box-shadow: ${({ theme }) => theme.shadows.CARD};
-    border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  }
-`;
+export const FunctionListCard = ContentCard;
+export const ConfigCard = ContentCard;
 
-export const FunctionListCard = styled(CardBase)``;
-
-export const ConfigCard = styled(CardBase)``;
-
-export const SearchInput = styled(Input.Search)`
+export const SearchInput = styled(BaseSearchInput)`
   && {
     margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
 `;
 
@@ -97,6 +73,7 @@ export const FunctionList = styled.div`
   background-color: ${({ theme }) => theme.colors.bgSecondary};
   border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+  ${scrollbarStyles}
 `;
 
 export const CategorySection = styled.div`
@@ -113,11 +90,7 @@ export const CategoryTitle = styled(Text)`
   }
 `;
 
-export const FunctionItemHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+export const FunctionItemHeader = styled(FlexRow).attrs({ $gap: 'XS' })``;
 
 export const FunctionOption = styled.button.attrs({ type: 'button' })<{
   $selected?: boolean;
@@ -163,19 +136,9 @@ export const QuickTaskTag = styled(Tag)`
   }
 `;
 
-export const FunctionDescriptionText = styled(Text)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
+export const FunctionDescriptionText = CaptionText;
 
-export const ContentStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-  width: 100%;
-`;
+export { ContentStack };
 
 export const PushAlertsRow = styled.div<{ $hasWarning: boolean }>`
   display: grid;
@@ -205,12 +168,7 @@ export const PushAlertCard = styled(Alert)`
         `}
 `;
 
-export const AlertBodyText = styled(Text)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
+export const AlertBodyText = CaptionText;
 
 export const AlertLinkWrapper = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
@@ -242,11 +200,7 @@ export const LineageTag = styled(Tag).attrs<{ $variant: 'parent' | 'source' | 'd
   }
 `;
 
-export const LineageSeparator = styled(Text)`
-  && {
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
+export const LineageSeparator = SecondaryText;
 
 export const HelpTooltipIcon = styled(InfoCircleOutlined)`
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
@@ -260,10 +214,8 @@ export const PriorityHelpIcon = styled(QuestionCircleOutlined)`
   cursor: pointer;
 `;
 
-export const SizeInputGroup = styled.div`
-  display: flex;
+export const SizeInputGroup = styled(FlexRow).attrs({ $gap: 'SM' })`
   width: 100%;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const SizeValueInput = styled(InputNumber)`
@@ -278,12 +230,7 @@ export const SizeUnitSelect = styled(Select)`
   }
 `;
 
-export const CheckboxGroupStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-  width: 100%;
-`;
+export const CheckboxGroupStack = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
 export const AdditionalOptionsInput = styled(Input)`
   && {
@@ -303,10 +250,7 @@ export const PriorityPopoverHeader = styled(Text)`
   }
 `;
 
-export const PriorityLegendRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
+export const PriorityLegendRow = styled(FlexRow).attrs({ $gap: 'SM' })`
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
 `;
 
@@ -325,12 +269,7 @@ export const PriorityLegendTag = styled(Tag)<{ $level: number }>`
   }
 `;
 
-export const PriorityLegendText = styled(Text)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
+export const PriorityLegendText = CaptionText;
 
 export const PriorityTagWrapper = styled.div`
   text-align: center;
@@ -352,10 +291,9 @@ export const PriorityStatusTag = styled(Tag)<{ $priority: number }>`
   }
 `;
 
-export const PriorityAlert = styled(Alert)`
+export const PriorityAlert = styled(RoundedAlert)`
   && {
     margin-top: ${({ theme }) => theme.spacing.LG}px;
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
 `;
 
@@ -369,16 +307,4 @@ export const PriorityAlertDetail = styled.div`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-export const PrimarySubmitButton = styled(Button)`
-  && {
-    background-color: ${({ theme }) => theme.colors.primary};
-    border-color: ${({ theme }) => theme.colors.primary};
-    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
-
-    &:hover,
-    &:focus {
-      background-color: ${({ theme }) => theme.colors.primaryHover};
-      border-color: ${({ theme }) => theme.colors.primaryHover};
-    }
-  }
-`;
+export const PrimarySubmitButton = SubmitButton;

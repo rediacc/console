@@ -53,3 +53,6 @@ export type {
 // Table state management
 export { useExpandableTable } from './useExpandableTable';
 export type { UseExpandableTableReturn } from './useExpandableTable';
+
+// Confirmation dialog hook
+export { useConfirmDialog } from './useConfirmDialog';

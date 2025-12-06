@@ -1,9 +1,8 @@
-import { useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
-import { showMessage } from '@/utils/messages';
+import { QueryKey } from '@tanstack/react-query';
 import { DS_QUERY_KEYS } from './distributedStorage';
 import i18n from '@/i18n/config';
-import { createErrorHandler } from '@/utils/mutationUtils';
 import { api } from '../client';
+import { createMutation } from '@/hooks/api/mutationFactory';
 
 type Operation = 'create' | 'update' | 'delete' | 'assign' | 'remove';
 
@@ -18,41 +17,27 @@ interface MutationFactoryConfig<TData> {
 
 /**
  * Factory function for creating distributed storage mutations
- * Reduces boilerplate by standardizing error handling, cache invalidation, and success messages
+ * Uses the main mutation factory with i18n support for distributed storage operations
  */
 export function createDistributedStorageMutation<TData extends object>(
   config: MutationFactoryConfig<TData>
 ) {
-  return () => {
-    const queryClient = useQueryClient();
-    const operationLabel = i18n.t(`distributedStorage:mutations.operations.${config.operation}`);
-    const resourceLabel = i18n.t(`distributedStorage:mutations.resources.${config.resourceKey}`);
-    const fallbackError = i18n.t('distributedStorage:errors.operationFailed', {
-      operation: operationLabel,
-      resource: resourceLabel,
-    });
-    const handleError = createErrorHandler(fallbackError);
+  const operationLabel = i18n.t(`distributedStorage:mutations.operations.${config.operation}`);
+  const resourceLabel = i18n.t(`distributedStorage:mutations.resources.${config.resourceKey}`);
+  const fallbackError = i18n.t('distributedStorage:errors.operationFailed', {
+    operation: operationLabel,
+    resource: resourceLabel,
+  });
 
-    return useMutation({
-      mutationFn: async (data: TData) => {
-        await config.request(data);
-      },
-      onSuccess: (_result: unknown, variables: TData) => {
-        // Invalidate primary keys
-        const keys = config.getInvalidateKeys(variables);
-        keys.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
-
-        // Invalidate additional keys if provided
-        if (config.additionalInvalidateKeys) {
-          const additionalKeys = config.additionalInvalidateKeys(variables);
-          additionalKeys.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
-        }
-
-        showMessage('success', i18n.t(`distributedStorage:${config.translationKey}`));
-      },
-      onError: handleError,
-    });
-  };
+  return createMutation<TData>({
+    request: config.request,
+    invalidateKeys: config.getInvalidateKeys,
+    additionalInvalidateKeys: config.additionalInvalidateKeys,
+    successMessage: i18n.t(`distributedStorage:${config.translationKey}`),
+    errorMessage: fallbackError,
+    operationName: `distributedStorage.${config.operation}.${config.resourceKey}`,
+    disableTelemetry: false,
+  });
 }
 
 // =============================================================================

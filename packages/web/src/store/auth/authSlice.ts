@@ -92,7 +92,6 @@ export const {
   loginSuccess,
   logout,
   updateCompany,
-  setVaultCompany,
   showSessionExpiredDialog,
   hideSessionExpiredDialog,
   setStayLoggedOutMode,

@@ -17,7 +17,7 @@ import enDistributedStorage from './locales/en/distributedStorage.json';
 import enOrganization from './locales/en/organization.json';
 import enMarketplace from './locales/en/marketplace.json';
 
-export const defaultNS = 'common';
+const defaultNS = 'common';
 
 // Initial resources - only English loaded
 const initialResources = {
@@ -240,8 +240,5 @@ i18n
 i18n.on('languageChanged', (lng) => {
   loadLanguageResources(lng);
 });
-
-// Export the load function for manual preloading if needed
-export { loadLanguageResources };
 
 export default i18n;

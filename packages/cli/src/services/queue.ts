@@ -192,4 +192,3 @@ export class CliQueueService {
 }
 
 export const queueService = new CliQueueService();
-export default queueService;

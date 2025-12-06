@@ -125,4 +125,3 @@ class WebCryptoProvider implements ICryptoProvider {
 }
 
 export const webCryptoProvider = new WebCryptoProvider();
-export default webCryptoProvider;

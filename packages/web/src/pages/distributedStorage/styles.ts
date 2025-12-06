@@ -1,14 +1,17 @@
 import styled from 'styled-components';
 import { Typography } from 'antd';
-import { PageContainer, SectionStack, SectionHeaderRow } from '@/styles/primitives';
-import { ActionsRow } from '@/components/common/styled';
+import {
+  PageContainer,
+  SectionStack,
+  SectionHeaderRow,
+  EmptyStateWrapper,
+} from '@/styles/primitives';
+import { ActionGroup as BaseActionGroup } from '@/components/common/styled';
 
 const { Title } = Typography;
 
 export const PageWrapper = PageContainer;
-
 export const HeaderSection = SectionStack;
-
 export const HeaderRow = SectionHeaderRow;
 
 export const TitleGroup = styled.div`
@@ -35,8 +38,8 @@ export const TeamSelectorWrapper = styled.div`
   }
 `;
 
-export const ActionGroup = styled(ActionsRow)`
+export const ActionGroup = styled(BaseActionGroup)`
   flex-shrink: 0;
 `;
 
-export { EmptyStateWrapper as EmptyState } from '@/styles/primitives';
+export const EmptyState = EmptyStateWrapper;

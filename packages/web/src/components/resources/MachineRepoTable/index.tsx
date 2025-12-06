@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Tag, Space, Typography, Button, Tooltip, Modal, Input } from 'antd';
+import { Alert, Tag, Space, Typography, Button, Tooltip, Input } from 'antd';
 import type { TableProps } from 'antd';
 import type { MenuProps } from 'antd';
 import { isAxiosError } from 'axios';
@@ -61,6 +61,7 @@ import { useAppSelector } from '@/store/store';
 import { createSorter, createCustomSorter, createArrayLengthSorter } from '@/core';
 import { parseVaultStatus } from '@/core/services/machine';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import {
   createActionColumn,
   createStatusColumn,
@@ -335,7 +336,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions']);
   const theme = useStyledTheme();
   const navigate = useNavigate();
-  const [modal, contextHolder] = Modal.useModal();
+  const { confirm, modal, contextHolder } = useConfirmDialog();
   const userEmail = useAppSelector((state) => state.auth.user?.email || '');
   const [_repos, setRepos] = useState<Repo[]>([]);
   const [systemContainers] = useState<Container[]>([]);
@@ -751,7 +752,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
     const parentName = context.parentName || Repo.name;
 
     // Show confirmation modal
-    modal.confirm({
+    confirm({
       title: t('resources:repos.deleteCloneConfirmTitle'),
       content: t('resources:repos.deleteCloneConfirmMessage', {
         name: Repo.name,
@@ -829,7 +830,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
     const { siblingClones, currentGrandName } = context;
 
     // Show confirmation modal
-    modal.confirm({
+    confirm({
       title: t('resources:repos.promoteToGrandTitle'),
       content: (
         <ModalContent>

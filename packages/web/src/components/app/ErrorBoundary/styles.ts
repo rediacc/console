@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { FlexColumn } from '@/styles/primitives';
 
 export const FallbackContainer = styled.div`
   padding: ${({ theme }) => theme.spacing.XL}px;
@@ -27,11 +28,7 @@ export const ErrorSummary = styled.summary`
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
 `;
 
-export const ErrorContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-
+export const ErrorContent = styled(FlexColumn).attrs({ $gap: 'XS' })`
   strong {
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }

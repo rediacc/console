@@ -8,6 +8,7 @@ import { showMessage } from '@/utils/messages';
 import apiClient from '@/api/client';
 import axios from 'axios';
 import { useDialogState } from '@/hooks/useDialogState';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import {
   StyledSelect,
   LoadingText,
@@ -50,7 +51,7 @@ interface EndpointSelectorProps {
 const HEALTH_INDICATOR_SYMBOL = '●';
 
 const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComplete }) => {
-  const [modal, contextHolder] = Modal.useModal();
+  const { confirm, contextHolder } = useConfirmDialog();
   const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
   const [selectedEndpoint, setSelectedEndpoint] = useState<Endpoint | null>(null);
   const [loading, setLoading] = useState(true);
@@ -295,7 +296,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
   const handleRemoveCustomEndpoint = (endpointId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent dropdown from closing
 
-    modal.confirm({
+    confirm({
       title: 'Remove Custom Endpoint',
       content: 'Are you sure you want to remove this custom endpoint?',
       onOk: async () => {

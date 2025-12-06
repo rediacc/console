@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { Card, Space, Input, Typography, Button, Tag, Empty, Row } from 'antd';
-import { HelperText as PrimitiveHelperText, MutedCaption } from '@/styles/primitives';
+import { HelperText as PrimitiveHelperText, MutedCaption, FlexRow } from '@/styles/primitives';
 
 const { Text, Paragraph } = Typography;
 
@@ -15,13 +15,11 @@ export const HeaderStack = styled(Space)`
   }
 `;
 
-export const HelperRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`;
+export const HelperRow = styled(FlexRow).attrs({
+  $gap: 'SM',
+  $justify: 'space-between',
+  $wrap: true,
+})``;
 
 export const HelperText = PrimitiveHelperText;
 

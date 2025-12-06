@@ -26,8 +26,6 @@ import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { CaptionText } from '@/styles/primitives';
 import {
   StyledModal,
-  LoadingContainer,
-  LoadingText,
   SummaryContainer,
   SummaryRow,
   SummaryStats,
@@ -324,12 +322,16 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       data-testid="audit-trace-modal"
     >
       {isLoading ? (
-        <LoadingContainer data-testid="audit-trace-loading">
-          <LoadingWrapper loading centered minHeight={160}>
-            <div />
-          </LoadingWrapper>
-          <LoadingText>{t('common:general.loading')}</LoadingText>
-        </LoadingContainer>
+        <LoadingWrapper
+          loading
+          centered
+          minHeight={160}
+          tip={t('common:general.loading')}
+          showTextBelow
+          data-testid="audit-trace-loading"
+        >
+          <div />
+        </LoadingWrapper>
       ) : error ? (
         <Alert
           message={t('audit.error')}

@@ -187,6 +187,16 @@ export const ActionsRow = styled.div<ActionsRowProps>`
 `;
 
 /**
+ * Action group for button groups (flex wrap with SM gap)
+ */
+export const ActionGroup = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing.SM}px;
+  align-items: center;
+`;
+
+/**
  * Container for action buttons in table cells
  */
 export const ActionsContainer = styled.div`

@@ -26,9 +26,13 @@ export {
   createStatusColumn,
   createDateColumn,
   createTruncatedColumn,
+  createCountColumn,
+  createVersionColumn,
   type ActionMenuItem,
   type ActionColumnOptions,
   type StatusColumnOptions,
   type DateColumnOptions,
   type TruncatedColumnOptions,
+  type CountColumnOptions,
+  type VersionColumnOptions,
 } from './index.tsx';
