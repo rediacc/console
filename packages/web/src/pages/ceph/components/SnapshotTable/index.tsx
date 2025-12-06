@@ -2,26 +2,26 @@ import { useCallback, useMemo, useState } from 'react';
 import type { Key } from 'react';
 import { Table, Tooltip, message } from 'antd';
 import {
- PlusOutlined,
- SettingOutlined,
- DeleteOutlined,
- RollbackOutlined,
- InfoCircleOutlined,
- SecurityScanOutlined,
- CopyOutlined,
+  PlusOutlined,
+  SettingOutlined,
+  DeleteOutlined,
+  RollbackOutlined,
+  InfoCircleOutlined,
+  SecurityScanOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { MenuProps } from 'antd';
 import {
- useCephRbdSnapshots,
- type CephRbdSnapshot,
- type CephRbdImage,
- type CephPool,
+  useCephRbdSnapshots,
+  type CephRbdSnapshot,
+  type CephRbdImage,
+  type CephPool,
 } from '@/api/queries/ceph';
 import {
- useDeleteCephRbdSnapshot,
- useCreateCephRbdSnapshot,
- useUpdateCephPoolVault,
+  useDeleteCephRbdSnapshot,
+  useCreateCephRbdSnapshot,
+  useUpdateCephPoolVault,
 } from '@/api/queries/cephMutations';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
@@ -34,304 +34,303 @@ import { buildSnapshotColumns } from './columns';
 import { ActionsRow, Container, ExpandButton, TableWrapper, Title } from './styles';
 
 interface SnapshotTableProps {
- image: CephRbdImage;
- pool: CephPool;
- teamFilter: string | string[];
+  image: CephRbdImage;
+  pool: CephPool;
+  teamFilter: string | string[];
 }
 
 interface SnapshotModalState {
- open: boolean;
- mode: 'create' | 'edit' | 'vault';
- data?: CephRbdSnapshot & { vaultContent?: string | null; vaultVersion?: number };
+  open: boolean;
+  mode: 'create' | 'edit' | 'vault';
+  data?: CephRbdSnapshot & { vaultContent?: string | null; vaultVersion?: number };
 }
 
 interface SnapshotFormValues extends Record<string, unknown> {
- snapshotName: string;
- vaultContent: string;
+  snapshotName: string;
+  vaultContent: string;
 }
 
 const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }) => {
- const { t } = useTranslation('ceph');
- const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable();
- const [modalState, setModalState] = useState<SnapshotModalState>({ open: false, mode: 'create' });
- const queueTrace = useQueueTraceModal();
- const managedQueueMutation = useManagedQueueItem();
- const { buildQueueVault } = useQueueVaultBuilder();
+  const { t } = useTranslation('ceph');
+  const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable();
+  const [modalState, setModalState] = useState<SnapshotModalState>({ open: false, mode: 'create' });
+  const queueTrace = useQueueTraceModal();
+  const managedQueueMutation = useManagedQueueItem();
+  const { buildQueueVault } = useQueueVaultBuilder();
 
- const { data: snapshots = [], isLoading } = useCephRbdSnapshots(image.imageGuid);
- const deleteSnapshotMutation = useDeleteCephRbdSnapshot();
- const createSnapshotMutation = useCreateCephRbdSnapshot();
- const updateVaultMutation = useUpdateCephPoolVault();
+  const { data: snapshots = [], isLoading } = useCephRbdSnapshots(image.imageGuid);
+  const deleteSnapshotMutation = useDeleteCephRbdSnapshot();
+  const createSnapshotMutation = useCreateCephRbdSnapshot();
+  const updateVaultMutation = useUpdateCephPoolVault();
 
- const handleCreate = useCallback(() => {
- setModalState({ open: true, mode: 'create' });
- }, []);
+  const handleCreate = useCallback(() => {
+    setModalState({ open: true, mode: 'create' });
+  }, []);
 
- const handleEdit = useCallback((snapshot: CephRbdSnapshot) => {
- setModalState({
- open: true,
- mode: 'edit',
- data: {
- ...snapshot,
- vaultContent: snapshot.vaultContent,
- },
- });
- }, []);
+  const handleEdit = useCallback((snapshot: CephRbdSnapshot) => {
+    setModalState({
+      open: true,
+      mode: 'edit',
+      data: {
+        ...snapshot,
+        vaultContent: snapshot.vaultContent,
+      },
+    });
+  }, []);
 
- const handleDelete = useCallback(
- (snapshot: CephRbdSnapshot) => {
- deleteSnapshotMutation.mutate({
- snapshotName: snapshot.snapshotName,
- imageName: image.imageName,
- poolName: pool.poolName,
- teamName: snapshot.teamName,
- });
- },
- [deleteSnapshotMutation, image.imageName, pool.poolName]
- );
+  const handleDelete = useCallback(
+    (snapshot: CephRbdSnapshot) => {
+      deleteSnapshotMutation.mutate({
+        snapshotName: snapshot.snapshotName,
+        imageName: image.imageName,
+        poolName: pool.poolName,
+        teamName: snapshot.teamName,
+      });
+    },
+    [deleteSnapshotMutation, image.imageName, pool.poolName]
+  );
 
- const handleQueueItemCreated = useCallback(
- (taskId: string) => {
- queueTrace.open(taskId);
- message.success(t('queue.itemCreated'));
- },
- [queueTrace, t]
- );
+  const handleQueueItemCreated = useCallback(
+    (taskId: string) => {
+      queueTrace.open(taskId);
+      message.success(t('queue.itemCreated'));
+    },
+    [queueTrace, t]
+  );
 
- const handleRunFunction = useCallback(
- async (functionName: string, snapshot?: CephRbdSnapshot) => {
- try {
- const queueVault = await buildQueueVault({
- functionName,
- teamName: pool.teamName,
- machineName: pool.clusterName,
- bridgeName: 'default',
- params: {
- cluster_name: pool.clusterName,
- pool_name: pool.poolName,
- image_name: image.imageName,
- snapshot_name: snapshot?.snapshotName || '',
- },
- priority: 3,
- addedVia: 'Ceph',
- });
+  const handleRunFunction = useCallback(
+    async (functionName: string, snapshot?: CephRbdSnapshot) => {
+      try {
+        const queueVault = await buildQueueVault({
+          functionName,
+          teamName: pool.teamName,
+          machineName: pool.clusterName,
+          bridgeName: 'default',
+          params: {
+            cluster_name: pool.clusterName,
+            pool_name: pool.poolName,
+            image_name: image.imageName,
+            snapshot_name: snapshot?.snapshotName || '',
+          },
+          priority: 3,
+          addedVia: 'Ceph',
+        });
 
- const response = await managedQueueMutation.mutateAsync({
- teamName: pool.teamName,
- machineName: pool.clusterName,
- bridgeName: 'default',
- queueVault,
- priority: 3,
- });
+        const response = await managedQueueMutation.mutateAsync({
+          teamName: pool.teamName,
+          machineName: pool.clusterName,
+          bridgeName: 'default',
+          queueVault,
+          priority: 3,
+        });
 
- if (response.taskId) {
- handleQueueItemCreated(response.taskId);
- }
- } catch {
- message.error(t('queue.createError'));
- }
- },
- [
- buildQueueVault,
- handleQueueItemCreated,
- image.imageName,
- managedQueueMutation,
- pool.clusterName,
- pool.poolName,
- pool.teamName,
- t,
- ]
- );
+        if (response.taskId) {
+          handleQueueItemCreated(response.taskId);
+        }
+      } catch {
+        message.error(t('queue.createError'));
+      }
+    },
+    [
+      buildQueueVault,
+      handleQueueItemCreated,
+      image.imageName,
+      managedQueueMutation,
+      pool.clusterName,
+      pool.poolName,
+      pool.teamName,
+      t,
+    ]
+  );
 
- const getSnapshotMenuItems = useCallback(
- (snapshot: CephRbdSnapshot): MenuProps['items'] => [
- {
- key: 'edit',
- label: (
- <span data-testid={`snapshot-list-edit-${snapshot.snapshotName}`}>
- {t('snapshots.edit')}
- </span>
- ),
- icon: <SettingOutlined />,
- onClick: () => handleEdit(snapshot),
- },
- {
- key: 'vault',
- label: (
- <span data-testid={`snapshot-list-vault-${snapshot.snapshotName}`}>
- {t('snapshots.vault')}
- </span>
- ),
- icon: <SettingOutlined />,
- onClick: () =>
- setModalState({
- open: true,
- mode: 'vault',
- data: snapshot,
- }),
- },
- {
- key: 'rollback',
- label: (
- <span data-testid={`snapshot-list-rollback-${snapshot.snapshotName}`}>
- {t('snapshots.rollback')}
- </span>
- ),
- icon: <RollbackOutlined />,
- onClick: () => handleRunFunction('ceph_rbd_snapshot_rollback', snapshot),
- },
- {
- key: 'diff',
- label: (
- <span data-testid={`snapshot-list-diff-${snapshot.snapshotName}`}>
- {t('snapshots.diff')}
- </span>
- ),
- icon: <InfoCircleOutlined />,
- onClick: () => handleRunFunction('ceph_rbd_diff', snapshot),
- },
- { type: 'divider' },
- {
- key: 'protect',
- label: (
- <span data-testid={`snapshot-list-protect-${snapshot.snapshotName}`}>
- {t('snapshots.protect')}
- </span>
- ),
- icon: <SecurityScanOutlined />,
- onClick: () => handleRunFunction('ceph_rbd_snapshot_protect', snapshot),
- },
- {
- key: 'unprotect',
- label: (
- <span data-testid={`snapshot-list-unprotect-${snapshot.snapshotName}`}>
- {t('snapshots.unprotect')}
- </span>
- ),
- icon: <SecurityScanOutlined />,
- onClick: () => handleRunFunction('ceph_rbd_snapshot_unprotect', snapshot),
- },
- { type: 'divider' },
- {
- key: 'delete',
- label: (
- <span data-testid={`snapshot-list-delete-${snapshot.snapshotName}`}>
- {t('snapshots.delete')}
- </span>
- ),
- icon: <DeleteOutlined />,
- danger: true,
- onClick: () => handleDelete(snapshot),
- },
- ],
- [handleDelete, handleEdit, handleRunFunction, t]
- );
+  const getSnapshotMenuItems = useCallback(
+    (snapshot: CephRbdSnapshot): MenuProps['items'] => [
+      {
+        key: 'edit',
+        label: (
+          <span data-testid={`snapshot-list-edit-${snapshot.snapshotName}`}>
+            {t('snapshots.edit')}
+          </span>
+        ),
+        icon: <SettingOutlined />,
+        onClick: () => handleEdit(snapshot),
+      },
+      {
+        key: 'vault',
+        label: (
+          <span data-testid={`snapshot-list-vault-${snapshot.snapshotName}`}>
+            {t('snapshots.vault')}
+          </span>
+        ),
+        icon: <SettingOutlined />,
+        onClick: () =>
+          setModalState({
+            open: true,
+            mode: 'vault',
+            data: snapshot,
+          }),
+      },
+      {
+        key: 'rollback',
+        label: (
+          <span data-testid={`snapshot-list-rollback-${snapshot.snapshotName}`}>
+            {t('snapshots.rollback')}
+          </span>
+        ),
+        icon: <RollbackOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_snapshot_rollback', snapshot),
+      },
+      {
+        key: 'diff',
+        label: (
+          <span data-testid={`snapshot-list-diff-${snapshot.snapshotName}`}>
+            {t('snapshots.diff')}
+          </span>
+        ),
+        icon: <InfoCircleOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_diff', snapshot),
+      },
+      { type: 'divider' },
+      {
+        key: 'protect',
+        label: (
+          <span data-testid={`snapshot-list-protect-${snapshot.snapshotName}`}>
+            {t('snapshots.protect')}
+          </span>
+        ),
+        icon: <SecurityScanOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_snapshot_protect', snapshot),
+      },
+      {
+        key: 'unprotect',
+        label: (
+          <span data-testid={`snapshot-list-unprotect-${snapshot.snapshotName}`}>
+            {t('snapshots.unprotect')}
+          </span>
+        ),
+        icon: <SecurityScanOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_snapshot_unprotect', snapshot),
+      },
+      { type: 'divider' },
+      {
+        key: 'delete',
+        label: (
+          <span data-testid={`snapshot-list-delete-${snapshot.snapshotName}`}>
+            {t('snapshots.delete')}
+          </span>
+        ),
+        icon: <DeleteOutlined />,
+        danger: true,
+        onClick: () => handleDelete(snapshot),
+      },
+    ],
+    [handleDelete, handleEdit, handleRunFunction, t]
+  );
 
- const columns = useMemo(
- () =>
- buildSnapshotColumns({
- t,
- getSnapshotMenuItems,
- handleRunFunction,
- }),
- [getSnapshotMenuItems, handleRunFunction, t]
- );
+  const columns = useMemo(
+    () =>
+      buildSnapshotColumns({
+        t,
+        getSnapshotMenuItems,
+        handleRunFunction,
+      }),
+    [getSnapshotMenuItems, handleRunFunction, t]
+  );
 
- const expandedRowRender = useCallback(
- (record: CephRbdSnapshot) => (
- <CloneTable snapshot={record} image={image} pool={pool} teamFilter={teamFilter} />
- ),
- [image, pool, teamFilter]
- );
+  const expandedRowRender = useCallback(
+    (record: CephRbdSnapshot) => (
+      <CloneTable snapshot={record} image={image} pool={pool} teamFilter={teamFilter} />
+    ),
+    [image, pool, teamFilter]
+  );
 
- return (
- <>
- <Container data-testid="snapshot-list-container">
- <Title>{t('snapshots.title')}</Title>
- <ActionsRow>
- <Tooltip title={t('snapshots.create')}>
- <Button
- 
- icon={<PlusOutlined />}
- onClick={handleCreate}
- data-testid="snapshot-list-create-button"
- aria-label={t('snapshots.create')}
- />
- </Tooltip>
- </ActionsRow>
+  return (
+    <>
+      <Container data-testid="snapshot-list-container">
+        <Title>{t('snapshots.title')}</Title>
+        <ActionsRow>
+          <Tooltip title={t('snapshots.create')}>
+            <Button
+              icon={<PlusOutlined />}
+              onClick={handleCreate}
+              data-testid="snapshot-list-create-button"
+              aria-label={t('snapshots.create')}
+            />
+          </Tooltip>
+        </ActionsRow>
 
- <TableWrapper>
- <Table
- columns={columns}
- dataSource={snapshots}
- rowKey="snapshotGuid"
- loading={isLoading}
- size="small"
- pagination={false}
- data-testid="snapshot-list-table"
- expandable={{
- expandedRowRender,
- expandedRowKeys,
- onExpandedRowsChange: (keys: readonly Key[]) => setExpandedRowKeys(keys.map(String)),
- expandIcon: ({ onExpand, record }) => (
- <ExpandButton
- icon={<CopyOutlined />}
- onClick={(event) => onExpand(record, event)}
- data-testid={`snapshot-list-expand-${record.snapshotName}`}
- />
- ),
- }}
- />
- </TableWrapper>
- </Container>
+        <TableWrapper>
+          <Table
+            columns={columns}
+            dataSource={snapshots}
+            rowKey="snapshotGuid"
+            loading={isLoading}
+            size="small"
+            pagination={false}
+            data-testid="snapshot-list-table"
+            expandable={{
+              expandedRowRender,
+              expandedRowKeys,
+              onExpandedRowsChange: (keys: readonly Key[]) => setExpandedRowKeys(keys.map(String)),
+              expandIcon: ({ onExpand, record }) => (
+                <ExpandButton
+                  icon={<CopyOutlined />}
+                  onClick={(event) => onExpand(record, event)}
+                  data-testid={`snapshot-list-expand-${record.snapshotName}`}
+                />
+              ),
+            }}
+          />
+        </TableWrapper>
+      </Container>
 
- <UnifiedResourceModal
- open={modalState.open}
- onCancel={() => setModalState({ open: false, mode: 'create' })}
- resourceType="snapshot"
- mode={modalState.mode}
- existingData={{
- ...modalState.data,
- teamName: pool.teamName,
- poolName: pool.poolName,
- imageName: image.imageName,
- pools: [pool],
- images: [image],
- vaultContent: modalState.data?.vaultContent,
- }}
- teamFilter={pool.teamName}
- onSubmit={async (data) => {
- const snapshotData = data as SnapshotFormValues;
- if (modalState.mode === 'create') {
- await createSnapshotMutation.mutateAsync({
- imageName: image.imageName,
- poolName: pool.poolName,
- teamName: pool.teamName,
- snapshotName: snapshotData.snapshotName,
- vaultContent: snapshotData.vaultContent,
- });
- } else if (modalState.mode === 'edit') {
- await updateVaultMutation.mutateAsync({
- poolName: pool.poolName,
- teamName: pool.teamName,
- vaultContent: snapshotData.vaultContent,
- vaultVersion: modalState.data?.vaultVersion || 0,
- });
- }
- setModalState({ open: false, mode: 'create' });
- }}
- isSubmitting={createSnapshotMutation.isPending || updateVaultMutation.isPending}
- data-testid={`snapshot-list-modal-${modalState.mode}`}
- />
+      <UnifiedResourceModal
+        open={modalState.open}
+        onCancel={() => setModalState({ open: false, mode: 'create' })}
+        resourceType="snapshot"
+        mode={modalState.mode}
+        existingData={{
+          ...modalState.data,
+          teamName: pool.teamName,
+          poolName: pool.poolName,
+          imageName: image.imageName,
+          pools: [pool],
+          images: [image],
+          vaultContent: modalState.data?.vaultContent,
+        }}
+        teamFilter={pool.teamName}
+        onSubmit={async (data) => {
+          const snapshotData = data as SnapshotFormValues;
+          if (modalState.mode === 'create') {
+            await createSnapshotMutation.mutateAsync({
+              imageName: image.imageName,
+              poolName: pool.poolName,
+              teamName: pool.teamName,
+              snapshotName: snapshotData.snapshotName,
+              vaultContent: snapshotData.vaultContent,
+            });
+          } else if (modalState.mode === 'edit') {
+            await updateVaultMutation.mutateAsync({
+              poolName: pool.poolName,
+              teamName: pool.teamName,
+              vaultContent: snapshotData.vaultContent,
+              vaultVersion: modalState.data?.vaultVersion || 0,
+            });
+          }
+          setModalState({ open: false, mode: 'create' });
+        }}
+        isSubmitting={createSnapshotMutation.isPending || updateVaultMutation.isPending}
+        data-testid={`snapshot-list-modal-${modalState.mode}`}
+      />
 
- <QueueItemTraceModal
- open={queueTrace.state.open}
- onCancel={queueTrace.close}
- taskId={queueTrace.state.taskId}
- data-testid="snapshot-list-queue-modal"
- />
- </>
- );
+      <QueueItemTraceModal
+        open={queueTrace.state.open}
+        onCancel={queueTrace.close}
+        taskId={queueTrace.state.taskId}
+        data-testid="snapshot-list-queue-modal"
+      />
+    </>
+  );
 };
 
 export default SnapshotTable;

@@ -23,7 +23,7 @@ export const ContentStack = styled(ModalBody)`
   gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const DescriptionText = styled(RediaccText).attrs({ color: 'secondary' })``;;
+export const DescriptionText = styled(RediaccText).attrs({ color: 'secondary' })``;
 
 export const CountdownCard = styled.div`
   background: ${({ theme }) => theme.colors.bgSecondary};

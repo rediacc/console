@@ -1,10 +1,5 @@
 import styled, { keyframes } from 'styled-components';
-import {
-  BaseModal,
-  BaseTable,
-  ModalBody,
-  FlexColumn,
-} from '@/styles/primitives';
+import { BaseModal, BaseTable, ModalBody, FlexColumn } from '@/styles/primitives';
 import { ActionGroup } from '@/components/common/styled';
 import { RediaccTag } from '@/components/ui/Tag';
 import { RediaccText } from '@/components/ui/Text';
@@ -90,7 +85,9 @@ export const SummaryMetric = styled(FlexColumn).attrs({
 
 export const SummaryLabel = styled(RediaccText).attrs({ color: 'secondary' })``;
 
-export const SummaryValue = styled(RediaccText).attrs({ weight: 'semibold' })<{ $variant?: TagVariant }>`
+export const SummaryValue = styled(RediaccText).attrs({ weight: 'semibold' })<{
+  $variant?: TagVariant;
+}>`
   && {
     color: ${({ theme, $variant }) =>
       $variant === 'success'

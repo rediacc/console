@@ -1,12 +1,15 @@
 import styled from 'styled-components';
 import { CloudServerOutlined, TeamOutlined, DesktopOutlined } from '@/utils/optimizedIcons';
 import { RediaccBadge } from '@/components/ui';
-import {
-  TableContainer as BaseTableContainer,
-  StyledIcon,
-} from '@/styles/primitives';
+import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
 import { RediaccTag, RediaccButton } from '@/components/ui';
-import { NameCell, NameText, ExpandIcon, ActionsRow, TableWrapper } from '../../styles/tableAliases';
+import {
+  NameCell,
+  NameText,
+  ExpandIcon,
+  ActionsRow,
+  TableWrapper,
+} from '../../styles/tableAliases';
 
 export const TableContainer = styled(BaseTableContainer)`
   .cluster-row {
@@ -82,7 +85,11 @@ export const ExpandedRowTitle = styled.h4`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export { TableWrapper as MachinesTableWrapper, NameCell as MachineNameCell, NameText as MachineNameText };
+export {
+  TableWrapper as MachinesTableWrapper,
+  NameCell as MachineNameCell,
+  NameText as MachineNameText,
+};
 
 export const MachineNameIcon = styled(StyledIcon).attrs(({ theme }) => ({
   as: DesktopOutlined,

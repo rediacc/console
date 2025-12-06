@@ -2,7 +2,12 @@ import styled from 'styled-components';
 import { Row } from 'antd';
 import { RediaccSearchInput as UnifiedSearchInput } from '@/components/ui/Form';
 import { FlexRow } from '@/styles/primitives';
-import { RediaccText as UnifiedText, RediaccCard, RediaccStack, RediaccEmpty } from '@/components/ui';
+import {
+  RediaccText as UnifiedText,
+  RediaccCard,
+  RediaccStack,
+  RediaccEmpty,
+} from '@/components/ui';
 import { RediaccButton } from '@/components/ui/Button';
 import { RediaccTag } from '@/components/ui/Tag';
 
@@ -62,7 +67,10 @@ export const TemplateGrid = styled(Row)`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const TemplateCard = styled(RediaccCard)<{ $selected?: boolean; $variant?: 'default' | 'none' }>`
+export const TemplateCard = styled(RediaccCard)<{
+  $selected?: boolean;
+  $variant?: 'default' | 'none';
+}>`
   height: 100%;
   border-color: ${({ theme, $selected, $variant }) =>
     $selected

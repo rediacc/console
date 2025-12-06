@@ -5,9 +5,11 @@ import type { ListVariant, ListSize } from './RediaccList.types';
 
 export const resolveListPadding = (theme: StyledTheme, size: ListSize = 'md'): number => {
   switch (size) {
-    case 'sm': return theme.spacing.SM;
+    case 'sm':
+      return theme.spacing.SM;
     case 'md':
-    default: return theme.spacing.MD;
+    default:
+      return theme.spacing.MD;
   }
 };
 
@@ -22,13 +24,17 @@ export const StyledRediaccList = styled(AntList).withConfig({
     background-color: ${({ theme }) => theme.colors.bgPrimary};
 
     /* Bordered variant */
-    ${({ $variant, theme }) => $variant === 'bordered' && css`
+    ${({ $variant, theme }) =>
+      $variant === 'bordered' &&
+      css`
       border: 1px solid ${theme.colors.borderSecondary};
       border-radius: ${theme.borderRadius.LG}px;
     `}
 
     /* Card variant */
-    ${({ $variant, theme }) => $variant === 'card' && css`
+    ${({ $variant, theme }) =>
+      $variant === 'card' &&
+      css`
       border: 1px solid ${theme.colors.borderSecondary};
       border-radius: ${theme.borderRadius.LG}px;
       box-shadow: ${theme.shadows.SM};
@@ -39,7 +45,9 @@ export const StyledRediaccList = styled(AntList).withConfig({
       padding: ${({ theme, $size }) => resolveListPadding(theme, $size)}px;
       border-color: ${({ theme }) => theme.colors.borderSecondary};
 
-      ${({ $split }) => !$split && css`
+      ${({ $split }) =>
+        !$split &&
+        css`
         border-bottom: none;
       `}
     }

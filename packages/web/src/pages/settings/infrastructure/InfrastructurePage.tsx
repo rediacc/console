@@ -73,11 +73,7 @@ import {
 } from '@/components/ui';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { RediaccInput as Input } from '@/components/ui';
-import {
-  ModalAlert,
-  TokenCopyRow,
-  ACTIONS_COLUMN_WIDTH,
-} from '@/pages/system/styles';
+import { ModalAlert, TokenCopyRow, ACTIONS_COLUMN_WIDTH } from '@/pages/system/styles';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { createSorter } from '@/core';

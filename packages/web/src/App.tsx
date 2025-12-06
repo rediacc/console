@@ -26,9 +26,7 @@ const DashboardPage = lazy(() => import('@/pages/dashboard'));
 const MachinesPage = lazy(() => import('@/pages/machines/MachinesPage'));
 const MachineReposPage = lazy(() => import('@/pages/resources/MachineReposPage'));
 const RepoContainersPage = lazy(() => import('@/pages/resources/RepoContainersPage'));
-const CephPage = lazy(
-  () => import('@/pages/ceph/CephPage')
-);
+const CephPage = lazy(() => import('@/pages/ceph/CephPage'));
 const QueuePage = lazy(() => import('@/pages/queue/QueuePage'));
 const ArchitecturePage = lazy(() => import('@/pages/architecture/ArchitecturePage'));
 const AuditPage = lazy(() => import('@/pages/audit/AuditPage'));
@@ -259,10 +257,7 @@ const AppContent: React.FC = () => {
                   />
 
                   {/* Ceph */}
-                  <Route
-                    path="/ceph"
-                    element={<Navigate to="/ceph/clusters" replace />}
-                  />
+                  <Route path="/ceph" element={<Navigate to="/ceph/clusters" replace />} />
                   <Route
                     path="/ceph/clusters"
                     element={

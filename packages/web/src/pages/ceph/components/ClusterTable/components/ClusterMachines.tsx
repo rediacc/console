@@ -1,10 +1,7 @@
 import React, { useMemo } from 'react';
 import { Table, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
-import {
-  CephCluster,
-  useCephClusterMachines,
-} from '@/api/queries/ceph';
+import { CephCluster, useCephClusterMachines } from '@/api/queries/ceph';
 import type { Machine } from '@/types';
 import { createSorter } from '@/core';
 import { formatTimestampAsIs } from '@/core';
@@ -25,10 +22,7 @@ interface ClusterMachinesProps {
 
 export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => {
   const { t } = useTranslation('ceph');
-  const { data: machines = [], isLoading } = useCephClusterMachines(
-    cluster.clusterName,
-    true
-  );
+  const { data: machines = [], isLoading } = useCephClusterMachines(cluster.clusterName, true);
 
   const machineColumns = useMemo(
     () => [

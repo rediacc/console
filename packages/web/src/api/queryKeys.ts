@@ -140,17 +140,14 @@ export const QUERY_KEYS = {
 
   // Ceph (re-exported from ceph.ts)
   ceph: {
-    clusters: (teamFilter?: string | string[]) =>
-      ['ceph-clusters', teamFilter] as const,
+    clusters: (teamFilter?: string | string[]) => ['ceph-clusters', teamFilter] as const,
     pools: (teamFilter?: string | string[]) => ['ceph-pools', teamFilter] as const,
-    images: (poolName?: string, teamName?: string) =>
-      ['ceph-images', poolName, teamName] as const,
+    images: (poolName?: string, teamName?: string) => ['ceph-images', poolName, teamName] as const,
     snapshots: (imageName?: string, poolName?: string, teamName?: string) =>
       ['ceph-snapshots', imageName, poolName, teamName] as const,
     clones: (snapshotName?: string, imageName?: string, poolName?: string, teamName?: string) =>
       ['ceph-clones', snapshotName, imageName, poolName, teamName] as const,
-    clusterMachines: (clusterName: string) =>
-      ['ceph-cluster-machines', clusterName] as const,
+    clusterMachines: (clusterName: string) => ['ceph-cluster-machines', clusterName] as const,
     machineAssignmentStatus: (machineName: string, teamName: string) =>
       ['machine-assignment-status', machineName, teamName] as const,
     availableMachinesForClone: (teamName: string) =>

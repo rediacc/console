@@ -12,7 +12,6 @@ import {
   VersionTag,
 } from './renderers';
 
-
 /**
  * Shared table column definitions to ensure consistency across pages
  * Import specific columns or use the factories to create customized versions

@@ -1446,7 +1446,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   return (
     <EditorContainer>
       {uiMode !== 'simple' && (
-        <InfoBanner message={t(`vaultEditor.${entityDef.descriptionKey}`)} variant="info" showIcon />
+        <InfoBanner
+          message={t(`vaultEditor.${entityDef.descriptionKey}`)}
+          variant="info"
+          showIcon
+        />
       )}
 
       {/* Warning for TEAM vault without SSH keys */}
@@ -1699,13 +1703,26 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                                   {t('vaultEditor.systemCompatibility.yes')}
                                 </Tag>
                               ) : (
-                                <Tag variant="warning">{t('vaultEditor.systemCompatibility.no')}</Tag>
+                                <Tag variant="warning">
+                                  {t('vaultEditor.systemCompatibility.no')}
+                                </Tag>
                               )}
                             </Descriptions.Item>
                             <Descriptions.Item
                               label={t('vaultEditor.systemCompatibility.sudoAvailable')}
                             >
-                              <Tag variant={sudoConfigValue.color as 'default' | 'success' | 'error' | 'warning' | 'primary'}>{sudoConfigValue.text}</Tag>
+                              <Tag
+                                variant={
+                                  sudoConfigValue.color as
+                                    | 'default'
+                                    | 'success'
+                                    | 'error'
+                                    | 'warning'
+                                    | 'primary'
+                                }
+                              >
+                                {sudoConfigValue.text}
+                              </Tag>
                             </Descriptions.Item>
                             {osSetupCompleted !== null && (
                               <Descriptions.Item

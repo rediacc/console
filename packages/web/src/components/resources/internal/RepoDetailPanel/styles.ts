@@ -47,7 +47,17 @@ const STATUS_TONES = {
   neutral: 'var(--color-border-secondary)',
 } as const;
 
-export { Header, HeaderRow, TitleGroup, TagGroup, FieldRow, FieldLabel, FieldValue, FieldValueMonospace, SectionCard };
+export {
+  Header,
+  HeaderRow,
+  TitleGroup,
+  TagGroup,
+  FieldRow,
+  FieldLabel,
+  FieldValue,
+  FieldValueMonospace,
+  SectionCard,
+};
 
 export const HeaderIcon = styled(FolderOutlined)`
   font-size: ${({ theme }) => theme.fontSize.XXXXXXL}px;

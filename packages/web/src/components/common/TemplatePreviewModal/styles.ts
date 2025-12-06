@@ -8,7 +8,14 @@ import {
   FlexColumn,
   FlexRow,
 } from '@/styles/primitives';
-import { RediaccText as Text, RediaccAlert, RediaccStack, RediaccDivider, RediaccList, RediaccTabs } from '@/components/ui';
+import {
+  RediaccText as Text,
+  RediaccAlert,
+  RediaccStack,
+  RediaccDivider,
+  RediaccList,
+  RediaccTabs,
+} from '@/components/ui';
 import { RediaccTag } from '@/components/ui/Tag';
 
 const { Title } = Typography;

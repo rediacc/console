@@ -1,10 +1,7 @@
 import styled from 'styled-components';
 import { Breadcrumb, Typography } from 'antd';
 import { PageContainer, SectionStack, SectionHeaderRow, FlexRow } from '@/styles/primitives';
-import {
-  ActionsRow,
-  CenteredState as BaseCenteredState,
-} from '@/components/common/styled';
+import { ActionsRow, CenteredState as BaseCenteredState } from '@/components/common/styled';
 import { RediaccCard } from '@/components/ui';
 
 export const PageWrapper = styled(PageContainer)`

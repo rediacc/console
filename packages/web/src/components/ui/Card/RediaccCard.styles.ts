@@ -6,17 +6,23 @@ import type { CardVariant, CardSize } from './RediaccCard.types';
 // Resolve padding based on size
 export const resolveCardPadding = (theme: StyledTheme, size: CardSize = 'md'): number => {
   switch (size) {
-    case 'sm': return theme.spacing.SM_LG; // 12px
-    case 'lg': return theme.spacing.LG; // 24px
+    case 'sm':
+      return theme.spacing.SM_LG; // 12px
+    case 'lg':
+      return theme.spacing.LG; // 24px
     case 'md':
-    default: return theme.spacing.MD; // 16px
+    default:
+      return theme.spacing.MD; // 16px
   }
 };
 
 // Token set for card variants
 type CardTokenSet = { bg: string; border: string; shadow: string };
 
-export const resolveCardVariantTokens = (variant: CardVariant = 'default', theme: StyledTheme): CardTokenSet => {
+export const resolveCardVariantTokens = (
+  variant: CardVariant = 'default',
+  theme: StyledTheme
+): CardTokenSet => {
   switch (variant) {
     case 'elevated':
       return { bg: theme.colors.bgPrimary, border: 'transparent', shadow: theme.shadows.CARD };
@@ -57,13 +63,17 @@ export const StyledRediaccCard = styled(AntCard)<{
     }
 
     /* Selected state for selectable variant */
-    ${({ $selected, theme }) => $selected && css`
+    ${({ $selected, theme }) =>
+      $selected &&
+      css`
       border-width: 2px;
       border-color: ${theme.colors.primary};
     `}
 
     /* Interactive hover effects */
-    ${({ $interactive, theme }) => $interactive && css`
+    ${({ $interactive, theme }) =>
+      $interactive &&
+      css`
       cursor: pointer;
       transition: ${theme.transitions.HOVER};
 

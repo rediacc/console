@@ -29,9 +29,7 @@ interface CephMachinesTabProps {
 
 type AssignmentFilter = 'all' | 'available' | 'cluster' | 'image' | 'clone';
 
-export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({
-  teamFilter,
-}) => {
+export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) => {
   const { t } = useTranslation(['ceph', 'machines', 'common']);
   const componentStyles = useComponentStyles();
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
@@ -79,10 +77,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({
         const assignmentType = machine.assignmentStatus?.assignmentType;
         switch (assignmentFilter) {
           case 'available':
-            return (
-              (!assignmentType || assignmentType === 'AVAILABLE') &&
-              !machine.cephClusterName
-            );
+            return (!assignmentType || assignmentType === 'AVAILABLE') && !machine.cephClusterName;
           case 'cluster':
             return assignmentType === 'CLUSTER' || !!machine.cephClusterName;
           case 'image':

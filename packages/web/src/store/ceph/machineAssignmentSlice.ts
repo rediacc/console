@@ -1,9 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type {
-  ValidationResult,
-  BulkOperationProgress,
-  BulkOperationResult,
-} from '@/features/ceph';
+import type { ValidationResult, BulkOperationProgress, BulkOperationResult } from '@/features/ceph';
 import type { MachineAssignmentType } from '@/types';
 
 // Types

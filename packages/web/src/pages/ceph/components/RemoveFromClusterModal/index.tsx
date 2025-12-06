@@ -51,9 +51,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
       : []);
 
   // Filter machines that have cluster assignments
-  const machinesWithClusters = targetMachines.filter(
-    (machine) => machine.cephClusterName
-  );
+  const machinesWithClusters = targetMachines.filter((machine) => machine.cephClusterName);
 
   const handleOk = async () => {
     if (machinesWithClusters.length === 0) return;

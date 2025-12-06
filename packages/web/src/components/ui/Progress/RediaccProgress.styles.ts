@@ -5,29 +5,41 @@ import type { ProgressVariant, ProgressSize, ProgressStatus } from './RediaccPro
 
 export const resolveProgressHeight = (size: ProgressSize = 'md'): number => {
   switch (size) {
-    case 'sm': return 6;
-    case 'lg': return 12;
+    case 'sm':
+      return 6;
+    case 'lg':
+      return 12;
     case 'md':
-    default: return 8;
+    default:
+      return 8;
   }
 };
 
 export const resolveCircleWidth = (size: ProgressSize = 'md'): number => {
   switch (size) {
-    case 'sm': return 60;
-    case 'lg': return 120;
+    case 'sm':
+      return 60;
+    case 'lg':
+      return 120;
     case 'md':
-    default: return 80;
+    default:
+      return 80;
   }
 };
 
-export const resolveProgressColor = (status: ProgressStatus = 'normal', theme: StyledTheme): string => {
+export const resolveProgressColor = (
+  status: ProgressStatus = 'normal',
+  theme: StyledTheme
+): string => {
   switch (status) {
-    case 'success': return theme.colors.success;
-    case 'exception': return theme.colors.error;
+    case 'success':
+      return theme.colors.success;
+    case 'exception':
+      return theme.colors.error;
     case 'active':
     case 'normal':
-    default: return theme.colors.primary;
+    default:
+      return theme.colors.primary;
   }
 };
 
@@ -38,7 +50,9 @@ export const StyledRediaccProgress = styled(AntProgress)<{
 }>`
   && {
     /* Line variant */
-    ${({ $variant }) => $variant === 'line' && `
+    ${({ $variant }) =>
+      $variant === 'line' &&
+      `
       .ant-progress-outer {
         margin-right: 0;
         padding-right: 0;
@@ -54,14 +68,18 @@ export const StyledRediaccProgress = styled(AntProgress)<{
     `}
 
     /* Size adjustments for line variant */
-    ${({ $variant, $size }) => $variant === 'line' && `
+    ${({ $variant, $size }) =>
+      $variant === 'line' &&
+      `
       .ant-progress-inner {
         height: ${resolveProgressHeight($size)}px;
       }
     `}
 
     /* Circle variant sizing */
-    ${({ $variant, $size }) => $variant === 'circle' && `
+    ${({ $variant, $size }) =>
+      $variant === 'circle' &&
+      `
       width: ${resolveCircleWidth($size)}px;
       height: ${resolveCircleWidth($size)}px;
     `}

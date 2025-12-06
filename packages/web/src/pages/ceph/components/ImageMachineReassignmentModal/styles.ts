@@ -1,9 +1,5 @@
 import styled from 'styled-components';
-import {
-  BaseModal,
-  StyledIcon,
-  AlertCard,
-} from '@/styles/primitives';
+import { BaseModal, StyledIcon, AlertCard } from '@/styles/primitives';
 import { ContentStack, InlineStack } from '@/components/common/styled';
 import { RediaccSelect as UISelect, RediaccText as Text } from '@/components/ui';
 import { ModalSize } from '@/types/modal';

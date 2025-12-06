@@ -80,7 +80,6 @@ import {
   getGrandVaultForOperation,
 } from '@/core';
 
-
 const RepoTableComponent = S.StyledTable as React.ComponentType<TableProps<RepoTableRow>>;
 const SystemTableComponent = S.StyledTable as React.ComponentType<TableProps<Container>>;
 
@@ -1047,7 +1046,9 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
                 count: context.childClones.length,
               })}
             </Typography.Paragraph>
-            <RediaccText as="p" weight="bold">{t('resources:repos.clonesList')}</RediaccText>
+            <RediaccText as="p" weight="bold">
+              {t('resources:repos.clonesList')}
+            </RediaccText>
             <ul>
               {context.childClones.map((clone) => (
                 <li key={clone.repoGuid}>{clone.repoName}</li>

@@ -1,5 +1,9 @@
 import { forwardRef } from 'react';
-import { StyledRediaccProgress, resolveProgressHeight, resolveCircleWidth } from './RediaccProgress.styles';
+import {
+  StyledRediaccProgress,
+  resolveProgressHeight,
+  resolveCircleWidth,
+} from './RediaccProgress.styles';
 import type { RediaccProgressProps } from './RediaccProgress.types';
 
 export const RediaccProgress = forwardRef<HTMLDivElement, RediaccProgressProps>(
@@ -18,9 +22,8 @@ export const RediaccProgress = forwardRef<HTMLDivElement, RediaccProgressProps>(
     ref
   ) => {
     // Use size-based defaults if strokeWidth not provided
-    const resolvedStrokeWidth = strokeWidth ?? (variant === 'line'
-      ? resolveProgressHeight(size)
-      : 6);
+    const resolvedStrokeWidth =
+      strokeWidth ?? (variant === 'line' ? resolveProgressHeight(size) : 6);
 
     // Use size-based width for circle
     const circleWidth = variant === 'circle' ? resolveCircleWidth(size) : undefined;

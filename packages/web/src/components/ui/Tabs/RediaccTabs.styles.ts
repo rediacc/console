@@ -5,19 +5,24 @@ import type { TabsVariant, TabsSize } from './RediaccTabs.types';
 
 export const resolveTabFontSize = (theme: StyledTheme, size: TabsSize = 'md'): number => {
   switch (size) {
-    case 'sm': return theme.fontSize.SM;
+    case 'sm':
+      return theme.fontSize.SM;
     case 'md':
-    default: return theme.fontSize.BASE;
+    default:
+      return theme.fontSize.BASE;
   }
 };
 
 // Map variant to antd type
 export const mapVariantToAntType = (variant: TabsVariant): 'line' | 'card' | 'editable-card' => {
   switch (variant) {
-    case 'card': return 'card';
-    case 'pills': return 'line'; // We style pills differently via CSS
+    case 'card':
+      return 'card';
+    case 'pills':
+      return 'line'; // We style pills differently via CSS
     case 'default':
-    default: return 'line';
+    default:
+      return 'line';
   }
 };
 
@@ -33,7 +38,9 @@ export const StyledRediaccTabs = styled(AntTabs).withConfig({
     .ant-tabs-nav {
       margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 
-      ${({ $centered }) => $centered && css`
+      ${({ $centered }) =>
+        $centered &&
+        css`
         justify-content: center;
       `}
 
@@ -52,7 +59,9 @@ export const StyledRediaccTabs = styled(AntTabs).withConfig({
         color: ${({ theme }) => theme.colors.textPrimary};
       }
 
-      ${({ $fullWidth }) => $fullWidth && css`
+      ${({ $fullWidth }) =>
+        $fullWidth &&
+        css`
         flex: 1;
         justify-content: center;
       `}
@@ -68,7 +77,9 @@ export const StyledRediaccTabs = styled(AntTabs).withConfig({
     }
 
     /* Pills variant */
-    ${({ $variant, theme }) => $variant === 'pills' && css`
+    ${({ $variant, theme }) =>
+      $variant === 'pills' &&
+      css`
       .ant-tabs-nav::before {
         display: none;
       }
@@ -93,7 +104,9 @@ export const StyledRediaccTabs = styled(AntTabs).withConfig({
     `}
 
     /* Card variant */
-    ${({ $variant, theme }) => $variant === 'card' && css`
+    ${({ $variant, theme }) =>
+      $variant === 'card' &&
+      css`
       .ant-tabs-tab {
         background-color: ${theme.colors.bgSecondary};
         border: 1px solid ${theme.colors.borderSecondary};

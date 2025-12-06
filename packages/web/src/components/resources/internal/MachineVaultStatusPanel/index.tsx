@@ -275,7 +275,8 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
             <TimestampWrapper>
               <Tooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
                 <Timestamp data-testid="vault-status-last-updated">
-                  {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
+                  {t('machines:lastUpdated')}:{' '}
+                  {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
                 </Timestamp>
               </Tooltip>
             </TimestampWrapper>

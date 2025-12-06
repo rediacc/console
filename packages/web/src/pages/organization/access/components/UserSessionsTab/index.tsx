@@ -185,7 +185,11 @@ const UserSessionsTab: React.FC = () => {
             <CellText>{name}</CellText>
             {record.parentRequestId && (
               <Tooltip title={t('userSessions.forkToken')}>
-                <SessionTag variant="primary" icon={<LinkOutlined />} data-testid="sessions-fork-tag">
+                <SessionTag
+                  variant="primary"
+                  icon={<LinkOutlined />}
+                  data-testid="sessions-fork-tag"
+                >
                   {t('userSessions.fork')}
                 </SessionTag>
               </Tooltip>
@@ -287,7 +291,14 @@ const UserSessionsTab: React.FC = () => {
 
       <TableCard
         title={
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '16px',
+            }}
+          >
             <InlineStack>
               <CardTitleText>{t('userSessions.title')}</CardTitleText>
               <Tooltip title={t('common:actions.refresh')}>

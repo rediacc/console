@@ -5,16 +5,31 @@ import type { AlertVariant, AlertSize } from './RediaccAlert.types';
 
 type AlertTokenSet = { bg: string; border: string; color: string };
 
-export const resolveAlertVariantTokens = (variant: AlertVariant = 'info', theme: StyledTheme): AlertTokenSet => {
+export const resolveAlertVariantTokens = (
+  variant: AlertVariant = 'info',
+  theme: StyledTheme
+): AlertTokenSet => {
   switch (variant) {
     case 'success':
-      return { bg: theme.colors.bgSuccess, border: theme.colors.success, color: theme.colors.success };
+      return {
+        bg: theme.colors.bgSuccess,
+        border: theme.colors.success,
+        color: theme.colors.success,
+      };
     case 'warning':
-      return { bg: theme.colors.bgWarning, border: theme.colors.warning, color: theme.colors.warning };
+      return {
+        bg: theme.colors.bgWarning,
+        border: theme.colors.warning,
+        color: theme.colors.warning,
+      };
     case 'error':
       return { bg: theme.colors.bgError, border: theme.colors.error, color: theme.colors.error };
     case 'neutral':
-      return { bg: theme.colors.bgSecondary, border: theme.colors.borderSecondary, color: theme.colors.textSecondary };
+      return {
+        bg: theme.colors.bgSecondary,
+        border: theme.colors.borderSecondary,
+        color: theme.colors.textSecondary,
+      };
     case 'info':
     default:
       return { bg: theme.colors.bgInfo, border: theme.colors.info, color: theme.colors.info };
@@ -32,7 +47,9 @@ export const resolveAlertPadding = (theme: StyledTheme, size: AlertSize = 'md'):
 };
 
 // Map our variant to antd type
-export const mapVariantToAntType = (variant: AlertVariant): 'info' | 'warning' | 'error' | 'success' => {
+export const mapVariantToAntType = (
+  variant: AlertVariant
+): 'info' | 'warning' | 'error' | 'success' => {
   if (variant === 'neutral') return 'info';
   return variant;
 };

@@ -1,11 +1,6 @@
 import styled from 'styled-components';
 import { CameraOutlined } from '@ant-design/icons';
-import {
-  FlexColumn,
-  FlexRow,
-  StyledIcon,
-  IconActionButton,
-} from '@/styles/primitives';
+import { FlexColumn, FlexRow, StyledIcon, IconActionButton } from '@/styles/primitives';
 import { RediaccTag } from '@/components/ui';
 import { TableWrapper, NameCell, NameText as BaseNameText } from '../../styles/tableAliases';
 

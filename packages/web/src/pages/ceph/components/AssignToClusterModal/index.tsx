@@ -2,10 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import type { Machine } from '@/types';
-import {
-  useCephClusters,
-  type CephCluster,
-} from '@/api/queries/ceph';
+import { useCephClusters, type CephCluster } from '@/api/queries/ceph';
 import {
   useUpdateMachineCeph,
   useUpdateMachineClusterAssignment,

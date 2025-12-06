@@ -2,9 +2,7 @@ import type { MenuProps } from 'antd';
 import type { TFunction } from 'i18next';
 import { DatabaseOutlined, PlusOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 
-export const getPoolFunctionMenuItems = (
-  t: TFunction<'ceph' | 'common'>
-): MenuProps['items'] => [
+export const getPoolFunctionMenuItems = (t: TFunction<'ceph' | 'common'>): MenuProps['items'] => [
   {
     key: 'list',
     label: t('functions.pool_list'),

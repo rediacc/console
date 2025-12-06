@@ -48,7 +48,8 @@ interface RediaccListStatics {
   Item: typeof List.Item;
 }
 
-export const RediaccList = forwardRef(RediaccListInner) as unknown as RediaccListComponent & RediaccListStatics;
+export const RediaccList = forwardRef(RediaccListInner) as unknown as RediaccListComponent &
+  RediaccListStatics;
 
 // Attach List.Item as a static property
 RediaccList.Item = List.Item;

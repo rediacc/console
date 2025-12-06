@@ -14,7 +14,10 @@ import type { RediaccRadioGroupProps, RediaccRadioButtonProps } from './RediaccR
  * </RediaccRadio.Group>
  */
 const RediaccRadioButton = forwardRef<any, RediaccRadioButtonProps>(
-  ({ value, disabled = false, children, className, style, 'data-testid': dataTestId, ...rest }, ref) => {
+  (
+    { value, disabled = false, children, className, style, 'data-testid': dataTestId, ...rest },
+    ref
+  ) => {
     return (
       <StyledRediaccRadioButton
         ref={ref}

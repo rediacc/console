@@ -28,4 +28,3 @@ export const WarningNote = styled(RediaccText)`
 export const DangerText = styled(RediaccText).attrs({ color: 'danger' })``;
 
 export const CaptionText = styled(RediaccText).attrs({ variant: 'caption', color: 'secondary' })``;
-

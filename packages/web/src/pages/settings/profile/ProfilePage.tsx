@@ -18,7 +18,12 @@ import TwoFactorSettings from '@/pages/settings/profile/components/TwoFactorSett
 import { ModalSize } from '@/types/modal';
 import { useDialogState, useModalForm } from '@/hooks';
 import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields';
-import { RediaccButton as Button, PageWrapper, SectionStack, SectionHeading } from '@/components/ui';
+import {
+  RediaccButton as Button,
+  PageWrapper,
+  SectionStack,
+  SectionHeading,
+} from '@/components/ui';
 import {
   CardContent,
   CardHeader,
@@ -257,10 +262,7 @@ const ProfilePage: React.FC = () => {
           <FormItemActions>
             <ModalActions>
               <Button onClick={closeChangePassword}>{tCommon('actions.cancel')}</Button>
-              <Button
-                htmlType="submit"
-                loading={updateUserPasswordMutation.isPending}
-              >
+              <Button htmlType="submit" loading={updateUserPasswordMutation.isPending}>
                 {t('personal.changePassword.submit', { defaultValue: 'Change Password' })}
               </Button>
             </ModalActions>

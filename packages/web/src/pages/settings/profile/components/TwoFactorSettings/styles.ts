@@ -2,11 +2,7 @@ import styled from 'styled-components';
 import { Space, Typography, Form } from 'antd';
 import { SafetyCertificateOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import {
-  StyledIcon,
-  NeutralStack,
-  FlexRow,
-} from '@/styles/primitives';
+import { StyledIcon, NeutralStack, FlexRow } from '@/styles/primitives';
 import { InlineStack } from '@/components/common/styled';
 import { RediaccInput } from '@/components/ui/Form/Input';
 import { RediaccAlert } from '@/components/ui';

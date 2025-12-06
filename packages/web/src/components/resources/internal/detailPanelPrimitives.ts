@@ -189,7 +189,10 @@ export const DetailPanelDivider = styled(RediaccDivider)`
   }
 `;
 
-export const DetailPanelSecondaryTextBlock = styled(RediaccText).attrs({ size: 'xs', color: 'muted' })`
+export const DetailPanelSecondaryTextBlock = styled(RediaccText).attrs({
+  size: 'xs',
+  color: 'muted',
+})`
   && {
     margin: 0;
   }

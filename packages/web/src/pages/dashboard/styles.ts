@@ -1,13 +1,15 @@
 import styled from 'styled-components';
 import { Typography, Timeline } from 'antd';
 import { Link as RouterLink } from 'react-router-dom';
-import { RediaccText as UnifiedText, RediaccCard, RediaccBadge, RediaccProgress, RediaccList, RediaccStack } from '@/components/ui';
 import {
-  PageContainer,
-  scrollbarStyles,
-  FlexRow,
-  FlexColumn,
-} from '@/styles/primitives';
+  RediaccText as UnifiedText,
+  RediaccCard,
+  RediaccBadge,
+  RediaccProgress,
+  RediaccList,
+  RediaccStack,
+} from '@/components/ui';
+import { PageContainer, scrollbarStyles, FlexRow, FlexColumn } from '@/styles/primitives';
 import {
   ContentStack,
   CenteredState,
@@ -113,7 +115,9 @@ export const InlineLink = styled(RouterLink)`
 
 export const QueueBadgeRow = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
-export const QueueBadge = styled(RediaccBadge)<{ $variant?: 'error' | 'warning' | 'info' | 'muted' }>`
+export const QueueBadge = styled(RediaccBadge)<{
+  $variant?: 'error' | 'warning' | 'info' | 'muted';
+}>`
   .ant-scroll-number {
     background-color: ${({ theme, $variant }) => {
       switch ($variant) {

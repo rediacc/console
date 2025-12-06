@@ -74,10 +74,7 @@ export const resolveTextSize = (theme: StyledTheme, size?: TextSize): number | u
 /**
  * Resolves font weight from weight prop
  */
-export const resolveTextWeight = (
-  theme: StyledTheme,
-  weight?: TextWeight
-): number | undefined => {
+export const resolveTextWeight = (theme: StyledTheme, weight?: TextWeight): number | undefined => {
   if (!weight) return undefined;
   switch (weight) {
     case 'regular':
@@ -127,9 +124,17 @@ export const resolveTextColor = (theme: StyledTheme, color?: TextColor): string 
  */
 export const StyledRediaccText = styled(AntText).withConfig({
   shouldForwardProp: (prop) =>
-    !['$variant', '$size', '$weight', '$color', '$align', '$truncate', '$maxLines', '$code', '$as'].includes(
-      prop
-    ),
+    ![
+      '$variant',
+      '$size',
+      '$weight',
+      '$color',
+      '$align',
+      '$truncate',
+      '$maxLines',
+      '$code',
+      '$as',
+    ].includes(prop),
 })<{
   $variant?: TextVariant;
   $size?: TextSize;

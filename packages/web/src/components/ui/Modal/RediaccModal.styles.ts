@@ -15,12 +15,17 @@ export const fadeInAnimation = keyframes`
 
 export const resolveModalWidth = (size: ModalSize = 'md'): string | number => {
   switch (size) {
-    case 'sm': return 400;
-    case 'lg': return 800;
-    case 'xl': return 1200;
-    case 'fullscreen': return '100vw';
+    case 'sm':
+      return 400;
+    case 'lg':
+      return 800;
+    case 'xl':
+      return 1200;
+    case 'fullscreen':
+      return '100vw';
     case 'md':
-    default: return 520;
+    default:
+      return 520;
   }
 };
 
@@ -30,7 +35,9 @@ export const StyledRediaccModal = styled(AntModal).withConfig({
   $size: ModalSize;
   $variant: ModalVariant;
 }>`
-  ${({ $size }) => $size === 'fullscreen' && css`
+  ${({ $size }) =>
+    $size === 'fullscreen' &&
+    css`
     &.ant-modal {
       max-width: 100vw;
       top: 0;
@@ -72,7 +79,9 @@ export const StyledRediaccModal = styled(AntModal).withConfig({
   .ant-modal-body {
     padding: ${({ theme }) => theme.spacing.LG}px;
 
-    ${({ $size }) => $size === 'xl' && css`
+    ${({ $size }) =>
+      $size === 'xl' &&
+      css`
       max-height: 80vh;
       overflow-y: auto;
     `}

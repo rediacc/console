@@ -116,8 +116,12 @@ export const createRepoSchema = z
       }, 'Invalid size format (e.g., 10G, 100G, 1T)'), // Optional - required only when creating physical storage
     repoGuid: z
       .union([
-        z.string().length(0), // Allow empty string
-        z.string().uuid('Invalid GUID format'), // Or valid UUID
+        z
+          .string()
+          .length(0), // Allow empty string
+        z
+          .string()
+          .uuid('Invalid GUID format'), // Or valid UUID
       ])
       .optional(), // Optional repo GUID
     vaultContent: vaultSchema.optional().default('{}'),
@@ -127,8 +131,7 @@ export const createRepoSchema = z
       if (!data) return true;
       // If repoGuid is provided (credential-only mode), machine and size are not required
       // Otherwise, both machine and size must be provided for physical storage creation
-      const isCredentialOnlyMode =
-        typeof data.repoGuid === 'string' && data.repoGuid.trim() !== '';
+      const isCredentialOnlyMode = typeof data.repoGuid === 'string' && data.repoGuid.trim() !== '';
       if (isCredentialOnlyMode) {
         return true; // No additional requirements in credential-only mode
       }

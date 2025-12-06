@@ -69,7 +69,10 @@ export const AdvancedOptionsContainer = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const AdvancedOptionsButton = styled(RediaccButton).attrs(() => ({ variant: 'text', size: 'sm' }))`
+export const AdvancedOptionsButton = styled(RediaccButton).attrs(() => ({
+  variant: 'text',
+  size: 'sm',
+}))`
   && {
     color: ${({ theme }) => theme.colors.textTertiary};
     height: auto;

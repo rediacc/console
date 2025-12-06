@@ -178,9 +178,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
 
           <WarningAlert
             message={<FieldLabel>{t('common:important')}</FieldLabel>}
-            description={
-              <FieldValue>{t('ceph:images.reassignmentWarning')}</FieldValue>
-            }
+            description={<FieldValue>{t('ceph:images.reassignmentWarning')}</FieldValue>}
             variant="warning"
             showIcon
             data-testid="image-reassign-warning"

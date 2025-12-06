@@ -297,7 +297,7 @@ export const StyledRediaccSearchInput = styled(AntSearch)<{
     input.ant-input {
       height: ${({ theme, $size }) => resolveInputHeight(theme, $size)}px;
       border-radius: ${({ theme }) => theme.borderRadius.LG}px 0 0 ${({ theme }) =>
-  theme.borderRadius.LG}px;
+        theme.borderRadius.LG}px;
     }
 
     /* Search button */

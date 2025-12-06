@@ -5,19 +5,25 @@ import type { EmptyVariant, EmptySize } from './RediaccEmpty.types';
 
 export const resolveEmptyPadding = (theme: StyledTheme, size: EmptySize = 'md'): number => {
   switch (size) {
-    case 'sm': return theme.spacing.LG; // 24px
-    case 'lg': return theme.spacing.XXXL; // 48px
+    case 'sm':
+      return theme.spacing.LG; // 24px
+    case 'lg':
+      return theme.spacing.XXXL; // 48px
     case 'md':
-    default: return theme.spacing.XXL; // 40px
+    default:
+      return theme.spacing.XXL; // 40px
   }
 };
 
 export const resolveEmptyImageSize = (size: EmptySize = 'md'): number => {
   switch (size) {
-    case 'sm': return 40;
-    case 'lg': return 80;
+    case 'sm':
+      return 40;
+    case 'lg':
+      return 80;
     case 'md':
-    default: return 60;
+    default:
+      return 60;
   }
 };
 
@@ -31,7 +37,9 @@ export const StyledRediaccEmpty = styled(AntEmpty).withConfig({
     padding: ${({ theme, $size }) => resolveEmptyPadding(theme, $size)}px 0;
 
     /* Minimal variant - no image */
-    ${({ $variant }) => $variant === 'minimal' && `
+    ${({ $variant }) =>
+      $variant === 'minimal' &&
+      `
       .ant-empty-image {
         display: none;
       }

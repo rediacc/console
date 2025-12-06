@@ -1,8 +1,5 @@
 import React from 'react';
-import {
-  CephCluster,
-  useCephClusterMachines,
-} from '@/api/queries/ceph';
+import { CephCluster, useCephClusterMachines } from '@/api/queries/ceph';
 import { MachineCountBadgeWrapper, MachineCountIcon } from '../styles';
 
 interface MachineCountBadgeProps {

@@ -543,7 +543,11 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         <Space>
           {stateColumn.render?.(state, record, index) as React.ReactNode}
 
-          {record.status && <Text variant="caption" muted>{record.status}</Text>}
+          {record.status && (
+            <Text variant="caption" muted>
+              {record.status}
+            </Text>
+          )}
         </Space>
       ),
     },

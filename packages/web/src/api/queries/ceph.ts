@@ -17,11 +17,7 @@ import type {
 export const CEPH_QUERY_KEYS = {
   clusters: (teamFilter?: string | string[]) => ['ceph-clusters', teamFilter],
   pools: (teamFilter?: string | string[]) => ['ceph-pools', teamFilter],
-  images: (poolName?: string, teamName?: string) => [
-    'ceph-images',
-    poolName,
-    teamName,
-  ],
+  images: (poolName?: string, teamName?: string) => ['ceph-images', poolName, teamName],
   snapshots: (imageName?: string, poolName?: string, teamName?: string) => [
     'ceph-snapshots',
     imageName,
@@ -85,11 +81,7 @@ export const useCephPools = (teamFilter?: string | string[], enabled = true) => 
 };
 
 // RBD Images
-export const useCephRbdImages = (
-  poolName?: string,
-  teamName?: string,
-  enabled = true
-) => {
+export const useCephRbdImages = (poolName?: string, teamName?: string, enabled = true) => {
   return useQuery<CephRbdImage[]>({
     queryKey: CEPH_QUERY_KEYS.images(poolName, teamName),
     queryFn: () => api.ceph.listImages(poolName as string, teamName as string),
@@ -107,11 +99,7 @@ export const useCephRbdSnapshots = (
   return useQuery<CephRbdSnapshot[]>({
     queryKey: CEPH_QUERY_KEYS.snapshots(imageName, poolName, teamName),
     queryFn: () =>
-      api.ceph.listSnapshots(
-        imageName as string,
-        poolName as string,
-        teamName as string
-      ),
+      api.ceph.listSnapshots(imageName as string, poolName as string, teamName as string),
     enabled: enabled && !!imageName && !!poolName && !!teamName,
   });
 };
@@ -193,13 +181,7 @@ export const useCloneMachines = (
   return useQuery<CephCloneMachine[]>({
     queryKey: CEPH_QUERY_KEYS.cloneMachines(cloneName, snapshotName, imageName, poolName, teamName),
     queryFn: () =>
-      api.ceph.getCloneMachines(
-        cloneName,
-        snapshotName,
-        imageName,
-        poolName,
-        teamName
-      ),
+      api.ceph.getCloneMachines(cloneName, snapshotName, imageName, poolName, teamName),
     enabled: enabled && !!cloneName && !!snapshotName && !!imageName && !!poolName && !!teamName,
   });
 };

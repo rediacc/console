@@ -22,7 +22,10 @@ export const CommandBox = styled.div`
   justify-content: space-between;
 `;
 
-export const CommandCode = styled(RediaccText).attrs({ size: 'sm' })<{ $isComment?: boolean; $isCommand?: boolean }>`
+export const CommandCode = styled(RediaccText).attrs({ size: 'sm' })<{
+  $isComment?: boolean;
+  $isCommand?: boolean;
+}>`
   && {
     background: transparent;
     border: none;

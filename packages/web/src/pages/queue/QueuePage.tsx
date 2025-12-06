@@ -62,7 +62,13 @@ import {
 import type { QueueItem } from '@rediacc/shared/types';
 import type { ParsedError } from '@rediacc/shared/error-parser';
 import { renderQueueStatus, renderPriority } from '@/utils/queueRenderers';
-import { PageWrapper, RediaccButton as Button, RediaccText as Text, RediaccText, RediaccStack } from '@/components/ui';
+import {
+  PageWrapper,
+  RediaccButton as Button,
+  RediaccText as Text,
+  RediaccText,
+  RediaccStack,
+} from '@/components/ui';
 import {
   FiltersCard,
   FiltersGrid,
@@ -594,9 +600,7 @@ const QueuePage: React.FC = () => {
                         {primaryError.severity}
                       </SeverityPill>
                     )}
-                    <TruncatedErrorText as="span">
-                      {primaryError?.message}
-                    </TruncatedErrorText>
+                    <TruncatedErrorText as="span">{primaryError?.message}</TruncatedErrorText>
                   </TooltipPrimaryRow>
                   {/* Show count of additional errors if any */}
                   {allErrors.length > 1 && (

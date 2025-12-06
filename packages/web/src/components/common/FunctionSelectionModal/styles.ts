@@ -1,11 +1,5 @@
 import styled, { css } from 'styled-components';
-import {
-  BaseModal,
-  ContentCard,
-  FlexColumn,
-  FlexRow,
-  scrollbarStyles,
-} from '@/styles/primitives';
+import { BaseModal, ContentCard, FlexColumn, FlexRow, scrollbarStyles } from '@/styles/primitives';
 import {
   RediaccSearchInput as UnifiedSearchInput,
   RediaccInputNumber,

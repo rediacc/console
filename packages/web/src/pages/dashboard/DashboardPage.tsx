@@ -613,7 +613,9 @@ const DashboardPage: React.FC = () => {
                                       <WarningOutlined /> {teamIssue.staleItems} stale
                                     </Tag>
                                   )}
-                                  <Tag color="processing">{teamIssue.pendingItems || 0} pending</Tag>
+                                  <Tag color="processing">
+                                    {teamIssue.pendingItems || 0} pending
+                                  </Tag>
                                   <Tag color="blue">{teamIssue.activeItems || 0} active</Tag>
                                 </InlineStack>
                               </FlexBetween>

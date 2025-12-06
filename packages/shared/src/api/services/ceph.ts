@@ -22,10 +22,7 @@ export function createCephService(client: ApiClient) {
   return {
     // Clusters
     listClusters: async (): Promise<CephCluster[]> => {
-      const response = await client.post<CephCluster>(
-        endpoints.ceph.getClusters,
-        {}
-      );
+      const response = await client.post<CephCluster>(endpoints.ceph.getClusters, {});
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<CephCluster>(1),
       });
@@ -62,12 +59,9 @@ export function createCephService(client: ApiClient) {
 
     // Pools
     listPools: async (teamName: string | string[]): Promise<CephPool[]> => {
-      const response = await client.post<CephPool>(
-        endpoints.ceph.getPools,
-        {
-          teamName: toMachineNamesValue(teamName),
-        }
-      );
+      const response = await client.post<CephPool>(endpoints.ceph.getPools, {
+        teamName: toMachineNamesValue(teamName),
+      });
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<CephPool>(1),
       });
@@ -109,17 +103,11 @@ export function createCephService(client: ApiClient) {
     },
 
     // Images
-    listImages: async (
-      poolName: string,
-      teamName: string
-    ): Promise<CephRbdImage[]> => {
-      const response = await client.post<CephRbdImage>(
-        endpoints.ceph.getRbdImages,
-        {
-          poolName,
-          teamName,
-        }
-      );
+    listImages: async (poolName: string, teamName: string): Promise<CephRbdImage[]> => {
+      const response = await client.post<CephRbdImage>(endpoints.ceph.getRbdImages, {
+        poolName,
+        teamName,
+      });
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<CephRbdImage>(1),
       });
@@ -169,14 +157,11 @@ export function createCephService(client: ApiClient) {
       poolName: string,
       teamName: string
     ): Promise<CephRbdSnapshot[]> => {
-      const response = await client.post<CephRbdSnapshot>(
-        endpoints.ceph.getRbdSnapshots,
-        {
-          imageName,
-          poolName,
-          teamName,
-        }
-      );
+      const response = await client.post<CephRbdSnapshot>(endpoints.ceph.getRbdSnapshots, {
+        imageName,
+        poolName,
+        teamName,
+      });
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<CephRbdSnapshot>(1),
       });
@@ -219,15 +204,12 @@ export function createCephService(client: ApiClient) {
       poolName: string,
       teamName: string
     ): Promise<CephRbdClone[]> => {
-      const response = await client.post<CephRbdClone>(
-        endpoints.ceph.getRbdClones,
-        {
-          snapshotName,
-          imageName,
-          poolName,
-          teamName,
-        }
-      );
+      const response = await client.post<CephRbdClone>(endpoints.ceph.getRbdClones, {
+        snapshotName,
+        imageName,
+        poolName,
+        teamName,
+      });
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<CephRbdClone>(1),
       });
@@ -323,9 +305,7 @@ export function createCephService(client: ApiClient) {
       );
     },
 
-    getAvailableMachinesForClone: async (
-      teamName: string
-    ): Promise<CephAvailableMachine[]> => {
+    getAvailableMachinesForClone: async (teamName: string): Promise<CephAvailableMachine[]> => {
       const response = await client.post<CephAvailableMachine>(
         endpoints.machines.getAvailableMachinesForClone,
         { teamName }
@@ -358,16 +338,13 @@ export function createCephService(client: ApiClient) {
       poolName: string,
       teamName: string
     ): Promise<CephCloneMachine[]> => {
-      const response = await client.post<CephCloneMachine>(
-        endpoints.machines.getCloneMachines,
-        {
-          cloneName,
-          snapshotName,
-          imageName,
-          poolName,
-          teamName,
-        }
-      );
+      const response = await client.post<CephCloneMachine>(endpoints.machines.getCloneMachines, {
+        cloneName,
+        snapshotName,
+        imageName,
+        poolName,
+        teamName,
+      });
 
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<CephCloneMachine>(0),

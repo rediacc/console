@@ -4,34 +4,48 @@ import type { StyledTheme } from '@/styles/styledTheme';
 import type { BadgeVariant, BadgeSize } from './RediaccBadge.types';
 
 // Get badge color based on variant
-export const resolveBadgeColor = (variant: BadgeVariant = 'default', theme: StyledTheme): string => {
+export const resolveBadgeColor = (
+  variant: BadgeVariant = 'default',
+  theme: StyledTheme
+): string => {
   switch (variant) {
-    case 'primary': return theme.colors.primary;
-    case 'success': return theme.colors.success;
-    case 'warning': return theme.colors.warning;
-    case 'error': return theme.colors.error;
-    case 'info': return theme.colors.info;
-    case 'muted': return theme.colors.textTertiary;
+    case 'primary':
+      return theme.colors.primary;
+    case 'success':
+      return theme.colors.success;
+    case 'warning':
+      return theme.colors.warning;
+    case 'error':
+      return theme.colors.error;
+    case 'info':
+      return theme.colors.info;
+    case 'muted':
+      return theme.colors.textTertiary;
     case 'default':
-    default: return theme.colors.primary;
+    default:
+      return theme.colors.primary;
   }
 };
 
 // Get badge size in pixels
 export const resolveBadgeSize = (size: BadgeSize = 'md'): number => {
   switch (size) {
-    case 'sm': return 16;
+    case 'sm':
+      return 16;
     case 'md':
-    default: return 20;
+    default:
+      return 20;
   }
 };
 
 // Get badge font size
 export const resolveBadgeFontSize = (theme: StyledTheme, size: BadgeSize = 'md'): number => {
   switch (size) {
-    case 'sm': return theme.fontSize.XS - 2; // 10px
+    case 'sm':
+      return theme.fontSize.XS - 2; // 10px
     case 'md':
-    default: return theme.fontSize.XS; // 12px
+    default:
+      return theme.fontSize.XS; // 12px
   }
 };
 

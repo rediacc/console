@@ -36,9 +36,7 @@ import {
   PercentageText,
 } from './styles';
 
-const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({
-  stats,
-}) => {
+const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
   const { t } = useTranslation(['common', 'ceph']);
   const styledTheme = useStyledTheme();
 
@@ -151,11 +149,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({
           <TitleText>{t('ceph:dashboard.title')}</TitleText>
         </InlineStack>
       }
-      extra={
-        <Subtitle>
-          {t('ceph:dashboard.subtitle', { total: stats.total_machines })}
-        </Subtitle>
-      }
+      extra={<Subtitle>{t('ceph:dashboard.subtitle', { total: stats.total_machines })}</Subtitle>}
     >
       <WidgetBody>
         <Row gutter={[16, 16]}>

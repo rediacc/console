@@ -1011,7 +1011,16 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <DashboardOutlined />
                               <span>Task Overview</span>
-                              <Tag variant={getSimplifiedStatus().color as 'default' | 'success' | 'error' | 'warning' | 'primary'}>
+                              <Tag
+                                variant={
+                                  getSimplifiedStatus().color as
+                                    | 'default'
+                                    | 'success'
+                                    | 'error'
+                                    | 'warning'
+                                    | 'primary'
+                                }
+                              >
                                 {getSimplifiedStatus().status}
                               </Tag>
                               {isTaskStale() && (
@@ -1605,10 +1614,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                   return (
                                                     <FullWidthSpace direction="vertical">
                                                       {/* SSH Test Result Summary */}
-                                                      <SpacedCard
-                                                        size="sm"
-                                                        title="SSH Test Result"
-                                                      >
+                                                      <SpacedCard size="sm" title="SSH Test Result">
                                                         <Descriptions column={2} size="small">
                                                           <Descriptions.Item label="Status">
                                                             <Tag variant="success">
@@ -1625,11 +1631,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                             {result.user}
                                                           </Descriptions.Item>
                                                           <Descriptions.Item label="Auth Method">
-                                                            <Tag variant="default">{result.auth_method}</Tag>
+                                                            <Tag variant="default">
+                                                              {result.auth_method}
+                                                            </Tag>
                                                           </Descriptions.Item>
                                                           <Descriptions.Item label="SSH Key">
                                                             {result.ssh_key_configured ? (
-                                                              <Tag variant="success">Configured</Tag>
+                                                              <Tag variant="success">
+                                                                Configured
+                                                              </Tag>
                                                             ) : (
                                                               <Tag variant="warning">
                                                                 Not Configured
@@ -1698,7 +1708,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                                 );
                                                               } else {
                                                                 return (
-                                                                  <Tag variant="default">Unknown</Tag>
+                                                                  <Tag variant="default">
+                                                                    Unknown
+                                                                  </Tag>
                                                                 );
                                                               }
                                                             })()}
@@ -1727,7 +1739,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                               compatibility.compatibility_issues
                                                                 .length > 0 && (
                                                                 <SectionMargin $top={spacing('SM')}>
-                                                                  <Text weight="bold">Known Issues:</Text>
+                                                                  <Text weight="bold">
+                                                                    Known Issues:
+                                                                  </Text>
                                                                   <InfoList
                                                                     $top={spacing('XS')}
                                                                     $bottom={spacing('SM')}
@@ -1829,9 +1843,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <TeamOutlined />
                               <span>Related Queue Items</span>
-                              <CaptionText>
-                                (Result Set 5 - Nearby Tasks)
-                              </CaptionText>
+                              <CaptionText>(Result Set 5 - Nearby Tasks)</CaptionText>
                             </Space>
                           ),
                           children: (
@@ -1948,9 +1960,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <DashboardOutlined />
                               <span>Performance Metrics</span>
-                              <CaptionText>
-                                (Result Set 6 - Machine Stats)
-                              </CaptionText>
+                              <CaptionText>(Result Set 6 - Machine Stats)</CaptionText>
                             </Space>
                           ),
                           children: (

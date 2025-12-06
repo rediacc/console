@@ -1,10 +1,5 @@
 import styled, { css, keyframes } from 'styled-components';
-import {
-  Table,
-  Typography,
-  Segmented,
-  Row,
-} from 'antd';
+import { Table, Typography, Segmented, Row } from 'antd';
 import type { TableProps } from 'antd';
 import type { ComponentType } from 'react';
 import type { StyledTheme } from '@/styles/styledTheme';
@@ -225,7 +220,6 @@ const fullWidthControlStyles = css`
   width: 100%;
 `;
 
-
 export const PageContainer = styled.div.attrs({ className: 'page-container' })`
   width: 100%;
 `;
@@ -301,7 +295,11 @@ export const FiltersCard = styled(RediaccCard)`
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
 `;
 
-export const FiltersGrid = styled(RediaccStack).attrs({ gap: 'sm', wrap: true, direction: 'horizontal' })`
+export const FiltersGrid = styled(RediaccStack).attrs({
+  gap: 'sm',
+  wrap: true,
+  direction: 'horizontal',
+})`
   width: 100%;
 `;
 

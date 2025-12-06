@@ -13,11 +13,7 @@ export type TagVariant =
 export type TagSize = 'sm' | 'md' | 'lg';
 
 // Semantic presets for common domain concepts
-export type TagPreset =
-  | 'team'
-  | 'machine'
-  | 'bridge'
-  | 'region';
+export type TagPreset = 'team' | 'machine' | 'bridge' | 'region';
 
 export interface RediaccTagProps {
   /** Visual style variant */

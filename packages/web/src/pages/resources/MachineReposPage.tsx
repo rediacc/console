@@ -42,8 +42,6 @@ import {
   ErrorWrapper,
 } from './styles';
 
-
-
 interface ContainerData {
   id: string;
   name: string;

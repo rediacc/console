@@ -7,37 +7,53 @@ export const resolveStackGap = (theme: StyledTheme, gap: StackGap | number = 'md
   if (typeof gap === 'number') return gap;
 
   switch (gap) {
-    case 'none': return 0;
-    case 'xs': return theme.spacing.XS; // 4px
-    case 'sm': return theme.spacing.SM; // 8px
-    case 'lg': return theme.spacing.LG; // 24px
-    case 'xl': return theme.spacing.XL; // 32px
+    case 'none':
+      return 0;
+    case 'xs':
+      return theme.spacing.XS; // 4px
+    case 'sm':
+      return theme.spacing.SM; // 8px
+    case 'lg':
+      return theme.spacing.LG; // 24px
+    case 'xl':
+      return theme.spacing.XL; // 32px
     case 'md':
-    default: return theme.spacing.MD; // 16px
+    default:
+      return theme.spacing.MD; // 16px
   }
 };
 
 // Map align to CSS align-items
 const mapAlign = (align: StackAlign = 'stretch'): string => {
   switch (align) {
-    case 'start': return 'flex-start';
-    case 'end': return 'flex-end';
-    case 'center': return 'center';
-    case 'baseline': return 'baseline';
+    case 'start':
+      return 'flex-start';
+    case 'end':
+      return 'flex-end';
+    case 'center':
+      return 'center';
+    case 'baseline':
+      return 'baseline';
     case 'stretch':
-    default: return 'stretch';
+    default:
+      return 'stretch';
   }
 };
 
 // Map justify to CSS justify-content
 const mapJustify = (justify: StackJustify = 'start'): string => {
   switch (justify) {
-    case 'end': return 'flex-end';
-    case 'center': return 'center';
-    case 'between': return 'space-between';
-    case 'around': return 'space-around';
+    case 'end':
+      return 'flex-end';
+    case 'center':
+      return 'center';
+    case 'between':
+      return 'space-between';
+    case 'around':
+      return 'space-around';
     case 'start':
-    default: return 'flex-start';
+    default:
+      return 'flex-start';
   }
 };
 

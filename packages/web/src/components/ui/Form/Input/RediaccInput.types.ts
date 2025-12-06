@@ -75,7 +75,10 @@ export interface RediaccPasswordInputProps extends Omit<RediaccBaseInputProps, '
 }
 
 export interface RediaccTextAreaProps
-  extends Omit<RediaccBaseInputProps, 'variant' | 'prefix' | 'suffix' | 'size' | 'onChange' | 'onBlur' | 'onFocus' | 'onPressEnter'> {
+  extends Omit<
+    RediaccBaseInputProps,
+    'variant' | 'prefix' | 'suffix' | 'size' | 'onChange' | 'onBlur' | 'onFocus' | 'onPressEnter'
+  > {
   /** Number of rows */
   rows?: number;
   /** Auto resize based on content */
@@ -94,7 +97,11 @@ export interface RediaccTextAreaProps
   onPressEnter?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
 }
 
-export interface RediaccInputNumberProps extends Omit<RediaccBaseInputProps, 'variant' | 'centered' | 'value' | 'defaultValue' | 'onChange'> {
+export interface RediaccInputNumberProps
+  extends Omit<
+    RediaccBaseInputProps,
+    'variant' | 'centered' | 'value' | 'defaultValue' | 'onChange'
+  > {
   /** Minimum value */
   min?: number;
   /** Maximum value */
@@ -123,7 +130,10 @@ export interface RediaccSearchInputProps extends Omit<RediaccBaseInputProps, 'va
   /** Search button action */
   onSearch?: (
     value: string,
-    event?: React.ChangeEvent<HTMLInputElement> | React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLInputElement>,
+    event?:
+      | React.ChangeEvent<HTMLInputElement>
+      | React.MouseEvent<HTMLElement>
+      | React.KeyboardEvent<HTMLInputElement>,
     info?: { source?: 'clear' | 'input' }
   ) => void;
   /** Show search button loading state */

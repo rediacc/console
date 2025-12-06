@@ -8,10 +8,7 @@ import {
   DeleteOutlined,
 } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
-import {
-  useCephClusterMachines,
-  useAvailableMachinesForClone,
-} from '@/api/queries/ceph';
+import { useCephClusterMachines, useAvailableMachinesForClone } from '@/api/queries/ceph';
 import {
   useUpdateMachineClusterAssignment,
   useUpdateMachineClusterRemoval,

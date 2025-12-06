@@ -1243,11 +1243,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                 </AutoSetupCheckbox>,
               ]
             : []),
-          <RediaccButton
-            key="cancel"
-            data-testid="resource-modal-cancel-button"
-            onClick={onCancel}
-          >
+          <RediaccButton key="cancel" data-testid="resource-modal-cancel-button" onClick={onCancel}>
             {t('general.cancel')}
           </RediaccButton>,
           ...(mode === 'create' && existingData && onUpdateVault

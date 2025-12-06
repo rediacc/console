@@ -102,9 +102,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
       <AppearanceRow>
         <div>
-          <SectionTitle>
-            {t('appearance.label', { defaultValue: 'Appearance' })}
-          </SectionTitle>
+          <SectionTitle>{t('appearance.label', { defaultValue: 'Appearance' })}</SectionTitle>
           <SectionDescription>
             {t('appearance.description', { defaultValue: 'Device theme' })}
           </SectionDescription>

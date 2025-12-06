@@ -1,9 +1,6 @@
 import styled from 'styled-components';
 import { CloudServerOutlined, DatabaseOutlined } from '@/utils/optimizedIcons';
-import {
-  TableContainer as BaseTableContainer,
-  StyledIcon,
-} from '@/styles/primitives';
+import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
 import { RediaccTag, RediaccCard } from '@/components/ui';
 import { ActionsRow, NameCell, NameText, ExpandIcon } from '../../styles/tableAliases';
 

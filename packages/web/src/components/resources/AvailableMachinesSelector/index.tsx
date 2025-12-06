@@ -73,8 +73,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
 
   const renderMachineOption = (machine: Machine) => {
     const isAssigned =
-      machine.cephClusterName ||
-      machine.assignmentStatus?.assignmentType !== 'AVAILABLE';
+      machine.cephClusterName || machine.assignmentStatus?.assignmentType !== 'AVAILABLE';
     const isDisabled = !allowSelectAssigned && isAssigned;
 
     return (
@@ -108,8 +107,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                   >
                     <StatusIcon as={WarningOutlined} />
                     <Text variant="caption">
-                      {t('machines:assignmentStatus.cluster')}:{' '}
-                      {machine.cephClusterName}
+                      {t('machines:assignmentStatus.cluster')}: {machine.cephClusterName}
                     </Text>
                   </Tag>
                 ) : machine.assignmentStatus ? (

@@ -4,18 +4,7 @@ import { StyledRediaccEmpty, EmptyTitle, EmptyAction } from './RediaccEmpty.styl
 import type { RediaccEmptyProps } from './RediaccEmpty.types';
 
 const RediaccEmptyComponent = forwardRef<any, RediaccEmptyProps>(
-  (
-    {
-      variant = 'default',
-      size = 'md',
-      title,
-      description,
-      image,
-      action,
-      ...rest
-    },
-    ref
-  ) => {
+  ({ variant = 'default', size = 'md', title, description, image, action, ...rest }, ref) => {
     // Build description with optional title
     const descriptionContent = (
       <>

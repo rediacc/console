@@ -61,8 +61,7 @@ export class MachineAssignmentService {
       machineName: machine.machineName,
       assignmentType: this.getMachineAssignmentType(machine),
       resourceName:
-        machine.cephClusterName ||
-        machine.assignmentStatus?.assignmentDetails?.split(': ')[1],
+        machine.cephClusterName || machine.assignmentStatus?.assignmentDetails?.split(': ')[1],
     };
   }
 
@@ -179,8 +178,7 @@ export class MachineAssignmentService {
           machineName: machine.machineName,
           assignmentType: this.getMachineAssignmentType(machine),
           resourceName:
-            machine.cephClusterName ||
-            machine.assignmentStatus?.assignmentDetails?.split(': ')[1],
+            machine.cephClusterName || machine.assignmentStatus?.assignmentDetails?.split(': ')[1],
         };
 
         conflicts.push({

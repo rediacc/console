@@ -254,17 +254,13 @@ function parseDashboard(response: ApiResponse): CompanyDashboardData {
   const featureAccess = parseObject<CompanyFeatureAccess>(normalized.featureAccess);
   const planLimits = parseObject<CompanyPlanLimits>(normalized.planLimits);
   const queueStats = parseObject<CompanyQueueStats>(normalized.queueStats);
-  const cephStats = parseObject<CompanyCephStats>(
-    normalized.cephStats
-  );
+  const cephStats = parseObject<CompanyCephStats>(normalized.cephStats);
   const allActiveSubscriptions = parseObjectArray<CompanySubscriptionDetail>(
     normalized.allActiveSubscriptions
   );
 
   if (cephStats && cephStats.team_breakdown) {
-    cephStats.team_breakdown = parseObjectArray<CephTeamBreakdown>(
-      cephStats.team_breakdown
-    );
+    cephStats.team_breakdown = parseObjectArray<CephTeamBreakdown>(cephStats.team_breakdown);
   }
 
   if (queueStats) {

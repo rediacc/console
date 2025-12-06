@@ -508,11 +508,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
         onCancel={handleCancel}
         className={ModalSize.ExtraLarge}
         footer={[
-          <RediaccButton
-            key="cancel"
-            onClick={handleCancel}
-            data-testid="function-modal-cancel"
-          >
+          <RediaccButton key="cancel" onClick={handleCancel} data-testid="function-modal-cancel">
             {t('common:actions.cancel')}
           </RediaccButton>,
           <RediaccButton
@@ -573,9 +569,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 <QuickTaskTag>⚡ {t('functions:quickTaskBadge')}</QuickTaskTag>
                               )}
                             </FunctionItemHeader>
-                            <FunctionDescriptionText>
-                              {func.description}
-                            </FunctionDescriptionText>
+                            <FunctionDescriptionText>{func.description}</FunctionDescriptionText>
                           </FunctionOption>
                         );
                       })}

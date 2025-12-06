@@ -269,7 +269,9 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       render: (timestamp: string, record: AuditTraceRecord, index: number) => (
         <Space direction="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
           <AntText>{formatTimestampAsIs(timestamp, 'datetime')}</AntText>
-          <Text variant="caption" muted>{record.timeAgo}</Text>
+          <Text variant="caption" muted>
+            {record.timeAgo}
+          </Text>
         </Space>
       ),
     },
@@ -327,7 +329,9 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                   {data.summary.lastActivity && (
                     <StatItem data-testid="audit-trace-last-activity">
                       <AntText color="secondary">{t('audit.lastActivity')}</AntText>
-                      <AntText strong>{new Date(data.summary.lastActivity).toLocaleDateString()}</AntText>
+                      <AntText strong>
+                        {new Date(data.summary.lastActivity).toLocaleDateString()}
+                      </AntText>
                     </StatItem>
                   )}
                 </SummaryStats>

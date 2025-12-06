@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Form, Input, Button, message } from 'antd';
-import { RediaccCheckbox as Checkbox, RediaccRadio as Radio, type CheckboxChangeEvent, type RadioChangeEvent } from '@/components/ui/Form';
+import {
+  RediaccCheckbox as Checkbox,
+  RediaccRadio as Radio,
+  type CheckboxChangeEvent,
+  type RadioChangeEvent,
+} from '@/components/ui/Form';
 import {
   CopyOutlined,
   CodeOutlined,
@@ -31,7 +36,6 @@ import {
   ActionsRow,
 } from './styles';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
-
 
 type CommandTab = 'vscode' | 'terminal' | 'desktop';
 type OperatingSystem = 'unix' | 'windows';
