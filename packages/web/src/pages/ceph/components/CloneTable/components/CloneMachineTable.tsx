@@ -1,5 +1,5 @@
 import React from 'react';
-import { Empty, Typography } from 'antd';
+import { Empty } from 'antd';
 import { TeamOutlined, CloudServerOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
@@ -22,8 +22,7 @@ import {
   MachineTagGrid,
 } from '../styles';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-
-const { Text } = Typography;
+import { RediaccText as Text } from '@/components/ui';
 
 interface CloneMachineTableProps {
   clone: CephRbdClone;

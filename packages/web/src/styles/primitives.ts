@@ -336,7 +336,7 @@ export const StatItem = styled(RediaccStack).attrs({ gap: 'xs', direction: 'hori
 
 export const StatLabel = styled(RediaccText).attrs({ variant: 'caption', color: 'secondary' })``;
 
-export const StatValue = styled(RediaccText).attrs<{ $color?: string }>(({ $color }) => ({
+export const StatValue = styled(RediaccText).attrs(() => ({
   variant: 'caption',
   weight: 'semibold',
 }))<{ $color?: string }>`

@@ -25,8 +25,8 @@ export interface OTPCodeFieldProps {
   lengthMessage?: string;
   /** Custom format message */
   formatMessage?: string;
-  /** Input size (default: 'large') */
-  size?: 'small' | 'middle' | 'large';
+  /** Input size (default: 'md') */
+  size?: 'sm' | 'md';
   /** data-testid attribute */
   'data-testid'?: string;
 }
@@ -49,7 +49,7 @@ export const OTPCodeField: React.FC<OTPCodeFieldProps> = ({
   requiredMessage,
   lengthMessage = 'Code must be 6 digits',
   formatMessage = 'Code must contain only digits',
-  size = 'large',
+  size = 'md',
   'data-testid': dataTestId,
 }) => {
   const rules: Rule[] = [];

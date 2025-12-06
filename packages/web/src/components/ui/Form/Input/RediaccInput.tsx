@@ -27,7 +27,7 @@ import type {
  * <RediaccInput fullWidth placeholder="Enter email" />
  *
  * // Small size input
- * <RediaccInput size="sm" placeholder="Search..." />
+ * <RediaccInput size="small" placeholder="Search..." />
  *
  * // Input with prefix icon
  * <RediaccInput prefix={<SearchOutlined />} placeholder="Search..." />
@@ -118,7 +118,7 @@ RediaccInput.displayName = 'RediaccInput';
  * <RediaccPasswordInput fullWidth placeholder="Confirm password" />
  *
  * // Small size password input
- * <RediaccPasswordInput size="sm" placeholder="New password" />
+ * <RediaccPasswordInput size="small" placeholder="New password" />
  */
 export const RediaccPasswordInput = forwardRef<any, RediaccPasswordInputProps>(
   (
@@ -316,6 +316,7 @@ export const RediaccInputNumber = forwardRef<any, RediaccInputNumberProps>(
       formatter,
       parser,
       controls = true,
+      keyboard = true,
       className,
       style,
       'data-testid': dataTestId,
@@ -352,6 +353,7 @@ export const RediaccInputNumber = forwardRef<any, RediaccInputNumberProps>(
         formatter={formatter}
         parser={parser}
         controls={controls}
+        keyboard={keyboard}
         className={className}
         style={style}
         data-testid={dataTestId}

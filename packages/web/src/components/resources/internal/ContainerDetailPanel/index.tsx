@@ -270,7 +270,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             <FieldRow>
               <FieldLabel>{t('resources:containers.networks')}:</FieldLabel>
               <FieldValue>
-                <Tag color="purple" data-testid="container-detail-network-tag">
+                <Tag color="default" data-testid="container-detail-network-tag">
                   {container.networks}
                 </Tag>
               </FieldValue>

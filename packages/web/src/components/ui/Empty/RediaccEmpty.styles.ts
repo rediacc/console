@@ -21,7 +21,9 @@ export const resolveEmptyImageSize = (size: EmptySize = 'md'): number => {
   }
 };
 
-export const StyledRediaccEmpty = styled(AntEmpty)<{
+export const StyledRediaccEmpty = styled(AntEmpty).withConfig({
+  shouldForwardProp: (prop) => !['$variant', '$size'].includes(prop),
+})<{
   $variant: EmptyVariant;
   $size: EmptySize;
 }>`

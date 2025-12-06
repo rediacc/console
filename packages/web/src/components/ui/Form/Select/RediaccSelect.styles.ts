@@ -21,7 +21,9 @@ export const resolveSelectHeight = (theme: StyledTheme, size: SelectSize = 'md')
 /**
  * Unified RediaccSelect styled component
  */
-export const StyledRediaccSelect = styled(AntSelect)<{
+export const StyledRediaccSelect = styled(AntSelect).withConfig({
+  shouldForwardProp: (prop) => !['$size', '$fullWidth', '$minWidth'].includes(prop),
+})<{
   $size: SelectSize;
   $fullWidth?: boolean;
   $minWidth?: number;

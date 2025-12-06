@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Alert, Button, Modal, Space, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Modal, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
@@ -12,8 +12,7 @@ import {
   InboxOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-
-const { Text } = Typography;
+import { RediaccText as Text } from '@/components/ui';
 
 const InlineList = styled.ul`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
@@ -188,14 +187,14 @@ const CredentialsPage: React.FC = () => {
                   {affectedMachines.map((machine) => (
                     <li key={machine.machineName}>
                       <Text weight="bold">{machine.machineName}</Text>
-                      <Text type="secondary"> ({machine.repoNames.join(', ')})</Text>
+                      <Text color="secondary"> ({machine.repoNames.join(', ')})</Text>
                     </li>
                   ))}
                 </InlineList>
               </div>
 
               <Alert
-                variant="warning"
+                type="warning"
                 message={t('repos.removeDeploymentsFirst')}
                 showIcon
                 icon={<WarningOutlined />}
@@ -217,7 +216,7 @@ const CredentialsPage: React.FC = () => {
               <Text>{t('repos.confirmDelete', { repoName: repo.repoName })}</Text>
 
               <Alert
-                variant="warning"
+                type="warning"
                 message={t('repos.machinesWillLoseAccess')}
                 description={
                   <InlineList>

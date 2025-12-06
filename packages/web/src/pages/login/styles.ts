@@ -1,6 +1,6 @@
 import styled from 'styled-components';
-import { Form } from 'antd';
-import { RediaccInput as Input, RediaccPasswordInput as PasswordInput } from '@/components/ui/Form';
+import { Form, Input as AntdInput } from 'antd';
+import { RediaccInput, RediaccPasswordInput as PasswordInput } from '@/components/ui/Form';
 import { RediaccButton } from '@/components/ui/Button';
 import {
   fadeInAnimation,
@@ -69,7 +69,7 @@ export const AdvancedOptionsContainer = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const AdvancedOptionsButton = styled(RediaccButton).attrs({ variant: 'text', size: 'sm' })`
+export const AdvancedOptionsButton = styled(RediaccButton).attrs(() => ({ variant: 'text', size: 'sm' }))`
   && {
     color: ${({ theme }) => theme.colors.textTertiary};
     height: auto;
@@ -139,10 +139,11 @@ export const TFAModalTitle = styled(FlexRow).attrs({ $gap: 'SM' })`
   }
 `;
 
-export const TFACodeInput = styled(RediaccInput).attrs({ centered: true })`
+export const TFACodeInput = styled(AntdInput)`
   && {
     font-size: ${({ theme }) => theme.fontSize.XL}px;
     letter-spacing: ${({ theme }) => theme.spacing.SM}px;
+    text-align: center;
   }
 `;
 

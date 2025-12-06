@@ -5,16 +5,15 @@ import {
   Space,
   Alert,
   Card,
-  Tag,
   Tooltip,
   message,
   Divider,
-  Typography,
   Col,
   Descriptions,
   Select,
 } from 'antd';
 import { RediaccSwitch } from '@/components/ui/Form';
+import { RediaccTag as Tag } from '@/components/ui';
 import type { FormInstance } from 'antd';
 import {
   InfoCircleOutlined,
@@ -44,6 +43,7 @@ import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { useTeams } from '@/api/queries/teams';
 import { featureFlags } from '@/config/featureFlags';
+import { RediaccText as Text } from '@/components/ui';
 import {
   EditorContainer,
   InfoBanner,
@@ -76,8 +76,6 @@ import {
   FullWidthPasswordInput,
   FullWidthTextArea,
 } from './styles';
-
-const { Text } = Typography;
 
 type NestedFieldDefinition = React.ComponentProps<typeof NestedObjectEditor>['fieldDefinition'];
 
@@ -1434,7 +1432,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       <Alert
         message={t('vaultEditor.unknownEntityType')}
         description={t('vaultEditor.unknownEntityDescription', { type: entityType })}
-        variant="error"
+        type="error"
         showIcon
       />
     );
@@ -1526,7 +1524,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                       />
                     }
                   >
-                    <FullWidthStack orientation="vertical" size="small">
+                    <FullWidthStack direction="vertical" gap="sm">
                       {!testConnectionSuccess && (
                         <InlineInfoAlert
                           message={t('vaultEditor.testConnection.required')}
@@ -1536,7 +1534,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                         />
                       )}
                       <TestConnectionButton
-                        type="primary"
+                        variant="primary"
                         icon={<WifiOutlined />}
                         loading={isCreatingQueueItem || isTestingConnection}
                         data-testid="vault-editor-test-connection"
@@ -1680,7 +1678,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                       };
 
                       return (
-                        <FullWidthStack orientation="vertical">
+                        <FullWidthStack direction="vertical">
                           <Descriptions bordered size="small" column={1}>
                             <Descriptions.Item
                               label={t('vaultEditor.systemCompatibility.operatingSystem')}
@@ -1697,23 +1695,23 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                               label={t('vaultEditor.systemCompatibility.btrfsAvailable')}
                             >
                               {compatibility.btrfs_available ? (
-                                <Tag color="success">
+                                <Tag variant="success">
                                   {t('vaultEditor.systemCompatibility.yes')}
                                 </Tag>
                               ) : (
-                                <Tag color="warning">{t('vaultEditor.systemCompatibility.no')}</Tag>
+                                <Tag variant="warning">{t('vaultEditor.systemCompatibility.no')}</Tag>
                               )}
                             </Descriptions.Item>
                             <Descriptions.Item
                               label={t('vaultEditor.systemCompatibility.sudoAvailable')}
                             >
-                              <Tag color={sudoConfigValue.color}>{sudoConfigValue.text}</Tag>
+                              <Tag variant={sudoConfigValue.color as 'default' | 'success' | 'error' | 'warning' | 'primary'}>{sudoConfigValue.text}</Tag>
                             </Descriptions.Item>
                             {osSetupCompleted !== null && (
                               <Descriptions.Item
                                 label={t('vaultEditor.systemCompatibility.osSetup')}
                               >
-                                <Tag color={osSetupCompleted ? 'success' : 'warning'}>
+                                <Tag variant={osSetupCompleted ? 'success' : 'warning'}>
                                   {osSetupCompleted
                                     ? t('vaultEditor.systemCompatibility.setupCompleted')
                                     : t('vaultEditor.systemCompatibility.setupRequired')}
@@ -1888,7 +1886,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 </Divider>
                 <TipsAlert
                   message={
-                    <FullWidthStack orientation="vertical">
+                    <FullWidthStack direction="vertical">
                       {[1, 2, 3, 4]
                         .map((index) => {
                           const tip = t(
@@ -1977,7 +1975,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
                 <FormatActions>
                   <FormatButton
-                    size="small"
+                    size="sm"
                     variant="default"
                     onClick={() => formatJsonRef.current?.()}
                     data-testid="vault-editor-format-json"

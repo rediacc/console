@@ -2,7 +2,7 @@ import { forwardRef } from 'react';
 import { StyledRediaccTabs, mapVariantToAntType } from './RediaccTabs.styles';
 import type { RediaccTabsProps } from './RediaccTabs.types';
 
-export const RediaccTabs = forwardRef<HTMLDivElement, RediaccTabsProps>(
+export const RediaccTabs = forwardRef<any, RediaccTabsProps>(
   (
     {
       variant = 'default',

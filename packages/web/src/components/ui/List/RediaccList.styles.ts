@@ -11,7 +11,9 @@ export const resolveListPadding = (theme: StyledTheme, size: ListSize = 'md'): n
   }
 };
 
-export const StyledRediaccList = styled(AntList)<{
+export const StyledRediaccList = styled(AntList).withConfig({
+  shouldForwardProp: (prop) => !['$variant', '$size', '$split'].includes(prop),
+})<{
   $variant: ListVariant;
   $size: ListSize;
   $split?: boolean;
@@ -63,4 +65,4 @@ export const StyledRediaccList = styled(AntList)<{
       padding: ${({ theme }) => theme.spacing.LG}px;
     }
   }
-` as typeof AntList;
+`;

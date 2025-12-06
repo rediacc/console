@@ -42,4 +42,12 @@ export interface RediaccModalProps {
   'data-testid'?: string;
   /** z-index for layering */
   zIndex?: number;
+  /** Custom modal width (overrides size preset) */
+  width?: string | number;
+  /** Props for OK button */
+  okButtonProps?: import('antd').ButtonProps;
+  /** Props for Cancel button */
+  cancelButtonProps?: import('antd').ButtonProps;
+  /** Extra content in the modal header */
+  extra?: ReactNode;
 }

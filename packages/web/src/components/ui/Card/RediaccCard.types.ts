@@ -12,10 +12,16 @@ export interface RediaccCardProps {
   selected?: boolean;
   /** Enable hover effects */
   interactive?: boolean;
+  /** Enable hover effects (alias for interactive) */
+  hoverable?: boolean;
   /** Stretch to full container width */
   fullWidth?: boolean;
   /** Remove all padding */
   noPadding?: boolean;
+  /** Card title (renders a header section) */
+  title?: ReactNode;
+  /** Extra content in the header (top right) */
+  extra?: ReactNode;
   /** Card content */
   children?: ReactNode;
   /** Additional class name */

@@ -56,6 +56,8 @@ export interface RediaccTextProps {
   truncate?: boolean;
   /** Maximum number of lines before truncating (requires truncate: true) */
   maxLines?: number;
+  /** Render as inline code (monospace) */
+  code?: boolean;
   /** HTML element to render */
   as?: TextElement;
   /** Text content */
@@ -70,4 +72,8 @@ export interface RediaccTextProps {
   id?: string;
   /** Click handler */
   onClick?: () => void;
+  /** Enable copy functionality */
+  copyable?: boolean | { text?: string; onCopy?: () => void };
+  /** Enable ellipsis with optional configuration */
+  ellipsis?: boolean | { rows?: number; expandable?: boolean; onExpand?: () => void };
 }

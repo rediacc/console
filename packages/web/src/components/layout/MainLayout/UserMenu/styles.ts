@@ -3,7 +3,7 @@ import { Avatar, Segmented } from 'antd';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { FlexColumn } from '@/styles/primitives';
 import { InlineStack, FlexBetween } from '@/components/common/styled';
-import { RediaccText, RediaccButton, RediaccBadge, RediaccDivider } from '@/components/ui';
+import { RediaccText, RediaccButton, RediaccTag, RediaccDivider } from '@/components/ui';
 
 export const MenuContainer = styled(FlexColumn).attrs({ $gap: 'MD' })`
   width: 320px;
@@ -31,16 +31,11 @@ export const CompanyName = styled(RediaccText)`
   display: block;
 `;
 
-export const PlanBadge = styled(RediaccBadge)`
-  .ant-badge-count {
-    background-color: var(--color-primary);
+export const PlanBadge = styled(RediaccTag).attrs({ variant: 'primary', size: 'sm' })`
+  && {
+    margin-top: ${({ theme }) => theme.spacing.XS}px;
     font-size: ${DESIGN_TOKENS.FONT_SIZE.XS}px;
     font-weight: ${DESIGN_TOKENS.FONT_WEIGHT.SEMIBOLD};
-    padding: 0 ${({ theme }) => theme.spacing.SM}px;
-    height: ${DESIGN_TOKENS.DIMENSIONS.ICON_MD}px;
-    line-height: ${DESIGN_TOKENS.DIMENSIONS.ICON_MD}px;
-    border-radius: ${({ theme }) => theme.borderRadius.XL}px;
-    margin-top: ${({ theme }) => theme.spacing.XS}px;
     box-shadow: ${DESIGN_TOKENS.SHADOWS.BUTTON_DEFAULT};
   }
 `;

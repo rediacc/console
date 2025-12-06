@@ -58,7 +58,7 @@ export const MetricsGrid = styled.div`
   gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const MetricCard = styled(RediaccCard).attrs({ size: 'small' })`
+export const MetricCard = styled(RediaccCard).attrs({ size: 'sm' })`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }

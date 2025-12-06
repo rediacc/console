@@ -127,7 +127,7 @@ export const resolveTextColor = (theme: StyledTheme, color?: TextColor): string 
  */
 export const StyledRediaccText = styled(AntText).withConfig({
   shouldForwardProp: (prop) =>
-    !['$variant', '$size', '$weight', '$color', '$align', '$truncate', '$maxLines', '$as'].includes(
+    !['$variant', '$size', '$weight', '$color', '$align', '$truncate', '$maxLines', '$code', '$as'].includes(
       prop
     ),
 })<{
@@ -138,6 +138,7 @@ export const StyledRediaccText = styled(AntText).withConfig({
   $align?: TextAlign;
   $truncate?: boolean;
   $maxLines?: number;
+  $code?: boolean;
   $as?: TextElement;
 }>`
   && {
@@ -180,6 +181,18 @@ export const StyledRediaccText = styled(AntText).withConfig({
       $align &&
       css`
         text-align: ${$align};
+      `}
+
+    /* Code styling */
+    ${({ $code, theme }) =>
+      $code &&
+      css`
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+        font-size: ${theme.fontSize.SM}px;
+        background-color: ${theme.colors.bgSecondary};
+        padding: 2px 6px;
+        border-radius: ${theme.borderRadius.SM}px;
+        border: 1px solid ${theme.colors.borderSecondary};
       `}
 
     /* Truncation - single line */

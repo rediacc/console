@@ -25,7 +25,7 @@ import type { RediaccSelectProps } from './RediaccSelect.types';
  *
  * @example
  * // Small size select with minimum width
- * <RediaccSelect size="sm" minWidth={150} options={options} />
+ * <RediaccSelect size="small" minWidth={150} options={options} />
  *
  * @example
  * // Searchable select
@@ -57,7 +57,12 @@ export const RediaccSelect = forwardRef<any, RediaccSelectProps>(
       allowClear = false,
       showSearch = false,
       filterOption,
+      searchValue,
+      onSearch,
       mode,
+      suffixIcon,
+      popupMatchSelectWidth,
+      tagRender,
       children,
       ...rest
     },
@@ -78,7 +83,12 @@ export const RediaccSelect = forwardRef<any, RediaccSelectProps>(
         allowClear={allowClear}
         showSearch={showSearch}
         filterOption={filterOption}
+        searchValue={searchValue}
+        onSearch={onSearch}
         mode={mode}
+        suffixIcon={suffixIcon}
+        popupMatchSelectWidth={popupMatchSelectWidth}
+        tagRender={tagRender as any}
         {...rest}
       >
         {children}

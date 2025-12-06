@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Button as AntButton, Space, Tag, Typography, Alert, Tooltip } from 'antd';
+import { Button as AntButton, Space, Tag, Alert, Tooltip } from 'antd';
 import {
   DoubleLeftOutlined,
   ReloadOutlined,
@@ -9,6 +9,7 @@ import {
   CloudDownloadOutlined,
 } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import { RediaccText as Text } from '@/components/ui';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { useMachines } from '@/api/queries/machines';
@@ -41,7 +42,7 @@ import {
   ErrorWrapper,
 } from './styles';
 
-const { Text } = Typography;
+
 
 interface ContainerData {
   id: string;
@@ -268,7 +269,7 @@ const MachineReposPage: React.FC = () => {
             <LoadingWrapper loading centered minHeight={160}>
               <div />
             </LoadingWrapper>
-            <Text type="secondary">{t('common:general.loading')}</Text>
+            <Text color="secondary">{t('common:general.loading')}</Text>
           </CenteredState>
         </FullHeightCard>
       </PageWrapper>
@@ -290,7 +291,7 @@ const MachineReposPage: React.FC = () => {
                 </AntButton>
               </ErrorWrapper>
             }
-            variant="error"
+            type="error"
             showIcon
           />
         </FullHeightCard>
@@ -340,14 +341,14 @@ const MachineReposPage: React.FC = () => {
                 </HeaderTitleText>
               </TitleRow>
               <ActionGroup>
-                <Tag color="green">
+                <Tag color="success">
                   {t('machines:team')}: {machine?.teamName}
                 </Tag>
                 <Tag color="blue">
                   {t('machines:bridge')}: {machine?.bridgeName}
                 </Tag>
                 {machine?.regionName && (
-                  <Tag color="purple">
+                  <Tag color="default">
                     {t('machines:region')}: {machine.regionName}
                   </Tag>
                 )}

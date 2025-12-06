@@ -446,11 +446,11 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
  requiredMark={false}
  data-testid="registration-verification-form"
  >
- <VerticalStack orientation="vertical">
+ <VerticalStack direction="vertical">
  <Alert
  message={t('auth:registration.verificationRequired')}
  description={t('auth:registration.verificationDescription')}
- variant="info"
+ type="info"
  showIcon
  data-testid="registration-verification-alert"
  />
@@ -465,7 +465,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
  ]}
  >
  <CodeInput
- size="large"
+ size="md"
  placeholder={t('auth:registration.activationCodePlaceholder')}
  autoComplete="off"
  maxLength={6}
@@ -497,7 +497,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
  <SuccessTitle data-testid="registration-success-title">
  {t('auth:registration.successTitle')}
  </SuccessTitle>
- <SuccessDescription type="secondary" data-testid="registration-success-description">
+ <SuccessDescription color="secondary" data-testid="registration-success-description">
  {t('auth:registration.successDescription')}
  </SuccessDescription>
  </SuccessContainer>
@@ -522,10 +522,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
  open={open}
  onCancel={handleClose}
  footer={null}
- destroyOnHidden
+ destroyOnClose
  data-testid="registration-modal"
  >
- <VerticalStack orientation="vertical">
+ <VerticalStack direction="vertical">
  <StepsWrapper
  current={currentStep}
  size="small"
@@ -540,7 +540,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
  {error && (
  <Alert
  message={error}
- variant="error"
+ type="error"
  showIcon
  closable
  onClose={() => {

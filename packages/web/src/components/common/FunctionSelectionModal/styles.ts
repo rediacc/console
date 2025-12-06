@@ -150,15 +150,15 @@ export const PushAlertsRow = styled.div<{ $hasWarning: boolean }>`
   }
 `;
 
-export const PushAlertCard = styled(RediaccAlert)`
+export const PushAlertCard = styled(RediaccAlert)<{ $variant?: string }>`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     border-width: 1px;
     height: 100%;
   }
 
-  ${({ theme, type }) =>
-    type === 'info'
+  ${({ theme, $variant }) =>
+    $variant === 'info'
       ? css`
           border-color: ${theme.colors.info};
         `

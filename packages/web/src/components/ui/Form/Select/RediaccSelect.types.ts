@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, CSSProperties } from 'react';
 
 export type SelectSize = 'sm' | 'md' | 'lg';
 
@@ -33,6 +33,10 @@ export interface RediaccSelectProps<T = any> {
   showSearch?: boolean;
   /** Custom filter function or boolean to enable/disable filtering */
   filterOption?: boolean | ((input: string, option: any) => boolean);
+  /** Controlled search value */
+  searchValue?: string;
+  /** Search change handler */
+  onSearch?: (value: string) => void;
   /** Multiple selection mode */
   mode?: 'multiple' | 'tags';
   /** Test identifier */
@@ -57,6 +61,21 @@ export interface RediaccSelectProps<T = any> {
   status?: 'error' | 'warning';
   /** Custom content when no results */
   notFoundContent?: ReactNode;
+  /** Custom suffix icon */
+  suffixIcon?: ReactNode;
+  /** Whether dropdown width matches select width */
+  popupMatchSelectWidth?: boolean;
+  /** Custom placeholder for hidden tags in multiple mode */
+  maxTagPlaceholder?: ReactNode | ((omittedValues: any[]) => ReactNode);
+  /** Inline styles */
+  style?: CSSProperties;
   /** Children (for custom options) */
   children?: ReactNode;
+  /** Custom tag render function for multiple mode */
+  tagRender?: (props: {
+    label: ReactNode;
+    value: any;
+    closable: boolean;
+    onClose: () => void;
+  }) => ReactNode;
 }

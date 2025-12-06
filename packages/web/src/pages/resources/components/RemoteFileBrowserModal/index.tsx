@@ -778,7 +778,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         </Tooltip>,
       ]}
     >
-      <ContentSpace orientation="vertical" size="middle">
+      <ContentSpace direction="vertical" gap="md">
         {/* Source selector with label */}
         <div data-testid="file-browser-source-container">
           <SourceLabel data-testid="file-browser-source-label">
@@ -893,7 +893,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
 
         {/* Info message */}
         <Alert
-          variant="info"
+          type="info"
           message={t('resources:remoteFiles.info')}
           showIcon
           data-testid="file-browser-info-alert"

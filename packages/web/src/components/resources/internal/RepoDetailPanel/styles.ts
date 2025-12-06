@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { Typography } from 'antd';
 import { FolderOutlined } from '@/utils/optimizedIcons';
 import { RediaccTag } from '@/components/ui/Tag';
 import { RediaccText } from '@/components/ui/Text';

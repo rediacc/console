@@ -113,15 +113,19 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
 
   if (clusters.length === 0 && !loading) {
     return (
-      <EmptyStatePanel description={t('clusters.noClusters')} $marginTop="XXXL">
-        <CreateClusterButton
-          variant="primary"
-          data-testid="ds-create-cluster-empty"
-          onClick={onCreateCluster}
-        >
-          {t('clusters.create')}
-        </CreateClusterButton>
-      </EmptyStatePanel>
+      <EmptyStatePanel
+        description={t('clusters.noClusters')}
+        $marginTop="XXXL"
+        action={
+          <CreateClusterButton
+            variant="primary"
+            data-testid="ds-create-cluster-empty"
+            onClick={onCreateCluster}
+          >
+            {t('clusters.create')}
+          </CreateClusterButton>
+        }
+      />
     );
   }
 

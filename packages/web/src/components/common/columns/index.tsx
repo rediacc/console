@@ -1,5 +1,6 @@
 import React from 'react';
-import { Button, Dropdown, Space, Tooltip, Typography } from 'antd';
+import { RediaccText as Text } from '@/components/ui';
+import { Button, Dropdown, Space, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps, TooltipProps } from 'antd';
 import { MoreOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
@@ -11,7 +12,6 @@ import {
   VersionTag,
 } from './renderers';
 
-const { Text } = Typography;
 
 /**
  * Shared table column definitions to ensure consistency across pages
@@ -420,7 +420,7 @@ export const createTruncatedColumn = <T,>(
     render: (value: string | null | undefined, record: T) => {
       const resolvedValue = options.renderText ? options.renderText(value, record) : value;
       if (!resolvedValue) {
-        return <Text type="secondary">-</Text>;
+        return <Text color="secondary">-</Text>;
       }
       const shouldTruncate = resolvedValue.length > maxLength;
       const displayText = shouldTruncate
@@ -553,7 +553,7 @@ export const createVersionColumn = <T,>(
       }
 
       if (value === null || value === undefined) {
-        return <Text type="secondary">-</Text>;
+        return <Text color="secondary">-</Text>;
       }
 
       const formattedVersion = options.formatVersion

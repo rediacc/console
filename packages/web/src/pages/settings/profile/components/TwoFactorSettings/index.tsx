@@ -20,7 +20,7 @@ import { ModalSize } from '@/types/modal';
 import { useDialogState } from '@/hooks/useDialogState';
 import { OTPCodeField } from '@/pages/settings/profile/components/OTPCodeField';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton as Button } from '@/components/ui';
+import { RediaccButton as Button, RediaccText as Text } from '@/components/ui';
 import { RediaccPasswordInput } from '@/components/ui/Form/Input';
 import {
   FullWidthStack,
@@ -39,7 +39,7 @@ import {
   ModalTitleWrapper,
 } from './styles';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 
 interface TwoFactorSettingsProps {
   open: boolean;
@@ -274,7 +274,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
           <QRCodeContainer>
             <QRCode value={otpUrl} size={200} data-testid="tfa-settings-qr-code" />
           </QRCodeContainer>
-          <Text type="secondary">{t('twoFactorAuth.scanQRCode')}</Text>
+          <Text color="secondary">{t('twoFactorAuth.scanQRCode')}</Text>
         </CenteredStack>
       ),
     },
@@ -309,7 +309,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
       <CenteredStack>
         <StatusIcon />
         <SectionTitle level={4}>{t('twoFactorAuth.verification.title')}</SectionTitle>
-        <Paragraph type="secondary">{t('twoFactorAuth.verification.subtitle')}</Paragraph>
+        <Paragraph color="secondary">{t('twoFactorAuth.verification.subtitle')}</Paragraph>
       </CenteredStack>
 
       <Tabs data-testid="tfa-settings-setup-tabs" items={tabItems} />
@@ -393,7 +393,7 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
       <SectionTitle level={4}>
         {isEnabled ? t('twoFactorAuth.status.enabled') : t('twoFactorAuth.status.disabled')}
       </SectionTitle>
-      <Paragraph type="secondary">
+      <Paragraph color="secondary">
         {isEnabled
           ? t('twoFactorAuth.status.enabledDescription')
           : t('twoFactorAuth.status.disabledDescription')}

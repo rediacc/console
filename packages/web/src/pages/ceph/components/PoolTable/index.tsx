@@ -131,11 +131,15 @@ export const PoolTable: React.FC<PoolTableProps> = ({
 
  if (pools.length === 0 && !loading) {
  return (
- <EmptyStatePanel description={t('pools.noPools')} $marginBottom="XL">
- <Button onClick={onCreatePool} data-testid="ds-create-pool-empty">
- {t('pools.create')}
- </Button>
- </EmptyStatePanel>
+ <EmptyStatePanel
+        description={t('pools.noPools')}
+        $marginBottom="XL"
+        action={
+          <Button onClick={onCreatePool} data-testid="ds-create-pool-empty">
+            {t('pools.create')}
+          </Button>
+        }
+      />
  );
  }
 

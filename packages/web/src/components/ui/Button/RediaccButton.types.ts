@@ -40,4 +40,6 @@ export interface RediaccButtonProps {
   tabIndex?: number;
   /** Block display (full width, deprecated - use fullWidth) */
   block?: boolean;
+  /** HTML title attribute for tooltip on hover */
+  title?: string;
 }

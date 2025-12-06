@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { Alert, Space, Typography } from 'antd';
+import { Alert, Space } from 'antd';
 
 import type { MenuProps } from 'antd';
 
@@ -60,8 +60,6 @@ import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 import { RediaccText as Text } from '@/components/ui';
-
-const { Text: AntText } = Typography;
 
 interface PortMapping {
   host: string;
@@ -565,11 +563,11 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
 
       render: (_: unknown, record: Container) => {
         if (!record.port_mappings || record.port_mappings.length === 0) {
-          return <AntText type="secondary">-</AntText>;
+          return <Text color="secondary">-</Text>;
         }
 
         return (
-          <Space orientation="vertical" size={0}>
+          <Space direction="vertical" size={4}>
             {record.port_mappings.slice(0, 2).map((pm, idx) => (
               <Text key={idx} variant="caption">
                 {pm.host_port}:{pm.container_port}/{pm.protocol}
@@ -741,7 +739,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
       <Alert
         message={t('resources:repos.errorLoadingContainers')}
         description={error}
-        variant="error"
+        type="error"
         showIcon
         data-testid="container-list-error"
       />
@@ -769,7 +767,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         </S.ContainersSection>
       ) : (
         <S.EmptyState data-testid="no-containers">
-          <AntText type="secondary">{t('resources:containers.noContainers')}</AntText>
+          <Text color="secondary">{t('resources:containers.noContainers')}</Text>
         </S.EmptyState>
       )}
 

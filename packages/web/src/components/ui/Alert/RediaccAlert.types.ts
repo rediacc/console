@@ -22,6 +22,8 @@ export interface RediaccAlertProps {
   description?: ReactNode;
   /** Custom icon */
   icon?: ReactNode;
+  /** Custom action element (e.g., button) */
+  action?: ReactNode;
   /** Callback when alert is closed */
   onClose?: () => void;
   /** Children (alternative to message prop) */

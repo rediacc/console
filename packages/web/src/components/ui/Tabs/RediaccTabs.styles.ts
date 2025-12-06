@@ -21,7 +21,9 @@ export const mapVariantToAntType = (variant: TabsVariant): 'line' | 'card' | 'ed
   }
 };
 
-export const StyledRediaccTabs = styled(AntTabs)<{
+export const StyledRediaccTabs = styled(AntTabs).withConfig({
+  shouldForwardProp: (prop) => !['$variant', '$size', '$centered', '$fullWidth'].includes(prop),
+})<{
   $variant: TabsVariant;
   $size: TabsSize;
   $centered?: boolean;

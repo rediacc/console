@@ -1,6 +1,5 @@
 import styled, { css, keyframes } from 'styled-components';
 import { Modal as AntModal } from 'antd';
-import type { StyledTheme } from '@/styles/styledTheme';
 import type { ModalSize, ModalVariant } from './RediaccModal.types';
 
 export const fadeInAnimation = keyframes`
@@ -25,7 +24,9 @@ export const resolveModalWidth = (size: ModalSize = 'md'): string | number => {
   }
 };
 
-export const StyledRediaccModal = styled(AntModal)<{
+export const StyledRediaccModal = styled(AntModal).withConfig({
+  shouldForwardProp: (prop) => !['$size', '$variant'].includes(prop),
+})<{
   $size: ModalSize;
   $variant: ModalVariant;
 }>`

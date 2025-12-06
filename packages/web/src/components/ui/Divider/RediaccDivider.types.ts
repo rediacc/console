@@ -12,6 +12,8 @@ export interface RediaccDividerProps {
   dashed?: boolean;
   /** Text to display in center of divider (horizontal only) */
   children?: ReactNode;
+  /** Margin for orientation text */
+  orientationMargin?: string | number;
   /** Additional class name */
   className?: string;
   /** Inline styles */

@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { RediaccInput as Input, RediaccSelect } from '@/components/ui/Form';
+import { RediaccInput, RediaccSelect } from '@/components/ui/Form';
 import { RediaccTag } from '@/components/ui/Tag';
 import { InlineStack } from '@/components/common/styled';
 

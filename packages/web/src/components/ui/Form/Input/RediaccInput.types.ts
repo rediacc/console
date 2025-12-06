@@ -56,11 +56,15 @@ export interface RediaccBaseInputProps {
   defaultValue?: string;
   /** Autocomplete attribute for browser autofill */
   autoComplete?: string;
+  /** Element to render after the input */
+  addonAfter?: ReactNode;
+  /** Element to render before the input */
+  addonBefore?: ReactNode;
 }
 
 export interface RediaccInputProps extends RediaccBaseInputProps {
   /** Input type */
-  type?: 'text' | 'email' | 'url' | 'tel';
+  type?: 'text' | 'email' | 'url' | 'tel' | 'password';
 }
 
 export interface RediaccPasswordInputProps extends Omit<RediaccBaseInputProps, 'variant' | 'type'> {
@@ -111,6 +115,8 @@ export interface RediaccInputNumberProps extends Omit<RediaccBaseInputProps, 'va
   defaultValue?: number | string;
   /** Show increase/decrease controls */
   controls?: boolean;
+  /** Enable keyboard behavior (up/down arrows) */
+  keyboard?: boolean;
 }
 
 export interface RediaccSearchInputProps extends Omit<RediaccBaseInputProps, 'variant'> {

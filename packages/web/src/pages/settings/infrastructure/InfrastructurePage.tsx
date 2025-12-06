@@ -10,7 +10,6 @@ import {
   Table,
   Modal,
   Alert,
-  Typography,
   Popconfirm,
   Result,
   Empty,
@@ -70,6 +69,7 @@ import {
   ModalStack,
   ModalStackLarge,
   ErrorWrapper,
+  RediaccText,
 } from '@/components/ui';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { RediaccInput as Input } from '@/components/ui';
@@ -152,7 +152,7 @@ const InfrastructurePage: React.FC = () => {
           if (modalData.mode === 'create') {
             await createRegionMutation.mutateAsync({
               regionName: data.regionName as string,
-              regionVault: data.vaultContent,
+              vaultContent: data.vaultContent,
             });
           } else if (modalData.data) {
             if (data.regionName && data.regionName !== modalData.data.regionName) {
@@ -378,7 +378,7 @@ const InfrastructurePage: React.FC = () => {
           <ApiOutlined />
           <strong>{text}</strong>
           {Number(record.hasAccess || 0) === 1 && (
-            <Tag color="green" icon={<CheckCircleOutlined />}>
+            <Tag color="success" icon={<CheckCircleOutlined />}>
               {t('bridges.access')}
             </Tag>
           )}
@@ -406,7 +406,7 @@ const InfrastructurePage: React.FC = () => {
       sorter: createSorter<Bridge>('isGlobalBridge'),
       render: (isGlobal: boolean) =>
         isGlobal ? (
-          <Tag color="purple" icon={<CloudServerOutlined />}>
+          <Tag color="default" icon={<CloudServerOutlined />}>
             {t('bridges.global')}
           </Tag>
         ) : (
@@ -423,7 +423,7 @@ const InfrastructurePage: React.FC = () => {
       sorter: createSorter<Bridge>('managementMode'),
       render: (mode: string) => {
         if (!mode) return <Tag>{t('bridges.local')}</Tag>;
-        const color = mode === 'Cloud' ? 'green' : 'default';
+        const color = mode === 'Cloud' ? 'success' : 'default';
         const icon = mode === 'Cloud' ? <CloudServerOutlined /> : <DesktopOutlined />;
         return (
           <Tag color={color} icon={icon}>
@@ -696,7 +696,7 @@ const InfrastructurePage: React.FC = () => {
                   <Alert
                     message={t('bridges.accessDenied')}
                     description={t('bridges.accessDeniedDescription')}
-                    variant="error"
+                    type="error"
                     showIcon
                   />
                 </ErrorWrapper>
@@ -709,7 +709,7 @@ const InfrastructurePage: React.FC = () => {
                   <Alert
                     message={t('bridges.noToken')}
                     description={t('bridges.noTokenDescription')}
-                    variant="info"
+                    type="info"
                     showIcon
                   />
                 </ErrorWrapper>
@@ -726,7 +726,7 @@ const InfrastructurePage: React.FC = () => {
                 />
 
                 <div>
-                  <Typography.Text strong>{t('bridges.tokenLabel')}</Typography.Text>
+                  <RediaccText weight="bold">{t('bridges.tokenLabel')}</RediaccText>
                   <TokenCopyRow>
                     <Input fullWidth value={token} readOnly autoComplete="off" />
                     <Button

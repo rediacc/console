@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Button, Tooltip, Input } from 'antd';
+import { Typography, Button, Tooltip, Input, Space, Alert } from 'antd';
 import type { TableProps } from 'antd';
 import type { MenuProps } from 'antd';
 import { isAxiosError } from 'axios';
 import styled, { useTheme as useStyledTheme } from 'styled-components';
-import { RediaccAlert, RediaccStack, RediaccTag } from '@/components/ui';
+import { RediaccAlert, RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
 import {
   CheckCircleOutlined,
   FunctionOutlined,
@@ -33,6 +33,7 @@ import {
   EyeOutlined,
 } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import { RediaccText as Text } from '@/components/ui';
 import { useDialogState } from '@/hooks/useDialogState';
 import * as S from './styles';
 import { type QueueFunction } from '@/api/queries/queue';
@@ -79,7 +80,6 @@ import {
   getGrandVaultForOperation,
 } from '@/core';
 
-const { Text } = Typography;
 
 const RepoTableComponent = S.StyledTable as React.ComponentType<TableProps<RepoTableRow>>;
 const SystemTableComponent = S.StyledTable as React.ComponentType<TableProps<Container>>;
@@ -853,7 +853,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
               </ul>
             </>
           )}
-          <Alert message={t('resources:repos.promoteWarning')} variant="warning" showIcon />
+          <Alert message={t('resources:repos.promoteWarning')} type="warning" showIcon />
         </ModalContent>
       ),
       okText: t('resources:repos.promoteButton'),
@@ -1047,7 +1047,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
                 count: context.childClones.length,
               })}
             </Typography.Paragraph>
-            <Typography.Paragraph strong>{t('resources:repos.clonesList')}</Typography.Paragraph>
+            <RediaccText as="p" weight="bold">{t('resources:repos.clonesList')}</RediaccText>
             <ul>
               {context.childClones.map((clone) => (
                 <li key={clone.repoGuid}>{clone.repoName}</li>
@@ -1072,12 +1072,12 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           <Alert
             message={t('resources:repos.deleteGrandWarning')}
             description={t('resources:repos.deleteGrandWarningDesc', { name: Repo.name })}
-            variant="warning"
+            type="warning"
             showIcon
           />
-          <Typography.Text strong>
+          <RediaccText weight="bold">
             {t('resources:repos.deleteGrandConfirmPrompt', { name: Repo.name })}
-          </Typography.Text>
+          </RediaccText>
           <ConfirmationInput
             type="text"
             placeholder={Repo.name}
@@ -1538,7 +1538,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
               index
             ) as React.ReactNode
           }
-          {record.status && <SmallText type="secondary">{record.status}</SmallText>}
+          {record.status && <SmallText color="secondary">{record.status}</SmallText>}
         </Space>
       ),
     },
@@ -1566,7 +1566,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         // If we have structured port mappings, use them
         if (portMappings && Array.isArray(portMappings) && portMappings.length > 0) {
           return (
-            <Space orientation="vertical" size={0}>
+            <Space direction="vertical" size={4}>
               {portMappings.map((mapping, index) => (
                 <SmallText key={index}>
                   {mapping.host_port ? (
@@ -1992,7 +1992,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         <Alert
           message={t('common:messages.error')}
           description={error}
-          variant="error"
+          type="error"
           showIcon
           action={
             <Tooltip title={t('common:actions.retry')}>
@@ -2028,7 +2028,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
       {/* Machine Name Title when in grouped view */}
       {hideSystemInfo && (
         <S.MachineHeader data-testid="machine-repo-list-machine-header">
-          <Space orientation="vertical" size={4}>
+          <Space direction="vertical" size="small">
             <Space>
               <S.MachineIcon as={DesktopOutlined} />
               <S.MachineTitle
@@ -2152,7 +2152,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         data-testid="machine-repo-list-function-modal"
         subtitle={
           selectedRepo && (
-            <FullWidthStack direction="vertical" size="small">
+            <FullWidthStack direction="vertical" gap="sm">
               <Space>
                 <Text>{t('resources:repos.Repo')}:</Text>
                 <InlineTag>{selectedRepo.name}</InlineTag>
@@ -2172,12 +2172,12 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
                     if (parentRepo) {
                       return (
                         <Space>
-                          <SmallText type="secondary">
+                          <SmallText color="secondary">
                             {t('resources:repos.parentRepo', { defaultValue: 'Parent Repo' })}:
                           </SmallText>
                           <InlineTag>{parentRepo.repoName}</InlineTag>
-                          <SmallText type="secondary">→</SmallText>
-                          <SmallText type="secondary">{t('common:current')}:</SmallText>
+                          <SmallText color="secondary">→</SmallText>
+                          <SmallText color="secondary">{t('common:current')}:</SmallText>
                           <InlineTag>{selectedRepo.name}</InlineTag>
                         </Space>
                       );

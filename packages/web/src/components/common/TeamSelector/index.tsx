@@ -28,7 +28,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
   loading = false,
   placeholder = 'Select teams...',
   style,
-}) => {
+}: TeamSelectorProps) => {
   const { t } = useTranslation('resources');
   const [searchValue, setSearchValue] = useState('');
 
@@ -65,7 +65,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       searchValue={searchValue}
       onSearch={setSearchValue}
       data-testid="team-selector"
-      tagRender={(props) => {
+      tagRender={(props: { value: string; closable: boolean; onClose: () => void }) => {
         const { value, closable, onClose } = props;
         return (
           <TeamTag closable={closable} onClose={onClose} data-testid={`team-selector-tag-${value}`}>
@@ -73,7 +73,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
           </TeamTag>
         );
       }}
-      popupRender={(menu) => (
+      dropdownRender={(menu: React.ReactElement) => (
         <>
           <DropdownSearchContainer>
             <SearchInput
@@ -90,7 +90,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
         </>
       )}
       maxTagCount="responsive"
-      maxTagPlaceholder={(omittedValues) => (
+      maxTagPlaceholder={(omittedValues: unknown[]) => (
         <TeamTag data-testid="team-selector-more-tag">+{omittedValues.length} more</TeamTag>
       )}
     />

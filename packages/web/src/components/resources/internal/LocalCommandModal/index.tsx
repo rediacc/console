@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Button, Typography, message } from 'antd';
+import { Form, Input, Button, message } from 'antd';
 import { RediaccCheckbox as Checkbox, RediaccRadio as Radio, type CheckboxChangeEvent, type RadioChangeEvent } from '@/components/ui/Form';
 import {
   CopyOutlined,
@@ -10,6 +10,7 @@ import {
   FileTextOutlined,
 } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import { RediaccText as Text } from '@/components/ui';
 import { createFreshForkToken } from '@/services/forkTokenService';
 import type { PluginContainer } from '@/types';
 import {
@@ -31,7 +32,6 @@ import {
 } from './styles';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 
-const { Text } = Typography;
 
 type CommandTab = 'vscode' | 'terminal' | 'desktop';
 type OperatingSystem = 'unix' | 'windows';
@@ -263,7 +263,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             children: (
               <Form layout="vertical">
                 <Form.Item help={t('resources:localCommandBuilder.vscodeHelp')}>
-                  <Text type="secondary">
+                  <Text color="secondary">
                     {t('resources:localCommandBuilder.vscodeDescription')}
                   </Text>
                 </Form.Item>
@@ -297,7 +297,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             children: (
               <Form layout="vertical">
                 <Form.Item help={t('resources:localCommandBuilder.desktopHelp')}>
-                  <Text type="secondary">
+                  <Text color="secondary">
                     {t('resources:localCommandBuilder.desktopDescription')}
                   </Text>
                 </Form.Item>
@@ -333,7 +333,6 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
           code
           copyable={{
             text: getCommand(),
-            icon: <CopyOutlined />,
             onCopy: copyToClipboard,
           }}
         >

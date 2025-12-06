@@ -1,4 +1,4 @@
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import { RediaccButton } from '@/components/ui/Button';
 import { RediaccText } from '@/components/ui/Text';
 import { RediaccCard, RediaccAlert, RediaccDivider } from '@/components/ui';

@@ -145,7 +145,7 @@ export const DetailPanelSectionTitle = styled(Title).attrs({ level: 5 })`
   }
 `;
 
-export const DetailPanelSectionCard = styled(RediaccCard).attrs({ size: 'small' })`
+export const DetailPanelSectionCard = styled(RediaccCard).attrs({ size: 'sm' })`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     background-color: ${({ theme }) => theme.colors.bgSecondary};

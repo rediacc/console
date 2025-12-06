@@ -72,14 +72,13 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
 
   return (
     <CommandContainer data-testid="pip-install-command-display">
-      {description && <CommandDescription type="secondary">{description}</CommandDescription>}
+      {description && <CommandDescription color="secondary">{description}</CommandDescription>}
       <CommandBox data-testid="pip-install-command-text">
         <CommandCode code $isComment={isComment} $isCommand={isCommand}>
           {command}
         </CommandCode>
         {showCopy && (
           <CopyButton
-            size="small"
             icon={copied ? <CheckOutlined /> : <CopyOutlined />}
             onClick={handleCopy}
             data-testid="pip-install-command-copy"
@@ -132,11 +131,11 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   };
 
   const renderQuickInstall = () => (
-    <ContentSpace orientation="vertical" size="large">
+    <ContentSpace direction="vertical" gap="lg">
       <Alert
         message={t('resources:pipInstall.quickInstallTitle')}
         description={t('resources:pipInstall.quickInstallDesc')}
-        variant="info"
+        type="info"
         showIcon
         icon={<RocketOutlined />}
         data-testid="pip-install-quick-alert"
@@ -191,7 +190,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
             ))}
           </NotesList>
         }
-        variant="warning"
+        type="warning"
         data-testid="pip-install-platform-alert"
       />
 
@@ -217,7 +216,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           label: t('resources:pipInstall.virtualEnvironment'),
           extra: <Tag color="green">{t('resources:pipInstall.recommended')}</Tag>,
           children: (
-            <ContentSpace orientation="vertical">
+            <ContentSpace direction="vertical">
               <Text>{virtualEnvInstructions.description}</Text>
               {virtualEnvInstructions.commands.map((cmd, index) => (
                 <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
@@ -229,7 +228,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           key: 'version',
           label: t('resources:pipInstall.specificVersion'),
           children: (
-            <ContentSpace orientation="vertical">
+            <ContentSpace direction="vertical">
               <Text>{t('resources:pipInstall.versionDesc')}</Text>
               <CommandDisplay command="pip install rediacc==1.0.0" />
               <CommandDisplay command="pip install rediacc>=1.0.0,<2.0.0" />
@@ -244,7 +243,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           key: 'uninstall',
           label: t('resources:pipInstall.uninstall'),
           children: (
-            <ContentSpace orientation="vertical">
+            <ContentSpace direction="vertical">
               <Text>{uninstallInstructions.description}</Text>
               {uninstallInstructions.commands.map((cmd, index) => (
                 <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
@@ -257,10 +256,10 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   );
 
   const renderTroubleshooting = () => (
-    <ContentSpace orientation="vertical" size="large">
+    <ContentSpace direction="vertical" gap="lg">
       <Alert
         message={t('resources:pipInstall.commonIssues')}
-        variant="info"
+        type="info"
         showIcon
         data-testid="pip-install-issues-alert"
       />
@@ -277,7 +276,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
               const troubleshooting =
                 pipInstallationService.getTroubleshootingCommands('pip-not-found');
               return (
-                <ContentSpace orientation="vertical">
+                <ContentSpace direction="vertical">
                   <Text>{troubleshooting.description}</Text>
                   {troubleshooting.commands.map((cmd, index) => (
                     <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
@@ -289,12 +288,12 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           {
             key: 'permission',
             label: t('resources:pipInstall.permissionDenied'),
-            extra: <Tag color="orange">{t('resources:pipInstall.warning')}</Tag>,
+            extra: <Tag color="warning">{t('resources:pipInstall.warning')}</Tag>,
             children: (() => {
               const troubleshooting =
                 pipInstallationService.getTroubleshootingCommands('permission-denied');
               return (
-                <ContentSpace orientation="vertical">
+                <ContentSpace direction="vertical">
                   <Text>{troubleshooting.description}</Text>
                   {troubleshooting.commands.map((cmd, index) => (
                     <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
@@ -310,7 +309,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
               const troubleshooting =
                 pipInstallationService.getTroubleshootingCommands('python-version');
               return (
-                <ContentSpace orientation="vertical">
+                <ContentSpace direction="vertical">
                   <Text>{troubleshooting.description}</Text>
                   {troubleshooting.commands.map((cmd, index) => (
                     <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
@@ -325,7 +324,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
       <Alert
         message={t('resources:pipInstall.stillNeedHelp')}
         description={
-          <ContentSpace orientation="vertical">
+          <ContentSpace direction="vertical">
             <Text>
               {t('resources:pipInstall.checkDocs')}:{' '}
               <a
@@ -350,7 +349,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
             </Text>
           </ContentSpace>
         }
-        variant="info"
+        type="info"
         data-testid="pip-install-help-alert"
       />
     </ContentSpace>

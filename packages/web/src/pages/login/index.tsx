@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { Form, Typography, Alert, Tooltip, Modal } from 'antd';
+import { Form, Alert, Tooltip, Modal } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import {
  UserOutlined,
@@ -11,6 +11,7 @@ import {
  SafetyCertificateOutlined,
 } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import { RediaccText as Text } from '@/components/ui';
 import { loginSuccess } from '@/store/auth/authSlice';
 import { saveAuthData } from '@/utils/auth';
 import { hashPassword } from '@/utils/auth';
@@ -22,7 +23,6 @@ import VersionSelector from '@/pages/login/components/VersionSelector';
 import EndpointSelector from '@/pages/login/components/EndpointSelector';
 import logoBlack from '@/assets/logo_black.png';
 import logoWhite from '@/assets/logo_white.png';
-import { spacing } from '@/utils/styleConstants';
 import { ModalSize } from '@/types/modal';
 import { featureFlags } from '@/config/featureFlags';
 import {
@@ -69,7 +69,6 @@ import {
  NoMarginFormItem,
 } from './styles';
 
-const { Text } = Typography;
 
 interface LoginForm {
  email: string;
@@ -480,7 +479,7 @@ const LoginPage: React.FC = () => {
  <>
  <SandboxWarning />
  <LoginContainer>
- <FullWidthStack orientation="vertical" size={spacing('XL')}>
+ <FullWidthStack direction="vertical" gap="xl">
  <LogoContainer>
  <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Rediacc Logo" />
  </LogoContainer>
@@ -493,9 +492,6 @@ const LoginPage: React.FC = () => {
  closable
  onClose={() => setError(null)}
  data-testid="login-error-alert"
- id="login-error-message"
- role="alert"
- aria-live="polite"
  />
  )}
 
@@ -595,7 +591,7 @@ const LoginPage: React.FC = () => {
  <AdvancedOptionsContainer>
  <AdvancedOptionsButton
  variant="text"
- size="small"
+ size="sm"
  onClick={() => {
  setShowAdvancedOptions(true);
  setTimeout(() => {
@@ -617,7 +613,7 @@ const LoginPage: React.FC = () => {
  }
  >
  <Button
- 
+                  variant="primary"
  htmlType="submit"
  size="md"
  fullWidth
@@ -632,7 +628,7 @@ const LoginPage: React.FC = () => {
  </Form>
 
  <RegisterContainer>
- <Text type="secondary">
+ <Text color="secondary">
  {t('auth:login.noAccount')}{' '}
  <RegisterLink
  onClick={() => setShowRegistration(true)}
@@ -678,11 +674,11 @@ const LoginPage: React.FC = () => {
  footer={null}
  className={ModalSize.Medium}
  >
- <FullWidthStack orientation="vertical" size={spacing('MD')}>
+ <FullWidthStack direction="vertical" gap="md">
  <Alert
  message={t('login.twoFactorAuth.required')}
  description={t('login.twoFactorAuth.description')}
- variant="info"
+ type="info"
  showIcon
  data-testid="tfa-info-alert"
  />
@@ -698,7 +694,7 @@ const LoginPage: React.FC = () => {
  ]}
  >
  <TFACodeInput
- size="md"
+ size="middle"
  placeholder={t('login.twoFactorAuth.codePlaceholder')}
  value={twoFACode}
  onChange={(e) => setTwoFACode(e.target.value)}
@@ -720,7 +716,7 @@ const LoginPage: React.FC = () => {
  {t('common:general.cancel')}
  </Button>
  <Button
- 
+                  variant="primary"
  htmlType="submit"
  loading={verifyTFAMutation.isPending}
  disabled={twoFACode.length !== 6}

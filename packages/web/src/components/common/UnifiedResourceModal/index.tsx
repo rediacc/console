@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { Modal, Space, Typography, Upload, message } from 'antd';
-// message.error is imported from antd
+import { Modal, Space, Upload, message } from 'antd';
 import { AppstoreOutlined } from '@/utils/optimizedIcons';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,7 +37,7 @@ import {
 import { z } from 'zod';
 import { ModalSize } from '@/types/modal';
 import { featureFlags } from '@/config/featureFlags';
-import { RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccText as Text } from '@/components/ui';
 import {
   TitleStack,
   TitleText,
@@ -51,8 +50,6 @@ import {
   TemplateCollapse,
   SelectedTemplateTag,
 } from './styles';
-
-const { Text } = Typography;
 
 export type ResourceType =
   | 'machine'
@@ -894,11 +891,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
     return (
       <Space size="small">
-        <Text type="secondary">{t('machines:team')}:</Text>
+        <Text color="secondary">{t('machines:team')}:</Text>
         <Text weight="bold">{teamLabel}</Text>
         {['machine', 'repo', 'storage'].includes(resourceType) && resourceName && (
           <>
-            <SecondaryLabel type="secondary">
+            <SecondaryLabel>
               {t(
                 resourceType === 'machine'
                   ? 'machines:machine'
@@ -1015,7 +1012,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         <TitleStack>
           <TitleText>{baseTitle}</TitleText>
           {subtitle && (
-            <SubtitleText type="secondary">
+            <SubtitleText>
               {t('general.team')}: {subtitle}
             </SubtitleText>
           )}
@@ -1195,7 +1192,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         title={renderModalTitle()}
         open={open}
         onCancel={onCancel}
-        destroyOnHidden
+        destroyOnClose
         footer={[
           ...(mode === 'create' && uiMode === 'expert'
             ? [
@@ -1383,7 +1380,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                         <AppstoreOutlined />
                         <Text>{t('resources:templates.selectTemplate')}</Text>
                         {selectedTemplate && (
-                          <SelectedTemplateTag color="blue">
+                          <SelectedTemplateTag variant="primary">
                             {selectedTemplate.replace(/^(db_|kick_|route_)/, '')}
                           </SelectedTemplateTag>
                         )}
@@ -1411,7 +1408,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             ) : undefined
           }
           defaultsContent={
-            <Space orientation="vertical" size={0}>
+            <Space direction="vertical" size={4}>
               <Text>{t('general.team')}: Private Team</Text>
               {resourceType === 'machine' && (
                 <>

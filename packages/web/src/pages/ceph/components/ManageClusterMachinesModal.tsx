@@ -185,7 +185,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     dataIndex: 'bridgeName',
     key: 'bridgeName',
     sorter: createSorter<Machine>('bridgeName'),
-    renderWrapper: (content) => <Tag color="green">{content}</Tag>,
+    renderWrapper: (content) => <Tag color="success">{content}</Tag>,
   });
 
   const assignedDateColumn = createDateColumn<Machine>({
@@ -212,7 +212,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     }
 
     return (
-      <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <div>
           <p>{t('machines:selectMachines')}</p>
           <AvailableMachinesSelector
@@ -254,10 +254,10 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     };
 
     return (
-      <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {selectedRemoveMachines.length > 0 && (
           <div>
-            <Tag color="orange">
+            <Tag color="warning">
               {t('machines:bulkOperations.selectedCount', { count: selectedRemoveMachines.length })}
             </Tag>
             <Button

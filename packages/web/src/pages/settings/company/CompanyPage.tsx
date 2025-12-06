@@ -72,6 +72,7 @@ import {
   RequirementsList,
   CaptionText,
   CenteredBlock,
+  RediaccText,
 } from '@/components/ui';
 import {
   SettingsCard,
@@ -380,7 +381,7 @@ const CompanyPage: React.FC = () => {
               <DangerStack>
                 <Row gutter={[16, 16]} align="middle">
                   <Col xs={24} lg={16}>
-                    <Space orientation="vertical" size={8}>
+                    <Space direction="vertical" size={8}>
                       <CardTitle level={5}>
                         {tSystem('dangerZone.blockUserRequests.title')}
                       </CardTitle>
@@ -409,9 +410,9 @@ const CompanyPage: React.FC = () => {
                                 {tSystem('dangerZone.blockUserRequests.confirmBlock.effect3')}
                               </li>
                             </BulletedList>
-                            <Typography.Text strong>
+                            <RediaccText weight="bold">
                               {tSystem('dangerZone.blockUserRequests.confirmBlock.confirm')}
-                            </Typography.Text>
+                            </RediaccText>
                           </ModalStack>
                         }
                         onConfirm={() => blockUserRequestsMutation.mutate(true)}
@@ -453,7 +454,7 @@ const CompanyPage: React.FC = () => {
 
                 <Row gutter={[16, 16]} align="middle">
                   <Col xs={24} lg={16}>
-                    <Space orientation="vertical" size={8}>
+                    <Space direction="vertical" size={8}>
                       <CardTitle level={5}>{tSystem('dangerZone.exportVaults.title')}</CardTitle>
                       <CardDescription>
                         {tSystem('dangerZone.exportVaults.description')}
@@ -479,7 +480,7 @@ const CompanyPage: React.FC = () => {
 
                 <Row gutter={[16, 16]} align="middle">
                   <Col xs={24} lg={16}>
-                    <Space orientation="vertical" size={8}>
+                    <Space direction="vertical" size={8}>
                       <CardTitle level={5}>{tSystem('dangerZone.exportData.title')}</CardTitle>
                       <CardDescription>
                         {tSystem('dangerZone.exportData.description')}
@@ -505,7 +506,7 @@ const CompanyPage: React.FC = () => {
 
                 <Row gutter={[16, 16]} align="middle">
                   <Col xs={24} lg={16}>
-                    <Space orientation="vertical" size={8}>
+                    <Space direction="vertical" size={8}>
                       <CardTitle level={5}>{tSystem('dangerZone.importData.title')}</CardTitle>
                       <CardDescription>
                         {tSystem('dangerZone.importData.description')}
@@ -531,7 +532,7 @@ const CompanyPage: React.FC = () => {
 
                 <Row gutter={[16, 16]} align="middle">
                   <Col xs={24} lg={16}>
-                    <Space orientation="vertical" size={8}>
+                    <Space direction="vertical" size={8}>
                       <CardTitle level={5}>
                         {tSystem('dangerZone.updateMasterPassword.title')}
                       </CardTitle>
@@ -543,7 +544,7 @@ const CompanyPage: React.FC = () => {
                         <li>{tSystem('dangerZone.updateMasterPassword.effect2')}</li>
                         <li>{tSystem('dangerZone.updateMasterPassword.effect3')}</li>
                       </RequirementsList>
-                      <WarningNote type="secondary" strong>
+                      <WarningNote color="secondary" weight="bold">
                         {tSystem('dangerZone.updateMasterPassword.warning')}
                       </WarningNote>
                     </Space>
@@ -604,7 +605,7 @@ const CompanyPage: React.FC = () => {
                   masterPasswordForm.resetFields(['password', 'confirmPassword']);
                 }}
               >
-                <Space orientation="vertical">
+                <Space direction="vertical">
                   <Radio value="update">
                     {tSystem('dangerZone.updateMasterPassword.modal.operationUpdate')}
                   </Radio>
@@ -624,7 +625,7 @@ const CompanyPage: React.FC = () => {
               </>
             }
             description={
-              <Space orientation="vertical" size={8}>
+              <Space direction="vertical" size="small">
                 <Typography.Text>
                   {tSystem(
                     `dangerZone.updateMasterPassword.modal.warningDescription${
@@ -648,10 +649,10 @@ const CompanyPage: React.FC = () => {
                     <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect4')}</li>
                   )}
                 </BulletedList>
-                <Typography.Text strong>
+                <RediaccText weight="bold">
                   {tSystem('dangerZone.updateMasterPassword.modal.warningPermanent')}
-                </Typography.Text>
-                <DangerText strong>
+                </RediaccText>
+                <DangerText weight="bold">
                   {tSystem(
                     masterPasswordOperation === 'remove'
                       ? 'dangerZone.updateMasterPassword.modal.warningSecureRemove'
@@ -792,9 +793,9 @@ const CompanyPage: React.FC = () => {
                 <Typography.Title level={1} type="danger">
                   {countdown}
                 </Typography.Title>
-                <Typography.Text type="secondary">
+                <RediaccText color="secondary">
                   {tSystem('dangerZone.updateMasterPassword.success.seconds')}
-                </Typography.Text>
+                </RediaccText>
               </CenteredBlock>
 
               <Button
@@ -850,20 +851,20 @@ const CompanyPage: React.FC = () => {
 
           <Form.Item label={tSystem('dangerZone.importData.modal.importMode')}>
             <Radio.Group value={importMode} onChange={(e) => setImportMode(e.target.value)}>
-              <Space orientation="vertical">
+              <Space direction="vertical">
                 <Radio value="skip">
-                  <Space orientation="vertical" size={0}>
-                    <Typography.Text strong>
+                  <Space direction="vertical" size={4}>
+                    <RediaccText weight="bold">
                       {tSystem('dangerZone.importData.modal.modeSkip')}
-                    </Typography.Text>
+                    </RediaccText>
                     <CaptionText>{tSystem('dangerZone.importData.modal.modeSkipDesc')}</CaptionText>
                   </Space>
                 </Radio>
                 <Radio value="override">
-                  <Space orientation="vertical" size={0}>
-                    <Typography.Text strong>
+                  <Space direction="vertical" size={4}>
+                    <RediaccText weight="bold">
                       {tSystem('dangerZone.importData.modal.modeOverride')}
-                    </Typography.Text>
+                    </RediaccText>
                     <CaptionText>
                       {tSystem('dangerZone.importData.modal.modeOverrideDesc')}
                     </CaptionText>

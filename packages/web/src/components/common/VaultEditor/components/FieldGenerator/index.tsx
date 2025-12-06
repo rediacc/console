@@ -8,6 +8,7 @@ import {
   GenerationOptions,
 } from '@/utils/cryptoGenerators';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { RediaccText } from '@/components/ui';
 import {
   PopoverContainer,
   OptionLabel,
@@ -129,7 +130,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   const currentKeySize: 2048 | 4096 = keyOptions.keySize ?? 2048;
 
   const renderSSHKeyOptions = () => (
-    <OptionsStack orientation="vertical">
+    <OptionsStack direction="vertical">
       {renderRadioGroup(t('fieldGenerator.keyType'), currentKeyType, keyTypeOptions, (val) =>
         setKeyOptions({ ...keyOptions, keyType: val })
       )}
@@ -141,13 +142,13 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   );
 
   const renderGeneratedValues = () => (
-    <OptionsStack orientation="vertical">
+    <OptionsStack direction="vertical">
       {Object.entries(generatedValues).map(([field, value]) => (
         <GeneratedValueCard key={field}>
           <ValueHeader>
-            <strong>{field}:</strong>
+            <RediaccText weight="bold">{field}:</RediaccText>
             <CopyButton
-              size="small"
+              size="sm"
               icon={
                 copiedField === field ? (
                   <CheckOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />
@@ -176,7 +177,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
       <ActionRow>
         {Object.keys(generatedValues).length === 0 ? (
           <ControlButton
-            type="primary"
+            variant="primary"
             icon={<KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
             onClick={handleGenerate}
             loading={generating}
@@ -201,7 +202,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
               {t('fieldGenerator.regenerate')}
             </ControlButton>
             <ControlButton
-              type="primary"
+              variant="primary"
               onClick={handleApply}
               data-testid="vault-editor-apply-generated"
             >
@@ -231,7 +232,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
         <GeneratorButton
           variant="text"
           icon={<KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
-          size="small"
+          size="sm"
           data-testid={props['data-testid'] || 'vault-editor-field-generator'}
         />
       </Tooltip>

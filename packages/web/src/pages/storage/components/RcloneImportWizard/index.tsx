@@ -541,7 +541,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       render: (status: ImportStatus['status'], record) => {
         if (currentStep < 2) return null;
         return (
-          <Space orientation="vertical" size="small">
+          <Space direction="vertical" size={8}>
             {statusColumn.render?.(status, record, 0) as React.ReactNode}
             {record.message && <StatusMessage>{record.message}</StatusMessage>}
           </Space>

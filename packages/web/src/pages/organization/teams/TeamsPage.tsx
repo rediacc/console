@@ -185,7 +185,7 @@ const TeamsPage: React.FC = () => {
           actions={
             <Tooltip title={tSystem('actions.createTeam')}>
               <Button
-                type="primary"
+                variant="primary"
                 icon={<PlusOutlined />}
                 onClick={() => unifiedModal.openCreate()}
                 data-testid="system-create-team-button"
@@ -244,9 +244,9 @@ const TeamsPage: React.FC = () => {
                           >
                             <Tooltip title={tCommon('actions.remove')}>
                               <Button
-                                type="primary"
+                                variant="primary"
                                 danger
-                                size="small"
+                                size="sm"
                                 loading={removeTeamMemberMutation.isPending}
                                 icon={<DeleteOutlined />}
                                 aria-label={tCommon('actions.remove')}
@@ -261,14 +261,14 @@ const TeamsPage: React.FC = () => {
                           description={
                             <Space size="small">
                               {member.isMember && (
-                                <Tag color="green">
+                                <Tag variant="success">
                                   {t('teams.manageMembers.memberStatus', {
                                     defaultValue: 'Member',
                                   })}
                                 </Tag>
                               )}
                               {member.hasAccess && (
-                                <Tag color="blue">
+                                <Tag variant="primary">
                                   {t('teams.manageMembers.accessStatus', {
                                     defaultValue: 'Has Access',
                                   })}
@@ -317,7 +317,7 @@ const TeamsPage: React.FC = () => {
                     />
                     <Tooltip title={tSystem('actions.addMember')}>
                       <Button
-                        type="primary"
+                        variant="primary"
                         onClick={handleAddTeamMember}
                         loading={addTeamMemberMutation.isPending}
                         disabled={!selectedMemberEmail}

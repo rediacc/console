@@ -57,7 +57,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           <UserEmail>{user?.email}</UserEmail>
           {company && <CompanyName>{company}</CompanyName>}
           {companyData?.activeSubscription && (
-            <PlanBadge count={companyData.activeSubscription.planCode ?? 'UNKNOWN'} />
+            <PlanBadge>{companyData.activeSubscription.planCode ?? 'UNKNOWN'}</PlanBadge>
           )}
         </UserDetails>
       </UserInfo>

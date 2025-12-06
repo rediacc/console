@@ -15,7 +15,7 @@ import type { RediaccTextProps } from './RediaccText.types';
  * <RediaccText>Default body text</RediaccText>
  *
  * // With overrides
- * <RediaccText size="lg" weight="semibold">
+ * <RediaccText size="large" weight="semibold">
  *   Custom styling
  * </RediaccText>
  *
@@ -29,7 +29,7 @@ import type { RediaccTextProps } from './RediaccText.types';
  *   This text will be truncated after 3 lines
  * </RediaccText>
  */
-export const RediaccText = forwardRef<HTMLSpanElement, RediaccTextProps>(
+export const RediaccText = forwardRef<any, RediaccTextProps>(
   (
     {
       variant,
@@ -40,11 +40,14 @@ export const RediaccText = forwardRef<HTMLSpanElement, RediaccTextProps>(
       align,
       truncate = false,
       maxLines,
+      code = false,
       as = 'span',
       children,
       className,
       style,
       onClick,
+      copyable,
+      ellipsis,
       ...rest
     },
     ref
@@ -62,10 +65,13 @@ export const RediaccText = forwardRef<HTMLSpanElement, RediaccTextProps>(
         $align={align}
         $truncate={truncate}
         $maxLines={maxLines}
+        $code={code}
         $as={as}
         className={className}
         style={style}
         onClick={onClick}
+        copyable={copyable as any}
+        ellipsis={ellipsis as any}
         {...rest}
       >
         {children}

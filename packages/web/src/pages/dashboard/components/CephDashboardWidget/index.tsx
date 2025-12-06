@@ -122,14 +122,14 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({
             )}
             {team.imageMachines > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.image')}>
-                <Tag data-testid={`ds-widget-team-tag-image-${teamKey}`} color="purple">
+                <Tag data-testid={`ds-widget-team-tag-image-${teamKey}`} color="default">
                   {team.imageMachines} image
                 </Tag>
               </Tooltip>
             )}
             {team.cloneMachines > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.clone')}>
-                <Tag data-testid={`ds-widget-team-tag-clone-${teamKey}`} color="orange">
+                <Tag data-testid={`ds-widget-team-tag-clone-${teamKey}`} color="warning">
                   {team.cloneMachines} clone
                 </Tag>
               </Tooltip>
@@ -163,7 +163,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({
             <Col key={item.type} xs={12} sm={12} md={6}>
               <AssignmentCard
                 data-testid={`ds-widget-stat-${item.type}`}
-                size="small"
+                size="sm"
                 $borderColor={item.color}
               >
                 <AssignmentStack>
@@ -239,7 +239,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({
             </TeamHeader>
             <TeamListStyled
               data-testid="ds-widget-team-list"
-              size="small"
+              size="sm"
               dataSource={stats.team_breakdown}
               renderItem={renderTeamItem}
             />

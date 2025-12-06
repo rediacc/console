@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Button as AntButton, Space, Tag, Typography, Alert, Tooltip } from 'antd';
+import { Button as AntButton, Space, Tag, Alert, Tooltip } from 'antd';
 import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
@@ -13,7 +13,7 @@ import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { useQueueTraceModal } from '@/hooks/useDialogState';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton as Button } from '@/components/ui';
+import { RediaccButton as Button, RediaccText as Text } from '@/components/ui';
 import { ActionGroup } from '@/components/common/styled';
 import {
   PageWrapper,
@@ -31,8 +31,6 @@ import {
   ErrorWrapper,
   HeaderTitleText,
 } from './styles';
-
-const { Text } = Typography;
 
 // Repo interface from vaultStatus (runtime data)
 interface Repo {
@@ -177,7 +175,7 @@ const RepoContainersPage: React.FC = () => {
             <LoadingWrapper loading centered minHeight={160}>
               <div />
             </LoadingWrapper>
-            <Text type="secondary">{t('common:general.loading')}</Text>
+            <Text color="secondary">{t('common:general.loading')}</Text>
           </CenteredState>
         </FullHeightCard>
       </PageWrapper>
@@ -199,7 +197,7 @@ const RepoContainersPage: React.FC = () => {
                 </AntButton>
               </ErrorWrapper>
             }
-            variant="error"
+            type="error"
             showIcon
           />
         </FullHeightCard>
@@ -222,7 +220,7 @@ const RepoContainersPage: React.FC = () => {
                 </AntButton>
               </ErrorWrapper>
             }
-            variant="error"
+            type="error"
             showIcon
           />
         </FullHeightCard>
@@ -284,10 +282,10 @@ const RepoContainersPage: React.FC = () => {
                 </HeaderTitleText>
               </TitleRow>
               <ActionGroup>
-                <Tag color="purple">
+                <Tag color="default">
                   {t('machines:machine')}: {actualMachine.machineName}
                 </Tag>
-                <Tag color="green">
+                <Tag color="success">
                   {t('machines:team')}: {actualMachine.teamName}
                 </Tag>
                 <Tag color="blue">

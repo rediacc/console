@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Modal, Form, Input } from 'antd';
+import { Modal, Form, Input, Select } from 'antd';
 import styled from 'styled-components';
 import { PlusOutlined } from '@/utils/optimizedIcons';
 import { endpointService, Endpoint } from '@/services/endpointService';
@@ -32,7 +32,7 @@ import {
  FormActions,
 } from './styles';
 
-const { Option } = StyledSelect;
+const { Option } = Select;
 
 const FormActionsRow = styled(Form.Item)`
  margin-bottom: 0;
@@ -319,7 +319,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
  // Show loading state
  if (loading) {
- return <LoadingText type="secondary">Loading...</LoadingText>;
+ return <LoadingText color="secondary">Loading...</LoadingText>;
  }
 
  // If no endpoint selected and we have endpoints, show the first one
@@ -337,7 +337,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
  // checkAllEndpointsHealth(endpoints);
  // }
  // }}
- size="small"
+ size="sm"
  suffixIcon={<EndpointSuffixIcon />}
  popupMatchSelectWidth={false}
  data-testid="endpoint-selector"
@@ -482,7 +482,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
  >
  Cancel
  </Button>
- <Button htmlType="submit" data-testid="custom-endpoint-submit-button">
+ <Button variant="primary" htmlType="submit" data-testid="custom-endpoint-submit-button">
  Add Endpoint
  </Button>
  </FormActions>

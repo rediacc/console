@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import {
   Space,
-  Typography,
   DatePicker,
   Select,
   Table,
@@ -14,6 +13,7 @@ import {
   Alert,
   Tooltip,
 } from 'antd';
+import { RediaccText as Text } from '@/components/ui';
 import {
   ReloadOutlined,
   SearchOutlined,
@@ -56,7 +56,6 @@ import {
 } from './styles';
 import { buildAuditColumns } from './columns';
 
-const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const AuditPage = () => {
@@ -195,7 +194,7 @@ const AuditPage = () => {
       <ContentStack>
         {/* Filters */}
         <PageCard data-testid="audit-filter-card">
-          <Space orientation="vertical" size="large">
+          <Space direction="vertical" size="large">
             <Row gutter={[24, 16]}>
               <Col xs={24} sm={24} md={8}>
                 <FilterField>
@@ -323,7 +322,7 @@ const AuditPage = () => {
           <Alert
             message={t('system:audit.errors.loadTitle')}
             description={error?.message || t('system:audit.errors.loadDescription')}
-            variant="error"
+            type="error"
             closable
             showIcon
             action={
@@ -359,8 +358,8 @@ const AuditPage = () => {
               emptyText: (
                 <Empty
                   description={
-                    <Space orientation="vertical" align="center">
-                      <Text type="secondary">
+                    <Space direction="vertical" align="center">
+                      <Text color="secondary">
                         {isError
                           ? t('system:audit.errors.unableToLoad')
                           : filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0

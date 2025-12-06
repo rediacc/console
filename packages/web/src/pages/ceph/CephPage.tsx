@@ -130,7 +130,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
  return (
  <PageWrapper>
  <PageCard>
- <Alert message="Loading company data..." variant="info" showIcon />
+ <Alert message="Loading company data..." type="info" showIcon />
  </PageCard>
  </PageWrapper>
  );
@@ -244,7 +244,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
  Company Data: {JSON.stringify(companyData, null, 2)}
  </>
  }
- variant="warning"
+ type="warning"
  showIcon
  icon={<SettingOutlined />}
  />

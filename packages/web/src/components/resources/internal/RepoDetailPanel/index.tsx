@@ -412,7 +412,7 @@ const ExternalVolumeWarning: React.FC<SectionProps> = ({ repo, panelData }) => {
               </li>
             ))}
           </VolumeList>
-          <FieldValue type="secondary">
+          <FieldValue color="secondary">
             <strong>Warning:</strong> If this repo is cloned, these volumes will be orphaned. Use
             bind mounts to <FieldValue code>$REPO_PATH</FieldValue> instead.
           </FieldValue>
@@ -461,7 +461,7 @@ const StorageSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
                     <IconWrapper $color="var(--color-success)">
                       <DatabaseOutlined />
                     </IconWrapper>
-                    <FieldValue strong>{t('resources:repos.diskUsage')}</FieldValue>
+                    <FieldValue weight="semibold">{t('resources:repos.diskUsage')}</FieldValue>
                   </Space>
                 </FieldRow>
                 <FieldValue>
@@ -578,7 +578,7 @@ const ServicesSection: React.FC<SectionProps> = ({ repo, panelData, t }) => (
         return (
           <ServiceCard
             key={`${service.name}-${index}`}
-            size="small"
+            size="sm"
             $state={state}
             data-testid={`repo-detail-service-card-${repo.repoName}-${service.name}`}
           >
@@ -586,7 +586,7 @@ const ServicesSection: React.FC<SectionProps> = ({ repo, panelData, t }) => (
               <Col span={24}>
                 <ServiceHeader>
                   <FieldValue
-                    strong
+                    weight="semibold"
                     data-testid={`repo-detail-service-name-${repo.repoName}-${service.name}`}
                   >
                     {service.name}

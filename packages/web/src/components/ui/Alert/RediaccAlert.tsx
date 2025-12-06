@@ -2,7 +2,7 @@ import { forwardRef } from 'react';
 import { StyledRediaccAlert, mapVariantToAntType } from './RediaccAlert.styles';
 import type { RediaccAlertProps } from './RediaccAlert.types';
 
-export const RediaccAlert = forwardRef<HTMLDivElement, RediaccAlertProps>(
+export const RediaccAlert = forwardRef<any, RediaccAlertProps>(
   (
     {
       variant = 'info',
@@ -14,6 +14,7 @@ export const RediaccAlert = forwardRef<HTMLDivElement, RediaccAlertProps>(
       message,
       description,
       icon,
+      action,
       onClose,
       children,
       ...rest
@@ -34,6 +35,7 @@ export const RediaccAlert = forwardRef<HTMLDivElement, RediaccAlertProps>(
         message={message ?? children}
         description={description}
         icon={icon}
+        action={action}
         onClose={onClose}
         {...rest}
       />

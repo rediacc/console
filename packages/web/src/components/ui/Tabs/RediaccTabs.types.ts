@@ -1,5 +1,4 @@
 import type { ReactNode, CSSProperties } from 'react';
-import type { TabsProps as AntTabsProps } from 'antd';
 
 export type TabsVariant = 'default' | 'card' | 'pills';
 export type TabsSize = 'sm' | 'md';

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ComponentPropsWithoutRef } from 'react';
-import { Tag, Row, Col, List } from 'antd';
+import { Row, Col, List } from 'antd';
+import { RediaccTag as Tag } from '@/components/ui';
 import { ModalSize } from '@/types/modal';
 import {
  RocketOutlined,
@@ -298,9 +299,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
  {context === 'marketplace' && (
  <Col xs={24} md={8}>
  <FeatureCard title={<CardTitle>{t('marketplace:features')}</CardTitle>}>
- <FeatureList orientation="vertical" size="small">
+ <FeatureList direction="vertical" gap="sm">
  {effectiveTemplate.tags?.map((tag) => (
- <FeatureItem key={tag} size="small">
+ <FeatureItem key={tag} gap="sm">
  <SuccessIcon>
  <CheckCircleOutlined />
  </SuccessIcon>
@@ -369,7 +370,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
  <FilePreviewColumn>
  <FilePreviewCard
  title={
- <FilePreviewHeader size="small">
+ <FilePreviewHeader gap="sm">
  <IconLabel>
  <CodeOutlined />
  <FilePath>
@@ -503,12 +504,12 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
  <div>
  <NoMarginTitle level={4}>{modalTitle}</NoMarginTitle>
  {context === 'repo-creation' && (
- <Tag color="blue" data-testid="template-details-name-tag">
+ <Tag variant="primary" data-testid="template-details-name-tag">
  {effectiveTemplate.name}
  </Tag>
  )}
  {context === 'marketplace' && effectiveTemplate.difficulty && (
- <DifficultyTag color={getDifficultyColor(effectiveTemplate.difficulty)}>
+ <DifficultyTag variant={getDifficultyColor(effectiveTemplate.difficulty)}>
  {t(
  `difficulty${effectiveTemplate.difficulty?.charAt(0).toUpperCase()}${effectiveTemplate.difficulty?.slice(
  1
@@ -553,7 +554,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
  activeKey={activeTab}
  onChange={setActiveTab}
  items={tabItems}
- size="large"
+ size="md"
  data-testid={
  context === 'marketplace' ? 'marketplace-preview-tabs' : 'template-details-tabs'
  }

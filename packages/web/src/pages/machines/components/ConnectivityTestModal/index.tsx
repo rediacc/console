@@ -302,7 +302,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
  open={open}
  onCancel={onClose}
  className={ModalSize.ExtraLarge}
- destroyOnHidden
+ destroyOnClose
  footer={
  <ModalFooterActions>
  <Button

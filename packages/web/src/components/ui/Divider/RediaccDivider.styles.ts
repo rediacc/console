@@ -13,7 +13,9 @@ export const resolveDividerSpacing = (theme: StyledTheme, spacing: DividerSpacin
   }
 };
 
-export const StyledRediaccDivider = styled(AntDivider)<{
+export const StyledRediaccDivider = styled(AntDivider).withConfig({
+  shouldForwardProp: (prop) => !['$orientation', '$spacing'].includes(prop),
+})<{
   $orientation: DividerOrientation;
   $spacing: DividerSpacing;
 }>`

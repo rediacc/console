@@ -40,9 +40,9 @@ const presetVariantMap: Record<TagPreset, TagVariant> = {
  * </RediaccTag>
  *
  * // Different sizes
- * <RediaccTag size="sm">Small</RediaccTag>
+ * <RediaccTag size="small">Small</RediaccTag>
  * <RediaccTag size="md">Medium</RediaccTag>
- * <RediaccTag size="lg">Large</RediaccTag>
+ * <RediaccTag size="large">Large</RediaccTag>
  */
 export const RediaccTag = forwardRef<HTMLSpanElement, RediaccTagProps>(
   (

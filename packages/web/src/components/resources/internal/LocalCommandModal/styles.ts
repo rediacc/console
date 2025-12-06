@@ -1,11 +1,9 @@
 import styled from 'styled-components';
-import { Form, Typography } from 'antd';
+import { Form } from 'antd';
 import { BaseModal, FlexColumn, FlexRow } from '@/styles/primitives';
 import { RediaccText, RediaccTabs } from '@/components/ui';
 import { ActionsRow as CommonActionsRow } from '@/components/common/styled';
 import { ModalSize } from '@/types/modal';
-
-const { Paragraph } = Typography;
 
 export const StyledModal = styled(BaseModal).attrs({
   className: `${ModalSize.Large} local-command-modal`,
@@ -88,7 +86,7 @@ export const PreviewHelper = styled(RediaccText).attrs({
   }
 `;
 
-export const CommandParagraph = styled(Paragraph)`
+export const CommandParagraph = styled(RediaccText).attrs({ as: 'p' })`
   && {
     margin: 0;
     font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;

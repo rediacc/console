@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Tag, Typography, Space, Alert, Button, Dropdown, message } from 'antd';
+import { Table, Tag, Typography, Space, Button, Dropdown, message } from 'antd';
 import {
   PlusCircleOutlined,
   EditOutlined,
@@ -23,7 +23,7 @@ import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit';
 import { formatTimestampAsIs } from '@/core';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { RediaccText as Text } from '@/components/ui';
+import { RediaccText as Text, RediaccAlert as Alert } from '@/components/ui';
 import {
   StyledModal,
   SummaryContainer,
@@ -267,7 +267,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       width: 200,
       sorter: createDateSorter<AuditTraceRecord>('timestamp'),
       render: (timestamp: string, record: AuditTraceRecord, index: number) => (
-        <Space orientation="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
+        <Space direction="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
           <AntText>{formatTimestampAsIs(timestamp, 'datetime')}</AntText>
           <Text variant="caption" muted>{record.timeAgo}</Text>
         </Space>
@@ -287,7 +287,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       onCancel={onCancel}
       width={DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_XL}
       footer={null}
-      destroyOnHidden
+      destroyOnClose
       data-testid="audit-trace-modal"
     >
       {isLoading ? (
@@ -317,16 +317,16 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
               <SummaryRow>
                 <SummaryStats>
                   <StatItem data-testid="audit-trace-total-records">
-                    <AntText type="secondary">{t('audit.totalRecords')}</AntText>
+                    <AntText color="secondary">{t('audit.totalRecords')}</AntText>
                     <StatValue>{data.summary.totalAuditRecords}</StatValue>
                   </StatItem>
                   <StatItem data-testid="audit-trace-visible-records">
-                    <AntText type="secondary">{t('audit.visibleRecords')}</AntText>
+                    <AntText color="secondary">{t('audit.visibleRecords')}</AntText>
                     <StatValue>{data.summary.visibleAuditRecords}</StatValue>
                   </StatItem>
                   {data.summary.lastActivity && (
                     <StatItem data-testid="audit-trace-last-activity">
-                      <AntText type="secondary">{t('audit.lastActivity')}</AntText>
+                      <AntText color="secondary">{t('audit.lastActivity')}</AntText>
                       <AntText strong>{new Date(data.summary.lastActivity).toLocaleDateString()}</AntText>
                     </StatItem>
                   )}

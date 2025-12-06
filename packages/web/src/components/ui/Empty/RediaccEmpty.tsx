@@ -1,8 +1,9 @@
 import { forwardRef } from 'react';
+import { Empty } from 'antd';
 import { StyledRediaccEmpty, EmptyTitle, EmptyAction } from './RediaccEmpty.styles';
 import type { RediaccEmptyProps } from './RediaccEmpty.types';
 
-export const RediaccEmpty = forwardRef<HTMLDivElement, RediaccEmptyProps>(
+const RediaccEmptyComponent = forwardRef<any, RediaccEmptyProps>(
   (
     {
       variant = 'default',
@@ -23,8 +24,9 @@ export const RediaccEmpty = forwardRef<HTMLDivElement, RediaccEmptyProps>(
       </>
     );
 
+    const Component = StyledRediaccEmpty as any;
     return (
-      <StyledRediaccEmpty
+      <Component
         ref={ref}
         $variant={variant}
         $size={size}
@@ -33,9 +35,15 @@ export const RediaccEmpty = forwardRef<HTMLDivElement, RediaccEmptyProps>(
         {...rest}
       >
         {action && <EmptyAction>{action}</EmptyAction>}
-      </StyledRediaccEmpty>
+      </Component>
     );
   }
 );
 
-RediaccEmpty.displayName = 'RediaccEmpty';
+RediaccEmptyComponent.displayName = 'RediaccEmpty';
+
+// Export with static properties from antd Empty
+export const RediaccEmpty = Object.assign(RediaccEmptyComponent, {
+  PRESENTED_IMAGE_DEFAULT: Empty.PRESENTED_IMAGE_DEFAULT,
+  PRESENTED_IMAGE_SIMPLE: Empty.PRESENTED_IMAGE_SIMPLE,
+});

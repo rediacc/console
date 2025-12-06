@@ -121,20 +121,20 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       className={ModalSize.Fullscreen}
       footer={null}
       data-testid="vault-modal"
-      destroyOnHidden
+      destroyOnClose
     >
       <ContentStack>
         <VersionBanner>
           <Space size="small">
-            <VersionLabel strong>{t('vaultEditor.vaultVersion')}</VersionLabel>
-            <VersionTag color="processing">{vaultVersion}</VersionTag>
+            <VersionLabel weight="bold">{t('vaultEditor.vaultVersion')}</VersionLabel>
+            <VersionTag variant="info">{vaultVersion}</VersionTag>
           </Space>
           <VersionDescription>{t('vaultEditor.versionAutoIncrement')}</VersionDescription>
         </VersionBanner>
 
         {showValidationErrors && validationErrors.length > 0 && (
           <ValidationAlert ref={validationErrorsRef}>
-            <ValidationTitle strong>{t('vaultEditor.validationErrors')}</ValidationTitle>
+            <ValidationTitle weight="bold">{t('vaultEditor.validationErrors')}</ValidationTitle>
             <ValidationList>
               {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>
@@ -173,7 +173,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               data-testid="vault-modal-file-upload"
             >
               <FileActionButton
-                size="small"
+                size="sm"
                 icon={<UploadIcon />}
                 data-testid="vault-modal-import-button"
               >
@@ -181,7 +181,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               </FileActionButton>
             </Upload>
             <FileActionButton
-              size="small"
+              size="sm"
               icon={<DownloadIcon />}
               onClick={() => {
                 if (importExportHandlers.current) {
@@ -201,7 +201,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                   <WarningIcon />
                   {t('vaultEditor.unsavedChanges')}
                 </UnsavedChangesText>
-                <UnsavedVersionHint type="secondary">
+                <UnsavedVersionHint>
                   {VERSION_HINT_BULLET}{' '}
                   {t('vaultEditor.versionWillIncrement', { version: vaultVersion + 1 })}
                 </UnsavedVersionHint>

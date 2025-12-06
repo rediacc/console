@@ -154,7 +154,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   return (
     <SelectorContainer>
-      <HeaderStack orientation="vertical" size="middle">
+      <HeaderStack direction="vertical" gap="md">
         <HelperRow>
           <HelperText>
             {multiple
@@ -165,7 +165,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           </HelperText>
           {((multiple && Array.isArray(value) && value.length > 0) || (!multiple && value)) && (
             <ClearButton
-              size="small"
+              size="sm"
               data-testid="resource-modal-template-clear-button"
               onClick={() => onChange?.(multiple ? [] : null)}
             >
@@ -243,20 +243,20 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   </SelectionIndicator>
                 )}
 
-                <CardStack orientation="vertical" size="small">
+                <CardStack direction="vertical" gap="sm">
                   <TemplateIconWrapper>
                     <TemplateIconComponent />
                   </TemplateIconWrapper>
 
-                  <TemplateTitle strong>{getTemplateTitle(template.name)}</TemplateTitle>
+                  <TemplateTitle weight="bold">{getTemplateTitle(template.name)}</TemplateTitle>
 
-                  <TemplateDescription ellipsis={{ rows: 2 }} type="secondary">
+                  <TemplateDescription ellipsis={{ rows: 2 }} color="secondary">
                     {getTemplateDescription(template.readme)}
                   </TemplateDescription>
 
                   <DetailsButton
                     variant="link"
-                    size="small"
+                    size="sm"
                     data-testid={`resource-modal-template-details-button-${template.name}`}
                     icon={<InfoCircleOutlined />}
                     onClick={(e) => {
@@ -288,18 +288,18 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 </SelectionIndicator>
               )}
 
-              <CardStack orientation="vertical" size="small">
+              <CardStack direction="vertical" gap="sm">
                 <TemplateIconWrapper $muted>
                   <AppstoreOutlined />
                 </TemplateIconWrapper>
 
-                <TemplateTitle strong>{t('resources:templates.noTemplate')}</TemplateTitle>
+                <TemplateTitle weight="bold">{t('resources:templates.noTemplate')}</TemplateTitle>
 
-                <TemplateDescription type="secondary">
+                <TemplateDescription color="secondary">
                   {t('resources:templates.startEmpty')}
                 </TemplateDescription>
 
-                <DefaultTag color="default">{t('resources:templates.default')}</DefaultTag>
+                <DefaultTag variant="default">{t('resources:templates.default')}</DefaultTag>
               </CardStack>
             </TemplateCard>
           </Col>

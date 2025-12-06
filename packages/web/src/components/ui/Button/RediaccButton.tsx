@@ -16,7 +16,7 @@ import type { RediaccButtonProps } from './RediaccButton.types';
  * <RediaccButton variant="danger">Delete</RediaccButton>
  *
  * // Small size button
- * <RediaccButton size="sm">Save</RediaccButton>
+ * <RediaccButton size="small">Save</RediaccButton>
  *
  * // Icon-only button
  * <RediaccButton iconOnly icon={<EditOutlined />} aria-label="Edit" />
@@ -42,6 +42,7 @@ export const RediaccButton = forwardRef<HTMLButtonElement, RediaccButtonProps>(
       fullWidth = false,
       danger = false,
       block,
+      title,
       children,
       ...rest
     },
@@ -66,6 +67,7 @@ export const RediaccButton = forwardRef<HTMLButtonElement, RediaccButtonProps>(
         disabled={disabled || loading}
         htmlType={htmlType}
         onClick={onClick}
+        title={title}
         {...rest}
       >
         {!iconOnly && children}

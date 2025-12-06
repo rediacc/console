@@ -1,4 +1,4 @@
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import { Alert as AntAlert } from 'antd';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { AlertVariant, AlertSize } from './RediaccAlert.types';
@@ -37,7 +37,9 @@ export const mapVariantToAntType = (variant: AlertVariant): 'info' | 'warning' |
   return variant;
 };
 
-export const StyledRediaccAlert = styled(AntAlert)<{
+export const StyledRediaccAlert = styled(AntAlert).withConfig({
+  shouldForwardProp: (prop) => !['$variant', '$size', '$rounded', '$banner'].includes(prop),
+})<{
   $variant: AlertVariant;
   $size: AlertSize;
   $rounded?: boolean;

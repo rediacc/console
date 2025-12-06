@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Row, Col, Progress } from 'antd';
+import { Row, Col, Progress, Tooltip } from 'antd';
 import type { ListProps } from 'antd';
 import {
   DoubleRightOutlined,
@@ -273,12 +273,11 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
           {machine.vaultStatusTime && (
             <TimestampWrapper>
-              <Timestamp
-                title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}
-                data-testid="vault-status-last-updated"
-              >
-                {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
-              </Timestamp>
+              <Tooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
+                <Timestamp data-testid="vault-status-last-updated">
+                  {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
+                </Timestamp>
+              </Tooltip>
             </TimestampWrapper>
           )}
         </Header>

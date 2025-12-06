@@ -2,7 +2,7 @@ import { forwardRef } from 'react';
 import { StyledRediaccModal, resolveModalWidth } from './RediaccModal.styles';
 import type { RediaccModalProps } from './RediaccModal.types';
 
-export const RediaccModal = forwardRef<HTMLDivElement, RediaccModalProps>(
+export const RediaccModal = forwardRef<any, RediaccModalProps>(
   (
     {
       size = 'md',
@@ -19,18 +19,23 @@ export const RediaccModal = forwardRef<HTMLDivElement, RediaccModalProps>(
       confirmLoading,
       okText,
       cancelText,
+      okButtonProps,
+      cancelButtonProps,
+      extra,
       children,
       zIndex,
+      width,
       ...rest
     },
     ref
   ) => {
+    const Component = StyledRediaccModal as any;
     return (
-      <StyledRediaccModal
+      <Component
         ref={ref}
         $size={size}
         $variant={variant}
-        width={resolveModalWidth(size)}
+        width={width ?? resolveModalWidth(size)}
         centered={centered}
         closable={closable}
         maskClosable={maskClosable}
@@ -43,11 +48,14 @@ export const RediaccModal = forwardRef<HTMLDivElement, RediaccModalProps>(
         confirmLoading={confirmLoading}
         okText={okText}
         cancelText={cancelText}
+        okButtonProps={okButtonProps}
+        cancelButtonProps={cancelButtonProps}
+        extra={extra}
         zIndex={zIndex}
         {...rest}
       >
         {children}
-      </StyledRediaccModal>
+      </Component>
     );
   }
 );

@@ -139,7 +139,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
 
             {onManageAssignment && assignmentType !== 'AVAILABLE' && (
               <ActionButton
-                type="primary"
+                variant="primary"
                 icon={
                   <IconWrapper $size="sm">
                     <RightOutlined />

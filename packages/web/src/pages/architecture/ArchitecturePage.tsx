@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Alert, Space, Typography, Tooltip, Statistic, Row, Col, Select } from 'antd';
+import { Alert, Space, Tooltip, Statistic, Row, Col, Select } from 'antd';
 import { RediaccRadio as Radio } from '@/components/ui/Form';
 import {
   FullscreenOutlined,
@@ -19,7 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { useCompanyArchitecture } from '@/api/queries/architecture';
 import { useTheme } from '@/context/ThemeContext';
 import * as d3 from 'd3';
-import { PageCard } from '@/components/ui';
+import { PageCard, RediaccText as Text } from '@/components/ui';
 import { RediaccButton as Button } from '@/components/ui';
 import { getArchitecturePalette } from './architectureTheme';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
@@ -45,8 +45,6 @@ import {
   CenteredState,
   CenteredMessage,
 } from './styles';
-
-const { Text } = Typography;
 
 interface GraphNode extends CompanyGraphNode, d3.SimulationNodeDatum {
   memberCount?: number;
@@ -685,7 +683,7 @@ const ArchitecturePage: React.FC = () => {
         <Alert
           message={t('messages.error', { ns: 'common' })}
           description={error instanceof Error ? error.message : t('architecture.fetchError')}
-          variant="error"
+          type="error"
           showIcon
           action={
             <Tooltip title={t('actions.retry', { ns: 'common' })}>
@@ -706,7 +704,7 @@ const ArchitecturePage: React.FC = () => {
   if (!data) {
     return (
       <PageWrapper>
-        <Alert message={t('architecture.noData')} variant="info" showIcon />
+        <Alert message={t('architecture.noData')} type="info" showIcon />
       </PageWrapper>
     );
   }

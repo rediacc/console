@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
 import { RediaccButton, RediaccStack } from '@/components/ui';
-import { RediaccRadio } from '@/components/ui/Form';
+import { RediaccRadioGroup, RediaccRadioButton } from '@/components/ui/Form';
 
 export const PopoverContainer = styled.div`
   width: 400px;
@@ -15,14 +15,14 @@ export const OptionLabel = styled.label`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export const OptionGroup = styled(RediaccRadio.Group)`
+export const OptionGroup = styled(RediaccRadioGroup)`
   && {
     display: block;
     margin-top: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 
-export const OptionRadio = styled(RediaccRadio)`
+export const OptionRadio = styled(RediaccRadioButton)`
   && {
     display: block;
     font-size: ${({ theme }) => theme.fontSize.SM}px;

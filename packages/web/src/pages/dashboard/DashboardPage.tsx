@@ -1,5 +1,5 @@
 import React from 'react';
-import { Col, Row, Alert, Tag, Typography, Statistic, Empty, Tooltip, Table } from 'antd';
+import { Col, Row, Alert, Tag, Statistic, Empty, Tooltip, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useTheme as useStyledTheme } from 'styled-components';
 import {
@@ -33,6 +33,7 @@ import { EmptyStateWrapper } from '@/styles/primitives';
 import { createSorter } from '@/core';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccText as Text } from '@/components/ui';
 import {
   PageWrapper,
   ContentStack,
@@ -66,8 +67,6 @@ import {
   QuantityBadge,
   HorizontalScroll,
 } from './styles';
-
-const { Text } = Typography;
 
 const resourceIcons: Record<string, React.ReactNode> = {
   Machine: <DesktopOutlined />,
@@ -157,8 +156,8 @@ const DashboardPage: React.FC = () => {
       render: (_: unknown, record: QueueMachineIssue) => (
         <InlineStack>
           {(record.staleItems || 0) > 0 && <Tag color="warning">{record.staleItems} stale</Tag>}
-          <Tag color="blue">{record.pendingItems || 0} pending</Tag>
-          <Tag color="processing">{record.activeItems || 0} active</Tag>
+          <Tag color="processing">{record.pendingItems || 0} pending</Tag>
+          <Tag color="blue">{record.activeItems || 0} active</Tag>
         </InlineStack>
       ),
     },
@@ -182,7 +181,7 @@ const DashboardPage: React.FC = () => {
         <Alert
           message="Error"
           description="Failed to load dashboard data. Please try again later."
-          variant="error"
+          type="error"
           showIcon
           icon={<AlertOutlined />}
           data-testid="dashboard-error-alert"
@@ -221,7 +220,7 @@ const DashboardPage: React.FC = () => {
           <Alert
             message="Subscription Expiring Soon"
             description={`Your ${dashboard.activeSubscription.planCode} subscription expires in ${dashboard.activeSubscription.daysRemaining} days.`}
-            variant="warning"
+            type="warning"
             showIcon
             icon={<ClockCircleOutlined />}
             data-testid="dashboard-alert-subscription-expiring"
@@ -232,7 +231,7 @@ const DashboardPage: React.FC = () => {
           <Alert
             message="Resource Limits Reached"
             description={`${accountHealth.resourcesAtLimit} resource type(s) have reached their limits. Consider upgrading your plan to continue scaling.`}
-            variant="error"
+            type="error"
             showIcon
             icon={<ExclamationCircleOutlined />}
             data-testid="dashboard-alert-resource-limits"
@@ -352,7 +351,7 @@ const DashboardPage: React.FC = () => {
                     <SectionTitle level={4}>{activeSubscriptions.length} Total</SectionTitle>
                   </div>
                   <ScrollContainer>
-                    <StatList size="small">
+                    <StatList gap="sm">
                       {activeSubscriptions.map((sub, index) => {
                         const percent = (() => {
                           const startDate = new Date(sub.startDate);
@@ -380,7 +379,7 @@ const DashboardPage: React.FC = () => {
                             <LicenseHeader>
                               <InlineStack>
                                 <Text weight="bold">{sub.planCode}</Text>
-                                <QuantityBadge count={`×${sub.quantity}`} />
+                                <QuantityBadge count={sub.quantity} />
                                 {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
                               </InlineStack>
                               <StatLabel
@@ -402,7 +401,7 @@ const DashboardPage: React.FC = () => {
                               <ResourceProgress
                                 percent={percent}
                                 showInfo={false}
-                                size="small"
+                                size="sm"
                                 strokeColor={strokeColor}
                                 data-testid={`dashboard-progress-subscription-${sub.planCode}`}
                               />
@@ -511,11 +510,11 @@ const DashboardPage: React.FC = () => {
               </Row>
 
               {(queueStats.hasStaleItems === 1 || queueStats.hasOldPendingItems === 1) && (
-                <StatList size="small">
+                <StatList gap="sm">
                   {queueStats.hasStaleItems === 1 && (
                     <Alert
                       message={`${queueStats.staleCount || 0} stale items`}
-                      variant="warning"
+                      type="warning"
                       showIcon
                       icon={<WarningOutlined />}
                       data-testid="dashboard-alert-stale-items"
@@ -524,7 +523,7 @@ const DashboardPage: React.FC = () => {
                   {queueStats.hasOldPendingItems === 1 && (
                     <Alert
                       message={`Oldest: ${Math.floor((queueStats.oldestPendingAgeMinutes || 0) / 60)}h`}
-                      variant="info"
+                      type="info"
                       showIcon
                       icon={<FieldTimeOutlined />}
                       data-testid="dashboard-alert-old-pending"
@@ -599,7 +598,7 @@ const DashboardPage: React.FC = () => {
                         <TeamOutlined /> Team Queue Status
                       </Text>
                       <BorderlessList
-                        size="small"
+                        size="sm"
                         dataSource={teamIssues}
                         data-testid="dashboard-list-team-issues"
                         renderItem={(team) => {
@@ -614,8 +613,8 @@ const DashboardPage: React.FC = () => {
                                       <WarningOutlined /> {teamIssue.staleItems} stale
                                     </Tag>
                                   )}
-                                  <Tag color="blue">{teamIssue.pendingItems || 0} pending</Tag>
-                                  <Tag color="processing">{teamIssue.activeItems || 0} active</Tag>
+                                  <Tag color="processing">{teamIssue.pendingItems || 0} pending</Tag>
+                                  <Tag color="blue">{teamIssue.activeItems || 0} active</Tag>
                                 </InlineStack>
                               </FlexBetween>
                             </BorderlessListItem>
@@ -713,7 +712,7 @@ const DashboardPage: React.FC = () => {
                 </Tag>
               </FlexBetween>
 
-              <StatList size="small">
+              <StatList gap="sm">
                 <InlineStack>
                   {accountHealth.resourcesAtLimit > 0 ? (
                     <ExclamationCircleOutlined style={{ color: theme.colors.warning }} />
@@ -782,7 +781,7 @@ const DashboardPage: React.FC = () => {
                   key: index,
                   dot: getActionIcon(log.action),
                   children: (
-                    <StatList size="small">
+                    <StatList gap="sm">
                       <FlexBetween>
                         <InlineStack>
                           <Text weight="bold">{log.action.replace(/_/g, ' ')}</Text>

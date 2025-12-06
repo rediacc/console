@@ -65,7 +65,7 @@ import {
   PriorityAlertDetail,
 } from './styles';
 import { ModalHeader, ModalTitle, ModalSubtitle } from '@/styles/primitives';
-import { RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccText as Text } from '@/components/ui';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;
@@ -80,7 +80,7 @@ const toFunctionParamValue = (value: unknown): FunctionParamValue | undefined =>
   return undefined;
 };
 
-const { Text, Paragraph } = Typography;
+const { Paragraph } = Typography;
 const QUICK_TASK_NAMES = ['ping', 'hello', 'ssh_test', 'health_check'];
 
 interface FunctionSelectionModalProps {
@@ -553,7 +553,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       key={category}
                       data-testid={`function-modal-category-${category}`}
                     >
-                      <CategoryTitle strong>{categories[category]?.name || category}</CategoryTitle>
+                      <CategoryTitle>{categories[category]?.name || category}</CategoryTitle>
                       {funcs.map((func) => {
                         const isQuickTask =
                           QUICK_TASK_NAMES.includes(func.name) ||
@@ -591,7 +591,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
               <ContentStack>
                 <ConfigCard
                   title={`${t('functions:configure')}: ${selectedFunction.name}`}
-                  size="small"
+                  size="sm"
                 >
                   <Paragraph>{selectedFunction.description}</Paragraph>
 
@@ -600,11 +600,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                     {selectedFunction.name === 'push' && functionParams.dest && (
                       <PushAlertsRow $hasWarning={functionParams.state === 'online'}>
                         <PushAlertCard
+                          $variant="info"
                           variant="info"
                           showIcon
                           message="Push Operation Details"
                           description={
-                            <Space orientation="vertical" size="small">
+                            <Space direction="vertical" size="small">
                               <div>
                                 <Text weight="bold">Destination Filename: </Text>
                                 <Text code>{functionParams.dest}</Text>
@@ -648,11 +649,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                         />
                         {functionParams.state === 'online' && (
                           <PushAlertCard
+                            $variant="warning"
                             variant="warning"
                             showIcon
                             message={t('functions:onlinePushWarningTitle')}
                             description={
-                              <Space orientation="vertical" size="small">
+                              <Space direction="vertical" size="small">
                                 <AlertBodyText>
                                   {t('functions:onlinePushWarningMessage')}
                                 </AlertBodyText>

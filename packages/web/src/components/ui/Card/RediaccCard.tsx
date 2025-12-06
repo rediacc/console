@@ -9,8 +9,11 @@ export const RediaccCard = forwardRef<HTMLDivElement, RediaccCardProps>(
       size = 'md',
       selected = false,
       interactive = false,
+      hoverable = false,
       fullWidth = false,
       noPadding = false,
+      title,
+      extra,
       children,
       onClick,
       ...rest
@@ -18,7 +21,8 @@ export const RediaccCard = forwardRef<HTMLDivElement, RediaccCardProps>(
     ref
   ) => {
     // Selectable cards should be interactive by default
-    const isInteractive = interactive || variant === 'selectable';
+    // hoverable is an alias for interactive
+    const isInteractive = interactive || hoverable || variant === 'selectable';
 
     return (
       <StyledRediaccCard
@@ -29,6 +33,8 @@ export const RediaccCard = forwardRef<HTMLDivElement, RediaccCardProps>(
         $interactive={isInteractive}
         $fullWidth={fullWidth}
         $noPadding={noPadding}
+        title={title}
+        extra={extra}
         onClick={onClick}
         {...rest}
       >
