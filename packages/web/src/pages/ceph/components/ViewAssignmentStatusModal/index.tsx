@@ -1,6 +1,7 @@
 import React from 'react';
 import { Table } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { RediaccText } from '@/components/ui';
 import { createTruncatedColumn } from '@/components/common/columns';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
@@ -12,14 +13,10 @@ import {
   InfoIcon,
   SummaryRow,
   SummaryItem,
-  SummaryLabel,
-  SummaryValue,
   MachinesTable,
   MachineNameRow,
-  MachineNameText,
   TeamTag,
   ClusterTag,
-  MutedText,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -56,7 +53,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     renderWrapper: (content) => (
       <MachineNameRow>
         <CloudServerOutlined />
-        <MachineNameText>{content}</MachineNameText>
+        <RediaccText weight="semibold">{content}</RediaccText>
       </MachineNameRow>
     ),
   });
@@ -76,7 +73,9 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     renderText: (cluster?: string | null) => cluster || noneLabel,
     renderWrapper: (content, fullText) =>
       fullText === noneLabel ? (
-        <MutedText>{fullText}</MutedText>
+        <RediaccText variant="caption" color="muted">
+          {fullText}
+        </RediaccText>
       ) : (
         <ClusterTag>{content}</ClusterTag>
       ),
@@ -123,16 +122,18 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     >
       <SummaryRow>
         <SummaryItem>
-          <SummaryLabel>{t('common:total')}:</SummaryLabel>
-          <SummaryValue>{totalMachines}</SummaryValue>
+          <RediaccText variant="caption" color="muted">
+            {t('common:total')}:
+          </RediaccText>
+          <RediaccText weight="semibold">{totalMachines}</RediaccText>
         </SummaryItem>
         <SummaryItem>
           <MachineAssignmentStatusBadge assignmentType="AVAILABLE" size="small" />
-          <SummaryValue>{stats.available}</SummaryValue>
+          <RediaccText weight="semibold">{stats.available}</RediaccText>
         </SummaryItem>
         <SummaryItem>
           <MachineAssignmentStatusBadge assignmentType="CLUSTER" size="small" />
-          <SummaryValue>{stats.cluster}</SummaryValue>
+          <RediaccText weight="semibold">{stats.cluster}</RediaccText>
         </SummaryItem>
       </SummaryRow>
 

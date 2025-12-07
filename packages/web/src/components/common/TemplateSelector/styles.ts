@@ -1,13 +1,6 @@
 import { Row } from 'antd';
 import styled from 'styled-components';
-import {
-  RediaccText,
-  RediaccCard,
-  RediaccStack,
-  RediaccEmpty,
-  RediaccButton,
-  RediaccTag,
-} from '@/components/ui';
+import { RediaccText, RediaccCard, RediaccStack, RediaccEmpty, RediaccButton, RediaccTag } from '@/components/ui';
 import { RediaccSearchInput } from '@/components/ui/Form';
 import { FlexRow } from '@/styles/primitives';
 
@@ -26,10 +19,6 @@ export const HelperRow = styled(FlexRow).attrs({
   $gap: 'SM',
   $justify: 'space-between',
   $wrap: true,
-})``;
-
-export const HelperText = styled(RediaccText).attrs({
-  variant: 'caption',
 })``;
 
 export const ClearButton = styled(RediaccButton).attrs({

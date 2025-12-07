@@ -3,7 +3,6 @@
  *
  * Unified text component with variants for all text styling needs.
  */
-
 export { RediaccText } from './RediaccText';
 export type {
   RediaccTextProps,

@@ -18,7 +18,6 @@ import {
   FieldValueStrong,
   FieldValueMonospace,
   SectionDivider,
-  SubduedText,
 } from '@/components/resources/internal/sharedDetailPanelAliases';
 import { RediaccText, RediaccCard } from '@/components/ui';
 
@@ -41,7 +40,6 @@ export {
   FieldValueStrong,
   FieldValueMonospace,
   SectionDivider,
-  SubduedText,
 };
 
 export const DividerLabel = styled.span`

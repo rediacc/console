@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Select, Table } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { RediaccText } from '@/components/ui';
 import { useCephClusters, type CephCluster } from '@/api/queries/ceph';
 import {
   useUpdateMachineCeph,
@@ -19,16 +20,11 @@ import {
   InfoAlert,
   MachineDetailsSection,
   DetailRow,
-  DetailLabel,
-  DetailValue,
   ClusterAlert,
   FieldGroup,
-  FieldLabel,
-  HelperText,
   StyledSelect,
   MachinesTable,
   MachineNameRow,
-  MachineNameText,
   TeamTag,
   AssignmentTag,
 } from './styles';
@@ -149,7 +145,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       renderWrapper: (content) => (
         <MachineNameRow>
           <CloudServerOutlined />
-          <MachineNameText>{content}</MachineNameText>
+          <RediaccText weight="medium">{content}</RediaccText>
         </MachineNameRow>
       ),
     });
@@ -234,12 +230,12 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
             <>
               <MachineDetailsSection>
                 <DetailRow>
-                  <DetailLabel>{t('machines:machine')}:</DetailLabel>
-                  <DetailValue>{machine.machineName}</DetailValue>
+                  <RediaccText weight="semibold">{t('machines:machine')}:</RediaccText>
+                  <RediaccText color="muted">{machine.machineName}</RediaccText>
                 </DetailRow>
                 <DetailRow>
-                  <DetailLabel>{t('machines:team')}:</DetailLabel>
-                  <DetailValue>{machine.teamName}</DetailValue>
+                  <RediaccText weight="semibold">{t('machines:team')}:</RediaccText>
+                  <RediaccText color="muted">{machine.teamName}</RediaccText>
                 </DetailRow>
               </MachineDetailsSection>
 
@@ -257,7 +253,9 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
         )}
 
         <FieldGroup>
-          <FieldLabel>{t('ceph:clusters.cluster')}:</FieldLabel>
+          <RediaccText weight="medium" size="sm">
+            {t('ceph:clusters.cluster')}:
+          </RediaccText>
           {clustersLoading ? (
             <LoadingWrapper loading centered minHeight={80}>
               <div />
@@ -283,7 +281,11 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
                   </Select.Option>
                 ))}
               </StyledSelect>
-              {!isBulkMode && <HelperText>{t('machines:clusterAssignmentHelp')}</HelperText>}
+              {!isBulkMode && (
+                <RediaccText size="xs" color="muted">
+                  {t('machines:clusterAssignmentHelp')}
+                </RediaccText>
+              )}
             </>
           )}
         </FieldGroup>

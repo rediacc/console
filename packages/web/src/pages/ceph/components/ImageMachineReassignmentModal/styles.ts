@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { ContentStack, InlineStack } from '@/components/common/styled';
-import { RediaccSelect, RediaccText } from '@/components/ui';
+import { RediaccSelect } from '@/components/ui';
 import { BaseModal, StyledIcon, AlertCard } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons';
@@ -37,15 +37,6 @@ export const FieldRow = styled.div`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const FieldLabel = styled(RediaccText).attrs({
-  weight: 'semibold',
-  size: 'sm',
-})``;
-
-export const FieldValue = styled(RediaccText).attrs({
-  color: 'muted',
-})``;
-
 export const InfoAlert = styled(AlertCard).attrs({ $variant: 'info' })``;
 export const WarningAlert = styled(AlertCard).attrs({ $variant: 'warning' })``;
 
@@ -57,16 +48,6 @@ export const MachineIcon = styled(StyledIcon).attrs(({ theme }) => ({
 
 export const StyledSelect = RediaccSelect;
 
-export const SelectLabel = styled(RediaccText).attrs({
-  weight: 'medium',
-  size: 'sm',
-})`
-  && {
-    display: block;
-    margin-bottom: ${({ theme }) => theme.spacing.XS}px;
-  }
-`;
-
 export const SelectOptionText = styled.span`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -75,10 +56,6 @@ export const SelectOptionText = styled.span`
 export const DisabledOptionText = styled(SelectOptionText)`
   opacity: 0.6;
 `;
-
-export const HelperText = styled(RediaccText).attrs({
-  variant: 'caption',
-})``;
 
 export const LoadingContainer = styled.div`
   display: flex;

@@ -21,5 +21,4 @@ export {
   DetailPanelSectionHeader as SectionHeader,
   DetailPanelSectionTitle as SectionTitle,
   DetailPanelSectionCard as SectionCard,
-  DetailPanelSecondaryTextBlock as SubduedText,
 } from './detailPanelPrimitives';

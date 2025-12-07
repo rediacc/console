@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Tabs } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { RediaccText } from '@/components/ui';
 import {
   useAvailableMachinesForClone,
   useCloneMachines,
@@ -26,14 +27,11 @@ import {
   InfoAlert,
   WarningAlert,
   FieldGroup,
-  FieldLabel,
   StyledSelect,
   EmptyState,
   MachinesTable,
   MachineNameRow,
-  MachineNameText,
   BridgeTag,
-  SelectionCount,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 import type { TableRowSelection } from 'antd/es/table/interface';
@@ -160,7 +158,9 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
         <InfoAlert message={t('ceph:clones.assignMachinesInfo')} variant="info" showIcon />
 
         <FieldGroup>
-          <FieldLabel>{t('ceph:machines.selectMachines')}:</FieldLabel>
+          <RediaccText weight="medium" size="sm">
+            {t('ceph:machines.selectMachines')}:
+          </RediaccText>
           <StyledSelect
             fullWidth
             mode="multiple"
@@ -177,9 +177,13 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             }))}
             data-testid="assign-clone-machine-select"
           />
-          <SelectionCount data-testid="assign-clone-selected-count">
+          <RediaccText
+            variant="caption"
+            color="muted"
+            data-testid="assign-clone-selected-count"
+          >
             {t('machines:bulkOperations.selectedCount', { count: selectedMachines.length })}
-          </SelectionCount>
+          </RediaccText>
         </FieldGroup>
       </AssignTabContainer>
     );
@@ -205,7 +209,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       renderWrapper: (content) => (
         <MachineNameRow>
           <CloudServerOutlined />
-          <MachineNameText>{content}</MachineNameText>
+          <RediaccText weight="medium">{content}</RediaccText>
         </MachineNameRow>
       ),
     });
@@ -244,9 +248,13 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           data-testid="assign-clone-machines-table"
         />
 
-        <SelectionCount data-testid="assign-clone-remove-selected-count">
+        <RediaccText
+          variant="caption"
+          color="muted"
+          data-testid="assign-clone-remove-selected-count"
+        >
           {t('machines:bulkOperations.selectedCount', { count: removingMachines.length })}
-        </SelectionCount>
+        </RediaccText>
       </ManageTabContainer>
     );
   };

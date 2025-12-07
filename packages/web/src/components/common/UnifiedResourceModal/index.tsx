@@ -40,9 +40,6 @@ import {
 import type { Team } from '@rediacc/shared/types';
 import {
   TitleStack,
-  TitleText,
-  SubtitleText,
-  SecondaryLabel,
   FooterLeftActions,
   AutoSetupCheckbox,
   UploadIcon,
@@ -895,7 +892,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         <RediaccText weight="bold">{teamLabel}</RediaccText>
         {['machine', 'repo', 'storage'].includes(resourceType) && resourceName && (
           <>
-            <SecondaryLabel>
+            <RediaccText color="secondary">
               {t(
                 resourceType === 'machine'
                   ? 'machines:machine'
@@ -904,7 +901,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     : 'repos.repo'
               )}
               :
-            </SecondaryLabel>
+            </RediaccText>
             <RediaccText weight="bold">{resourceName}</RediaccText>
           </>
         )}
@@ -1010,11 +1007,13 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       const subtitle = getModalSubtitle();
       return (
         <TitleStack>
-          <TitleText>{baseTitle}</TitleText>
+          <RediaccText size="lg" weight="semibold">
+            {baseTitle}
+          </RediaccText>
           {subtitle && (
-            <SubtitleText>
+            <RediaccText size="sm" color="secondary">
               {t('general.team')}: {subtitle}
-            </SubtitleText>
+            </RediaccText>
           )}
         </TitleStack>
       );

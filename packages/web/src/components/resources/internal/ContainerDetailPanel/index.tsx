@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Progress, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { IconWrapper } from '@/components/ui';
+import { IconWrapper, RediaccText } from '@/components/ui';
 import {
   DoubleRightOutlined,
   ApiOutlined,
@@ -40,7 +40,6 @@ import {
   MetricValue,
   SectionStack,
   InlineText,
-  SubduedText,
 } from './styles';
 
 interface ContainerData {
@@ -300,14 +299,18 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         <SectionCard data-testid="container-detail-environment">
           <SectionStack>
             <div>
-              <SubduedText>{t('resources:containers.mounts')}:</SubduedText>
+              <RediaccText size="xs" color="muted">
+                {t('resources:containers.mounts')}:
+              </RediaccText>
               <FieldValueMonospace data-testid="container-detail-mounts">
                 {container.mounts}
               </FieldValueMonospace>
             </div>
             {container.labels && (
               <div>
-                <SubduedText>{t('resources:containers.labels')}:</SubduedText>
+                <RediaccText size="xs" color="muted">
+                  {t('resources:containers.labels')}:
+                </RediaccText>
                 <FieldValueMonospace data-testid="container-detail-labels">
                   {container.labels}
                 </FieldValueMonospace>

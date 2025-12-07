@@ -17,7 +17,6 @@ import {
   SectionDivider,
   SectionHeader,
   SectionTitle,
-  SubduedText,
 } from '@/components/resources/internal/sharedDetailPanelAliases';
 import {
   RediaccTag,
@@ -92,7 +91,7 @@ export const EmptyState = styled(RediaccEmpty)`
   margin-top: ${({ theme }) => theme.spacing.XXXL}px;
 `;
 
-export { SectionDivider, SectionHeader, SectionTitle, SubduedText };
+export { SectionDivider, SectionHeader, SectionTitle };
 
 export const SectionBlock = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.XL}px;

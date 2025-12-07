@@ -186,12 +186,3 @@ export const DetailPanelDivider = styled(RediaccDivider)`
     margin: ${({ theme }) => `${theme.spacing.LG}px 0`};
   }
 `;
-
-export const DetailPanelSecondaryTextBlock = styled(RediaccText).attrs({
-  size: 'xs',
-  color: 'muted',
-})`
-  && {
-    margin: 0;
-  }
-`;

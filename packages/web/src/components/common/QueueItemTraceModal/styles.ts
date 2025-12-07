@@ -46,10 +46,6 @@ export const LastFetchedText = BaseLastFetchedText;
 export const SmallStatusTag = styled(RediaccTag).attrs({
   size: 'sm',
 })``;
-export const CaptionText = styled(RediaccText).attrs({
-  variant: 'caption',
-  color: 'muted',
-})``;
 
 export const NoteWrapper = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;

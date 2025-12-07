@@ -22,9 +22,6 @@ export const InputSlot = PrimitiveInputSlot;
 export const ActionBar = PrimitiveActionBar;
 export const ContentSection = PrimitiveContentSection;
 
-/**
- * InlineFormRow - Horizontal form layout with wrapping
- */
 export const InlineFormRow = styled.div`
   width: 100%;
   display: flex;
