@@ -54,7 +54,9 @@ export {
 } from '@rediacc/shared/error-parser';
 export * from './utils/normalize';
 export * from './utils/progress-parser';
-export * from './utils/batch';
+// Re-export batch utils excluding BulkValidationResult to avoid conflict with shared/services/machine
+export { performBulkValidation, type BulkValidationError } from './utils/batch';
+export type { BulkValidationResult as GenericBulkValidationResult } from './utils/batch';
 
 // API utilities
 // Services - re-exported from shared (machine and repo are fully platform-agnostic)

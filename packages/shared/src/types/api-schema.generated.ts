@@ -2,9 +2,9 @@
  * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
  *
  * Generated from: middleware/AppData/stored-procedures.json
- * Generated at: 2025-12-07T07:11:38Z
- * Schema version: 2.0.0
- * Schema generated: 2025-12-06T10:41:55Z
+ * Generated at: 2025-12-07T11:15:49Z
+ * Schema version: 3.0.0
+ * Schema generated: 2025-12-07T10:34:05.6472788Z
  *
  * To regenerate, run: ./go deploy prep
  * Or directly: ./_scripts/console-schema.sh --generate
@@ -12,8 +12,6 @@
  * This file provides compile-time type safety for API calls by ensuring
  * parameter names and types match the middleware's expected schema.
  */
-
- 
 
 // ============================================================================
 // Procedure Parameter Interfaces
@@ -1300,7 +1298,7 @@ export function createProcedureParams<T extends StoredProcedureName>(
 // ============================================================================
 
 export const API_SCHEMA_METADATA = {
-  version: '2.0.0',
-  generated: '2025-12-06T10:41:55Z',
+  version: '3.0.0',
+  generated: '2025-12-07T10:34:05.6472788Z',
   procedureCount: 116,
 } as const;

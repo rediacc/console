@@ -48,6 +48,12 @@ import {
   ActionIcon,
 } from './styles';
 
+interface AuditPageFilters extends Record<string, unknown> {
+  dateRange: [Dayjs | null, Dayjs | null];
+  entityFilter: string | undefined;
+  searchText: string;
+}
+
 const { RangePicker } = DatePicker;
 
 const AuditPage = () => {

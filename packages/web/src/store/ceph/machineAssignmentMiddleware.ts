@@ -4,7 +4,7 @@ import type { BulkValidationResult, ValidationResult } from '@/features/ceph';
 import type { RootState } from '@/store/store';
 import type { Machine } from '@/types';
 import { clearStaleValidations, setMultipleValidationResults } from './machineAssignmentSlice';
-import type { Middleware, UnknownAction } from '@reduxjs/toolkit';
+import type { Middleware, MiddlewareAPI, UnknownAction } from '@reduxjs/toolkit';
 
 // Configuration
 const VALIDATION_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -15,7 +15,7 @@ let middlewareInitialized = false;
 
 // Middleware for managing side effects
 export const machineAssignmentMiddleware: Middleware =
-  (store: MiddlewareStore) => (next) => (action) => {
+  (store: MiddlewareAPI) => (next) => (action) => {
     // Set up periodic validation cache cleanup (only once)
     if (!middlewareInitialized) {
       middlewareInitialized = true;
@@ -66,7 +66,7 @@ export const machineAssignmentMiddleware: Middleware =
 
 // Middleware for persisting selection across page refreshes (optional)
 export const machineSelectionPersistenceMiddleware: Middleware =
-  (store: MiddlewareStore) => (next) => (action) => {
+  (store: MiddlewareAPI) => (next) => (action) => {
     const result = next(action);
     const typedAction = action as UnknownAction;
 
@@ -93,7 +93,7 @@ export const machineSelectionPersistenceMiddleware: Middleware =
 
 // Middleware for logging operations (development only)
 export const machineAssignmentLoggingMiddleware: Middleware =
-  (store: MiddlewareStore) => (next) => (action) => {
+  (store: MiddlewareAPI) => (next) => (action) => {
     const typedAction = action as UnknownAction;
     if (import.meta.env.DEV && String(typedAction.type).startsWith('machineAssignment/')) {
       console.warn(`Machine Assignment action: ${typedAction.type}`, {

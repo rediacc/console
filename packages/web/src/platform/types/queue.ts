@@ -2,11 +2,13 @@ import type { VaultContextData } from './vault';
 
 // Re-export types from shared package for backward compatibility
 export type { QueueRequestContext, FunctionRequirements } from '@rediacc/shared/queue-vault';
+// Re-export LocalQueueItem as QueueItem for backward compatibility in the platform layer
+// This is the client-side queue item type (different from types/domain.ts QueueItem which is server-side)
 export type {
   QueueItemStatus,
   QueueItemData,
-  QueueItem,
   ActiveTask,
+  LocalQueueItem as QueueItem,
 } from '@rediacc/shared/services/queue';
 
 /**

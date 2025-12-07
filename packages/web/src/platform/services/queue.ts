@@ -8,11 +8,12 @@ import { encodeBase64 } from '@/platform/utils/encoding';
 import { QueueService as SharedQueueService } from '@rediacc/shared/services/queue';
 
 // Re-export types from shared for backward compatibility
+// Note: QueueItem is not exported from shared to avoid conflict with types/domain.ts
+// Use LocalQueueItem from shared if you need the client-side queue item type
 export type {
   QueueNotificationLevel,
   QueueNotification,
   QueueMonitoringEvent,
-  QueueItem,
   QueueItemData,
   QueueItemStatus,
   ActiveTask,
