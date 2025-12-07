@@ -1,6 +1,5 @@
 import type { Middleware, UnknownAction } from '@reduxjs/toolkit';
 import { clearStaleValidations } from './machineAssignmentSlice';
-import type { RootState, AppDispatch } from '@/store/store';
 
 // Configuration
 const VALIDATION_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -129,9 +128,10 @@ export const restorePersistedSelection = () => {
 // Async thunk for validating selected machines
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { MachineValidationService } from '@/features/ceph';
+import type { BulkValidationResult, ValidationResult } from '@/features/ceph';
+import type { RootState, AppDispatch } from '@/store/store';
 import type { Machine } from '@/types';
 import { setMultipleValidationResults } from './machineAssignmentSlice';
-import type { BulkValidationResult, ValidationResult } from '@/features/ceph';
 
 export const validateSelectedMachines = createAsyncThunk<
   void,

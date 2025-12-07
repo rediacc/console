@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { Table } from 'antd';
-import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
-import type { Machine } from '@/types';
 import { useUpdateMachineClusterAssignment } from '@/api/queries/cephMutations';
-import { showMessage } from '@/utils/messages';
-import type { ColumnsType } from 'antd/es/table';
 import { createTruncatedColumn } from '@/components/common/columns';
+import type { Machine } from '@/types';
+import { showMessage } from '@/utils/messages';
+import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import {
   StyledModal,
   TitleStack,
@@ -19,6 +18,7 @@ import {
   ClusterTag,
   MutedText,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 interface RemoveFromClusterModalProps {
   open: boolean;

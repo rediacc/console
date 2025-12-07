@@ -1,15 +1,6 @@
-import styled from 'styled-components';
 import { Typography, Timeline } from 'antd';
 import { Link as RouterLink } from 'react-router-dom';
-import {
-  RediaccText as UnifiedText,
-  RediaccCard,
-  RediaccBadge,
-  RediaccProgress,
-  RediaccList,
-  RediaccStack,
-} from '@/components/ui';
-import { PageContainer, scrollbarStyles, FlexRow, FlexColumn } from '@/styles/primitives';
+import styled from 'styled-components';
 import {
   ContentStack,
   CenteredState,
@@ -20,6 +11,15 @@ import {
   StatValue as BaseStatValue,
   Divider,
 } from '@/components/common/styled';
+import {
+  RediaccText,
+  RediaccCard,
+  RediaccBadge,
+  RediaccProgress,
+  RediaccList,
+  RediaccStack,
+} from '@/components/ui';
+import { PageContainer, scrollbarStyles, FlexRow, FlexColumn } from '@/styles/primitives';
 
 export const PageWrapper = PageContainer;
 
@@ -30,7 +30,7 @@ export const DashboardCard = styled(RediaccCard)`
   width: 100%;
 `;
 
-export const SectionDescription = styled(UnifiedText).attrs({ color: 'secondary' })``;
+export const SectionDescription = styled(RediaccText).attrs({ color: 'secondary' })``;
 
 export const ResourceTile = styled.div`
   padding: ${({ theme }) => theme.spacing.MD}px;
@@ -49,7 +49,7 @@ export const TileHeader = styled(FlexRow).attrs({ $justify: 'space-between', $ga
   width: 100%;
 `;
 
-export const TileMeta = styled(UnifiedText).attrs({ color: 'secondary', weight: 'medium' })`
+export const TileMeta = styled(RediaccText).attrs({ color: 'secondary', weight: 'medium' })`
   && {
     display: inline-block;
   }
@@ -59,7 +59,7 @@ export const ResourceProgress = styled(RediaccProgress)`
   margin: ${({ theme }) => theme.spacing.SM}px 0;
 `;
 
-export const SectionLabel = styled(UnifiedText).attrs({ color: 'secondary', size: 'sm' })`
+export const SectionLabel = styled(RediaccText).attrs({ color: 'secondary', size: 'sm' })`
   && {
     display: block;
     letter-spacing: ${({ theme }) => theme.letterSpacing.WIDE};
@@ -160,7 +160,7 @@ export const BorderlessListItem = styled(AntListItem)`
   }
 `;
 
-export const AuditMeta = styled(UnifiedText).attrs({ size: 'sm', color: 'secondary' })``;
+export const AuditMeta = styled(RediaccText).attrs({ size: 'sm', color: 'secondary' })``;
 
 export const SectionFooter = styled(FlexRow).attrs({ $justify: 'space-between' })`
   width: 100%;

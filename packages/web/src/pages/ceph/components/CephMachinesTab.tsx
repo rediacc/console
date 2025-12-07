@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
 import { Space, Select, Input, Button, Card, Row, Col } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import { useMachines } from '@/api/queries/machines';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
+import { useDialogState } from '@/hooks/useDialogState';
+import { AssignToClusterModal } from '@/pages/ceph/components/AssignToClusterModal';
+import { RemoveFromClusterModal } from '@/pages/ceph/components/RemoveFromClusterModal';
+import { ViewAssignmentStatusModal } from '@/pages/ceph/components/ViewAssignmentStatusModal';
+import { RootState } from '@/store/store';
+import { Machine } from '@/types';
+import { showMessage } from '@/utils/messages';
 import {
   SearchOutlined,
   FilterOutlined,
@@ -7,19 +18,8 @@ import {
   CloudServerOutlined,
   InfoCircleOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { FilterableMachineTable } from './FilterableMachineTable';
 import { MachineAvailabilitySummary } from './MachineAvailabilitySummary';
-import { useMachines } from '@/api/queries/machines';
-import { Machine } from '@/types';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { AssignToClusterModal } from '@/pages/ceph/components/AssignToClusterModal';
-import { RemoveFromClusterModal } from '@/pages/ceph/components/RemoveFromClusterModal';
-import { ViewAssignmentStatusModal } from '@/pages/ceph/components/ViewAssignmentStatusModal';
-import { showMessage } from '@/utils/messages';
-import { useDialogState } from '@/hooks/useDialogState';
 
 const { Search } = Input;
 
@@ -117,7 +117,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `distributed-storage-machines-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `ceph-machines-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

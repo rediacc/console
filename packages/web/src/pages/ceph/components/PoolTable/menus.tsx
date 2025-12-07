@@ -1,6 +1,6 @@
+import { DatabaseOutlined, PlusOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 import type { MenuProps } from 'antd';
 import type { TFunction } from 'i18next';
-import { DatabaseOutlined, PlusOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 
 export const getPoolFunctionMenuItems = (t: TFunction<'ceph' | 'common'>): MenuProps['items'] => [
   {

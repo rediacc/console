@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { message, Form, Row, Col } from 'antd';
-import type { FieldValues } from 'react-hook-form';
-import type { UploadFile } from 'antd/es/upload/interface';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import VaultEditor from '@/components/common/VaultEditor';
+import { DefaultsBanner } from './components/DefaultsBanner';
+import { FieldRenderer } from './components/FieldRenderer';
+import { ImportExportControls } from './components/ImportExportControls';
 import { FormWrapper, StyledForm, SectionDivider, VaultSection } from './styles';
 import type {
   ResourceFormWithVaultRef,
   ResourceFormWithVaultProps,
   ImportExportHandlers,
 } from './types';
-import { ImportExportControls } from './components/ImportExportControls';
-import { DefaultsBanner } from './components/DefaultsBanner';
-import { FieldRenderer } from './components/FieldRenderer';
+import type { UploadFile } from 'antd/es/upload/interface';
+import type { FieldValues } from 'react-hook-form';
 
 const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormWithVaultProps>(
   function ResourceFormWithVault(

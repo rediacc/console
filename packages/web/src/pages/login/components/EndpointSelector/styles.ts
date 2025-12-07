@@ -1,9 +1,8 @@
-import styled from 'styled-components';
 import { Typography } from 'antd';
-import { LoadingOutlined, ApiOutlined, DeleteOutlined } from '@/utils/optimizedIcons';
+import styled from 'styled-components';
+import { RediaccSelect, RediaccStack } from '@/components/ui';
 import { FlexRow } from '@/styles/primitives';
-import { RediaccSelect } from '@/components/ui/Form';
-import { RediaccStack } from '@/components/ui';
+import { LoadingOutlined, ApiOutlined, DeleteOutlined } from '@/utils/optimizedIcons';
 
 const { Text: AntText } = Typography;
 

@@ -15,17 +15,19 @@ import {
   Popover,
   message,
 } from 'antd';
-import { ExclamationCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
-import type { QueueFunction } from '@/api/queries/queue';
-import { useLocalizedFunctions } from '@/services/functionsService';
-import { useRepos } from '@/api/queries/repos';
 import { useMachines } from '@/api/queries/machines';
+import type { QueueFunction } from '@/api/queries/queue';
+import { useRepos } from '@/api/queries/repos';
 import { useStorage } from '@/api/queries/storage';
-import { ModalSize } from '@/types/modal';
-import TemplateSelector from '@/components/common/TemplateSelector';
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
+import TemplateSelector from '@/components/common/TemplateSelector';
+import { RediaccButton, RediaccText } from '@/components/ui';
+import { useLocalizedFunctions } from '@/services/functionsService';
 import { templateService } from '@/services/templateService';
+import { ModalHeader, ModalTitle, ModalSubtitle } from '@/styles/primitives';
+import { ModalSize } from '@/types/modal';
+import { ExclamationCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 import {
   StyledModal,
   FunctionListCard,
@@ -64,8 +66,6 @@ import {
   PriorityAlertNote,
   PriorityAlertDetail,
 } from './styles';
-import { ModalHeader, ModalTitle, ModalSubtitle } from '@/styles/primitives';
-import { RediaccButton, RediaccText as Text } from '@/components/ui';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;
@@ -564,7 +564,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             data-testid={`function-modal-item-${func.name}`}
                           >
                             <FunctionItemHeader>
-                              <Text weight="bold">{func.name}</Text>
+                              <RediaccText weight="bold">{func.name}</RediaccText>
                               {isQuickTask && (
                                 <QuickTaskTag>⚡ {t('functions:quickTaskBadge')}</QuickTaskTag>
                               )}
@@ -601,12 +601,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           description={
                             <Space direction="vertical" size="small">
                               <div>
-                                <Text weight="bold">Destination Filename: </Text>
-                                <Text code>{functionParams.dest}</Text>
+                                <RediaccText weight="bold">Destination Filename: </RediaccText>
+                                <RediaccText code>{functionParams.dest}</RediaccText>
                               </div>
                               {additionalContext?.parentRepo && (
                                 <div>
-                                  <Text weight="bold">Repo Lineage: </Text>
+                                  <RediaccText weight="bold">Repo Lineage: </RediaccText>
                                   <Space>
                                     <LineageTag $variant="parent">
                                       {additionalContext.parentRepo}
@@ -624,7 +624,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               )}
                               {!additionalContext?.parentRepo && additionalContext?.sourceRepo && (
                                 <div>
-                                  <Text weight="bold">Source Repo: </Text>
+                                  <RediaccText weight="bold">Source Repo: </RediaccText>
                                   <LineageTag $variant="source">
                                     {additionalContext.sourceRepo}
                                   </LineageTag>

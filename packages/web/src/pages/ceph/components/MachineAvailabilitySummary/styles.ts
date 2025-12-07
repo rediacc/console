@@ -1,8 +1,8 @@
-import styled from 'styled-components';
 import { Statistic } from 'antd';
-import { ReloadOutlined } from '@/utils/optimizedIcons';
-import { FlexRow, StyledIcon } from '@/styles/primitives';
+import styled from 'styled-components';
 import { RediaccCard } from '@/components/ui';
+import { FlexRow, StyledIcon } from '@/styles/primitives';
+import { ReloadOutlined } from '@/utils/optimizedIcons';
 
 export const SummaryCard = styled(RediaccCard)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;

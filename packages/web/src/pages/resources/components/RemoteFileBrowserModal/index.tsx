@@ -1,5 +1,14 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import {
+  FolderOutlined,
+  FileOutlined,
+  CloudDownloadOutlined,
+  ReloadOutlined,
+  HomeOutlined,
+  FolderOpenOutlined,
+  RightOutlined,
+  CloseOutlined,
+} from '@ant-design/icons';
 import {
   Modal,
   Table,
@@ -12,7 +21,21 @@ import {
   Breadcrumb,
   Tooltip,
 } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useMachines } from '@/api/queries/machines';
+import { useRepos } from '@/api/queries/repos';
+import { useStorage } from '@/api/queries/storage';
+import { useTeams } from '@/api/queries/teams';
+import { useDropdownData } from '@/api/queries/useDropdownData';
+import { createTruncatedColumn } from '@/components/common/columns';
+import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import { createSorter, createCustomSorter } from '@/platform';
+import { waitForQueueItemCompletion } from '@/services/helloService';
 import { ModalSize } from '@/types/modal';
+import { showMessage } from '@/utils/messages';
 import {
   ContentSpace,
   SourceLabel,
@@ -22,31 +45,8 @@ import {
   FolderIcon,
   FileIcon,
 } from './styles';
-import type { ColumnsType } from 'antd/es/table/interface';
 import type { TableProps } from 'antd';
-import {
-  FolderOutlined,
-  FileOutlined,
-  CloudDownloadOutlined,
-  ReloadOutlined,
-  HomeOutlined,
-  FolderOpenOutlined,
-  RightOutlined,
-  CloseOutlined,
-} from '@ant-design/icons';
-import { useDropdownData } from '@/api/queries/useDropdownData';
-import { useStorage } from '@/api/queries/storage';
-import { useMachines } from '@/api/queries/machines';
-import { useTeams } from '@/api/queries/teams';
-import { useRepos } from '@/api/queries/repos';
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
-import { waitForQueueItemCompletion } from '@/services/helloService';
-import { showMessage } from '@/utils/messages';
-import { createSorter, createCustomSorter } from '@/core';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
-import { createTruncatedColumn } from '@/components/common/columns';
+import type { ColumnsType } from 'antd/es/table/interface';
 
 interface RemoteFile {
   name: string;

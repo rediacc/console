@@ -1,4 +1,6 @@
 import styled from 'styled-components';
+import { InlineStack } from '@/components/common/styled';
+import { RediaccSelect, RediaccTag, RediaccText } from '@/components/ui';
 import {
   BaseModal,
   BaseTable,
@@ -8,8 +10,6 @@ import {
   ModalTitleRow,
   AlertCard,
 } from '@/styles/primitives';
-import { InlineStack } from '@/components/common/styled';
-import { RediaccSelect as UISelect, RediaccTag, RediaccText as Text } from '@/components/ui';
 import { ModalSize } from '@/types/modal';
 
 export const StyledModal = styled(BaseModal).attrs<{ $size: ModalSize }>(({ $size }) => ({
@@ -34,24 +34,24 @@ export const DetailRow = styled(InlineStack).attrs({ $align: 'flex-start' })`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const DetailLabel = styled(Text).attrs({
+export const DetailLabel = styled(RediaccText).attrs({
   weight: 'semibold',
 })``;
 
-export const DetailValue = styled(Text).attrs({
+export const DetailValue = styled(RediaccText).attrs({
   color: 'muted',
 })``;
 
 export const FieldGroup = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
-export const FieldLabel = styled(Text).attrs({
+export const FieldLabel = styled(RediaccText).attrs({
   weight: 'medium',
   size: 'sm',
 })``;
 
-export const StyledSelect = UISelect;
+export const StyledSelect = RediaccSelect;
 
-export const HelperText = styled(Text).attrs({
+export const HelperText = styled(RediaccText).attrs({
   size: 'xs',
   color: 'muted',
 })``;
@@ -66,7 +66,7 @@ export const MachinesTable = styled(BaseTable)`
 
 export const MachineNameRow = styled(InlineStack)``;
 
-export const MachineNameText = styled(Text).attrs({
+export const MachineNameText = styled(RediaccText).attrs({
   weight: 'medium',
 })``;
 

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
 
 interface ConfirmOptions {
   title: string | ReactNode;

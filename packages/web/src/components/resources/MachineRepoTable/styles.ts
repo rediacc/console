@@ -1,9 +1,9 @@
-import styled, { css } from 'styled-components';
-import { Table as AntTable } from 'antd';
-import type { TableProps } from 'antd';
 import type { ComponentType } from 'react';
+import { Table as AntTable } from 'antd';
+import styled, { css } from 'styled-components';
+import { RediaccText } from '@/components/ui';
 import { ExpandIcon as BaseExpandIcon } from '@/styles/primitives';
-import { RediaccText } from '@/components/ui/Text';
+import type { TableProps } from 'antd';
 
 const withAlpha = (color: string, alphaHex: string) =>
   color.startsWith('#') ? `${color}${alphaHex}` : color;

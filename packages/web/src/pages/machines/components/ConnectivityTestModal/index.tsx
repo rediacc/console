@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Tooltip } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
+import { InlineStack } from '@/components/common/styled';
+import { RediaccButton } from '@/components/ui';
+import type { QueueItemCompletionResult } from '@/services/helloService';
+import { usePingFunction } from '@/services/pingService';
+import { ModalContentStack, ModalFooterActions } from '@/styles/primitives';
+import type { Machine } from '@/types';
+import { ModalSize } from '@/types/modal';
+import { showMessage } from '@/utils/messages';
 import {
   SyncOutlined,
   CheckCircleOutlined,
@@ -7,17 +17,6 @@ import {
   WifiOutlined,
   ClockCircleOutlined,
 } from '@/utils/optimizedIcons';
-import type { ColumnsType } from 'antd/es/table/interface';
-import { useTranslation } from 'react-i18next';
-import { showMessage } from '@/utils/messages';
-import type { Machine } from '@/types';
-import { usePingFunction } from '@/services/pingService';
-import { ModalSize } from '@/types/modal';
-import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
-import type { QueueItemCompletionResult } from '@/services/helloService';
-import { RediaccButton as Button } from '@/components/ui';
-import { InlineStack } from '@/components/common/styled';
-import { ModalContentStack, ModalFooterActions } from '@/styles/primitives';
 import {
   StyledModal,
   ModalContent,
@@ -37,6 +36,7 @@ import {
   ResourceTag,
   MessageText,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table/interface';
 
 interface ConnectivityTestModalProps {
   open: boolean;
@@ -305,7 +305,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       destroyOnClose
       footer={
         <ModalFooterActions>
-          <Button
+          <RediaccButton
             icon={<SyncOutlined />}
             onClick={runAllTests}
             disabled={isRunning || machines.length === 0}
@@ -313,9 +313,9 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             data-testid="connectivity-run-test-button"
           >
             {isRunning ? t('machines:testing') : t('machines:runTest')}
-          </Button>
+          </RediaccButton>
           <Tooltip title="Close">
-            <Button
+            <RediaccButton
               iconOnly
               icon={<CloseCircleOutlined />}
               onClick={onClose}

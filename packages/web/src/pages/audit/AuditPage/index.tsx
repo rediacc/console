@@ -13,17 +13,11 @@ import {
   Alert,
   Tooltip,
 } from 'antd';
-import { RediaccText as Text } from '@/components/ui';
-import {
-  ReloadOutlined,
-  SearchOutlined,
-  DownloadOutlined,
-  FileExcelOutlined,
-  FileTextOutlined,
-} from '@/utils/optimizedIcons';
-import { useAuditLogs } from '@/api/queries/audit';
-import { useTranslation } from 'react-i18next';
 import dayjs, { Dayjs } from 'dayjs';
+import { useTranslation } from 'react-i18next';
+import { useAuditLogs } from '@/api/queries/audit';
+import { RediaccText } from '@/components/ui';
+import { RediaccButton } from '@/components/ui';
 import { useFilters, usePagination } from '@/hooks';
 
 // Audit page filter state type
@@ -41,9 +35,16 @@ import {
   downloadCSV,
   downloadJSON,
   generateTimestampedFilename,
-} from '@/core';
+} from '@/platform';
 import { PageCard } from '@/styles/primitives';
-import { RediaccButton as Button } from '@/components/ui';
+import {
+  ReloadOutlined,
+  SearchOutlined,
+  DownloadOutlined,
+  FileExcelOutlined,
+  FileTextOutlined,
+} from '@/utils/optimizedIcons';
+import { buildAuditColumns } from './columns';
 import {
   PageWrapper,
   ContentStack,
@@ -54,7 +55,6 @@ import {
   LinkButton,
   ActionIcon,
 } from './styles';
-import { buildAuditColumns } from './columns';
 
 const { RangePicker } = DatePicker;
 
@@ -326,9 +326,9 @@ const AuditPage = () => {
             closable
             showIcon
             action={
-              <Button size="sm" onClick={() => refetch()} loading={isLoading}>
+              <RediaccButton size="sm" onClick={() => refetch()} loading={isLoading}>
                 {t('system:audit.errors.tryAgain')}
-              </Button>
+              </RediaccButton>
             }
           />
         )}
@@ -359,13 +359,13 @@ const AuditPage = () => {
                 <Empty
                   description={
                     <Space direction="vertical" align="center">
-                      <Text color="secondary">
+                      <RediaccText color="secondary">
                         {isError
                           ? t('system:audit.errors.unableToLoad')
                           : filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0
                             ? t('system:audit.empty.noMatchingFilters')
                             : t('system:audit.empty.noLogsInRange')}
-                      </Text>
+                      </RediaccText>
                       {!isError && (
                         <LinkButton onClick={clearAllFilters}>
                           {t('system:audit.empty.clearFilters')}

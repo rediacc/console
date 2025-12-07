@@ -1,5 +1,11 @@
 import { Space, Badge, Tooltip, Button, Popconfirm } from 'antd';
-import type { TableProps } from 'antd';
+import type { Team } from '@/api/queries/teams';
+import {
+  createCountColumn,
+  createVersionColumn,
+  createTruncatedColumn,
+} from '@/components/common/columns';
+import { featureFlags } from '@/config/featureFlags';
 import {
   TeamOutlined,
   UserOutlined,
@@ -10,14 +16,8 @@ import {
   HistoryOutlined,
   DeleteOutlined,
 } from '@/utils/optimizedIcons';
-import { featureFlags } from '@/config/featureFlags';
-import type { Team } from '@/api/queries/teams';
+import type { TableProps } from 'antd';
 import type { TFunction } from 'i18next';
-import {
-  createCountColumn,
-  createVersionColumn,
-  createTruncatedColumn,
-} from '@/components/common/columns';
 
 interface GetTeamColumnsParams {
   tSystem: TFunction<'system'>;

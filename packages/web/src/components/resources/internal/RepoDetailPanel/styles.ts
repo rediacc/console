@@ -1,9 +1,4 @@
 import styled from 'styled-components';
-import { FolderOutlined } from '@/utils/optimizedIcons';
-import { RediaccTag } from '@/components/ui/Tag';
-import type { TagPreset, TagVariant } from '@/components/ui/Tag';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccCard, RediaccAlert, RediaccEmpty } from '@/components/ui';
 import {
   PanelWrapper,
   Header,
@@ -21,7 +16,10 @@ import {
   SectionDivider as BaseSectionDivider,
   SectionHeader as BaseSectionHeader,
   SectionTitle as BaseSectionTitle,
-} from '../sharedDetailPanelAliases';
+} from '@/components/resources/internal/sharedDetailPanelAliases';
+import { RediaccTag, RediaccText, RediaccCard, RediaccAlert, RediaccEmpty } from '@/components/ui';
+import type { TagPreset, TagVariant } from '@/components/ui/Tag';
+import { FolderOutlined } from '@/utils/optimizedIcons';
 
 export { PanelWrapper, PanelTitle, CollapseButton, ContentWrapper };
 

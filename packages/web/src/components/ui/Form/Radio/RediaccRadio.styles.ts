@@ -1,5 +1,5 @@
-import styled from 'styled-components';
 import { Radio as AntRadio } from 'antd';
+import styled from 'styled-components';
 
 const { Group: AntRadioGroup, Button: AntRadioButton } = AntRadio;
 

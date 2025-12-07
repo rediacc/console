@@ -1,7 +1,6 @@
-import styled from 'styled-components';
 import { Form } from 'antd';
-import { RediaccInput, RediaccPasswordInput, RediaccSelect } from '@/components/ui/Form';
-import { RediaccStack } from '@/components/ui';
+import styled from 'styled-components';
+import { RediaccInput, RediaccPasswordInput, RediaccSelect, RediaccStack } from '@/components/ui';
 
 export const StyledForm = styled(Form)`
   width: 100%;

@@ -1,8 +1,8 @@
 import styled from 'styled-components';
-import { CloudServerOutlined, DatabaseOutlined } from '@/utils/optimizedIcons';
-import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
 import { RediaccTag, RediaccCard } from '@/components/ui';
-import { ActionsRow, NameCell, NameText, ExpandIcon } from '../../styles/tableAliases';
+import { ActionsRow, NameCell, NameText, ExpandIcon } from '@/pages/ceph/styles/tableAliases';
+import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
+import { CloudServerOutlined, DatabaseOutlined } from '@/utils/optimizedIcons';
 
 export const ClusterCard = styled(RediaccCard)`
   && {

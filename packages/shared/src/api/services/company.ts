@@ -106,9 +106,9 @@ export function createCompanyService(client: ApiClient) {
     },
 
     importData: async (data: string, mergeMode?: string): Promise<CompanyImportResult> => {
-      const payload: Record<string, unknown> = { data };
+      const payload: Record<string, unknown> = { companyDataJson: data };
       if (mergeMode) {
-        payload.mergeMode = mergeMode;
+        payload.importMode = mergeMode;
       }
       const response = await client.post(endpoints.company.importCompanyData, payload);
       const row = getRowByIndex<CompanyImportResult>(response, 0);
@@ -123,7 +123,7 @@ export function createCompanyService(client: ApiClient) {
       blockRequests: boolean
     ): Promise<CompanyBlockUserRequestsResult> => {
       const response = await client.post(endpoints.company.updateCompanyBlockUserRequests, {
-        blockRequests,
+        blockUserRequests: blockRequests,
       });
       const row = getRowByIndex<CompanyBlockUserRequestsResult>(response, 0);
       return {

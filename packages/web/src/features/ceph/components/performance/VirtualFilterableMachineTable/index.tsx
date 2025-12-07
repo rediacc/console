@@ -1,11 +1,8 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { Badge, Select } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Machine, MachineAssignmentType } from '@/types';
-import { MachineAssignmentService } from '@/features/ceph';
-import { useDebounce } from '@/features/ceph/utils/useDebounce';
+import { Badge, Select } from 'antd';
 import { ActionGroup } from '@/components/common/styled';
-import { VirtualMachineTable } from '../VirtualMachineTable';
+import { MachineAssignmentService } from '@/features/ceph';
 import {
   Container,
   ToolbarStack,
@@ -15,7 +12,10 @@ import {
   RefreshButton,
   StatusText,
   OptionLabel,
-} from './styles';
+} from '@/features/ceph/components/performance/VirtualFilterableMachineTable/styles';
+import { VirtualMachineTable } from '@/features/ceph/components/performance/VirtualMachineTable';
+import { useDebounce } from '@/features/ceph/utils/useDebounce';
+import { Machine, MachineAssignmentType } from '@/types';
 
 const { Option } = Select;
 

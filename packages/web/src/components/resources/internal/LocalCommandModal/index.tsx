@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Form, Input, Button, message } from 'antd';
+import { useTranslation } from 'react-i18next';
+import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import {
-  RediaccCheckbox as Checkbox,
-  RediaccRadio as Radio,
+  RediaccCheckbox,
+  RediaccRadio,
   type CheckboxChangeEvent,
   type RadioChangeEvent,
-} from '@/components/ui/Form';
+  RediaccText,
+} from '@/components/ui';
+import { createFreshForkToken } from '@/services/forkTokenService';
+import type { PluginContainer } from '@/types';
 import {
   CopyOutlined,
   CodeOutlined,
@@ -14,10 +19,6 @@ import {
   DesktopOutlined,
   FileTextOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { RediaccText as Text } from '@/components/ui';
-import { createFreshForkToken } from '@/services/forkTokenService';
-import type { PluginContainer } from '@/types';
 import {
   StyledModal,
   Description,
@@ -35,7 +36,6 @@ import {
   PreviewMetaText,
   ActionsRow,
 } from './styles';
-import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 
 type CommandTab = 'vscode' | 'terminal' | 'desktop';
 type OperatingSystem = 'unix' | 'windows';
@@ -227,31 +227,31 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
 
       <SettingsForm layout="vertical">
         <Form.Item label={t('resources:localCommandBuilder.operatingSystem')}>
-          <Radio.Group value={os} onChange={handleOsChange}>
-            <Radio.Button value="unix">
+          <RediaccRadio.Group value={os} onChange={handleOsChange}>
+            <RediaccRadio.Button value="unix">
               <AppleOutlined /> {t('resources:localCommandBuilder.unixLinuxMac')}
-            </Radio.Button>
-            <Radio.Button value="windows">
+            </RediaccRadio.Button>
+            <RediaccRadio.Button value="windows">
               <WindowsOutlined /> {t('resources:localCommandBuilder.windows')}
-            </Radio.Button>
-          </Radio.Group>
+            </RediaccRadio.Button>
+          </RediaccRadio.Group>
         </Form.Item>
 
         <Form.Item>
-          <Checkbox checked={useDocker} onChange={handleDockerChange}>
+          <RediaccCheckbox checked={useDocker} onChange={handleDockerChange}>
             {t('resources:localCommandBuilder.useDocker')}
             <CheckboxHelper>{t('resources:localCommandBuilder.useDockerHelp')}</CheckboxHelper>
-          </Checkbox>
+          </RediaccCheckbox>
         </Form.Item>
 
         {useDocker && (
           <Form.Item>
-            <Checkbox checked={useNetworkHost} onChange={handleNetworkHostChange}>
+            <RediaccCheckbox checked={useNetworkHost} onChange={handleNetworkHostChange}>
               {t('resources:localCommandBuilder.useNetworkHost')}
               <CheckboxHelper>
                 {t('resources:localCommandBuilder.useNetworkHostHelp')}
               </CheckboxHelper>
-            </Checkbox>
+            </RediaccCheckbox>
           </Form.Item>
         )}
       </SettingsForm>
@@ -267,9 +267,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             children: (
               <Form layout="vertical">
                 <Form.Item help={t('resources:localCommandBuilder.vscodeHelp')}>
-                  <Text color="secondary">
+                  <RediaccText color="secondary">
                     {t('resources:localCommandBuilder.vscodeDescription')}
-                  </Text>
+                  </RediaccText>
                 </Form.Item>
               </Form>
             ),
@@ -301,9 +301,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             children: (
               <Form layout="vertical">
                 <Form.Item help={t('resources:localCommandBuilder.desktopHelp')}>
-                  <Text color="secondary">
+                  <RediaccText color="secondary">
                     {t('resources:localCommandBuilder.desktopDescription')}
-                  </Text>
+                  </RediaccText>
                 </Form.Item>
               </Form>
             ),

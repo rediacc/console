@@ -1,8 +1,7 @@
-import styled from 'styled-components';
 import { Form, Steps, Typography } from 'antd';
-import { RediaccInput } from '@/components/ui/Form';
+import styled from 'styled-components';
+import { RediaccInput, RediaccText, RediaccStack } from '@/components/ui';
 import { BaseModal, FlexRow } from '@/styles/primitives';
-import { RediaccText, RediaccStack } from '@/components/ui';
 
 const { Title } = Typography;
 

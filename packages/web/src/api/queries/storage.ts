@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import { api } from '@/api/client';
 import {
   createResourceMutation,
   createVaultUpdateMutation,
   createMutation,
 } from '@/hooks/api/mutationFactory';
-import { api } from '@/api/client';
 import type { Storage } from '@rediacc/shared/types';
 
 // Get storage for a team or multiple teams

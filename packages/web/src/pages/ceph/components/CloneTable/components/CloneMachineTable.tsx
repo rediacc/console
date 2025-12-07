@@ -1,6 +1,6 @@
 import React from 'react';
-import { Empty } from 'antd';
 import { TeamOutlined, CloudServerOutlined } from '@ant-design/icons';
+import { Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   useCloneMachines,
@@ -10,6 +10,8 @@ import {
   type CephPool,
   type CloneMachine,
 } from '@/api/queries/ceph';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccText } from '@/components/ui';
 import {
   AssignButton,
   EmptyState,
@@ -20,9 +22,7 @@ import {
   MachineListWrapper,
   MachineTag,
   MachineTagGrid,
-} from '../styles';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccText as Text } from '@/components/ui';
+} from '@/pages/ceph/components/CloneTable/styles';
 
 interface CloneMachineTableProps {
   clone: CephRbdClone;
@@ -82,7 +82,7 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
       <MachineListStack>
         <MachineListHeader>
           <TeamOutlined />
-          <Text weight="bold">{t('clones.assignedMachines')}:</Text>
+          <RediaccText weight="bold">{t('clones.assignedMachines')}:</RediaccText>
           <MachineCountTag data-testid={`clone-list-machine-count-${clone.cloneName}`}>
             {machines.length} {t('machines:machines')}
           </MachineCountTag>

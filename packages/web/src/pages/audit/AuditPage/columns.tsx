@@ -1,15 +1,15 @@
 import { Space, Tag } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { TFunction } from 'i18next';
 import { AuditLog } from '@/api/queries/audit';
-import { createDateSorter } from '@/core';
 import {
   createDateColumn,
   createStatusColumn,
   createTruncatedColumn,
   type StatusConfig,
 } from '@/components/common/columns';
+import { createDateSorter } from '@/platform';
 import { FilterHintIcon, ColumnFilterIcon, DescriptionText } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 interface ColumnBuilderParams {
   t: TFunction<'system' | 'common'>;

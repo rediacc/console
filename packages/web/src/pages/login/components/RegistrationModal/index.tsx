@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { Form, Input, Alert } from 'antd';
-import { RediaccCheckbox as Checkbox } from '@/components/ui/Form';
+import { useTranslation } from 'react-i18next';
+import apiClient, { api } from '@/api/client';
+import { RediaccCheckbox } from '@/components/ui';
+import { RediaccButton } from '@/components/ui';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { LanguageLink } from '@/pages/login/components/LanguageLink';
+import { Turnstile } from '@/pages/login/components/Turnstile';
+import { apiConnectionService } from '@/services/apiConnectionService';
+import { hashPassword } from '@/utils/auth';
+import { showMessage } from '@/utils/messages';
 import {
   UserOutlined,
   LockOutlined,
@@ -9,15 +18,6 @@ import {
   SafetyCertificateOutlined,
   CheckCircleOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { showMessage } from '@/utils/messages';
-import { hashPassword } from '@/utils/auth';
-import apiClient, { api } from '@/api/client';
-import { apiConnectionService } from '@/services/apiConnectionService';
-import { Turnstile } from '@/pages/login/components/Turnstile';
-import { LanguageLink } from '@/pages/login/components/LanguageLink';
-import { useAsyncAction } from '@/hooks/useAsyncAction';
-import { RediaccButton as Button } from '@/components/ui';
 import {
   StyledModal,
   VerticalStack,
@@ -378,7 +378,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           ]}
           $noMargin
         >
-          <Checkbox>
+          <RediaccCheckbox>
             {
               t(
                 'auth:registration.termsText',
@@ -405,7 +405,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 'I accept the terms and conditions {terms} and {privacy}'
               ).split('{privacy}')[1]
             }
-          </Checkbox>
+          </RediaccCheckbox>
         </TermsField>
 
         {/* Cloudflare Turnstile - only render if enabled and not in CI mode */}
@@ -423,7 +423,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       </TermsRow>
 
       <FormField $noMargin>
-        <Button
+        <RediaccButton
           htmlType="submit"
           fullWidth
           size="md"
@@ -432,7 +432,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           data-testid="registration-submit-button"
         >
           {t('auth:registration.createAccount')}
-        </Button>
+        </RediaccButton>
       </FormField>
     </Form>
   );
@@ -473,7 +473,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         </FormField>
 
         <FormField $noMargin>
-          <Button
+          <RediaccButton
             htmlType="submit"
             fullWidth
             size="md"
@@ -481,7 +481,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             data-testid="registration-verify-button"
           >
             {t('auth:registration.verifyAccount')}
-          </Button>
+          </RediaccButton>
         </FormField>
       </VerticalStack>
     </Form>

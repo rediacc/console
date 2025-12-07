@@ -1,15 +1,15 @@
 import styled, { css } from 'styled-components';
-import { BaseModal, ContentCard, FlexColumn, FlexRow, scrollbarStyles } from '@/styles/primitives';
+import { ContentStack } from '@/components/common/styled';
+import { RediaccText, RediaccTag, RediaccAlert } from '@/components/ui';
 import {
-  RediaccSearchInput as UnifiedSearchInput,
+  RediaccSearchInput,
   RediaccInputNumber,
   RediaccSelect,
   RediaccInput,
 } from '@/components/ui/Form';
-import { ContentStack } from '@/components/common/styled';
+import { BaseModal, ContentCard, FlexColumn, FlexRow, scrollbarStyles } from '@/styles/primitives';
 import type { StyledTheme } from '@/styles/styledTheme';
 import { InfoCircleOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons';
-import { RediaccText as Text, RediaccTag, RediaccAlert } from '@/components/ui';
 
 const resolvePriorityTokens = (priority: number, theme: StyledTheme) => {
   const configs: Record<number, { color: string; bg: string; border: string }> = {
@@ -53,7 +53,7 @@ export const StyledModal = styled(BaseModal)`
 export const FunctionListCard = ContentCard;
 export const ConfigCard = ContentCard;
 
-export const SearchInput = styled(UnifiedSearchInput)`
+export const SearchInput = styled(RediaccSearchInput)`
   && {
     margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   }
@@ -73,7 +73,7 @@ export const CategorySection = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const CategoryTitle = styled(Text).attrs({
+export const CategoryTitle = styled(RediaccText).attrs({
   size: 'lg',
   weight: 'semibold',
 })`
@@ -126,7 +126,7 @@ export const QuickTaskTag = styled(RediaccTag).attrs({
   }
 `;
 
-export const FunctionDescriptionText = styled(Text).attrs({
+export const FunctionDescriptionText = styled(RediaccText).attrs({
   variant: 'caption',
   color: 'muted',
 })``;
@@ -161,7 +161,7 @@ export const PushAlertCard = styled(RediaccAlert)<{ $variant?: string }>`
         `}
 `;
 
-export const AlertBodyText = styled(Text).attrs({
+export const AlertBodyText = styled(RediaccText).attrs({
   variant: 'caption',
 })``;
 
@@ -193,7 +193,7 @@ export const LineageTag = styled(RediaccTag)<{ $variant: 'parent' | 'source' | '
   }
 `;
 
-export const LineageSeparator = styled(Text).attrs({
+export const LineageSeparator = styled(RediaccText).attrs({
   color: 'secondary',
 })``;
 
@@ -237,7 +237,7 @@ export const PriorityPopoverContent = styled.div`
   max-width: 400px;
 `;
 
-export const PriorityPopoverHeader = styled(Text).attrs({
+export const PriorityPopoverHeader = styled(RediaccText).attrs({
   weight: 'semibold',
 })`
   && {
@@ -265,7 +265,7 @@ export const PriorityLegendTag = styled(RediaccTag)<{ $level: number }>`
   }
 `;
 
-export const PriorityLegendText = styled(Text).attrs({
+export const PriorityLegendText = styled(RediaccText).attrs({
   variant: 'caption',
 })``;
 

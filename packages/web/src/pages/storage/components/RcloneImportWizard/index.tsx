@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { Steps, Upload, Button, Table, Space, Typography, Tag, Tooltip } from 'antd';
-import { RediaccCheckbox as Checkbox } from '@/components/ui/Form';
+import { useTranslation } from 'react-i18next';
+import { useCreateStorage } from '@/api/queries/storage';
+import { useStorage } from '@/api/queries/storage';
+import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccCheckbox } from '@/components/ui';
+import { createSorter } from '@/platform';
 import {
   CloudOutlined,
   InfoCircleOutlined,
@@ -10,14 +16,6 @@ import {
   CloseCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useCreateStorage } from '@/api/queries/storage';
-import { useStorage } from '@/api/queries/storage';
-import type { UploadFile } from 'antd/es/upload';
-import type { ColumnsType } from 'antd/es/table';
-import type { TFunction } from 'i18next';
-import { createSorter } from '@/core';
-import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import {
   WizardModal,
   UploadStepWrapper,
@@ -28,7 +26,9 @@ import {
   LoadingState,
   StatusMessage,
 } from './styles';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
+import type { ColumnsType } from 'antd/es/table';
+import type { UploadFile } from 'antd/es/upload';
+import type { TFunction } from 'i18next';
 
 const { Text, Paragraph } = Typography;
 
@@ -482,7 +482,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   const columns: ColumnsType<ImportStatus> = [
     {
       title: (
-        <Checkbox
+        <RediaccCheckbox
           checked={importStatuses.every((s) => s.selected)}
           indeterminate={
             importStatuses.some((s) => s.selected) && !importStatuses.every((s) => s.selected)
@@ -496,7 +496,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       key: 'selected',
       width: 50,
       render: (_: unknown, record: ImportStatus, index: number) => (
-        <Checkbox
+        <RediaccCheckbox
           checked={record.selected}
           onChange={() => toggleSelection(index)}
           disabled={currentStep === 2}

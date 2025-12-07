@@ -1,8 +1,8 @@
-import styled from 'styled-components';
 import { Form } from 'antd';
-import { BaseModal, FlexColumn, FlexRow } from '@/styles/primitives';
-import { RediaccText, RediaccTabs } from '@/components/ui';
+import styled from 'styled-components';
 import { ActionsRow as CommonActionsRow } from '@/components/common/styled';
+import { RediaccText, RediaccTabs } from '@/components/ui';
+import { BaseModal, FlexColumn, FlexRow } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 
 export const StyledModal = styled(BaseModal).attrs({

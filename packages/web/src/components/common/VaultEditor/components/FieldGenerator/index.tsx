@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Popover, message, Tooltip } from 'antd';
-import { KeyOutlined, ReloadOutlined, CopyOutlined, CheckOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import { RediaccText } from '@/components/ui';
 import {
   generateSSHKeyPair,
   generateRepoCredential,
   GenerationOptions,
 } from '@/utils/cryptoGenerators';
+import { KeyOutlined, ReloadOutlined, CopyOutlined, CheckOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { RediaccText } from '@/components/ui';
 import {
   PopoverContainer,
   OptionLabel,

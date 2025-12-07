@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { BaseModal, StyledIcon, AlertCard } from '@/styles/primitives';
 import { ContentStack, InlineStack } from '@/components/common/styled';
-import { RediaccSelect as UISelect, RediaccText as Text } from '@/components/ui';
+import { RediaccSelect, RediaccText } from '@/components/ui';
+import { BaseModal, StyledIcon, AlertCard } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons';
 
@@ -37,12 +37,12 @@ export const FieldRow = styled.div`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const FieldLabel = styled(Text).attrs({
+export const FieldLabel = styled(RediaccText).attrs({
   weight: 'semibold',
   size: 'sm',
 })``;
 
-export const FieldValue = styled(Text).attrs({
+export const FieldValue = styled(RediaccText).attrs({
   color: 'muted',
 })``;
 
@@ -55,9 +55,9 @@ export const MachineIcon = styled(StyledIcon).attrs(({ theme }) => ({
   $color: theme.colors.primary,
 }))``;
 
-export const StyledSelect = UISelect;
+export const StyledSelect = RediaccSelect;
 
-export const SelectLabel = styled(Text).attrs({
+export const SelectLabel = styled(RediaccText).attrs({
   weight: 'medium',
   size: 'sm',
 })`
@@ -76,7 +76,7 @@ export const DisabledOptionText = styled(SelectOptionText)`
   opacity: 0.6;
 `;
 
-export const HelperText = styled(Text).attrs({
+export const HelperText = styled(RediaccText).attrs({
   variant: 'caption',
 })``;
 

@@ -1,18 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CloudServerOutlined } from '@/utils/optimizedIcons';
+import { Select, Table } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { Machine } from '@/types';
 import { useCephClusters, type CephCluster } from '@/api/queries/ceph';
 import {
   useUpdateMachineCeph,
   useUpdateMachineClusterAssignment,
 } from '@/api/queries/cephMutations';
-import { showMessage } from '@/utils/messages';
-import { Select, Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { ModalSize } from '@/types/modal';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { createTruncatedColumn } from '@/components/common/columns';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import type { Machine } from '@/types';
+import { ModalSize } from '@/types/modal';
+import { showMessage } from '@/utils/messages';
+import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import {
   StyledModal,
   TitleStack,
@@ -33,6 +32,7 @@ import {
   TeamTag,
   AssignmentTag,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 interface AssignToClusterModalProps {
   open: boolean;

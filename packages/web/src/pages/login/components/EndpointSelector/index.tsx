@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Modal, Form, Input, Select } from 'antd';
-import styled from 'styled-components';
-import { PlusOutlined } from '@/utils/optimizedIcons';
-import { endpointService, Endpoint } from '@/services/endpointService';
-import { apiConnectionService } from '@/services/apiConnectionService';
-import { showMessage } from '@/utils/messages';
-import apiClient from '@/api/client';
 import axios from 'axios';
-import { useDialogState } from '@/hooks/useDialogState';
+import styled from 'styled-components';
+import apiClient from '@/api/client';
+import { RediaccButton } from '@/components/ui';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { RediaccButton as Button } from '@/components/ui';
+import { useDialogState } from '@/hooks/useDialogState';
+import { apiConnectionService } from '@/services/apiConnectionService';
+import { endpointService, Endpoint } from '@/services/endpointService';
+import { showMessage } from '@/utils/messages';
+import { PlusOutlined } from '@/utils/optimizedIcons';
 import {
   StyledSelect,
   LoadingText,
@@ -474,21 +474,21 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
           <FormActionsRow>
             <FormActions>
-              <Button
+              <RediaccButton
                 onClick={() => {
                   customModal.close();
                   customForm.resetFields();
                 }}
               >
                 Cancel
-              </Button>
-              <Button
+              </RediaccButton>
+              <RediaccButton
                 variant="primary"
                 htmlType="submit"
                 data-testid="custom-endpoint-submit-button"
               >
                 Add Endpoint
-              </Button>
+              </RediaccButton>
             </FormActions>
           </FormActionsRow>
         </Form>

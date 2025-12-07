@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccButton, RediaccStack } from '@/components/ui';
-import { RediaccRadioGroup, RediaccRadioButton } from '@/components/ui/Form';
+import { RediaccButton, RediaccStack, RediaccRadioGroup, RediaccRadioButton } from '@/components/ui';
 
 export const PopoverContainer = styled.div`
   width: 400px;

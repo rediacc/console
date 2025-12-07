@@ -1,6 +1,23 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button as AntButton, Space, Tag, Alert, Tooltip } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useMachines } from '@/api/queries/machines';
+import { useRepos } from '@/api/queries/repos';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ActionGroup } from '@/components/common/styled';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
+import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
+import { RediaccButton } from '@/components/ui';
+import { RediaccText } from '@/components/ui';
+import { DETAIL_PANEL } from '@/constants/layout';
+import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
+import { usePanelWidth } from '@/hooks/usePanelWidth';
+import { useRepoCreation } from '@/hooks/useRepoCreation';
+import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
+import { Machine, Repo, PluginContainer } from '@/types';
 import {
   DoubleLeftOutlined,
   ReloadOutlined,
@@ -8,23 +25,6 @@ import {
   PlusOutlined,
   CloudDownloadOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { RediaccText as Text } from '@/components/ui';
-import { usePanelWidth } from '@/hooks/usePanelWidth';
-import { DETAIL_PANEL } from '@/constants/layout';
-import { useMachines } from '@/api/queries/machines';
-import { useRepos } from '@/api/queries/repos';
-import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
-import { Machine, Repo, PluginContainer } from '@/types';
-import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { useRepoCreation } from '@/hooks/useRepoCreation';
-import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton as Button } from '@/components/ui';
-import { ActionGroup } from '@/components/common/styled';
 import {
   PageWrapper,
   FullHeightCard,
@@ -267,7 +267,7 @@ const MachineReposPage: React.FC = () => {
             <LoadingWrapper loading centered minHeight={160}>
               <div />
             </LoadingWrapper>
-            <Text color="secondary">{t('common:general.loading')}</Text>
+            <RediaccText color="secondary">{t('common:general.loading')}</RediaccText>
           </CenteredState>
         </FullHeightCard>
       </PageWrapper>
@@ -321,7 +321,7 @@ const MachineReposPage: React.FC = () => {
             <TitleColumn>
               <TitleRow>
                 <Tooltip title={t('machines:backToMachines')}>
-                  <Button
+                  <RediaccButton
                     iconOnly
                     icon={<DoubleLeftOutlined />}
                     onClick={handleBackToMachines}
@@ -355,7 +355,7 @@ const MachineReposPage: React.FC = () => {
 
             <ActionsRow>
               <Tooltip title={t('machines:createRepo')}>
-                <Button
+                <RediaccButton
                   iconOnly
                   icon={<PlusOutlined />}
                   onClick={handleCreateRepo}
@@ -363,7 +363,7 @@ const MachineReposPage: React.FC = () => {
                 />
               </Tooltip>
               <Tooltip title={t('functions:functions.pull.name')}>
-                <Button
+                <RediaccButton
                   iconOnly
                   icon={<CloudDownloadOutlined />}
                   onClick={handlePull}
@@ -371,7 +371,7 @@ const MachineReposPage: React.FC = () => {
                 />
               </Tooltip>
               <Tooltip title={t('common:actions.refresh')}>
-                <Button
+                <RediaccButton
                   iconOnly
                   icon={<ReloadOutlined />}
                   onClick={handleRefresh}

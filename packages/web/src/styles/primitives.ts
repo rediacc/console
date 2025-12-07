@@ -1,20 +1,18 @@
-import styled, { css, keyframes } from 'styled-components';
-import { Table, Typography, Segmented, Row } from 'antd';
-import type { TableProps } from 'antd';
 import type { ComponentType } from 'react';
-import type { StyledTheme } from '@/styles/styledTheme';
-import { RightOutlined } from '@/utils/optimizedIcons';
-// Import Button directly to avoid circular dependency with @/components/ui barrel
-import { RediaccButton } from '@/components/ui/Button';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccTag } from '@/components/ui/Tag';
-// Import Rediacc components
-import { RediaccCard } from '@/components/ui/Card';
-import { RediaccAlert } from '@/components/ui/Alert';
-import { RediaccStack } from '@/components/ui/Stack';
-import { RediaccBadge } from '@/components/ui/Badge';
-import { RediaccEmpty } from '@/components/ui/Empty';
-import { RediaccModal } from '@/components/ui/Modal';
+import { Table, Typography, Segmented, Row } from 'antd';
+import styled, { css, keyframes } from 'styled-components';
+// Import Rediacc components from barrel export
+import {
+  RediaccButton,
+  RediaccText,
+  RediaccTag,
+  RediaccCard,
+  RediaccAlert,
+  RediaccStack,
+  RediaccBadge,
+  RediaccEmpty,
+  RediaccModal,
+} from '@/components/ui';
 // Import unified form components
 import {
   RediaccInput,
@@ -26,6 +24,9 @@ import {
   RediaccCheckbox,
   RediaccDatePicker,
 } from '@/components/ui/Form';
+import type { StyledTheme } from '@/styles/styledTheme';
+import { RightOutlined } from '@/utils/optimizedIcons';
+import type { TableProps } from 'antd';
 
 // ============================================
 // SHARED ANIMATIONS

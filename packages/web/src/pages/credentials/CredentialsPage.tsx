@@ -3,32 +3,14 @@ import { Alert, Button, Modal, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
-import {
-  PlusOutlined,
-  ReloadOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  HistoryOutlined,
-  InboxOutlined,
-  WarningOutlined,
-} from '@/utils/optimizedIcons';
-import { RediaccText as Text } from '@/components/ui';
 
 const InlineList = styled.ul`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
   margin-bottom: 0;
   padding-left: 20px;
 `;
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import AuditTraceModal from '@/components/common/AuditTraceModal';
-import TeamSelector from '@/components/common/TeamSelector';
-import { ActionButtonGroup, ActionButtonConfig } from '@/components/common/ActionButtonGroup';
-import { createActionColumn } from '@/components/common/columns';
-import ResourceListView, {
-  COLUMN_WIDTHS,
-  COLUMN_RESPONSIVE,
-} from '@/components/common/ResourceListView';
+import { useMachines } from '@/api/queries/machines';
+import { QueueFunction } from '@/api/queries/queue';
 import {
   useRepos,
   useCreateRepo,
@@ -37,22 +19,19 @@ import {
   useUpdateRepoVault,
   Repo,
 } from '@/api/queries/repos';
-import { useMachines } from '@/api/queries/machines';
 import { useStorage } from '@/api/queries/storage';
 import { useDropdownData } from '@/api/queries/useDropdownData';
-import { useRepoCreation } from '@/hooks/useRepoCreation';
-import { useQueueAction } from '@/hooks/useQueueAction';
-import {
-  useUnifiedModal,
-  useTeamSelection,
-  usePagination,
-  useTraceModal,
-  useQueueTraceModal,
-  useAsyncAction,
-} from '@/hooks';
-import { showMessage } from '@/utils/messages';
-import { QueueFunction } from '@/api/queries/queue';
-import type { QueueActionParams } from '@/services/queueActionService';
+import { ActionButtonGroup, ActionButtonConfig } from '@/components/common/ActionButtonGroup';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { createActionColumn } from '@/components/common/columns';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import ResourceListView, {
+  COLUMN_WIDTHS,
+  COLUMN_RESPONSIVE,
+} from '@/components/common/ResourceListView';
+import TeamSelector from '@/components/common/TeamSelector';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { RediaccText } from '@/components/ui';
 import {
   PageWrapper,
   SectionStack,
@@ -62,7 +41,28 @@ import {
   ListSubtitle,
 } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
-import { getAffectedResources as coreGetAffectedResources } from '@/core';
+import {
+  useUnifiedModal,
+  useTeamSelection,
+  usePagination,
+  useTraceModal,
+  useQueueTraceModal,
+  useAsyncAction,
+} from '@/hooks';
+import { useQueueAction } from '@/hooks/useQueueAction';
+import { useRepoCreation } from '@/hooks/useRepoCreation';
+import { getAffectedResources as coreGetAffectedResources } from '@/platform';
+import type { QueueActionParams } from '@/services/queueActionService';
+import { showMessage } from '@/utils/messages';
+import {
+  PlusOutlined,
+  ReloadOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  HistoryOutlined,
+  InboxOutlined,
+  WarningOutlined,
+} from '@/utils/optimizedIcons';
 
 interface CredentialsLocationState {
   createRepo?: boolean;
@@ -156,7 +156,7 @@ const CredentialsPage: React.FC = () => {
           title: t('repos.cannotDeleteCredential'),
           content: (
             <div>
-              <Text>
+              <RediaccText>
                 {forks.length > 0
                   ? t('repos.credentialHasDeploymentsWithForks', {
                       count: affectedMachines.length,
@@ -165,11 +165,11 @@ const CredentialsPage: React.FC = () => {
                   : t('repos.credentialHasDeployments', {
                       count: affectedMachines.length,
                     })}
-              </Text>
+              </RediaccText>
 
               {forks.length > 0 && (
                 <div style={{ marginTop: 16 }}>
-                  <Text weight="bold">{t('repos.affectedForks')}</Text>
+                  <RediaccText weight="bold">{t('repos.affectedForks')}</RediaccText>
                   <InlineList>
                     {forks.map((fork) => (
                       <li key={fork.repoGuid}>
@@ -182,12 +182,12 @@ const CredentialsPage: React.FC = () => {
               )}
 
               <div style={{ marginTop: 16 }}>
-                <Text weight="bold">{t('repos.affectedMachines')}</Text>
+                <RediaccText weight="bold">{t('repos.affectedMachines')}</RediaccText>
                 <InlineList>
                   {affectedMachines.map((machine) => (
                     <li key={machine.machineName}>
-                      <Text weight="bold">{machine.machineName}</Text>
-                      <Text color="secondary"> ({machine.repoNames.join(', ')})</Text>
+                      <RediaccText weight="bold">{machine.machineName}</RediaccText>
+                      <RediaccText color="secondary"> ({machine.repoNames.join(', ')})</RediaccText>
                     </li>
                   ))}
                 </InlineList>
@@ -213,7 +213,7 @@ const CredentialsPage: React.FC = () => {
           title: t('repos.deleteRepo'),
           content: (
             <div>
-              <Text>{t('repos.confirmDelete', { repoName: repo.repoName })}</Text>
+              <RediaccText>{t('repos.confirmDelete', { repoName: repo.repoName })}</RediaccText>
 
               <Alert
                 type="warning"
@@ -222,7 +222,7 @@ const CredentialsPage: React.FC = () => {
                   <InlineList>
                     {affectedMachines.map((machine) => (
                       <li key={machine.machineName}>
-                        <Text weight="bold">{machine.machineName}</Text>
+                        <RediaccText weight="bold">{machine.machineName}</RediaccText>
                       </li>
                     ))}
                   </InlineList>

@@ -12,32 +12,9 @@ import {
   Typography,
   Form,
 } from 'antd';
-import {
-  BankOutlined,
-  SettingOutlined,
-  LockOutlined,
-  UnlockOutlined,
-  DownloadOutlined,
-  ExportOutlined,
-  ImportOutlined,
-  WarningOutlined,
-  KeyOutlined,
-  UploadOutlined,
-} from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import VaultEditorModal from '@/components/common/VaultEditorModal';
-import { ModalSize } from '@/types/modal';
-import { RootState } from '@/store/store';
-import { logout } from '@/store/auth/authSlice';
-import { featureFlags } from '@/config/featureFlags';
-import { masterPasswordService } from '@/services/masterPasswordService';
-import { encryptString, decryptString } from '@/utils/encryption';
-import { showMessage } from '@/utils/messages';
-import { useDialogState } from '@/hooks/useDialogState';
-import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields';
-import { RediaccButton as Button } from '@/components/ui';
 import {
   useCompanyVault,
   useUpdateCompanyVault,
@@ -47,6 +24,9 @@ import {
   useExportCompanyData,
   useImportCompanyData,
 } from '@/api/queries/company';
+import VaultEditorModal from '@/components/common/VaultEditorModal';
+import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields';
+import { RediaccButton } from '@/components/ui';
 import {
   PageWrapper as CompanyPageWrapper,
   SectionStack as CompanySectionStack,
@@ -74,6 +54,8 @@ import {
   CenteredBlock,
   RediaccText,
 } from '@/components/ui';
+import { featureFlags } from '@/config/featureFlags';
+import { useDialogState } from '@/hooks/useDialogState';
 import {
   SettingsCard,
   DangerCard,
@@ -82,6 +64,24 @@ import {
   FormItemNoMargin,
   FormItemActionsLg,
 } from '@/pages/system/styles';
+import { masterPasswordService } from '@/services/masterPasswordService';
+import { logout } from '@/store/auth/authSlice';
+import { RootState } from '@/store/store';
+import { ModalSize } from '@/types/modal';
+import { encryptString, decryptString } from '@/utils/encryption';
+import { showMessage } from '@/utils/messages';
+import {
+  BankOutlined,
+  SettingOutlined,
+  LockOutlined,
+  UnlockOutlined,
+  DownloadOutlined,
+  ExportOutlined,
+  ImportOutlined,
+  WarningOutlined,
+  KeyOutlined,
+  UploadOutlined,
+} from '@/utils/optimizedIcons';
 
 const CompanyPage: React.FC = () => {
   const { t } = useTranslation('settings');
@@ -358,7 +358,7 @@ const CompanyPage: React.FC = () => {
             {featureFlags.isEnabled('companyVaultConfiguration') && (
               <CardActions>
                 <Tooltip title={t('company.configureVault')}>
-                  <Button
+                  <RediaccButton
                     icon={<SettingOutlined />}
                     onClick={() => companyVaultModal.open()}
                     size="md"
@@ -421,7 +421,7 @@ const CompanyPage: React.FC = () => {
                         okButtonProps={{ danger: true }}
                       >
                         <Tooltip title={tSystem('dangerZone.blockUserRequests.blockButton')}>
-                          <Button
+                          <RediaccButton
                             variant="danger"
                             icon={<LockOutlined />}
                             loading={blockUserRequestsMutation.isPending}
@@ -439,7 +439,7 @@ const CompanyPage: React.FC = () => {
                         cancelText={tCommon('general.cancel')}
                       >
                         <Tooltip title={tSystem('dangerZone.blockUserRequests.unblockButton')}>
-                          <Button
+                          <RediaccButton
                             icon={<UnlockOutlined />}
                             loading={blockUserRequestsMutation.isPending}
                             aria-label={tSystem('dangerZone.blockUserRequests.unblockButton')}
@@ -464,7 +464,7 @@ const CompanyPage: React.FC = () => {
                   <Col xs={24} lg={8}>
                     <RightAlign>
                       <Tooltip title={tSystem('dangerZone.exportVaults.button')}>
-                        <Button
+                        <RediaccButton
                           icon={<DownloadOutlined />}
                           onClick={handleExportVaults}
                           loading={exportVaultsQuery.isFetching}
@@ -490,7 +490,7 @@ const CompanyPage: React.FC = () => {
                   <Col xs={24} lg={8}>
                     <RightAlign>
                       <Tooltip title={tSystem('dangerZone.exportData.button')}>
-                        <Button
+                        <RediaccButton
                           icon={<ExportOutlined />}
                           onClick={handleExportCompanyData}
                           loading={exportCompanyDataQuery.isFetching}
@@ -516,7 +516,7 @@ const CompanyPage: React.FC = () => {
                   <Col xs={24} lg={8}>
                     <RightAlign>
                       <Tooltip title={tSystem('dangerZone.importData.button')}>
-                        <Button
+                        <RediaccButton
                           variant="danger"
                           icon={<ImportOutlined />}
                           onClick={() => importModal.open()}
@@ -552,7 +552,7 @@ const CompanyPage: React.FC = () => {
                   <Col xs={24} lg={8}>
                     <RightAlign>
                       <Tooltip title={tSystem('dangerZone.updateMasterPassword.button')}>
-                        <Button
+                        <RediaccButton
                           variant="danger"
                           icon={<KeyOutlined />}
                           onClick={handleOpenMasterPasswordModal}
@@ -717,7 +717,7 @@ const CompanyPage: React.FC = () => {
 
           <FormItemNoMargin>
             <ModalActions>
-              <Button
+              <RediaccButton
                 onClick={() => {
                   masterPasswordModal.close();
                   masterPasswordForm.resetFields();
@@ -726,8 +726,8 @@ const CompanyPage: React.FC = () => {
                 data-testid="system-master-password-cancel-button"
               >
                 {tSystem('dangerZone.updateMasterPassword.modal.cancel')}
-              </Button>
-              <Button
+              </RediaccButton>
+              <RediaccButton
                 variant="danger"
                 htmlType="submit"
                 loading={updateVaultsMutation.isPending}
@@ -740,7 +740,7 @@ const CompanyPage: React.FC = () => {
                     masterPasswordOperation.slice(1)
                   }`
                 )}
-              </Button>
+              </RediaccButton>
             </ModalActions>
           </FormItemNoMargin>
         </Form>
@@ -798,7 +798,7 @@ const CompanyPage: React.FC = () => {
                 </RediaccText>
               </CenteredBlock>
 
-              <Button
+              <RediaccButton
                 size="md"
                 fullWidth
                 onClick={() => {
@@ -807,7 +807,7 @@ const CompanyPage: React.FC = () => {
                 }}
               >
                 {tSystem('dangerZone.updateMasterPassword.success.loginNow')}
-              </Button>
+              </RediaccButton>
             </ModalStackLarge>
           }
         />
@@ -843,9 +843,9 @@ const CompanyPage: React.FC = () => {
               maxCount={1}
               accept=".json"
             >
-              <Button icon={<UploadOutlined />}>
+              <RediaccButton icon={<UploadOutlined />}>
                 {importFile ? importFile.name : tSystem('dangerZone.importData.modal.selectFile')}
-              </Button>
+              </RediaccButton>
             </Upload>
           </Form.Item>
 
@@ -876,7 +876,7 @@ const CompanyPage: React.FC = () => {
 
           <FormItemActionsLg>
             <ModalActions>
-              <Button
+              <RediaccButton
                 onClick={() => {
                   importModal.close();
                   setImportFile(null);
@@ -885,14 +885,14 @@ const CompanyPage: React.FC = () => {
                 }}
               >
                 {tSystem('dangerZone.importData.modal.cancel')}
-              </Button>
-              <Button
+              </RediaccButton>
+              <RediaccButton
                 htmlType="submit"
                 loading={importCompanyDataMutation.isPending}
                 disabled={!importFile}
               >
                 {tSystem('dangerZone.importData.modal.import')}
-              </Button>
+              </RediaccButton>
             </ModalActions>
           </FormItemActionsLg>
         </Form>

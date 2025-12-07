@@ -1,7 +1,7 @@
-import styled from 'styled-components';
 import { Layout } from 'antd';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import styled from 'styled-components';
 import { FlexColumn } from '@/styles/primitives';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const { Sider } = Layout;
 

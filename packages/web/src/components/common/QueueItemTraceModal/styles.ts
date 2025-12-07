@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { RediaccText, RediaccTag, RediaccAlert, RediaccButton } from '@/components/ui';
 import {
   LargeModal,
   ModeSegmented as BaseModeSegmented,
@@ -19,8 +20,6 @@ import {
   ItalicText,
   TitleText,
 } from '@/styles/primitives';
-import { RediaccText as Text, RediaccTag, RediaccAlert } from '@/components/ui';
-import { RediaccButton } from '@/components/ui/Button';
 
 // Re-export from primitives
 export const StyledModal = LargeModal;
@@ -47,7 +46,7 @@ export const LastFetchedText = BaseLastFetchedText;
 export const SmallStatusTag = styled(RediaccTag).attrs({
   size: 'sm',
 })``;
-export const CaptionText = styled(Text).attrs({
+export const CaptionText = styled(RediaccText).attrs({
   variant: 'caption',
   color: 'muted',
 })``;
@@ -73,7 +72,7 @@ export const ItalicCaption = styled(ItalicText)`
   }
 `;
 
-export const CodeText = styled(Text).attrs({
+export const CodeText = styled(RediaccText).attrs({
   size: 'xs',
 })`
   && {
@@ -96,7 +95,7 @@ export const ActionButton = styled(RediaccButton)<{ $bold?: boolean; $large?: bo
   }
 `;
 
-export const StatusText = styled(Text)<{ $color?: string }>`
+export const StatusText = styled(RediaccText)<{ $color?: string }>`
   && {
     color: ${({ $color, theme }) => $color || theme.colors.textPrimary};
     text-transform: capitalize;

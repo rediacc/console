@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Table, Tooltip, message } from 'antd';
 import {
   PlusOutlined,
   SettingOutlined,
@@ -11,10 +10,8 @@ import {
   ScissorOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
-import type { MenuProps } from 'antd';
+import { Table, Tooltip, message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
-import { useFormModal } from '@/hooks/useFormModal';
 import {
   useCephRbdClones,
   type CephRbdClone,
@@ -27,16 +24,19 @@ import {
   useCreateCephRbdClone,
   useUpdateCephPoolVault,
 } from '@/api/queries/cephMutations';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { AssignMachinesToCloneModal } from '@/pages/ceph/components/AssignMachinesToCloneModal';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { RediaccButton } from '@/components/ui';
+import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
+import { useFormModal } from '@/hooks/useFormModal';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { RediaccButton as Button } from '@/components/ui';
+import { AssignMachinesToCloneModal } from '@/pages/ceph/components/AssignMachinesToCloneModal';
 import { buildCloneColumns } from './columns';
-import { ActionsRow, Container, ExpandButton, TableWrapper, Title } from './styles';
 import { CloneMachineTable } from './components/CloneMachineTable';
 import { MachineCountBadge } from './components/MachineCountBadge';
+import { ActionsRow, Container, ExpandButton, TableWrapper, Title } from './styles';
+import type { MenuProps } from 'antd';
 
 interface CloneTableProps {
   snapshot: CephRbdSnapshot;
@@ -256,13 +256,13 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
         <Title>{t('clones.title')}</Title>
         <ActionsRow>
           <Tooltip title={t('clones.create')}>
-            <Button
+            <RediaccButton
               icon={<PlusOutlined />}
               onClick={handleCreate}
               data-testid="clone-list-create-button"
             >
               {t('clones.create')}
-            </Button>
+            </RediaccButton>
           </Tooltip>
         </ActionsRow>
 

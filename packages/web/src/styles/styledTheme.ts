@@ -1,5 +1,5 @@
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { colorTokens } from '@/config/antdTheme';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 export interface StyledTheme {
   // Colors

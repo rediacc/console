@@ -1,4 +1,6 @@
 import styled from 'styled-components';
+import { InlineStack } from '@/components/common/styled';
+import { RediaccSelect, RediaccTag, RediaccText } from '@/components/ui';
 import {
   BaseModal,
   BaseTable,
@@ -8,8 +10,6 @@ import {
   PaddedEmpty,
   AlertCard,
 } from '@/styles/primitives';
-import { InlineStack } from '@/components/common/styled';
-import { RediaccSelect as UISelect, RediaccTag, RediaccText as Text } from '@/components/ui';
 import { ModalSize } from '@/types/modal';
 
 export const StyledModal = styled(BaseModal).attrs({
@@ -36,12 +36,12 @@ export const WarningAlert = styled(AlertCard).attrs({ $variant: 'warning' })``;
 
 export const FieldGroup = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
-export const FieldLabel = styled(Text).attrs({
+export const FieldLabel = styled(RediaccText).attrs({
   weight: 'medium',
   size: 'sm',
 })``;
 
-export const StyledSelect = styled(UISelect).attrs({ size: 'sm' })``;
+export const StyledSelect = styled(RediaccSelect).attrs({ size: 'sm' })``;
 
 export const EmptyState = styled(PaddedEmpty)`
   margin-top: ${({ theme }) => theme.spacing.XL}px;
@@ -55,7 +55,7 @@ export const MachinesTable = styled(BaseTable)`
 
 export const MachineNameRow = styled(InlineStack)``;
 
-export const MachineNameText = styled(Text).attrs({
+export const MachineNameText = styled(RediaccText).attrs({
   weight: 'medium',
 })``;
 
@@ -69,7 +69,7 @@ export const BridgeTag = styled(RediaccTag).attrs({
   }
 `;
 
-export const SelectionCount = styled(Text).attrs({
+export const SelectionCount = styled(RediaccText).attrs({
   variant: 'caption',
   color: 'muted',
 })``;

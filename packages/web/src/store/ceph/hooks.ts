@@ -1,5 +1,21 @@
 import { useCallback } from 'react';
+import type { BulkOperationProgress, BulkOperationResult } from '@/features/ceph';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import type { Machine, MachineAssignmentType } from '@/types';
+import {
+  selectSelectedMachines,
+  selectSelectedMachineCount,
+  selectIsAnyMachineSelected,
+  selectIsMachineSelected,
+  selectIsOperationInProgress,
+  selectOperationProgress,
+  selectCurrentOperation,
+  selectLastOperationResult,
+  selectActiveFilters,
+  selectSelectionSummary,
+  selectAreAllSelectedMachinesValid,
+  selectFilteredMachines,
+} from './machineAssignmentSelectors';
 import {
   setSelectedMachines,
   addSelectedMachines,
@@ -16,22 +32,6 @@ import {
   clearFilters,
   toggleGroupExpansion,
 } from './machineAssignmentSlice';
-import {
-  selectSelectedMachines,
-  selectSelectedMachineCount,
-  selectIsAnyMachineSelected,
-  selectIsMachineSelected,
-  selectIsOperationInProgress,
-  selectOperationProgress,
-  selectCurrentOperation,
-  selectLastOperationResult,
-  selectActiveFilters,
-  selectSelectionSummary,
-  selectAreAllSelectedMachinesValid,
-  selectFilteredMachines,
-} from './machineAssignmentSelectors';
-import type { Machine, MachineAssignmentType } from '@/types';
-import type { BulkOperationProgress, BulkOperationResult } from '@/features/ceph';
 import type { MachineAssignmentState } from './machineAssignmentSlice';
 
 // Hook for machine selection management

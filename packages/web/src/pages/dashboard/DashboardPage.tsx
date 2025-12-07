@@ -1,7 +1,15 @@
 import React from 'react';
 import { Col, Row, Alert, Tag, Statistic, Empty, Tooltip, Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { useTheme as useStyledTheme } from 'styled-components';
+import { useRecentAuditLogs } from '@/api/queries/audit';
+import { useDashboard } from '@/api/queries/dashboard';
+import { createTruncatedColumn } from '@/components/common/columns';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccText } from '@/components/ui';
+import CephDashboardWidget from '@/pages/dashboard/components/CephDashboardWidget';
+import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
+import { createSorter } from '@/platform';
+import { EmptyStateWrapper } from '@/styles/primitives';
 import {
   AlertOutlined,
   CheckCircleOutlined,
@@ -24,16 +32,7 @@ import {
   RobotOutlined,
   TeamOutlined,
 } from '@/utils/optimizedIcons';
-import { useDashboard } from '@/api/queries/dashboard';
 import type { QueueTeamIssue, QueueMachineIssue } from '@rediacc/shared/types';
-import { useRecentAuditLogs } from '@/api/queries/audit';
-import CephDashboardWidget from '@/pages/dashboard/components/CephDashboardWidget';
-import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
-import { EmptyStateWrapper } from '@/styles/primitives';
-import { createSorter } from '@/core';
-import { createTruncatedColumn } from '@/components/common/columns';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccText as Text } from '@/components/ui';
 import {
   PageWrapper,
   ContentStack,
@@ -67,6 +66,7 @@ import {
   QuantityBadge,
   HorizontalScroll,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 const resourceIcons: Record<string, React.ReactNode> = {
   Machine: <DesktopOutlined />,
@@ -268,7 +268,7 @@ const DashboardPage: React.FC = () => {
                         <TileHeader>
                           <InlineStack>
                             {resourceIcons[resource.resourceType]}
-                            <Text weight="bold">{resource.resourceType}s</Text>
+                            <RediaccText weight="bold">{resource.resourceType}s</RediaccText>
                           </InlineStack>
                           <TileMeta>
                             {resource.currentUsage} /{' '}
@@ -378,7 +378,7 @@ const DashboardPage: React.FC = () => {
                           >
                             <LicenseHeader>
                               <InlineStack>
-                                <Text weight="bold">{sub.planCode}</Text>
+                                <RediaccText weight="bold">{sub.planCode}</RediaccText>
                                 <QuantityBadge count={sub.quantity} />
                                 {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
                               </InlineStack>
@@ -560,7 +560,7 @@ const DashboardPage: React.FC = () => {
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={8}>
                 <ResourceTile>
-                  <Text weight="bold">Today&apos;s Activity</Text>
+                  <RediaccText weight="bold">Today&apos;s Activity</RediaccText>
                   <StatList>
                     <StatRow>
                       <StatLabel>Created</StatLabel>
@@ -594,9 +594,9 @@ const DashboardPage: React.FC = () => {
                 <StatList>
                   {teamIssues.length > 0 && (
                     <div>
-                      <Text weight="bold" style={{ marginBottom: theme.spacing.SM }}>
+                      <RediaccText weight="bold" style={{ marginBottom: theme.spacing.SM }}>
                         <TeamOutlined /> Team Queue Status
-                      </Text>
+                      </RediaccText>
                       <BorderlessList
                         size="sm"
                         dataSource={teamIssues}
@@ -606,7 +606,7 @@ const DashboardPage: React.FC = () => {
                           return (
                             <BorderlessListItem>
                               <FlexBetween>
-                                <Text weight="bold">{teamIssue.teamName}</Text>
+                                <RediaccText weight="bold">{teamIssue.teamName}</RediaccText>
                                 <InlineStack>
                                   {(teamIssue.staleItems || 0) > 0 && (
                                     <Tag color="warning">
@@ -628,9 +628,9 @@ const DashboardPage: React.FC = () => {
 
                   {machineIssues.length > 0 && (
                     <div>
-                      <Text weight="bold" style={{ marginBottom: theme.spacing.SM }}>
+                      <RediaccText weight="bold" style={{ marginBottom: theme.spacing.SM }}>
                         <DesktopOutlined /> Machine Queue Status
-                      </Text>
+                      </RediaccText>
                       <HorizontalScroll>
                         <Table
                           size="small"
@@ -647,12 +647,12 @@ const DashboardPage: React.FC = () => {
                   {featureAccess?.hasAdvancedAnalytics === 1 &&
                     queueStats.highestPriorityPending !== null && (
                       <ResourceTile>
-                        <Text weight="bold">
+                        <RediaccText weight="bold">
                           <ThunderboltOutlined /> Priority Breakdown
-                        </Text>
+                        </RediaccText>
                         <QueueBadgeRow>
                           <FlexBetween>
-                            <Text>Highest Priority</Text>
+                            <RediaccText>Highest Priority</RediaccText>
                             <QueueBadge
                               $variant="error"
                               count={queueStats.highestPriorityPending ?? 0}
@@ -660,7 +660,7 @@ const DashboardPage: React.FC = () => {
                             />
                           </FlexBetween>
                           <FlexBetween>
-                            <Text>High Priority</Text>
+                            <RediaccText>High Priority</RediaccText>
                             <QueueBadge
                               $variant="warning"
                               count={queueStats.highPriorityPending ?? 0}
@@ -668,7 +668,7 @@ const DashboardPage: React.FC = () => {
                             />
                           </FlexBetween>
                           <FlexBetween>
-                            <Text>Normal Priority</Text>
+                            <RediaccText>Normal Priority</RediaccText>
                             <QueueBadge
                               $variant="info"
                               count={queueStats.normalPriorityPending ?? 0}
@@ -676,7 +676,7 @@ const DashboardPage: React.FC = () => {
                             />
                           </FlexBetween>
                           <FlexBetween>
-                            <Text>Low Priority</Text>
+                            <RediaccText>Low Priority</RediaccText>
                             <QueueBadge
                               $variant="muted"
                               count={queueStats.lowPriorityPending ?? 0}
@@ -708,7 +708,7 @@ const DashboardPage: React.FC = () => {
           >
             <StatList>
               <FlexBetween>
-                <Text>Overall Status</Text>
+                <RediaccText>Overall Status</RediaccText>
                 <Tag color={STATUS_TYPE_MAP[accountHealth.subscriptionStatus] || 'success'}>
                   {accountHealth.subscriptionStatus}
                 </Tag>
@@ -721,17 +721,17 @@ const DashboardPage: React.FC = () => {
                   ) : (
                     <CheckCircleOutlined style={{ color: theme.colors.success }} />
                   )}
-                  <Text>{accountHealth.resourcesAtLimit} resources at limit</Text>
+                  <RediaccText>{accountHealth.resourcesAtLimit} resources at limit</RediaccText>
                 </InlineStack>
 
                 <InlineStack>
                   <ClockCircleOutlined style={{ color: theme.colors.textSecondary }} />
-                  <Text>{accountHealth.resourcesNearLimit} resources near limit</Text>
+                  <RediaccText>{accountHealth.resourcesNearLimit} resources near limit</RediaccText>
                 </InlineStack>
               </StatList>
 
               <SectionFooter>
-                <Text weight="bold">{accountHealth.upgradeRecommendation}</Text>
+                <RediaccText weight="bold">{accountHealth.upgradeRecommendation}</RediaccText>
               </SectionFooter>
             </StatList>
           </DashboardCard>
@@ -786,7 +786,7 @@ const DashboardPage: React.FC = () => {
                     <StatList gap="sm">
                       <FlexBetween>
                         <InlineStack>
-                          <Text weight="bold">{log.action.replace(/_/g, ' ')}</Text>
+                          <RediaccText weight="bold">{log.action.replace(/_/g, ' ')}</RediaccText>
                           <Tag>{log.entity}</Tag>
                         </InlineStack>
                         <AuditMeta>{formatTimestamp(log.timestamp)}</AuditMeta>

@@ -1,7 +1,5 @@
 import styled from 'styled-components';
-import { RediaccButton } from '@/components/ui/Button';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccStack } from '@/components/ui';
+import { RediaccButton, RediaccText, RediaccStack } from '@/components/ui';
 
 export const CommandContainer = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;

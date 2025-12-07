@@ -1,14 +1,5 @@
 import React, { useState } from 'react';
 import { Badge, Dropdown, List, Empty, Space, Tag } from 'antd';
-import {
-  BellOutlined,
-  CloseOutlined,
-  ExclamationCircleOutlined,
-  InfoCircleOutlined,
-  WarningOutlined,
-  CheckCircleOutlined,
-} from '@/utils/optimizedIcons';
-import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import {
   markAsRead,
@@ -18,10 +9,20 @@ import {
   NotificationType,
   Notification,
 } from '@/store/notifications/notificationSlice';
-import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { useTranslation } from 'react-i18next';
+import { useSelector, useDispatch } from 'react-redux';
 import 'dayjs/locale/es';
+import { RediaccButton } from '@/components/ui';
+import {
+  BellOutlined,
+  CloseOutlined,
+  ExclamationCircleOutlined,
+  InfoCircleOutlined,
+  WarningOutlined,
+  CheckCircleOutlined,
+} from '@/utils/optimizedIcons';
 import {
   NotificationDropdown,
   NotificationHeader,
@@ -39,7 +40,6 @@ import {
   EmptyWrapper,
   BellButton,
 } from './styles';
-import { RediaccButton } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 

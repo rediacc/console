@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 import { Progress, Tag } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { IconWrapper } from '@/components/ui';
 import {
   DoubleRightOutlined,
   ApiOutlined,
@@ -12,7 +14,6 @@ import {
   PauseCircleOutlined,
   ContainerOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
 import {
   PanelWrapper,
   Header,
@@ -41,7 +42,6 @@ import {
   InlineText,
   SubduedText,
 } from './styles';
-import { IconWrapper } from '@/components/ui';
 
 interface ContainerData {
   id: string;

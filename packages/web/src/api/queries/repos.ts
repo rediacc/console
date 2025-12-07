@@ -1,8 +1,8 @@
-import { createResourceQuery } from '@/hooks/api/queryFactory';
+import { api } from '@/api/client';
 import { createMutation } from '@/hooks/api/mutationFactory';
+import { createResourceQuery } from '@/hooks/api/queryFactory';
 import { minifyJSON } from '@/utils/json';
 import type { Repo } from '@rediacc/shared/types';
-import { api } from '@/api/client';
 
 // Get repos for a team or multiple teams
 export const useRepos = createResourceQuery<Repo>({

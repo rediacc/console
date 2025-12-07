@@ -12,21 +12,8 @@ import {
   Popconfirm,
   Result,
 } from 'antd';
-import {
-  SafetyOutlined,
-  KeyOutlined,
-  UserOutlined,
-  HistoryOutlined,
-  PlusOutlined,
-  DeleteOutlined,
-} from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import ResourceListView from '@/components/common/ResourceListView';
-import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
-import UserSessionsTab from '@/pages/organization/access/components/UserSessionsTab';
-import { useDropdownData } from '@/api/queries/useDropdownData';
 import {
   usePermissionGroups as usePermissionGroupsQuery,
   usePermissionGroupDetails,
@@ -37,7 +24,9 @@ import {
   useAssignUserToGroup,
   PermissionGroup,
 } from '@/api/queries/permissions';
-import { ModalSize } from '@/types/modal';
+import { useDropdownData } from '@/api/queries/useDropdownData';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import ResourceListView from '@/components/common/ResourceListView';
 import {
   PageWrapper as AccessPageWrapper,
   SectionStack as AccessSectionStack,
@@ -47,10 +36,21 @@ import {
   ListSubtitle as AccessListSubtitle,
   ModalStack,
   InlineFormRow,
-  RediaccSelect as Select,
+  RediaccSelect,
 } from '@/components/ui';
-import { showMessage } from '@/utils/messages';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import UserSessionsTab from '@/pages/organization/access/components/UserSessionsTab';
 import { RootState } from '@/store/store';
+import { ModalSize } from '@/types/modal';
+import { showMessage } from '@/utils/messages';
+import {
+  SafetyOutlined,
+  KeyOutlined,
+  UserOutlined,
+  HistoryOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+} from '@/utils/optimizedIcons';
 
 const AccessPage: React.FC = () => {
   const { t } = useTranslation('organization');
@@ -414,7 +414,7 @@ const AccessPage: React.FC = () => {
               children: (
                 <ModalStack>
                   <InlineFormRow>
-                    <Select
+                    <RediaccSelect
                       fullWidth
                       placeholder={t('access.modals.permissionPlaceholder', {
                         defaultValue: 'Select permission to add',
@@ -440,7 +440,7 @@ const AccessPage: React.FC = () => {
                           {perm.name}
                         </AntSelect.Option>
                       ))}
-                    </Select>
+                    </RediaccSelect>
                     <Tooltip title={tSystem('actions.addPermission')}>
                       <Button
                         type="primary"
@@ -479,7 +479,7 @@ const AccessPage: React.FC = () => {
         okButtonProps={{ 'data-testid': 'modal-assign-user-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-assign-user-cancel' }}
       >
-        <Select
+        <RediaccSelect
           fullWidth
           placeholder={t('access.modals.userPlaceholder', { defaultValue: 'Select user' })}
           value={selectedUser}

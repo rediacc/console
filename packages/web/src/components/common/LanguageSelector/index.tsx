@@ -1,13 +1,13 @@
 import React from 'react';
 import { Select, Dropdown } from 'antd';
 import { GlobalOutlined } from '@/utils/optimizedIcons';
+import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { useUpdateUserLanguage } from '@/api/queries/users';
-import type { RootState } from '@/store/store';
 import { InlineStack } from '@/components/common/styled';
+import type { RootState } from '@/store/store';
 import { LanguageButton, LanguageSelect } from './styles';
 const { Option } = Select;
 

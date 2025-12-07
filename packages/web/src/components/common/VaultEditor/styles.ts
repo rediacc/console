@@ -1,22 +1,20 @@
-import styled, { css } from 'styled-components';
 import { Form, Row } from 'antd';
+import styled, { css } from 'styled-components';
+import { RediaccButton, RediaccText, RediaccStack, RediaccAlert, RediaccDivider } from '@/components/ui';
+import {
+  RediaccInput,
+  RediaccPasswordInput,
+  RediaccTextArea,
+  RediaccInputNumber,
+  RediaccSelect,
+} from '@/components/ui/Form';
+import { FlexColumn, FlexRow } from '@/styles/primitives';
 import {
   InfoCircleOutlined,
   BulbOutlined,
   WarningOutlined,
   ExclamationCircleOutlined,
 } from '@/utils/optimizedIcons';
-import { FlexColumn, FlexRow } from '@/styles/primitives';
-import {
-  RediaccInput,
-  RediaccPasswordInput as UnifiedPasswordInput,
-  RediaccTextArea as UnifiedTextArea,
-  RediaccInputNumber as UnifiedInputNumber,
-  RediaccSelect as UnifiedSelect,
-} from '@/components/ui/Form';
-import { RediaccButton } from '@/components/ui/Button';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccStack, RediaccAlert, RediaccDivider } from '@/components/ui';
 
 export const EditorContainer = styled(FlexColumn).attrs({ $gap: 'MD' })``;
 
@@ -184,12 +182,12 @@ export const FullWidthInput = styled(RediaccInput)`
   }
 `;
 
-export const FullWidthPasswordInput = styled(UnifiedPasswordInput).attrs({
+export const FullWidthPasswordInput = styled(RediaccPasswordInput).attrs({
   fullWidth: true,
 })``;
 
-export const FullWidthTextArea = styled(UnifiedTextArea).attrs({ fullWidth: true })``;
+export const FullWidthTextArea = styled(RediaccTextArea).attrs({ fullWidth: true })``;
 
-export const FullWidthInputNumber = styled(UnifiedInputNumber).attrs({ fullWidth: true })``;
+export const FullWidthInputNumber = styled(RediaccInputNumber).attrs({ fullWidth: true })``;
 
-export const FullWidthSelect = styled(UnifiedSelect).attrs({ fullWidth: true })``;
+export const FullWidthSelect = styled(RediaccSelect).attrs({ fullWidth: true })``;

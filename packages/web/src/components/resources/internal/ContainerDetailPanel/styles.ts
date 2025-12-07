@@ -1,6 +1,4 @@
 import styled from 'styled-components';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccCard } from '@/components/ui';
 import {
   PanelWrapper,
   Header,
@@ -21,7 +19,8 @@ import {
   FieldValueMonospace,
   SectionDivider,
   SubduedText,
-} from '../sharedDetailPanelAliases';
+} from '@/components/resources/internal/sharedDetailPanelAliases';
+import { RediaccText, RediaccCard } from '@/components/ui';
 
 export {
   PanelWrapper,

@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo } from 'react';
 import { Row, Col, Progress, Tooltip } from 'antd';
-import type { ListProps } from 'antd';
+import { useTranslation } from 'react-i18next';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { CephSection } from '@/components/resources/internal/CephSection';
+import { featureFlags } from '@/config/featureFlags';
+import { useTraceModal } from '@/hooks/useDialogState';
+import { calculateResourcePercent } from '@/platform';
+import { getLocalizedRelativeTime, formatTimestampAsIs } from '@/platform';
+import type { Machine } from '@/types';
 import {
   DoubleRightOutlined,
   DesktopOutlined,
@@ -15,17 +22,8 @@ import {
   CodeOutlined,
   CompassOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import type { TFunction } from 'i18next';
-import type { Machine } from '@/types';
-import { getLocalizedRelativeTime, formatTimestampAsIs } from '@/core';
-import { calculateResourcePercent } from '@/core';
-import { parseVaultStatus } from '@/core/services/machine';
 import { abbreviatePath } from '@/utils/pathUtils';
-import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { CephSection } from '../CephSection';
-import { featureFlags } from '@/config/featureFlags';
-import { useTraceModal } from '@/hooks/useDialogState';
+import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import {
   PanelWrapper,
   Header,
@@ -67,6 +65,8 @@ import {
   StatusTag,
   AddressTag,
 } from './styles';
+import type { ListProps } from 'antd';
+import type { TFunction } from 'i18next';
 
 interface MachineVaultStatusPanelProps {
   machine: Machine | null;
@@ -308,7 +308,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
               )}
 
               {featureFlags.isEnabled('ceph') && machine && (
-                <SectionBlock data-testid="vault-status-distributed-storage">
+                <SectionBlock data-testid="vault-status-ceph">
                   <CephSection
                     machine={machine}
                     onViewDetails={() =>

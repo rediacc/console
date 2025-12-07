@@ -1,11 +1,10 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
 import { Modal, Space, message, Upload, Tooltip } from 'antd';
-import type { RcFile } from 'antd/es/upload';
-import { CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import VaultEditor from '@/components/common/VaultEditor';
 import { RediaccButton } from '@/components/ui';
-import VaultEditor from '../VaultEditor';
 import { ModalSize } from '@/types/modal';
+import { CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons';
 import {
   ActionGroup,
   ContentStack,
@@ -26,6 +25,7 @@ import {
   VersionTag,
   WarningIcon,
 } from './styles';
+import type { RcFile } from 'antd/es/upload';
 
 interface VaultEditorModalProps {
   open: boolean;

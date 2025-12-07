@@ -1,15 +1,15 @@
 import { configureStore, Middleware } from '@reduxjs/toolkit';
 import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
 import authSlice from './auth/authSlice';
-import uiSlice from './ui/uiSlice';
-import notificationSlice from './notifications/notificationSlice';
-import machineAssignmentSlice from './ceph/machineAssignmentSlice';
 import {
   machineAssignmentMiddleware,
   machineSelectionPersistenceMiddleware,
   machineAssignmentLoggingMiddleware,
 } from './ceph/machineAssignmentMiddleware';
+import machineAssignmentSlice from './ceph/machineAssignmentSlice';
 import { telemetryMiddleware } from './middleware/telemetryMiddleware';
+import notificationSlice from './notifications/notificationSlice';
+import uiSlice from './ui/uiSlice';
 
 // Define RootState type from reducer shape before store creation
 const rootReducer = {

@@ -1,5 +1,5 @@
-import styled, { css } from 'styled-components';
 import { DatePicker as AntDatePicker } from 'antd';
+import styled, { css } from 'styled-components';
 
 const { RangePicker: AntRangePicker } = AntDatePicker;
 

@@ -1,12 +1,12 @@
-import { createResourceQuery } from '@/hooks/api/queryFactory';
+import { api } from '@/api/client';
+import { QUERY_KEY_STRINGS } from '@/api/queryKeys';
 import {
   createResourceMutation,
   createVaultUpdateMutation,
   createMutation,
 } from '@/hooks/api/mutationFactory';
-import { QUERY_KEY_STRINGS } from '@/api/queryKeys';
+import { createResourceQuery } from '@/hooks/api/queryFactory';
 import type { Machine } from '@/types';
-import { api } from '@/api/client';
 
 // Get machines for a team, multiple teams, or all machines
 export const useMachines = createResourceQuery<Machine>({

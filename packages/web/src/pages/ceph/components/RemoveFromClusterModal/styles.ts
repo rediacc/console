@@ -1,9 +1,9 @@
 import styled from 'styled-components';
-import { BaseModal, BaseTable, ModalTitleRow, AlertCard } from '@/styles/primitives';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccTag, RediaccText as Text } from '@/components/ui';
-import { WarningOutlined } from '@/utils/optimizedIcons';
+import { RediaccTag, RediaccText } from '@/components/ui';
+import { BaseModal, BaseTable, ModalTitleRow, AlertCard } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
+import { WarningOutlined } from '@/utils/optimizedIcons';
 
 export const StyledModal = styled(BaseModal).attrs({
   className: `${ModalSize.Medium} remove-from-cluster-modal`,
@@ -30,7 +30,7 @@ export const MachinesTable = styled(BaseTable)`
 
 export const MachineNameRow = styled(InlineStack)``;
 
-export const MachineNameText = styled(Text).attrs({
+export const MachineNameText = styled(RediaccText).attrs({
   variant: 'caption',
   weight: 'semibold',
 })``;
@@ -45,7 +45,7 @@ export const ClusterTag = styled(RediaccTag).attrs({
   }
 `;
 
-export const MutedText = styled(Text).attrs({
+export const MutedText = styled(RediaccText).attrs({
   variant: 'caption',
   color: 'muted',
 })``;

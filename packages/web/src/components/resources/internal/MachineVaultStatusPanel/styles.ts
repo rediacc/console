@@ -1,11 +1,5 @@
-import styled from 'styled-components';
 import { Typography } from 'antd';
-import { CloudServerOutlined } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { RediaccTag } from '@/components/ui/Tag';
-import type { TagPreset, TagVariant } from '@/components/ui/Tag';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccCard, RediaccBadge, RediaccEmpty, RediaccList } from '@/components/ui';
+import styled from 'styled-components';
 import {
   PanelWrapper,
   Header,
@@ -24,7 +18,11 @@ import {
   SectionHeader,
   SectionTitle,
   SubduedText,
-} from '../sharedDetailPanelAliases';
+} from '@/components/resources/internal/sharedDetailPanelAliases';
+import { RediaccTag, RediaccText, RediaccCard, RediaccBadge, RediaccEmpty, RediaccList } from '@/components/ui';
+import type { TagPreset, TagVariant } from '@/components/ui/Tag';
+import { CloudServerOutlined } from '@/utils/optimizedIcons';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const { Title } = Typography;
 

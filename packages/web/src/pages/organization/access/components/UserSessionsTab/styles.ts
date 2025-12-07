@@ -1,11 +1,7 @@
-import styled from 'styled-components';
 import { Statistic } from 'antd';
-import { RediaccInput } from '@/components/ui/Form/Input';
-import { RediaccButton } from '@/components/ui/Button';
-import { RediaccTag } from '@/components/ui/Tag';
-import { RediaccText } from '@/components/ui/Text';
+import styled from 'styled-components';
+import { RediaccInput, RediaccButton, RediaccTag, RediaccText, CardTitle, RediaccCard } from '@/components/ui';
 import { FlexColumn } from '@/styles/primitives';
-import { CardTitle, RediaccCard } from '@/components/ui';
 
 export const TabContainer = styled(FlexColumn).attrs({
   $gap: 'LG',

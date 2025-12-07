@@ -8,8 +8,8 @@
  * - SectionHeaderRow: Row for section headers with actions
  */
 
-import styled from 'styled-components';
 import { Typography } from 'antd';
+import styled from 'styled-components';
 import { PageContainer, SectionHeaderRow as PrimitiveSectionHeaderRow } from '@/styles/primitives';
 
 const { Title } = Typography;

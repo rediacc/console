@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
+import importPlugin from 'eslint-plugin-import';
 import globals from 'globals';
 
 export default tseslint.config(
@@ -32,6 +33,7 @@ export default tseslint.config(
     plugins: {
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
+      import: importPlugin,
     },
     languageOptions: {
       ecmaVersion: 'latest',
@@ -51,7 +53,12 @@ export default tseslint.config(
     settings: {
       react: {
         version: 'detect'
-      }
+      },
+      'import/resolver': {
+        typescript: {
+          project: ['packages/web/tsconfig.json', 'packages/shared/tsconfig.json'],
+        },
+      },
     },
     rules: {
       // React rules
@@ -74,6 +81,28 @@ export default tseslint.config(
       // General rules
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-debugger': 'warn',
+
+      // Import rules - enforce consistent import paths
+      // Note: no-relative-parent-imports is not used because @/ aliases resolve to parent
+      // directories and the rule cannot distinguish between ../foo and @/foo patterns.
+      // All parent imports have been converted to use @/ alias which is the desired pattern.
+      'import/order': ['warn', {
+        groups: [
+          'builtin',
+          'external',
+          'internal',
+          ['parent', 'sibling', 'index'],
+          'type',
+        ],
+        pathGroups: [
+          { pattern: 'react', group: 'builtin', position: 'before' },
+          { pattern: '@/**', group: 'internal', position: 'before' },
+          { pattern: '@rediacc/shared/**', group: 'internal', position: 'before' },
+        ],
+        pathGroupsExcludedImportTypes: ['react'],
+        'newlines-between': 'never',
+        alphabetize: { order: 'asc', caseInsensitive: true },
+      }],
     }
   }
 );

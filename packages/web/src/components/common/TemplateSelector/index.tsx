@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Col, Empty } from 'antd';
+import { useTranslation } from 'react-i18next';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { templateService } from '@/services/templateService';
 import {
   DatabaseOutlined,
   GlobalOutlined,
@@ -8,10 +12,7 @@ import {
   InfoCircleOutlined,
   AppstoreOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { templateService } from '@/services/templateService';
-import { useAsyncAction } from '@/hooks/useAsyncAction';
 import {
   SelectorContainer,
   HeaderStack,
@@ -32,7 +33,6 @@ import {
   DefaultTag,
   ErrorState,
 } from './styles';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
 
 interface Template {
   id?: string;

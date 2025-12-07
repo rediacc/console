@@ -1,19 +1,8 @@
 import React, { useState } from 'react';
 import { Empty, Alert, Tooltip } from 'antd';
-import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
-import { useCompanyInfo } from '@/api/queries/dashboard';
-import { useTeamSelection, useQueueTraceModal } from '@/hooks';
-import TeamSelector from '@/components/common/TeamSelector';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { ClusterTable } from './components/ClusterTable';
-import { PoolTable } from './components/PoolTable';
-import { CephMachinesTab } from './components/CephMachinesTab';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { showMessage } from '@/utils/messages';
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { useCephClusters, useCephPools } from '@/api/queries/ceph';
+import type { CephCluster, CephPool } from '@/api/queries/ceph';
 import {
   useCreateCephCluster,
   useCreateCephPool,
@@ -22,9 +11,20 @@ import {
   useDeleteCephCluster,
   useDeleteCephPool,
 } from '@/api/queries/cephMutations';
-import type { CephCluster, CephPool } from '@/api/queries/ceph';
+import { useCompanyInfo } from '@/api/queries/dashboard';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import TeamSelector from '@/components/common/TeamSelector';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { RediaccButton } from '@/components/ui';
+import { useTeamSelection, useQueueTraceModal } from '@/hooks';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { PageCard } from '@/styles/primitives';
-import { RediaccButton as Button } from '@/components/ui';
+import { showMessage } from '@/utils/messages';
+import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimizedIcons';
+import { CephMachinesTab } from './components/CephMachinesTab';
+import { ClusterTable } from './components/ClusterTable';
+import { PoolTable } from './components/PoolTable';
 import {
   PageWrapper,
   HeaderSection,
@@ -295,7 +295,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
     return (
       <ActionGroup>
         <Tooltip title={createLabel}>
-          <Button
+          <RediaccButton
             iconOnly
             icon={<PlusOutlined />}
             onClick={() => {
@@ -310,7 +310,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
           />
         </Tooltip>
         <Tooltip title={t('common:actions.refresh')}>
-          <Button
+          <RediaccButton
             iconOnly
             icon={<ReloadOutlined />}
             onClick={() => {

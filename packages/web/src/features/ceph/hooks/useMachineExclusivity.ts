@@ -1,15 +1,15 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useDebounce } from '../utils/useDebounce';
+import { useTranslation } from 'react-i18next';
 import {
   useCloneMachineAssignmentValidation,
   useAvailableMachinesForClone,
   type MachineAssignmentValidation,
   type AvailableMachine,
 } from '@/api/queries/ceph';
+import { MachineValidationService } from '@/features/ceph/services';
+import { useDebounce } from '@/features/ceph/utils/useDebounce';
 import type { Machine, MachineAssignmentType } from '@/types';
-import type { ValidationResult, ExclusivityValidation } from '../models/machine-validation.model';
-import { useTranslation } from 'react-i18next';
-import { MachineValidationService } from '../services';
+import type { ValidationResult, ExclusivityValidation } from '@rediacc/shared/services/machine';
 
 export interface MachineAvailability {
   available: string[];

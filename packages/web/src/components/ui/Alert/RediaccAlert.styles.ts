@@ -1,5 +1,5 @@
-import styled from 'styled-components';
 import { Alert as AntAlert } from 'antd';
+import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { AlertVariant, AlertSize } from './RediaccAlert.types';
 

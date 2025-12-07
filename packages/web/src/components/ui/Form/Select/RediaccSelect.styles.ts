@@ -1,5 +1,5 @@
-import styled, { css } from 'styled-components';
 import { Select as AntSelect } from 'antd';
+import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { SelectSize } from './RediaccSelect.types';
 

@@ -5,6 +5,8 @@ export * from './queue-vault';
 export * from './api';
 export * from './endpoints';
 export * from './encryption';
+export * from './validation';
+export * from './services';
 export {
   QUEUE_STATUS_CONFIG,
   PRIORITY_CONFIG,

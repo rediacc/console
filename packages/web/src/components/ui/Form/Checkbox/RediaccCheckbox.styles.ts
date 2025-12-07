@@ -1,5 +1,5 @@
-import styled from 'styled-components';
 import { Checkbox as AntCheckbox } from 'antd';
+import styled from 'styled-components';
 
 /**
  * Styled RediaccCheckbox component

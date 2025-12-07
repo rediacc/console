@@ -3,7 +3,7 @@
  * Stores master password in secure memory storage instead of Redux state
  */
 
-import { secureStorage } from '../utils/secureMemoryStorage';
+import { secureStorage } from '@/utils/secureMemoryStorage';
 
 const MASTER_PASSWORD_KEY = 'z^X8zFgx%SqhMAsK';
 

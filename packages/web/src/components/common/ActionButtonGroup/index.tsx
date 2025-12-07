@@ -1,7 +1,5 @@
 import React from 'react';
 import { Tooltip, Dropdown } from 'antd';
-import type { MenuProps } from 'antd';
-import type { TFunction } from 'i18next';
 import styled from 'styled-components';
 import { TableActionButton } from '@/components/common/styled';
 
@@ -260,6 +258,8 @@ import {
   EyeOutlined,
   LockOutlined,
 } from '@/utils/optimizedIcons';
+import type { MenuProps } from 'antd';
+import type { TFunction } from 'i18next';
 
 /**
  * Preset button configurations for common patterns

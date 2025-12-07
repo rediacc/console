@@ -1,5 +1,5 @@
 /**
- * Shared table component aliases for distributed storage tables.
+ * Shared table component aliases for Ceph tables.
  * Centralizes common re-exports to avoid duplication across table styles.
  */
 export { TableContainer as TableWrapper } from '@/styles/primitives';

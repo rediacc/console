@@ -1,27 +1,27 @@
 import React, { useCallback, useState } from 'react';
 import { Dropdown, Tooltip, message } from 'antd';
-import type { MenuProps } from 'antd';
 type ItemType = NonNullable<MenuProps['items']>[number];
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import { LocalCommandModal } from '@/components/resources/internal/LocalCommandModal';
+import { PipInstallationModal } from '@/components/resources/internal/PipInstallationModal';
+import { IconWrapper } from '@/components/ui';
+import { useDialogState } from '@/hooks/useDialogState';
+import {
+  protocolUrlService,
+  type ProtocolAction,
+  type ContainerParams,
+} from '@/services/protocolUrlService';
+import type { RootState } from '@/store/store';
+import type { PluginContainer } from '@/types';
 import {
   DesktopOutlined,
   CodeOutlined,
   BuildOutlined,
   FileTextOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
-import {
-  protocolUrlService,
-  type ProtocolAction,
-  type ContainerParams,
-} from '@/services/protocolUrlService';
-import { PipInstallationModal } from '../PipInstallationModal';
-import { LocalCommandModal } from '../LocalCommandModal';
-import type { RootState } from '@/store/store';
-import type { PluginContainer } from '@/types';
-import { useDialogState } from '@/hooks/useDialogState';
 import { MenuLabel, TriggerButton } from './styles';
-import { IconWrapper } from '@/components/ui';
+import type { MenuProps } from 'antd';
 
 type ContainerMenuAction = 'terminal' | 'logs' | 'stats';
 

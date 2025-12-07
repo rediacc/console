@@ -1,5 +1,14 @@
-import styled from 'styled-components';
 import { Typography } from 'antd';
+import styled from 'styled-components';
+import {
+  RediaccText,
+  RediaccAlert,
+  RediaccStack,
+  RediaccDivider,
+  RediaccList,
+  RediaccTabs,
+  RediaccTag,
+} from '@/components/ui';
 import {
   BaseModal,
   ContentCard,
@@ -8,15 +17,6 @@ import {
   FlexColumn,
   FlexRow,
 } from '@/styles/primitives';
-import {
-  RediaccText as Text,
-  RediaccAlert,
-  RediaccStack,
-  RediaccDivider,
-  RediaccList,
-  RediaccTabs,
-} from '@/components/ui';
-import { RediaccTag } from '@/components/ui/Tag';
 
 const { Title } = Typography;
 
@@ -78,7 +78,7 @@ export const DescriptionCard = styled(ContentCard)`
 
 export const FeatureCard = DescriptionCard;
 
-export const CardTitle = styled(Text).attrs({
+export const CardTitle = styled(RediaccText).attrs({
   size: 'xl',
   weight: 'semibold',
 })``;
@@ -105,7 +105,7 @@ export const FeatureItem = styled(RediaccStack).attrs({ direction: 'horizontal' 
   }
 `;
 
-export const FeatureText = styled(Text)`
+export const FeatureText = styled(RediaccText)`
   && {
     color: ${({ theme }) => theme.colors.textPrimary};
   }
@@ -162,7 +162,7 @@ export const FileListItem = styled(RediaccList.Item)<{ $active?: boolean }>`
 
 export const FileMeta = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
-export const FileName = styled(Text).attrs({
+export const FileName = styled(RediaccText).attrs({
   weight: 'medium',
 })`
   && {
@@ -192,7 +192,7 @@ export const FilePreviewHeader = styled(RediaccStack).attrs({ direction: 'horizo
   }
 `;
 
-export const FilePath = styled(Text)`
+export const FilePath = styled(RediaccText)`
   && {
     font-family: monospace;
   }
@@ -236,7 +236,7 @@ export const ChecklistItem = styled.li`
   line-height: ${({ theme }) => theme.lineHeight.RELAXED};
 `;
 
-export const BodyParagraph = styled(Text)`
+export const BodyParagraph = styled(RediaccText)`
   && {
     display: block;
     color: ${({ theme }) => theme.colors.textPrimary};
@@ -245,7 +245,7 @@ export const BodyParagraph = styled(Text)`
 `;
 
 // BodyText accepts weight prop to allow both regular and bold text
-export const BodyText = styled(Text).attrs({
+export const BodyText = styled(RediaccText).attrs({
   color: 'muted',
 })``;
 
@@ -270,6 +270,6 @@ export const SuccessIcon = styled(IconLabel)`
   color: ${({ theme }) => theme.colors.success};
 `;
 
-export const AlertDescription = styled(Text).attrs({
+export const AlertDescription = styled(RediaccText).attrs({
   color: 'secondary',
 })``;

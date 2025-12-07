@@ -1,11 +1,10 @@
-import styled from 'styled-components';
 import { Space, Typography, Form } from 'antd';
+import styled from 'styled-components';
+import { InlineStack } from '@/components/common/styled';
+import { RediaccInput, RediaccAlert } from '@/components/ui';
+import { StyledIcon, NeutralStack, FlexRow } from '@/styles/primitives';
 import { SafetyCertificateOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { StyledIcon, NeutralStack, FlexRow } from '@/styles/primitives';
-import { InlineStack } from '@/components/common/styled';
-import { RediaccInput } from '@/components/ui/Form/Input';
-import { RediaccAlert } from '@/components/ui';
 
 type SpacingKey = keyof typeof DESIGN_TOKENS.SPACING;
 

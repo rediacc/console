@@ -1,19 +1,17 @@
-import type { ColumnsType } from 'antd/es/table';
-import type { TFunction } from 'i18next';
-import {
-  EditOutlined,
-  DeleteOutlined,
-  FunctionOutlined,
-  HistoryOutlined,
-} from '@/utils/optimizedIcons';
 import type { CephCluster } from '@/api/queries/ceph';
-import { createSorter } from '@/core';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
   createActionColumn,
   createTruncatedColumn,
   createVersionColumn,
 } from '@/components/common/columns';
+import { createSorter } from '@/platform';
+import {
+  EditOutlined,
+  DeleteOutlined,
+  FunctionOutlined,
+  HistoryOutlined,
+} from '@/utils/optimizedIcons';
 import { MachineCountBadge } from './components/MachineCountBadge';
 import { getClusterFunctionMenuItems } from './menus';
 import {
@@ -25,6 +23,8 @@ import {
   ManageMachinesButton,
   MachineManageCell,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
+import type { TFunction } from 'i18next';
 
 interface BuildClusterColumnsParams {
   t: TFunction<'ceph' | 'common' | 'machines'>;

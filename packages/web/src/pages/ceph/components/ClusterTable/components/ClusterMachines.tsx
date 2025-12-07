@@ -2,9 +2,6 @@ import React, { useMemo } from 'react';
 import { Table, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CephCluster, useCephClusterMachines } from '@/api/queries/ceph';
-import type { Machine } from '@/types';
-import { createSorter } from '@/core';
-import { formatTimestampAsIs } from '@/core';
 import {
   ExpandedRowContainer,
   ExpandedRowTitle,
@@ -14,7 +11,10 @@ import {
   MachineNameText,
   MachineBridgeTag,
   AssignedDateText,
-} from '../styles';
+} from '@/pages/ceph/components/ClusterTable/styles';
+import { createSorter } from '@/platform';
+import { formatTimestampAsIs } from '@/platform';
+import type { Machine } from '@/types';
 
 interface ClusterMachinesProps {
   cluster: CephCluster;

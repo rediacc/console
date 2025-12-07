@@ -1,9 +1,8 @@
 import styled from 'styled-components';
-import { FilterOutlined } from '@/utils/optimizedIcons';
-import { PageContainer, StyledIcon } from '@/styles/primitives';
 import { ContentStack } from '@/components/common/styled';
-import { RediaccText as UnifiedText, RediaccStack } from '@/components/ui';
-import { RediaccButton } from '@/components/ui/Button';
+import { RediaccText, RediaccStack, RediaccButton } from '@/components/ui';
+import { PageContainer, StyledIcon } from '@/styles/primitives';
+import { FilterOutlined } from '@/utils/optimizedIcons';
 
 export const PageWrapper = PageContainer;
 
@@ -14,7 +13,7 @@ export const FilterField = styled(RediaccStack).attrs({ direction: 'vertical', g
   width: 100%;
 `;
 
-export const FilterLabel = styled(UnifiedText)`
+export const FilterLabel = styled(RediaccText)`
   && {
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
@@ -65,6 +64,6 @@ export const ActionIcon = styled(StyledIcon).attrs<{ $color: string }>(({ $color
 }))<{ $color: string }>``;
 
 // Use Text from unified component with description variant
-export const DescriptionText = styled(UnifiedText).attrs({
+export const DescriptionText = styled(RediaccText).attrs({
   variant: 'caption',
 })``;

@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Alert, Space, Tooltip, Statistic, Row, Col, Select } from 'antd';
-import { RediaccRadio as Radio } from '@/components/ui/Form';
+import * as d3 from 'd3';
+import { useTranslation } from 'react-i18next';
+import { useCompanyArchitecture } from '@/api/queries/architecture';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccRadio } from '@/components/ui';
+import { PageCard, RediaccText, RediaccButton } from '@/components/ui';
+import { useTheme } from '@/context/ThemeContext';
 import {
   FullscreenOutlined,
   FullscreenExitOutlined,
@@ -15,15 +21,8 @@ import {
   CheckOutlined,
   MinusCircleOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useCompanyArchitecture } from '@/api/queries/architecture';
-import { useTheme } from '@/context/ThemeContext';
-import * as d3 from 'd3';
-import { PageCard, RediaccText as Text } from '@/components/ui';
-import { RediaccButton as Button } from '@/components/ui';
-import { getArchitecturePalette } from './architectureTheme';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
 import type { CompanyDataGraph, CompanyGraphNode } from '@rediacc/shared/types';
+import { getArchitecturePalette } from './architectureTheme';
 import {
   PageWrapper,
   ContentStack,
@@ -687,7 +686,7 @@ const ArchitecturePage: React.FC = () => {
           showIcon
           action={
             <Tooltip title={t('actions.retry', { ns: 'common' })}>
-              <Button
+              <RediaccButton
                 size="sm"
                 iconOnly
                 icon={<ReloadOutlined />}
@@ -729,23 +728,23 @@ const ArchitecturePage: React.FC = () => {
             <HeaderRow>
               <SectionTitleText>{t('architecture.title')}</SectionTitleText>
               <ActionGroup>
-                <Radio.Group
+                <RediaccRadio.Group
                   value={viewMode}
                   onChange={(e) => setViewMode(e.target.value)}
                   data-testid="architecture-view-mode-selector"
                 >
-                  <Radio.Button value="hierarchy" data-testid="architecture-view-hierarchy">
+                  <RediaccRadio.Button value="hierarchy" data-testid="architecture-view-hierarchy">
                     {t('architecture.viewHierarchy')}
-                  </Radio.Button>
-                  <Radio.Button value="force" data-testid="architecture-view-force">
+                  </RediaccRadio.Button>
+                  <RediaccRadio.Button value="force" data-testid="architecture-view-force">
                     {t('architecture.viewForce')}
-                  </Radio.Button>
-                  <Radio.Button value="radial" data-testid="architecture-view-radial">
+                  </RediaccRadio.Button>
+                  <RediaccRadio.Button value="radial" data-testid="architecture-view-radial">
                     {t('architecture.viewRadial')}
-                  </Radio.Button>
-                </Radio.Group>
+                  </RediaccRadio.Button>
+                </RediaccRadio.Group>
                 <Tooltip title={t('actions.refresh', { ns: 'common' })}>
-                  <Button
+                  <RediaccButton
                     iconOnly
                     icon={<ReloadOutlined />}
                     onClick={() => refetch()}
@@ -759,7 +758,7 @@ const ArchitecturePage: React.FC = () => {
                       : t('actions.fullscreen', { ns: 'common' })
                   }
                 >
-                  <Button
+                  <RediaccButton
                     iconOnly
                     icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
                     onClick={toggleFullscreen}
@@ -772,7 +771,7 @@ const ArchitecturePage: React.FC = () => {
             <FiltersRow>
               <FilterLabel>
                 <FilterOutlined />
-                <Text weight="bold">{t('architecture.filterEntities', { ns: 'system' })}</Text>
+                <RediaccText weight="bold">{t('architecture.filterEntities', { ns: 'system' })}</RediaccText>
               </FilterLabel>
               <FilterSelectWrapper>
                 <Select
@@ -801,7 +800,7 @@ const ArchitecturePage: React.FC = () => {
               </FilterSelectWrapper>
               <FilterActions>
                 <Tooltip title={t('architecture.selectAll', { ns: 'system' })}>
-                  <Button
+                  <RediaccButton
                     iconOnly
                     size="sm"
                     icon={<CheckOutlined />}
@@ -811,7 +810,7 @@ const ArchitecturePage: React.FC = () => {
                   />
                 </Tooltip>
                 <Tooltip title={t('architecture.clearAll', { ns: 'system' })}>
-                  <Button
+                  <RediaccButton
                     iconOnly
                     size="sm"
                     icon={<MinusCircleOutlined />}
@@ -911,7 +910,7 @@ const ArchitecturePage: React.FC = () => {
             }).map(([type, label]) => (
               <LegendItem key={type} data-testid={`architecture-legend-${type}`}>
                 <LegendIcon $color={getNodeColor(type)}>{getNodeIcon(type)}</LegendIcon>
-                <Text>{label}</Text>
+                <RediaccText>{label}</RediaccText>
               </LegendItem>
             ))}
           </LegendGrid>

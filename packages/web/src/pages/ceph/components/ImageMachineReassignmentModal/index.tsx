@@ -7,6 +7,7 @@ import {
   type AvailableMachine,
 } from '@/api/queries/ceph';
 import { useUpdateImageMachineAssignment } from '@/api/queries/cephMutations';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {
   StyledModal,
   TitleStack,
@@ -25,7 +26,6 @@ import {
   HelperText,
   LoadingContainer,
 } from './styles';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
 
 interface ImageMachineReassignmentModalProps {
   open: boolean;

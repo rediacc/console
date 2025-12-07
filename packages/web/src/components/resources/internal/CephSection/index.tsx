@@ -1,4 +1,10 @@
 import React, { type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useMachineAssignmentStatus } from '@/api/queries/ceph';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
+import { IconWrapper } from '@/components/ui';
+import type { Machine, MachineAssignmentType } from '@/types';
 import {
   DatabaseOutlined,
   CloudServerOutlined,
@@ -7,10 +13,6 @@ import {
   HistoryOutlined,
   RightOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import type { Machine, MachineAssignmentType } from '@/types';
-import { useMachineAssignmentStatus } from '@/api/queries/ceph';
-import MachineAssignmentStatusBadge from '../../MachineAssignmentStatusBadge';
 import {
   LoadingState,
   SectionDivider,
@@ -25,8 +27,6 @@ import {
   ActionButton,
   ButtonLabel,
 } from './styles';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { IconWrapper } from '@/components/ui';
 
 interface CephSectionProps {
   machine: Machine;

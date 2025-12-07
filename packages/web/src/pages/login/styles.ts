@@ -1,7 +1,6 @@
-import styled from 'styled-components';
 import { Form, Input as AntdInput } from 'antd';
-import { RediaccInput, RediaccPasswordInput as PasswordInput } from '@/components/ui/Form';
-import { RediaccButton } from '@/components/ui/Button';
+import styled from 'styled-components';
+import { RediaccInput, RediaccPasswordInput, RediaccButton } from '@/components/ui';
 import {
   fadeInAnimation,
   ErrorAlert,
@@ -156,4 +155,4 @@ export const TFAButtonContainer = styled(FlexRow).attrs({ $justify: 'flex-end', 
 
 // Use unified Form components with medium size (no wrapper needed)
 export const StyledInput = RediaccInput;
-export const StyledPasswordInput = PasswordInput;
+export const StyledPasswordInput = RediaccPasswordInput;

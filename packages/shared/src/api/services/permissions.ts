@@ -34,7 +34,7 @@ export function createPermissionsService(client: ApiClient) {
     getGroupDetails: async (groupName: string): Promise<Permission[]> => {
       const response = await client.get<Permission>(
         endpoints.permissions.getPermissionGroupDetails,
-        { groupName }
+        { permissionGroupName: groupName }
       );
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<Permission>(1),
@@ -43,20 +43,20 @@ export function createPermissionsService(client: ApiClient) {
     },
 
     createGroup: (groupName: string) =>
-      client.post(endpoints.permissions.createPermissionGroup, { groupName }),
+      client.post(endpoints.permissions.createPermissionGroup, { permissionGroupName: groupName }),
 
     deleteGroup: (groupName: string) =>
-      client.post(endpoints.permissions.deletePermissionGroup, { groupName }),
+      client.post(endpoints.permissions.deletePermissionGroup, { permissionGroupName: groupName }),
 
     addPermission: (groupName: string, permissionName: string) =>
       client.post(endpoints.permissions.createPermissionInGroup, {
-        groupName,
+        permissionGroupName: groupName,
         permissionName,
       }),
 
     removePermission: (groupName: string, permissionName: string) =>
       client.post(endpoints.permissions.deletePermissionFromGroup, {
-        groupName,
+        permissionGroupName: groupName,
         permissionName,
       }),
   };

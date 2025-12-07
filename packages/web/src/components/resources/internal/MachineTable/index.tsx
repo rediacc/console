@@ -1,7 +1,24 @@
 ﻿import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { Table, Button, Space, Tooltip } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { useMachines } from '@/api/queries/machines';
+import { useRepos } from '@/api/queries/repos';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
+import { featureFlags } from '@/config/featureFlags';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
+import { AssignToClusterModal } from '@/pages/ceph/components/AssignToClusterModal';
+import { RemoveFromClusterModal } from '@/pages/ceph/components/RemoveFromClusterModal';
+import { ViewAssignmentStatusModal } from '@/pages/ceph/components/ViewAssignmentStatusModal';
+import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
+import { getMachineRepos as coreGetMachineRepos } from '@/platform';
+import { useLocalizedFunctions } from '@/services/functionsService';
+import { usePingFunction } from '@/services/pingService';
+import { RootState } from '@/store/store';
+import type { Machine } from '@/types';
 import {
   InboxOutlined,
   TeamOutlined,
@@ -13,26 +30,8 @@ import {
   RightOutlined,
   InfoCircleOutlined,
 } from '@/utils/optimizedIcons';
-import { useMachines } from '@/api/queries/machines';
-import type { Machine } from '@/types';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
-import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
-import { usePingFunction } from '@/services/pingService';
-import { useLocalizedFunctions } from '@/services/functionsService';
-import { useRepos } from '@/api/queries/repos';
-import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
-import { MachineVaultStatusPanel } from '../MachineVaultStatusPanel';
-import { AssignToClusterModal } from '@/pages/ceph/components/AssignToClusterModal';
-import { RemoveFromClusterModal } from '@/pages/ceph/components/RemoveFromClusterModal';
-import { ViewAssignmentStatusModal } from '@/pages/ceph/components/ViewAssignmentStatusModal';
-import { featureFlags } from '@/config/featureFlags';
-import { getMachineRepos as coreGetMachineRepos } from '@/core';
-import type { DeployedRepo } from '@/core/services/machine';
+import type { DeployedRepo } from '@rediacc/shared/services/machine';
 import { buildMachineTableColumns } from './columns';
-import type { MachineFunctionAction } from './columns';
 import {
   MachineTableWrapper,
   TableContainer,
@@ -57,6 +56,7 @@ import {
   GroupHeaderTag,
   StyledTag,
 } from './styles';
+import type { MachineFunctionAction } from './columns';
 // Local type for group variants - maps to preset prop
 type GroupVariant = 'repo' | 'bridge' | 'team' | 'region' | 'status' | 'grand';
 

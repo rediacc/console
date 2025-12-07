@@ -1,7 +1,5 @@
 import styled from 'styled-components';
-import { CloudServerOutlined, TeamOutlined, DesktopOutlined } from '@/utils/optimizedIcons';
 import { RediaccBadge } from '@/components/ui';
-import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
 import { RediaccTag, RediaccButton } from '@/components/ui';
 import {
   NameCell,
@@ -9,7 +7,9 @@ import {
   ExpandIcon,
   ActionsRow,
   TableWrapper,
-} from '../../styles/tableAliases';
+} from '@/pages/ceph/styles/tableAliases';
+import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
+import { CloudServerOutlined, TeamOutlined, DesktopOutlined } from '@/utils/optimizedIcons';
 
 export const TableContainer = styled(BaseTableContainer)`
   .cluster-row {

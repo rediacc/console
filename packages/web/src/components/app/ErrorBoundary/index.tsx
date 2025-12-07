@@ -1,7 +1,7 @@
 import React, { Component, ReactNode } from 'react';
-import { Result } from 'antd';
-import { RediaccButton as Button } from '@/components/ui';
 import { ReloadOutlined, BugOutlined } from '@ant-design/icons';
+import { Result } from 'antd';
+import { RediaccButton } from '@/components/ui';
 import { telemetryService } from '@/services/telemetryService';
 import { FallbackContainer, ErrorDetails, ErrorSummary, ErrorContent } from './styles';
 
@@ -134,17 +134,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               </div>
             }
             extra={[
-              <Button key="retry" onClick={this.handleRetry} icon={<BugOutlined />}>
+              <RediaccButton key="retry" onClick={this.handleRetry} icon={<BugOutlined />}>
                 Try Again
-              </Button>,
-              <Button
+              </RediaccButton>,
+              <RediaccButton
                 key="reload"
                 variant="primary"
                 onClick={this.handleReload}
                 icon={<ReloadOutlined />}
               >
                 Reload Page
-              </Button>,
+              </RediaccButton>,
             ]}
           />
         </FallbackContainer>

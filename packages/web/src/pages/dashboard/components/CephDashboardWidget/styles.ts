@@ -1,8 +1,8 @@
-import styled from 'styled-components';
 import { Statistic } from 'antd';
-import { FlexColumn, FlexRow } from '@/styles/primitives';
+import styled from 'styled-components';
 import { ActionGroup } from '@/components/common/styled';
 import { RediaccText, RediaccCard, RediaccList } from '@/components/ui';
+import { FlexColumn, FlexRow } from '@/styles/primitives';
 
 export const WidgetCard = styled(RediaccCard)`
   border: 1px solid var(--color-border-secondary);

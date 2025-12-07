@@ -1,5 +1,5 @@
-import styled from 'styled-components';
 import { Switch as AntSwitch } from 'antd';
+import styled from 'styled-components';
 
 /**
  * Styled RediaccSwitch component

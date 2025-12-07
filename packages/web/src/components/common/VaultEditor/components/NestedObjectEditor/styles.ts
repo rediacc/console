@@ -1,11 +1,8 @@
-import styled from 'styled-components';
 import { Collapse, Form } from 'antd';
-import { FlexColumn } from '@/styles/primitives';
+import styled from 'styled-components';
 import { InlineStack, ActionGroup } from '@/components/common/styled';
-import { RediaccButton as Button, RediaccCard } from '@/components/ui';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccTag } from '@/components/ui/Tag';
-import { RediaccInput } from '@/components/ui/Form';
+import { RediaccButton, RediaccCard, RediaccText, RediaccTag, RediaccInput } from '@/components/ui';
+import { FlexColumn } from '@/styles/primitives';
 
 export const EditorContainer = styled.div`
   width: 100%;
@@ -105,7 +102,7 @@ export const KeyInput = styled(RediaccInput).attrs({
   }
 `;
 
-export const PrimaryActionButton = styled(Button).attrs({
+export const PrimaryActionButton = styled(RediaccButton).attrs({
   variant: 'primary',
   size: 'sm',
 })`
@@ -114,7 +111,7 @@ export const PrimaryActionButton = styled(Button).attrs({
   }
 `;
 
-export const SecondaryActionButton = styled(Button).attrs({
+export const SecondaryActionButton = styled(RediaccButton).attrs({
   size: 'sm',
 })``;
 
@@ -148,7 +145,7 @@ export const TypeTag = styled(RediaccTag).attrs({
 
 export const PanelActions = InlineStack;
 
-export const PanelDeleteButton = styled(Button).attrs({ iconOnly: true, variant: 'danger' })`
+export const PanelDeleteButton = styled(RediaccButton).attrs({ iconOnly: true, variant: 'danger' })`
   && {
     padding: 0;
   }

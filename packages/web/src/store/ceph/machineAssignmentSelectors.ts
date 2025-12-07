@@ -1,8 +1,8 @@
 import { createSelector } from '@reduxjs/toolkit';
-import type { RootState } from '@/store/store';
-import type { Machine, MachineAssignmentType } from '@/types';
 import { MachineAssignmentService } from '@/features/ceph';
 import type { ValidationResult } from '@/features/ceph';
+import type { RootState } from '@/store/store';
+import type { Machine, MachineAssignmentType } from '@/types';
 import type { OperationHistoryEntry } from './machineAssignmentSlice';
 
 type OperationResult = OperationHistoryEntry['result'];

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ClockCircleOutlined, LogoutOutlined } from '@/utils/optimizedIcons';
-import { RootState } from '@/store/store';
+import { IconWrapper } from '@/components/ui';
 import { hideSessionExpiredDialog, setStayLoggedOutMode } from '@/store/auth/authSlice';
+import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
+import { ClockCircleOutlined, LogoutOutlined } from '@/utils/optimizedIcons';
 import {
   StyledModal,
   TitleStack,
@@ -14,7 +15,6 @@ import {
   CountdownText,
   FooterButton,
 } from './styles';
-import { IconWrapper } from '@/components/ui';
 
 const COUNTDOWN_DURATION = 60; // 60 seconds
 

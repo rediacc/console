@@ -1,5 +1,5 @@
-import styled, { css } from 'styled-components';
 import { Card as AntCard } from 'antd';
+import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { CardVariant, CardSize } from './RediaccCard.types';
 

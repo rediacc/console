@@ -7,6 +7,14 @@ import { withSpinner } from '../utils/spinner.js';
 import { handleError } from '../utils/errors.js';
 import type { CompanyVaultRecord } from '@rediacc/shared/types';
 import type { OutputFormat } from '../types/index.js';
+import {
+  canDeleteGrandRepo,
+  canPromoteToGrand,
+  findSiblingClones,
+  isCredential,
+  type RepoWithRelations,
+} from '@rediacc/shared/services/repo';
+
 export function registerRepoCommands(program: Command): void {
   const repo = program.command('repo').description('Repository management commands');
 
@@ -105,7 +113,7 @@ export function registerRepoCommands(program: Command): void {
       }
     });
 
-  // repo delete
+  // repo delete - enhanced with shared orchestration
   repo
     .command('delete <name>')
     .description('Delete a repository')
@@ -122,8 +130,49 @@ export function registerRepoCommands(program: Command): void {
           process.exit(1);
         }
 
+        // Fetch all repos to validate deletion
+        const allRepos = await withSpinner(
+          'Checking repository relationships...',
+          () => api.repos.list(opts.team as string),
+          'Repository relationships checked'
+        );
+
+        // Find the target repo
+        const targetRepo = allRepos.find(
+          (r: RepoWithRelations) => r.repoName === name && (r.repoTag === options.tag || !options.tag)
+        );
+
+        if (!targetRepo) {
+          outputService.error(`Repository "${name}:${options.tag}" not found`);
+          process.exit(1);
+        }
+
+        // Use shared orchestration to validate deletion
+        if (isCredential(targetRepo)) {
+          const validation = canDeleteGrandRepo(targetRepo, allRepos);
+
+          if (!validation.canDelete) {
+            outputService.error(`Cannot delete grand repo: ${validation.reason}`);
+
+            if (validation.childClones.length > 0) {
+              outputService.info('\nAffected child clones:');
+              validation.childClones.forEach((clone) => {
+                outputService.info(`  - ${clone.repoName}${clone.repoTag ? `:${clone.repoTag}` : ''}`);
+              });
+              outputService.info('\nDelete or promote child clones first.');
+            }
+            process.exit(1);
+          }
+        }
+
         if (!options.force) {
           const { askConfirm } = await import('../utils/prompt.js');
+
+          // Show warning for grand repos
+          if (isCredential(targetRepo)) {
+            outputService.warn('This is a grand repo (credential). Deleting it is irreversible.');
+          }
+
           const confirm = await askConfirm(
             `Delete repository "${name}:${options.tag}"? This cannot be undone.`
           );
@@ -143,12 +192,13 @@ export function registerRepoCommands(program: Command): void {
       }
     });
 
-  // repo promote
+  // repo promote - enhanced with shared orchestration
   repo
     .command('promote <name>')
     .description('Promote a fork to grand status')
     .option('-t, --team <name>', 'Team name')
     .option('--tag <tag>', 'Repository tag', 'main')
+    .option('-f, --force', 'Skip confirmation')
     .action(async (name, options) => {
       try {
         await authService.requireAuth();
@@ -159,10 +209,53 @@ export function registerRepoCommands(program: Command): void {
           process.exit(1);
         }
 
+        // Fetch all repos to validate promotion
+        const allRepos = await withSpinner(
+          'Checking repository relationships...',
+          () => api.repos.list(opts.team as string),
+          'Repository relationships checked'
+        );
+
+        // Find the target repo
+        const targetRepo = allRepos.find(
+          (r: RepoWithRelations) => r.repoName === name && (r.repoTag === options.tag || !options.tag)
+        );
+
+        if (!targetRepo) {
+          outputService.error(`Repository "${name}:${options.tag}" not found`);
+          process.exit(1);
+        }
+
+        // Use shared orchestration to validate promotion
+        const validation = canPromoteToGrand(targetRepo);
+
+        if (!validation.canPromote) {
+          outputService.error(`Cannot promote: ${validation.reason}`);
+          process.exit(1);
+        }
+
+        // Find and display affected siblings
+        const { siblingClones, currentGrandName } = findSiblingClones(targetRepo, allRepos);
+
+        if (!options.force && siblingClones.length > 0) {
+          outputService.info(`\nThis will separate "${name}" from grand repo "${currentGrandName}"`);
+          outputService.info(`\n${siblingClones.length} sibling clone(s) will remain linked to the original grand:`);
+          siblingClones.forEach((sibling) => {
+            outputService.info(`  - ${sibling.repoName}${sibling.repoTag ? `:${sibling.repoTag}` : ''}`);
+          });
+
+          const { askConfirm } = await import('../utils/prompt.js');
+          const confirm = await askConfirm('\nProceed with promotion?');
+          if (!confirm) {
+            outputService.info('Cancelled');
+            return;
+          }
+        }
+
         await withSpinner(
           `Promoting repository "${name}:${options.tag}"...`,
           () => api.repos.promoteToGrand(opts.team as string, name),
-          `Repository "${name}:${options.tag}" promoted`
+          `Repository "${name}:${options.tag}" promoted to grand status`
         );
       } catch (error) {
         handleError(error);

@@ -1,36 +1,35 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
+import { useQueryClient } from '@tanstack/react-query';
 import { Layout, Dropdown, message, Drawer } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useSelector, useDispatch } from 'react-redux';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import apiClient from '@/api/client';
+import { useCompanyInfo } from '@/api/queries/dashboard';
+import logoBlack from '@/assets/logo_black.png';
+import logoWhite from '@/assets/logo_white.png';
+import SandboxWarning from '@/components/common/SandboxWarning';
+import { useTelemetry } from '@/components/common/TelemetryProvider';
+import NotificationBell from '@/components/layout/MainLayout/components/NotificationBell';
+import { RediaccButton } from '@/components/ui';
+import { featureFlags } from '@/config/featureFlags';
+import { useTheme } from '@/context/ThemeContext';
+import { masterPasswordService } from '@/services/masterPasswordService';
+import { selectUser, selectCompany } from '@/store/auth/authSelectors';
+import { logout, updateCompany } from '@/store/auth/authSlice';
+import { RootState } from '@/store/store';
+import { toggleUiMode } from '@/store/ui/uiSlice';
+import { clearAuthData, saveAuthData, getAuthData } from '@/utils/auth';
 import {
   UserOutlined,
   MenuOutlined,
   SmileOutlined,
   SafetyCertificateOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { selectUser, selectCompany } from '@/store/auth/authSelectors';
-import { logout, updateCompany } from '@/store/auth/authSlice';
-import { masterPasswordService } from '@/services/masterPasswordService';
-import { toggleUiMode } from '@/store/ui/uiSlice';
-import { clearAuthData, saveAuthData, getAuthData } from '@/utils/auth';
-import apiClient from '@/api/client';
-import NotificationBell from '@/components/layout/MainLayout/components/NotificationBell';
-import { useTheme } from '@/context/ThemeContext';
-import logoBlack from '@/assets/logo_black.png';
-import logoWhite from '@/assets/logo_white.png';
-import { RootState } from '@/store/store';
-import { useCompanyInfo } from '@/api/queries/dashboard';
-import { useQueryClient } from '@tanstack/react-query';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import SandboxWarning from '@/components/common/SandboxWarning';
-import { useTelemetry } from '@/components/common/TelemetryProvider';
-import { featureFlags } from '@/config/featureFlags';
-import { getMenuItems } from './menuItems';
 import { buildMenuItems, flattenMenuRoutes } from './helpers';
-import { UserMenu } from './UserMenu';
+import { getMenuItems } from './menuItems';
 import { Sidebar } from './Sidebar';
-import { SIDEBAR_EXPANDED_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from './types';
 import {
   HEADER_HEIGHT,
   MainLayoutContainer,
@@ -46,7 +45,8 @@ import {
   TransitionText,
   ContentWrapper,
 } from './styles';
-import { RediaccButton } from '@/components/ui';
+import { SIDEBAR_EXPANDED_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from './types';
+import { UserMenu } from './UserMenu';
 
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);

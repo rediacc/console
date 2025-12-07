@@ -1,5 +1,5 @@
-import styled from 'styled-components';
 import { Badge as AntBadge } from 'antd';
+import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { BadgeVariant, BadgeSize } from './RediaccBadge.types';
 

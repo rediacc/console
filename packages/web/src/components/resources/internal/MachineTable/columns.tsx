@@ -1,18 +1,17 @@
 import { Space } from 'antd';
-import type { ColumnsType } from 'antd/es/table/interface';
 import { TFunction } from 'i18next';
-import { createSorter, createCustomSorter } from '@/core';
-import type { Machine } from '@/types';
-import MachineAssignmentStatusCell from '../../MachineAssignmentStatusCell';
-import { LocalActionsMenu } from '../LocalActionsMenu';
-import { showMessage } from '@/utils/messages';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
   createActionColumn,
   createStatusColumn,
   createTruncatedColumn,
 } from '@/components/common/columns';
+import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
+import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
+import { createSorter, createCustomSorter } from '@/platform';
+import type { usePingFunction } from '@/services/pingService';
+import type { Machine } from '@/types';
+import { showMessage } from '@/utils/messages';
 import {
   EditOutlined,
   FunctionOutlined,
@@ -24,8 +23,9 @@ import {
   CheckCircleOutlined,
   DisconnectOutlined,
 } from '@/utils/optimizedIcons';
-import type { usePingFunction } from '@/services/pingService';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { MachineNameIcon, StyledTag, StyledBadge } from './styles';
+import type { ColumnsType } from 'antd/es/table/interface';
 
 type ExecutePingForMachineAndWait = ReturnType<
   typeof usePingFunction

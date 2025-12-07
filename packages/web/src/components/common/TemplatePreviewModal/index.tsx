@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import type { ComponentPropsWithoutRef } from 'react';
 import { Row, Col, List } from 'antd';
-import { RediaccTag as Tag } from '@/components/ui';
+import { useTranslation } from 'react-i18next';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccTag } from '@/components/ui';
+import { RediaccButton } from '@/components/ui';
+import { templateService } from '@/services/templateService';
+import { TabLabel } from '@/styles/primitives';
+import { NoMarginTitle } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import {
   RocketOutlined,
@@ -12,15 +21,6 @@ import {
   CheckCircleOutlined,
   FileOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import ReactMarkdown from 'react-markdown';
-import type { Components as MarkdownComponents } from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { templateService } from '@/services/templateService';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { TabLabel } from '@/styles/primitives';
 import {
   StyledModal,
   TitleStack,
@@ -62,8 +62,8 @@ import {
   IconLabel,
   SuccessIcon,
 } from './styles';
-import { NoMarginTitle } from '@/styles/primitives';
-import { RediaccButton } from '@/components/ui';
+import type { Components as MarkdownComponents } from 'react-markdown';
+import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 
 interface TemplateFile {
   name: string;
@@ -504,9 +504,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           <div>
             <NoMarginTitle level={4}>{modalTitle}</NoMarginTitle>
             {context === 'repo-creation' && (
-              <Tag variant="primary" data-testid="template-details-name-tag">
+              <RediaccTag variant="primary" data-testid="template-details-name-tag">
                 {effectiveTemplate.name}
-              </Tag>
+              </RediaccTag>
             )}
             {context === 'marketplace' && effectiveTemplate.difficulty && (
               <DifficultyTag variant={getDifficultyColor(effectiveTemplate.difficulty)}>

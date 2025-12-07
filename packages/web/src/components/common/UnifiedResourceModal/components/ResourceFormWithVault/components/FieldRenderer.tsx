@@ -1,9 +1,9 @@
 import { Input } from 'antd';
 import { Controller, Control } from 'react-hook-form';
+import { SizeInputGroup, SizeNumberInput, SizeUnitSelect } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/styles';
+import type { FormFieldConfig } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/types';
+import { RediaccSelect } from '@/components/ui';
 import type { FieldValues } from 'react-hook-form';
-import type { FormFieldConfig } from '../types';
-import { SizeInputGroup, SizeNumberInput, SizeUnitSelect } from '../styles';
-import { RediaccSelect as Select } from '@/components/ui';
 
 interface FieldRendererProps<T extends FieldValues> {
   field: FormFieldConfig<T>;
@@ -19,7 +19,7 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
           control={control}
           rules={field.rules}
           render={({ field: controllerField }) => (
-            <Select
+            <RediaccSelect
               {...controllerField}
               fullWidth
               options={field.options}

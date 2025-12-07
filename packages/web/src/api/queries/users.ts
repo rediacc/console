@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/api/client';
 import { createMutation } from '@/hooks/api/mutationFactory';
+import i18n from '@/i18n/config';
 import { hashPassword } from '@/utils/auth';
 import { showMessage } from '@/utils/messages';
-import i18n from '@/i18n/config';
 import { createErrorHandler } from '@/utils/mutationUtils';
-import { api } from '@/api/client';
 import type { PermissionGroup, User, UserRequest, UserVault } from '@rediacc/shared/types';
 
 // Get all users

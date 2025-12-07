@@ -66,7 +66,7 @@
   "deleteWarning": "Are you sure you want to delete machine \"{{name}}\"? This action cannot be undone.",
   "description": "Description (optional)",
   "descriptionPlaceholder": "Add a custom description for this queue item",
-  "cephCluster": "Distributed Storage",
+  "cephCluster": "Ceph",
   "editMachine": "Edit Machine",
   "experimental": "experimental",
   "failed": "Failed",

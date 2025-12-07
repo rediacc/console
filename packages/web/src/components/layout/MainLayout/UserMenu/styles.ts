@@ -1,9 +1,9 @@
-import styled from 'styled-components';
 import { Avatar, Segmented } from 'antd';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { FlexColumn } from '@/styles/primitives';
+import styled from 'styled-components';
 import { InlineStack, FlexBetween } from '@/components/common/styled';
 import { RediaccText, RediaccButton, RediaccTag, RediaccDivider } from '@/components/ui';
+import { FlexColumn } from '@/styles/primitives';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 export const MenuContainer = styled(FlexColumn).attrs({ $gap: 'MD' })`
   width: 320px;

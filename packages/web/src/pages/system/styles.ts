@@ -12,10 +12,10 @@
  *   import { PageWrapper, SectionStack, ModalStack, etc. } from '@/components/ui'
  */
 
-import styled from 'styled-components';
 import { Form, Space } from 'antd';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import styled from 'styled-components';
 import { RediaccCard, RediaccBadge, RediaccAlert } from '@/components/ui';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const SpaceCompact = Space.Compact;
 

@@ -1,5 +1,5 @@
-import styled, { css } from 'styled-components';
 import { Tabs as AntTabs } from 'antd';
+import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { TabsVariant, TabsSize } from './RediaccTabs.types';
 

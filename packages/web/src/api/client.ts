@@ -6,10 +6,10 @@ import axios, {
   AxiosRequestConfig,
   isAxiosError,
 } from 'axios';
-import type { ApiResponse } from '@rediacc/shared/types';
 import { normalizeResponse, createApiServices } from '@rediacc/shared/api';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import { endpoints } from '@rediacc/shared/endpoints';
+import type { ApiResponse } from '@rediacc/shared/types';
 
 // Extend axios config to include metadata
 declare module 'axios' {

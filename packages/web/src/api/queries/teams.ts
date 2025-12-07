@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { api } from '@/api/client';
+import { QUERY_KEYS, QUERY_KEY_STRINGS } from '@/api/queryKeys';
 import {
   createResourceMutation,
   createVaultUpdateMutation,
   createMutation,
 } from '@/hooks/api/mutationFactory';
-import { QUERY_KEYS, QUERY_KEY_STRINGS } from '@/api/queryKeys';
-import { api } from '@/api/client';
 import type { Team, TeamMember } from '@rediacc/shared/types';
 
 // Get all teams

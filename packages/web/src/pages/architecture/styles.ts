@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
 import { ContentStack, CenteredState, ActionGroup } from '@/components/common/styled';
-import { RediaccText as Text, RediaccStack } from '@/components/ui';
+import { RediaccText, RediaccStack } from '@/components/ui';
+import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
 
 export const PageWrapper = PageContainer;
 
@@ -91,7 +91,7 @@ export const LegendIcon = styled.div<{ $color: string }>`
   background-color: ${({ $color }) => $color};
 `;
 
-export const SectionTitleText = styled(Text).attrs({ size: 'xl', weight: 'semibold' })`
+export const SectionTitleText = styled(RediaccText).attrs({ size: 'xl', weight: 'semibold' })`
   && {
     margin: 0;
     color: ${({ theme }) => theme.colors.textPrimary};

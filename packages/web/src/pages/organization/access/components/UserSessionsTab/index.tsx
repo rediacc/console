@@ -1,5 +1,20 @@
 import React, { useState } from 'react';
 import { Table, Button, Row, Col, Space, Popconfirm, message, Tooltip } from 'antd';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import { useUserRequests, useDeleteUserRequest, type UserRequest } from '@/api/queries/users';
+import {
+  createActionColumn,
+  createDateColumn,
+  createStatusColumn,
+  createTruncatedColumn,
+} from '@/components/common/columns';
+import { InlineStack } from '@/components/common/styled';
+import { createDateSorter } from '@/platform';
+import { selectUser } from '@/store/auth/authSelectors';
+import { TableContainer } from '@/styles/primitives';
 import {
   SearchOutlined,
   CloseCircleOutlined,
@@ -9,22 +24,6 @@ import {
   CheckCircleOutlined,
   StopOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useUserRequests, useDeleteUserRequest, type UserRequest } from '@/api/queries/users';
-import { useSelector } from 'react-redux';
-import { selectUser } from '@/store/auth/authSelectors';
-import type { ColumnsType } from 'antd/es/table';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import { createDateSorter } from '@/core';
-import {
-  createActionColumn,
-  createDateColumn,
-  createStatusColumn,
-  createTruncatedColumn,
-} from '@/components/common/columns';
-import { InlineStack } from '@/components/common/styled';
-import { TableContainer } from '@/styles/primitives';
 import {
   TabContainer,
   StatCard,
@@ -39,6 +38,7 @@ import {
   CellText,
   SummaryText,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 dayjs.extend(relativeTime);
 

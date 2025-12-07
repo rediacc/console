@@ -99,12 +99,12 @@ export function createAuthService(client: ApiClient) {
       sessionName: string,
       options: ForkSessionOptions = {}
     ): Promise<ForkSessionCredentials> => {
-      const payload: Record<string, unknown> = { sessionName };
+      const payload: Record<string, unknown> = { childName: sessionName };
       if (options.permissionsName && options.permissionsName.trim() !== '') {
         payload.forkedPermissionsName = options.permissionsName;
       }
       if (options.expiresInHours !== undefined) {
-        payload.expiresInHours = options.expiresInHours;
+        payload.tokenExpirationHours = options.expiresInHours;
       }
       const response = await client.post(endpoints.auth.forkAuthenticationRequest, payload);
 

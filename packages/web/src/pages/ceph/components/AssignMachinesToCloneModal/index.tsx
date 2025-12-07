@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Tabs } from 'antd';
-import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import {
   useAvailableMachinesForClone,
@@ -13,12 +12,11 @@ import {
   useUpdateCloneMachineAssignments,
   useUpdateCloneMachineRemovals,
 } from '@/api/queries/cephMutations';
-import { showMessage } from '@/utils/messages';
-import type { ColumnsType } from 'antd/es/table';
-import type { TableRowSelection } from 'antd/es/table/interface';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { createTruncatedColumn } from '@/components/common/columns';
-import { RediaccButton as Button } from '@/components/ui';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccButton } from '@/components/ui';
+import { showMessage } from '@/utils/messages';
+import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';
 import {
   StyledModal,
   TitleStack,
@@ -37,6 +35,8 @@ import {
   BridgeTag,
   SelectionCount,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
+import type { TableRowSelection } from 'antd/es/table/interface';
 
 interface AssignMachinesToCloneModalProps {
   open: boolean;
@@ -254,10 +254,10 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
   const footerButtons =
     activeTab === 'assign'
       ? [
-          <Button key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
+          <RediaccButton key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
             {t('common:actions.cancel')}
-          </Button>,
-          <Button
+          </RediaccButton>,
+          <RediaccButton
             key="assign"
             loading={assignMutation.isPending}
             disabled={selectedMachines.length === 0}
@@ -265,13 +265,13 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             data-testid="assign-clone-submit"
           >
             {t('ceph:machines.assignMachine')}
-          </Button>,
+          </RediaccButton>,
         ]
       : [
-          <Button key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
+          <RediaccButton key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
             {t('common:actions.cancel')}
-          </Button>,
-          <Button
+          </RediaccButton>,
+          <RediaccButton
             key="remove"
             variant="danger"
             loading={removeMutation.isPending}
@@ -280,7 +280,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             data-testid="assign-clone-remove-submit"
           >
             {t('ceph:machines.unassignMachine')}
-          </Button>,
+          </RediaccButton>,
         ];
 
   return (

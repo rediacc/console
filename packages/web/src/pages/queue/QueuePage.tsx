@@ -1,37 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { Modal, Tabs, Tooltip, Dropdown, Space } from 'antd';
-import styled, { useTheme as useStyledTheme } from 'styled-components';
 import type { ColumnsType } from 'antd/es/table';
-import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay';
-import { renderTimestamp, renderBoolean } from '@/components/common/columns';
-import { RediaccTag } from '@/components/ui/Tag';
-import {
-  ThunderboltOutlined,
-  DesktopOutlined,
-  ApiOutlined,
-  ExclamationCircleOutlined,
-  GlobalOutlined,
-  ReloadOutlined,
-  ExportOutlined,
-  HistoryOutlined,
-  SearchOutlined,
-  CloseCircleOutlined,
-  PlayCircleOutlined,
-  WarningOutlined,
-} from '@/utils/optimizedIcons';
-import {
-  useQueueItems,
-  useCancelQueueItem,
-  QueueFilters,
-  type QueueStatistics,
-} from '@/api/queries/queue';
-import { useDropdownData } from '@/api/queries/useDropdownData';
-import ResourceListView from '@/components/common/ResourceListView';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { showMessage } from '@/utils/messages';
-import { useFilters, useMultiPagination, useQueueTraceModal } from '@/hooks';
 import dayjs, { Dayjs } from 'dayjs';
-import { confirmAction } from '@/utils/confirmations';
 
 // Page-level filter state type
 type QueuePageFilters = {
@@ -47,6 +17,21 @@ type QueuePageFilters = {
   includeCancelled: boolean;
 };
 import { useTranslation } from 'react-i18next';
+import styled, { useTheme as useStyledTheme } from 'styled-components';
+import {
+  useQueueItems,
+  useCancelQueueItem,
+  QueueFilters,
+  type QueueStatistics,
+} from '@/api/queries/queue';
+import { useDropdownData } from '@/api/queries/useDropdownData';
+import { renderTimestamp, renderBoolean } from '@/components/common/columns';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import ResourceListView from '@/components/common/ResourceListView';
+import { PageWrapper, RediaccButton, RediaccText, RediaccStack } from '@/components/ui';
+import { RediaccTag } from '@/components/ui/Tag';
+import { useFilters, useMultiPagination, useQueueTraceModal } from '@/hooks';
+import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay';
 import {
   formatTimestampAsIs,
   isValidGuid,
@@ -58,17 +43,7 @@ import {
   getSeverityColor,
   formatAge,
   STALE_TASK_CONSTANTS,
-} from '@/core';
-import type { QueueItem } from '@rediacc/shared/types';
-import type { ParsedError } from '@rediacc/shared/error-parser';
-import { renderQueueStatus, renderPriority } from '@/utils/queueRenderers';
-import {
-  PageWrapper,
-  RediaccButton as Button,
-  RediaccText as Text,
-  RediaccText,
-  RediaccStack,
-} from '@/components/ui';
+} from '@/platform';
 import {
   FiltersCard,
   FiltersGrid,
@@ -85,6 +60,25 @@ import {
   TabCount,
   FilterCheckbox,
 } from '@/styles/primitives';
+import { confirmAction } from '@/utils/confirmations';
+import { showMessage } from '@/utils/messages';
+import {
+  ThunderboltOutlined,
+  DesktopOutlined,
+  ApiOutlined,
+  ExclamationCircleOutlined,
+  GlobalOutlined,
+  ReloadOutlined,
+  ExportOutlined,
+  HistoryOutlined,
+  SearchOutlined,
+  CloseCircleOutlined,
+  PlayCircleOutlined,
+  WarningOutlined,
+} from '@/utils/optimizedIcons';
+import { renderQueueStatus, renderPriority } from '@/utils/queueRenderers';
+import type { ParsedError } from '@rediacc/shared/error-parser';
+import type { QueueItem } from '@rediacc/shared/types';
 
 const PriorityTooltipHeading = styled(RediaccText)`
   && {
@@ -106,14 +100,14 @@ const TooltipContent = styled.div`
   min-width: 240px;
 `;
 
-const TooltipErrorText = styled(Text).attrs({ size: 'sm' })<{ $isLast?: boolean }>`
+const TooltipErrorText = styled(RediaccText).attrs({ size: 'sm' })<{ $isLast?: boolean }>`
   && {
     display: block;
     margin-bottom: ${({ theme, $isLast }) => ($isLast ? 0 : theme.spacing.XS / 2)}px;
   }
 `;
 
-const TooltipFooterNote = styled(Text).attrs({ size: 'sm' })`
+const TooltipFooterNote = styled(RediaccText).attrs({ size: 'sm' })`
   && {
     display: block;
     margin-top: ${({ theme }) => theme.spacing.XS}px;
@@ -142,7 +136,7 @@ const SeverityPill = styled(RediaccTag)<{ $color?: string }>`
   }
 `;
 
-const TruncatedErrorText = styled(Text).attrs({ size: 'sm', color: 'muted' })`
+const TruncatedErrorText = styled(RediaccText).attrs({ size: 'sm', color: 'muted' })`
   && {
     display: inline-flex;
     flex: 1;
@@ -152,7 +146,7 @@ const TruncatedErrorText = styled(Text).attrs({ size: 'sm', color: 'muted' })`
   }
 `;
 
-const AdditionalErrorsNote = styled(Text).attrs({ size: 'xs', color: 'muted' })`
+const AdditionalErrorsNote = styled(RediaccText).attrs({ size: 'xs', color: 'muted' })`
   && {
     font-style: italic;
   }
@@ -482,16 +476,16 @@ const QueuePage: React.FC = () => {
         const tooltipContent = (
           <TooltipContent>
             <PriorityTooltipHeading weight="bold">{priorityLabel}</PriorityTooltipHeading>
-            <Text variant="caption" as="div">
+            <RediaccText variant="caption" as="div">
               {record.priority === 1
                 ? t('queue:priorityTooltipP1')
                 : t('queue:priorityTooltipTier')}
-            </Text>
+            </RediaccText>
           </TooltipContent>
         );
         return (
           renderPriority(priorityLabel, record.priority, tooltipContent) || (
-            <Text color="secondary">-</Text>
+            <RediaccText color="secondary">-</RediaccText>
           )
         );
       },
@@ -556,7 +550,7 @@ const QueuePage: React.FC = () => {
       key: 'retryCount',
       width: 280,
       render: (retryCount: number | undefined, record: QueueItem) => {
-        if (!retryCount && retryCount !== 0) return <Text color="secondary">-</Text>;
+        if (!retryCount && retryCount !== 0) return <RediaccText color="secondary">-</RediaccText>;
 
         const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT;
         const retryColor =
@@ -627,7 +621,7 @@ const QueuePage: React.FC = () => {
       dataIndex: 'createdBy',
       key: 'createdBy',
       width: 150,
-      render: (createdBy: string | undefined) => createdBy || <Text color="secondary">-</Text>,
+      render: (createdBy: string | undefined) => createdBy || <RediaccText color="secondary">-</RediaccText>,
     },
     {
       title: 'Age',
@@ -672,7 +666,7 @@ const QueuePage: React.FC = () => {
       render: (_: unknown, record: QueueItem) => (
         <Space size="small">
           <Tooltip title="Trace">
-            <Button
+            <RediaccButton
               size="sm"
               iconOnly
               icon={<HistoryOutlined />}
@@ -685,7 +679,7 @@ const QueuePage: React.FC = () => {
             record.healthStatus !== 'CANCELLED' &&
             record.healthStatus !== 'CANCELLING' && (
               <Tooltip title="Cancel">
-                <Button
+                <RediaccButton
                   size="sm"
                   danger
                   iconOnly
@@ -842,7 +836,7 @@ const QueuePage: React.FC = () => {
 
           <Space size={4}>
             <Tooltip title={t('common:actions.refresh')}>
-              <Button
+              <RediaccButton
                 size="sm"
                 iconOnly
                 icon={<ReloadOutlined />}
@@ -864,7 +858,7 @@ const QueuePage: React.FC = () => {
               }}
             >
               <Tooltip title={t('common:export')}>
-                <Button
+                <RediaccButton
                   size="sm"
                   iconOnly
                   icon={<ExportOutlined />}

@@ -1,5 +1,32 @@
 import React, { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Tooltip, Space, Tag, Popconfirm, Modal, Form, Select } from 'antd';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import {
+  usePermissionGroups as usePermissionGroupsQuery,
+  PermissionGroup,
+} from '@/api/queries/permissions';
+import {
+  useUsers,
+  useCreateUser,
+  useDeactivateUser,
+  useReactivateUser,
+  useAssignUserPermissions,
+  User,
+} from '@/api/queries/users';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import ResourceListView from '@/components/common/ResourceListView';
+import {
+  PageWrapper as UsersPageWrapper,
+  SectionStack as UsersSectionStack,
+  SectionHeading as UsersSectionHeading,
+  ListTitleRow as UsersListHeader,
+  ListTitle as UsersListTitle,
+  ListSubtitle as UsersListSubtitle,
+} from '@/components/ui';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import ResourceForm from '@/pages/organization/users/components/ResourceForm';
 import {
   UserOutlined,
   SafetyOutlined,
@@ -9,34 +36,7 @@ import {
   HistoryOutlined,
   PlusOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import ResourceListView from '@/components/common/ResourceListView';
-import ResourceForm from '@/pages/organization/users/components/ResourceForm';
-import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserSchema, CreateUserForm } from '@/utils/validation';
-import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
-import {
-  useUsers,
-  useCreateUser,
-  useDeactivateUser,
-  useReactivateUser,
-  useAssignUserPermissions,
-  User,
-} from '@/api/queries/users';
-import {
-  usePermissionGroups as usePermissionGroupsQuery,
-  PermissionGroup,
-} from '@/api/queries/permissions';
-import {
-  PageWrapper as UsersPageWrapper,
-  SectionStack as UsersSectionStack,
-  SectionHeading as UsersSectionHeading,
-  ListTitleRow as UsersListHeader,
-  ListTitle as UsersListTitle,
-  ListSubtitle as UsersListSubtitle,
-} from '@/components/ui';
 
 const UsersPage: React.FC = () => {
   const { t } = useTranslation('organization');

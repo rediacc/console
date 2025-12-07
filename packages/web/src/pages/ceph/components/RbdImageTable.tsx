@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import type { Key } from 'react';
-import { Table, Button, Space, Tag, Tooltip, message } from 'antd';
-import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
   PlusOutlined,
   SettingOutlined,
@@ -19,9 +17,8 @@ import {
   SyncOutlined,
   CloudServerOutlined,
 } from '@ant-design/icons';
+import { Table, Button, Space, Tag, Tooltip, message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { MenuProps } from 'antd';
-import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles';
 import {
   useCephRbdImages,
   useAvailableMachinesForClone,
@@ -33,15 +30,18 @@ import {
   useCreateCephRbdImage,
   useUpdateCephPoolVault,
 } from '@/api/queries/cephMutations';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
+import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMachineReassignmentModal';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { useDialogState, useQueueTraceModal, useExpandableTable } from '@/hooks';
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { useDialogState, useQueueTraceModal, useExpandableTable } from '@/hooks';
-import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
+import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMachineReassignmentModal';
+import { createSorter } from '@/platform';
 import SnapshotTable from './SnapshotTable';
-import { createSorter } from '@/core';
+import type { MenuProps } from 'antd';
 
 interface RbdImageTableProps {
   pool: CephPool;
@@ -130,7 +130,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
 
       const response = await managedQueueMutation.mutateAsync({
         teamName: pool.teamName,
-        machineName: pool.clusterName, // Using cluster as machine for distributed storage
+        machineName: pool.clusterName, // Using cluster as machine for Ceph
         bridgeName: 'default',
         queueVault,
         priority: 3,

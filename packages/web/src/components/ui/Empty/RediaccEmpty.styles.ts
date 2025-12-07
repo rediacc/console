@@ -1,5 +1,5 @@
-import styled from 'styled-components';
 import { Empty as AntEmpty } from 'antd';
+import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { EmptyVariant, EmptySize } from './RediaccEmpty.types';
 

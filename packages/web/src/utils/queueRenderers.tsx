@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Tag, Tooltip } from 'antd';
+import { QUEUE_STATUS_CONFIG, PRIORITY_CONFIG, formatAge, type QueueHealthStatus } from '@/platform';
 import {
   ClockCircleOutlined,
   PlayCircleOutlined,
@@ -13,7 +14,6 @@ import {
   ExclamationCircleOutlined,
   CloseCircleOutlined,
 } from '@/utils/optimizedIcons';
-import { QUEUE_STATUS_CONFIG, PRIORITY_CONFIG, formatAge, type QueueHealthStatus } from '@/core';
 
 /**
  * Status configuration with React icon components

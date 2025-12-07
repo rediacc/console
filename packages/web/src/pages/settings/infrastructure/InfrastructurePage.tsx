@@ -16,35 +16,8 @@ import {
   Form,
   Checkbox,
 } from 'antd';
-import {
-  EnvironmentOutlined,
-  ApiOutlined,
-  EditOutlined,
-  HistoryOutlined,
-  PlusOutlined,
-  DeleteOutlined,
-  KeyOutlined,
-  SyncOutlined,
-  DesktopOutlined,
-  CloudServerOutlined,
-  CheckCircleOutlined,
-} from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
-import ResourceListView from '@/components/common/ResourceListView';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
-import { ModalSize } from '@/types/modal';
-import { featureFlags } from '@/config/featureFlags';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  useRegions,
-  useCreateRegion,
-  useUpdateRegionName,
-  useDeleteRegion,
-  useUpdateRegionVault,
-  Region,
-} from '@/api/queries/regions';
+import { useSelector } from 'react-redux';
 import {
   useBridges,
   useCreateBridge,
@@ -54,6 +27,19 @@ import {
   useResetBridgeAuthorization,
   Bridge,
 } from '@/api/queries/bridges';
+import {
+  useRegions,
+  useCreateRegion,
+  useUpdateRegionName,
+  useDeleteRegion,
+  useUpdateRegionVault,
+  Region,
+} from '@/api/queries/regions';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { createVersionColumn } from '@/components/common/columns';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import ResourceListView from '@/components/common/ResourceListView';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import {
   PageWrapper,
   SectionStack,
@@ -71,13 +57,27 @@ import {
   ErrorWrapper,
   RediaccText,
 } from '@/components/ui';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccInput as Input } from '@/components/ui';
+import { RediaccInput } from '@/components/ui';
+import { featureFlags } from '@/config/featureFlags';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { ModalAlert, TokenCopyRow, ACTIONS_COLUMN_WIDTH } from '@/pages/system/styles';
-import { useSelector } from 'react-redux';
+import { createSorter } from '@/platform';
 import { RootState } from '@/store/store';
-import { createSorter } from '@/core';
-import { createVersionColumn } from '@/components/common/columns';
+import { ModalSize } from '@/types/modal';
+import {
+  EnvironmentOutlined,
+  ApiOutlined,
+  EditOutlined,
+  HistoryOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+  KeyOutlined,
+  SyncOutlined,
+  DesktopOutlined,
+  CloudServerOutlined,
+  CheckCircleOutlined,
+} from '@/utils/optimizedIcons';
+import type { ColumnsType } from 'antd/es/table';
 
 const InfrastructurePage: React.FC = () => {
   const { t } = useTranslation('resources');
@@ -724,7 +724,7 @@ const InfrastructurePage: React.FC = () => {
                 <div>
                   <RediaccText weight="bold">{t('bridges.tokenLabel')}</RediaccText>
                   <TokenCopyRow>
-                    <Input fullWidth value={token} readOnly autoComplete="off" />
+                    <RediaccInput fullWidth value={token} readOnly autoComplete="off" />
                     <Button
                       icon={<KeyOutlined />}
                       onClick={() => {

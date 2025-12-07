@@ -1,15 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Tooltip } from 'antd';
+import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
+import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
+import { RepoDetailPanel } from '@/components/resources/internal/RepoDetailPanel';
+import type { Machine, Repo, PluginContainer } from '@/types';
 import {
   DoubleLeftOutlined,
   DesktopOutlined,
   InboxOutlined,
   ContainerOutlined,
 } from '@/utils/optimizedIcons';
-import { MachineVaultStatusPanel } from '../internal/MachineVaultStatusPanel';
-import { RepoDetailPanel } from '../internal/RepoDetailPanel';
-import { ContainerDetailPanel } from '../internal/ContainerDetailPanel';
-import type { Machine, Repo, PluginContainer } from '@/types';
 import {
   CollapsedIcon,
   CollapsedPanel,

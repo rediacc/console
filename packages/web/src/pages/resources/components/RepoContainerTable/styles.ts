@@ -1,7 +1,7 @@
-import styled, { css } from 'styled-components';
-import { Table as AntTable, Typography } from 'antd';
-import type { TableProps } from 'antd';
 import React from 'react';
+import { Table as AntTable, Typography } from 'antd';
+import styled, { css } from 'styled-components';
+import type { TableProps } from 'antd';
 
 const { Title } = Typography;
 

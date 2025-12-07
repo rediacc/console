@@ -1,26 +1,29 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { Modal, Space, Upload, message } from 'antd';
-import { AppstoreOutlined } from '@/utils/optimizedIcons';
-import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Modal, Space, Upload, message } from 'antd';
+import { useForm, type Resolver } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
+import { z } from 'zod';
+import type { QueueFunction } from '@/api/queries/queue';
+import { useDropdownData } from '@/api/queries/useDropdownData';
+import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
+import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
+import TemplateSelector from '@/components/common/TemplateSelector';
 import ResourceFormWithVault, {
   type FormFieldConfig,
   type ImportExportHandlers,
   type ResourceFormWithVaultRef,
 } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
-import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
-import TemplateSelector from '@/components/common/TemplateSelector';
-import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
-import { useDropdownData } from '@/api/queries/useDropdownData';
-import type { Machine, Repo } from '@/types';
-import type { Team } from '@rediacc/shared/types';
-import type { QueueFunction } from '@/api/queries/queue';
-import { templateService } from '@/services/templateService';
+import { RediaccButton, RediaccText } from '@/components/ui';
+import { featureFlags } from '@/config/featureFlags';
 import { useDialogState } from '@/hooks/useDialogState';
+import { templateService } from '@/services/templateService';
+import { RootState } from '@/store/store';
+import type { Machine, Repo } from '@/types';
+import { ModalSize } from '@/types/modal';
+import { AppstoreOutlined } from '@/utils/optimizedIcons';
 import {
   createMachineSchema,
   createRepoSchema,
@@ -34,10 +37,7 @@ import {
   createSnapshotSchema,
   createCloneSchema,
 } from '@/utils/validation';
-import { z } from 'zod';
-import { ModalSize } from '@/types/modal';
-import { featureFlags } from '@/config/featureFlags';
-import { RediaccButton, RediaccText as Text } from '@/components/ui';
+import type { Team } from '@rediacc/shared/types';
 import {
   TitleStack,
   TitleText,
@@ -891,8 +891,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
     return (
       <Space size="small">
-        <Text color="secondary">{t('machines:team')}:</Text>
-        <Text weight="bold">{teamLabel}</Text>
+        <RediaccText color="secondary">{t('machines:team')}:</RediaccText>
+        <RediaccText weight="bold">{teamLabel}</RediaccText>
         {['machine', 'repo', 'storage'].includes(resourceType) && resourceName && (
           <>
             <SecondaryLabel>
@@ -905,7 +905,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
               )}
               :
             </SecondaryLabel>
-            <Text weight="bold">{resourceName}</Text>
+            <RediaccText weight="bold">{resourceName}</RediaccText>
           </>
         )}
       </Space>
@@ -1374,7 +1374,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     label: (
                       <Space size="small">
                         <AppstoreOutlined />
-                        <Text>{t('resources:templates.selectTemplate')}</Text>
+                        <RediaccText>{t('resources:templates.selectTemplate')}</RediaccText>
                         {selectedTemplate && (
                           <SelectedTemplateTag variant="primary">
                             {selectedTemplate.replace(/^(db_|kick_|route_)/, '')}
@@ -1405,11 +1405,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           }
           defaultsContent={
             <Space direction="vertical" size={4}>
-              <Text>{t('general.team')}: Private Team</Text>
+              <RediaccText>{t('general.team')}: Private Team</RediaccText>
               {resourceType === 'machine' && (
                 <>
-                  <Text>{t('machines:region')}: Default Region</Text>
-                  <Text>{t('machines:bridge')}: Global Bridges</Text>
+                  <RediaccText>{t('machines:region')}: Default Region</RediaccText>
+                  <RediaccText>{t('machines:bridge')}: Global Bridges</RediaccText>
                 </>
               )}
             </Space>

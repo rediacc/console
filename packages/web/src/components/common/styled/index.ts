@@ -5,14 +5,12 @@
  * Import from '@/components/common/styled' instead of defining in page styles.
  */
 
-import styled from 'styled-components';
-import { Table } from 'antd';
-import type { TableProps } from 'antd';
 import type { ComponentType } from 'react';
+import { Table } from 'antd';
+import styled from 'styled-components';
+import { RediaccButton, RediaccStack, RediaccText, RediaccSelect } from '@/components/ui';
 import type { StatusVariant } from '@/styles/primitives';
-import { RediaccButton as Button, RediaccStack } from '@/components/ui';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccSelect } from '@/components/ui/Form/Select';
+import type { TableProps } from 'antd';
 
 // =============================================================================
 // SPACING TYPES
@@ -253,7 +251,7 @@ export interface TableActionButtonProps {
  * @example
  * <TableActionButton icon={<EditOutlined />} />
  */
-export const TableActionButton = styled(Button).attrs<TableActionButtonProps>((props) => ({
+export const TableActionButton = styled(RediaccButton).attrs<TableActionButtonProps>((props) => ({
   iconOnly: !props.$hasLabel,
 }))<TableActionButtonProps>`
   && {

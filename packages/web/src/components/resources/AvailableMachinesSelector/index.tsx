@@ -1,11 +1,11 @@
 import React from 'react';
 import { Select, Empty } from 'antd';
-import type { DefaultOptionType } from 'antd/es/select';
-import { CloudServerOutlined, CheckCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
-import type { Machine } from '@/types';
 import { useAvailableMachinesForClone } from '@/api/queries/ceph';
-import MachineAssignmentStatusBadge from '../MachineAssignmentStatusBadge';
+import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
+import { RediaccText, RediaccTag } from '@/components/ui';
+import type { Machine } from '@/types';
+import { CloudServerOutlined, CheckCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 import {
   StyledSelect,
   OptionContent,
@@ -18,7 +18,7 @@ import {
   StatusIcon,
   EmptyDescription,
 } from './styles';
-import { RediaccText as Text, RediaccTag as Tag } from '@/components/ui';
+import type { DefaultOptionType } from 'antd/es/select';
 
 const { Option } = Select;
 
@@ -101,15 +101,15 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
             <StatusContainer>
               {isAssigned ? (
                 machine.cephClusterName ? (
-                  <Tag
+                  <RediaccTag
                     variant="primary"
                     data-testid={`available-machines-cluster-tag-${machine.machineName}`}
                   >
                     <StatusIcon as={WarningOutlined} />
-                    <Text variant="caption">
+                    <RediaccText variant="caption">
                       {t('machines:assignmentStatus.cluster')}: {machine.cephClusterName}
-                    </Text>
-                  </Tag>
+                    </RediaccText>
+                  </RediaccTag>
                 ) : machine.assignmentStatus ? (
                   <MachineAssignmentStatusBadge
                     assignmentType={machine.assignmentStatus.assignmentType}
@@ -118,13 +118,13 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                   />
                 ) : null
               ) : (
-                <Tag
+                <RediaccTag
                   variant="success"
                   data-testid={`available-machines-available-tag-${machine.machineName}`}
                 >
                   <StatusIcon as={CheckCircleOutlined} />
-                  <Text variant="caption">{t('machines:assignmentStatus.available')}</Text>
-                </Tag>
+                  <RediaccText variant="caption">{t('machines:assignmentStatus.available')}</RediaccText>
+                </RediaccTag>
               )}
             </StatusContainer>
           )}

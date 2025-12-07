@@ -1,12 +1,11 @@
 import React from 'react';
 import { Table } from 'antd';
-import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
-import type { Machine } from '@/types';
+import { createTruncatedColumn } from '@/components/common/columns';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
-import type { ColumnsType } from 'antd/es/table';
-import { createTruncatedColumn } from '@/components/common/columns';
+import type { Machine } from '@/types';
+import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import {
   StyledModal,
   TitleStack,
@@ -22,6 +21,7 @@ import {
   ClusterTag,
   MutedText,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 interface ViewAssignmentStatusModalProps {
   open: boolean;

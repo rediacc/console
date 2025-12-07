@@ -1,5 +1,5 @@
-import styled from 'styled-components';
 import { Progress as AntProgress } from 'antd';
+import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { ProgressVariant, ProgressSize, ProgressStatus } from './RediaccProgress.types';
 

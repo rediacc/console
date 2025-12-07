@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { FlexRow } from '@/styles/primitives';
 import { InlineStack, FlexBetween } from '@/components/common/styled';
 import { RediaccText, RediaccButton } from '@/components/ui';
+import { FlexRow } from '@/styles/primitives';
 
 export const NotificationDropdown = styled.div`
   background-color: var(--color-bg-primary);

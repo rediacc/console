@@ -1,8 +1,8 @@
 import { QueryKey } from '@tanstack/react-query';
-import { CEPH_QUERY_KEYS } from './ceph';
-import i18n from '@/i18n/config';
-import { api } from '../client';
+import { api } from '@/api/client';
 import { createMutation } from '@/hooks/api/mutationFactory';
+import i18n from '@/i18n/config';
+import { CEPH_QUERY_KEYS } from './ceph';
 
 type Operation = 'create' | 'update' | 'delete' | 'assign' | 'remove';
 

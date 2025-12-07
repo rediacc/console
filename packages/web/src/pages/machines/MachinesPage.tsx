@@ -1,14 +1,8 @@
 ﻿import React, { useState, useCallback, useEffect } from 'react';
 import { Empty, Modal, Tooltip } from 'antd';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PlusOutlined, WifiOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
-import { showMessage } from '@/utils/messages';
-import { SplitResourceView } from '@/pages/machines/components/SplitResourceView';
-import type { ContainerData } from '@/pages/machines/components/SplitResourceView';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useTheme } from 'styled-components';
 import {
   useCreateMachine,
   useUpdateMachineName,
@@ -17,17 +11,12 @@ import {
   useDeleteMachine,
   useMachines,
 } from '@/api/queries/machines';
+import { QueueFunction } from '@/api/queries/queue';
 import { useRepos, Repo } from '@/api/queries/repos';
 import { useStorage } from '@/api/queries/storage';
-import { useQueueAction } from '@/hooks/useQueueAction';
-import { useUnifiedModal, useTeamSelection, useQueueTraceModal, useDialogState } from '@/hooks';
-import { confirmDelete } from '@/utils/confirmations';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import TeamSelector from '@/components/common/TeamSelector';
-import { type Machine } from '@/types';
-import { QueueFunction } from '@/api/queries/queue';
-import type { QueueActionParams } from '@/services/queueActionService';
-import { FUNCTION_DEFINITIONS } from '@/services/functionsService';
-import { useTheme } from 'styled-components';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import {
   SectionStack,
   SectionHeading,
@@ -39,8 +28,19 @@ import {
   InputSlot as TeamSelectorWrapper,
   ActionBar as ButtonGroup,
   ContentSection,
-  RediaccButton as Button,
+  RediaccButton,
 } from '@/components/ui';
+import { useUnifiedModal, useTeamSelection, useQueueTraceModal, useDialogState } from '@/hooks';
+import { useQueueAction } from '@/hooks/useQueueAction';
+import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
+import type { ContainerData } from '@/pages/machines/components/SplitResourceView';
+import { SplitResourceView } from '@/pages/machines/components/SplitResourceView';
+import { FUNCTION_DEFINITIONS } from '@/services/functionsService';
+import type { QueueActionParams } from '@/services/queueActionService';
+import { type Machine } from '@/types';
+import { confirmDelete } from '@/utils/confirmations';
+import { showMessage } from '@/utils/messages';
+import { PlusOutlined, WifiOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 
 interface MachineFormValues extends Record<string, unknown> {
   teamName: string;
@@ -482,7 +482,7 @@ const MachinesPage: React.FC = () => {
                 {selectedTeams.length > 0 && (
                   <ButtonGroup>
                     <Tooltip title={t('machines:createMachine')}>
-                      <Button
+                      <RediaccButton
                         iconOnly
                         icon={<PlusOutlined />}
                         data-testid="machines-create-machine-button"
@@ -491,7 +491,7 @@ const MachinesPage: React.FC = () => {
                       />
                     </Tooltip>
                     <Tooltip title={t('machines:connectivityTest')}>
-                      <Button
+                      <RediaccButton
                         iconOnly
                         icon={<WifiOutlined />}
                         data-testid="machines-connectivity-test-button"
@@ -501,7 +501,7 @@ const MachinesPage: React.FC = () => {
                       />
                     </Tooltip>
                     <Tooltip title={t('common:actions.refresh')}>
-                      <Button
+                      <RediaccButton
                         iconOnly
                         icon={<ReloadOutlined />}
                         data-testid="machines-refresh-button"

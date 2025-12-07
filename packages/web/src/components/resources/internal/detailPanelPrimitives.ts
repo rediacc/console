@@ -1,8 +1,6 @@
-import styled from 'styled-components';
 import { Typography } from 'antd';
-import { RediaccButton } from '@/components/ui/Button';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccCard, RediaccDivider } from '@/components/ui';
+import styled from 'styled-components';
+import { RediaccButton, RediaccText, RediaccCard, RediaccDivider } from '@/components/ui';
 
 const { Title } = Typography;
 

@@ -1,5 +1,8 @@
 import React from 'react';
 import { Row, Col, Progress, Tag, Tooltip } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useTheme as useStyledTheme } from 'styled-components';
+import { InlineStack } from '@/components/common/styled';
 import {
   CloudServerOutlined,
   DatabaseOutlined,
@@ -7,11 +10,7 @@ import {
   CopyOutlined,
   TeamOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useTheme as useStyledTheme } from 'styled-components';
 import type { CephTeamBreakdown } from '@rediacc/shared/types';
-import { InlineStack } from '@/components/common/styled';
-import { CephDashboardWidgetProps } from './types';
 import {
   WidgetCard,
   TitleIcon,
@@ -35,6 +34,7 @@ import {
   TeamTagGroup,
   PercentageText,
 } from './styles';
+import { CephDashboardWidgetProps } from './types';
 
 const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
   const { t } = useTranslation(['common', 'ceph']);

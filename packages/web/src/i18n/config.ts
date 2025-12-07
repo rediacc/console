@@ -1,21 +1,21 @@
 import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import { initReactI18next } from 'react-i18next';
 import { cookieDetector } from './cookieDetector';
 
 // Only load default language initially (English)
 import enAuth from './locales/en/auth.json';
+import enCeph from './locales/en/ceph.json';
 import enCommon from './locales/en/common.json';
-import enResources from './locales/en/resources.json';
+import enFunctions from './locales/en/functions.json';
 import enMachines from './locales/en/machines.json';
-import enSystem from './locales/en/system.json';
+import enMarketplace from './locales/en/marketplace.json';
+import enOrganization from './locales/en/organization.json';
 import enQueue from './locales/en/queue.json';
+import enResources from './locales/en/resources.json';
 import enSettings from './locales/en/settings.json';
 import enStorageProviders from './locales/en/storageProviders.json';
-import enFunctions from './locales/en/functions.json';
-import enCeph from './locales/en/ceph.json';
-import enOrganization from './locales/en/organization.json';
-import enMarketplace from './locales/en/marketplace.json';
+import enSystem from './locales/en/system.json';
 
 const defaultNS = 'common';
 

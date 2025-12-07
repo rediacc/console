@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useDebouncedCallback, useDebouncedValidation } from '../utils/useDebounce';
-import { MachineValidationService } from '../services';
+import type { ValidationResult } from '@/features/ceph/models';
+import { MachineValidationService } from '@/features/ceph/services';
+import { useDebouncedCallback, useDebouncedValidation } from '@/features/ceph/utils/useDebounce';
 import type { Machine } from '@/types';
-import type { ValidationResult } from '../models';
 
 export interface DebouncedValidationOptions {
   delay?: number;

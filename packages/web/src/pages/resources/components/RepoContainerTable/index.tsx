@@ -1,11 +1,28 @@
 import React, { useEffect, useState } from 'react';
-
 import { Alert, Space } from 'antd';
-
-import type { MenuProps } from 'antd';
-
+import { useTranslation } from 'react-i18next';
+import { useRepos } from '@/api/queries/repos';
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
+import {
+  createActionColumn,
+  createStatusColumn,
+  createTruncatedColumn,
+} from '@/components/common/columns';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
+import { RediaccText } from '@/components/ui';
+import { featureFlags } from '@/config/featureFlags';
 import { useTableStyles } from '@/hooks/useComponentStyles';
-
+import { useQueueAction } from '@/hooks/useQueueAction';
+import {
+  createSorter,
+  createCustomSorter,
+  createArrayLengthSorter,
+  getGrandVaultForOperation,
+} from '@/platform';
+import { useAppSelector } from '@/store/store';
+import { Machine, PluginContainer } from '@/types';
+import { showMessage } from '@/utils/messages';
 import {
   FunctionOutlined,
   PlayCircleOutlined,
@@ -17,49 +34,11 @@ import {
   DisconnectOutlined,
   EyeOutlined,
 } from '@/utils/optimizedIcons';
-
-import { useTranslation } from 'react-i18next';
-
-import * as S from './styles';
-
-import { useQueueAction } from '@/hooks/useQueueAction';
-
-import { Machine, PluginContainer } from '@/types';
-
-import { useRepos } from '@/api/queries/repos';
-
-import type { ColumnsType } from 'antd/es/table';
-
-import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
-
-import { showMessage } from '@/utils/messages';
-
-import { useAppSelector } from '@/store/store';
-
-import { featureFlags } from '@/config/featureFlags';
-
-import {
-  createSorter,
-  createCustomSorter,
-  createArrayLengthSorter,
-  getGrandVaultForOperation,
-} from '@/core';
-
-import { parseVaultStatus } from '@/core/services/machine';
-
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-
-import {
-  createActionColumn,
-  createStatusColumn,
-  createTruncatedColumn,
-} from '@/components/common/columns';
-
-import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
-
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-
-import { RediaccText as Text } from '@/components/ui';
+import { parseVaultStatus } from '@rediacc/shared/services/machine';
+import * as S from './styles';
+import type { MenuProps } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 interface PortMapping {
   host: string;
@@ -544,9 +523,9 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
           {stateColumn.render?.(state, record, index) as React.ReactNode}
 
           {record.status && (
-            <Text variant="caption" muted>
+            <RediaccText variant="caption" muted>
               {record.status}
-            </Text>
+            </RediaccText>
           )}
         </Space>
       ),
@@ -567,21 +546,21 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
 
       render: (_: unknown, record: Container) => {
         if (!record.port_mappings || record.port_mappings.length === 0) {
-          return <Text color="secondary">-</Text>;
+          return <RediaccText color="secondary">-</RediaccText>;
         }
 
         return (
           <Space direction="vertical" size={4}>
             {record.port_mappings.slice(0, 2).map((pm, idx) => (
-              <Text key={idx} variant="caption">
+              <RediaccText key={idx} variant="caption">
                 {pm.host_port}:{pm.container_port}/{pm.protocol}
-              </Text>
+              </RediaccText>
             ))}
 
             {record.port_mappings.length > 2 && (
-              <Text variant="caption" muted size="xs">
+              <RediaccText variant="caption" muted size="xs">
                 +{record.port_mappings.length - 2} more
-              </Text>
+              </RediaccText>
             )}
           </Space>
         );
@@ -771,7 +750,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         </S.ContainersSection>
       ) : (
         <S.EmptyState data-testid="no-containers">
-          <Text color="secondary">{t('resources:containers.noContainers')}</Text>
+          <RediaccText color="secondary">{t('resources:containers.noContainers')}</RediaccText>
         </S.EmptyState>
       )}
 

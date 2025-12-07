@@ -11,6 +11,9 @@ import {
   Tag,
   message,
 } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { pipInstallationService, InstallOptions } from '@/services/pipInstallationService';
+import { ModalSize } from '@/types/modal';
 import {
   RocketOutlined,
   CopyOutlined,
@@ -21,9 +24,6 @@ import {
   AppleOutlined,
   DesktopOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { pipInstallationService, InstallOptions } from '@/services/pipInstallationService';
-import { ModalSize } from '@/types/modal';
 import {
   CommandContainer,
   CommandDescription,

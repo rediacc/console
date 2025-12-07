@@ -1,12 +1,10 @@
 import styled from 'styled-components';
-import { InfoCircleOutlined, UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons';
 import {
   ContentStack as BaseContentStack,
   ActionGroup as BaseActionGroup,
 } from '@/components/common/styled';
-import { RediaccButton } from '@/components/ui/Button';
-import { RediaccTag } from '@/components/ui/Tag';
-import { RediaccText } from '@/components/ui/Text';
+import { RediaccButton, RediaccTag, RediaccText } from '@/components/ui';
+import { InfoCircleOutlined, UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons';
 
 export const ContentStack = BaseContentStack;
 

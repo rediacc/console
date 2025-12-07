@@ -1,11 +1,11 @@
 ﻿import React from 'react';
 import { Table } from 'antd';
-import type { TableRowSelection } from 'antd/es/table/interface';
 import { useTranslation } from 'react-i18next';
-import type { Machine } from '@/types';
 import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
+import type { Machine } from '@/types';
 import { buildMachineTableColumns } from './columns';
 import { TableContainer, ExpandedRowContent } from './styles';
+import type { TableRowSelection } from 'antd/es/table/interface';
 
 export interface FilterableMachineTableProps {
   machines: Machine[];

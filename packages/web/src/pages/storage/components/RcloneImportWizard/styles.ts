@@ -1,8 +1,8 @@
-import styled from 'styled-components';
 import { Typography } from 'antd';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { LoadingState as BaseLoadingState } from '@/styles/primitives';
+import styled from 'styled-components';
 import { RediaccText, RediaccAlert, RediaccModal } from '@/components/ui';
+import { LoadingState as BaseLoadingState } from '@/styles/primitives';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const { Title } = Typography;
 

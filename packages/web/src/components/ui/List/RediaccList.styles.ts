@@ -1,5 +1,5 @@
-import styled, { css } from 'styled-components';
 import { List as AntList } from 'antd';
+import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { ListVariant, ListSize } from './RediaccList.types';
 

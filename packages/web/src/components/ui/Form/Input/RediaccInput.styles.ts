@@ -1,5 +1,5 @@
-import styled, { css } from 'styled-components';
 import { Input as AntInput, InputNumber as AntInputNumber } from 'antd';
+import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { InputVariant, InputSize } from './RediaccInput.types';
 

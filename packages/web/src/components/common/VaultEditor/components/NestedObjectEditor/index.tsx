@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Input, Popconfirm, Empty, Row, Col } from 'antd';
-import { RediaccSwitch } from '@/components/ui/Form';
+import { useTranslation } from 'react-i18next';
+import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
+import { RediaccSwitch } from '@/components/ui';
 import {
   PlusOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
   CodeOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { SimpleJsonEditor } from '../SimpleJsonEditor';
 import {
   EditorContainer,
   SummaryCard,

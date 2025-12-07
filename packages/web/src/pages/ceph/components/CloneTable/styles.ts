@@ -1,6 +1,8 @@
-import styled from 'styled-components';
 import { CopyOutlined, CloudUploadOutlined } from '@ant-design/icons';
+import styled from 'styled-components';
 import { RediaccBadge } from '@/components/ui';
+import { RediaccTag, RediaccButton, RediaccStack } from '@/components/ui';
+import { TableWrapper, NameCell, ActionsRow } from '@/pages/ceph/styles/tableAliases';
 import {
   FlexColumn,
   EmptyStateWrapper,
@@ -8,8 +10,6 @@ import {
   StyledIcon,
   IconActionButton,
 } from '@/styles/primitives';
-import { RediaccTag, RediaccButton, RediaccStack } from '@/components/ui';
-import { TableWrapper, NameCell, ActionsRow } from '../../styles/tableAliases';
 
 export const Container = styled(FlexColumn).attrs({ $gap: 'MD' })`
   padding: ${({ theme }) =>

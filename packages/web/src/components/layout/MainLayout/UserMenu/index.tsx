@@ -1,14 +1,14 @@
 import React from 'react';
 import { Space } from 'antd';
+import { useTranslation } from 'react-i18next';
+import LanguageSelector from '@/components/common/LanguageSelector';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
 import {
   UserOutlined,
   LogoutOutlined,
   SmileOutlined,
   SafetyCertificateOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { ThemeToggle } from '@/components/common/ThemeToggle';
-import LanguageSelector from '@/components/common/LanguageSelector';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
 import {

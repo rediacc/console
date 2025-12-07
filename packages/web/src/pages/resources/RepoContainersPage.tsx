@@ -1,20 +1,20 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button as AntButton, Space, Tag, Alert, Tooltip } from 'antd';
-import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
-import { usePanelWidth } from '@/hooks/usePanelWidth';
-import { DETAIL_PANEL } from '@/constants/layout';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
 import { useRepos } from '@/api/queries/repos';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ActionGroup } from '@/components/common/styled';
+import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
+import { RediaccButton, RediaccText } from '@/components/ui';
+import { DETAIL_PANEL } from '@/constants/layout';
+import { useQueueTraceModal } from '@/hooks/useDialogState';
+import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { RepoContainerTable } from '@/pages/resources/components/RepoContainerTable';
 import { Machine, PluginContainer } from '@/types';
-import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { useQueueTraceModal } from '@/hooks/useDialogState';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton as Button, RediaccText as Text } from '@/components/ui';
-import { ActionGroup } from '@/components/common/styled';
+import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optimizedIcons';
 import {
   PageWrapper,
   FullHeightCard,
@@ -175,7 +175,7 @@ const RepoContainersPage: React.FC = () => {
             <LoadingWrapper loading centered minHeight={160}>
               <div />
             </LoadingWrapper>
-            <Text color="secondary">{t('common:general.loading')}</Text>
+            <RediaccText color="secondary">{t('common:general.loading')}</RediaccText>
           </CenteredState>
         </FullHeightCard>
       </PageWrapper>
@@ -264,7 +264,7 @@ const RepoContainersPage: React.FC = () => {
             <TitleColumn>
               <TitleRow>
                 <Tooltip title={t('machines:backToRepos')}>
-                  <Button
+                  <RediaccButton
                     iconOnly
                     icon={<DoubleLeftOutlined />}
                     onClick={handleBackToRepos}
@@ -301,7 +301,7 @@ const RepoContainersPage: React.FC = () => {
 
             <ActionsRow>
               <Tooltip title={t('common:actions.refresh')}>
-                <Button
+                <RediaccButton
                   iconOnly
                   icon={<ReloadOutlined />}
                   onClick={handleRefresh}

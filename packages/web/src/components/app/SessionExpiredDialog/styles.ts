@@ -1,8 +1,7 @@
 import styled from 'styled-components';
-import { BaseModal, ModalBody } from '@/styles/primitives';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccButton } from '@/components/ui/Button';
+import { RediaccText, RediaccButton } from '@/components/ui';
+import { BaseModal, ModalBody } from '@/styles/primitives';
 
 export const StyledModal = styled(BaseModal)`
   .ant-modal-content {

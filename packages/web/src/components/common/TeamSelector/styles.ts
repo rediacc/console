@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { RediaccInput, RediaccSelect } from '@/components/ui/Form';
-import { RediaccTag } from '@/components/ui/Tag';
 import { InlineStack } from '@/components/common/styled';
+import { RediaccTag } from '@/components/ui';
+import { RediaccInput, RediaccSelect } from '@/components/ui/Form';
 
 export const TeamSelect = styled(RediaccSelect)`
   && {

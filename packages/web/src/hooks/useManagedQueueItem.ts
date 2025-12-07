@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { showMessage } from '@/utils/messages';
-import { minifyJSON } from '@/utils/json';
+import type { QueueItem, QueueItemData } from '@/platform/types/queue';
 import { queueService } from '@/services/queueService';
-import type { QueueItem, QueueItemData } from '@/core/types/queue';
+import { minifyJSON } from '@/utils/json';
+import { showMessage } from '@/utils/messages';
 
 /**
  * A managed version of useCreateQueueItem that handles high-priority queue items

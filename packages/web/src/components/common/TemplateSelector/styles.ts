@@ -1,15 +1,15 @@
-import styled from 'styled-components';
 import { Row } from 'antd';
-import { RediaccSearchInput as UnifiedSearchInput } from '@/components/ui/Form';
-import { FlexRow } from '@/styles/primitives';
+import styled from 'styled-components';
 import {
-  RediaccText as UnifiedText,
+  RediaccText,
   RediaccCard,
   RediaccStack,
   RediaccEmpty,
+  RediaccButton,
+  RediaccTag,
 } from '@/components/ui';
-import { RediaccButton } from '@/components/ui/Button';
-import { RediaccTag } from '@/components/ui/Tag';
+import { RediaccSearchInput } from '@/components/ui/Form';
+import { FlexRow } from '@/styles/primitives';
 
 export const SelectorContainer = styled.div`
   width: 100%;
@@ -28,7 +28,7 @@ export const HelperRow = styled(FlexRow).attrs({
   $wrap: true,
 })``;
 
-export const HelperText = styled(UnifiedText).attrs({
+export const HelperText = styled(RediaccText).attrs({
   variant: 'caption',
 })``;
 
@@ -41,14 +41,14 @@ export const ClearButton = styled(RediaccButton).attrs({
   }
 `;
 
-export const SearchInput = styled(UnifiedSearchInput)`
+export const SearchInput = styled(RediaccSearchInput)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
 `;
 
-export const ResultCount = styled(UnifiedText).attrs({
+export const ResultCount = styled(RediaccText).attrs({
   color: 'muted',
 })`
   && {
@@ -113,13 +113,13 @@ export const TemplateIconWrapper = styled.div<{ $muted?: boolean }>`
   }
 `;
 
-export const TemplateTitle = styled(UnifiedText)`
+export const TemplateTitle = styled(RediaccText)`
   && {
     font-size: ${({ theme }) => theme.fontSize.BASE}px;
   }
 `;
 
-export const TemplateDescription = styled(UnifiedText)`
+export const TemplateDescription = styled(RediaccText)`
   && {
     display: block;
     margin-bottom: ${({ theme }) => theme.spacing.SM}px;

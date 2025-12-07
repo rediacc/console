@@ -2,12 +2,12 @@ import React from 'react';
 import { Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import styled from 'styled-components';
-import { RediaccTag as Tag, RediaccText as Text } from '@/components/ui';
+import { RediaccTag, RediaccText } from '@/components/ui';
 
 /**
  * Styled version tag used across column renderers
  */
-export const VersionTag = styled(Tag)`
+export const VersionTag = styled(RediaccTag)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     border-color: ${({ theme }) => theme.colors.info};
@@ -52,7 +52,7 @@ export const renderTimestampElement = (
   format: string = 'YYYY-MM-DD HH:mm:ss'
 ): React.ReactNode => {
   if (!timestamp) {
-    return <Text color="secondary">-</Text>;
+    return <RediaccText color="secondary">-</RediaccText>;
   }
   return dayjs(timestamp).format(format);
 };
@@ -70,7 +70,7 @@ export const renderTruncatedId = (
   showEllipsis: boolean = true
 ): React.ReactNode => {
   if (!id) {
-    return <Text color="secondary">-</Text>;
+    return <RediaccText color="secondary">-</RediaccText>;
   }
 
   const truncated = id.substring(0, length);
@@ -94,13 +94,13 @@ export const renderCopyableId = (
   length: number = 8
 ): React.ReactNode => {
   if (!id) {
-    return <Text color="secondary">-</Text>;
+    return <RediaccText color="secondary">-</RediaccText>;
   }
 
   return (
-    <Text code copyable>
+    <RediaccText code copyable>
       {id.substring(0, length)}...
-    </Text>
+    </RediaccText>
   );
 };
 
@@ -115,7 +115,7 @@ export const renderVersionTag = (
   formatFn?: (version: number) => string
 ): React.ReactNode => {
   if (version === null || version === undefined) {
-    return <Text color="secondary">-</Text>;
+    return <RediaccText color="secondary">-</RediaccText>;
   }
 
   const label = formatFn ? formatFn(version) : `v${version}`;
@@ -190,7 +190,7 @@ export const renderBoolean = (
   noText: string = 'No'
 ): React.ReactNode => {
   if (value === null || value === undefined) {
-    return <Text color="secondary">-</Text>;
+    return <RediaccText color="secondary">-</RediaccText>;
   }
-  return value ? <Tag variant="success">{yesText}</Tag> : <Tag>{noText}</Tag>;
+  return value ? <RediaccTag variant="success">{yesText}</RediaccTag> : <RediaccTag>{noText}</RediaccTag>;
 };

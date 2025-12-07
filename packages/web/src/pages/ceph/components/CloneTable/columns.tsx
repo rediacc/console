@@ -1,13 +1,13 @@
 import React from 'react';
-import { Tooltip } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import type { MenuProps } from 'antd';
 import { EllipsisOutlined, CloudUploadOutlined } from '@ant-design/icons';
+import { Tooltip } from 'antd';
 import { TFunction } from 'i18next';
 import type { CephRbdClone } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn } from '@/components/common/columns';
 import { CloneIcon, CloneName, NameCell, VaultTag } from './styles';
+import type { MenuProps } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 interface ColumnBuilderParams {
   t: TFunction<'ceph' | 'common'>;

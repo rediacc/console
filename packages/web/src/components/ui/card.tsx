@@ -7,8 +7,8 @@
  * - CardHeaderRow for legacy compatibility
  */
 
-import styled from 'styled-components';
 import { Typography, Card } from 'antd';
+import styled from 'styled-components';
 import { SectionHeaderRow as PrimitiveHeaderRow } from '@/styles/primitives';
 
 const { Title, Text } = Typography;

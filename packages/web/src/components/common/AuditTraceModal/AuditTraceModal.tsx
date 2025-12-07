@@ -1,5 +1,13 @@
 import React from 'react';
 import { Table, Tag, Typography, Space, Button, Dropdown, message } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccText, RediaccAlert } from '@/components/ui';
+import { IconWrapper } from '@/components/ui';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
+import { formatTimestampAsIs } from '@/platform';
+import { createSorter, createDateSorter } from '@/platform';
 import {
   PlusCircleOutlined,
   EditOutlined,
@@ -18,12 +26,7 @@ import {
   HddOutlined,
   CopyOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit';
-import { formatTimestampAsIs } from '@/core';
-import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { RediaccText as Text, RediaccAlert as Alert } from '@/components/ui';
 import {
   StyledModal,
   SummaryContainer,
@@ -32,9 +35,6 @@ import {
   StatItem,
   StatValue,
 } from './styles';
-import { createSorter, createDateSorter } from '@/core';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { IconWrapper } from '@/components/ui';
 
 const { Text: AntText } = Typography;
 
@@ -269,9 +269,9 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       render: (timestamp: string, record: AuditTraceRecord, index: number) => (
         <Space direction="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
           <AntText>{formatTimestampAsIs(timestamp, 'datetime')}</AntText>
-          <Text variant="caption" muted>
+          <RediaccText variant="caption" muted>
             {record.timeAgo}
-          </Text>
+          </RediaccText>
         </Space>
       ),
     },
@@ -304,7 +304,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           <div />
         </LoadingWrapper>
       ) : error ? (
-        <Alert
+        <RediaccAlert
           message={t('audit.error')}
           description={error instanceof Error ? error.message : t('audit.errorLoading')}
           variant="error"

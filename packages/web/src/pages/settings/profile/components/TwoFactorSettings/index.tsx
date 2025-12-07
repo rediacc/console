@@ -1,27 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Typography, Result, Tabs, Card } from 'antd';
-import type { FormInstance } from 'antd/es/form';
-import type { TFunction } from 'i18next';
+import { message } from 'antd';
+import { useTranslation } from 'react-i18next';
+import QRCode from 'react-qr-code';
+import { useSelector } from 'react-redux';
+import { useTFAStatus, useEnableTFA, useDisableTFA } from '@/api/queries/twoFactor';
+import type { EnableTwoFactorResponse } from '@/api/queries/twoFactor';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccButton, RediaccText, RediaccPasswordInput } from '@/components/ui';
+import { useDialogState } from '@/hooks/useDialogState';
+import { OTPCodeField } from '@/pages/settings/profile/components/OTPCodeField';
+import { RootState } from '@/store/store';
+import { ModalSize } from '@/types/modal';
 import {
   KeyOutlined,
   CheckCircleOutlined,
   WarningOutlined,
   CopyOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useTFAStatus, useEnableTFA, useDisableTFA } from '@/api/queries/twoFactor';
-import type { EnableTwoFactorResponse } from '@/api/queries/twoFactor';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import QRCode from 'react-qr-code';
-import { message } from 'antd';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { ModalSize } from '@/types/modal';
-import { useDialogState } from '@/hooks/useDialogState';
-import { OTPCodeField } from '@/pages/settings/profile/components/OTPCodeField';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton as Button, RediaccText as Text } from '@/components/ui';
-import { RediaccPasswordInput } from '@/components/ui/Form/Input';
 import {
   FullWidthStack,
   CenteredStack,
@@ -38,6 +35,8 @@ import {
   ModalTitleIcon,
   ModalTitleWrapper,
 } from './styles';
+import type { FormInstance } from 'antd/es/form';
+import type { TFunction } from 'i18next';
 
 const { Title, Paragraph } = Typography;
 
@@ -274,7 +273,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
           <QRCodeContainer>
             <QRCode value={otpUrl} size={200} data-testid="tfa-settings-qr-code" />
           </QRCodeContainer>
-          <Text color="secondary">{t('twoFactorAuth.scanQRCode')}</Text>
+          <RediaccText color="secondary">{t('twoFactorAuth.scanQRCode')}</RediaccText>
         </CenteredStack>
       ),
     },
@@ -286,10 +285,10 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
           message={t('twoFactorAuth.manualSetup.title')}
           description={
             <FullWidthStack>
-              <Text>{t('twoFactorAuth.manualSetup.instructions')}</Text>
+              <RediaccText>{t('twoFactorAuth.manualSetup.instructions')}</RediaccText>
               <SecretInputRow>
                 <SecretInput value={secret} readOnly data-testid="tfa-settings-secret-key-input" />
-                <Button
+                <RediaccButton
                   icon={<CopyOutlined />}
                   onClick={() => copySecret(secret)}
                   data-testid="tfa-settings-copy-secret-button"
@@ -327,16 +326,16 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
 
         <FormItemNoMargin>
           <FormActionRow $align="space-between">
-            <Button onClick={onCancel} data-testid="tfa-settings-verification-cancel-button">
+            <RediaccButton onClick={onCancel} data-testid="tfa-settings-verification-cancel-button">
               {t('common:general.cancel')}
-            </Button>
-            <Button
+            </RediaccButton>
+            <RediaccButton
               htmlType="submit"
               loading={isSubmitting}
               data-testid="tfa-settings-verification-submit-button"
             >
               {t('twoFactorAuth.verification.submit')}
-            </Button>
+            </RediaccButton>
           </FormActionRow>
         </FormItemNoMargin>
       </Form>
@@ -366,9 +365,9 @@ const SuccessContent: React.FC<SuccessContentProps> = ({ t, onDone }) => (
           data-testid="tfa-settings-success-alert"
         />
 
-        <Button size="md" fullWidth onClick={onDone} data-testid="tfa-settings-success-done-button">
+        <RediaccButton size="md" fullWidth onClick={onDone} data-testid="tfa-settings-success-done-button">
           {t('twoFactorAuth.done')}
-        </Button>
+        </RediaccButton>
       </FullWidthStack>
     }
   />
@@ -408,7 +407,7 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
     </Card>
 
     {isEnabled ? (
-      <Button
+      <RediaccButton
         variant="danger"
         size="md"
         fullWidth
@@ -417,9 +416,9 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
         data-testid="tfa-settings-disable-button"
       >
         {t('twoFactorAuth.disable')}
-      </Button>
+      </RediaccButton>
     ) : (
-      <Button
+      <RediaccButton
         size="md"
         fullWidth
         icon={<CheckCircleOutlined />}
@@ -427,7 +426,7 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
         data-testid="tfa-settings-enable-button"
       >
         {t('twoFactorAuth.enable')}
-      </Button>
+      </RediaccButton>
     )}
   </FullWidthStack>
 );
@@ -482,16 +481,16 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
 
       <FormItemNoMargin>
         <FormActionRow>
-          <Button onClick={onCancel} data-testid="tfa-settings-enable-cancel-button">
+          <RediaccButton onClick={onCancel} data-testid="tfa-settings-enable-cancel-button">
             {t('common:general.cancel')}
-          </Button>
-          <Button
+          </RediaccButton>
+          <RediaccButton
             htmlType="submit"
             loading={isSubmitting}
             data-testid="tfa-settings-enable-submit-button"
           >
             {t('twoFactorAuth.enableModal.submit')}
-          </Button>
+          </RediaccButton>
         </FormActionRow>
       </FormItemNoMargin>
     </Form>
@@ -558,17 +557,17 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
 
       <FormItemNoMargin>
         <FormActionRow>
-          <Button onClick={onCancel} data-testid="tfa-settings-disable-cancel-button">
+          <RediaccButton onClick={onCancel} data-testid="tfa-settings-disable-cancel-button">
             {t('common:general.cancel')}
-          </Button>
-          <Button
+          </RediaccButton>
+          <RediaccButton
             variant="danger"
             htmlType="submit"
             loading={isSubmitting}
             data-testid="tfa-settings-disable-submit-button"
           >
             {t('twoFactorAuth.disableModal.submit')}
-          </Button>
+          </RediaccButton>
         </FormActionRow>
       </FormItemNoMargin>
     </Form>

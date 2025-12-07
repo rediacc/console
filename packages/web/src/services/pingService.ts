@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { useCreateQueueItem } from '@/api/queries/queue';
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
-import type { Machine } from '@/types';
 import { useTeams } from '@/api/queries/teams';
-import { waitForQueueItemCompletion, type QueueItemCompletionResult } from './helloService';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import type { Machine } from '@/types';
 import type { Team } from '@rediacc/shared/types';
+import { waitForQueueItemCompletion, type QueueItemCompletionResult } from './helloService';
 
 export interface PingFunctionParams {
   teamName: string;

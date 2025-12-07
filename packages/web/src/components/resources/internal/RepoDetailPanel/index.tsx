@@ -1,6 +1,10 @@
 ﻿import React, { useEffect, useMemo } from 'react';
 import { Row, Col, Progress, Space } from 'antd';
-import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
+import { useMachines } from '@/api/queries/machines';
+import type { Repo } from '@/api/queries/repos';
+import { IconWrapper } from '@/components/ui';
+import type { Machine } from '@/types';
 import {
   DoubleRightOutlined,
   DatabaseOutlined,
@@ -14,10 +18,6 @@ import {
   CodeOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import type { Repo } from '@/api/queries/repos';
-import type { Machine } from '@/types';
-import { useMachines } from '@/api/queries/machines';
 import { abbreviatePath } from '@/utils/pathUtils';
 import {
   PanelWrapper,
@@ -57,7 +57,7 @@ import {
   ActivityCard,
   ActivityMetrics,
 } from './styles';
-import { IconWrapper } from '@/components/ui';
+import type { TFunction } from 'i18next';
 
 interface RepoDetailPanelProps {
   repo: Repo | null;

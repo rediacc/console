@@ -66,7 +66,7 @@ export function createUsersService(client: ApiClient) {
       client.post(endpoints.users.updateUserPassword, { userNewPass: passwordHash }),
 
     updateLanguage: (language: string) =>
-      client.post(endpoints.users.updateUserLanguage, { language }),
+      client.post(endpoints.users.updateUserLanguage, { preferredLanguage: language }),
 
     getVault: async (): Promise<UserVault> => {
       interface UserVaultRow {

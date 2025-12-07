@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { Key } from 'react';
-import { Table, Tooltip, message } from 'antd';
 import {
   PlusOutlined,
   SettingOutlined,
@@ -10,8 +9,8 @@ import {
   SecurityScanOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
+import { Table, Tooltip, message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { MenuProps } from 'antd';
 import {
   useCephRbdSnapshots,
   type CephRbdSnapshot,
@@ -23,15 +22,16 @@ import {
   useCreateCephRbdSnapshot,
   useUpdateCephPoolVault,
 } from '@/api/queries/cephMutations';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { RediaccButton } from '@/components/ui';
+import { useQueueTraceModal, useExpandableTable } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { useQueueTraceModal, useExpandableTable } from '@/hooks';
-import { RediaccButton as Button } from '@/components/ui';
-import CloneTable from '../CloneTable';
+import CloneTable from '@/pages/ceph/components/CloneTable';
 import { buildSnapshotColumns } from './columns';
 import { ActionsRow, Container, ExpandButton, TableWrapper, Title } from './styles';
+import type { MenuProps } from 'antd';
 
 interface SnapshotTableProps {
   image: CephRbdImage;
@@ -250,7 +250,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         <Title>{t('snapshots.title')}</Title>
         <ActionsRow>
           <Tooltip title={t('snapshots.create')}>
-            <Button
+            <RediaccButton
               icon={<PlusOutlined />}
               onClick={handleCreate}
               data-testid="snapshot-list-create-button"

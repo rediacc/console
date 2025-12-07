@@ -12,9 +12,22 @@ import {
   Descriptions,
   Select,
 } from 'antd';
-import { RediaccSwitch } from '@/components/ui/Form';
-import { RediaccTag as Tag } from '@/components/ui';
-import type { FormInstance } from 'antd';
+
+// Type for form validation error entity
+interface ValidateErrorEntity<T = unknown> {
+  values: T;
+  errorFields: { name: (string | number)[]; errors: string[] }[];
+  outOfDate: boolean;
+}
+import { useTranslation } from 'react-i18next';
+import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue';
+import { useTeams } from '@/api/queries/teams';
+import { RediaccSwitch, RediaccTag } from '@/components/ui';
+import { RediaccText } from '@/components/ui';
+import { featureFlags } from '@/config/featureFlags';
+import storageProviders from '@/data/storageProviders.json';
+import vaultDefinitions from '@/data/vaults.json';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import {
   InfoCircleOutlined,
   WarningOutlined,
@@ -24,26 +37,9 @@ import {
   CheckCircleOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
-import { SimpleJsonEditor } from './components/SimpleJsonEditor';
-import { NestedObjectEditor } from './components/NestedObjectEditor';
-import type { UploadFile } from 'antd/es/upload/interface';
-import type { Rule } from 'antd/es/form';
-
-// Type for form validation error entity
-interface ValidateErrorEntity<T = unknown> {
-  values: T;
-  errorFields: { name: (string | number)[]; errors: string[] }[];
-  outOfDate: boolean;
-}
-import { useTranslation } from 'react-i18next';
-import vaultDefinitions from '@/data/vaults.json';
-import storageProviders from '@/data/storageProviders.json';
 import FieldGenerator from './components/FieldGenerator';
-import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue';
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { useTeams } from '@/api/queries/teams';
-import { featureFlags } from '@/config/featureFlags';
-import { RediaccText as Text } from '@/components/ui';
+import { NestedObjectEditor } from './components/NestedObjectEditor';
+import { SimpleJsonEditor } from './components/SimpleJsonEditor';
 import {
   EditorContainer,
   InfoBanner,
@@ -76,6 +72,9 @@ import {
   FullWidthPasswordInput,
   FullWidthTextArea,
 } from './styles';
+import type { FormInstance } from 'antd';
+import type { Rule } from 'antd/es/form';
+import type { UploadFile } from 'antd/es/upload/interface';
 
 type NestedFieldDefinition = React.ComponentProps<typeof NestedObjectEditor>['fieldDefinition'];
 
@@ -1621,7 +1620,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {entityType === 'MACHINE' && form.getFieldValue('kernel_compatibility') && (
                 <Col xs={24} lg={12}>
                   <FieldItem
-                    label={<Text weight="bold">{t('vaultEditor.systemCompatibility.title')}</Text>}
+                    label={<RediaccText weight="bold">{t('vaultEditor.systemCompatibility.title')}</RediaccText>}
                     colon={false}
                   >
                     {(() => {
@@ -1699,19 +1698,19 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                               label={t('vaultEditor.systemCompatibility.btrfsAvailable')}
                             >
                               {compatibility.btrfs_available ? (
-                                <Tag variant="success">
+                                <RediaccTag variant="success">
                                   {t('vaultEditor.systemCompatibility.yes')}
-                                </Tag>
+                                </RediaccTag>
                               ) : (
-                                <Tag variant="warning">
+                                <RediaccTag variant="warning">
                                   {t('vaultEditor.systemCompatibility.no')}
-                                </Tag>
+                                </RediaccTag>
                               )}
                             </Descriptions.Item>
                             <Descriptions.Item
                               label={t('vaultEditor.systemCompatibility.sudoAvailable')}
                             >
-                              <Tag
+                              <RediaccTag
                                 variant={
                                   sudoConfigValue.color as
                                     | 'default'
@@ -1722,17 +1721,17 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                                 }
                               >
                                 {sudoConfigValue.text}
-                              </Tag>
+                              </RediaccTag>
                             </Descriptions.Item>
                             {osSetupCompleted !== null && (
                               <Descriptions.Item
                                 label={t('vaultEditor.systemCompatibility.osSetup')}
                               >
-                                <Tag variant={osSetupCompleted ? 'success' : 'warning'}>
+                                <RediaccTag variant={osSetupCompleted ? 'success' : 'warning'}>
                                   {osSetupCompleted
                                     ? t('vaultEditor.systemCompatibility.setupCompleted')
                                     : t('vaultEditor.systemCompatibility.setupRequired')}
-                                </Tag>
+                                </RediaccTag>
                               </Descriptions.Item>
                             )}
                           </Descriptions>
@@ -1742,9 +1741,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                             icon={config.icon}
                             message={
                               <Space>
-                                <Text weight="bold">
+                                <RediaccText weight="bold">
                                   {t('vaultEditor.systemCompatibility.compatibilityStatus')}:
-                                </Text>
+                                </RediaccText>
                                 <StatusHighlightText $status={config.statusVariant}>
                                   {t(`vaultEditor.systemCompatibility.${status}`)}
                                 </StatusHighlightText>
@@ -1755,9 +1754,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                                 {compatibility.compatibility_issues &&
                                   compatibility.compatibility_issues.length > 0 && (
                                     <ListSection>
-                                      <Text weight="bold">
+                                      <RediaccText weight="bold">
                                         {t('vaultEditor.systemCompatibility.knownIssues')}:
-                                      </Text>
+                                      </RediaccText>
                                       <IssueList>
                                         {compatibility.compatibility_issues.map(
                                           (issue: string, index: number) => (
@@ -1770,9 +1769,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                                 {compatibility.recommendations &&
                                   compatibility.recommendations.length > 0 && (
                                     <ListSection>
-                                      <Text weight="bold">
+                                      <RediaccText weight="bold">
                                         {t('vaultEditor.systemCompatibility.recommendations')}:
-                                      </Text>
+                                      </RediaccText>
                                       <RecommendationList>
                                         {compatibility.recommendations.map(
                                           (rec: string, index: number) => (
@@ -1896,9 +1895,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 <Divider>
                   <Space>
                     <TipsDividerIcon />
-                    <Text weight="bold">
+                    <RediaccText weight="bold">
                       {t('storageProviders:common.tips', { defaultValue: 'Tips' })}
-                    </Text>
+                    </RediaccText>
                   </Space>
                 </Divider>
                 <TipsAlert
@@ -1912,7 +1911,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                           );
                           return tip ? (
                             <div key={index}>
-                              <Text>- {tip}</Text>
+                              <RediaccText>- {tip}</RediaccText>
                             </div>
                           ) : null;
                         })

@@ -1,8 +1,7 @@
 import styled, { css } from 'styled-components';
-import { RediaccSearchInput as UnifiedSearchInput } from '@/components/ui/Form';
-import { RediaccText as Text, RediaccCard, RediaccStack } from '@/components/ui';
-import { RediaccButton } from '@/components/ui/Button';
 import { ActionGroup } from '@/components/common/styled';
+import { RediaccText, RediaccCard, RediaccStack, RediaccButton } from '@/components/ui';
+import { RediaccSearchInput } from '@/components/ui/Form';
 
 export const ContainerCard = styled(RediaccCard)`
   && {
@@ -56,7 +55,7 @@ export const ActionsGroup = styled(ActionGroup)`
   }
 `;
 
-export const SearchInput = styled(UnifiedSearchInput)`
+export const SearchInput = styled(RediaccSearchInput)`
   && {
     width: 300px;
     min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
@@ -79,12 +78,12 @@ export const EmptyDescriptionStack = styled(RediaccStack).attrs({
   padding: ${({ theme }) => theme.spacing.LG}px;
 `;
 
-export const EmptyTitle = styled(Text).attrs({
+export const EmptyTitle = styled(RediaccText).attrs({
   size: 'xl',
   weight: 'semibold',
 })``;
 
-export const EmptySubtitle = styled(Text).attrs({
+export const EmptySubtitle = styled(RediaccText).attrs({
   variant: 'caption',
 })``;
 

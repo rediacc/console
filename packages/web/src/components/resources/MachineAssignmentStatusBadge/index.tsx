@@ -1,16 +1,16 @@
 import React from 'react';
-import { Tooltip } from 'antd';
 import {
   CloudServerOutlined,
   FileImageOutlined,
   CopyOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons';
+import { Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { MachineAssignmentType } from '@/types';
-import type { TagVariant } from '@/components/ui/Tag';
-import { AssignmentBadge, AssignmentTag, TooltipText } from './styles';
 import { IconWrapper } from '@/components/ui';
+import type { TagVariant } from '@/components/ui/Tag';
+import type { MachineAssignmentType } from '@/types';
+import { AssignmentBadge, AssignmentTag, TooltipText } from './styles';
 
 interface MachineAssignmentStatusBadgeProps {
   assignmentType: MachineAssignmentType;

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { TeamOutlined, SearchOutlined } from '@/utils/optimizedIcons';
-import type { Team } from '@/api/queries/teams';
 import { useTranslation } from 'react-i18next';
+import type { Team } from '@/api/queries/teams';
+import { TeamOutlined, SearchOutlined } from '@/utils/optimizedIcons';
 import {
   TeamSelect,
   TeamTag,

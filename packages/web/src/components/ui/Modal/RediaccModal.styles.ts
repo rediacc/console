@@ -1,5 +1,5 @@
-import styled, { css, keyframes } from 'styled-components';
 import { Modal as AntModal } from 'antd';
+import styled, { css, keyframes } from 'styled-components';
 import type { ModalSize, ModalVariant } from './RediaccModal.types';
 
 export const fadeInAnimation = keyframes`

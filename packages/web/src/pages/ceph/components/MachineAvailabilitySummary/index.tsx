@@ -1,5 +1,9 @@
 import React from 'react';
 import { Row, Col } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useTheme as useStyledTheme } from 'styled-components';
+import { useMachines } from '@/api/queries/machines';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {
   DesktopOutlined,
   CheckCircleOutlined,
@@ -7,10 +11,6 @@ import {
   HddOutlined,
   CopyOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useTheme as useStyledTheme } from 'styled-components';
-import { useMachines } from '@/api/queries/machines';
-import { MachineAvailabilitySummaryProps, MachineStats } from './types';
 import {
   SummaryCard,
   LoadingCard,
@@ -21,7 +21,7 @@ import {
   SummaryStatistic,
   PercentageSuffix,
 } from './styles';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { MachineAvailabilitySummaryProps, MachineStats } from './types';
 
 export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProps> = ({
   teamFilter,

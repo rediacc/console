@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Tooltip } from 'antd';
-import { CloudServerOutlined, DesktopOutlined, ClockCircleOutlined } from '@/utils/optimizedIcons';
 import { useApiHealth } from '@/api/queries/health';
 import { versionService } from '@/services/versionService';
+import { CloudServerOutlined, DesktopOutlined, ClockCircleOutlined } from '@/utils/optimizedIcons';
 import {
   FooterContainer,
   VersionItem,
