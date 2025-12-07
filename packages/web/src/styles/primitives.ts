@@ -1,18 +1,17 @@
 import type { ComponentType } from 'react';
 import { Table, Typography, Segmented, Row } from 'antd';
 import styled, { css, keyframes } from 'styled-components';
-// Import Rediacc components from barrel export
-import {
-  RediaccButton,
-  RediaccText,
-  RediaccTag,
-  RediaccCard,
-  RediaccAlert,
-  RediaccStack,
-  RediaccBadge,
-  RediaccEmpty,
-  RediaccModal,
-} from '@/components/ui';
+// Import Rediacc components directly to avoid circular dependencies
+// (barrel export @/components/ui includes card.tsx which imports from primitives)
+import { RediaccButton } from '@/components/ui/Button';
+import { RediaccText } from '@/components/ui/Text';
+import { RediaccTag } from '@/components/ui/Tag';
+import { RediaccCard } from '@/components/ui/Card';
+import { RediaccAlert } from '@/components/ui/Alert';
+import { RediaccStack } from '@/components/ui/Stack';
+import { RediaccBadge } from '@/components/ui/Badge';
+import { RediaccEmpty } from '@/components/ui/Empty';
+import { RediaccModal } from '@/components/ui/Modal';
 // Import unified form components
 import {
   RediaccInput,
