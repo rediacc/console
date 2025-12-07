@@ -5,7 +5,21 @@ import i18n from '@/i18n/config';
 import { hashPassword } from '@/utils/auth';
 import { showMessage } from '@/utils/messages';
 import { createErrorHandler } from '@/utils/mutationUtils';
-import type { PermissionGroup, User, UserRequest, UserVault } from '@rediacc/shared/types';
+import type {
+  PermissionGroup,
+  User,
+  UserRequest,
+  UserVault,
+  UpdateUserToDeactivatedParams,
+  UpdateUserToActivatedParams,
+  UpdateUserEmailParams,
+  UpdateUserLanguageParams,
+  UpdateUserVaultParams,
+  UpdateUserAssignedPermissionsParams,
+  CreatePermissionGroupParams,
+  DeleteUserRequestParams,
+  UpdateUserPasswordParams,
+} from '@rediacc/shared/types';
 
 // Get all users
 export const useUsers = () => {
@@ -63,32 +77,28 @@ export const useActivateUser = () => {
 };
 
 // Deactivate user
-export const useDeactivateUser = createMutation<string>({
-  request: (userEmail) => api.users.deactivate(userEmail),
+export const useDeactivateUser = createMutation<UpdateUserToDeactivatedParams>({
+  request: (params) => api.users.deactivate(params),
   invalidateKeys: ['users'],
-  successMessage: (userEmail) =>
-    i18n.t('organization:users.success.deactivated', { email: userEmail }),
+  successMessage: (params) =>
+    i18n.t('organization:users.success.deactivated', { email: params.userEmail }),
   errorMessage: i18n.t('organization:users.errors.deactivateFailed'),
   operationName: 'users.deactivate',
 });
 
 // Reactivate user
-export const useReactivateUser = createMutation<string>({
-  request: (userEmail) => api.users.activate(userEmail),
+export const useReactivateUser = createMutation<UpdateUserToActivatedParams>({
+  request: (params) => api.users.activate(params),
   invalidateKeys: ['users'],
-  successMessage: (userEmail) =>
-    i18n.t('organization:users.success.activated', { email: userEmail }),
+  successMessage: (params) =>
+    i18n.t('organization:users.success.activated', { email: params.userEmail }),
   errorMessage: i18n.t('organization:users.errors.activateFailed'),
   operationName: 'users.activate',
 });
 
 // Update user email
-export const useUpdateUserEmail = createMutation<{
-  currentUserEmail: string;
-  newUserEmail: string;
-}>({
-  request: ({ currentUserEmail, newUserEmail }) =>
-    api.users.updateEmail(currentUserEmail, newUserEmail),
+export const useUpdateUserEmail = createMutation<UpdateUserEmailParams>({
+  request: (params) => api.users.updateEmail(params),
   invalidateKeys: ['users'],
   successMessage: (vars) =>
     i18n.t('organization:users.success.emailUpdated', { email: vars.newUserEmail }),
@@ -97,8 +107,8 @@ export const useUpdateUserEmail = createMutation<{
 });
 
 // Update user language preference
-export const useUpdateUserLanguage = createMutation<string>({
-  request: (preferredLanguage) => api.users.updateLanguage(preferredLanguage),
+export const useUpdateUserLanguage = createMutation<UpdateUserLanguageParams>({
+  request: (params) => api.users.updateLanguage(params),
   invalidateKeys: [],
   successMessage: () => i18n.t('organization:users.success.languageSaved'),
   errorMessage: i18n.t('organization:users.errors.languageUpdateFailed'),
@@ -114,22 +124,20 @@ export const usePermissionGroups = () => {
 };
 
 // Create permission group
-export const useCreatePermissionGroup = createMutation<string>({
-  request: (permissionGroupName) => api.permissions.createGroup(permissionGroupName),
+export const useCreatePermissionGroup = createMutation<CreatePermissionGroupParams>({
+  request: (params) => api.permissions.createGroup(params),
   invalidateKeys: ['permission-groups'],
-  successMessage: (groupName) =>
-    i18n.t('organization:users.success.permissionGroupCreated', { groupName }),
+  successMessage: (params) =>
+    i18n.t('organization:users.success.permissionGroupCreated', {
+      groupName: params.permissionGroupName,
+    }),
   errorMessage: i18n.t('organization:users.errors.permissionGroupCreateFailed'),
   operationName: 'permissions.createGroup',
 });
 
 // Assign user to permission group
-export const useAssignUserPermissions = createMutation<{
-  userEmail: string;
-  permissionGroupName: string;
-}>({
-  request: ({ userEmail, permissionGroupName }) =>
-    api.users.assignPermissions(userEmail, permissionGroupName),
+export const useAssignUserPermissions = createMutation<UpdateUserAssignedPermissionsParams>({
+  request: (params) => api.users.assignPermissions(params),
   invalidateKeys: ['users'],
   successMessage: (vars) =>
     i18n.t('organization:users.success.permissionsAssigned', {
@@ -144,16 +152,16 @@ export const useAssignUserPermissions = createMutation<{
 export const useUpdateUserPassword = createMutation<
   { userEmail: string; newPassword: string },
   unknown,
-  { passwordHash: string }
+  UpdateUserPasswordParams
 >({
-  request: ({ passwordHash }) => api.users.updatePassword(passwordHash),
+  request: (params) => api.users.updatePassword(params),
   invalidateKeys: [],
   successMessage: () => i18n.t('organization:users.success.passwordUpdated'),
   errorMessage: i18n.t('organization:users.errors.passwordUpdateFailed'),
   transformData: async (data) => {
     const passwordHash = await hashPassword(data.newPassword);
     return {
-      passwordHash,
+      userNewPass: passwordHash,
     };
   },
   operationName: 'users.updatePassword',
@@ -170,8 +178,8 @@ export const useUserRequests = () => {
 };
 
 // Delete/terminate a user request/session
-export const useDeleteUserRequest = createMutation<{ requestId: number }>({
-  request: ({ requestId }) => api.auth.terminateSession(requestId),
+export const useDeleteUserRequest = createMutation<DeleteUserRequestParams>({
+  request: (params) => api.auth.terminateSession(params),
   invalidateKeys: ['user-requests'],
   successMessage: () => i18n.t('organization:users.success.sessionTerminated'),
   errorMessage: i18n.t('organization:users.errors.sessionTerminateFailed'),
@@ -187,8 +195,8 @@ export const useUserVault = () => {
 };
 
 // Update current user's vault
-export const useUpdateUserVault = createMutation<{ vaultContent: string; vaultVersion: number }>({
-  request: ({ vaultContent, vaultVersion }) => api.users.updateVault(vaultContent, vaultVersion),
+export const useUpdateUserVault = createMutation<UpdateUserVaultParams>({
+  request: (params) => api.users.updateVault(params),
   invalidateKeys: ['user-vault'],
   successMessage: () => i18n.t('organization:users.success.userVaultUpdated'),
   errorMessage: i18n.t('organization:users.errors.userVaultUpdateFailed'),

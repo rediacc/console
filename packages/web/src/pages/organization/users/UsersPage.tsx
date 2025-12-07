@@ -101,7 +101,7 @@ const UsersPage: React.FC = () => {
 
   const handleDeactivateUser = async (userEmail: string) => {
     try {
-      await deactivateUserMutation.mutateAsync(userEmail);
+      await deactivateUserMutation.mutateAsync({ userEmail });
     } catch {
       // handled by mutation
     }
@@ -109,7 +109,7 @@ const UsersPage: React.FC = () => {
 
   const handleReactivateUser = async (userEmail: string) => {
     try {
-      await reactivateUserMutation.mutateAsync(userEmail);
+      await reactivateUserMutation.mutateAsync({ userEmail });
     } catch {
       // handled by mutation
     }

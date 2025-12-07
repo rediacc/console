@@ -1,6 +1,13 @@
 import { Command } from 'commander';
 import { api } from '../services/api.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
+import type {
+  GetTeamStoragesParams,
+  CreateStorageParams,
+  UpdateStorageNameParams,
+  DeleteStorageParams,
+  UpdateStorageVaultParams,
+} from '@rediacc/shared/types';
 
 export function registerStorageCommands(program: Command): void {
   createResourceCommands(program, {
@@ -9,34 +16,17 @@ export function registerStorageCommands(program: Command): void {
     nameField: 'storageName',
     parentOption: 'team',
     operations: {
-      list: (params) => api.storage.list(params?.teamName as string),
-      create: (payload) =>
-        api.storage.create(
-          payload.teamName as string,
-          payload.storageName as string,
-          payload.vaultContent as string | undefined
-        ),
-      rename: (payload) =>
-        api.storage.rename(
-          payload.teamName as string,
-          payload.currentStorageName as string,
-          payload.newStorageName as string
-        ),
-      delete: (payload) =>
-        api.storage.delete(payload.teamName as string, payload.storageName as string),
+      list: (params) => api.storage.list({ teamName: params?.teamName as string }),
+      create: (payload) => api.storage.create(payload as unknown as CreateStorageParams),
+      rename: (payload) => api.storage.rename(payload as unknown as UpdateStorageNameParams),
+      delete: (payload) => api.storage.delete(payload as unknown as DeleteStorageParams),
     },
     vaultConfig: {
       fetch: (params) => api.company.getAllVaults(params),
       vaultType: 'Storage',
     },
     vaultUpdateConfig: {
-      update: (payload) =>
-        api.storage.updateVault(
-          payload.teamName as string,
-          payload.storageName as string,
-          payload.vaultContent as string,
-          payload.vaultVersion as number
-        ),
+      update: (payload) => api.storage.updateVault(payload as unknown as UpdateStorageVaultParams),
       vaultFieldName: 'vaultContent',
     },
   });

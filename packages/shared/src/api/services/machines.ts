@@ -1,7 +1,25 @@
 import { endpoints } from '../../endpoints';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { Machine } from '../../types';
+import type {
+  Machine,
+  CreateMachineParams,
+  UpdateMachineNameParams,
+  DeleteMachineParams,
+  UpdateMachineVaultParams,
+  UpdateMachineAssignedBridgeParams,
+  UpdateMachineClusterAssignmentParams,
+  UpdateMachineClusterRemovalParams,
+  UpdateCloneMachineAssignmentsParams,
+  UpdateCloneMachineRemovalsParams,
+  UpdateMachineCephParams,
+  UpdateImageMachineAssignmentParams,
+  GetCloneMachinesParams,
+  GetMachineAssignmentStatusParams,
+  GetCloneMachineAssignmentValidationParams,
+  GetAvailableMachinesForCloneParams,
+  WithOptionalVault,
+} from '../../types';
 
 function normalizeTeamName(teamName?: string | string[]) {
   if (!teamName) return undefined;
@@ -22,54 +40,32 @@ export function createMachinesService(client: ApiClient) {
       });
     },
 
-    getAssignmentStatus: (machineName: string, teamName: string) =>
-      client.get(endpoints.machines.getMachineAssignmentStatus, { machineName, teamName }),
+    getAssignmentStatus: (params: GetMachineAssignmentStatusParams) =>
+      client.get(endpoints.machines.getMachineAssignmentStatus, params),
 
-    create: (teamName: string, machineName: string, bridgeName: string, vaultContent?: string) =>
+    create: (params: WithOptionalVault<CreateMachineParams>) =>
       client.post(endpoints.machines.createMachine, {
-        teamName,
-        machineName,
-        bridgeName,
-        vaultContent: vaultContent ?? '{}',
+        ...params,
+        vaultContent: params.vaultContent ?? '{}',
       }),
 
-    rename: (teamName: string, currentName: string, newName: string) =>
-      client.post(endpoints.machines.updateMachineName, {
-        teamName,
-        currentMachineName: currentName,
-        newMachineName: newName,
-      }),
+    rename: (params: UpdateMachineNameParams) =>
+      client.post(endpoints.machines.updateMachineName, params),
 
-    delete: (teamName: string, machineName: string) =>
-      client.post(endpoints.machines.deleteMachine, { teamName, machineName }),
+    delete: (params: DeleteMachineParams) =>
+      client.post(endpoints.machines.deleteMachine, params),
 
-    updateVault: (teamName: string, machineName: string, vault: string, vaultVersion: number) =>
-      client.post(endpoints.machines.updateMachineVault, {
-        teamName,
-        machineName,
-        vaultContent: vault,
-        vaultVersion,
-      }),
+    updateVault: (params: UpdateMachineVaultParams) =>
+      client.post(endpoints.machines.updateMachineVault, params),
 
-    assignBridge: (teamName: string, machineName: string, bridgeName: string) =>
-      client.post(endpoints.machines.updateMachineAssignedBridge, {
-        teamName,
-        machineName,
-        bridgeName,
-      }),
+    assignBridge: (params: UpdateMachineAssignedBridgeParams) =>
+      client.post(endpoints.machines.updateMachineAssignedBridge, params),
 
-    updateClusterAssignment: (teamName: string, machineName: string, clusterName: string | null) =>
-      client.post(endpoints.machines.updateMachineClusterAssignment, {
-        teamName,
-        machineName,
-        clusterName,
-      }),
+    updateClusterAssignment: (params: UpdateMachineClusterAssignmentParams) =>
+      client.post(endpoints.machines.updateMachineClusterAssignment, params),
 
-    removeFromCluster: (teamName: string, machineName: string) =>
-      client.post(endpoints.machines.updateMachineClusterRemoval, {
-        teamName,
-        machineName,
-      }),
+    removeFromCluster: (params: UpdateMachineClusterRemovalParams) =>
+      client.post(endpoints.machines.updateMachineClusterRemoval, params),
 
     updateCloneAssignment: (teamName: string, machineName: string, cloneName: string) =>
       client.post(endpoints.machines.updateMachineCloneAssignment, {
@@ -78,82 +74,25 @@ export function createMachinesService(client: ApiClient) {
         cloneName,
       }),
 
-    updateCloneAssignments: (
-      cloneName: string,
-      snapshotName: string,
-      imageName: string,
-      poolName: string,
-      teamName: string,
-      machineNames: string
-    ) =>
-      client.post(endpoints.machines.updateCloneMachineAssignments, {
-        cloneName,
-        snapshotName,
-        imageName,
-        poolName,
-        teamName,
-        machineNames,
-      }),
+    updateCloneAssignments: (params: UpdateCloneMachineAssignmentsParams) =>
+      client.post(endpoints.machines.updateCloneMachineAssignments, params),
 
-    removeCloneAssignments: (
-      cloneName: string,
-      snapshotName: string,
-      imageName: string,
-      poolName: string,
-      teamName: string,
-      machineNames: string
-    ) =>
-      client.post(endpoints.machines.updateCloneMachineRemovals, {
-        cloneName,
-        snapshotName,
-        imageName,
-        poolName,
-        teamName,
-        machineNames,
-      }),
+    removeCloneAssignments: (params: UpdateCloneMachineRemovalsParams) =>
+      client.post(endpoints.machines.updateCloneMachineRemovals, params),
 
-    updateCeph: (teamName: string, machineName: string, clusterName: string | null) =>
-      client.post(endpoints.machines.updateMachineCeph, {
-        teamName,
-        machineName,
-        clusterName,
-      }),
+    updateCeph: (params: UpdateMachineCephParams) =>
+      client.post(endpoints.machines.updateMachineCeph, params),
 
-    updateImageAssignment: (
-      teamName: string,
-      poolName: string,
-      imageName: string,
-      newMachineName: string
-    ) =>
-      client.post(endpoints.machines.updateImageMachineAssignment, {
-        teamName,
-        poolName,
-        imageName,
-        newMachineName,
-      }),
+    updateImageAssignment: (params: UpdateImageMachineAssignmentParams) =>
+      client.post(endpoints.machines.updateImageMachineAssignment, params),
 
-    getCloneMachines: (
-      cloneName: string,
-      snapshotName: string,
-      imageName: string,
-      poolName: string,
-      teamName: string
-    ) =>
-      client.get(endpoints.machines.getCloneMachines, {
-        cloneName,
-        snapshotName,
-        imageName,
-        poolName,
-        teamName,
-      }),
+    getCloneMachines: (params: GetCloneMachinesParams) =>
+      client.get(endpoints.machines.getCloneMachines, params),
 
-    getCloneAssignmentValidation: (teamName: string, machineNames: string) =>
-      client.get(endpoints.machines.getCloneMachineAssignmentValidation, {
-        teamName,
-        machineNames,
-      }),
+    getCloneAssignmentValidation: (params: GetCloneMachineAssignmentValidationParams) =>
+      client.get(endpoints.machines.getCloneMachineAssignmentValidation, params),
 
-    getAvailableMachinesForClone: (teamName: string) =>
-      client.get(endpoints.machines.getAvailableMachinesForClone, { teamName }),
+    getAvailableMachinesForClone: (params: GetAvailableMachinesForCloneParams) =>
+      client.get(endpoints.machines.getAvailableMachinesForClone, params),
   };
 }

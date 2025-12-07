@@ -6,7 +6,20 @@ import { invalidateQueueCaches, invalidateAllQueueCaches } from '@/utils/cacheUt
 import { minifyJSON } from '@/utils/json';
 import { showMessage } from '@/utils/messages';
 import { createErrorHandler } from '@/utils/mutationUtils';
-import type { QueueTrace, QueueListResult } from '@rediacc/shared/types';
+import type {
+  QueueTrace,
+  QueueListResult,
+  QueueFilters,
+  CreateQueueItemParams,
+  UpdateQueueItemResponseParams,
+  UpdateQueueItemToCompletedParams,
+  CancelQueueItemParams,
+  DeleteQueueItemParams,
+  RetryFailedQueueItemParams,
+  GetQueueItemTraceParams,
+} from '@rediacc/shared/types';
+
+export type { QueueFilters };
 
 export interface QueueFunctionParameter {
   type: string;
@@ -29,27 +42,6 @@ export interface QueueFunction {
 }
 
 // Queue functions will be loaded via the functionsService instead
-
-// Parameters for GetTeamQueueItems
-export interface QueueFilters {
-  teamName?: string; // Comma-separated team names
-  machineName?: string;
-  bridgeName?: string;
-  regionName?: string;
-  status?: string; // Comma-separated status values
-  priority?: number;
-  minPriority?: number;
-  maxPriority?: number;
-  dateFrom?: string;
-  dateTo?: string;
-  taskId?: string;
-  includeCompleted?: boolean;
-  includeCancelled?: boolean;
-  onlyStale?: boolean;
-  staleThresholdMinutes?: number;
-  maxRecords?: number;
-  createdByUserEmail?: string;
-}
 
 // Get queue items with advanced filtering
 export const useQueueItems = (filters: QueueFilters = {}) => {
@@ -91,27 +83,23 @@ export const useCreateQueueItem = () => {
   return useMutation({
     mutationFn: async (data: {
       teamName: string;
-      machineName?: string; // Made optional for bridge-only queue items
+      machineName?: string;
       bridgeName: string;
       queueVault: string;
-      priority?: number; // Optional priority (1-5), defaults to 3
+      priority?: number;
     }) => {
       // Ensure priority is within valid range
       const priority =
         data.priority && data.priority >= 1 && data.priority <= 5 ? data.priority : 3;
       // Minify the vault JSON before sending
-      const minifiedData = {
-        ...data,
-        queueVault: minifyJSON(data.queueVault),
+      const params: CreateQueueItemParams = {
+        teamName: data.teamName,
+        machineName: data.machineName || '',
+        bridgeName: data.bridgeName,
+        vaultContent: minifyJSON(data.queueVault),
         priority,
       };
-      const response = await api.queue.create(
-        minifiedData.teamName,
-        minifiedData.machineName,
-        minifiedData.bridgeName,
-        minifiedData.queueVault,
-        minifiedData.priority
-      );
+      const response = await api.queue.create(params);
       return response;
     },
     onSuccess: (response, variables) => {
@@ -132,11 +120,11 @@ export const useUpdateQueueItemResponse = () => {
   return useMutation({
     mutationFn: async (data: { taskId: string; responseVault: string }) => {
       // Minify the vault JSON before sending
-      const minifiedData = {
-        ...data,
-        responseVault: minifyJSON(data.responseVault),
+      const params: UpdateQueueItemResponseParams = {
+        taskId: data.taskId,
+        vaultContent: minifyJSON(data.responseVault),
       };
-      return api.queue.updateResponse(minifiedData.taskId, minifiedData.responseVault);
+      return api.queue.updateResponse(params);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
@@ -157,16 +145,12 @@ export const useCompleteQueueItem = () => {
       finalStatus?: 'COMPLETED' | 'FAILED';
     }) => {
       // Minify the vault JSON before sending
-      const minifiedData = {
-        ...data,
-        finalVault: minifyJSON(data.finalVault),
+      const params: UpdateQueueItemToCompletedParams = {
+        taskId: data.taskId,
+        vaultContent: minifyJSON(data.finalVault),
         finalStatus: data.finalStatus || 'COMPLETED', // Default to COMPLETED for backward compatibility
       };
-      return api.queue.complete(
-        minifiedData.taskId,
-        minifiedData.finalVault,
-        minifiedData.finalStatus
-      );
+      return api.queue.complete(params);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
@@ -230,7 +214,8 @@ export const useCancelQueueItem = () => {
 
   return useMutation({
     mutationFn: async (taskId: string) => {
-      return api.queue.cancel(taskId);
+      const params: CancelQueueItemParams = { taskId };
+      return api.queue.cancel(params);
     },
     onSuccess: (_, taskId) => {
       invalidateAllQueueCaches(queryClient);
@@ -246,7 +231,8 @@ export const useDeleteQueueItem = () => {
 
   return useMutation({
     mutationFn: async (taskId: string) => {
-      return api.queue.delete(taskId);
+      const params: DeleteQueueItemParams = { taskId };
+      return api.queue.delete(params);
     },
     onSuccess: (_, taskId) => {
       invalidateAllQueueCaches(queryClient);
@@ -262,7 +248,8 @@ export const useRetryFailedQueueItem = () => {
 
   return useMutation({
     mutationFn: async (taskId: string) => {
-      return api.queue.retry(taskId);
+      const params: RetryFailedQueueItemParams = { taskId };
+      return api.queue.retry(params);
     },
     onSuccess: (_, taskId) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
@@ -279,7 +266,8 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
     queryKey: QUERY_KEYS.queue.itemTrace(taskId),
     queryFn: async () => {
       if (!taskId) return null;
-      const trace = await api.queue.getTrace(taskId);
+      const params: GetQueueItemTraceParams = { taskId };
+      const trace = await api.queue.getTrace(params);
       return trace;
     },
     enabled: enabled && !!taskId,

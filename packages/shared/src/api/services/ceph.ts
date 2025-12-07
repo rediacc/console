@@ -12,6 +12,31 @@ import type {
   CephRbdImage,
   CephRbdSnapshot,
   Machine,
+  CreateCephClusterParams,
+  DeleteCephClusterParams,
+  UpdateCephClusterVaultParams,
+  GetCephClusterMachinesParams,
+  GetCephPoolsParams,
+  CreateCephPoolParams,
+  DeleteCephPoolParams,
+  UpdateCephPoolVaultParams,
+  GetCephRbdImagesParams,
+  CreateCephRbdImageParams,
+  DeleteCephRbdImageParams,
+  GetCephRbdSnapshotsParams,
+  CreateCephRbdSnapshotParams,
+  DeleteCephRbdSnapshotParams,
+  GetCephRbdClonesParams,
+  CreateCephRbdCloneParams,
+  DeleteCephRbdCloneParams,
+  UpdateCloneMachineAssignmentsParams,
+  UpdateCloneMachineRemovalsParams,
+  GetMachineAssignmentStatusParams,
+  GetAvailableMachinesForCloneParams,
+  GetCloneMachineAssignmentValidationParams,
+  GetCloneMachinesParams,
+  UpdateImageMachineAssignmentParams,
+  WithOptionalVault,
 } from '../../types';
 
 function toMachineNamesValue(machineNames: string | string[]): string {
@@ -28,274 +53,124 @@ export function createCephService(client: ApiClient) {
       });
     },
 
-    createCluster: async (clusterName: string, vaultContent?: string): Promise<void> => {
-      await client.post(endpoints.ceph.createCluster, { clusterName, vaultContent });
+    createCluster: async (params: WithOptionalVault<CreateCephClusterParams>): Promise<void> => {
+      await client.post(endpoints.ceph.createCluster, params);
     },
 
-    deleteCluster: async (clusterName: string): Promise<void> => {
-      await client.post(endpoints.ceph.deleteCluster, { clusterName });
+    deleteCluster: async (params: DeleteCephClusterParams): Promise<void> => {
+      await client.post(endpoints.ceph.deleteCluster, params);
     },
 
-    updateClusterVault: async (
-      clusterName: string,
-      vaultContent: string,
-      vaultVersion: number
-    ): Promise<void> => {
-      await client.post(endpoints.ceph.updateClusterVault, {
-        clusterName,
-        vaultContent,
-        vaultVersion,
-      });
+    updateClusterVault: async (params: UpdateCephClusterVaultParams): Promise<void> => {
+      await client.post(endpoints.ceph.updateClusterVault, params);
     },
 
-    getClusterMachines: async (clusterName: string): Promise<Machine[]> => {
-      const response = await client.post<Machine>(endpoints.ceph.getClusterMachines, {
-        clusterName,
-      });
+    getClusterMachines: async (params: GetCephClusterMachinesParams): Promise<Machine[]> => {
+      const response = await client.post<Machine>(endpoints.ceph.getClusterMachines, params);
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<Machine>(1),
       });
     },
 
     // Pools
-    listPools: async (teamName: string | string[]): Promise<CephPool[]> => {
-      const response = await client.post<CephPool>(endpoints.ceph.getPools, {
-        teamName: toMachineNamesValue(teamName),
-      });
+    listPools: async (params: GetCephPoolsParams): Promise<CephPool[]> => {
+      const response = await client.post<CephPool>(endpoints.ceph.getPools, params);
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<CephPool>(1),
       });
     },
 
-    createPool: async (
-      teamName: string,
-      clusterName: string,
-      poolName: string,
-      vaultContent?: string
-    ): Promise<void> => {
-      await client.post(endpoints.ceph.createPool, {
-        teamName,
-        clusterName,
-        poolName,
-        vaultContent,
-      });
+    createPool: async (params: WithOptionalVault<CreateCephPoolParams>): Promise<void> => {
+      await client.post(endpoints.ceph.createPool, params);
     },
 
-    deletePool: async (teamName: string, poolName: string): Promise<void> => {
-      await client.post(endpoints.ceph.deletePool, {
-        teamName,
-        poolName,
-      });
+    deletePool: async (params: DeleteCephPoolParams): Promise<void> => {
+      await client.post(endpoints.ceph.deletePool, params);
     },
 
-    updatePoolVault: async (
-      teamName: string,
-      poolName: string,
-      vaultContent: string,
-      vaultVersion: number
-    ): Promise<void> => {
-      await client.post(endpoints.ceph.updatePoolVault, {
-        teamName,
-        poolName,
-        vaultContent,
-        vaultVersion,
-      });
+    updatePoolVault: async (params: UpdateCephPoolVaultParams): Promise<void> => {
+      await client.post(endpoints.ceph.updatePoolVault, params);
     },
 
     // Images
-    listImages: async (poolName: string, teamName: string): Promise<CephRbdImage[]> => {
-      const response = await client.post<CephRbdImage>(endpoints.ceph.getRbdImages, {
-        poolName,
-        teamName,
-      });
+    listImages: async (params: GetCephRbdImagesParams): Promise<CephRbdImage[]> => {
+      const response = await client.post<CephRbdImage>(endpoints.ceph.getRbdImages, params);
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<CephRbdImage>(1),
       });
     },
 
-    createImage: async (
-      poolName: string,
-      teamName: string,
-      imageName: string,
-      machineName: string,
-      vaultContent?: string
-    ): Promise<void> => {
-      await client.post(endpoints.ceph.createRbdImage, {
-        poolName,
-        teamName,
-        imageName,
-        machineName,
-        vaultContent,
-      });
+    createImage: async (params: WithOptionalVault<CreateCephRbdImageParams>): Promise<void> => {
+      await client.post(endpoints.ceph.createRbdImage, params);
     },
 
-    deleteImage: async (poolName: string, teamName: string, imageName: string): Promise<void> => {
-      await client.post(endpoints.ceph.deleteRbdImage, {
-        poolName,
-        teamName,
-        imageName,
-      });
+    deleteImage: async (params: DeleteCephRbdImageParams): Promise<void> => {
+      await client.post(endpoints.ceph.deleteRbdImage, params);
     },
 
-    assignMachineToImage: async (
-      poolName: string,
-      teamName: string,
-      imageName: string,
-      newMachineName: string
-    ): Promise<void> => {
-      await client.post(endpoints.machines.updateImageMachineAssignment, {
-        poolName,
-        teamName,
-        imageName,
-        newMachineName,
-      });
+    assignMachineToImage: async (params: UpdateImageMachineAssignmentParams): Promise<void> => {
+      await client.post(endpoints.machines.updateImageMachineAssignment, params);
     },
 
     // Snapshots
-    listSnapshots: async (
-      imageName: string,
-      poolName: string,
-      teamName: string
-    ): Promise<CephRbdSnapshot[]> => {
-      const response = await client.post<CephRbdSnapshot>(endpoints.ceph.getRbdSnapshots, {
-        imageName,
-        poolName,
-        teamName,
-      });
+    listSnapshots: async (params: GetCephRbdSnapshotsParams): Promise<CephRbdSnapshot[]> => {
+      const response = await client.post<CephRbdSnapshot>(endpoints.ceph.getRbdSnapshots, params);
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<CephRbdSnapshot>(1),
       });
     },
 
     createSnapshot: async (
-      imageName: string,
-      poolName: string,
-      teamName: string,
-      snapshotName: string,
-      vaultContent?: string
+      params: WithOptionalVault<CreateCephRbdSnapshotParams>
     ): Promise<void> => {
-      await client.post(endpoints.ceph.createRbdSnapshot, {
-        imageName,
-        poolName,
-        teamName,
-        snapshotName,
-        vaultContent,
-      });
+      await client.post(endpoints.ceph.createRbdSnapshot, params);
     },
 
-    deleteSnapshot: async (
-      imageName: string,
-      poolName: string,
-      teamName: string,
-      snapshotName: string
-    ): Promise<void> => {
-      await client.post(endpoints.ceph.deleteRbdSnapshot, {
-        imageName,
-        poolName,
-        teamName,
-        snapshotName,
-      });
+    deleteSnapshot: async (params: DeleteCephRbdSnapshotParams): Promise<void> => {
+      await client.post(endpoints.ceph.deleteRbdSnapshot, params);
     },
 
     // Clones
-    listClones: async (
-      snapshotName: string,
-      imageName: string,
-      poolName: string,
-      teamName: string
-    ): Promise<CephRbdClone[]> => {
-      const response = await client.post<CephRbdClone>(endpoints.ceph.getRbdClones, {
-        snapshotName,
-        imageName,
-        poolName,
-        teamName,
-      });
+    listClones: async (params: GetCephRbdClonesParams): Promise<CephRbdClone[]> => {
+      const response = await client.post<CephRbdClone>(endpoints.ceph.getRbdClones, params);
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<CephRbdClone>(1),
       });
     },
 
-    createClone: async (
-      snapshotName: string,
-      imageName: string,
-      poolName: string,
-      teamName: string,
-      cloneName: string,
-      vaultContent?: string
-    ): Promise<void> => {
-      await client.post(endpoints.ceph.createRbdClone, {
-        snapshotName,
-        imageName,
-        poolName,
-        teamName,
-        cloneName,
-        vaultContent,
-      });
+    createClone: async (params: WithOptionalVault<CreateCephRbdCloneParams>): Promise<void> => {
+      await client.post(endpoints.ceph.createRbdClone, params);
     },
 
-    deleteClone: async (
-      cloneName: string,
-      snapshotName: string,
-      imageName: string,
-      poolName: string,
-      teamName: string
-    ): Promise<void> => {
-      await client.post(endpoints.ceph.deleteRbdClone, {
-        cloneName,
-        snapshotName,
-        imageName,
-        poolName,
-        teamName,
-      });
+    deleteClone: async (params: DeleteCephRbdCloneParams): Promise<void> => {
+      await client.post(endpoints.ceph.deleteRbdClone, params);
     },
 
     assignMachinesToClone: async (
-      cloneName: string,
-      snapshotName: string,
-      imageName: string,
-      poolName: string,
-      teamName: string,
-      machineNames: string | string[]
+      params: UpdateCloneMachineAssignmentsParams & { machineNames: string | string[] }
     ): Promise<void> => {
       await client.post(endpoints.machines.updateCloneMachineAssignments, {
-        cloneName,
-        snapshotName,
-        imageName,
-        poolName,
-        teamName,
-        machineNames: toMachineNamesValue(machineNames),
+        ...params,
+        machineNames: toMachineNamesValue(params.machineNames),
       });
     },
 
     removeMachinesFromClone: async (
-      cloneName: string,
-      snapshotName: string,
-      imageName: string,
-      poolName: string,
-      teamName: string,
-      machineNames: string | string[]
+      params: UpdateCloneMachineRemovalsParams & { machineNames: string | string[] }
     ): Promise<void> => {
       await client.post(endpoints.machines.updateCloneMachineRemovals, {
-        cloneName,
-        snapshotName,
-        imageName,
-        poolName,
-        teamName,
-        machineNames: toMachineNamesValue(machineNames),
+        ...params,
+        machineNames: toMachineNamesValue(params.machineNames),
       });
     },
 
     // Validation helpers
     getMachineAssignmentStatus: async (
-      machineName: string,
-      teamName: string
+      params: GetMachineAssignmentStatusParams
     ): Promise<CephMachineAssignmentStatus | null> => {
       const response = await client.post<CephMachineAssignmentStatus>(
         endpoints.machines.getMachineAssignmentStatus,
-        {
-          machineName,
-          teamName,
-        }
+        params
       );
 
       return (
@@ -305,10 +180,12 @@ export function createCephService(client: ApiClient) {
       );
     },
 
-    getAvailableMachinesForClone: async (teamName: string): Promise<CephAvailableMachine[]> => {
+    getAvailableMachinesForClone: async (
+      params: GetAvailableMachinesForCloneParams
+    ): Promise<CephAvailableMachine[]> => {
       const response = await client.post<CephAvailableMachine>(
         endpoints.machines.getAvailableMachinesForClone,
-        { teamName }
+        params
       );
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<CephAvailableMachine>(0),
@@ -316,14 +193,13 @@ export function createCephService(client: ApiClient) {
     },
 
     getCloneAssignmentValidation: async (
-      teamName: string,
-      machineNames: string | string[]
+      params: GetCloneMachineAssignmentValidationParams & { machineNames: string | string[] }
     ): Promise<CephMachineAssignmentValidation[]> => {
       const response = await client.post<CephMachineAssignmentValidation>(
         endpoints.machines.getCloneMachineAssignmentValidation,
         {
-          teamName,
-          machineNames: toMachineNamesValue(machineNames),
+          ...params,
+          machineNames: toMachineNamesValue(params.machineNames),
         }
       );
       return parseResponse(response, {
@@ -331,20 +207,11 @@ export function createCephService(client: ApiClient) {
       });
     },
 
-    getCloneMachines: async (
-      cloneName: string,
-      snapshotName: string,
-      imageName: string,
-      poolName: string,
-      teamName: string
-    ): Promise<CephCloneMachine[]> => {
-      const response = await client.post<CephCloneMachine>(endpoints.machines.getCloneMachines, {
-        cloneName,
-        snapshotName,
-        imageName,
-        poolName,
-        teamName,
-      });
+    getCloneMachines: async (params: GetCloneMachinesParams): Promise<CephCloneMachine[]> => {
+      const response = await client.post<CephCloneMachine>(
+        endpoints.machines.getCloneMachines,
+        params
+      );
 
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<CephCloneMachine>(0),

@@ -228,7 +228,7 @@ const InfrastructurePage: React.FC = () => {
 
   const handleDeleteRegion = async (regionName: string) => {
     try {
-      await deleteRegionMutation.mutateAsync(regionName);
+      await deleteRegionMutation.mutateAsync({ regionName });
       if (selectedRegion === regionName) {
         setSelectedRegion(null);
       }
@@ -254,7 +254,6 @@ const InfrastructurePage: React.FC = () => {
 
     try {
       await resetBridgeAuthMutation.mutateAsync({
-        regionName: data.regionName,
         bridgeName: data.bridgeName,
         isCloudManaged: data.isCloudManaged,
       });

@@ -26,6 +26,13 @@ import type {
   QueueMachineIssue,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
+import type {
+  UpdateCompanyVaultParams,
+  UpdateCompanyVaultsParams,
+  ImportCompanyDataParams,
+  UpdateCompanyBlockUserRequestsParams,
+  GetLookupDataParams,
+} from '../../types';
 
 export function createCompanyService(client: ApiClient) {
   return {
@@ -73,16 +80,11 @@ export function createCompanyService(client: ApiClient) {
       };
     },
 
-    updateVault: (vault: string, vaultVersion: number) =>
-      client.post(endpoints.company.updateCompanyVault, {
-        vaultContent: vault,
-        vaultVersion,
-      }),
+    updateVault: (params: UpdateCompanyVaultParams) =>
+      client.post(endpoints.company.updateCompanyVault, params),
 
-    updateAllVaults: async (updatesPayload: unknown): Promise<CompanyVaultUpdateResult> => {
-      const response = await client.post(endpoints.company.updateCompanyVaults, {
-        updates: updatesPayload,
-      });
+    updateAllVaults: async (params: UpdateCompanyVaultsParams): Promise<CompanyVaultUpdateResult> => {
+      const response = await client.post(endpoints.company.updateCompanyVaults, params);
 
       const row = getRowByIndex<{ result?: { totalUpdated?: number; failedCount?: number } }>(
         response,
@@ -105,12 +107,8 @@ export function createCompanyService(client: ApiClient) {
       return row ? normalizeRecord(row) : {};
     },
 
-    importData: async (data: string, mergeMode?: string): Promise<CompanyImportResult> => {
-      const payload: Record<string, unknown> = { companyDataJson: data };
-      if (mergeMode) {
-        payload.importMode = mergeMode;
-      }
-      const response = await client.post(endpoints.company.importCompanyData, payload);
+    importData: async (params: ImportCompanyDataParams): Promise<CompanyImportResult> => {
+      const response = await client.post(endpoints.company.importCompanyData, params);
       const row = getRowByIndex<CompanyImportResult>(response, 0);
       return {
         importedCount: row?.importedCount ?? 0,
@@ -120,22 +118,17 @@ export function createCompanyService(client: ApiClient) {
     },
 
     updateBlockUserRequests: async (
-      blockRequests: boolean
+      params: UpdateCompanyBlockUserRequestsParams
     ): Promise<CompanyBlockUserRequestsResult> => {
-      const response = await client.post(endpoints.company.updateCompanyBlockUserRequests, {
-        blockUserRequests: blockRequests,
-      });
+      const response = await client.post(endpoints.company.updateCompanyBlockUserRequests, params);
       const row = getRowByIndex<CompanyBlockUserRequestsResult>(response, 0);
       return {
         deactivatedCount: row?.deactivatedCount ?? 0,
       };
     },
 
-    getLookupData: async (context?: string): Promise<CompanyDropdownData> => {
-      const response = await client.get(
-        endpoints.company.getLookupData,
-        context ? { context } : {}
-      );
+    getLookupData: async (params?: GetLookupDataParams): Promise<CompanyDropdownData> => {
+      const response = await client.get(endpoints.company.getLookupData, params ?? {});
       const row =
         getRowByIndex<Record<string, unknown>>(response, 1) ??
         getRowByIndex<Record<string, unknown>>(response, 0);

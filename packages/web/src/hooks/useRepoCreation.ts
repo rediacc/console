@@ -81,7 +81,7 @@ export function useRepoCreation(machines: Machine[]): UseRepoCreationReturn {
           await new Promise((resolve) => setTimeout(resolve, 500));
 
           // Fetch the created repo to get its vault with credentials
-          const repoList = await api.repos.list(data.teamName);
+          const repoList = await api.repos.list({ teamName: data.teamName });
           const createdRepo = repoList.find((repo) => repo.repoName === data.repoName);
 
           const repoVault = createdRepo?.vaultContent || data.vaultContent || '{}';

@@ -52,7 +52,7 @@ export const getEntityAuditTrace = async (
   entityType: string,
   entityIdentifier: string
 ): Promise<AuditTraceResponse> => {
-  return api.audit.getEntityTrace(entityType, entityIdentifier);
+  return api.audit.getEntityTrace({ entityType, entityIdentifier });
 };
 
 // React Query hook for entity audit trace

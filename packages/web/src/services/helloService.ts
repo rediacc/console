@@ -123,7 +123,7 @@ export async function waitForQueueItemCompletion(
 
 async function pollQueueItemStatus(taskId: string): Promise<QueueItemCompletionResult | null> {
   try {
-    const trace = await api.queue.getTrace(taskId);
+    const trace = await api.queue.getTrace({ taskId });
     const queueDetails = trace.queueDetails;
 
     if (!queueDetails) {

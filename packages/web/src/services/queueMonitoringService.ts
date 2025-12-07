@@ -216,7 +216,7 @@ class QueueMonitoringService {
         // In Chrome extension context, wrap API call with additional error handling
         try {
           trace = (await Promise.race([
-            api.queue.getTrace(task.taskId),
+            api.queue.getTrace({ taskId: task.taskId }),
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Chrome extension timeout')), 8000)
             ),
@@ -232,7 +232,7 @@ class QueueMonitoringService {
         }
       } else {
         // Fetch the latest status normally
-        trace = await api.queue.getTrace(task.taskId);
+        trace = await api.queue.getTrace({ taskId: task.taskId });
       }
 
       // Extract queue details from response

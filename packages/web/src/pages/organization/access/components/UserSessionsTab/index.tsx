@@ -52,7 +52,7 @@ const UserSessionsTab: React.FC = () => {
 
   const handleTerminateSession = async (session: UserRequest) => {
     try {
-      await deleteUserRequestMutation.mutateAsync({ requestId: session.requestId });
+      await deleteUserRequestMutation.mutateAsync({ targetRequestId: session.requestId });
       if (session.userEmail === user?.email) {
         message.warning(t('userSessions.selfTerminateWarning'));
       }

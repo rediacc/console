@@ -11,6 +11,15 @@ import type {
   CephRbdImage,
   CephRbdSnapshot,
   Machine,
+  GetCephPoolsParams,
+  GetCephRbdImagesParams,
+  GetCephRbdSnapshotsParams,
+  GetCephRbdClonesParams,
+  GetCephClusterMachinesParams,
+  GetMachineAssignmentStatusParams,
+  GetAvailableMachinesForCloneParams,
+  GetCloneMachineAssignmentValidationParams,
+  GetCloneMachinesParams,
 } from '@rediacc/shared/types';
 
 // Query Keys - exported for use in mutations
@@ -74,7 +83,8 @@ export const useCephPools = (teamFilter?: string | string[], enabled = true) => 
       if (!teamName) {
         return [];
       }
-      return api.ceph.listPools(teamName);
+      const params: GetCephPoolsParams = { teamName, clusterName: '' };
+      return api.ceph.listPools(params);
     },
     enabled: enabled && !!teamFilter,
   });
@@ -84,7 +94,10 @@ export const useCephPools = (teamFilter?: string | string[], enabled = true) => 
 export const useCephRbdImages = (poolName?: string, teamName?: string, enabled = true) => {
   return useQuery<CephRbdImage[]>({
     queryKey: CEPH_QUERY_KEYS.images(poolName, teamName),
-    queryFn: () => api.ceph.listImages(poolName as string, teamName as string),
+    queryFn: () => {
+      const params: GetCephRbdImagesParams = { poolName: poolName!, teamName: teamName! };
+      return api.ceph.listImages(params);
+    },
     enabled: enabled && !!poolName && !!teamName,
   });
 };
@@ -98,8 +111,14 @@ export const useCephRbdSnapshots = (
 ) => {
   return useQuery<CephRbdSnapshot[]>({
     queryKey: CEPH_QUERY_KEYS.snapshots(imageName, poolName, teamName),
-    queryFn: () =>
-      api.ceph.listSnapshots(imageName as string, poolName as string, teamName as string),
+    queryFn: () => {
+      const params: GetCephRbdSnapshotsParams = {
+        imageName: imageName!,
+        poolName: poolName!,
+        teamName: teamName!,
+      };
+      return api.ceph.listSnapshots(params);
+    },
     enabled: enabled && !!imageName && !!poolName && !!teamName,
   });
 };
@@ -114,13 +133,15 @@ export const useCephRbdClones = (
 ) => {
   return useQuery<CephRbdClone[]>({
     queryKey: CEPH_QUERY_KEYS.clones(snapshotName, imageName, poolName, teamName),
-    queryFn: () =>
-      api.ceph.listClones(
-        snapshotName as string,
-        imageName as string,
-        poolName as string,
-        teamName as string
-      ),
+    queryFn: () => {
+      const params: GetCephRbdClonesParams = {
+        snapshotName: snapshotName!,
+        imageName: imageName!,
+        poolName: poolName!,
+        teamName: teamName!,
+      };
+      return api.ceph.listClones(params);
+    },
     enabled: enabled && !!snapshotName && !!imageName && !!poolName && !!teamName,
   });
 };
@@ -129,7 +150,10 @@ export const useCephRbdClones = (
 export const useCephClusterMachines = (clusterName: string, enabled = true) => {
   return useQuery<Machine[]>({
     queryKey: CEPH_QUERY_KEYS.clusterMachines(clusterName),
-    queryFn: () => api.ceph.getClusterMachines(clusterName),
+    queryFn: () => {
+      const params: GetCephClusterMachinesParams = { clusterName };
+      return api.ceph.getClusterMachines(params);
+    },
     enabled: enabled && !!clusterName,
   });
 };
@@ -142,7 +166,10 @@ export const useMachineAssignmentStatus = (
 ) => {
   return useQuery<CephMachineAssignmentStatus | null>({
     queryKey: CEPH_QUERY_KEYS.machineAssignmentStatus(machineName, teamName),
-    queryFn: () => api.ceph.getMachineAssignmentStatus(machineName, teamName),
+    queryFn: () => {
+      const params: GetMachineAssignmentStatusParams = { machineName, teamName };
+      return api.ceph.getMachineAssignmentStatus(params);
+    },
     enabled: enabled && !!machineName && !!teamName,
   });
 };
@@ -151,7 +178,10 @@ export const useMachineAssignmentStatus = (
 export const useAvailableMachinesForClone = (teamName: string, enabled = true) => {
   return useQuery<CephAvailableMachine[]>({
     queryKey: CEPH_QUERY_KEYS.availableMachinesForClone(teamName),
-    queryFn: () => api.ceph.getAvailableMachinesForClone(teamName),
+    queryFn: () => {
+      const params: GetAvailableMachinesForCloneParams = { teamName };
+      return api.ceph.getAvailableMachinesForClone(params);
+    },
     enabled: enabled && !!teamName,
   });
 };
@@ -164,7 +194,13 @@ export const useCloneMachineAssignmentValidation = (
 ) => {
   return useQuery<CephMachineAssignmentValidation[]>({
     queryKey: CEPH_QUERY_KEYS.machineAssignmentValidation(teamName, machineNames),
-    queryFn: () => api.ceph.getCloneAssignmentValidation(teamName, machineNames),
+    queryFn: () => {
+      const params: GetCloneMachineAssignmentValidationParams & { machineNames: string } = {
+        teamName,
+        machineNames,
+      };
+      return api.ceph.getCloneAssignmentValidation(params);
+    },
     enabled: enabled && !!teamName && !!machineNames,
   });
 };
@@ -180,8 +216,16 @@ export const useCloneMachines = (
 ) => {
   return useQuery<CephCloneMachine[]>({
     queryKey: CEPH_QUERY_KEYS.cloneMachines(cloneName, snapshotName, imageName, poolName, teamName),
-    queryFn: () =>
-      api.ceph.getCloneMachines(cloneName, snapshotName, imageName, poolName, teamName),
+    queryFn: () => {
+      const params: GetCloneMachinesParams = {
+        cloneName,
+        snapshotName,
+        imageName,
+        poolName,
+        teamName,
+      };
+      return api.ceph.getCloneMachines(params);
+    },
     enabled: enabled && !!cloneName && !!snapshotName && !!imageName && !!poolName && !!teamName,
   });
 };

@@ -45,7 +45,7 @@ export function registerAuditCommands(program: Command): void {
 
         const trace = await withSpinner(
           'Fetching entity audit trace...',
-          () => api.audit.getEntityTrace(entityType, entityId),
+          () => api.audit.getEntityTrace({ entityType, entityIdentifier: entityId }),
           'Audit trace fetched'
         );
 

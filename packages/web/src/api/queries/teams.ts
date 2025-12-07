@@ -6,7 +6,17 @@ import {
   createVaultUpdateMutation,
   createMutation,
 } from '@/hooks/api/mutationFactory';
-import type { Team, TeamMember } from '@rediacc/shared/types';
+import type {
+  Team,
+  TeamMember,
+  CreateTeamParams,
+  UpdateTeamNameParams,
+  UpdateTeamVaultParams,
+  DeleteTeamParams,
+  CreateTeamMembershipParams,
+  DeleteUserFromTeamParams,
+  WithOptionalVault,
+} from '@rediacc/shared/types';
 
 // Get all teams
 export const useTeams = () => {
@@ -24,7 +34,7 @@ export const useTeamMembers = (teamName: string) => {
   return useQuery<TeamMember[]>({
     queryKey: QUERY_KEYS.teams.members(teamName),
     queryFn: async () => {
-      return api.teams.getMembers(teamName);
+      return api.teams.getMembers({ teamName });
     },
     enabled: !!teamName,
   });
@@ -33,16 +43,16 @@ export const useTeamMembers = (teamName: string) => {
 export type { Team, TeamMember };
 
 // Create team
-export const useCreateTeam = createResourceMutation<{ teamName: string; vaultContent?: string }>(
+export const useCreateTeam = createResourceMutation<WithOptionalVault<CreateTeamParams>>(
   'Team',
   'create',
-  (variables) => api.teams.create(variables.teamName, variables.vaultContent),
+  (params) => api.teams.create(params),
   'teamName'
 );
 
 // Update team name
-export const useUpdateTeamName = createMutation<{ currentTeamName: string; newTeamName: string }>({
-  request: ({ currentTeamName, newTeamName }) => api.teams.rename(currentTeamName, newTeamName),
+export const useUpdateTeamName = createMutation<UpdateTeamNameParams>({
+  request: (params) => api.teams.rename(params),
   invalidateKeys: [QUERY_KEY_STRINGS.teams, QUERY_KEY_STRINGS.dropdown],
   successMessage: (variables) => `Team renamed to "${variables.newTeamName}"`,
   errorMessage: 'Failed to update team name',
@@ -50,29 +60,27 @@ export const useUpdateTeamName = createMutation<{ currentTeamName: string; newTe
 });
 
 // Update team vault
-export const useUpdateTeamVault = createVaultUpdateMutation<{
-  teamName: string;
-  vaultContent: string;
-  vaultVersion: number;
-}>(
+export const useUpdateTeamVault = createVaultUpdateMutation<
+  UpdateTeamVaultParams & Record<string, unknown>
+>(
   'Team',
-  (data) => api.teams.updateVault(data.teamName, data.vaultContent, data.vaultVersion),
+  (params) => api.teams.updateVault(params),
   'teamName',
   'vaultContent'
 );
 
 // Delete team
-export const useDeleteTeam = createMutation<string>({
-  request: (teamName) => api.teams.delete(teamName),
+export const useDeleteTeam = createMutation<DeleteTeamParams>({
+  request: (params) => api.teams.delete(params),
   invalidateKeys: [QUERY_KEY_STRINGS.teams, QUERY_KEY_STRINGS.dropdown],
-  successMessage: (teamName) => `Team "${teamName}" deleted successfully`,
+  successMessage: (params) => `Team "${params.teamName}" deleted successfully`,
   errorMessage: 'Failed to delete team',
   operationName: 'teams.delete',
 });
 
 // Add team member
-export const useAddTeamMember = createMutation<{ teamName: string; newUserEmail: string }>({
-  request: ({ teamName, newUserEmail }) => api.teams.addMember(teamName, newUserEmail),
+export const useAddTeamMember = createMutation<CreateTeamMembershipParams>({
+  request: (params) => api.teams.addMember(params),
   invalidateKeys: (variables) => [QUERY_KEY_STRINGS.teamMembers, variables.teamName],
   successMessage: (variables) => `User "${variables.newUserEmail}" added to team`,
   errorMessage: 'Failed to add team member',
@@ -80,8 +88,8 @@ export const useAddTeamMember = createMutation<{ teamName: string; newUserEmail:
 });
 
 // Remove team member
-export const useRemoveTeamMember = createMutation<{ teamName: string; removeUserEmail: string }>({
-  request: ({ teamName, removeUserEmail }) => api.teams.removeMember(teamName, removeUserEmail),
+export const useRemoveTeamMember = createMutation<DeleteUserFromTeamParams>({
+  request: (params) => api.teams.removeMember(params),
   invalidateKeys: (variables) => [QUERY_KEY_STRINGS.teamMembers, variables.teamName],
   successMessage: (variables) => `User "${variables.removeUserEmail}" removed from team`,
   errorMessage: 'Failed to remove team member',

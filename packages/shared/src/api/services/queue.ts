@@ -12,27 +12,18 @@ import type {
   QueuePositionEntry,
   QueueMachineStats,
   QueuePlanInfo,
+  GetTeamQueueItemsParams,
+  CreateQueueItemParams,
+  CancelQueueItemParams,
+  DeleteQueueItemParams,
+  RetryFailedQueueItemParams,
+  GetQueueItemTraceParams,
+  UpdateQueueItemResponseParams,
+  UpdateQueueItemToCompletedParams,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
 
-export interface QueueFilters {
-  machineName?: string;
-  bridgeName?: string;
-  regionName?: string;
-  status?: string;
-  priority?: number;
-  minPriority?: number;
-  maxPriority?: number;
-  dateFrom?: string;
-  dateTo?: string;
-  taskId?: string;
-  includeCompleted?: boolean;
-  includeCancelled?: boolean;
-  onlyStale?: boolean;
-  staleThresholdMinutes?: number;
-  maxRecords?: number;
-  createdByUserEmail?: string;
-}
+export type QueueFilters = Partial<Omit<GetTeamQueueItemsParams, 'teamName'>>;
 
 export interface QueueCreateResult {
   taskId: string | null;
@@ -72,53 +63,29 @@ export function createQueueService(client: ApiClient) {
       return parseQueueItems(response);
     },
 
-    create: async (
-      teamName: string,
-      machineName: string | undefined,
-      bridgeName: string,
-      vaultContent: string,
-      priority = 3
-    ): Promise<QueueCreateResult> => {
-      const response = await client.post(endpoints.queue.createQueueItem, {
-        teamName,
-        machineName,
-        bridgeName,
-        vaultContent,
-        priority,
-      });
+    create: async (params: CreateQueueItemParams): Promise<QueueCreateResult> => {
+      const response = await client.post(endpoints.queue.createQueueItem, params);
       return parseQueueCreateResult(response);
     },
 
-    updateResponse: async (
-      taskId: string,
-      vaultContent: string,
-      vaultVersion?: number
-    ): Promise<void> => {
-      const payload: Record<string, unknown> = { taskId, vaultContent };
-      if (vaultVersion !== undefined) {
-        payload.vaultVersion = vaultVersion;
-      }
-      await client.post(endpoints.queue.updateQueueItemResponse, payload);
+    updateResponse: async (params: UpdateQueueItemResponseParams): Promise<void> => {
+      await client.post(endpoints.queue.updateQueueItemResponse, params);
     },
 
-    complete: async (taskId: string, vaultContent: string, finalStatus: string): Promise<void> => {
-      await client.post(endpoints.queue.updateQueueItemToCompleted, {
-        taskId,
-        vaultContent,
-        finalStatus,
-      });
+    complete: async (params: UpdateQueueItemToCompletedParams): Promise<void> => {
+      await client.post(endpoints.queue.updateQueueItemToCompleted, params);
     },
 
-    cancel: async (taskId: string): Promise<void> => {
-      await client.post(endpoints.queue.cancelQueueItem, { taskId });
+    cancel: async (params: CancelQueueItemParams): Promise<void> => {
+      await client.post(endpoints.queue.cancelQueueItem, params);
     },
 
-    delete: async (taskId: string): Promise<void> => {
-      await client.post(endpoints.queue.deleteQueueItem, { taskId });
+    delete: async (params: DeleteQueueItemParams): Promise<void> => {
+      await client.post(endpoints.queue.deleteQueueItem, params);
     },
 
-    retry: async (taskId: string): Promise<void> => {
-      await client.post(endpoints.queue.retryFailedQueueItem, { taskId });
+    retry: async (params: RetryFailedQueueItemParams): Promise<void> => {
+      await client.post(endpoints.queue.retryFailedQueueItem, params);
     },
 
     updatePriority: async (taskId: string, priority: number): Promise<void> => {
@@ -129,8 +96,8 @@ export function createQueueService(client: ApiClient) {
       await client.post(endpoints.queue.updateQueueItemProtection, { taskId, isProtected });
     },
 
-    getTrace: async (taskId: string): Promise<QueueTrace> => {
-      const response = await client.get(endpoints.queue.getQueueItemTrace, { taskId });
+    getTrace: async (params: GetQueueItemTraceParams): Promise<QueueTrace> => {
+      const response = await client.get(endpoints.queue.getQueueItemTrace, params);
       return parseQueueTrace(response);
     },
   };

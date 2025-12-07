@@ -29,6 +29,7 @@ import { useQueueTraceModal, useExpandableTable } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import CloneTable from '@/pages/ceph/components/CloneTable';
+import type { SnapshotFormValues as FullSnapshotFormValues } from '@rediacc/shared/types';
 import { buildSnapshotColumns } from './columns';
 import { ActionsRow, Container, ExpandButton, TableWrapper, Title } from './styles';
 import type { MenuProps } from 'antd';
@@ -45,10 +46,8 @@ interface SnapshotModalState {
   data?: CephRbdSnapshot & { vaultContent?: string | null; vaultVersion?: number };
 }
 
-interface SnapshotFormValues extends Record<string, unknown> {
-  snapshotName: string;
-  vaultContent: string;
-}
+// Form-specific subset of shared SnapshotFormValues (image/pool/team context provided separately)
+type SnapshotFormValues = Pick<FullSnapshotFormValues, 'snapshotName'> & { vaultContent: string };
 
 const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }) => {
   const { t } = useTranslation('ceph');

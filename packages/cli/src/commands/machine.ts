@@ -17,6 +17,13 @@ import {
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
+import type {
+  CreateMachineParams,
+  UpdateMachineNameParams,
+  DeleteMachineParams,
+  UpdateMachineVaultParams,
+  UpdateMachineAssignedBridgeParams,
+} from '@rediacc/shared/types';
 
 export function registerMachineCommands(program: Command): void {
   // Create standard CRUD commands using factory
@@ -27,21 +34,9 @@ export function registerMachineCommands(program: Command): void {
     parentOption: 'team',
     operations: {
       list: (params) => api.machines.list(params?.teamName as string | undefined),
-      create: (payload) =>
-        api.machines.create(
-          payload.teamName as string,
-          payload.machineName as string,
-          payload.bridgeName as string,
-          payload.vaultContent as string | undefined
-        ),
-      rename: (payload) =>
-        api.machines.rename(
-          payload.teamName as string,
-          payload.currentMachineName as string,
-          payload.newMachineName as string
-        ),
-      delete: (payload) =>
-        api.machines.delete(payload.teamName as string, payload.machineName as string),
+      create: (payload) => api.machines.create(payload as unknown as CreateMachineParams),
+      rename: (payload) => api.machines.rename(payload as unknown as UpdateMachineNameParams),
+      delete: (payload) => api.machines.delete(payload as unknown as DeleteMachineParams),
     },
     createOptions: [{ flags: '-b, --bridge <name>', description: 'Bridge name', required: true }],
     transformCreatePayload: (name, opts) => ({
@@ -54,13 +49,7 @@ export function registerMachineCommands(program: Command): void {
       vaultType: 'Machine',
     },
     vaultUpdateConfig: {
-      update: (payload) =>
-        api.machines.updateVault(
-          payload.teamName as string,
-          payload.machineName as string,
-          payload.vaultContent as string,
-          payload.vaultVersion as number
-        ),
+      update: (payload) => api.machines.updateVault(payload as unknown as UpdateMachineVaultParams),
       vaultFieldName: 'vaultContent',
     },
   });
@@ -80,12 +69,7 @@ export function registerMachineCommands(program: Command): void {
     targetName: 'bridge',
     targetField: 'newBridgeName',
     parentOption: 'team',
-    perform: (payload) =>
-      api.machines.assignBridge(
-        payload.teamName as string,
-        payload.machineName as string,
-        payload.newBridgeName as string
-      ),
+    perform: (payload) => api.machines.assignBridge(payload as unknown as UpdateMachineAssignedBridgeParams),
   });
 
   // Add vault-status command using shared parsing

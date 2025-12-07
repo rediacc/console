@@ -99,7 +99,7 @@ const AccessPage: React.FC = () => {
 
   const handleDeleteGroup = async (groupName: string) => {
     try {
-      await deleteGroupMutation.mutateAsync(groupName);
+      await deleteGroupMutation.mutateAsync({ permissionGroupName: groupName });
     } catch {
       // handled by mutation
     }

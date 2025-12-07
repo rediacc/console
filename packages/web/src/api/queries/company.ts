@@ -13,6 +13,10 @@ import type {
   CompanyVaultUpdateResult,
   CompanyExportData,
   CompanyVaultRecord,
+  UpdateCompanyVaultParams,
+  UpdateCompanyBlockUserRequestsParams,
+  ImportCompanyDataParams,
+  UpdateCompanyVaultsParams,
 } from '@rediacc/shared/types';
 
 // Get company vault configuration
@@ -30,20 +34,17 @@ export const useCompanyVault = () => {
 };
 
 // Update company vault configuration
-export const useUpdateCompanyVault = createMutation<{ vaultContent: string; vaultVersion: number }>(
-  {
-    request: ({ vaultContent, vaultVersion }) =>
-      api.company.updateVault(vaultContent, vaultVersion),
-    invalidateKeys: ['company-vault'],
-    successMessage: () => i18n.t('system:company.success.vaultUpdated'),
-    errorMessage: i18n.t('system:company.errors.vaultUpdateFailed'),
-    transformData: (data) => ({
-      ...data,
-      vaultContent: minifyJSON(data.vaultContent),
-    }),
-    operationName: 'company.updateVault',
-  }
-);
+export const useUpdateCompanyVault = createMutation<UpdateCompanyVaultParams>({
+  request: (params) => api.company.updateVault(params),
+  invalidateKeys: ['company-vault'],
+  successMessage: () => i18n.t('system:company.success.vaultUpdated'),
+  errorMessage: i18n.t('system:company.errors.vaultUpdateFailed'),
+  transformData: (data) => ({
+    ...data,
+    vaultContent: minifyJSON(data.vaultContent),
+  }),
+  operationName: 'company.updateVault',
+});
 
 // Block or unblock user requests - Special case with dynamic success message
 export const useUpdateCompanyBlockUserRequests = () => {
@@ -54,7 +55,8 @@ export const useUpdateCompanyBlockUserRequests = () => {
 
   return useMutation({
     mutationFn: async (blockUserRequests: boolean) => {
-      return api.company.updateBlockUserRequests(blockUserRequests);
+      const params: UpdateCompanyBlockUserRequestsParams = { blockUserRequests };
+      return api.company.updateBlockUserRequests(params);
     },
     onSuccess: (data, variables) => {
       const deactivatedCount = (data as CompanyBlockUserRequestsResult)?.deactivatedCount ?? 0;
@@ -125,7 +127,8 @@ export const useUpdateCompanyVaults = () => {
 
   return useMutation({
     mutationFn: async (vaultUpdates: Array<Record<string, unknown>>) => {
-      return api.company.updateAllVaults(JSON.stringify(vaultUpdates));
+      const params: UpdateCompanyVaultsParams = { updates: JSON.stringify(vaultUpdates) };
+      return api.company.updateAllVaults(params);
     },
     onSuccess: (data: CompanyVaultUpdateResult) => {
       const totalUpdated = data.totalUpdated ?? 0;
@@ -175,8 +178,12 @@ export const useImportCompanyData = () => {
   const importErrorHandler = createErrorHandler(i18n.t('system:company.errors.importFailed'));
 
   return useMutation({
-    mutationFn: async (params: { companyDataJson: string; importMode?: 'skip' | 'override' }) => {
-      return api.company.importData(params.companyDataJson, params.importMode || 'skip');
+    mutationFn: async (data: { companyDataJson: string; importMode?: 'skip' | 'override' }) => {
+      const params: ImportCompanyDataParams = {
+        companyDataJson: data.companyDataJson,
+        importMode: data.importMode || 'skip',
+      };
+      return api.company.importData(params);
     },
     onSuccess: (data: CompanyImportResult) => {
       const importedCount = data.importedCount ?? 0;

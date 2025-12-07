@@ -2,6 +2,16 @@ import { endpoints } from '../../endpoints';
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type { User, UserVault } from '../../types';
+import type {
+  CreateNewUserParams,
+  UpdateUserToActivatedParams,
+  UpdateUserToDeactivatedParams,
+  UpdateUserEmailParams,
+  UpdateUserPasswordParams,
+  UpdateUserLanguageParams,
+  UpdateUserVaultParams,
+  UpdateUserAssignedPermissionsParams,
+} from '../../types';
 
 export interface CreateUserOptions {
   passwordHash?: string;
@@ -50,23 +60,19 @@ export function createUsersService(client: ApiClient) {
       };
     },
 
-    activate: (email: string) =>
-      client.post(endpoints.users.updateUserToActivated, { userEmail: email }),
+    activate: (params: UpdateUserToActivatedParams) =>
+      client.post(endpoints.users.updateUserToActivated, params),
 
-    deactivate: (email: string) =>
-      client.post(endpoints.users.updateUserToDeactivated, { userEmail: email }),
+    deactivate: (params: UpdateUserToDeactivatedParams) =>
+      client.post(endpoints.users.updateUserToDeactivated, params),
 
-    updateEmail: (currentEmail: string, newEmail: string) =>
-      client.post(endpoints.users.updateUserEmail, {
-        currentUserEmail: currentEmail,
-        newUserEmail: newEmail,
-      }),
+    updateEmail: (params: UpdateUserEmailParams) => client.post(endpoints.users.updateUserEmail, params),
 
-    updatePassword: (passwordHash: string) =>
-      client.post(endpoints.users.updateUserPassword, { userNewPass: passwordHash }),
+    updatePassword: (params: UpdateUserPasswordParams) =>
+      client.post(endpoints.users.updateUserPassword, params),
 
-    updateLanguage: (language: string) =>
-      client.post(endpoints.users.updateUserLanguage, { preferredLanguage: language }),
+    updateLanguage: (params: UpdateUserLanguageParams) =>
+      client.post(endpoints.users.updateUserLanguage, params),
 
     getVault: async (): Promise<UserVault> => {
       interface UserVaultRow {
@@ -86,16 +92,10 @@ export function createUsersService(client: ApiClient) {
       };
     },
 
-    updateVault: (vault: string, vaultVersion: number) =>
-      client.post(endpoints.users.updateUserVault, {
-        vaultContent: vault,
-        vaultVersion,
-      }),
+    updateVault: (params: UpdateUserVaultParams) =>
+      client.post(endpoints.users.updateUserVault, params),
 
-    assignPermissions: (email: string, groupName: string) =>
-      client.post(endpoints.users.updateUserAssignedPermissions, {
-        userEmail: email,
-        permissionGroupName: groupName,
-      }),
+    assignPermissions: (params: UpdateUserAssignedPermissionsParams) =>
+      client.post(endpoints.users.updateUserAssignedPermissions, params),
   };
 }

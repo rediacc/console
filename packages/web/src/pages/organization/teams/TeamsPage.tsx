@@ -112,7 +112,7 @@ const TeamsPage: React.FC = () => {
 
   const handleDeleteTeam = async (teamName: string) => {
     try {
-      await deleteTeamMutation.mutateAsync(teamName);
+      await deleteTeamMutation.mutateAsync({ teamName });
     } catch {
       // handled by mutation
     }

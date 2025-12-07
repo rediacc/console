@@ -7,6 +7,14 @@ import {
 } from '@/hooks/api/mutationFactory';
 import { createResourceQuery } from '@/hooks/api/queryFactory';
 import type { Machine } from '@/types';
+import type {
+  CreateMachineParams,
+  UpdateMachineNameParams,
+  UpdateMachineAssignedBridgeParams,
+  UpdateMachineVaultParams,
+  DeleteMachineParams,
+  WithOptionalVault,
+} from '@rediacc/shared/types';
 
 // Get machines for a team, multiple teams, or all machines
 export const useMachines = createResourceQuery<Machine>({
@@ -16,14 +24,8 @@ export const useMachines = createResourceQuery<Machine>({
 });
 
 // Create machine
-export const useCreateMachine = createMutation<{
-  teamName: string;
-  bridgeName: string;
-  machineName: string;
-  vaultContent?: string;
-}>({
-  request: ({ teamName, bridgeName, machineName, vaultContent }) =>
-    api.machines.create(teamName, machineName, bridgeName, vaultContent),
+export const useCreateMachine = createMutation<WithOptionalVault<CreateMachineParams>>({
+  request: (params) => api.machines.create(params),
   invalidateKeys: [
     QUERY_KEY_STRINGS.machines,
     QUERY_KEY_STRINGS.teams,
@@ -42,13 +44,8 @@ export const useCreateMachine = createMutation<{
 });
 
 // Update machine name
-export const useUpdateMachineName = createMutation<{
-  teamName: string;
-  currentMachineName: string;
-  newMachineName: string;
-}>({
-  request: ({ teamName, currentMachineName, newMachineName }) =>
-    api.machines.rename(teamName, currentMachineName, newMachineName),
+export const useUpdateMachineName = createMutation<UpdateMachineNameParams>({
+  request: (params) => api.machines.rename(params),
   invalidateKeys: [QUERY_KEY_STRINGS.machines, QUERY_KEY_STRINGS.dropdown],
   successMessage: (vars) => `Machine renamed to "${vars.newMachineName}"`,
   errorMessage: 'Failed to update machine name',
@@ -56,13 +53,8 @@ export const useUpdateMachineName = createMutation<{
 });
 
 // Update machine bridge assignment
-export const useUpdateMachineBridge = createMutation<{
-  teamName: string;
-  machineName: string;
-  newBridgeName: string;
-}>({
-  request: ({ teamName, machineName, newBridgeName }) =>
-    api.machines.assignBridge(teamName, machineName, newBridgeName),
+export const useUpdateMachineBridge = createMutation<UpdateMachineAssignedBridgeParams>({
+  request: (params) => api.machines.assignBridge(params),
   invalidateKeys: [QUERY_KEY_STRINGS.machines, QUERY_KEY_STRINGS.bridges],
   successMessage: (vars) =>
     `Machine "${vars.machineName}" reassigned to bridge "${vars.newBridgeName}"`,
@@ -71,27 +63,22 @@ export const useUpdateMachineBridge = createMutation<{
 });
 
 // Update machine vault
-export const useUpdateMachineVault = createVaultUpdateMutation<{
-  teamName: string;
-  machineName: string;
-  vaultContent: string;
-  vaultVersion: number;
-}>(
+export const useUpdateMachineVault = createVaultUpdateMutation<
+  UpdateMachineVaultParams & Record<string, unknown>
+>(
   'Machine',
-  (data) =>
-    api.machines.updateVault(data.teamName, data.machineName, data.vaultContent, data.vaultVersion),
+  (data) => api.machines.updateVault(data),
   'machineName',
   'vaultContent'
 );
 
 // Delete machine
-export const useDeleteMachine = createResourceMutation<{
-  teamName: string;
-  machineName: string;
-}>(
+export const useDeleteMachine = createResourceMutation<
+  DeleteMachineParams & Record<string, unknown>
+>(
   'Machine',
   'delete',
-  (variables) => api.machines.delete(variables.teamName, variables.machineName),
+  (variables) => api.machines.delete(variables),
   'machineName',
   [QUERY_KEY_STRINGS.teams, QUERY_KEY_STRINGS.bridges]
 );

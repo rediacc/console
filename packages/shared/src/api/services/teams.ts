@@ -2,6 +2,16 @@ import { endpoints } from '../../endpoints';
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type { Team, TeamMember } from '../../types';
+import type {
+  WithOptionalVault,
+  CreateTeamParams,
+  UpdateTeamNameParams,
+  DeleteTeamParams,
+  UpdateTeamVaultParams,
+  GetTeamMembersParams,
+  CreateTeamMembershipParams,
+  DeleteUserFromTeamParams,
+} from '../../types';
 
 export function createTeamsService(client: ApiClient) {
   return {
@@ -13,48 +23,34 @@ export function createTeamsService(client: ApiClient) {
       });
     },
 
-    create: async (teamName: string, vaultContent?: string): Promise<Team | null> => {
+    create: async (params: WithOptionalVault<CreateTeamParams>): Promise<Team | null> => {
       const response = await client.post<Team>(endpoints.teams.createTeam, {
-        teamName,
-        vaultContent: vaultContent ?? '{}',
+        ...params,
+        vaultContent: params.vaultContent ?? '{}',
       });
       return parseFirst(response, {
         extractor: responseExtractors.primaryOrSecondary,
       });
     },
 
-    rename: (currentName: string, newName: string) =>
-      client.post(endpoints.teams.updateTeamName, {
-        currentTeamName: currentName,
-        newTeamName: newName,
-      }),
+    rename: (params: UpdateTeamNameParams) => client.post(endpoints.teams.updateTeamName, params),
 
-    delete: (teamName: string) => client.post(endpoints.teams.deleteTeam, { teamName }),
+    delete: (params: DeleteTeamParams) => client.post(endpoints.teams.deleteTeam, params),
 
-    updateVault: (teamName: string, vault: string, vaultVersion: number) =>
-      client.post(endpoints.teams.updateTeamVault, {
-        teamName,
-        vaultContent: vault,
-        vaultVersion,
-      }),
+    updateVault: (params: UpdateTeamVaultParams) =>
+      client.post(endpoints.teams.updateTeamVault, params),
 
-    getMembers: async (teamName: string): Promise<TeamMember[]> => {
-      const response = await client.get<TeamMember>(endpoints.teams.getTeamMembers, { teamName });
+    getMembers: async (params: GetTeamMembersParams): Promise<TeamMember[]> => {
+      const response = await client.get<TeamMember>(endpoints.teams.getTeamMembers, params);
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<TeamMember>(1),
       });
     },
 
-    addMember: (teamName: string, userEmail: string) =>
-      client.post(endpoints.teams.createTeamMembership, {
-        teamName,
-        newUserEmail: userEmail,
-      }),
+    addMember: (params: CreateTeamMembershipParams) =>
+      client.post(endpoints.teams.createTeamMembership, params),
 
-    removeMember: (teamName: string, userEmail: string) =>
-      client.post(endpoints.teams.deleteUserFromTeam, {
-        teamName,
-        removeUserEmail: userEmail,
-      }),
+    removeMember: (params: DeleteUserFromTeamParams) =>
+      client.post(endpoints.teams.deleteUserFromTeam, params),
   };
 }

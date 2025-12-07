@@ -10,6 +10,12 @@ import type {
   VerifyTfaResult,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
+import type {
+  CreateAuthenticationRequestParams,
+  DeleteUserRequestParams,
+  ActivateUserAccountParams,
+  IsRegisteredParams,
+} from '../../types';
 
 export interface ForkSessionOptions {
   permissionsName?: string;
@@ -157,8 +163,15 @@ export function createAuthService(client: ApiClient) {
       });
     },
 
-    terminateSession: (requestId: number | string) =>
-      client.post(endpoints.users.deleteUserRequest, { requestId }),
+    terminateSession: (params: DeleteUserRequestParams | { requestId: number | string }) => {
+      const targetRequestId =
+        'requestId' in params
+          ? typeof params.requestId === 'number'
+            ? params.requestId
+            : Number(params.requestId)
+          : params.targetRequestId;
+      return client.post(endpoints.users.deleteUserRequest, { targetRequestId });
+    },
 
     getTfaStatus: async (): Promise<AuthRequestStatus> => {
       const response = await client.post<AuthStatusRow>(endpoints.users.updateUserTfa, {
@@ -228,13 +241,13 @@ export function createAuthService(client: ApiClient) {
       };
     },
 
-    checkRegistration: async (email: string): Promise<{ isRegistered: boolean }> => {
+    checkRegistration: async (params: IsRegisteredParams): Promise<{ isRegistered: boolean }> => {
       interface RegistrationRow {
         isRegistered?: boolean | number | string;
       }
 
       const response = await client.get<RegistrationRow>(endpoints.auth.isRegistered, {
-        userEmail: email,
+        userEmail: params.userName,
       });
       const row = parseFirst<RegistrationRow>(response, {
         extractor: responseExtractors.primaryOrSecondary,

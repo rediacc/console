@@ -43,7 +43,7 @@ export function registerPermissionCommands(program: Command): void {
 
         await withSpinner(
           `Creating permission group "${name}"...`,
-          () => api.permissions.createGroup(name),
+          () => api.permissions.createGroup({ permissionGroupName: name }),
           `Permission group "${name}" created`
         );
       } catch (error) {
@@ -71,7 +71,7 @@ export function registerPermissionCommands(program: Command): void {
 
         await withSpinner(
           `Deleting permission group "${name}"...`,
-          () => api.permissions.deleteGroup(name),
+          () => api.permissions.deleteGroup({ permissionGroupName: name }),
           `Permission group "${name}" deleted`
         );
       } catch (error) {
@@ -89,7 +89,7 @@ export function registerPermissionCommands(program: Command): void {
 
         const details = await withSpinner(
           'Fetching permission group details...',
-          () => api.permissions.getGroupDetails(name),
+          () => api.permissions.getGroupDetails({ permissionGroupName: name }),
           'Details fetched'
         );
 
@@ -111,7 +111,7 @@ export function registerPermissionCommands(program: Command): void {
 
         await withSpinner(
           `Adding permission "${permissionName}" to group "${groupName}"...`,
-          () => api.permissions.addPermission(groupName, permissionName),
+          () => api.permissions.addPermission({ permissionGroupName: groupName, permissionName }),
           'Permission added'
         );
       } catch (error) {
@@ -129,7 +129,7 @@ export function registerPermissionCommands(program: Command): void {
 
         await withSpinner(
           `Removing permission "${permissionName}" from group "${groupName}"...`,
-          () => api.permissions.removePermission(groupName, permissionName),
+          () => api.permissions.removePermission({ permissionGroupName: groupName, permissionName }),
           'Permission removed'
         );
       } catch (error) {

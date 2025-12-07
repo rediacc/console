@@ -3,7 +3,15 @@ import { api } from '@/api/client';
 import i18n from '@/i18n/config';
 import { showMessage } from '@/utils/messages';
 import { createErrorHandler } from '@/utils/mutationUtils';
-import type { Permission, PermissionGroup } from '@rediacc/shared/types';
+import type {
+  Permission,
+  PermissionGroup,
+  CreatePermissionGroupParams,
+  DeletePermissionGroupParams,
+  CreatePermissionInGroupParams,
+  DeletePermissionFromGroupParams,
+  UpdateUserAssignedPermissionsParams,
+} from '@rediacc/shared/types';
 
 // Get all permission groups
 export const usePermissionGroups = () => {
@@ -20,7 +28,7 @@ export const usePermissionGroupDetails = (groupName: string) => {
   return useQuery({
     queryKey: ['permissionGroup', groupName],
     queryFn: async () => {
-      const permissions = await api.permissions.getGroupDetails(groupName);
+      const permissions = await api.permissions.getGroupDetails({ permissionGroupName: groupName });
 
       return {
         permissionGroupName: groupName,
@@ -36,8 +44,8 @@ export const useCreatePermissionGroup = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { permissionGroupName: string }) => {
-      return api.permissions.createGroup(data.permissionGroupName);
+    mutationFn: async (params: CreatePermissionGroupParams) => {
+      return api.permissions.createGroup(params);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['permissionGroups'] });
@@ -56,15 +64,15 @@ export const useDeletePermissionGroup = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (permissionGroupName: string) => {
-      return api.permissions.deleteGroup(permissionGroupName);
+    mutationFn: async (params: DeletePermissionGroupParams) => {
+      return api.permissions.deleteGroup(params);
     },
-    onSuccess: (_, permissionGroupName) => {
+    onSuccess: (_, params) => {
       queryClient.invalidateQueries({ queryKey: ['permissionGroups'] });
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
       showMessage(
         'success',
-        i18n.t('organization:access.success.groupDeleted', { group: permissionGroupName })
+        i18n.t('organization:access.success.groupDeleted', { group: params.permissionGroupName })
       );
     },
     onError: createErrorHandler(i18n.t('organization:access.errors.deleteGroupFailed')),
@@ -76,8 +84,8 @@ export const useAddPermissionToGroup = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { permissionGroupName: string; permissionName: string }) => {
-      return api.permissions.addPermission(data.permissionGroupName, data.permissionName);
+    mutationFn: async (params: CreatePermissionInGroupParams) => {
+      return api.permissions.addPermission(params);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
@@ -100,8 +108,8 @@ export const useRemovePermissionFromGroup = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { permissionGroupName: string; permissionName: string }) => {
-      return api.permissions.removePermission(data.permissionGroupName, data.permissionName);
+    mutationFn: async (params: DeletePermissionFromGroupParams) => {
+      return api.permissions.removePermission(params);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
@@ -124,8 +132,8 @@ export const useAssignUserToGroup = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { userEmail: string; permissionGroupName: string }) => {
-      return api.users.assignPermissions(data.userEmail, data.permissionGroupName);
+    mutationFn: async (params: UpdateUserAssignedPermissionsParams) => {
+      return api.users.assignPermissions(params);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });

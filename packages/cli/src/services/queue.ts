@@ -119,7 +119,7 @@ export class CliQueueService {
     if (requirements.repository && context.params.repo) {
       try {
         const repoGuid = context.params.repo as string;
-        const repos = await api.repos.list(context.teamName);
+        const repos = await api.repos.list({ teamName: context.teamName });
         const repo = repos.find((r: Repo) => r.repoGuid === repoGuid);
         const vaultContent = this.parseVaultContent(repo?.vaultContent);
         if (vaultContent) {
@@ -144,7 +144,7 @@ export class CliQueueService {
         | undefined;
       if (storageName) {
         try {
-          const storageList = await api.storage.list(context.teamName);
+          const storageList = await api.storage.list({ teamName: context.teamName });
           const storage = storageList.find((s: Storage) => s.storageName === storageName);
           const parsed = this.parseVaultContent(storage?.vaultContent);
           if (parsed) {
@@ -158,7 +158,7 @@ export class CliQueueService {
 
     if (requirements.bridge && context.bridgeName && context.regionName) {
       try {
-        const bridges = await api.regions.getBridges(context.regionName);
+        const bridges = await api.regions.getBridges({ regionName: context.regionName });
         const bridge = bridges.find((b: Bridge) => b.bridgeName === context.bridgeName);
         const parsed = this.parseVaultContent(bridge?.vaultContent);
         if (parsed) {

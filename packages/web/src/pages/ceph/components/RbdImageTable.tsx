@@ -40,6 +40,7 @@ import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMachineReassignmentModal';
 import { createSorter } from '@/platform';
+import type { ImageFormValues as FullImageFormValues } from '@rediacc/shared/types';
 import SnapshotTable from './SnapshotTable';
 import type { MenuProps } from 'antd';
 
@@ -54,11 +55,8 @@ interface RbdImageModalState {
   data?: CephRbdImage & { vaultContent?: string | null; vaultVersion?: number };
 }
 
-interface ImageFormValues extends Record<string, unknown> {
-  imageName: string;
-  machineName: string;
-  vaultContent: string;
-}
+// Form-specific subset of shared ImageFormValues (pool/team context provided separately)
+type ImageFormValues = Pick<FullImageFormValues, 'imageName' | 'machineName'> & { vaultContent: string };
 
 const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   const { t } = useTranslation('ceph');

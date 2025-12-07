@@ -35,7 +35,7 @@ export function registerRepoCommands(program: Command): void {
 
         const repos = await withSpinner(
           'Fetching repositories...',
-          () => api.repos.list(opts.team as string),
+          () => api.repos.list({ teamName: opts.team as string }),
           'Repositories fetched'
         );
 
@@ -105,7 +105,7 @@ export function registerRepoCommands(program: Command): void {
 
         await withSpinner(
           `Renaming repository "${oldName}" to "${newName}"...`,
-          () => api.repos.rename(opts.team as string, oldName, newName),
+          () => api.repos.rename({ teamName: opts.team as string, currentRepoName: oldName, newRepoName: newName }),
           `Repository renamed to "${newName}"`
         );
       } catch (error) {
@@ -133,7 +133,7 @@ export function registerRepoCommands(program: Command): void {
         // Fetch all repos to validate deletion
         const allRepos = await withSpinner(
           'Checking repository relationships...',
-          () => api.repos.list(opts.team as string),
+          () => api.repos.list({ teamName: opts.team as string }),
           'Repository relationships checked'
         );
 
@@ -187,7 +187,7 @@ export function registerRepoCommands(program: Command): void {
 
         await withSpinner(
           `Deleting repository "${name}:${options.tag}"...`,
-          () => api.repos.delete(opts.team as string, name, options.tag),
+          () => api.repos.delete({ teamName: opts.team as string, repoName: name, repoTag: options.tag }),
           `Repository "${name}:${options.tag}" deleted`
         );
       } catch (error) {
@@ -215,7 +215,7 @@ export function registerRepoCommands(program: Command): void {
         // Fetch all repos to validate promotion
         const allRepos = await withSpinner(
           'Checking repository relationships...',
-          () => api.repos.list(opts.team as string),
+          () => api.repos.list({ teamName: opts.team as string }),
           'Repository relationships checked'
         );
 
@@ -264,7 +264,7 @@ export function registerRepoCommands(program: Command): void {
 
         await withSpinner(
           `Promoting repository "${name}:${options.tag}"...`,
-          () => api.repos.promoteToGrand(opts.team as string, name),
+          () => api.repos.promoteToGrand({ teamName: opts.team as string, repoName: name }),
           `Repository "${name}:${options.tag}" promoted to grand status`
         );
       } catch (error) {
@@ -371,7 +371,7 @@ export function registerRepoCommands(program: Command): void {
         await withSpinner(
           'Updating repository vault...',
           () =>
-            api.repos.updateVault(opts.team as string, repoName, vaultData, options.vaultVersion),
+            api.repos.updateVault({ teamName: opts.team as string, repoName, repoTag: options.tag, vaultContent: vaultData, vaultVersion: options.vaultVersion }),
           'Repository vault updated'
         );
       } catch (error) {

@@ -5,7 +5,14 @@ import {
   createVaultUpdateMutation,
   createMutation,
 } from '@/hooks/api/mutationFactory';
-import type { Storage } from '@rediacc/shared/types';
+import type {
+  Storage,
+  CreateStorageParams,
+  UpdateStorageNameParams,
+  UpdateStorageVaultParams,
+  DeleteStorageParams,
+  WithOptionalVault,
+} from '@rediacc/shared/types';
 
 // Get storage for a team or multiple teams
 export const useStorage = (teamFilter?: string | string[]) => {
@@ -15,7 +22,7 @@ export const useStorage = (teamFilter?: string | string[]) => {
       if (!teamFilter || (Array.isArray(teamFilter) && teamFilter.length === 0)) return [];
 
       const targetTeam = Array.isArray(teamFilter) ? teamFilter.join(',') : teamFilter;
-      return api.storage.list(targetTeam);
+      return api.storage.list({ teamName: targetTeam });
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
     staleTime: 30 * 1000, // 30 seconds
@@ -23,13 +30,8 @@ export const useStorage = (teamFilter?: string | string[]) => {
 };
 
 // Create storage
-export const useCreateStorage = createMutation<{
-  teamName: string;
-  storageName: string;
-  vaultContent?: string;
-}>({
-  request: ({ teamName, storageName, vaultContent }) =>
-    api.storage.create(teamName, storageName, vaultContent),
+export const useCreateStorage = createMutation<WithOptionalVault<CreateStorageParams>>({
+  request: (params) => api.storage.create(params),
   invalidateKeys: ['storage', 'teams'],
   successMessage: (vars) => `Storage "${vars.storageName}" created successfully`,
   errorMessage: 'Failed to create storage',
@@ -41,13 +43,8 @@ export const useCreateStorage = createMutation<{
 });
 
 // Update storage name
-export const useUpdateStorageName = createMutation<{
-  teamName: string;
-  currentStorageName: string;
-  newStorageName: string;
-}>({
-  request: ({ teamName, currentStorageName, newStorageName }) =>
-    api.storage.rename(teamName, currentStorageName, newStorageName),
+export const useUpdateStorageName = createMutation<UpdateStorageNameParams>({
+  request: (params) => api.storage.rename(params),
   invalidateKeys: ['storage'],
   successMessage: (vars) => `Storage renamed to "${vars.newStorageName}"`,
   errorMessage: 'Failed to update storage name',
@@ -55,27 +52,22 @@ export const useUpdateStorageName = createMutation<{
 });
 
 // Update storage vault
-export const useUpdateStorageVault = createVaultUpdateMutation<{
-  teamName: string;
-  storageName: string;
-  vaultContent: string;
-  vaultVersion: number;
-}>(
+export const useUpdateStorageVault = createVaultUpdateMutation<
+  UpdateStorageVaultParams & Record<string, unknown>
+>(
   'Storage',
-  (data) =>
-    api.storage.updateVault(data.teamName, data.storageName, data.vaultContent, data.vaultVersion),
+  (params) => api.storage.updateVault(params),
   'storageName',
   'vaultContent'
 );
 
 // Delete storage
-export const useDeleteStorage = createResourceMutation<{
-  teamName: string;
-  storageName: string;
-}>(
+export const useDeleteStorage = createResourceMutation<
+  DeleteStorageParams & Record<string, unknown>
+>(
   'Storage',
   'delete',
-  (variables) => api.storage.delete(variables.teamName, variables.storageName),
+  (params) => api.storage.delete(params),
   'storageName',
   ['teams']
 );

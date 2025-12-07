@@ -2,6 +2,14 @@ import { endpoints } from '../../endpoints';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type { Bridge, Region } from '../../types';
+import type {
+  WithOptionalVault,
+  CreateRegionParams,
+  UpdateRegionNameParams,
+  DeleteRegionParams,
+  UpdateRegionVaultParams,
+  GetRegionBridgesParams,
+} from '../../types';
 
 export function createRegionsService(client: ApiClient) {
   return {
@@ -13,29 +21,23 @@ export function createRegionsService(client: ApiClient) {
       });
     },
 
-    create: (regionName: string, vaultContent?: string) =>
+    create: (params: WithOptionalVault<CreateRegionParams>) =>
       client.post(endpoints.regions.createRegion, {
-        regionName,
-        vaultContent: vaultContent ?? '{}',
+        ...params,
+        vaultContent: params.vaultContent ?? '{}',
       }),
 
-    rename: (currentName: string, newName: string) =>
-      client.post(endpoints.regions.updateRegionName, {
-        currentRegionName: currentName,
-        newRegionName: newName,
-      }),
+    rename: (params: UpdateRegionNameParams) =>
+      client.post(endpoints.regions.updateRegionName, params),
 
-    delete: (regionName: string) => client.post(endpoints.regions.deleteRegion, { regionName }),
+    delete: (params: DeleteRegionParams) =>
+      client.post(endpoints.regions.deleteRegion, params),
 
-    updateVault: (regionName: string, vault: string, vaultVersion: number) =>
-      client.post(endpoints.regions.updateRegionVault, {
-        regionName,
-        vaultContent: vault,
-        vaultVersion,
-      }),
+    updateVault: (params: UpdateRegionVaultParams) =>
+      client.post(endpoints.regions.updateRegionVault, params),
 
-    getBridges: async (regionName: string): Promise<Bridge[]> => {
-      const response = await client.get<Bridge>(endpoints.regions.getRegionBridges, { regionName });
+    getBridges: async (params: GetRegionBridgesParams): Promise<Bridge[]> => {
+      const response = await client.get<Bridge>(endpoints.regions.getRegionBridges, params);
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<Bridge>(1),
         filter: (bridge) => Boolean(bridge.bridgeName),

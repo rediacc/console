@@ -5,7 +5,15 @@ import {
   createVaultUpdateMutation,
   createMutation,
 } from '@/hooks/api/mutationFactory';
-import type { Region, Bridge } from '@rediacc/shared/types';
+import type {
+  Region,
+  Bridge,
+  CreateRegionParams,
+  UpdateRegionNameParams,
+  UpdateRegionVaultParams,
+  DeleteRegionParams,
+  WithOptionalVault,
+} from '@rediacc/shared/types';
 
 // Get all regions
 export const useRegions = (enabled: boolean = true) => {
@@ -24,7 +32,7 @@ export const useRegionBridges = (regionName: string) => {
   return useQuery<Bridge[]>({
     queryKey: ['region-bridges', regionName],
     queryFn: async () => {
-      return api.regions.getBridges(regionName);
+      return api.regions.getBridges({ regionName });
     },
     enabled: !!regionName,
   });
@@ -33,23 +41,16 @@ export const useRegionBridges = (regionName: string) => {
 export type { Region };
 
 // Create region
-export const useCreateRegion = createResourceMutation<{
-  regionName: string;
-  vaultContent?: string;
-}>(
+export const useCreateRegion = createResourceMutation<WithOptionalVault<CreateRegionParams>>(
   'Region',
   'create',
-  (variables) => api.regions.create(variables.regionName, variables.vaultContent),
+  (params) => api.regions.create(params),
   'regionName'
 );
 
 // Update region name
-export const useUpdateRegionName = createMutation<{
-  currentRegionName: string;
-  newRegionName: string;
-}>({
-  request: ({ currentRegionName, newRegionName }) =>
-    api.regions.rename(currentRegionName, newRegionName),
+export const useUpdateRegionName = createMutation<UpdateRegionNameParams>({
+  request: (params) => api.regions.rename(params),
   invalidateKeys: ['regions', 'dropdown-data'],
   successMessage: (variables) => `Region renamed to "${variables.newRegionName}"`,
   errorMessage: 'Failed to update region name',
@@ -57,22 +58,20 @@ export const useUpdateRegionName = createMutation<{
 });
 
 // Update region vault
-export const useUpdateRegionVault = createVaultUpdateMutation<{
-  regionName: string;
-  vaultContent: string;
-  vaultVersion: number;
-}>(
+export const useUpdateRegionVault = createVaultUpdateMutation<
+  UpdateRegionVaultParams & Record<string, unknown>
+>(
   'Region',
-  (data) => api.regions.updateVault(data.regionName, data.vaultContent, data.vaultVersion),
+  (params) => api.regions.updateVault(params),
   'regionName',
   'vaultContent'
 );
 
 // Delete region
-export const useDeleteRegion = createMutation<string>({
-  request: (regionName) => api.regions.delete(regionName),
+export const useDeleteRegion = createMutation<DeleteRegionParams>({
+  request: (params) => api.regions.delete(params),
   invalidateKeys: ['regions', 'dropdown-data'],
-  successMessage: (regionName) => `Region "${regionName}" deleted successfully`,
+  successMessage: (params) => `Region "${params.regionName}" deleted successfully`,
   errorMessage: 'Failed to delete region',
   operationName: 'regions.delete',
 });

@@ -70,11 +70,11 @@ export class BatchApiService {
           if (params.targetType === 'cluster') {
             return Promise.all(
               batch.map((machineName) =>
-                api.machines.updateClusterAssignment(
-                  params.teamName,
+                api.machines.updateClusterAssignment({
+                  teamName: params.teamName,
                   machineName,
-                  params.targetResource || null
-                )
+                  clusterName: params.targetResource || '',
+                })
               )
             );
           } else if (params.targetType === 'clone') {
@@ -93,7 +93,11 @@ export class BatchApiService {
         case 'remove':
           return Promise.all(
             batch.map((machineName) =>
-              api.machines.updateClusterAssignment(params.teamName, machineName, null)
+              api.machines.updateClusterAssignment({
+                teamName: params.teamName,
+                machineName,
+                clusterName: '',
+              })
             )
           );
 

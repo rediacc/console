@@ -8,6 +8,7 @@ import type {
   AuditTraceRecord,
   AuditTraceSummary,
 } from '../../types';
+import type { GetEntityAuditTraceParams } from '../../types';
 import type { ApiResponse } from '../../types/api';
 
 export interface AuditLogOptions {
@@ -36,11 +37,8 @@ export function createAuditService(client: ApiClient) {
       });
     },
 
-    getEntityTrace: async (entityType: string, entityName: string): Promise<AuditTraceResponse> => {
-      const response = await client.post(endpoints.audit.getEntityAuditTrace, {
-        entityType,
-        entityIdentifier: entityName,
-      });
+    getEntityTrace: async (params: GetEntityAuditTraceParams): Promise<AuditTraceResponse> => {
+      const response = await client.post(endpoints.audit.getEntityAuditTrace, params);
 
       const records = getRowsByIndex<AuditTraceRecord>(response, 1);
       const summary = getRowByIndex<AuditTraceSummary>(response, 2);

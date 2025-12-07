@@ -217,7 +217,6 @@ const QueuePage: React.FC = () => {
     (): QueueFilters => ({
       teamName: filters.teamName,
       machineName: filters.machineName,
-      regionName: filters.regionName,
       bridgeName: filters.bridgeName,
       onlyStale: filters.onlyStale,
       staleThresholdMinutes: 10,

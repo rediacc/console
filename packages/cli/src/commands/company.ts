@@ -156,7 +156,7 @@ export function registerCompanyCommands(program: Command): void {
 
         await withSpinner(
           'Updating company vault...',
-          () => api.company.updateVault(vaultData, options.vaultVersion),
+          () => api.company.updateVault({ vaultContent: vaultData, vaultVersion: options.vaultVersion }),
           'Company vault updated'
         );
       } catch (error) {
@@ -211,7 +211,7 @@ export function registerCompanyCommands(program: Command): void {
 
         await withSpinner(
           'Importing company data...',
-          () => api.company.importData(content, options.mode),
+          () => api.company.importData({ companyDataJson: content, importMode: options.mode }),
           'Import complete'
         );
       } catch (error) {

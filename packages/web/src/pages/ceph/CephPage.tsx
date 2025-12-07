@@ -25,6 +25,10 @@ import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimized
 import { CephMachinesTab } from './components/CephMachinesTab';
 import { ClusterTable } from './components/ClusterTable';
 import { PoolTable } from './components/PoolTable';
+import type {
+  ClusterFormValues as BaseClusterFormValues,
+  PoolFormValues as BasePoolFormValues,
+} from '@rediacc/shared/types';
 import {
   PageWrapper,
   HeaderSection,
@@ -46,19 +50,9 @@ type ModalData =
   | (Partial<CephCluster> & Record<string, unknown>)
   | (Partial<CephPool> & Record<string, unknown>);
 
-interface ClusterFormValues extends Record<string, unknown> {
-  clusterName: string;
-  vaultContent: string;
-  vaultVersion?: number;
-}
-
-interface PoolFormValues extends Record<string, unknown> {
-  teamName: string;
-  clusterName: string;
-  poolName: string;
-  vaultContent: string;
-  vaultVersion?: number;
-}
+// Extend shared types with vault version for edit operations and required vaultContent
+type ClusterFormValues = BaseClusterFormValues & { vaultVersion?: number; vaultContent: string };
+type PoolFormValues = BasePoolFormValues & { vaultVersion?: number; vaultContent: string };
 
 type ModalFormValues = ClusterFormValues | PoolFormValues;
 

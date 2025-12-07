@@ -53,7 +53,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
 
     // Save to backend if authenticated
     if (isAuthenticated) {
-      updateLanguageMutation.mutate(value);
+      updateLanguageMutation.mutate({ preferredLanguage: value });
     }
   };
 

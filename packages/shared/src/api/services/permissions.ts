@@ -2,6 +2,13 @@ import { endpoints } from '../../endpoints';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type { Permission, PermissionGroup } from '../../types';
+import type {
+  CreatePermissionGroupParams,
+  DeletePermissionGroupParams,
+  CreatePermissionInGroupParams,
+  DeletePermissionFromGroupParams,
+  GetPermissionGroupDetailsParams,
+} from '../../types';
 
 export function createPermissionsService(client: ApiClient) {
   return {
@@ -31,10 +38,10 @@ export function createPermissionsService(client: ApiClient) {
       });
     },
 
-    getGroupDetails: async (groupName: string): Promise<Permission[]> => {
+    getGroupDetails: async (params: GetPermissionGroupDetailsParams): Promise<Permission[]> => {
       const response = await client.get<Permission>(
         endpoints.permissions.getPermissionGroupDetails,
-        { permissionGroupName: groupName }
+        params
       );
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<Permission>(1),
@@ -42,22 +49,16 @@ export function createPermissionsService(client: ApiClient) {
       });
     },
 
-    createGroup: (groupName: string) =>
-      client.post(endpoints.permissions.createPermissionGroup, { permissionGroupName: groupName }),
+    createGroup: (params: CreatePermissionGroupParams) =>
+      client.post(endpoints.permissions.createPermissionGroup, params),
 
-    deleteGroup: (groupName: string) =>
-      client.post(endpoints.permissions.deletePermissionGroup, { permissionGroupName: groupName }),
+    deleteGroup: (params: DeletePermissionGroupParams) =>
+      client.post(endpoints.permissions.deletePermissionGroup, params),
 
-    addPermission: (groupName: string, permissionName: string) =>
-      client.post(endpoints.permissions.createPermissionInGroup, {
-        permissionGroupName: groupName,
-        permissionName,
-      }),
+    addPermission: (params: CreatePermissionInGroupParams) =>
+      client.post(endpoints.permissions.createPermissionInGroup, params),
 
-    removePermission: (groupName: string, permissionName: string) =>
-      client.post(endpoints.permissions.deletePermissionFromGroup, {
-        permissionGroupName: groupName,
-        permissionName,
-      }),
+    removePermission: (params: DeletePermissionFromGroupParams) =>
+      client.post(endpoints.permissions.deletePermissionFromGroup, params),
   };
 }

@@ -314,6 +314,7 @@ const CredentialsPage: React.FC = () => {
               await updateRepoVaultMutation.mutateAsync({
                 teamName: currentResource.teamName,
                 repoName: newName || currentName,
+                repoTag: currentResource.repoTag || 'latest',
                 vaultContent: vaultData,
                 vaultVersion: currentResource.vaultVersion + 1,
               });
@@ -348,6 +349,7 @@ const CredentialsPage: React.FC = () => {
           await updateRepoVaultMutation.mutateAsync({
             teamName: currentResource.teamName,
             repoName: currentResource.repoName,
+            repoTag: currentResource.repoTag || 'latest',
             vaultContent: vault,
             vaultVersion: version,
           });

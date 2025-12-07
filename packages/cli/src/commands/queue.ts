@@ -119,13 +119,13 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
   const response = await withSpinner(
     `Creating queue item for function "${options.function}"...`,
     () =>
-      api.queue.create(
-        opts.team as string,
-        opts.machine as string,
-        opts.bridge as string,
-        queueVault,
-        parseInt(options.priority, 10)
-      ),
+      api.queue.create({
+        teamName: opts.team as string,
+        machineName: opts.machine as string,
+        bridgeName: opts.bridge as string,
+        vaultContent: queueVault,
+        priority: parseInt(options.priority, 10)
+      }),
     'Queue item created'
   );
 
@@ -143,7 +143,7 @@ export async function traceAction(
 ): Promise<void> {
   await authService.requireAuth();
 
-  const fetchTrace = async () => api.queue.getTrace(taskId);
+  const fetchTrace = async () => api.queue.getTrace({ taskId });
 
   if (options.watch) {
     // Watch mode - poll until complete
@@ -210,7 +210,7 @@ export async function cancelAction(taskId: string): Promise<void> {
 
   await withSpinner(
     `Cancelling task ${taskId}...`,
-    () => api.queue.cancel(taskId),
+    () => api.queue.cancel({ taskId }),
     'Task cancelled'
   );
 }
@@ -220,7 +220,7 @@ export async function retryAction(taskId: string): Promise<void> {
 
   await withSpinner(
     `Retrying task ${taskId}...`,
-    () => api.queue.retry(taskId),
+    () => api.queue.retry({ taskId }),
     'Task retry initiated'
   );
 }
@@ -372,7 +372,7 @@ export function registerQueueCommands(program: Command): void {
 
         await withSpinner(
           `Deleting task ${taskId}...`,
-          () => api.queue.delete(taskId),
+          () => api.queue.delete({ taskId }),
           'Task deleted'
         );
       } catch (error) {
