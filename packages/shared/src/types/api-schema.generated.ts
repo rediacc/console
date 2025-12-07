@@ -2,7 +2,7 @@
  * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
  *
  * Generated from: middleware/AppData/stored-procedures.json
- * Generated at: 2025-12-07T12:21:03Z
+ * Generated at: 2025-12-07T12:48:20Z
  * Schema version: 3.0.0
  * Schema generated: 2025-12-07T11:41:23.6725941Z
  *
@@ -920,9 +920,7 @@ export interface ActivateUserAccount_ResultSet0 {
   result: string;
 }
 
-export type ActivateUserAccountResults = [
-  ActivateUserAccount_ResultSet0[],
-];
+export type ActivateUserAccountResults = [ActivateUserAccount_ResultSet0[]];
 
 export interface CancelQueueItem_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -972,9 +970,7 @@ export interface CreateAuthenticationRequest_ResultSet0 {
   authenticationStatus: string;
 }
 
-export type CreateAuthenticationRequestResults = [
-  CreateAuthenticationRequest_ResultSet0[],
-];
+export type CreateAuthenticationRequestResults = [CreateAuthenticationRequest_ResultSet0[]];
 
 export interface CreateBridge_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -987,10 +983,7 @@ export interface CreateBridge_ResultSet1 {
   name: string;
 }
 
-export type CreateBridgeResults = [
-  CreateBridge_ResultSet0[],
-  CreateBridge_ResultSet1[],
-];
+export type CreateBridgeResults = [CreateBridge_ResultSet0[], CreateBridge_ResultSet1[]];
 
 export interface CreateCephCluster_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1015,10 +1008,7 @@ export interface CreateCephPool_ResultSet1 {
   message: string;
 }
 
-export type CreateCephPoolResults = [
-  CreateCephPool_ResultSet0[],
-  CreateCephPool_ResultSet1[],
-];
+export type CreateCephPoolResults = [CreateCephPool_ResultSet0[], CreateCephPool_ResultSet1[]];
 
 export interface CreateCephRbdClone_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1071,10 +1061,7 @@ export interface CreateMachine_ResultSet1 {
   name: string;
 }
 
-export type CreateMachineResults = [
-  CreateMachine_ResultSet0[],
-  CreateMachine_ResultSet1[],
-];
+export type CreateMachineResults = [CreateMachine_ResultSet0[], CreateMachine_ResultSet1[]];
 
 export interface CreateNewCompany_ResultSet0 {
   /** @sqlType nvarchar */
@@ -1089,9 +1076,7 @@ export interface CreateNewCompany_ResultSet0 {
   companyName: string | null;
 }
 
-export type CreateNewCompanyResults = [
-  CreateNewCompany_ResultSet0[],
-];
+export type CreateNewCompanyResults = [CreateNewCompany_ResultSet0[]];
 
 export interface CreateNewUser_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1110,10 +1095,7 @@ export interface CreateNewUser_ResultSet1 {
   createdBy: string | null;
 }
 
-export type CreateNewUserResults = [
-  CreateNewUser_ResultSet0[],
-  CreateNewUser_ResultSet1[],
-];
+export type CreateNewUserResults = [CreateNewUser_ResultSet0[], CreateNewUser_ResultSet1[]];
 
 export interface CreatePermissionGroup_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1174,10 +1156,7 @@ export interface CreateQueueItem_ResultSet1 {
   highPriorityInfo: string | null;
 }
 
-export type CreateQueueItemResults = [
-  CreateQueueItem_ResultSet0[],
-  CreateQueueItem_ResultSet1[],
-];
+export type CreateQueueItemResults = [CreateQueueItem_ResultSet0[], CreateQueueItem_ResultSet1[]];
 
 export interface CreateRegion_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1188,10 +1167,7 @@ export interface CreateRegion_ResultSet1 {
   name: string;
 }
 
-export type CreateRegionResults = [
-  CreateRegion_ResultSet0[],
-  CreateRegion_ResultSet1[],
-];
+export type CreateRegionResults = [CreateRegion_ResultSet0[], CreateRegion_ResultSet1[]];
 
 export interface CreateRepository_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1216,10 +1192,7 @@ export interface CreateStorage_ResultSet1 {
   name: string;
 }
 
-export type CreateStorageResults = [
-  CreateStorage_ResultSet0[],
-  CreateStorage_ResultSet1[],
-];
+export type CreateStorageResults = [CreateStorage_ResultSet0[], CreateStorage_ResultSet1[]];
 
 export interface CreateTeam_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1230,10 +1203,7 @@ export interface CreateTeam_ResultSet1 {
   name: string;
 }
 
-export type CreateTeamResults = [
-  CreateTeam_ResultSet0[],
-  CreateTeam_ResultSet1[],
-];
+export type CreateTeamResults = [CreateTeam_ResultSet0[], CreateTeam_ResultSet1[]];
 
 export interface CreateTeamMembership_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1258,9 +1228,7 @@ export interface DeleteBridge_ResultSet0 {
   nextRequestToken: string | null;
 }
 
-export type DeleteBridgeResults = [
-  DeleteBridge_ResultSet0[],
-];
+export type DeleteBridgeResults = [DeleteBridge_ResultSet0[]];
 
 export interface DeleteCephCluster_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1285,10 +1253,7 @@ export interface DeleteCephPool_ResultSet1 {
   message: string;
 }
 
-export type DeleteCephPoolResults = [
-  DeleteCephPool_ResultSet0[],
-  DeleteCephPool_ResultSet1[],
-];
+export type DeleteCephPoolResults = [DeleteCephPool_ResultSet0[], DeleteCephPool_ResultSet1[]];
 
 export interface DeleteCephRbdClone_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1337,9 +1302,7 @@ export interface DeleteMachine_ResultSet0 {
   nextRequestToken: string | null;
 }
 
-export type DeleteMachineResults = [
-  DeleteMachine_ResultSet0[],
-];
+export type DeleteMachineResults = [DeleteMachine_ResultSet0[]];
 
 export interface DeletePermissionFromGroup_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1388,46 +1351,35 @@ export interface DeleteQueueItem_ResultSet1 {
   result: string;
 }
 
-export type DeleteQueueItemResults = [
-  DeleteQueueItem_ResultSet0[],
-  DeleteQueueItem_ResultSet1[],
-];
+export type DeleteQueueItemResults = [DeleteQueueItem_ResultSet0[], DeleteQueueItem_ResultSet1[]];
 
 export interface DeleteRegion_ResultSet0 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
 }
 
-export type DeleteRegionResults = [
-  DeleteRegion_ResultSet0[],
-];
+export type DeleteRegionResults = [DeleteRegion_ResultSet0[]];
 
 export interface DeleteRepository_ResultSet0 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
 }
 
-export type DeleteRepositoryResults = [
-  DeleteRepository_ResultSet0[],
-];
+export type DeleteRepositoryResults = [DeleteRepository_ResultSet0[]];
 
 export interface DeleteStorage_ResultSet0 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
 }
 
-export type DeleteStorageResults = [
-  DeleteStorage_ResultSet0[],
-];
+export type DeleteStorageResults = [DeleteStorage_ResultSet0[]];
 
 export interface DeleteTeam_ResultSet0 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
 }
 
-export type DeleteTeamResults = [
-  DeleteTeam_ResultSet0[],
-];
+export type DeleteTeamResults = [DeleteTeam_ResultSet0[]];
 
 export interface DeleteUserFromTeam_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1601,10 +1553,7 @@ export interface GetCephClusters_ResultSet1 {
   clusterVault: string | null;
 }
 
-export type GetCephClustersResults = [
-  GetCephClusters_ResultSet0[],
-  GetCephClusters_ResultSet1[],
-];
+export type GetCephClustersResults = [GetCephClusters_ResultSet0[], GetCephClusters_ResultSet1[]];
 
 export interface GetCephPools_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1625,10 +1574,7 @@ export interface GetCephPools_ResultSet1 {
   poolVault: string | null;
 }
 
-export type GetCephPoolsResults = [
-  GetCephPools_ResultSet0[],
-  GetCephPools_ResultSet1[],
-];
+export type GetCephPoolsResults = [GetCephPools_ResultSet0[], GetCephPools_ResultSet1[]];
 
 export interface GetCephRbdClones_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1873,10 +1819,7 @@ export interface GetCompanyTeams_ResultSet1 {
   storageCount: number | null;
 }
 
-export type GetCompanyTeamsResults = [
-  GetCompanyTeams_ResultSet0[],
-  GetCompanyTeams_ResultSet1[],
-];
+export type GetCompanyTeamsResults = [GetCompanyTeams_ResultSet0[], GetCompanyTeams_ResultSet1[]];
 
 export interface GetCompanyUsers_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1936,10 +1879,7 @@ export interface GetCompanyVault_ResultSet1 {
   vaultContent: string | null;
 }
 
-export type GetCompanyVaultResults = [
-  GetCompanyVault_ResultSet0[],
-  GetCompanyVault_ResultSet1[],
-];
+export type GetCompanyVaultResults = [GetCompanyVault_ResultSet0[], GetCompanyVault_ResultSet1[]];
 
 export interface GetCompanyVaults_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -2095,10 +2035,7 @@ export interface GetLookupData_ResultSet1 {
   dropdownValues: string | null;
 }
 
-export type GetLookupDataResults = [
-  GetLookupData_ResultSet0[],
-  GetLookupData_ResultSet1[],
-];
+export type GetLookupDataResults = [GetLookupData_ResultSet0[], GetLookupData_ResultSet1[]];
 
 export interface GetMachineAssignmentStatus_ResultSet0 {
   /** @sqlType nvarchar */
@@ -2536,10 +2473,7 @@ export interface GetTeamMachines_ResultSet1 {
   queueCount: number | null;
 }
 
-export type GetTeamMachinesResults = [
-  GetTeamMachines_ResultSet0[],
-  GetTeamMachines_ResultSet1[],
-];
+export type GetTeamMachinesResults = [GetTeamMachines_ResultSet0[], GetTeamMachines_ResultSet1[]];
 
 export interface GetTeamMembers_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -2702,10 +2636,7 @@ export interface GetTeamStorages_ResultSet1 {
   teamName: string;
 }
 
-export type GetTeamStoragesResults = [
-  GetTeamStorages_ResultSet0[],
-  GetTeamStorages_ResultSet1[],
-];
+export type GetTeamStoragesResults = [GetTeamStorages_ResultSet0[], GetTeamStorages_ResultSet1[]];
 
 export interface GetUserCompany_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -2726,10 +2657,7 @@ export interface GetUserCompany_ResultSet1 {
   userCount: number | null;
 }
 
-export type GetUserCompanyResults = [
-  GetUserCompany_ResultSet0[],
-  GetUserCompany_ResultSet1[],
-];
+export type GetUserCompanyResults = [GetUserCompany_ResultSet0[], GetUserCompany_ResultSet1[]];
 
 export interface GetUserRequests_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -2760,10 +2688,7 @@ export interface GetUserRequests_ResultSet1 {
   expirationTime: string | null;
 }
 
-export type GetUserRequestsResults = [
-  GetUserRequests_ResultSet0[],
-  GetUserRequests_ResultSet1[],
-];
+export type GetUserRequestsResults = [GetUserRequests_ResultSet0[], GetUserRequests_ResultSet1[]];
 
 export interface GetUserVault_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -2780,10 +2705,7 @@ export interface GetUserVault_ResultSet1 {
   userCredential: string | null;
 }
 
-export type GetUserVaultResults = [
-  GetUserVault_ResultSet0[],
-  GetUserVault_ResultSet1[],
-];
+export type GetUserVaultResults = [GetUserVault_ResultSet0[], GetUserVault_ResultSet1[]];
 
 export interface ImportCompanyData_ResultSet0 {
   /** @sqlType varchar */
@@ -2840,10 +2762,7 @@ export interface IsRegistered_ResultSet1 {
   serverName: string | null;
 }
 
-export type IsRegisteredResults = [
-  IsRegistered_ResultSet0[],
-  IsRegistered_ResultSet1[],
-];
+export type IsRegisteredResults = [IsRegistered_ResultSet0[], IsRegistered_ResultSet1[]];
 
 export interface PrivilegeAuthenticationRequest_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -2879,9 +2798,7 @@ export interface PromoteRepositoryToGrand_ResultSet0 {
   nextRequestToken: string | null;
 }
 
-export type PromoteRepositoryToGrandResults = [
-  PromoteRepositoryToGrand_ResultSet0[],
-];
+export type PromoteRepositoryToGrandResults = [PromoteRepositoryToGrand_ResultSet0[]];
 
 export interface ResetBridgeAuthorization_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -3449,10 +3366,7 @@ export interface UpdateTeamName_ResultSet1 {
   memberCount: number | null;
 }
 
-export type UpdateTeamNameResults = [
-  UpdateTeamName_ResultSet0[],
-  UpdateTeamName_ResultSet1[],
-];
+export type UpdateTeamNameResults = [UpdateTeamName_ResultSet0[], UpdateTeamName_ResultSet1[]];
 
 export interface UpdateTeamVault_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -3467,10 +3381,7 @@ export interface UpdateTeamVault_ResultSet1 {
   result: string;
 }
 
-export type UpdateTeamVaultResults = [
-  UpdateTeamVault_ResultSet0[],
-  UpdateTeamVault_ResultSet1[],
-];
+export type UpdateTeamVaultResults = [UpdateTeamVault_ResultSet0[], UpdateTeamVault_ResultSet1[]];
 
 export interface UpdateUserAssignedPermissions_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -3505,10 +3416,7 @@ export interface UpdateUserEmail_ResultSet1 {
   result: string;
 }
 
-export type UpdateUserEmailResults = [
-  UpdateUserEmail_ResultSet0[],
-  UpdateUserEmail_ResultSet1[],
-];
+export type UpdateUserEmailResults = [UpdateUserEmail_ResultSet0[], UpdateUserEmail_ResultSet1[]];
 
 export interface UpdateUserLanguage_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -3632,10 +3540,7 @@ export interface UpdateUserVault_ResultSet1 {
   result: string;
 }
 
-export type UpdateUserVaultResults = [
-  UpdateUserVault_ResultSet0[],
-  UpdateUserVault_ResultSet1[],
-];
+export type UpdateUserVaultResults = [UpdateUserVault_ResultSet0[], UpdateUserVault_ResultSet1[]];
 
 // ============================================================================
 // Utility Types

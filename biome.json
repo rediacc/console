@@ -57,7 +57,8 @@
       "!**/dist/**",
       "!**/bin/**",
       "!**/*.min.js",
-      "!**/*.min.css"
+      "!**/*.min.css",
+      "!**/*.generated.ts"
     ],
     "ignoreUnknown": true
   }
