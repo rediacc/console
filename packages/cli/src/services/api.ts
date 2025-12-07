@@ -7,14 +7,13 @@ import {
 } from '@rediacc/shared/api';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import { createVaultEncryptor } from '@rediacc/shared/encryption';
-import { endpoints } from '@rediacc/shared/endpoints';
 import type { ApiResponse } from '@rediacc/shared/types';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { nodeStorageAdapter } from '../adapters/storage.js';
 import { EXIT_CODES } from '../types/index.js';
 import type { AuthResponse } from '../types/api-responses.js';
 
-const API_PREFIX = endpoints.base.storedProcedure;
+const API_PREFIX = '/StoredProcedure';
 const STORAGE_KEYS = {
   TOKEN: 'token',
   API_URL: 'apiUrl',
@@ -81,7 +80,7 @@ class CliApiClient implements SharedApiClient {
     await this.initialize();
 
     const response = await this.client.post<ApiResponse>(
-      endpoints.auth.createAuthenticationRequest,
+      '/CreateAuthenticationRequest',
       { name: sessionName },
       {
         headers: {
@@ -97,7 +96,7 @@ class CliApiClient implements SharedApiClient {
   }
 
   async logout(): Promise<ApiResponse> {
-    return this.post(endpoints.users.deleteUserRequest, {});
+    return this.post('/DeleteUserRequest', {});
   }
 
   async activateUser(
@@ -108,7 +107,7 @@ class CliApiClient implements SharedApiClient {
     await this.initialize();
 
     const response = await this.client.post<ApiResponse>(
-      endpoints.auth.activateUserAccount,
+      '/ActivateUserAccount',
       { activationCode },
       {
         headers: {

@@ -1,9 +1,7 @@
-import { endpoints } from '../../endpoints';
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type { User, UserVault } from '../../types';
 import type {
-  CreateNewUserParams,
   UpdateUserToActivatedParams,
   UpdateUserToDeactivatedParams,
   UpdateUserEmailParams,
@@ -26,7 +24,7 @@ export interface CreateUserResult {
 export function createUsersService(client: ApiClient) {
   return {
     list: async (): Promise<User[]> => {
-      const response = await client.get<User>(endpoints.company.getCompanyUsers);
+      const response = await client.get<User>('/GetCompanyUsers');
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<User>(1),
         filter: (user) => Boolean(user.userEmail),
@@ -48,10 +46,7 @@ export function createUsersService(client: ApiClient) {
       if (passwordHash) payload.newUserHash = passwordHash;
       if (options.language) payload.languagePreference = options.language;
       if (options.fullName) payload.fullName = options.fullName;
-      const response = await client.post<{ activationCode?: string }>(
-        endpoints.users.createUser,
-        payload
-      );
+      const response = await client.post<{ activationCode?: string }>('/CreateNewUser', payload);
       const row = parseFirst<{ activationCode?: string }>(response, {
         extractor: responseExtractors.byIndex(0),
       });
@@ -61,18 +56,18 @@ export function createUsersService(client: ApiClient) {
     },
 
     activate: (params: UpdateUserToActivatedParams) =>
-      client.post(endpoints.users.updateUserToActivated, params),
+      client.post('/UpdateUserToActivated', params),
 
     deactivate: (params: UpdateUserToDeactivatedParams) =>
-      client.post(endpoints.users.updateUserToDeactivated, params),
+      client.post('/UpdateUserToDeactivated', params),
 
-    updateEmail: (params: UpdateUserEmailParams) => client.post(endpoints.users.updateUserEmail, params),
+    updateEmail: (params: UpdateUserEmailParams) => client.post('/UpdateUserEmail', params),
 
     updatePassword: (params: UpdateUserPasswordParams) =>
-      client.post(endpoints.users.updateUserPassword, params),
+      client.post('/UpdateUserPassword', params),
 
     updateLanguage: (params: UpdateUserLanguageParams) =>
-      client.post(endpoints.users.updateUserLanguage, params),
+      client.post('/UpdateUserLanguage', params),
 
     getVault: async (): Promise<UserVault> => {
       interface UserVaultRow {
@@ -81,7 +76,7 @@ export function createUsersService(client: ApiClient) {
         userCredential?: string | null;
       }
 
-      const response = await client.get<UserVaultRow>(endpoints.users.getUserVault);
+      const response = await client.get<UserVaultRow>('/GetUserVault');
       const first = parseFirst<UserVaultRow>(response, {
         extractor: responseExtractors.byIndex(1),
       });
@@ -92,10 +87,9 @@ export function createUsersService(client: ApiClient) {
       };
     },
 
-    updateVault: (params: UpdateUserVaultParams) =>
-      client.post(endpoints.users.updateUserVault, params),
+    updateVault: (params: UpdateUserVaultParams) => client.post('/UpdateUserVault', params),
 
     assignPermissions: (params: UpdateUserAssignedPermissionsParams) =>
-      client.post(endpoints.users.updateUserAssignedPermissions, params),
+      client.post('/UpdateUserAssignedPermissions', params),
   };
 }

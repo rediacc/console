@@ -22,13 +22,13 @@ import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { PageCard } from '@/styles/primitives';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimizedIcons';
-import { CephMachinesTab } from './components/CephMachinesTab';
-import { ClusterTable } from './components/ClusterTable';
-import { PoolTable } from './components/PoolTable';
 import type {
   ClusterFormValues as BaseClusterFormValues,
   PoolFormValues as BasePoolFormValues,
 } from '@rediacc/shared/types';
+import { CephMachinesTab } from './components/CephMachinesTab';
+import { ClusterTable } from './components/ClusterTable';
+import { PoolTable } from './components/PoolTable';
 import {
   PageWrapper,
   HeaderSection,

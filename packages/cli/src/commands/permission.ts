@@ -129,7 +129,8 @@ export function registerPermissionCommands(program: Command): void {
 
         await withSpinner(
           `Removing permission "${permissionName}" from group "${groupName}"...`,
-          () => api.permissions.removePermission({ permissionGroupName: groupName, permissionName }),
+          () =>
+            api.permissions.removePermission({ permissionGroupName: groupName, permissionName }),
           'Permission removed'
         );
       } catch (error) {

@@ -44,7 +44,6 @@ import {
 import { useQueueAction } from '@/hooks/useQueueAction';
 import RcloneImportWizard from '@/pages/storage/components/RcloneImportWizard';
 import type { QueueActionParams } from '@/services/queueActionService';
-import type { StorageFormValues } from '@rediacc/shared/types';
 import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
 import {
@@ -59,6 +58,7 @@ import {
   ImportOutlined,
   CloudOutlined,
 } from '@/utils/optimizedIcons';
+import type { StorageFormValues } from '@rediacc/shared/types';
 
 interface StorageFunctionParams {
   sourceType?: string;

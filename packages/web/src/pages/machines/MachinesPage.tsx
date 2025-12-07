@@ -37,11 +37,11 @@ import type { ContainerData } from '@/pages/machines/components/SplitResourceVie
 import { SplitResourceView } from '@/pages/machines/components/SplitResourceView';
 import { FUNCTION_DEFINITIONS } from '@/services/functionsService';
 import type { QueueActionParams } from '@/services/queueActionService';
-import type { MachineFormValues as BaseMachineFormValues } from '@rediacc/shared/types';
 import { type Machine } from '@/types';
 import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, WifiOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import type { MachineFormValues as BaseMachineFormValues } from '@rediacc/shared/types';
 
 // Extend shared type with UI-specific field for auto-setup option
 type MachineFormValues = BaseMachineFormValues & { autoSetup?: boolean };

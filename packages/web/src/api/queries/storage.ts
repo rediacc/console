@@ -54,22 +54,11 @@ export const useUpdateStorageName = createMutation<UpdateStorageNameParams>({
 // Update storage vault
 export const useUpdateStorageVault = createVaultUpdateMutation<
   UpdateStorageVaultParams & Record<string, unknown>
->(
-  'Storage',
-  (params) => api.storage.updateVault(params),
-  'storageName',
-  'vaultContent'
-);
+>('Storage', (params) => api.storage.updateVault(params), 'storageName', 'vaultContent');
 
 // Delete storage
 export const useDeleteStorage = createResourceMutation<
   DeleteStorageParams & Record<string, unknown>
->(
-  'Storage',
-  'delete',
-  (params) => api.storage.delete(params),
-  'storageName',
-  ['teams']
-);
+>('Storage', 'delete', (params) => api.storage.delete(params), 'storageName', ['teams']);
 
 export type { Storage };

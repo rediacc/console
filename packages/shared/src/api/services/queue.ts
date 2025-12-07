@@ -1,4 +1,3 @@
-import { endpoints } from '../../endpoints';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type {
@@ -49,14 +48,14 @@ export function createQueueService(client: ApiClient) {
       filters: QueueFilters = {}
     ): Promise<QueueListResult> => {
       const response = await client.get<QueueItem | QueueStatistics>(
-        endpoints.queue.getTeamQueueItems,
+        '/GetTeamQueueItems',
         buildQueueListParams(teamName, filters)
       );
       return parseQueueList(response);
     },
 
     getNext: async (machineName: string, itemCount = 5): Promise<QueueItem[]> => {
-      const response = await client.get<QueueItem>(endpoints.queue.getQueueItemsNext, {
+      const response = await client.get<QueueItem>('/GetQueueItemsNext', {
         machineName,
         itemCount,
       });
@@ -64,40 +63,32 @@ export function createQueueService(client: ApiClient) {
     },
 
     create: async (params: CreateQueueItemParams): Promise<QueueCreateResult> => {
-      const response = await client.post(endpoints.queue.createQueueItem, params);
+      const response = await client.post('/CreateQueueItem', params);
       return parseQueueCreateResult(response);
     },
 
     updateResponse: async (params: UpdateQueueItemResponseParams): Promise<void> => {
-      await client.post(endpoints.queue.updateQueueItemResponse, params);
+      await client.post('/UpdateQueueItemResponse', params);
     },
 
     complete: async (params: UpdateQueueItemToCompletedParams): Promise<void> => {
-      await client.post(endpoints.queue.updateQueueItemToCompleted, params);
+      await client.post('/UpdateQueueItemToCompleted', params);
     },
 
     cancel: async (params: CancelQueueItemParams): Promise<void> => {
-      await client.post(endpoints.queue.cancelQueueItem, params);
+      await client.post('/CancelQueueItem', params);
     },
 
     delete: async (params: DeleteQueueItemParams): Promise<void> => {
-      await client.post(endpoints.queue.deleteQueueItem, params);
+      await client.post('/DeleteQueueItem', params);
     },
 
     retry: async (params: RetryFailedQueueItemParams): Promise<void> => {
-      await client.post(endpoints.queue.retryFailedQueueItem, params);
-    },
-
-    updatePriority: async (taskId: string, priority: number): Promise<void> => {
-      await client.post(endpoints.queue.updateQueueItemPriority, { taskId, priority });
-    },
-
-    updateProtection: async (taskId: string, isProtected: boolean): Promise<void> => {
-      await client.post(endpoints.queue.updateQueueItemProtection, { taskId, isProtected });
+      await client.post('/RetryFailedQueueItem', params);
     },
 
     getTrace: async (params: GetQueueItemTraceParams): Promise<QueueTrace> => {
-      const response = await client.get(endpoints.queue.getQueueItemTrace, params);
+      const response = await client.get('/GetQueueItemTrace', params);
       return parseQueueTrace(response);
     },
   };

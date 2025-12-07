@@ -1,4 +1,3 @@
-import { endpoints } from '../../endpoints';
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type {
@@ -9,13 +8,8 @@ import type {
   UserRequest,
   VerifyTfaResult,
 } from '../../types';
+import type { DeleteUserRequestParams, IsRegisteredParams } from '../../types';
 import type { ApiResponse } from '../../types/api';
-import type {
-  CreateAuthenticationRequestParams,
-  DeleteUserRequestParams,
-  ActivateUserAccountParams,
-  IsRegisteredParams,
-} from '../../types';
 
 export interface ForkSessionOptions {
   permissionsName?: string;
@@ -89,7 +83,7 @@ export function createAuthService(client: ApiClient) {
   return {
     login: (email: string, passwordHash: string, sessionName = 'Web Session') =>
       client.post(
-        endpoints.auth.createAuthenticationRequest,
+        '/CreateAuthenticationRequest',
         { name: sessionName },
         {
           headers: {
@@ -99,7 +93,7 @@ export function createAuthService(client: ApiClient) {
         }
       ),
 
-    logout: () => client.post(endpoints.users.deleteUserRequest, {}),
+    logout: () => client.post('/DeleteUserRequest', {}),
 
     forkSession: async (
       sessionName: string,
@@ -112,7 +106,7 @@ export function createAuthService(client: ApiClient) {
       if (options.expiresInHours !== undefined) {
         payload.tokenExpirationHours = options.expiresInHours;
       }
-      const response = await client.post(endpoints.auth.forkAuthenticationRequest, payload);
+      const response = await client.post('/ForkAuthenticationRequest', payload);
 
       const credentialsSet =
         response.resultSets?.find((set) => set.resultSetName === 'Credentials') ??
@@ -139,7 +133,7 @@ export function createAuthService(client: ApiClient) {
 
     activateAccount: (email: string, code: string, passwordHash: string) =>
       client.post(
-        endpoints.auth.activateUserAccount,
+        '/ActivateUserAccount',
         { activationCode: code },
         {
           headers: {
@@ -150,14 +144,12 @@ export function createAuthService(client: ApiClient) {
       ),
 
     getRequestStatus: async (): Promise<AuthRequestStatus> => {
-      const response = await client.get<AuthStatusRow>(
-        endpoints.auth.getRequestAuthenticationStatus
-      );
+      const response = await client.get<AuthStatusRow>('/GetRequestAuthenticationStatus');
       return extractAuthStatus(response);
     },
 
     getSessions: async (): Promise<UserRequest[]> => {
-      const response = await client.get<UserRequest>(endpoints.users.getUserRequests);
+      const response = await client.get<UserRequest>('/GetUserRequests');
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<UserRequest>(1),
       });
@@ -170,11 +162,11 @@ export function createAuthService(client: ApiClient) {
             ? params.requestId
             : Number(params.requestId)
           : params.targetRequestId;
-      return client.post(endpoints.users.deleteUserRequest, { targetRequestId });
+      return client.post('/DeleteUserRequest', { targetRequestId });
     },
 
     getTfaStatus: async (): Promise<AuthRequestStatus> => {
-      const response = await client.post<AuthStatusRow>(endpoints.users.updateUserTfa, {
+      const response = await client.post<AuthStatusRow>('/UpdateUserTFA', {
         action: 'status',
       });
       return extractAuthStatus(response);
@@ -186,7 +178,7 @@ export function createAuthService(client: ApiClient) {
     ): Promise<EnableTfaResponse | null> => {
       // Legacy mode for CLI - no password/options provided
       if (!passwordHash && Object.keys(options).length === 0) {
-        const response = await client.post<EnableTfaResponse>(endpoints.users.updateUserTfa, {
+        const response = await client.post<EnableTfaResponse>('/UpdateUserTFA', {
           action: 'enable',
         });
         return extractTfaResponse(response);
@@ -199,17 +191,17 @@ export function createAuthService(client: ApiClient) {
       if (options.secret) payload.secret = options.secret;
       if (options.confirmEnable) payload.confirmEnable = true;
 
-      const response = await client.post<EnableTfaResponse>(endpoints.users.updateUserTfa, payload);
+      const response = await client.post<EnableTfaResponse>('/UpdateUserTFA', payload);
       return extractTfaResponse(response);
     },
 
     disableTfa: async (passwordHash?: string, currentCode?: string): Promise<void> => {
       if (!passwordHash && !currentCode) {
-        await client.post(endpoints.users.updateUserTfa, { action: 'disable' });
+        await client.post('/UpdateUserTFA', { action: 'disable' });
         return;
       }
 
-      await client.post(endpoints.users.updateUserTfa, {
+      await client.post('/UpdateUserTFA', {
         enable: false,
         userHash: passwordHash,
         currentCode,
@@ -217,13 +209,10 @@ export function createAuthService(client: ApiClient) {
     },
 
     verifyTfa: async (code: string, sessionName?: string): Promise<VerifyTfaResult> => {
-      const response = await client.post<VerifyTfaResult>(
-        endpoints.auth.privilegeAuthenticationRequest,
-        {
-          currentCode: code,
-          sessionName,
-        }
-      );
+      const response = await client.post<VerifyTfaResult>('/PrivilegeAuthenticationRequest', {
+        currentCode: code,
+        sessionName,
+      });
 
       const row =
         parseFirst<VerifyTfaResult>(response, {
@@ -246,7 +235,7 @@ export function createAuthService(client: ApiClient) {
         isRegistered?: boolean | number | string;
       }
 
-      const response = await client.get<RegistrationRow>(endpoints.auth.isRegistered, {
+      const response = await client.get<RegistrationRow>('/IsRegistered', {
         userEmail: params.userName,
       });
       const row = parseFirst<RegistrationRow>(response, {

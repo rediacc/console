@@ -77,16 +77,6 @@ export class BatchApiService {
                 })
               )
             );
-          } else if (params.targetType === 'clone') {
-            return Promise.all(
-              batch.map((machineName) =>
-                api.machines.updateCloneAssignment(
-                  params.teamName,
-                  machineName,
-                  params.targetResource as string
-                )
-              )
-            );
           }
           throw new Error(`Unsupported target type: ${params.targetType}`);
 

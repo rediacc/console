@@ -65,20 +65,12 @@ export const useUpdateMachineBridge = createMutation<UpdateMachineAssignedBridge
 // Update machine vault
 export const useUpdateMachineVault = createVaultUpdateMutation<
   UpdateMachineVaultParams & Record<string, unknown>
->(
-  'Machine',
-  (data) => api.machines.updateVault(data),
-  'machineName',
-  'vaultContent'
-);
+>('Machine', (data) => api.machines.updateVault(data), 'machineName', 'vaultContent');
 
 // Delete machine
 export const useDeleteMachine = createResourceMutation<
   DeleteMachineParams & Record<string, unknown>
->(
-  'Machine',
-  'delete',
-  (variables) => api.machines.delete(variables),
-  'machineName',
-  [QUERY_KEY_STRINGS.teams, QUERY_KEY_STRINGS.bridges]
-);
+>('Machine', 'delete', (variables) => api.machines.delete(variables), 'machineName', [
+  QUERY_KEY_STRINGS.teams,
+  QUERY_KEY_STRINGS.bridges,
+]);

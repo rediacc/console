@@ -2,7 +2,6 @@ import { QueryKey } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { createMutation } from '@/hooks/api/mutationFactory';
 import i18n from '@/i18n/config';
-import { CEPH_QUERY_KEYS } from './ceph';
 import type {
   CreateCephClusterParams,
   UpdateCephClusterVaultParams,
@@ -24,6 +23,7 @@ import type {
   UpdateMachineClusterRemovalParams,
   WithOptionalVault,
 } from '@rediacc/shared/types';
+import { CEPH_QUERY_KEYS } from './ceph';
 
 type Operation = 'create' | 'update' | 'delete' | 'assign' | 'remove';
 
@@ -119,7 +119,9 @@ export const useDeleteCephPool = createCephMutation<DeleteCephPoolParams>({
 // RBD IMAGE MUTATIONS
 // =============================================================================
 
-export const useCreateCephRbdImage = createCephMutation<WithOptionalVault<CreateCephRbdImageParams>>({
+export const useCreateCephRbdImage = createCephMutation<
+  WithOptionalVault<CreateCephRbdImageParams>
+>({
   request: (params) => api.ceph.createImage(params),
   operation: 'create',
   resourceKey: 'rbdImage',
@@ -136,19 +138,22 @@ export const useDeleteCephRbdImage = createCephMutation<DeleteCephRbdImageParams
   getInvalidateKeys: () => [CEPH_QUERY_KEYS.images()],
 });
 
-export const useUpdateImageMachineAssignment = createCephMutation<UpdateImageMachineAssignmentParams>({
-  request: (params) => api.ceph.assignMachineToImage(params),
-  operation: 'assign',
-  resourceKey: 'imageMachine',
-  translationKey: 'images.reassignmentSuccess',
-  getInvalidateKeys: () => [CEPH_QUERY_KEYS.images()],
-});
+export const useUpdateImageMachineAssignment =
+  createCephMutation<UpdateImageMachineAssignmentParams>({
+    request: (params) => api.ceph.assignMachineToImage(params),
+    operation: 'assign',
+    resourceKey: 'imageMachine',
+    translationKey: 'images.reassignmentSuccess',
+    getInvalidateKeys: () => [CEPH_QUERY_KEYS.images()],
+  });
 
 // =============================================================================
 // RBD SNAPSHOT MUTATIONS
 // =============================================================================
 
-export const useCreateCephRbdSnapshot = createCephMutation<WithOptionalVault<CreateCephRbdSnapshotParams>>({
+export const useCreateCephRbdSnapshot = createCephMutation<
+  WithOptionalVault<CreateCephRbdSnapshotParams>
+>({
   request: (params) => api.ceph.createSnapshot(params),
   operation: 'create',
   resourceKey: 'rbdSnapshot',
@@ -168,7 +173,9 @@ export const useDeleteCephRbdSnapshot = createCephMutation<DeleteCephRbdSnapshot
 // RBD CLONE MUTATIONS
 // =============================================================================
 
-export const useCreateCephRbdClone = createCephMutation<WithOptionalVault<CreateCephRbdCloneParams>>({
+export const useCreateCephRbdClone = createCephMutation<
+  WithOptionalVault<CreateCephRbdCloneParams>
+>({
   request: (params) => api.ceph.createClone(params),
   operation: 'create',
   resourceKey: 'rbdClone',
@@ -234,24 +241,27 @@ export const useUpdateCloneMachineRemovals = createCephMutation<
   ],
 });
 
-export const useUpdateMachineClusterAssignment = createCephMutation<UpdateMachineClusterAssignmentParams>({
-  request: (params) => api.machines.updateClusterAssignment(params),
-  operation: 'assign',
-  resourceKey: 'machineCluster',
-  translationKey: 'machines.clusterAssignedSuccess',
-  getInvalidateKeys: (variables) => [
-    CEPH_QUERY_KEYS.clusterMachines(variables.clusterName),
-    CEPH_QUERY_KEYS.machineAssignmentStatus(variables.machineName, variables.teamName),
-  ],
-});
+export const useUpdateMachineClusterAssignment =
+  createCephMutation<UpdateMachineClusterAssignmentParams>({
+    request: (params) => api.machines.updateClusterAssignment(params),
+    operation: 'assign',
+    resourceKey: 'machineCluster',
+    translationKey: 'machines.clusterAssignedSuccess',
+    getInvalidateKeys: (variables) => [
+      CEPH_QUERY_KEYS.clusterMachines(variables.clusterName),
+      CEPH_QUERY_KEYS.machineAssignmentStatus(variables.machineName, variables.teamName),
+    ],
+  });
 
-export const useUpdateMachineClusterRemoval = createCephMutation<UpdateMachineClusterRemovalParams>({
-  request: (params) => api.machines.removeFromCluster(params),
-  operation: 'remove',
-  resourceKey: 'machineCluster',
-  translationKey: 'machines.clusterRemovedSuccess',
-  getInvalidateKeys: (variables) => [
-    ['ceph-cluster-machines'],
-    CEPH_QUERY_KEYS.machineAssignmentStatus(variables.machineName, variables.teamName),
-  ],
-});
+export const useUpdateMachineClusterRemoval = createCephMutation<UpdateMachineClusterRemovalParams>(
+  {
+    request: (params) => api.machines.removeFromCluster(params),
+    operation: 'remove',
+    resourceKey: 'machineCluster',
+    translationKey: 'machines.clusterRemovedSuccess',
+    getInvalidateKeys: (variables) => [
+      ['ceph-cluster-machines'],
+      CEPH_QUERY_KEYS.machineAssignmentStatus(variables.machineName, variables.teamName),
+    ],
+  }
+);

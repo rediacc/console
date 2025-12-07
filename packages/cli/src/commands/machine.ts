@@ -5,6 +5,13 @@ import {
   getMachineRepos,
   type MachineWithVaultStatus,
 } from '@rediacc/shared/services/machine';
+import type {
+  CreateMachineParams,
+  UpdateMachineNameParams,
+  DeleteMachineParams,
+  UpdateMachineVaultParams,
+  UpdateMachineAssignedBridgeParams,
+} from '@rediacc/shared/types';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -17,13 +24,6 @@ import {
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
-import type {
-  CreateMachineParams,
-  UpdateMachineNameParams,
-  DeleteMachineParams,
-  UpdateMachineVaultParams,
-  UpdateMachineAssignedBridgeParams,
-} from '@rediacc/shared/types';
 
 export function registerMachineCommands(program: Command): void {
   // Create standard CRUD commands using factory
@@ -69,7 +69,8 @@ export function registerMachineCommands(program: Command): void {
     targetName: 'bridge',
     targetField: 'newBridgeName',
     parentOption: 'team',
-    perform: (payload) => api.machines.assignBridge(payload as unknown as UpdateMachineAssignedBridgeParams),
+    perform: (payload) =>
+      api.machines.assignBridge(payload as unknown as UpdateMachineAssignedBridgeParams),
   });
 
   // Add vault-status command using shared parsing

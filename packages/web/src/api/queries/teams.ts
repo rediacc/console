@@ -62,12 +62,7 @@ export const useUpdateTeamName = createMutation<UpdateTeamNameParams>({
 // Update team vault
 export const useUpdateTeamVault = createVaultUpdateMutation<
   UpdateTeamVaultParams & Record<string, unknown>
->(
-  'Team',
-  (params) => api.teams.updateVault(params),
-  'teamName',
-  'vaultContent'
-);
+>('Team', (params) => api.teams.updateVault(params), 'teamName', 'vaultContent');
 
 // Delete team
 export const useDeleteTeam = createMutation<DeleteTeamParams>({

@@ -124,7 +124,7 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
         machineName: opts.machine as string,
         bridgeName: opts.bridge as string,
         vaultContent: queueVault,
-        priority: parseInt(options.priority, 10)
+        priority: parseInt(options.priority, 10),
       }),
     'Queue item created'
   );

@@ -1,12 +1,12 @@
 import { Command } from 'commander';
-import { api } from '../services/api.js';
-import { createResourceCommands } from '../utils/commandFactory.js';
 import type {
   CreateRegionParams,
   UpdateRegionNameParams,
   DeleteRegionParams,
   UpdateRegionVaultParams,
 } from '@rediacc/shared/types';
+import { api } from '../services/api.js';
+import { createResourceCommands } from '../utils/commandFactory.js';
 
 export function registerRegionCommands(program: Command): void {
   createResourceCommands(program, {

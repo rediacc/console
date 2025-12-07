@@ -1,4 +1,3 @@
-import { endpoints } from '../../endpoints';
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type { Team, TeamMember } from '../../types';
@@ -16,7 +15,7 @@ import type {
 export function createTeamsService(client: ApiClient) {
   return {
     list: async (): Promise<Team[]> => {
-      const response = await client.get<Team>(endpoints.company.getCompanyTeams);
+      const response = await client.get<Team>('/GetCompanyTeams');
       return parseResponse(response, {
         extractor: responseExtractors.primaryOrSecondary,
         filter: (team) => Boolean(team.teamName),
@@ -24,7 +23,7 @@ export function createTeamsService(client: ApiClient) {
     },
 
     create: async (params: WithOptionalVault<CreateTeamParams>): Promise<Team | null> => {
-      const response = await client.post<Team>(endpoints.teams.createTeam, {
+      const response = await client.post<Team>('/CreateTeam', {
         ...params,
         vaultContent: params.vaultContent ?? '{}',
       });
@@ -33,24 +32,21 @@ export function createTeamsService(client: ApiClient) {
       });
     },
 
-    rename: (params: UpdateTeamNameParams) => client.post(endpoints.teams.updateTeamName, params),
+    rename: (params: UpdateTeamNameParams) => client.post('/UpdateTeamName', params),
 
-    delete: (params: DeleteTeamParams) => client.post(endpoints.teams.deleteTeam, params),
+    delete: (params: DeleteTeamParams) => client.post('/DeleteTeam', params),
 
-    updateVault: (params: UpdateTeamVaultParams) =>
-      client.post(endpoints.teams.updateTeamVault, params),
+    updateVault: (params: UpdateTeamVaultParams) => client.post('/UpdateTeamVault', params),
 
     getMembers: async (params: GetTeamMembersParams): Promise<TeamMember[]> => {
-      const response = await client.get<TeamMember>(endpoints.teams.getTeamMembers, params);
+      const response = await client.get<TeamMember>('/GetTeamMembers', params);
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<TeamMember>(1),
       });
     },
 
-    addMember: (params: CreateTeamMembershipParams) =>
-      client.post(endpoints.teams.createTeamMembership, params),
+    addMember: (params: CreateTeamMembershipParams) => client.post('/CreateTeamMembership', params),
 
-    removeMember: (params: DeleteUserFromTeamParams) =>
-      client.post(endpoints.teams.deleteUserFromTeam, params),
+    removeMember: (params: DeleteUserFromTeamParams) => client.post('/DeleteUserFromTeam', params),
   };
 }

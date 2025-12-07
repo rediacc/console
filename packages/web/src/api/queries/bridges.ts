@@ -53,17 +53,10 @@ export const useUpdateBridgeName = createMutation<UpdateBridgeNameParams>({
 // Update bridge vault
 export const useUpdateBridgeVault = createVaultUpdateMutation<
   UpdateBridgeVaultParams & Record<string, unknown>
->(
-  'Bridge',
-  (params) => api.bridges.updateVault(params),
-  'bridgeName',
-  'vaultContent'
-);
+>('Bridge', (params) => api.bridges.updateVault(params), 'bridgeName', 'vaultContent');
 
 // Delete bridge
-export const useDeleteBridge = createResourceMutation<
-  DeleteBridgeParams & Record<string, unknown>
->(
+export const useDeleteBridge = createResourceMutation<DeleteBridgeParams & Record<string, unknown>>(
   'Bridge',
   'delete',
   (params) => api.bridges.delete(params),

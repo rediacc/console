@@ -156,7 +156,11 @@ export function registerCompanyCommands(program: Command): void {
 
         await withSpinner(
           'Updating company vault...',
-          () => api.company.updateVault({ vaultContent: vaultData, vaultVersion: options.vaultVersion }),
+          () =>
+            api.company.updateVault({
+              vaultContent: vaultData,
+              vaultVersion: options.vaultVersion,
+            }),
           'Company vault updated'
         );
       } catch (error) {

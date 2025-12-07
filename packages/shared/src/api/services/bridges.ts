@@ -1,4 +1,3 @@
-import { endpoints } from '../../endpoints';
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type { Bridge, BridgeAuthorizationToken } from '../../types';
@@ -15,7 +14,7 @@ import type {
 export function createBridgesService(client: ApiClient) {
   return {
     list: async (params: GetRegionBridgesParams): Promise<Bridge[]> => {
-      const response = await client.get<Bridge>(endpoints.regions.getRegionBridges, params);
+      const response = await client.get<Bridge>('/GetRegionBridges', params);
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<Bridge>(1),
         filter: (bridge) => Boolean(bridge.bridgeName),
@@ -23,23 +22,20 @@ export function createBridgesService(client: ApiClient) {
     },
 
     create: (params: WithOptionalVault<CreateBridgeParams>) =>
-      client.post(endpoints.bridges.createBridge, {
+      client.post('/CreateBridge', {
         ...params,
         vaultContent: params.vaultContent ?? '{}',
       }),
 
-    rename: (params: UpdateBridgeNameParams) =>
-      client.post(endpoints.bridges.updateBridgeName, params),
+    rename: (params: UpdateBridgeNameParams) => client.post('/UpdateBridgeName', params),
 
-    delete: (params: DeleteBridgeParams) =>
-      client.post(endpoints.bridges.deleteBridge, params),
+    delete: (params: DeleteBridgeParams) => client.post('/DeleteBridge', params),
 
-    updateVault: (params: UpdateBridgeVaultParams) =>
-      client.post(endpoints.bridges.updateBridgeVault, params),
+    updateVault: (params: UpdateBridgeVaultParams) => client.post('/UpdateBridgeVault', params),
 
     resetAuthorization: async (params: ResetBridgeAuthorizationParams): Promise<string | null> => {
       const response = await client.post<BridgeAuthorizationToken>(
-        endpoints.bridges.resetBridgeAuthorization,
+        '/ResetBridgeAuthorization',
         params
       );
 

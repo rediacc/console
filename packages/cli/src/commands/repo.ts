@@ -105,7 +105,12 @@ export function registerRepoCommands(program: Command): void {
 
         await withSpinner(
           `Renaming repository "${oldName}" to "${newName}"...`,
-          () => api.repos.rename({ teamName: opts.team as string, currentRepoName: oldName, newRepoName: newName }),
+          () =>
+            api.repos.rename({
+              teamName: opts.team as string,
+              currentRepoName: oldName,
+              newRepoName: newName,
+            }),
           `Repository renamed to "${newName}"`
         );
       } catch (error) {
@@ -187,7 +192,12 @@ export function registerRepoCommands(program: Command): void {
 
         await withSpinner(
           `Deleting repository "${name}:${options.tag}"...`,
-          () => api.repos.delete({ teamName: opts.team as string, repoName: name, repoTag: options.tag }),
+          () =>
+            api.repos.delete({
+              teamName: opts.team as string,
+              repoName: name,
+              repoTag: options.tag,
+            }),
           `Repository "${name}:${options.tag}" deleted`
         );
       } catch (error) {
@@ -371,7 +381,13 @@ export function registerRepoCommands(program: Command): void {
         await withSpinner(
           'Updating repository vault...',
           () =>
-            api.repos.updateVault({ teamName: opts.team as string, repoName, repoTag: options.tag, vaultContent: vaultData, vaultVersion: options.vaultVersion }),
+            api.repos.updateVault({
+              teamName: opts.team as string,
+              repoName,
+              repoTag: options.tag,
+              vaultContent: vaultData,
+              vaultVersion: options.vaultVersion,
+            }),
           'Repository vault updated'
         );
       } catch (error) {

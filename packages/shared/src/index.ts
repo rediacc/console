@@ -3,7 +3,6 @@ export * from './error-parser';
 export * from './formatters';
 export * from './queue-vault';
 export * from './api';
-export * from './endpoints';
 export * from './encryption';
 export * from './validation';
 export * from './services';

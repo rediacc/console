@@ -1,4 +1,3 @@
-import { endpoints } from '../../endpoints';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type {
@@ -24,7 +23,7 @@ export function createAuditService(client: ApiClient) {
       maxRecords = 100,
       options: AuditLogOptions = {}
     ): Promise<AuditLogEntry[]> => {
-      const response = await client.post<AuditLogEntry>(endpoints.audit.getAuditLogs, {
+      const response = await client.post<AuditLogEntry>('/GetAuditLogs', {
         entityFilter: entityType,
         startDate,
         endDate,
@@ -38,7 +37,7 @@ export function createAuditService(client: ApiClient) {
     },
 
     getEntityTrace: async (params: GetEntityAuditTraceParams): Promise<AuditTraceResponse> => {
-      const response = await client.post(endpoints.audit.getEntityAuditTrace, params);
+      const response = await client.post('/GetEntityAuditTrace', params);
 
       const records = getRowsByIndex<AuditTraceRecord>(response, 1);
       const summary = getRowByIndex<AuditTraceSummary>(response, 2);
@@ -57,7 +56,7 @@ export function createAuditService(client: ApiClient) {
       entityType: string,
       entityName: string
     ): Promise<AuditHistoryEntry[]> => {
-      const response = await client.post<AuditHistoryEntry>(endpoints.audit.getEntityHistory, {
+      const response = await client.post<AuditHistoryEntry>('/GetEntityHistory', {
         entityType,
         entityIdentifier: entityName,
       });

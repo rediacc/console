@@ -202,7 +202,8 @@ export function registerUserCommands(program: Command): void {
 
         await withSpinner(
           'Updating user vault...',
-          () => api.users.updateVault({ vaultContent: vaultData, vaultVersion: options.vaultVersion }),
+          () =>
+            api.users.updateVault({ vaultContent: vaultData, vaultVersion: options.vaultVersion }),
           'User vault updated'
         );
       } catch (error) {

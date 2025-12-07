@@ -60,12 +60,7 @@ export const useUpdateRegionName = createMutation<UpdateRegionNameParams>({
 // Update region vault
 export const useUpdateRegionVault = createVaultUpdateMutation<
   UpdateRegionVaultParams & Record<string, unknown>
->(
-  'Region',
-  (params) => api.regions.updateVault(params),
-  'regionName',
-  'vaultContent'
-);
+>('Region', (params) => api.regions.updateVault(params), 'regionName', 'vaultContent');
 
 // Delete region
 export const useDeleteRegion = createMutation<DeleteRegionParams>({

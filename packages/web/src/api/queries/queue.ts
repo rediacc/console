@@ -165,49 +165,6 @@ export const useCompleteQueueItem = () => {
   });
 };
 
-// Update queue item priority
-export const useUpdateQueueItemPriority = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: { taskId: string; priority: number }) => {
-      // Ensure priority is within valid range
-      const priority = data.priority >= 1 && data.priority <= 5 ? data.priority : 3;
-      return api.queue.updatePriority(data.taskId, priority);
-    },
-    onSuccess: (_, variables) => {
-      invalidateAllQueueCaches(queryClient);
-      showMessage(
-        'success',
-        i18n.t('queue:success.priorityUpdated', {
-          taskId: variables.taskId,
-          priority: variables.priority,
-        })
-      );
-    },
-    onError: createErrorHandler(i18n.t('queue:errors.updatePriorityFailed')),
-  });
-};
-
-// Update queue item protection status
-export const useUpdateQueueItemProtection = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: { taskId: string; protection: boolean }) => {
-      return api.queue.updateProtection(data.taskId, data.protection);
-    },
-    onSuccess: (_, variables) => {
-      invalidateAllQueueCaches(queryClient);
-      const message = variables.protection
-        ? i18n.t('queue:success.protectionEnabled', { taskId: variables.taskId })
-        : i18n.t('queue:success.protectionDisabled', { taskId: variables.taskId });
-      showMessage('success', message);
-    },
-    onError: createErrorHandler(i18n.t('queue:errors.updateProtectionFailed')),
-  });
-};
-
 // Cancel queue item
 export const useCancelQueueItem = () => {
   const queryClient = useQueryClient();

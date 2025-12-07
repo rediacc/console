@@ -56,7 +56,9 @@ interface RbdImageModalState {
 }
 
 // Form-specific subset of shared ImageFormValues (pool/team context provided separately)
-type ImageFormValues = Pick<FullImageFormValues, 'imageName' | 'machineName'> & { vaultContent: string };
+type ImageFormValues = Pick<FullImageFormValues, 'imageName' | 'machineName'> & {
+  vaultContent: string;
+};
 
 const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   const { t } = useTranslation('ceph');

@@ -1,4 +1,3 @@
-import { endpoints } from '../../endpoints';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type { Storage } from '../../types';
@@ -14,7 +13,7 @@ import type {
 export function createStorageService(client: ApiClient) {
   return {
     list: async (params: GetTeamStoragesParams): Promise<Storage[]> => {
-      const response = await client.get<Storage>(endpoints.storage.getTeamStorages, params);
+      const response = await client.get<Storage>('/GetTeamStorages', params);
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<Storage>(1),
         filter: (storage) => Boolean(storage.storageName),
@@ -22,18 +21,15 @@ export function createStorageService(client: ApiClient) {
     },
 
     create: (params: WithOptionalVault<CreateStorageParams>) =>
-      client.post(endpoints.storage.createStorage, {
+      client.post('/CreateStorage', {
         ...params,
         vaultContent: params.vaultContent ?? '{}',
       }),
 
-    rename: (params: UpdateStorageNameParams) =>
-      client.post(endpoints.storage.updateStorageName, params),
+    rename: (params: UpdateStorageNameParams) => client.post('/UpdateStorageName', params),
 
-    delete: (params: DeleteStorageParams) =>
-      client.post(endpoints.storage.deleteStorage, params),
+    delete: (params: DeleteStorageParams) => client.post('/DeleteStorage', params),
 
-    updateVault: (params: UpdateStorageVaultParams) =>
-      client.post(endpoints.storage.updateStorageVault, params),
+    updateVault: (params: UpdateStorageVaultParams) => client.post('/UpdateStorageVault', params),
   };
 }

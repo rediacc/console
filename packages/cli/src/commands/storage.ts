@@ -1,13 +1,12 @@
 import { Command } from 'commander';
-import { api } from '../services/api.js';
-import { createResourceCommands } from '../utils/commandFactory.js';
 import type {
-  GetTeamStoragesParams,
   CreateStorageParams,
   UpdateStorageNameParams,
   DeleteStorageParams,
   UpdateStorageVaultParams,
 } from '@rediacc/shared/types';
+import { api } from '../services/api.js';
+import { createResourceCommands } from '../utils/commandFactory.js';
 
 export function registerStorageCommands(program: Command): void {
   createResourceCommands(program, {

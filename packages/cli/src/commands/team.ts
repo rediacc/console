@@ -1,4 +1,10 @@
 import { Command } from 'commander';
+import type {
+  CreateTeamParams,
+  UpdateTeamNameParams,
+  DeleteTeamParams,
+  UpdateTeamVaultParams,
+} from '@rediacc/shared/types';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
@@ -6,15 +12,6 @@ import { createResourceCommands } from '../utils/commandFactory.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
-import type {
-  CreateTeamParams,
-  UpdateTeamNameParams,
-  DeleteTeamParams,
-  UpdateTeamVaultParams,
-  GetTeamMembersParams,
-  CreateTeamMembershipParams,
-  DeleteUserFromTeamParams,
-} from '@rediacc/shared/types';
 
 export function registerTeamCommands(program: Command): void {
   // Create standard CRUD commands using factory

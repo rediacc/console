@@ -1,4 +1,10 @@
 import { Command } from 'commander';
+import type {
+  CreateBridgeParams,
+  UpdateBridgeNameParams,
+  DeleteBridgeParams,
+  UpdateBridgeVaultParams,
+} from '@rediacc/shared/types';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -6,14 +12,6 @@ import { outputService } from '../services/output.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
-import type {
-  GetRegionBridgesParams,
-  CreateBridgeParams,
-  UpdateBridgeNameParams,
-  DeleteBridgeParams,
-  UpdateBridgeVaultParams,
-  ResetBridgeAuthorizationParams,
-} from '@rediacc/shared/types';
 
 export function registerBridgeCommands(program: Command): void {
   // Create standard CRUD commands using factory

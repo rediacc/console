@@ -1,4 +1,3 @@
-import { endpoints } from '../../endpoints';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type {
@@ -30,7 +29,7 @@ export function createMachinesService(client: ApiClient) {
   return {
     list: async (teamName?: string | string[]): Promise<Machine[]> => {
       const response = await client.get<Machine>(
-        endpoints.machines.getTeamMachines,
+        '/GetTeamMachines',
         teamName ? { teamName: normalizeTeamName(teamName) } : undefined
       );
 
@@ -41,58 +40,46 @@ export function createMachinesService(client: ApiClient) {
     },
 
     getAssignmentStatus: (params: GetMachineAssignmentStatusParams) =>
-      client.get(endpoints.machines.getMachineAssignmentStatus, params),
+      client.get('/GetMachineAssignmentStatus', params),
 
     create: (params: WithOptionalVault<CreateMachineParams>) =>
-      client.post(endpoints.machines.createMachine, {
+      client.post('/CreateMachine', {
         ...params,
         vaultContent: params.vaultContent ?? '{}',
       }),
 
-    rename: (params: UpdateMachineNameParams) =>
-      client.post(endpoints.machines.updateMachineName, params),
+    rename: (params: UpdateMachineNameParams) => client.post('/UpdateMachineName', params),
 
-    delete: (params: DeleteMachineParams) =>
-      client.post(endpoints.machines.deleteMachine, params),
+    delete: (params: DeleteMachineParams) => client.post('/DeleteMachine', params),
 
-    updateVault: (params: UpdateMachineVaultParams) =>
-      client.post(endpoints.machines.updateMachineVault, params),
+    updateVault: (params: UpdateMachineVaultParams) => client.post('/UpdateMachineVault', params),
 
     assignBridge: (params: UpdateMachineAssignedBridgeParams) =>
-      client.post(endpoints.machines.updateMachineAssignedBridge, params),
+      client.post('/UpdateMachineAssignedBridge', params),
 
     updateClusterAssignment: (params: UpdateMachineClusterAssignmentParams) =>
-      client.post(endpoints.machines.updateMachineClusterAssignment, params),
+      client.post('/UpdateMachineClusterAssignment', params),
 
     removeFromCluster: (params: UpdateMachineClusterRemovalParams) =>
-      client.post(endpoints.machines.updateMachineClusterRemoval, params),
-
-    updateCloneAssignment: (teamName: string, machineName: string, cloneName: string) =>
-      client.post(endpoints.machines.updateMachineCloneAssignment, {
-        teamName,
-        machineName,
-        cloneName,
-      }),
+      client.post('/UpdateMachineClusterRemoval', params),
 
     updateCloneAssignments: (params: UpdateCloneMachineAssignmentsParams) =>
-      client.post(endpoints.machines.updateCloneMachineAssignments, params),
+      client.post('/UpdateCloneMachineAssignments', params),
 
     removeCloneAssignments: (params: UpdateCloneMachineRemovalsParams) =>
-      client.post(endpoints.machines.updateCloneMachineRemovals, params),
+      client.post('/UpdateCloneMachineRemovals', params),
 
-    updateCeph: (params: UpdateMachineCephParams) =>
-      client.post(endpoints.machines.updateMachineCeph, params),
+    updateCeph: (params: UpdateMachineCephParams) => client.post('/UpdateMachineCeph', params),
 
     updateImageAssignment: (params: UpdateImageMachineAssignmentParams) =>
-      client.post(endpoints.machines.updateImageMachineAssignment, params),
+      client.post('/UpdateImageMachineAssignment', params),
 
-    getCloneMachines: (params: GetCloneMachinesParams) =>
-      client.get(endpoints.machines.getCloneMachines, params),
+    getCloneMachines: (params: GetCloneMachinesParams) => client.get('/GetCloneMachines', params),
 
     getCloneAssignmentValidation: (params: GetCloneMachineAssignmentValidationParams) =>
-      client.get(endpoints.machines.getCloneMachineAssignmentValidation, params),
+      client.get('/GetCloneMachineAssignmentValidation', params),
 
     getAvailableMachinesForClone: (params: GetAvailableMachinesForCloneParams) =>
-      client.get(endpoints.machines.getAvailableMachinesForClone, params),
+      client.get('/GetAvailableMachinesForClone', params),
   };
 }
