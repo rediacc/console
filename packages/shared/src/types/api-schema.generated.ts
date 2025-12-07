@@ -2,9 +2,9 @@
  * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
  *
  * Generated from: middleware/AppData/stored-procedures.json
- * Generated at: 2025-12-07T11:15:49Z
+ * Generated at: 2025-12-07T12:21:03Z
  * Schema version: 3.0.0
- * Schema generated: 2025-12-07T10:34:05.6472788Z
+ * Schema generated: 2025-12-07T11:41:23.6725941Z
  *
  * To regenerate, run: ./go deploy prep
  * Or directly: ./_scripts/console-schema.sh --generate
@@ -910,6 +910,2734 @@ export interface UpdateUserVaultParams {
 }
 
 // ============================================================================
+// Procedure Result Set Interfaces
+// ============================================================================
+
+export interface ActivateUserAccount_ResultSet0 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type ActivateUserAccountResults = [
+  ActivateUserAccount_ResultSet0[],
+];
+
+export interface CancelQueueItem_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CancelQueueItem_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  taskId: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType nvarchar */
+  previousStatus: string | null;
+  /** @sqlType varchar */
+  newStatus: string;
+}
+export interface CancelQueueItem_ResultSet2 {
+  /** @sqlType uniqueidentifier */
+  taskId: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType nvarchar */
+  previousStatus: string | null;
+  /** @sqlType varchar */
+  newStatus: string;
+}
+
+export type CancelQueueItemResults = [
+  CancelQueueItem_ResultSet0[],
+  CancelQueueItem_ResultSet1[],
+  CancelQueueItem_ResultSet2[],
+];
+
+export interface CreateAuthenticationRequest_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+  /** @sqlType datetimeoffset */
+  tokenExpiration: string | null;
+  /** @sqlType int */
+  expirationHours: number | null;
+  /** @sqlType nvarchar */
+  vaultCompany: string | null;
+  /** @sqlType bit */
+  isAuthorized: boolean | null;
+  /** @sqlType nvarchar */
+  preferredLanguage: string | null;
+  /** @sqlType varchar */
+  authenticationStatus: string;
+}
+
+export type CreateAuthenticationRequestResults = [
+  CreateAuthenticationRequest_ResultSet0[],
+];
+
+export interface CreateBridge_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateBridge_ResultSet1 {
+  /** @sqlType int */
+  bridgeId: number;
+  /** @sqlType nvarchar */
+  name: string;
+}
+
+export type CreateBridgeResults = [
+  CreateBridge_ResultSet0[],
+  CreateBridge_ResultSet1[],
+];
+
+export interface CreateCephCluster_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateCephCluster_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type CreateCephClusterResults = [
+  CreateCephCluster_ResultSet0[],
+  CreateCephCluster_ResultSet1[],
+];
+
+export interface CreateCephPool_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateCephPool_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type CreateCephPoolResults = [
+  CreateCephPool_ResultSet0[],
+  CreateCephPool_ResultSet1[],
+];
+
+export interface CreateCephRbdClone_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateCephRbdClone_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type CreateCephRbdCloneResults = [
+  CreateCephRbdClone_ResultSet0[],
+  CreateCephRbdClone_ResultSet1[],
+];
+
+export interface CreateCephRbdImage_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateCephRbdImage_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type CreateCephRbdImageResults = [
+  CreateCephRbdImage_ResultSet0[],
+  CreateCephRbdImage_ResultSet1[],
+];
+
+export interface CreateCephRbdSnapshot_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateCephRbdSnapshot_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type CreateCephRbdSnapshotResults = [
+  CreateCephRbdSnapshot_ResultSet0[],
+  CreateCephRbdSnapshot_ResultSet1[],
+];
+
+export interface CreateMachine_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateMachine_ResultSet1 {
+  /** @sqlType nvarchar */
+  name: string;
+}
+
+export type CreateMachineResults = [
+  CreateMachine_ResultSet0[],
+  CreateMachine_ResultSet1[],
+];
+
+export interface CreateNewCompany_ResultSet0 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType nvarchar */
+  languagePreference: string | null;
+  /** @sqlType char */
+  activationCode: string | null;
+  /** @sqlType nvarchar */
+  companyName: string | null;
+}
+
+export type CreateNewCompanyResults = [
+  CreateNewCompany_ResultSet0[],
+];
+
+export interface CreateNewUser_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateNewUser_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType nvarchar */
+  languagePreference: string | null;
+  /** @sqlType char */
+  activationCode: string | null;
+  /** @sqlType nvarchar */
+  createdBy: string | null;
+}
+
+export type CreateNewUserResults = [
+  CreateNewUser_ResultSet0[],
+  CreateNewUser_ResultSet1[],
+];
+
+export interface CreatePermissionGroup_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreatePermissionGroup_ResultSet1 {
+  /** @sqlType nvarchar */
+  permissionGroupName: string;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type CreatePermissionGroupResults = [
+  CreatePermissionGroup_ResultSet0[],
+  CreatePermissionGroup_ResultSet1[],
+];
+
+export interface CreatePermissionInGroup_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreatePermissionInGroup_ResultSet1 {
+  /** @sqlType nvarchar */
+  permissionName: string;
+  /** @sqlType nvarchar */
+  permissionGroupName: string;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type CreatePermissionInGroupResults = [
+  CreatePermissionInGroup_ResultSet0[],
+  CreatePermissionInGroup_ResultSet1[],
+];
+
+export interface CreateQueueItem_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateQueueItem_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  taskId: string;
+  /** @sqlType datetimeoffset */
+  time: string;
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType uniqueidentifier */
+  bridgeCredential: string;
+  /** @sqlType nvarchar */
+  status: string;
+  /** @sqlType int */
+  priority: number;
+  /** @sqlType nvarchar */
+  createdBy: string;
+  /** @sqlType nvarchar */
+  highPriorityInfo: string | null;
+}
+
+export type CreateQueueItemResults = [
+  CreateQueueItem_ResultSet0[],
+  CreateQueueItem_ResultSet1[],
+];
+
+export interface CreateRegion_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateRegion_ResultSet1 {
+  /** @sqlType nvarchar */
+  name: string;
+}
+
+export type CreateRegionResults = [
+  CreateRegion_ResultSet0[],
+  CreateRegion_ResultSet1[],
+];
+
+export interface CreateRepository_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateRepository_ResultSet1 {
+  /** @sqlType nvarchar */
+  name: string;
+}
+
+export type CreateRepositoryResults = [
+  CreateRepository_ResultSet0[],
+  CreateRepository_ResultSet1[],
+];
+
+export interface CreateStorage_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateStorage_ResultSet1 {
+  /** @sqlType nvarchar */
+  name: string;
+}
+
+export type CreateStorageResults = [
+  CreateStorage_ResultSet0[],
+  CreateStorage_ResultSet1[],
+];
+
+export interface CreateTeam_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateTeam_ResultSet1 {
+  /** @sqlType nvarchar */
+  name: string;
+}
+
+export type CreateTeamResults = [
+  CreateTeam_ResultSet0[],
+  CreateTeam_ResultSet1[],
+];
+
+export interface CreateTeamMembership_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface CreateTeamMembership_ResultSet1 {
+  /** @sqlType nvarchar */
+  addedUserEmail: string | null;
+  /** @sqlType nvarchar */
+  teamName: string | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type CreateTeamMembershipResults = [
+  CreateTeamMembership_ResultSet0[],
+  CreateTeamMembership_ResultSet1[],
+];
+
+export interface DeleteBridge_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+
+export type DeleteBridgeResults = [
+  DeleteBridge_ResultSet0[],
+];
+
+export interface DeleteCephCluster_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface DeleteCephCluster_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type DeleteCephClusterResults = [
+  DeleteCephCluster_ResultSet0[],
+  DeleteCephCluster_ResultSet1[],
+];
+
+export interface DeleteCephPool_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface DeleteCephPool_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type DeleteCephPoolResults = [
+  DeleteCephPool_ResultSet0[],
+  DeleteCephPool_ResultSet1[],
+];
+
+export interface DeleteCephRbdClone_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface DeleteCephRbdClone_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type DeleteCephRbdCloneResults = [
+  DeleteCephRbdClone_ResultSet0[],
+  DeleteCephRbdClone_ResultSet1[],
+];
+
+export interface DeleteCephRbdImage_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface DeleteCephRbdImage_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type DeleteCephRbdImageResults = [
+  DeleteCephRbdImage_ResultSet0[],
+  DeleteCephRbdImage_ResultSet1[],
+];
+
+export interface DeleteCephRbdSnapshot_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface DeleteCephRbdSnapshot_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type DeleteCephRbdSnapshotResults = [
+  DeleteCephRbdSnapshot_ResultSet0[],
+  DeleteCephRbdSnapshot_ResultSet1[],
+];
+
+export interface DeleteMachine_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+
+export type DeleteMachineResults = [
+  DeleteMachine_ResultSet0[],
+];
+
+export interface DeletePermissionFromGroup_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface DeletePermissionFromGroup_ResultSet1 {
+  /** @sqlType int */
+  permissionsId: number | null;
+  /** @sqlType nvarchar */
+  permissionGroupName: string | null;
+  /** @sqlType int */
+  companyId: number | null;
+  /** @sqlType nvarchar */
+  removedPermissionName: string | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type DeletePermissionFromGroupResults = [
+  DeletePermissionFromGroup_ResultSet0[],
+  DeletePermissionFromGroup_ResultSet1[],
+];
+
+export interface DeletePermissionGroup_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface DeletePermissionGroup_ResultSet1 {
+  /** @sqlType nvarchar */
+  removedPermissionGroupName: string | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type DeletePermissionGroupResults = [
+  DeletePermissionGroup_ResultSet0[],
+  DeletePermissionGroup_ResultSet1[],
+];
+
+export interface DeleteQueueItem_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface DeleteQueueItem_ResultSet1 {
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type DeleteQueueItemResults = [
+  DeleteQueueItem_ResultSet0[],
+  DeleteQueueItem_ResultSet1[],
+];
+
+export interface DeleteRegion_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+
+export type DeleteRegionResults = [
+  DeleteRegion_ResultSet0[],
+];
+
+export interface DeleteRepository_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+
+export type DeleteRepositoryResults = [
+  DeleteRepository_ResultSet0[],
+];
+
+export interface DeleteStorage_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+
+export type DeleteStorageResults = [
+  DeleteStorage_ResultSet0[],
+];
+
+export interface DeleteTeam_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+
+export type DeleteTeamResults = [
+  DeleteTeam_ResultSet0[],
+];
+
+export interface DeleteUserFromTeam_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface DeleteUserFromTeam_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType nvarchar */
+  teamName: string | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type DeleteUserFromTeamResults = [
+  DeleteUserFromTeam_ResultSet0[],
+  DeleteUserFromTeam_ResultSet1[],
+];
+
+export interface DeleteUserRequest_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface DeleteUserRequest_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType nvarchar */
+  sessionName: string | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type DeleteUserRequestResults = [
+  DeleteUserRequest_ResultSet0[],
+  DeleteUserRequest_ResultSet1[],
+];
+
+export interface ExportCompanyData_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface ExportCompanyData_ResultSet1 {
+  /** @sqlType nvarchar */
+  exportData: string | null;
+}
+
+export type ExportCompanyDataResults = [
+  ExportCompanyData_ResultSet0[],
+  ExportCompanyData_ResultSet1[],
+];
+
+export interface ForkAuthenticationRequest_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface ForkAuthenticationRequest_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+  /** @sqlType datetimeoffset */
+  tokenExpiration: string | null;
+  /** @sqlType int */
+  expirationHours: number | null;
+  /** @sqlType nvarchar */
+  vaultCompany: string | null;
+  /** @sqlType bit */
+  isAuthorized: boolean | null;
+  /** @sqlType varchar */
+  authenticationStatus: string;
+  /** @sqlType int */
+  parentRequestId: number | null;
+}
+
+export type ForkAuthenticationRequestResults = [
+  ForkAuthenticationRequest_ResultSet0[],
+  ForkAuthenticationRequest_ResultSet1[],
+];
+
+export interface GetAuditLogs_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetAuditLogs_ResultSet1 {
+  /** @sqlType nvarchar */
+  entity: string;
+  /** @sqlType nvarchar */
+  entityName: string | null;
+  /** @sqlType nvarchar */
+  action: string;
+  /** @sqlType nvarchar */
+  details: string | null;
+  /** @sqlType nvarchar */
+  actionByUser: string | null;
+  /** @sqlType datetime2 */
+  timestamp: string;
+}
+export interface GetAuditLogs_ResultSet2 {
+  /** @sqlType nvarchar */
+  entity: string;
+  /** @sqlType nvarchar */
+  entityName: string | null;
+  /** @sqlType nvarchar */
+  action: string;
+  /** @sqlType nvarchar */
+  details: string | null;
+  /** @sqlType nvarchar */
+  actionByUser: string | null;
+  /** @sqlType datetime2 */
+  timestamp: string;
+}
+
+export type GetAuditLogsResults = [
+  GetAuditLogs_ResultSet0[],
+  GetAuditLogs_ResultSet1[],
+  GetAuditLogs_ResultSet2[],
+];
+
+export interface GetAvailableMachinesForClone_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetAvailableMachinesForClone_ResultSet1 {
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType varchar */
+  status: string;
+  /** @sqlType varchar */
+  description: string;
+}
+
+export type GetAvailableMachinesForCloneResults = [
+  GetAvailableMachinesForClone_ResultSet0[],
+  GetAvailableMachinesForClone_ResultSet1[],
+];
+
+export interface GetCephClusterMachines_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCephClusterMachines_ResultSet1 {
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType nvarchar */
+  regionName: string;
+  /** @sqlType nvarchar */
+  clusterName: string;
+}
+
+export type GetCephClusterMachinesResults = [
+  GetCephClusterMachines_ResultSet0[],
+  GetCephClusterMachines_ResultSet1[],
+];
+
+export interface GetCephClusters_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCephClusters_ResultSet1 {
+  /** @sqlType nvarchar */
+  clusterName: string;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType int */
+  assignedMachineCount: number | null;
+  /** @sqlType int */
+  poolCount: number | null;
+  /** @sqlType nvarchar */
+  clusterVault: string | null;
+}
+
+export type GetCephClustersResults = [
+  GetCephClusters_ResultSet0[],
+  GetCephClusters_ResultSet1[],
+];
+
+export interface GetCephPools_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCephPools_ResultSet1 {
+  /** @sqlType nvarchar */
+  poolName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType nvarchar */
+  clusterName: string;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType int */
+  rbdImageCount: number | null;
+  /** @sqlType nvarchar */
+  poolVault: string | null;
+}
+
+export type GetCephPoolsResults = [
+  GetCephPools_ResultSet0[],
+  GetCephPools_ResultSet1[],
+];
+
+export interface GetCephRbdClones_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCephRbdClones_ResultSet1 {
+  /** @sqlType nvarchar */
+  cloneName: string;
+  /** @sqlType nvarchar */
+  snapshotName: string;
+  /** @sqlType nvarchar */
+  imageName: string;
+  /** @sqlType nvarchar */
+  poolName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType nvarchar */
+  clusterName: string;
+  /** @sqlType datetime2 */
+  snapshotCreatedDate: string;
+  /** @sqlType nvarchar */
+  cloneVault: string | null;
+}
+
+export type GetCephRbdClonesResults = [
+  GetCephRbdClones_ResultSet0[],
+  GetCephRbdClones_ResultSet1[],
+];
+
+export interface GetCephRbdImages_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCephRbdImages_ResultSet1 {
+  /** @sqlType nvarchar */
+  imageName: string;
+  /** @sqlType nvarchar */
+  poolName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType nvarchar */
+  clusterName: string;
+  /** @sqlType nvarchar */
+  machineName: string | null;
+  /** @sqlType int */
+  imageGuid: number;
+  /** @sqlType int */
+  snapshotCount: number | null;
+  /** @sqlType nvarchar */
+  imageVault: string | null;
+}
+
+export type GetCephRbdImagesResults = [
+  GetCephRbdImages_ResultSet0[],
+  GetCephRbdImages_ResultSet1[],
+];
+
+export interface GetCephRbdSnapshots_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCephRbdSnapshots_ResultSet1 {
+  /** @sqlType nvarchar */
+  snapshotName: string;
+  /** @sqlType nvarchar */
+  imageName: string;
+  /** @sqlType nvarchar */
+  poolName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType nvarchar */
+  clusterName: string;
+  /** @sqlType datetime2 */
+  createdDate: string;
+  /** @sqlType int */
+  cloneCount: number | null;
+  /** @sqlType nvarchar */
+  snapshotVault: string | null;
+}
+
+export type GetCephRbdSnapshotsResults = [
+  GetCephRbdSnapshots_ResultSet0[],
+  GetCephRbdSnapshots_ResultSet1[],
+];
+
+export interface GetCloneMachineAssignmentValidation_ResultSet0 {
+  /** @sqlType nvarchar */
+  machineName: string | null;
+  /** @sqlType nvarchar */
+  validationStatus: string | null;
+  /** @sqlType nvarchar */
+  currentAssignment: string | null;
+  /** @sqlType nvarchar */
+  message: string | null;
+}
+export interface GetCloneMachineAssignmentValidation_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCloneMachineAssignmentValidation_ResultSet2 {
+  /** @sqlType nvarchar */
+  machineName: string | null;
+  /** @sqlType varchar */
+  validationStatus: string;
+  /** @sqlType nvarchar */
+  currentAssignment: string | null;
+  /** @sqlType nvarchar */
+  message: string;
+}
+
+export type GetCloneMachineAssignmentValidationResults = [
+  GetCloneMachineAssignmentValidation_ResultSet0[],
+  GetCloneMachineAssignmentValidation_ResultSet1[],
+  GetCloneMachineAssignmentValidation_ResultSet2[],
+];
+
+export interface GetCloneMachines_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCloneMachines_ResultSet1 {
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType int */
+  assignmentId: number;
+}
+
+export type GetCloneMachinesResults = [
+  GetCloneMachines_ResultSet0[],
+  GetCloneMachines_ResultSet1[],
+];
+
+export interface GetCompanyDashboardJson_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCompanyDashboardJson_ResultSet1 {
+  /** @sqlType nvarchar */
+  subscriptionAndResourcesJson: string | null;
+}
+export interface GetCompanyDashboardJson_ResultSet2 {
+  /** @sqlType nvarchar */
+  planCode: string | null;
+  /** @sqlType int */
+  quantity: number | null;
+  /** @sqlType datetime2 */
+  startDate: string | null;
+  /** @sqlType datetime2 */
+  endDate: string | null;
+  /** @sqlType int */
+  daysRemaining: number | null;
+  /** @sqlType nvarchar */
+  status: string | null;
+  /** @sqlType int */
+  isTrial: number;
+}
+
+export type GetCompanyDashboardJsonResults = [
+  GetCompanyDashboardJson_ResultSet0[],
+  GetCompanyDashboardJson_ResultSet1[],
+  GetCompanyDashboardJson_ResultSet2[],
+];
+
+export interface GetCompanyDataGraphJson_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCompanyDataGraphJson_ResultSet1 {
+  /** @sqlType nvarchar */
+  companyDataGraph: string | null;
+}
+
+export type GetCompanyDataGraphJsonResults = [
+  GetCompanyDataGraphJson_ResultSet0[],
+  GetCompanyDataGraphJson_ResultSet1[],
+];
+
+export interface GetCompanyPermissionGroups_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCompanyPermissionGroups_ResultSet1 {
+  /** @sqlType nvarchar */
+  permissionGroupName: string;
+  /** @sqlType int */
+  userCount: number | null;
+  /** @sqlType int */
+  permissionCount: number | null;
+  /** @sqlType nvarchar */
+  permissions: string | null;
+}
+
+export type GetCompanyPermissionGroupsResults = [
+  GetCompanyPermissionGroups_ResultSet0[],
+  GetCompanyPermissionGroups_ResultSet1[],
+];
+
+export interface GetCompanyRegions_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCompanyRegions_ResultSet1 {
+  /** @sqlType nvarchar */
+  regionName: string;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType int */
+  bridgeCount: number | null;
+}
+
+export type GetCompanyRegionsResults = [
+  GetCompanyRegions_ResultSet0[],
+  GetCompanyRegions_ResultSet1[],
+];
+
+export interface GetCompanyTeams_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCompanyTeams_ResultSet1 {
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType nvarchar */
+  companyName: string;
+  /** @sqlType int */
+  isMember: number;
+  /** @sqlType int */
+  memberCount: number | null;
+  /** @sqlType int */
+  machineCount: number | null;
+  /** @sqlType int */
+  repoCount: number | null;
+  /** @sqlType int */
+  storageCount: number | null;
+}
+
+export type GetCompanyTeamsResults = [
+  GetCompanyTeams_ResultSet0[],
+  GetCompanyTeams_ResultSet1[],
+];
+
+export interface GetCompanyUsers_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCompanyUsers_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string;
+  /** @sqlType bit */
+  activated: boolean;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType nvarchar */
+  permissionsName: string;
+  /** @sqlType nvarchar */
+  companyName: string;
+  /** @sqlType int */
+  teamCount: number | null;
+}
+export interface GetCompanyUsers_ResultSet2 {
+  /** @sqlType nvarchar */
+  userEmail: string;
+  /** @sqlType bit */
+  activated: boolean;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType int */
+  vaultContent: number | null;
+  /** @sqlType nvarchar */
+  permissionsName: string;
+  /** @sqlType nvarchar */
+  companyName: string;
+  /** @sqlType int */
+  teamCount: number | null;
+}
+
+export type GetCompanyUsersResults = [
+  GetCompanyUsers_ResultSet0[],
+  GetCompanyUsers_ResultSet1[],
+  GetCompanyUsers_ResultSet2[],
+];
+
+export interface GetCompanyVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCompanyVault_ResultSet1 {
+  /** @sqlType nvarchar */
+  companyName: string;
+  /** @sqlType uniqueidentifier */
+  companyCredential: string;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+}
+
+export type GetCompanyVaultResults = [
+  GetCompanyVault_ResultSet0[],
+  GetCompanyVault_ResultSet1[],
+];
+
+export interface GetCompanyVaults_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCompanyVaults_ResultSet1 {
+  /** @sqlType nvarchar */
+  entityType: string;
+  /** @sqlType int */
+  entityId: number;
+  /** @sqlType nvarchar */
+  entityName: string | null;
+  /** @sqlType int */
+  vaultId: number;
+  /** @sqlType nvarchar */
+  vaultName: string;
+  /** @sqlType uniqueidentifier */
+  credential: string;
+  /** @sqlType int */
+  chunkOrder: number;
+  /** @sqlType int */
+  version: number;
+  /** @sqlType varbinary */
+  encryptedVault: string;
+  /** @sqlType nvarchar */
+  decryptedVault: string | null;
+}
+export interface GetCompanyVaults_ResultSet2 {
+  /** @sqlType int */
+  bridgeId: number;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType uniqueidentifier */
+  requestToken: string | null;
+  /** @sqlType int */
+  hasRequestToken: number;
+}
+
+export type GetCompanyVaultsResults = [
+  GetCompanyVaults_ResultSet0[],
+  GetCompanyVaults_ResultSet1[],
+  GetCompanyVaults_ResultSet2[],
+];
+
+export interface GetEntityAuditTrace_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetEntityAuditTrace_ResultSet1 {
+  /** @sqlType nvarchar */
+  action: string;
+  /** @sqlType nvarchar */
+  details: string | null;
+  /** @sqlType nvarchar */
+  performedBy: string | null;
+  /** @sqlType datetime2 */
+  timestamp: string;
+  /** @sqlType varchar */
+  actionType: string;
+  /** @sqlType nvarchar */
+  timeAgo: string | null;
+  /** @sqlType varchar */
+  iconHint: string;
+}
+export interface GetEntityAuditTrace_ResultSet2 {
+  /** @sqlType nvarchar */
+  entityType: string | null;
+  /** @sqlType nvarchar */
+  entityName: string | null;
+  /** @sqlType int */
+  entityId: number | null;
+  /** @sqlType int */
+  totalAuditRecords: number | null;
+  /** @sqlType int */
+  visibleAuditRecords: number | null;
+  /** @sqlType datetime2 */
+  oldestVisibleActivity: string | null;
+  /** @sqlType datetime2 */
+  lastActivity: string | null;
+  /** @sqlType bit */
+  hasAccess: boolean | null;
+  /** @sqlType bit */
+  isAdmin: boolean | null;
+  /** @sqlType nvarchar */
+  subscriptionTier: string | null;
+  /** @sqlType int */
+  auditRetentionDays: number | null;
+  /** @sqlType int */
+  hasOlderRecords: number;
+  /** @sqlType int */
+  relatedCount: number | null;
+}
+
+export type GetEntityAuditTraceResults = [
+  GetEntityAuditTrace_ResultSet0[],
+  GetEntityAuditTrace_ResultSet1[],
+  GetEntityAuditTrace_ResultSet2[],
+];
+
+export interface GetEntityHistory_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetEntityHistory_ResultSet1 {
+  /** @sqlType int */
+  auditId: number;
+  /** @sqlType nvarchar */
+  entity: string;
+  /** @sqlType int */
+  entityId: number;
+  /** @sqlType nvarchar */
+  entityName: string | null;
+  /** @sqlType nvarchar */
+  action: string;
+  /** @sqlType nvarchar */
+  details: string | null;
+  /** @sqlType int */
+  userId: number | null;
+  /** @sqlType nvarchar */
+  actionByUser: string | null;
+  /** @sqlType datetime2 */
+  timestamp: string;
+  /** @sqlType varchar */
+  actionCategory: string;
+}
+export interface GetEntityHistory_ResultSet2 {
+  /** @sqlType nvarchar */
+  entityType: string | null;
+  /** @sqlType nvarchar */
+  entityName: string | null;
+  /** @sqlType uniqueidentifier */
+  entityCredential: string | null;
+  /** @sqlType int */
+  totalAuditRecords: number | null;
+  /** @sqlType datetime2 */
+  firstActivity: string | null;
+  /** @sqlType datetime2 */
+  lastActivity: string | null;
+}
+
+export type GetEntityHistoryResults = [
+  GetEntityHistory_ResultSet0[],
+  GetEntityHistory_ResultSet1[],
+  GetEntityHistory_ResultSet2[],
+];
+
+export interface GetLookupData_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetLookupData_ResultSet1 {
+  /** @sqlType nvarchar */
+  dropdownValues: string | null;
+}
+
+export type GetLookupDataResults = [
+  GetLookupData_ResultSet0[],
+  GetLookupData_ResultSet1[],
+];
+
+export interface GetMachineAssignmentStatus_ResultSet0 {
+  /** @sqlType nvarchar */
+  machineName: string | null;
+  /** @sqlType nvarchar */
+  teamName: string | null;
+  /** @sqlType nvarchar */
+  assignmentType: string | null;
+  /** @sqlType nvarchar */
+  assignmentDetails: string | null;
+  /** @sqlType nvarchar */
+  status: string | null;
+}
+export interface GetMachineAssignmentStatus_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetMachineAssignmentStatus_ResultSet2 {
+  /** @sqlType nvarchar */
+  machineName: string | null;
+  /** @sqlType nvarchar */
+  teamName: string | null;
+  /** @sqlType nvarchar */
+  assignmentType: string | null;
+  /** @sqlType nvarchar */
+  assignmentDetails: string | null;
+  /** @sqlType varchar */
+  status: string | null;
+}
+
+export type GetMachineAssignmentStatusResults = [
+  GetMachineAssignmentStatus_ResultSet0[],
+  GetMachineAssignmentStatus_ResultSet1[],
+  GetMachineAssignmentStatus_ResultSet2[],
+];
+
+export interface GetPermissionGroupDetails_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetPermissionGroupDetails_ResultSet1 {
+  /** @sqlType nvarchar */
+  permissionGroupName: string;
+  /** @sqlType nvarchar */
+  permissionName: string;
+}
+
+export type GetPermissionGroupDetailsResults = [
+  GetPermissionGroupDetails_ResultSet0[],
+  GetPermissionGroupDetails_ResultSet1[],
+];
+
+export interface GetQueueItemTrace_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetQueueItemTrace_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  taskId: string;
+  /** @sqlType nvarchar */
+  status: string;
+  /** @sqlType datetimeoffset */
+  createdTime: string;
+  /** @sqlType datetimeoffset */
+  assignedTime: string | null;
+  /** @sqlType datetimeoffset */
+  lastAssigned: string | null;
+  /** @sqlType int */
+  retryCount: number;
+  /** @sqlType datetimeoffset */
+  lastRetryAt: string | null;
+  /** @sqlType nvarchar */
+  lastFailureReason: string | null;
+  /** @sqlType datetimeoffset */
+  lastResponseAt: string | null;
+  /** @sqlType int */
+  priority: number | null;
+  /** @sqlType varchar */
+  priorityLabel: string | null;
+  /** @sqlType int */
+  secondsToAssignment: number | null;
+  /** @sqlType int */
+  processingDurationSeconds: number | null;
+  /** @sqlType int */
+  totalDurationSeconds: number | null;
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType int */
+  machineId: number | null;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType int */
+  bridgeId: number;
+  /** @sqlType nvarchar */
+  regionName: string;
+  /** @sqlType int */
+  regionId: number;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType int */
+  teamId: number | null;
+  /** @sqlType nvarchar */
+  companyName: string;
+  /** @sqlType int */
+  companyId: number;
+  /** @sqlType nvarchar */
+  createdBy: string;
+  /** @sqlType int */
+  createdByUserId: number;
+  /** @sqlType varchar */
+  healthStatus: string;
+  /** @sqlType int */
+  isStale: number;
+  /** @sqlType int */
+  isStalePending: number;
+  /** @sqlType int */
+  canBeCancelled: number;
+}
+export interface GetQueueItemTrace_ResultSet2 {
+  /** @sqlType varchar */
+  vaultType: string;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType int */
+  hasContent: number;
+}
+export interface GetQueueItemTrace_ResultSet3 {
+  /** @sqlType varchar */
+  vaultType: string;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType int */
+  hasContent: number;
+}
+export interface GetQueueItemTrace_ResultSet4 {
+  /** @sqlType nvarchar */
+  action: string;
+  /** @sqlType nvarchar */
+  details: string | null;
+  /** @sqlType datetime2 */
+  timestamp: string;
+  /** @sqlType nvarchar */
+  actionByUser: string | null;
+  /** @sqlType int */
+  secondsSincePrevious: number | null;
+}
+export interface GetQueueItemTrace_ResultSet5 {
+  /** @sqlType uniqueidentifier */
+  taskId: string;
+  /** @sqlType nvarchar */
+  status: string;
+  /** @sqlType datetimeoffset */
+  createdTime: string;
+  /** @sqlType int */
+  priority: number | null;
+  /** @sqlType int */
+  secondsDifference: number | null;
+  /** @sqlType varchar */
+  relativePosition: string;
+  /** @sqlType nvarchar */
+  createdBy: string;
+}
+export interface GetQueueItemTrace_ResultSet6 {
+  /** @sqlType int */
+  avgProcessingTimeSeconds: number | null;
+  /** @sqlType float */
+  machineSuccessRate: number | null;
+  /** @sqlType int */
+  currentQueueDepth: number | null;
+  /** @sqlType int */
+  activeProcessingCount: number | null;
+  /** @sqlType int */
+  maxConcurrentTasks: number;
+}
+
+export type GetQueueItemTraceResults = [
+  GetQueueItemTrace_ResultSet0[],
+  GetQueueItemTrace_ResultSet1[],
+  GetQueueItemTrace_ResultSet2[],
+  GetQueueItemTrace_ResultSet3[],
+  GetQueueItemTrace_ResultSet4[],
+  GetQueueItemTrace_ResultSet5[],
+  GetQueueItemTrace_ResultSet6[],
+];
+
+export interface GetQueueItemsNext_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetQueueItemsNext_ResultSet1 {
+  /** @sqlType nvarchar */
+  companyLicense: string | null;
+  /** @sqlType nvarchar */
+  companyCredential: string | null;
+  /** @sqlType nvarchar */
+  bridgeCredential: string | null;
+}
+export interface GetQueueItemsNext_ResultSet2 {
+  /** @sqlType uniqueidentifier */
+  taskId: string;
+  /** @sqlType datetimeoffset */
+  time: string;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType datetimeoffset */
+  assigned: string | null;
+  /** @sqlType nvarchar */
+  status: string;
+  /** @sqlType int */
+  priority: number | null;
+  /** @sqlType int */
+  retryCount: number;
+  /** @sqlType nvarchar */
+  subscriptionTier: string | null;
+  /** @sqlType int */
+  maxConcurrentTasks: number | null;
+  /** @sqlType int */
+  currentlyProcessingTasks: number | null;
+}
+export interface GetQueueItemsNext_ResultSet3 {
+  /** @sqlType nvarchar */
+  result: string | null;
+  /** @sqlType nvarchar */
+  subscriptionTier: string | null;
+  /** @sqlType int */
+  maxConcurrentTasks: number | null;
+  /** @sqlType int */
+  currentlyProcessingTasks: number | null;
+}
+export interface GetQueueItemsNext_ResultSet4 {
+  /** @sqlType uniqueidentifier */
+  taskId: string;
+  /** @sqlType datetimeoffset */
+  time: string;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType datetimeoffset */
+  assigned: string | null;
+  /** @sqlType nvarchar */
+  status: string;
+  /** @sqlType int */
+  priority: number | null;
+  /** @sqlType int */
+  retryCount: number;
+  /** @sqlType nvarchar */
+  subscriptionTier: string | null;
+  /** @sqlType int */
+  maxConcurrentTasks: number | null;
+  /** @sqlType int */
+  currentlyProcessingTasks: number | null;
+}
+export interface GetQueueItemsNext_ResultSet5 {
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType nvarchar */
+  subscriptionTier: string | null;
+  /** @sqlType int */
+  maxConcurrentTasks: number | null;
+  /** @sqlType int */
+  currentlyProcessingTasks: number | null;
+}
+export interface GetQueueItemsNext_ResultSet6 {
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType nvarchar */
+  subscriptionTier: string | null;
+  /** @sqlType int */
+  maxConcurrentTasks: number | null;
+  /** @sqlType int */
+  currentlyProcessingTasks: number | null;
+}
+export interface GetQueueItemsNext_ResultSet7 {
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType nvarchar */
+  subscriptionTier: string | null;
+  /** @sqlType int */
+  maxConcurrentTasks: number | null;
+  /** @sqlType int */
+  currentlyProcessingTasks: number | null;
+}
+
+export type GetQueueItemsNextResults = [
+  GetQueueItemsNext_ResultSet0[],
+  GetQueueItemsNext_ResultSet1[],
+  GetQueueItemsNext_ResultSet2[],
+  GetQueueItemsNext_ResultSet3[],
+  GetQueueItemsNext_ResultSet4[],
+  GetQueueItemsNext_ResultSet5[],
+  GetQueueItemsNext_ResultSet6[],
+  GetQueueItemsNext_ResultSet7[],
+];
+
+export interface GetRegionBridges_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetRegionBridges_ResultSet1 {
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType int */
+  bridgeCredentialsVersion: number | null;
+  /** @sqlType nvarchar */
+  bridgeCredentials: string | null;
+  /** @sqlType nvarchar */
+  regionName: string;
+  /** @sqlType int */
+  machineCount: number | null;
+  /** @sqlType int */
+  hasAccess: number;
+  /** @sqlType nvarchar */
+  bridgeUserEmail: string | null;
+  /** @sqlType varchar */
+  managementMode: string;
+  /** @sqlType int */
+  isGlobalBridge: number;
+}
+
+export type GetRegionBridgesResults = [
+  GetRegionBridges_ResultSet0[],
+  GetRegionBridges_ResultSet1[],
+];
+
+export interface GetRequestAuthenticationStatus_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetRequestAuthenticationStatus_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType bit */
+  isTFAEnabled: boolean | null;
+  /** @sqlType bit */
+  isAuthorized: boolean | null;
+  /** @sqlType datetimeoffset */
+  lastLoginTime: string | null;
+  /** @sqlType datetimeoffset */
+  tokenExpiration: string | null;
+  /** @sqlType nvarchar */
+  permissionGroup: string | null;
+  /** @sqlType int */
+  activeTokenCount: number | null;
+  /** @sqlType varchar */
+  authenticationStatus: string;
+}
+
+export type GetRequestAuthenticationStatusResults = [
+  GetRequestAuthenticationStatus_ResultSet0[],
+  GetRequestAuthenticationStatus_ResultSet1[],
+];
+
+export interface GetSystemConfiguration_ResultSet0 {
+  /** @sqlType nvarchar */
+  configKey: string | null;
+  /** @sqlType nvarchar */
+  configValue: string | null;
+  /** @sqlType nvarchar */
+  configDescription: string | null;
+  /** @sqlType datetime */
+  modifiedDate: string | null;
+}
+export interface GetSystemConfiguration_ResultSet1 {
+  /** @sqlType nvarchar */
+  configKey: string;
+  /** @sqlType nvarchar */
+  configValue: string | null;
+  /** @sqlType nvarchar */
+  configDescription: string | null;
+  /** @sqlType datetime */
+  modifiedDate: string | null;
+}
+export interface GetSystemConfiguration_ResultSet2 {
+  /** @sqlType nvarchar */
+  configKey: string;
+  /** @sqlType nvarchar */
+  configValue: string | null;
+  /** @sqlType nvarchar */
+  configDescription: string | null;
+  /** @sqlType datetime */
+  modifiedDate: string | null;
+}
+
+export type GetSystemConfigurationResults = [
+  GetSystemConfiguration_ResultSet0[],
+  GetSystemConfiguration_ResultSet1[],
+  GetSystemConfiguration_ResultSet2[],
+];
+
+export interface GetTeamMachines_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetTeamMachines_ResultSet1 {
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType nvarchar */
+  vaultStatus: string | null;
+  /** @sqlType datetime2 */
+  vaultStatusTime: string | null;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType nvarchar */
+  regionName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType int */
+  queueCount: number | null;
+}
+
+export type GetTeamMachinesResults = [
+  GetTeamMachines_ResultSet0[],
+  GetTeamMachines_ResultSet1[],
+];
+
+export interface GetTeamMembers_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetTeamMembers_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string;
+  /** @sqlType bit */
+  activated: boolean;
+  /** @sqlType nvarchar */
+  teams: string | null;
+  /** @sqlType nvarchar */
+  companyName: string;
+}
+export interface GetTeamMembers_ResultSet2 {
+  /** @sqlType nvarchar */
+  userEmail: string;
+  /** @sqlType bit */
+  activated: boolean;
+  /** @sqlType nvarchar */
+  teams: string | null;
+  /** @sqlType nvarchar */
+  companyName: string;
+}
+
+export type GetTeamMembersResults = [
+  GetTeamMembers_ResultSet0[],
+  GetTeamMembers_ResultSet1[],
+  GetTeamMembers_ResultSet2[],
+];
+
+export interface GetTeamQueueItems_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetTeamQueueItems_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  taskId: string | null;
+  /** @sqlType datetime2 */
+  createdTime: string | null;
+  /** @sqlType int */
+  ageInMinutes: number | null;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType int */
+  vaultVersionResponse: number | null;
+  /** @sqlType nvarchar */
+  vaultContentResponse: string | null;
+  /** @sqlType nvarchar */
+  machineName: string | null;
+  /** @sqlType nvarchar */
+  bridgeName: string | null;
+  /** @sqlType nvarchar */
+  teamName: string | null;
+  /** @sqlType nvarchar */
+  regionName: string | null;
+  /** @sqlType nvarchar */
+  status: string | null;
+  /** @sqlType datetime2 */
+  assignedTime: string | null;
+  /** @sqlType datetime2 */
+  lastAssigned: string | null;
+  /** @sqlType int */
+  minutesSinceAssigned: number | null;
+  /** @sqlType int */
+  priority: number | null;
+  /** @sqlType nvarchar */
+  priorityLabel: string | null;
+  /** @sqlType varchar */
+  healthStatus: string;
+  /** @sqlType int */
+  canBeCancelled: number;
+  /** @sqlType int */
+  hasResponse: number;
+  /** @sqlType nvarchar */
+  createdBy: string | null;
+  /** @sqlType int */
+  retryCount: number | null;
+  /** @sqlType datetimeoffset */
+  lastRetryAt: string | null;
+  /** @sqlType nvarchar */
+  lastFailureReason: string | null;
+  /** @sqlType int */
+  permanentlyFailed: number;
+}
+export interface GetTeamQueueItems_ResultSet2 {
+  /** @sqlType int */
+  totalCount: number | null;
+  /** @sqlType int */
+  pendingCount: number | null;
+  /** @sqlType int */
+  assignedCount: number | null;
+  /** @sqlType int */
+  processingCount: number | null;
+  /** @sqlType int */
+  cancellingCount: number | null;
+  /** @sqlType int */
+  completedCount: number | null;
+  /** @sqlType int */
+  cancelledCount: number | null;
+  /** @sqlType int */
+  failedCount: number | null;
+  /** @sqlType int */
+  staleCount: number | null;
+}
+
+export type GetTeamQueueItemsResults = [
+  GetTeamQueueItems_ResultSet0[],
+  GetTeamQueueItems_ResultSet1[],
+  GetTeamQueueItems_ResultSet2[],
+];
+
+export interface GetTeamRepositories_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetTeamRepositories_ResultSet1 {
+  /** @sqlType nvarchar */
+  repoName: string;
+  /** @sqlType uniqueidentifier */
+  repoGuid: string;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType uniqueidentifier */
+  grandGuid: string;
+  /** @sqlType uniqueidentifier */
+  parentGuid: string | null;
+  /** @sqlType int */
+  repoNetworkId: number;
+  /** @sqlType nvarchar */
+  repoNetworkMode: string;
+  /** @sqlType nvarchar */
+  repoTag: string;
+}
+
+export type GetTeamRepositoriesResults = [
+  GetTeamRepositories_ResultSet0[],
+  GetTeamRepositories_ResultSet1[],
+];
+
+export interface GetTeamStorages_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetTeamStorages_ResultSet1 {
+  /** @sqlType nvarchar */
+  storageName: string;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType nvarchar */
+  teamName: string;
+}
+
+export type GetTeamStoragesResults = [
+  GetTeamStorages_ResultSet0[],
+  GetTeamStorages_ResultSet1[],
+];
+
+export interface GetUserCompany_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetUserCompany_ResultSet1 {
+  /** @sqlType nvarchar */
+  companyName: string;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType int */
+  teamCount: number | null;
+  /** @sqlType int */
+  regionCount: number | null;
+  /** @sqlType int */
+  userCount: number | null;
+}
+
+export type GetUserCompanyResults = [
+  GetUserCompany_ResultSet0[],
+  GetUserCompany_ResultSet1[],
+];
+
+export interface GetUserRequests_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetUserRequests_ResultSet1 {
+  /** @sqlType int */
+  requestId: number;
+  /** @sqlType nvarchar */
+  userEmail: string;
+  /** @sqlType nvarchar */
+  sessionName: string;
+  /** @sqlType nvarchar */
+  ipAddress: string | null;
+  /** @sqlType nvarchar */
+  userAgent: string | null;
+  /** @sqlType datetimeoffset */
+  createdAt: string;
+  /** @sqlType datetimeoffset */
+  lastActivity: string;
+  /** @sqlType bit */
+  isActive: boolean;
+  /** @sqlType int */
+  parentRequestId: number | null;
+  /** @sqlType nvarchar */
+  permissionsName: string | null;
+  /** @sqlType datetimeoffset */
+  expirationTime: string | null;
+}
+
+export type GetUserRequestsResults = [
+  GetUserRequests_ResultSet0[],
+  GetUserRequests_ResultSet1[],
+];
+
+export interface GetUserVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetUserVault_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType uniqueidentifier */
+  userCredential: string | null;
+}
+
+export type GetUserVaultResults = [
+  GetUserVault_ResultSet0[],
+  GetUserVault_ResultSet1[],
+];
+
+export interface ImportCompanyData_ResultSet0 {
+  /** @sqlType varchar */
+  message: string;
+  /** @sqlType int */
+  importedCount: number;
+  /** @sqlType int */
+  skippedCount: number;
+  /** @sqlType int */
+  errorCount: number;
+}
+export interface ImportCompanyData_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface ImportCompanyData_ResultSet2 {
+  /** @sqlType int */
+  importedCount: number;
+  /** @sqlType int */
+  skippedCount: number;
+  /** @sqlType int */
+  errorCount: number;
+  /** @sqlType varchar */
+  result: string;
+}
+export interface ImportCompanyData_ResultSet3 {
+  /** @sqlType int */
+  importedCount: number | null;
+  /** @sqlType int */
+  skippedCount: number | null;
+  /** @sqlType int */
+  errorCount: number | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type ImportCompanyDataResults = [
+  ImportCompanyData_ResultSet0[],
+  ImportCompanyData_ResultSet1[],
+  ImportCompanyData_ResultSet2[],
+  ImportCompanyData_ResultSet3[],
+];
+
+export interface IsRegistered_ResultSet0 {
+  /** @sqlType bit */
+  isRegistered: boolean | null;
+  /** @sqlType nvarchar */
+  serverName: string | null;
+}
+export interface IsRegistered_ResultSet1 {
+  /** @sqlType bit */
+  isRegistered: boolean | null;
+  /** @sqlType nvarchar */
+  serverName: string | null;
+}
+
+export type IsRegisteredResults = [
+  IsRegistered_ResultSet0[],
+  IsRegistered_ResultSet1[],
+];
+
+export interface PrivilegeAuthenticationRequest_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface PrivilegeAuthenticationRequest_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType bit */
+  isAuthorized: boolean | null;
+  /** @sqlType bit */
+  hasTFAEnabled: boolean | null;
+}
+export interface PrivilegeAuthenticationRequest_ResultSet2 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType int */
+  isAuthorized: number;
+}
+
+export type PrivilegeAuthenticationRequestResults = [
+  PrivilegeAuthenticationRequest_ResultSet0[],
+  PrivilegeAuthenticationRequest_ResultSet1[],
+  PrivilegeAuthenticationRequest_ResultSet2[],
+];
+
+export interface PromoteRepositoryToGrand_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+
+export type PromoteRepositoryToGrandResults = [
+  PromoteRepositoryToGrand_ResultSet0[],
+];
+
+export interface ResetBridgeAuthorization_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface ResetBridgeAuthorization_ResultSet1 {
+  /** @sqlType nvarchar */
+  bridgeName: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType varchar */
+  managementMode: string;
+}
+
+export type ResetBridgeAuthorizationResults = [
+  ResetBridgeAuthorization_ResultSet0[],
+  ResetBridgeAuthorization_ResultSet1[],
+];
+
+export interface RetryFailedQueueItem_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface RetryFailedQueueItem_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  taskId: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType int */
+  newRetryCount: number | null;
+}
+
+export type RetryFailedQueueItemResults = [
+  RetryFailedQueueItem_ResultSet0[],
+  RetryFailedQueueItem_ResultSet1[],
+];
+
+export interface UpdateBridgeName_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateBridgeName_ResultSet1 {
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType nvarchar */
+  regionName: string;
+}
+
+export type UpdateBridgeNameResults = [
+  UpdateBridgeName_ResultSet0[],
+  UpdateBridgeName_ResultSet1[],
+];
+
+export interface UpdateBridgeVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateBridgeVault_ResultSet1 {
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateBridgeVaultResults = [
+  UpdateBridgeVault_ResultSet0[],
+  UpdateBridgeVault_ResultSet1[],
+];
+
+export interface UpdateCephClusterVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateCephClusterVault_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type UpdateCephClusterVaultResults = [
+  UpdateCephClusterVault_ResultSet0[],
+  UpdateCephClusterVault_ResultSet1[],
+];
+
+export interface UpdateCephPoolVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateCephPoolVault_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type UpdateCephPoolVaultResults = [
+  UpdateCephPoolVault_ResultSet0[],
+  UpdateCephPoolVault_ResultSet1[],
+];
+
+export interface UpdateCloneMachineAssignments_ResultSet0 {
+  /** @sqlType varchar */
+  message: string;
+}
+export interface UpdateCloneMachineAssignments_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateCloneMachineAssignments_ResultSet2 {
+  /** @sqlType nvarchar */
+  message: string | null;
+}
+export interface UpdateCloneMachineAssignments_ResultSet3 {
+  /** @sqlType nvarchar */
+  message: string | null;
+}
+
+export type UpdateCloneMachineAssignmentsResults = [
+  UpdateCloneMachineAssignments_ResultSet0[],
+  UpdateCloneMachineAssignments_ResultSet1[],
+  UpdateCloneMachineAssignments_ResultSet2[],
+  UpdateCloneMachineAssignments_ResultSet3[],
+];
+
+export interface UpdateCloneMachineRemovals_ResultSet0 {
+  /** @sqlType varchar */
+  message: string;
+}
+export interface UpdateCloneMachineRemovals_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateCloneMachineRemovals_ResultSet2 {
+  /** @sqlType nvarchar */
+  message: string | null;
+}
+
+export type UpdateCloneMachineRemovalsResults = [
+  UpdateCloneMachineRemovals_ResultSet0[],
+  UpdateCloneMachineRemovals_ResultSet1[],
+  UpdateCloneMachineRemovals_ResultSet2[],
+];
+
+export interface UpdateCompanyBlockUserRequests_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateCompanyBlockUserRequests_ResultSet1 {
+  /** @sqlType int */
+  companyId: number | null;
+  /** @sqlType bit */
+  blockUserRequests: boolean | null;
+  /** @sqlType int */
+  deactivatedTokenCount: number | null;
+  /** @sqlType nvarchar */
+  result: string | null;
+}
+
+export type UpdateCompanyBlockUserRequestsResults = [
+  UpdateCompanyBlockUserRequests_ResultSet0[],
+  UpdateCompanyBlockUserRequests_ResultSet1[],
+];
+
+export interface UpdateCompanyVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateCompanyVault_ResultSet1 {
+  /** @sqlType nvarchar */
+  companyName: string;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateCompanyVaultResults = [
+  UpdateCompanyVault_ResultSet0[],
+  UpdateCompanyVault_ResultSet1[],
+];
+
+export interface UpdateCompanyVaults_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateCompanyVaults_ResultSet1 {
+  /** @sqlType int */
+  companyId: number | null;
+  /** @sqlType int */
+  blockUserRequests: number;
+  /** @sqlType int */
+  vaultsUpdated: number | null;
+  /** @sqlType nvarchar */
+  result: string | null;
+}
+
+export type UpdateCompanyVaultsResults = [
+  UpdateCompanyVaults_ResultSet0[],
+  UpdateCompanyVaults_ResultSet1[],
+];
+
+export interface UpdateImageMachineAssignment_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateImageMachineAssignment_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+export interface UpdateImageMachineAssignment_ResultSet2 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type UpdateImageMachineAssignmentResults = [
+  UpdateImageMachineAssignment_ResultSet0[],
+  UpdateImageMachineAssignment_ResultSet1[],
+  UpdateImageMachineAssignment_ResultSet2[],
+];
+
+export interface UpdateMachineAssignedBridge_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateMachineAssignedBridge_ResultSet1 {
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType nvarchar */
+  regionName: string;
+}
+
+export type UpdateMachineAssignedBridgeResults = [
+  UpdateMachineAssignedBridge_ResultSet0[],
+  UpdateMachineAssignedBridge_ResultSet1[],
+];
+
+export interface UpdateMachineCeph_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateMachineCeph_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+export interface UpdateMachineCeph_ResultSet2 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type UpdateMachineCephResults = [
+  UpdateMachineCeph_ResultSet0[],
+  UpdateMachineCeph_ResultSet1[],
+  UpdateMachineCeph_ResultSet2[],
+];
+
+export interface UpdateMachineClusterAssignment_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateMachineClusterAssignment_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type UpdateMachineClusterAssignmentResults = [
+  UpdateMachineClusterAssignment_ResultSet0[],
+  UpdateMachineClusterAssignment_ResultSet1[],
+];
+
+export interface UpdateMachineClusterRemoval_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateMachineClusterRemoval_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type UpdateMachineClusterRemovalResults = [
+  UpdateMachineClusterRemoval_ResultSet0[],
+  UpdateMachineClusterRemoval_ResultSet1[],
+];
+
+export interface UpdateMachineName_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateMachineName_ResultSet1 {
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+}
+
+export type UpdateMachineNameResults = [
+  UpdateMachineName_ResultSet0[],
+  UpdateMachineName_ResultSet1[],
+];
+
+export interface UpdateMachineStatus_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateMachineStatus_ResultSet1 {
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType int */
+  vaultVersion: number;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType nvarchar */
+  vaultStatus: string | null;
+  /** @sqlType datetime2 */
+  vaultStatusTime: string | null;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType nvarchar */
+  regionName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType int */
+  queueCount: number | null;
+}
+
+export type UpdateMachineStatusResults = [
+  UpdateMachineStatus_ResultSet0[],
+  UpdateMachineStatus_ResultSet1[],
+];
+
+export interface UpdateMachineVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateMachineVault_ResultSet1 {
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateMachineVaultResults = [
+  UpdateMachineVault_ResultSet0[],
+  UpdateMachineVault_ResultSet1[],
+];
+
+export interface UpdateQueueItemResponse_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateQueueItemResponse_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  taskId: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType varchar */
+  message: string;
+}
+export interface UpdateQueueItemResponse_ResultSet2 {
+  /** @sqlType uniqueidentifier */
+  taskId: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType varchar */
+  message: string;
+}
+export interface UpdateQueueItemResponse_ResultSet3 {
+  /** @sqlType uniqueidentifier */
+  taskId: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType varchar */
+  message: string;
+}
+export interface UpdateQueueItemResponse_ResultSet4 {
+  /** @sqlType uniqueidentifier */
+  taskId: string | null;
+  /** @sqlType varchar */
+  result: string;
+}
+export interface UpdateQueueItemResponse_ResultSet5 {
+  /** @sqlType uniqueidentifier */
+  taskId: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType varchar */
+  message: string;
+}
+export interface UpdateQueueItemResponse_ResultSet6 {
+  /** @sqlType uniqueidentifier */
+  taskId: string | null;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType varchar */
+  message: string;
+}
+export interface UpdateQueueItemResponse_ResultSet7 {
+  /** @sqlType uniqueidentifier */
+  taskId: string | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateQueueItemResponseResults = [
+  UpdateQueueItemResponse_ResultSet0[],
+  UpdateQueueItemResponse_ResultSet1[],
+  UpdateQueueItemResponse_ResultSet2[],
+  UpdateQueueItemResponse_ResultSet3[],
+  UpdateQueueItemResponse_ResultSet4[],
+  UpdateQueueItemResponse_ResultSet5[],
+  UpdateQueueItemResponse_ResultSet6[],
+  UpdateQueueItemResponse_ResultSet7[],
+];
+
+export interface UpdateQueueItemToCompleted_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateQueueItemToCompleted_ResultSet1 {
+  /** @sqlType uniqueidentifier */
+  taskId: string | null;
+  /** @sqlType nvarchar */
+  result: string | null;
+}
+
+export type UpdateQueueItemToCompletedResults = [
+  UpdateQueueItemToCompleted_ResultSet0[],
+  UpdateQueueItemToCompleted_ResultSet1[],
+];
+
+export interface UpdateRegionName_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateRegionName_ResultSet1 {
+  /** @sqlType nvarchar */
+  regionName: string;
+}
+
+export type UpdateRegionNameResults = [
+  UpdateRegionName_ResultSet0[],
+  UpdateRegionName_ResultSet1[],
+];
+
+export interface UpdateRegionVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateRegionVault_ResultSet1 {
+  /** @sqlType nvarchar */
+  regionName: string;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateRegionVaultResults = [
+  UpdateRegionVault_ResultSet0[],
+  UpdateRegionVault_ResultSet1[],
+];
+
+export interface UpdateRepositoryName_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateRepositoryName_ResultSet1 {
+  /** @sqlType nvarchar */
+  repoName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+}
+
+export type UpdateRepositoryNameResults = [
+  UpdateRepositoryName_ResultSet0[],
+  UpdateRepositoryName_ResultSet1[],
+];
+
+export interface UpdateRepositoryTag_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateRepositoryTag_ResultSet1 {
+  /** @sqlType nvarchar */
+  repoName: string;
+  /** @sqlType nvarchar */
+  repoTag: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+}
+
+export type UpdateRepositoryTagResults = [
+  UpdateRepositoryTag_ResultSet0[],
+  UpdateRepositoryTag_ResultSet1[],
+];
+
+export interface UpdateRepositoryVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateRepositoryVault_ResultSet1 {
+  /** @sqlType nvarchar */
+  repoName: string;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateRepositoryVaultResults = [
+  UpdateRepositoryVault_ResultSet0[],
+  UpdateRepositoryVault_ResultSet1[],
+];
+
+export interface UpdateStorageName_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateStorageName_ResultSet1 {
+  /** @sqlType nvarchar */
+  storageName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+}
+
+export type UpdateStorageNameResults = [
+  UpdateStorageName_ResultSet0[],
+  UpdateStorageName_ResultSet1[],
+];
+
+export interface UpdateStorageVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateStorageVault_ResultSet1 {
+  /** @sqlType nvarchar */
+  storageName: string;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateStorageVaultResults = [
+  UpdateStorageVault_ResultSet0[],
+  UpdateStorageVault_ResultSet1[],
+];
+
+export interface UpdateTeamName_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateTeamName_ResultSet1 {
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType nvarchar */
+  companyName: string;
+  /** @sqlType int */
+  memberCount: number | null;
+}
+
+export type UpdateTeamNameResults = [
+  UpdateTeamName_ResultSet0[],
+  UpdateTeamName_ResultSet1[],
+];
+
+export interface UpdateTeamVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateTeamVault_ResultSet1 {
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateTeamVaultResults = [
+  UpdateTeamVault_ResultSet0[],
+  UpdateTeamVault_ResultSet1[],
+];
+
+export interface UpdateUserAssignedPermissions_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateUserAssignedPermissions_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string;
+  /** @sqlType nvarchar */
+  permissionGroupName: string;
+  /** @sqlType varchar */
+  result: string;
+  /** @sqlType int */
+  totalTokenCount: number | null;
+  /** @sqlType int */
+  tokensDowngraded: number | null;
+}
+
+export type UpdateUserAssignedPermissionsResults = [
+  UpdateUserAssignedPermissions_ResultSet0[],
+  UpdateUserAssignedPermissions_ResultSet1[],
+];
+
+export interface UpdateUserEmail_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateUserEmail_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateUserEmailResults = [
+  UpdateUserEmail_ResultSet0[],
+  UpdateUserEmail_ResultSet1[],
+];
+
+export interface UpdateUserLanguage_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateUserLanguage_ResultSet1 {
+  /** @sqlType nvarchar */
+  preferredLanguage: string | null;
+  /** @sqlType varchar */
+  message: string;
+}
+
+export type UpdateUserLanguageResults = [
+  UpdateUserLanguage_ResultSet0[],
+  UpdateUserLanguage_ResultSet1[],
+];
+
+export interface UpdateUserPassword_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateUserPassword_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateUserPasswordResults = [
+  UpdateUserPassword_ResultSet0[],
+  UpdateUserPassword_ResultSet1[],
+];
+
+export interface UpdateUserTFA_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateUserTFA_ResultSet1 {
+  /** @sqlType nvarchar */
+  secret: string | null;
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType varchar */
+  authType: string;
+  /** @sqlType varchar */
+  result: string;
+}
+export interface UpdateUserTFA_ResultSet2 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType varchar */
+  result: string;
+}
+export interface UpdateUserTFA_ResultSet3 {
+  /** @sqlType nvarchar */
+  secret: string | null;
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType varchar */
+  authType: string;
+  /** @sqlType varchar */
+  result: string;
+}
+export interface UpdateUserTFA_ResultSet4 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateUserTFAResults = [
+  UpdateUserTFA_ResultSet0[],
+  UpdateUserTFA_ResultSet1[],
+  UpdateUserTFA_ResultSet2[],
+  UpdateUserTFA_ResultSet3[],
+  UpdateUserTFA_ResultSet4[],
+];
+
+export interface UpdateUserToActivated_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateUserToActivated_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateUserToActivatedResults = [
+  UpdateUserToActivated_ResultSet0[],
+  UpdateUserToActivated_ResultSet1[],
+];
+
+export interface UpdateUserToDeactivated_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateUserToDeactivated_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateUserToDeactivatedResults = [
+  UpdateUserToDeactivated_ResultSet0[],
+  UpdateUserToDeactivated_ResultSet1[],
+];
+
+export interface UpdateUserVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateUserVault_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType varchar */
+  result: string;
+}
+
+export type UpdateUserVaultResults = [
+  UpdateUserVault_ResultSet0[],
+  UpdateUserVault_ResultSet1[],
+];
+
+// ============================================================================
 // Utility Types
 // ============================================================================
 
@@ -1279,9 +4007,136 @@ export interface ProcedurePrefixMap {
 }
 
 /**
+ * Map of procedure names to their result tuple types
+ */
+export interface ProcedureResultsMap {
+  ActivateUserAccount: ActivateUserAccountResults;
+  CancelQueueItem: CancelQueueItemResults;
+  CreateAuthenticationRequest: CreateAuthenticationRequestResults;
+  CreateBridge: CreateBridgeResults;
+  CreateCephCluster: CreateCephClusterResults;
+  CreateCephPool: CreateCephPoolResults;
+  CreateCephRbdClone: CreateCephRbdCloneResults;
+  CreateCephRbdImage: CreateCephRbdImageResults;
+  CreateCephRbdSnapshot: CreateCephRbdSnapshotResults;
+  CreateMachine: CreateMachineResults;
+  CreateNewCompany: CreateNewCompanyResults;
+  CreateNewUser: CreateNewUserResults;
+  CreatePermissionGroup: CreatePermissionGroupResults;
+  CreatePermissionInGroup: CreatePermissionInGroupResults;
+  CreateQueueItem: CreateQueueItemResults;
+  CreateRegion: CreateRegionResults;
+  CreateRepository: CreateRepositoryResults;
+  CreateStorage: CreateStorageResults;
+  CreateTeam: CreateTeamResults;
+  CreateTeamMembership: CreateTeamMembershipResults;
+  DeleteBridge: DeleteBridgeResults;
+  DeleteCephCluster: DeleteCephClusterResults;
+  DeleteCephPool: DeleteCephPoolResults;
+  DeleteCephRbdClone: DeleteCephRbdCloneResults;
+  DeleteCephRbdImage: DeleteCephRbdImageResults;
+  DeleteCephRbdSnapshot: DeleteCephRbdSnapshotResults;
+  DeleteMachine: DeleteMachineResults;
+  DeletePermissionFromGroup: DeletePermissionFromGroupResults;
+  DeletePermissionGroup: DeletePermissionGroupResults;
+  DeleteQueueItem: DeleteQueueItemResults;
+  DeleteRegion: DeleteRegionResults;
+  DeleteRepository: DeleteRepositoryResults;
+  DeleteStorage: DeleteStorageResults;
+  DeleteTeam: DeleteTeamResults;
+  DeleteUserFromTeam: DeleteUserFromTeamResults;
+  DeleteUserRequest: DeleteUserRequestResults;
+  ExportCompanyData: ExportCompanyDataResults;
+  ForkAuthenticationRequest: ForkAuthenticationRequestResults;
+  GetAuditLogs: GetAuditLogsResults;
+  GetAvailableMachinesForClone: GetAvailableMachinesForCloneResults;
+  GetCephClusterMachines: GetCephClusterMachinesResults;
+  GetCephClusters: GetCephClustersResults;
+  GetCephPools: GetCephPoolsResults;
+  GetCephRbdClones: GetCephRbdClonesResults;
+  GetCephRbdImages: GetCephRbdImagesResults;
+  GetCephRbdSnapshots: GetCephRbdSnapshotsResults;
+  GetCloneMachineAssignmentValidation: GetCloneMachineAssignmentValidationResults;
+  GetCloneMachines: GetCloneMachinesResults;
+  GetCompanyDashboardJson: GetCompanyDashboardJsonResults;
+  GetCompanyDataGraphJson: GetCompanyDataGraphJsonResults;
+  GetCompanyPermissionGroups: GetCompanyPermissionGroupsResults;
+  GetCompanyRegions: GetCompanyRegionsResults;
+  GetCompanyTeams: GetCompanyTeamsResults;
+  GetCompanyUsers: GetCompanyUsersResults;
+  GetCompanyVault: GetCompanyVaultResults;
+  GetCompanyVaults: GetCompanyVaultsResults;
+  GetEntityAuditTrace: GetEntityAuditTraceResults;
+  GetEntityHistory: GetEntityHistoryResults;
+  GetLookupData: GetLookupDataResults;
+  GetMachineAssignmentStatus: GetMachineAssignmentStatusResults;
+  GetPermissionGroupDetails: GetPermissionGroupDetailsResults;
+  GetQueueItemTrace: GetQueueItemTraceResults;
+  GetQueueItemsNext: GetQueueItemsNextResults;
+  GetRegionBridges: GetRegionBridgesResults;
+  GetRequestAuthenticationStatus: GetRequestAuthenticationStatusResults;
+  GetSystemConfiguration: GetSystemConfigurationResults;
+  GetTeamMachines: GetTeamMachinesResults;
+  GetTeamMembers: GetTeamMembersResults;
+  GetTeamQueueItems: GetTeamQueueItemsResults;
+  GetTeamRepositories: GetTeamRepositoriesResults;
+  GetTeamStorages: GetTeamStoragesResults;
+  GetUserCompany: GetUserCompanyResults;
+  GetUserRequests: GetUserRequestsResults;
+  GetUserVault: GetUserVaultResults;
+  ImportCompanyData: ImportCompanyDataResults;
+  IsRegistered: IsRegisteredResults;
+  PrivilegeAuthenticationRequest: PrivilegeAuthenticationRequestResults;
+  PromoteRepositoryToGrand: PromoteRepositoryToGrandResults;
+  ResetBridgeAuthorization: ResetBridgeAuthorizationResults;
+  RetryFailedQueueItem: RetryFailedQueueItemResults;
+  UpdateBridgeName: UpdateBridgeNameResults;
+  UpdateBridgeVault: UpdateBridgeVaultResults;
+  UpdateCephClusterVault: UpdateCephClusterVaultResults;
+  UpdateCephPoolVault: UpdateCephPoolVaultResults;
+  UpdateCloneMachineAssignments: UpdateCloneMachineAssignmentsResults;
+  UpdateCloneMachineRemovals: UpdateCloneMachineRemovalsResults;
+  UpdateCompanyBlockUserRequests: UpdateCompanyBlockUserRequestsResults;
+  UpdateCompanyVault: UpdateCompanyVaultResults;
+  UpdateCompanyVaults: UpdateCompanyVaultsResults;
+  UpdateImageMachineAssignment: UpdateImageMachineAssignmentResults;
+  UpdateMachineAssignedBridge: UpdateMachineAssignedBridgeResults;
+  UpdateMachineCeph: UpdateMachineCephResults;
+  UpdateMachineClusterAssignment: UpdateMachineClusterAssignmentResults;
+  UpdateMachineClusterRemoval: UpdateMachineClusterRemovalResults;
+  UpdateMachineName: UpdateMachineNameResults;
+  UpdateMachineStatus: UpdateMachineStatusResults;
+  UpdateMachineVault: UpdateMachineVaultResults;
+  UpdateQueueItemResponse: UpdateQueueItemResponseResults;
+  UpdateQueueItemToCompleted: UpdateQueueItemToCompletedResults;
+  UpdateRegionName: UpdateRegionNameResults;
+  UpdateRegionVault: UpdateRegionVaultResults;
+  UpdateRepositoryName: UpdateRepositoryNameResults;
+  UpdateRepositoryTag: UpdateRepositoryTagResults;
+  UpdateRepositoryVault: UpdateRepositoryVaultResults;
+  UpdateStorageName: UpdateStorageNameResults;
+  UpdateStorageVault: UpdateStorageVaultResults;
+  UpdateTeamName: UpdateTeamNameResults;
+  UpdateTeamVault: UpdateTeamVaultResults;
+  UpdateUserAssignedPermissions: UpdateUserAssignedPermissionsResults;
+  UpdateUserEmail: UpdateUserEmailResults;
+  UpdateUserLanguage: UpdateUserLanguageResults;
+  UpdateUserPassword: UpdateUserPasswordResults;
+  UpdateUserTFA: UpdateUserTFAResults;
+  UpdateUserToActivated: UpdateUserToActivatedResults;
+  UpdateUserToDeactivated: UpdateUserToDeactivatedResults;
+  UpdateUserVault: UpdateUserVaultResults;
+}
+
+/**
  * Get parameter type for a specific procedure
  */
 export type ParamsFor<T extends StoredProcedureName> = ProcedureParamsMap[T];
+
+/**
+ * Get result tuple type for a specific procedure
+ */
+export type ResultsFor<T extends StoredProcedureName> = ProcedureResultsMap[T];
 
 /**
  * Helper to validate procedure parameters at compile time
@@ -1299,6 +4154,6 @@ export function createProcedureParams<T extends StoredProcedureName>(
 
 export const API_SCHEMA_METADATA = {
   version: '3.0.0',
-  generated: '2025-12-07T10:34:05.6472788Z',
+  generated: '2025-12-07T11:41:23.6725941Z',
   procedureCount: 116,
 } as const;
