@@ -771,7 +771,9 @@ const ArchitecturePage: React.FC = () => {
             <FiltersRow>
               <FilterLabel>
                 <FilterOutlined />
-                <RediaccText weight="bold">{t('architecture.filterEntities', { ns: 'system' })}</RediaccText>
+                <RediaccText weight="bold">
+                  {t('architecture.filterEntities', { ns: 'system' })}
+                </RediaccText>
               </FilterLabel>
               <FilterSelectWrapper>
                 <Select

@@ -1,6 +1,12 @@
 import styled, { keyframes } from 'styled-components';
 import { ActionGroup } from '@/components/common/styled';
-import { RediaccTag, RediaccText, RediaccAlert, RediaccStack, RediaccProgress } from '@/components/ui';
+import {
+  RediaccTag,
+  RediaccText,
+  RediaccAlert,
+  RediaccStack,
+  RediaccProgress,
+} from '@/components/ui';
 import type { TagVariant } from '@/components/ui/Tag';
 import { BaseModal, BaseTable, ModalBody, FlexColumn } from '@/styles/primitives';
 

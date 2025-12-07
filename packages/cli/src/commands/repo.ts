@@ -139,7 +139,8 @@ export function registerRepoCommands(program: Command): void {
 
         // Find the target repo
         const targetRepo = allRepos.find(
-          (r: RepoWithRelations) => r.repoName === name && (r.repoTag === options.tag || !options.tag)
+          (r: RepoWithRelations) =>
+            r.repoName === name && (r.repoTag === options.tag || !options.tag)
         );
 
         if (!targetRepo) {
@@ -157,7 +158,9 @@ export function registerRepoCommands(program: Command): void {
             if (validation.childClones.length > 0) {
               outputService.info('\nAffected child clones:');
               validation.childClones.forEach((clone) => {
-                outputService.info(`  - ${clone.repoName}${clone.repoTag ? `:${clone.repoTag}` : ''}`);
+                outputService.info(
+                  `  - ${clone.repoName}${clone.repoTag ? `:${clone.repoTag}` : ''}`
+                );
               });
               outputService.info('\nDelete or promote child clones first.');
             }
@@ -218,7 +221,8 @@ export function registerRepoCommands(program: Command): void {
 
         // Find the target repo
         const targetRepo = allRepos.find(
-          (r: RepoWithRelations) => r.repoName === name && (r.repoTag === options.tag || !options.tag)
+          (r: RepoWithRelations) =>
+            r.repoName === name && (r.repoTag === options.tag || !options.tag)
         );
 
         if (!targetRepo) {
@@ -238,10 +242,16 @@ export function registerRepoCommands(program: Command): void {
         const { siblingClones, currentGrandName } = findSiblingClones(targetRepo, allRepos);
 
         if (!options.force && siblingClones.length > 0) {
-          outputService.info(`\nThis will separate "${name}" from grand repo "${currentGrandName}"`);
-          outputService.info(`\n${siblingClones.length} sibling clone(s) will remain linked to the original grand:`);
+          outputService.info(
+            `\nThis will separate "${name}" from grand repo "${currentGrandName}"`
+          );
+          outputService.info(
+            `\n${siblingClones.length} sibling clone(s) will remain linked to the original grand:`
+          );
           siblingClones.forEach((sibling) => {
-            outputService.info(`  - ${sibling.repoName}${sibling.repoTag ? `:${sibling.repoTag}` : ''}`);
+            outputService.info(
+              `  - ${sibling.repoName}${sibling.repoTag ? `:${sibling.repoTag}` : ''}`
+            );
           });
 
           const { askConfirm } = await import('../utils/prompt.js');

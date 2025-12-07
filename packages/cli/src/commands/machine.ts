@@ -133,7 +133,9 @@ export function registerMachineCommands(program: Command): void {
           if (parsed.repos.length > 0) {
             outputService.info('\nDeployed Repositories:');
             parsed.repos.forEach((repo) => {
-              outputService.info(`  - ${repo.name}${repo.size_human ? ` (${repo.size_human})` : ''}`);
+              outputService.info(
+                `  - ${repo.name}${repo.size_human ? ` (${repo.size_human})` : ''}`
+              );
               if (repo.mounted !== undefined) {
                 outputService.info(`    Mounted: ${repo.mounted ? 'Yes' : 'No'}`);
               }

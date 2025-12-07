@@ -123,7 +123,9 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                   data-testid={`available-machines-available-tag-${machine.machineName}`}
                 >
                   <StatusIcon as={CheckCircleOutlined} />
-                  <RediaccText variant="caption">{t('machines:assignmentStatus.available')}</RediaccText>
+                  <RediaccText variant="caption">
+                    {t('machines:assignmentStatus.available')}
+                  </RediaccText>
                 </RediaccTag>
               )}
             </StatusContainer>

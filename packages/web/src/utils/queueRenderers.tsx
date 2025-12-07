@@ -5,7 +5,12 @@
 
 import React from 'react';
 import { Tag, Tooltip } from 'antd';
-import { QUEUE_STATUS_CONFIG, PRIORITY_CONFIG, formatAge, type QueueHealthStatus } from '@/platform';
+import {
+  QUEUE_STATUS_CONFIG,
+  PRIORITY_CONFIG,
+  formatAge,
+  type QueueHealthStatus,
+} from '@/platform';
 import {
   ClockCircleOutlined,
   PlayCircleOutlined,

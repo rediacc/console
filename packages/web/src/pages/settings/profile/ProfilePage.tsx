@@ -6,12 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUserVault, useUpdateUserVault, useUpdateUserPassword } from '@/api/queries/users';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
 import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields';
-import {
-  RediaccButton,
-  PageWrapper,
-  SectionStack,
-  SectionHeading,
-} from '@/components/ui';
+import { RediaccButton, PageWrapper, SectionStack, SectionHeading } from '@/components/ui';
 import {
   CardContent,
   CardHeader,
@@ -261,7 +256,9 @@ const ProfilePage: React.FC = () => {
 
           <FormItemActions>
             <ModalActions>
-              <RediaccButton onClick={closeChangePassword}>{tCommon('actions.cancel')}</RediaccButton>
+              <RediaccButton onClick={closeChangePassword}>
+                {tCommon('actions.cancel')}
+              </RediaccButton>
               <RediaccButton htmlType="submit" loading={updateUserPasswordMutation.isPending}>
                 {t('personal.changePassword.submit', { defaultValue: 'Change Password' })}
               </RediaccButton>

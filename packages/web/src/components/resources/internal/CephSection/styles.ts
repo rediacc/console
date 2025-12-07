@@ -1,6 +1,12 @@
 import styled from 'styled-components';
 import { ContentStack, ActionsRow } from '@/components/common/styled';
-import { RediaccButton, RediaccText, RediaccCard, RediaccAlert, RediaccDivider } from '@/components/ui';
+import {
+  RediaccButton,
+  RediaccText,
+  RediaccCard,
+  RediaccAlert,
+  RediaccDivider,
+} from '@/components/ui';
 
 export { ContentStack, ActionsRow };
 

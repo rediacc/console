@@ -192,5 +192,9 @@ export const renderBoolean = (
   if (value === null || value === undefined) {
     return <RediaccText color="secondary">-</RediaccText>;
   }
-  return value ? <RediaccTag variant="success">{yesText}</RediaccTag> : <RediaccTag>{noText}</RediaccTag>;
+  return value ? (
+    <RediaccTag variant="success">{yesText}</RediaccTag>
+  ) : (
+    <RediaccTag>{noText}</RediaccTag>
+  );
 };

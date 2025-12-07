@@ -620,7 +620,8 @@ const QueuePage: React.FC = () => {
       dataIndex: 'createdBy',
       key: 'createdBy',
       width: 150,
-      render: (createdBy: string | undefined) => createdBy || <RediaccText color="secondary">-</RediaccText>,
+      render: (createdBy: string | undefined) =>
+        createdBy || <RediaccText color="secondary">-</RediaccText>,
     },
     {
       title: 'Age',

@@ -1034,8 +1034,7 @@ export type StoredProcedureName =
   | 'UpdateUserTFA'
   | 'UpdateUserToActivated'
   | 'UpdateUserToDeactivated'
-  | 'UpdateUserVault'
-;
+  | 'UpdateUserVault';
 
 /**
  * Map of procedure names to their parameter types

@@ -65,10 +65,7 @@ export class MachineValidationService {
   /**
    * Validate exclusivity rules for machine assignment
    */
-  static validateExclusivityRule(
-    machine: Machine,
-    targetType: CephResourceType
-  ): ValidationResult {
+  static validateExclusivityRule(machine: Machine, targetType: CephResourceType): ValidationResult {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
 
@@ -280,10 +277,7 @@ export class MachineValidationService {
   /**
    * Get all invalid machines from a list
    */
-  static getInvalidMachines(
-    machines: Machine[],
-    targetType: CephResourceType
-  ): InvalidMachine[] {
+  static getInvalidMachines(machines: Machine[], targetType: CephResourceType): InvalidMachine[] {
     const result = this.validateBulkAssignment(machines, targetType);
     return result.invalidMachines;
   }
@@ -343,9 +337,7 @@ export class MachineValidationService {
   /**
    * Normalize resource types to the assignment categories used by validation
    */
-  private static normalizeTargetType(
-    targetType: CephResourceType
-  ): 'cluster' | 'image' | 'clone' {
+  private static normalizeTargetType(targetType: CephResourceType): 'cluster' | 'image' | 'clone' {
     switch (targetType) {
       case 'pool':
         return 'cluster';

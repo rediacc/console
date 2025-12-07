@@ -1619,7 +1619,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {entityType === 'MACHINE' && form.getFieldValue('kernel_compatibility') && (
                 <Col xs={24} lg={12}>
                   <FieldItem
-                    label={<RediaccText weight="bold">{t('vaultEditor.systemCompatibility.title')}</RediaccText>}
+                    label={
+                      <RediaccText weight="bold">
+                        {t('vaultEditor.systemCompatibility.title')}
+                      </RediaccText>
+                    }
                     colon={false}
                   >
                     {(() => {

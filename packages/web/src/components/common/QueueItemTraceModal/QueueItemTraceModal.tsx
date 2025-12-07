@@ -915,7 +915,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                       >
                         <CaptionText>Machine</CaptionText>
                         <div>
-                          <RediaccText weight="bold">{traceData.queueDetails.machineName}</RediaccText>
+                          <RediaccText weight="bold">
+                            {traceData.queueDetails.machineName}
+                          </RediaccText>
                         </div>
                       </KeyInfoCard>
                     </Col>
@@ -1110,7 +1112,11 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                             traceData.queueDetails,
                                             'permanentlyFailed',
                                             'PermanentlyFailed'
-                                          ) && <RediaccTag variant="error">Permanently Failed</RediaccTag>}
+                                          ) && (
+                                            <RediaccTag variant="error">
+                                              Permanently Failed
+                                            </RediaccTag>
+                                          )}
                                         </Space>
                                       </Descriptions.Item>
                                       <Descriptions.Item label="Priority">
@@ -1162,17 +1168,23 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                       <Descriptions.Item label="Machine">
                                         <Space>
                                           <TeamOutlined />
-                                          <RediaccText>{traceData.queueDetails.machineName}</RediaccText>
+                                          <RediaccText>
+                                            {traceData.queueDetails.machineName}
+                                          </RediaccText>
                                         </Space>
                                       </Descriptions.Item>
                                       <Descriptions.Item label="Team">
                                         <RediaccText>{traceData.queueDetails.teamName}</RediaccText>
                                       </Descriptions.Item>
                                       <Descriptions.Item label="Bridge">
-                                        <RediaccText>{traceData.queueDetails.bridgeName}</RediaccText>
+                                        <RediaccText>
+                                          {traceData.queueDetails.bridgeName}
+                                        </RediaccText>
                                       </Descriptions.Item>
                                       <Descriptions.Item label="Region">
-                                        <RediaccText>{traceData.queueDetails.regionName}</RediaccText>
+                                        <RediaccText>
+                                          {traceData.queueDetails.regionName}
+                                        </RediaccText>
                                       </Descriptions.Item>
                                     </Descriptions>
                                   </Card>
@@ -1250,7 +1262,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                           <CodeOutlined />
                                           <RediaccText>Response (Console)</RediaccText>
                                           {traceData.queueDetails?.status === 'PROCESSING' && (
-                                            <RediaccTag icon={<SyncOutlined spin />} variant="primary">
+                                            <RediaccTag
+                                              icon={<SyncOutlined spin />}
+                                              variant="primary"
+                                            >
                                               Live Output
                                             </RediaccTag>
                                           )}
@@ -1486,7 +1501,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                       </RediaccText>
                                       {details && <RediaccText>{details}</RediaccText>}
                                       {actionByUser && (
-                                        <RediaccText color="secondary">By: {actionByUser}</RediaccText>
+                                        <RediaccText color="secondary">
+                                          By: {actionByUser}
+                                        </RediaccText>
                                       )}
                                     </Space>
                                   ),
@@ -1672,7 +1689,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                           </Descriptions.Item>
                                                           <Descriptions.Item label="BTRFS Support">
                                                             {compatibility.btrfs_available ? (
-                                                              <RediaccTag variant="success">Available</RediaccTag>
+                                                              <RediaccTag variant="success">
+                                                                Available
+                                                              </RediaccTag>
                                                             ) : (
                                                               <RediaccTag variant="warning">
                                                                 Not Available

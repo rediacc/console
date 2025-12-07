@@ -1,6 +1,10 @@
 import { Input } from 'antd';
 import { Controller, Control } from 'react-hook-form';
-import { SizeInputGroup, SizeNumberInput, SizeUnitSelect } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/styles';
+import {
+  SizeInputGroup,
+  SizeNumberInput,
+  SizeUnitSelect,
+} from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/styles';
 import type { FormFieldConfig } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/types';
 import { RediaccSelect } from '@/components/ui';
 import type { FieldValues } from 'react-hook-form';

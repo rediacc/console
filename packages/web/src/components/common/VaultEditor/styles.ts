@@ -1,6 +1,12 @@
 import { Form, Row } from 'antd';
 import styled, { css } from 'styled-components';
-import { RediaccButton, RediaccText, RediaccStack, RediaccAlert, RediaccDivider } from '@/components/ui';
+import {
+  RediaccButton,
+  RediaccText,
+  RediaccStack,
+  RediaccAlert,
+  RediaccDivider,
+} from '@/components/ui';
 import {
   RediaccInput,
   RediaccPasswordInput,

@@ -24,8 +24,12 @@ export type {
  * Queue service dependencies (for backward compatibility)
  */
 export interface QueueServiceDependencies {
-  emitNotification?: (notification: import('@rediacc/shared/services/queue').QueueNotification) => void;
-  emitMonitoringEvent?: (event: import('@rediacc/shared/services/queue').QueueMonitoringEvent) => void;
+  emitNotification?: (
+    notification: import('@rediacc/shared/services/queue').QueueNotification
+  ) => void;
+  emitMonitoringEvent?: (
+    event: import('@rediacc/shared/services/queue').QueueMonitoringEvent
+  ) => void;
 }
 
 /**
