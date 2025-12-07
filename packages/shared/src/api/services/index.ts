@@ -1,17 +1,17 @@
-import type { ApiClient } from './types';
+import { createAuditService } from './audit';
 import { createAuthService } from './auth';
-import { createCompanyService } from './company';
-import { createUsersService } from './users';
-import { createPermissionsService } from './permissions';
-import { createTeamsService } from './teams';
-import { createRegionsService } from './regions';
 import { createBridgesService } from './bridges';
+import { createCephService } from './ceph';
+import { createCompanyService } from './company';
 import { createMachinesService } from './machines';
+import { createPermissionsService } from './permissions';
+import { createQueueService } from './queue';
+import { createRegionsService } from './regions';
 import { createReposService } from './repos';
 import { createStorageService } from './storage';
-import { createQueueService } from './queue';
-import { createCephService } from './ceph';
-import { createAuditService } from './audit';
+import { createTeamsService } from './teams';
+import { createUsersService } from './users';
+import type { ApiClient } from './types';
 
 export function createApiServices(client: ApiClient) {
   return {

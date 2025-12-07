@@ -1,7 +1,7 @@
 import { endpoints } from '../../endpoints';
-import type { Repo } from '../../types';
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type { Repo } from '../../types';
 
 export interface CreateRepoOptions {
   repoTag?: string;

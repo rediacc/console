@@ -1,11 +1,11 @@
 import { Command } from 'commander';
-import { authService } from '../services/auth.js';
 import { api } from '../services/api.js';
+import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
-import { withSpinner } from '../utils/spinner.js';
-import { handleError } from '../utils/errors.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
+import { handleError } from '../utils/errors.js';
+import { withSpinner } from '../utils/spinner.js';
 export function registerBridgeCommands(program: Command): void {
   // Create standard CRUD commands using factory
   const bridge = createResourceCommands(program, {

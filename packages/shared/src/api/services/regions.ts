@@ -1,7 +1,7 @@
 import { endpoints } from '../../endpoints';
-import type { Bridge, Region } from '../../types';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type { Bridge, Region } from '../../types';
 
 export function createRegionsService(client: ApiClient) {
   return {

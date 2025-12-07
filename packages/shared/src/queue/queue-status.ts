@@ -1,5 +1,5 @@
-import type { ErrorSeverity } from '../error-parser';
 import { getSeverityLevel } from '../error-parser';
+import type { ErrorSeverity } from '../error-parser';
 import type { QueueHealthStatus, QueueStatus } from '../types';
 
 /**

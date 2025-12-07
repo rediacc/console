@@ -1,7 +1,7 @@
 import { endpoints } from '../../endpoints';
-import type { Storage } from '../../types';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type { Storage } from '../../types';
 
 export function createStorageService(client: ApiClient) {
   return {

@@ -1,7 +1,7 @@
 import { endpoints } from '../../endpoints';
-import type { Team, TeamMember } from '../../types';
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type { Team, TeamMember } from '../../types';
 
 export function createTeamsService(client: ApiClient) {
   return {

@@ -3,7 +3,7 @@
  * Platform-agnostic business logic for machine assignment operations
  */
 
-import type { Machine, MachineAssignmentType } from '../../types';
+import { MachineValidationService } from './validation';
 import type {
   MachineAssignment,
   BulkOperationRequest,
@@ -15,7 +15,7 @@ import type {
   ValidationContext,
   CephResourceType,
 } from './types';
-import { MachineValidationService } from './validation';
+import type { Machine, MachineAssignmentType } from '../../types';
 
 interface AssignmentOperationResult {
   success: boolean;

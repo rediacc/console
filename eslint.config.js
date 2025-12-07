@@ -14,6 +14,7 @@ export default tseslint.config(
       'packages/*/node_modules/',
       'packages/*/bin/',
       'bin/',
+      'cli/dist/',
       'node_modules/',
       '*.config.js',
       '*.config.ts',

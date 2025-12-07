@@ -13,7 +13,7 @@
  * parameter names and types match the middleware's expected schema.
  */
 
-/* eslint-disable @typescript-eslint/no-empty-object-type */
+ 
 
 // ============================================================================
 // Procedure Parameter Interfaces

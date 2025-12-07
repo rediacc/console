@@ -1,10 +1,10 @@
 import { Command } from 'commander';
-import { authService } from '../services/auth.js';
 import { api } from '../services/api.js';
+import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
+import { handleError } from '../utils/errors.js';
 import { askText, askPassword, askConfirm } from '../utils/prompt.js';
 import { withSpinner } from '../utils/spinner.js';
-import { handleError } from '../utils/errors.js';
 import type { OutputFormat } from '../types/index.js';
 export function registerAuthCommands(program: Command): void {
   const auth = program.command('auth').description('Authentication commands');

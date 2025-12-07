@@ -1,7 +1,7 @@
 import { endpoints } from '../../endpoints';
-import type { Machine } from '../../types';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type { Machine } from '../../types';
 
 function normalizeTeamName(teamName?: string | string[]) {
   if (!teamName) return undefined;

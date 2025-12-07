@@ -1,4 +1,6 @@
 import { endpoints } from '../../endpoints';
+import { parseResponse, responseExtractors } from '../parseResponse';
+import type { ApiClient } from './types';
 import type {
   AuditHistoryEntry,
   AuditLogEntry,
@@ -7,8 +9,6 @@ import type {
   AuditTraceSummary,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
-import { parseResponse, responseExtractors } from '../parseResponse';
-import type { ApiClient } from './types';
 
 export interface AuditLogOptions {
   offset?: number;

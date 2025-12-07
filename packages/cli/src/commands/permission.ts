@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import { authService } from '../services/auth.js';
 import { api } from '../services/api.js';
+import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
-import { withSpinner } from '../utils/spinner.js';
 import { handleError } from '../utils/errors.js';
+import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 export function registerPermissionCommands(program: Command): void {
   const permission = program.command('permission').description('Permission management commands');

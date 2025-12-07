@@ -1,7 +1,7 @@
 import { endpoints } from '../../endpoints';
-import type { User, UserVault } from '../../types';
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type { User, UserVault } from '../../types';
 
 export interface CreateUserOptions {
   passwordHash?: string;

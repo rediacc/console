@@ -1,7 +1,7 @@
 import { endpoints } from '../../endpoints';
-import type { Permission, PermissionGroup } from '../../types';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type { Permission, PermissionGroup } from '../../types';
 
 export function createPermissionsService(client: ApiClient) {
   return {

@@ -1,7 +1,7 @@
 import { endpoints } from '../../endpoints';
-import type { Bridge, BridgeAuthorizationToken } from '../../types';
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type { Bridge, BridgeAuthorizationToken } from '../../types';
 
 export function createBridgesService(client: ApiClient) {
   return {

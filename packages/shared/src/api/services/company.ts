@@ -1,4 +1,7 @@
 import { endpoints } from '../../endpoints';
+import { normalizeRecord } from '../normalizer';
+import { fixTripleEncodedFields, parseDoubleEncodedJson } from '../responseTransforms';
+import type { ApiClient } from './types';
 import type {
   CompanyProfile,
   CompanyDashboardData,
@@ -23,9 +26,6 @@ import type {
   QueueMachineIssue,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
-import { normalizeRecord } from '../normalizer';
-import { fixTripleEncodedFields, parseDoubleEncodedJson } from '../responseTransforms';
-import type { ApiClient } from './types';
 
 export function createCompanyService(client: ApiClient) {
   return {

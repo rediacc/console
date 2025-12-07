@@ -1,5 +1,5 @@
-import type { ICryptoProvider } from './types';
 import { hasVaultFields, isVaultField, transformVaultFields } from './vaultTransform';
+import type { ICryptoProvider } from './types';
 
 const BASE64_REGEX = /^[A-Za-z0-9+/]+=*$/;
 

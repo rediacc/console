@@ -1,4 +1,6 @@
 import { endpoints } from '../../endpoints';
+import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
+import type { ApiClient } from './types';
 import type {
   AuthLoginResult,
   AuthRequestStatus,
@@ -8,8 +10,6 @@ import type {
   VerifyTfaResult,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
-import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
-import type { ApiClient } from './types';
 
 export interface ForkSessionOptions {
   permissionsName?: string;

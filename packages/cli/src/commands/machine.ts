@@ -1,22 +1,22 @@
 import { Command } from 'commander';
-import { api } from '../services/api.js';
-import {
-  createResourceCommands,
-  addStatusCommand,
-  addAssignCommand,
-} from '../utils/commandFactory.js';
-import { authService } from '../services/auth.js';
-import { contextService } from '../services/context.js';
-import { outputService } from '../services/output.js';
-import { withSpinner } from '../utils/spinner.js';
-import { handleError } from '../utils/errors.js';
-import type { OutputFormat } from '../types/index.js';
 import {
   parseVaultStatus,
   getDeploymentSummary,
   getMachineRepos,
   type MachineWithVaultStatus,
 } from '@rediacc/shared/services/machine';
+import { api } from '../services/api.js';
+import { authService } from '../services/auth.js';
+import { contextService } from '../services/context.js';
+import { outputService } from '../services/output.js';
+import {
+  createResourceCommands,
+  addStatusCommand,
+  addAssignCommand,
+} from '../utils/commandFactory.js';
+import { handleError } from '../utils/errors.js';
+import { withSpinner } from '../utils/spinner.js';
+import type { OutputFormat } from '../types/index.js';
 
 export function registerMachineCommands(program: Command): void {
   // Create standard CRUD commands using factory

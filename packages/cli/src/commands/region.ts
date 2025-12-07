@@ -1,6 +1,6 @@
 import { Command } from 'commander';
-import { createResourceCommands } from '../utils/commandFactory.js';
 import { api } from '../services/api.js';
+import { createResourceCommands } from '../utils/commandFactory.js';
 
 export function registerRegionCommands(program: Command): void {
   createResourceCommands(program, {

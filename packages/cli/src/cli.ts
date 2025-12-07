@@ -1,18 +1,18 @@
 import { Command } from 'commander';
+import { registerAuditCommands } from './commands/audit.js';
 import { registerAuthCommands } from './commands/auth.js';
-import { registerTeamCommands } from './commands/team.js';
-import { registerMachineCommands } from './commands/machine.js';
-import { registerRepoCommands } from './commands/repo.js';
-import { registerStorageCommands } from './commands/storage.js';
-import { registerQueueCommands } from './commands/queue.js';
-import { registerRegionCommands } from './commands/region.js';
 import { registerBridgeCommands } from './commands/bridge.js';
 import { registerCompanyCommands } from './commands/company.js';
-import { registerUserCommands } from './commands/user.js';
 import { registerContextCommands } from './commands/context.js';
+import { registerMachineCommands } from './commands/machine.js';
 import { registerPermissionCommands } from './commands/permission.js';
-import { registerAuditCommands } from './commands/audit.js';
+import { registerQueueCommands } from './commands/queue.js';
+import { registerRegionCommands } from './commands/region.js';
+import { registerRepoCommands } from './commands/repo.js';
 import { registerShortcuts } from './commands/shortcuts.js';
+import { registerStorageCommands } from './commands/storage.js';
+import { registerTeamCommands } from './commands/team.js';
+import { registerUserCommands } from './commands/user.js';
 import { VERSION } from './version.js';
 
 export const cli = new Command();

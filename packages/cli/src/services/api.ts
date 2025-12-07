@@ -1,5 +1,4 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import type { ApiResponse } from '@rediacc/shared/types';
 import {
   normalizeResponse,
   createApiServices,
@@ -9,8 +8,9 @@ import {
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import { createVaultEncryptor } from '@rediacc/shared/encryption';
 import { endpoints } from '@rediacc/shared/endpoints';
-import { nodeStorageAdapter } from '../adapters/storage.js';
+import type { ApiResponse } from '@rediacc/shared/types';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
+import { nodeStorageAdapter } from '../adapters/storage.js';
 import { EXIT_CODES } from '../types/index.js';
 import type { AuthResponse } from '../types/api-responses.js';
 

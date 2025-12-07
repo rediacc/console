@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import { authService } from '../services/auth.js';
 import { api } from '../services/api.js';
+import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
-import { withSpinner } from '../utils/spinner.js';
 import { handleError } from '../utils/errors.js';
+import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 export function registerCompanyCommands(program: Command): void {
   const company = program.command('company').description('Company management commands');

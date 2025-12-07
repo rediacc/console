@@ -3,7 +3,6 @@
  * Platform-agnostic validation rules for machine assignment operations
  */
 
-import type { Machine } from '../../types';
 import type {
   ValidationResult,
   ValidationError,
@@ -17,6 +16,7 @@ import type {
   CephResource,
   CephResourceType,
 } from './types';
+import type { Machine } from '../../types';
 
 export class MachineValidationService {
   /**

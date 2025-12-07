@@ -1,4 +1,6 @@
 import { endpoints } from '../../endpoints';
+import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
+import type { ApiClient } from './types';
 import type {
   CephAvailableMachine,
   CephCloneMachine,
@@ -11,8 +13,6 @@ import type {
   CephRbdSnapshot,
   Machine,
 } from '../../types';
-import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
-import type { ApiClient } from './types';
 
 function toMachineNamesValue(machineNames: string | string[]): string {
   return Array.isArray(machineNames) ? machineNames.join(',') : machineNames;

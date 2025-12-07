@@ -1,12 +1,4 @@
 import { Command } from 'commander';
-import { authService } from '../services/auth.js';
-import { api } from '../services/api.js';
-import { contextService } from '../services/context.js';
-import { outputService } from '../services/output.js';
-import { withSpinner } from '../utils/spinner.js';
-import { handleError } from '../utils/errors.js';
-import type { CompanyVaultRecord } from '@rediacc/shared/types';
-import type { OutputFormat } from '../types/index.js';
 import {
   canDeleteGrandRepo,
   canPromoteToGrand,
@@ -14,6 +6,14 @@ import {
   isCredential,
   type RepoWithRelations,
 } from '@rediacc/shared/services/repo';
+import type { CompanyVaultRecord } from '@rediacc/shared/types';
+import { api } from '../services/api.js';
+import { authService } from '../services/auth.js';
+import { contextService } from '../services/context.js';
+import { outputService } from '../services/output.js';
+import { handleError } from '../utils/errors.js';
+import { withSpinner } from '../utils/spinner.js';
+import type { OutputFormat } from '../types/index.js';
 
 export function registerRepoCommands(program: Command): void {
   const repo = program.command('repo').description('Repository management commands');

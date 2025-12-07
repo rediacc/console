@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import { authService } from '../services/auth.js';
 import { api } from '../services/api.js';
+import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
-import { withSpinner } from '../utils/spinner.js';
 import { handleError } from '../utils/errors.js';
+import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 export function registerUserCommands(program: Command): void {
   const user = program.command('user').description('User management commands');
