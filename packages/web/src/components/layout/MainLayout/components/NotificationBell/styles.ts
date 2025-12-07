@@ -10,6 +10,13 @@ export const NotificationDropdown = styled.div`
   max-height: 500px;
   min-width: 380px;
   border: 1px solid var(--color-border-secondary);
+  
+  @media (max-width: 768px) {
+    min-width: 0;
+    width: calc(100vw - 32px);
+    max-width: 380px;
+    margin: 0 16px;
+  }
 `;
 
 export const NotificationHeader = styled(FlexBetween)`

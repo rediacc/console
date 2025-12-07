@@ -10,7 +10,6 @@ export const TeamSelect = styled(RediaccSelect)`
 
   && .ant-select-selector {
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
   }
 `;
 
@@ -22,6 +21,7 @@ export const TeamTag = styled(RediaccTag).attrs({
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     display: inline-flex;
     align-items: center;
+    padding: 2px 4px;
   }
 `;
 

@@ -54,6 +54,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
   return (
     <TeamSelect
       mode="multiple"
+      size="sm"
       style={style}
       placeholder={placeholder}
       value={selectedTeams}
