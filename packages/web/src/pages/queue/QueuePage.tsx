@@ -1,8 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { Modal, Tabs, Tooltip, Dropdown, Space } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import dayjs, { Dayjs } from 'dayjs';
-
 // Page-level filter state type
 type QueuePageFilters = {
   teamName: string;
@@ -79,6 +77,7 @@ import {
 import { renderQueueStatus, renderPriority } from '@/utils/queueRenderers';
 import type { ParsedError } from '@rediacc/shared/error-parser';
 import type { QueueItem } from '@rediacc/shared/types';
+import type { ColumnsType } from 'antd/es/table';
 
 const PriorityTooltipHeading = styled(RediaccText)`
   && {

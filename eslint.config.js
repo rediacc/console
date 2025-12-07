@@ -86,7 +86,7 @@ export default tseslint.config(
       // Note: no-relative-parent-imports is not used because @/ aliases resolve to parent
       // directories and the rule cannot distinguish between ../foo and @/foo patterns.
       // All parent imports have been converted to use @/ alias which is the desired pattern.
-      'import/order': ['warn', {
+      'import/order': ['error', {
         groups: [
           'builtin',
           'external',

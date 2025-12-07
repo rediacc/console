@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Badge, Dropdown, List, Empty, Space, Tag } from 'antd';
-import { RootState } from '@/store/store';
+import dayjs from 'dayjs';
+import 'dayjs/locale/es';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { useTranslation } from 'react-i18next';
+import { useSelector, useDispatch } from 'react-redux';
+import { RediaccButton } from '@/components/ui';
 import {
   markAsRead,
   markAllAsRead,
@@ -9,12 +14,7 @@ import {
   NotificationType,
   Notification,
 } from '@/store/notifications/notificationSlice';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import { useTranslation } from 'react-i18next';
-import { useSelector, useDispatch } from 'react-redux';
-import 'dayjs/locale/es';
-import { RediaccButton } from '@/components/ui';
+import { RootState } from '@/store/store';
 import {
   BellOutlined,
   CloseOutlined,

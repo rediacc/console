@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, type JSX } from 'react';
-import { useTheme } from 'styled-components';
 import {
   Form,
   Space,
@@ -12,14 +11,14 @@ import {
   Descriptions,
   Select,
 } from 'antd';
-
+import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 // Type for form validation error entity
 interface ValidateErrorEntity<T = unknown> {
   values: T;
   errorFields: { name: (string | number)[]; errors: string[] }[];
   outOfDate: boolean;
 }
-import { useTranslation } from 'react-i18next';
 import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue';
 import { useTeams } from '@/api/queries/teams';
 import { RediaccSwitch, RediaccTag } from '@/components/ui';

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Tooltip, Dropdown } from 'antd';
 import styled from 'styled-components';
+// eslint-disable-next-line import/order -- False positive: no empty line exists
 import { TableActionButton } from '@/components/common/styled';
-
 // =============================================================================
 // TYPES
 // =============================================================================

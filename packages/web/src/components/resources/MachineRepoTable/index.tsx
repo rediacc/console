@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Button, Tooltip, Input, Space, Alert } from 'antd';
-import type { TableProps } from 'antd';
-import type { MenuProps } from 'antd';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -17,25 +15,23 @@ import {
 } from '@/api/queries/repos';
 import { useStorage } from '@/api/queries/storage';
 import { useTeams } from '@/api/queries/teams';
-import type { ColumnsType } from 'antd/es/table';
-import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
-
-// Type for menu item click event
-type MenuClickEvent = { key: string; domEvent: React.MouseEvent | React.KeyboardEvent };
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
   createActionColumn,
   createStatusColumn,
   createTruncatedColumn,
 } from '@/components/common/columns';
+import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
 import { RediaccAlert, RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { useQueueAction } from '@/hooks/useQueueAction';
-import { createSorter, createCustomSorter, createArrayLengthSorter } from '@/platform';
 import {
+  createSorter,
+  createCustomSorter,
+  createArrayLengthSorter,
   canBackupToStorage,
   isFork as coreIsFork,
   isCredential as coreIsCredential,
@@ -78,6 +74,10 @@ import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import type { Repo as TeamRepo } from '@rediacc/shared/types';
 import * as S from './styles';
+import type { TableProps, MenuProps } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+// Type for menu item click event
+type MenuClickEvent = { key: string; domEvent: React.MouseEvent | React.KeyboardEvent };
 
 const RepoTableComponent = S.StyledTable as React.ComponentType<TableProps<RepoTableRow>>;
 const SystemTableComponent = S.StyledTable as React.ComponentType<TableProps<Container>>;

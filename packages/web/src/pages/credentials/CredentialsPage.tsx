@@ -3,12 +3,6 @@ import { Alert, Button, Modal, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
-
-const InlineList = styled.ul`
-  margin-top: ${({ theme }) => theme.spacing.SM}px;
-  margin-bottom: 0;
-  padding-left: 20px;
-`;
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
 import {
@@ -31,8 +25,8 @@ import ResourceListView, {
 } from '@/components/common/ResourceListView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccText } from '@/components/ui';
 import {
+  RediaccText,
   PageWrapper,
   SectionStack,
   SectionHeading,
@@ -63,6 +57,12 @@ import {
   InboxOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
+
+const InlineList = styled.ul`
+  margin-top: ${({ theme }) => theme.spacing.SM}px;
+  margin-bottom: 0;
+  padding-left: 20px;
+`;
 
 interface CredentialsLocationState {
   createRepo?: boolean;

@@ -16,16 +16,8 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useAuditLogs } from '@/api/queries/audit';
-import { RediaccText } from '@/components/ui';
-import { RediaccButton } from '@/components/ui';
+import { RediaccText, RediaccButton } from '@/components/ui';
 import { useFilters, usePagination } from '@/hooks';
-
-// Audit page filter state type
-type AuditPageFilters = {
-  dateRange: [Dayjs | null, Dayjs | null];
-  entityFilter: string | undefined;
-  searchText: string;
-};
 import {
   findActionConfig,
   getActionTagColor,

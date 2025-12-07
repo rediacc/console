@@ -6,10 +6,17 @@ import axios, {
   AxiosRequestConfig,
   isAxiosError,
 } from 'axios';
+import { apiConnectionService } from '@/services/apiConnectionService';
+import { telemetryService } from '@/services/telemetryService';
+import { tokenService } from '@/services/tokenService';
+import { logout, showSessionExpiredDialog } from '@/store/auth/authSlice';
+import { store } from '@/store/store';
+import { showMessage } from '@/utils/messages';
 import { normalizeResponse, createApiServices } from '@rediacc/shared/api';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import { endpoints } from '@rediacc/shared/endpoints';
 import type { ApiResponse } from '@rediacc/shared/types';
+import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware';
 
 // Extend axios config to include metadata
 declare module 'axios' {
@@ -19,13 +26,6 @@ declare module 'axios' {
     };
   }
 }
-import { store } from '@/store/store';
-import { logout, showSessionExpiredDialog } from '@/store/auth/authSlice';
-import { showMessage } from '@/utils/messages';
-import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware';
-import { tokenService } from '@/services/tokenService';
-import { apiConnectionService } from '@/services/apiConnectionService';
-import { telemetryService } from '@/services/telemetryService';
 
 // API configuration
 const API_PREFIX = endpoints.base.storedProcedure;
