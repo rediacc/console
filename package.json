@@ -18,9 +18,10 @@
     "lint": "eslint .",
     "typecheck": "tsc -b packages/shared packages/cli && npm run typecheck -w @rediacc/web",
     "clean": "npm run clean -w @rediacc/shared && npm run clean -w @rediacc/cli && npm run clean -w @rediacc/web",
+    "fix": "biome format --write packages/ && eslint . --fix",
     "format": "biome format --write packages/",
     "format:check": "biome format packages/",
-    "format:imports": "biome check --write --organize-imports-enabled=true packages/",
+    "format:imports": "biome check --write packages/",
     "lint:unused": "knip",
     "lint:unused:fix": "knip --fix"
   },
