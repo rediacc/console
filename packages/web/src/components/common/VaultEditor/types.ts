@@ -2,7 +2,13 @@ import type { FormInstance } from 'antd';
 import type { Rule } from 'antd/es/form';
 import type { UploadFile } from 'antd/es/upload/interface';
 
-export type VaultFieldValue = string | number | boolean | Record<string, unknown> | unknown[] | null;
+export type VaultFieldValue =
+  | string
+  | number
+  | boolean
+  | Record<string, unknown>
+  | unknown[]
+  | null;
 
 export type VaultFormValues = Record<string, unknown>;
 

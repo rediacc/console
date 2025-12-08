@@ -1,13 +1,7 @@
 import { useCallback } from 'react';
 import { Form, Button } from 'antd';
 import { Controller, FieldValues } from 'react-hook-form';
-import {
-  StyledForm,
-  TextInput,
-  PasswordInput,
-  FieldSelect,
-  FormActions,
-} from './styles';
+import { StyledForm, TextInput, PasswordInput, FieldSelect, FormActions } from './styles';
 import { RediaccStack } from '@/components/ui';
 import { FormFieldConfig, ResourceFormProps } from './types';
 

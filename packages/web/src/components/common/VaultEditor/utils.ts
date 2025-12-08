@@ -100,7 +100,9 @@ export const processExtraFields = (
 /**
  * Helper function to format validation errors
  */
-export const formatValidationErrors = (errorInfo?: ValidateErrorEntity<VaultFormValues>): string[] =>
+export const formatValidationErrors = (
+  errorInfo?: ValidateErrorEntity<VaultFormValues>
+): string[] =>
   errorInfo?.errorFields?.map((field) => `${field.name.join('.')}: ${field.errors.join(', ')}`) ??
   [];
 

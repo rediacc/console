@@ -31,7 +31,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ traceLogs }) => {
               <RediaccText weight="bold">
                 {action.replace('QUEUE_ITEM_', '').replace(/_/g, ' ')}
               </RediaccText>
-              <RediaccText color="secondary">{formatTimestampAsIs(timestamp, 'datetime')}</RediaccText>
+              <RediaccText color="secondary">
+                {formatTimestampAsIs(timestamp, 'datetime')}
+              </RediaccText>
               {details && <RediaccText>{details}</RediaccText>}
               {actionByUser && <RediaccText color="secondary">By: {actionByUser}</RediaccText>}
             </Space>

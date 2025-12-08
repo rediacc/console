@@ -3,12 +3,7 @@ import styled from 'styled-components';
 import { RediaccBadge } from '@/components/ui';
 import { RediaccButton } from '@/components/ui';
 import { TableWrapper, NameCell, ActionsRow } from '@/pages/ceph/styles/tableAliases';
-import {
-  FlexColumn,
-  TableCellText,
-  StyledIcon,
-  IconActionButton,
-} from '@/styles/primitives';
+import { FlexColumn, TableCellText, StyledIcon, IconActionButton } from '@/styles/primitives';
 
 export const Container = styled(FlexColumn).attrs({ $gap: 'MD' })`
   padding: ${({ theme }) =>

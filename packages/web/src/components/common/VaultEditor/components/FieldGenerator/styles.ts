@@ -1,9 +1,5 @@
 import styled from 'styled-components';
-import {
-  RediaccButton,
-  RediaccRadioGroup,
-  RediaccRadioButton,
-} from '@/components/ui';
+import { RediaccButton, RediaccRadioGroup, RediaccRadioButton } from '@/components/ui';
 
 export const PopoverContainer = styled.div`
   width: 400px;
@@ -88,4 +84,3 @@ export const CopyButton = styled(RediaccButton).attrs({
     font-size: ${({ theme }) => theme.fontSize.XS}px;
   }
 `;
-

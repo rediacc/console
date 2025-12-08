@@ -35,7 +35,12 @@ interface RepoActionsMenuProps {
   userEmail: string;
   containersData: Record<string, RepoContainersState>;
   isExecuting: boolean;
-  onQuickAction: (repo: RepoTableRow, functionName: string, priority: number, option?: string) => void;
+  onQuickAction: (
+    repo: RepoTableRow,
+    functionName: string,
+    priority: number,
+    option?: string
+  ) => void;
   onRunFunction: (repo: RepoTableRow, functionName?: string) => void;
   onPromoteToGrand: (repo: RepoTableRow) => void;
   onDeleteFork: (repo: RepoTableRow) => void;
@@ -311,14 +316,12 @@ export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
               repo={row.name}
               teamName={machine.teamName}
               userEmail={userEmail}
-              pluginContainers={(containersData[row.name]?.containers || []).map(
-                (container) => ({
-                  ...container,
-                  name: container.name ?? '',
-                  image: container.image ?? '',
-                  status: container.status ?? container.state ?? '',
-                })
-              )}
+              pluginContainers={(containersData[row.name]?.containers || []).map((container) => ({
+                ...container,
+                name: container.name ?? '',
+                image: container.image ?? '',
+                status: container.status ?? container.state ?? '',
+              }))}
             />
           ),
         },

@@ -11,17 +11,8 @@ import type {
   ValidateErrorEntity,
   FieldDefinition,
 } from '../types';
-import {
-  formatValidationErrors,
-  processExtraFields,
-  decodeBase64,
-  encodeBase64,
-} from '../utils';
-import {
-  vaultDefinitionConfig,
-  storageProviderConfig,
-  STORAGE_FIELDS_TO_KEEP,
-} from '../constants';
+import { formatValidationErrors, processExtraFields, decodeBase64, encodeBase64 } from '../utils';
+import { vaultDefinitionConfig, storageProviderConfig, STORAGE_FIELDS_TO_KEEP } from '../constants';
 
 export const useVaultEditorState = (props: VaultEditorProps) => {
   const {

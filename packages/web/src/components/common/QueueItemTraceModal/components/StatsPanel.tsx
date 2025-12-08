@@ -2,11 +2,7 @@ import React from 'react';
 import { Row, Col, Statistic } from 'antd';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import {
-  ClockCircleOutlined,
-  SyncOutlined,
-  HourglassOutlined,
-} from '@/utils/optimizedIcons';
+import { ClockCircleOutlined, SyncOutlined, HourglassOutlined } from '@/utils/optimizedIcons';
 import type { StatsPanelProps } from '../types';
 
 export const StatsPanel: React.FC<StatsPanelProps> = ({
@@ -23,9 +19,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
         <Statistic
           title={t('queue:statistics.totalDuration')}
           value={
-            totalDurationSeconds < 60
-              ? totalDurationSeconds
-              : Math.floor(totalDurationSeconds / 60)
+            totalDurationSeconds < 60 ? totalDurationSeconds : Math.floor(totalDurationSeconds / 60)
           }
           suffix={totalDurationSeconds < 60 ? 'sec' : 'min'}
           prefix={<ClockCircleOutlined />}

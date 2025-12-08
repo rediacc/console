@@ -35,12 +35,7 @@ import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import type { TableProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import * as S from './styles';
-import type {
-  MachineRepoTableProps,
-  RepoTableRow,
-  Container,
-  Repo,
-} from './types';
+import type { MachineRepoTableProps, RepoTableRow, Container, Repo } from './types';
 import { getAxiosErrorMessage } from './utils';
 import { useRepoColumns, useSystemContainerColumns } from './columns';
 import { RepoActionsMenu } from './components/RepoActionsMenu';
@@ -575,11 +570,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
 
         try {
           const grandRepoVault =
-            getGrandVaultForOperation(
-              context.repoGuid!,
-              context.repoGuid,
-              teamRepos
-            ) || '{}';
+            getGrandVaultForOperation(context.repoGuid!, context.repoGuid, teamRepos) || '{}';
 
           const params: Record<string, unknown> = {
             repo: context.repoGuid,

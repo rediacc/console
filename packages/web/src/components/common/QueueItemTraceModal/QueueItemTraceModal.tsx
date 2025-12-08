@@ -198,7 +198,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   };
 
   const taskStaleness = traceData?.queueDetails ? getTaskStaleness(traceData.queueDetails) : 'none';
-  const simplifiedStatus = traceData?.queueDetails ? getSimplifiedStatus(traceData.queueDetails) : { status: 'unknown', color: 'default' as const, icon: null };
+  const simplifiedStatus = traceData?.queueDetails
+    ? getSimplifiedStatus(traceData.queueDetails)
+    : { status: 'unknown', color: 'default' as const, icon: null };
 
   return (
     <Modal

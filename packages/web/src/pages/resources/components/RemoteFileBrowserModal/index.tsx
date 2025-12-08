@@ -36,13 +36,7 @@ import { createSorter, createCustomSorter } from '@/platform';
 import { waitForQueueItemCompletion } from '@/services/helloService';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
-import {
-  SourceLabel,
-  SourceSelect,
-  SearchInput,
-  FolderIcon,
-  FileIcon,
-} from './styles';
+import { SourceLabel, SourceSelect, SearchInput, FolderIcon, FileIcon } from './styles';
 import { RediaccStack } from '@/components/ui';
 import type { TableProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table/interface';

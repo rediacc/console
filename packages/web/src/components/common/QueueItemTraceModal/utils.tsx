@@ -1,10 +1,6 @@
 import dayjs from 'dayjs';
 import type { QueueTraceLog } from '@rediacc/shared/types';
-import {
-  normalizeToString,
-  normalizeToNumber,
-  formatTimestampAsIs,
-} from '@/platform';
+import { normalizeToString, normalizeToNumber, formatTimestampAsIs } from '@/platform';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,

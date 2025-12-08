@@ -1,15 +1,19 @@
 import React from 'react';
 import { Tabs, Space, Empty, Descriptions, Collapse } from 'antd';
-import { FileTextOutlined, CheckCircleOutlined, WarningOutlined, ExclamationCircleOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons';
+import {
+  FileTextOutlined,
+  CheckCircleOutlined,
+  WarningOutlined,
+  ExclamationCircleOutlined,
+  QuestionCircleOutlined,
+} from '@/utils/optimizedIcons';
 import { RediaccText, RediaccTag, RediaccAlert, RediaccCard, RediaccStack } from '@/components/ui';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
 import { spacing } from '@/utils/styleConstants';
 import { SectionMargin, InfoList } from '../styles';
 import type { ResponseViewerProps } from '../types';
 
-export const ResponseViewer: React.FC<ResponseViewerProps> = ({
-  responseVaultContent,
-}) => {
+export const ResponseViewer: React.FC<ResponseViewerProps> = ({ responseVaultContent }) => {
   const renderRequestVault = (vaultContent: any) => {
     if (!vaultContent || !vaultContent.hasContent) {
       return <Empty description="No request vault content" />;
@@ -71,7 +75,8 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({
               },
             };
 
-            const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown;
+            const config =
+              statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown;
 
             return (
               <RediaccStack variant="column" fullWidth>
@@ -86,9 +91,7 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({
                     <Descriptions.Item label="Status">
                       <RediaccTag variant="success">{result.status}</RediaccTag>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Machine">
-                      {result.machine || 'N/A'}
-                    </Descriptions.Item>
+                    <Descriptions.Item label="Machine">{result.machine || 'N/A'}</Descriptions.Item>
                     <Descriptions.Item label="IP Address">{result.ip}</Descriptions.Item>
                     <Descriptions.Item label="User">{result.user}</Descriptions.Item>
                     <Descriptions.Item label="Auth Method">
@@ -179,16 +182,17 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({
                             </InfoList>
                           </SectionMargin>
                         )}
-                      {compatibility.recommendations && compatibility.recommendations.length > 0 && (
-                        <SectionMargin>
-                          <RediaccText weight="bold">Recommendations:</RediaccText>
-                          <InfoList $top={spacing('XS')}>
-                            {compatibility.recommendations.map((rec: string, index: number) => (
-                              <li key={index}>{rec}</li>
-                            ))}
-                          </InfoList>
-                        </SectionMargin>
-                      )}
+                      {compatibility.recommendations &&
+                        compatibility.recommendations.length > 0 && (
+                          <SectionMargin>
+                            <RediaccText weight="bold">Recommendations:</RediaccText>
+                            <InfoList $top={spacing('XS')}>
+                              {compatibility.recommendations.map((rec: string, index: number) => (
+                                <li key={index}>{rec}</li>
+                              ))}
+                            </InfoList>
+                          </SectionMargin>
+                        )}
                     </>
                   }
                   showIcon

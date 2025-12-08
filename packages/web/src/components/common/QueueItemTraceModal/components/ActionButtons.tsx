@@ -1,10 +1,6 @@
 import React from 'react';
 import { Button } from 'antd';
-import {
-  CloseCircleOutlined,
-  RetweetOutlined,
-  ReloadOutlined,
-} from '@/utils/optimizedIcons';
+import { CloseCircleOutlined, RetweetOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import { normalizeToString, normalizeToNumber, normalizeToBoolean } from '@/platform';
 import { ActionButton } from '../styles';
 import type { ActionButtonsProps } from '../types';
@@ -22,7 +18,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   styles,
 }) => {
   const status = queueDetails ? normalizeToString(queueDetails, 'status', 'Status') : '';
-  const retryCount = queueDetails ? normalizeToNumber(queueDetails, 0, 'retryCount', 'RetryCount') : 0;
+  const retryCount = queueDetails
+    ? normalizeToNumber(queueDetails, 0, 'retryCount', 'RetryCount')
+    : 0;
   const permanentlyFailed = queueDetails
     ? normalizeToBoolean(queueDetails, 'permanentlyFailed', 'PermanentlyFailed')
     : false;
