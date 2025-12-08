@@ -1,6 +1,6 @@
 import styled from 'styled-components';
-import { RediaccInput, RediaccSelect } from '@/components/ui/Form';
 import { RediaccButton } from '@/components/ui';
+import { RediaccInput, RediaccSelect } from '@/components/ui/Form';
 import { FlexColumn } from '@/styles/primitives';
 
 export const Container = styled(FlexColumn).attrs({

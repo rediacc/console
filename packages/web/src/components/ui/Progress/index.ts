@@ -1,12 +1,12 @@
 export { RediaccProgress } from './RediaccProgress';
-export type {
-  RediaccProgressProps,
-  ProgressVariant,
-  ProgressSize,
-  ProgressStatus,
-} from './RediaccProgress.types';
 export {
-  resolveProgressHeight,
   resolveCircleWidth,
   resolveProgressColor,
+  resolveProgressHeight,
 } from './RediaccProgress.styles';
+export type {
+  ProgressSize,
+  ProgressStatus,
+  ProgressVariant,
+  RediaccProgressProps,
+} from './RediaccProgress.types';

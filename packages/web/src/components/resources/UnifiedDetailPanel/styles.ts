@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { RediaccButton } from '@/components/ui/Button';
+import { RediaccButton } from '@/components/ui';
 import type { StyledTheme } from '@/styles/styledTheme';
 
 type ResourceType = 'machine' | 'repo' | 'container';

@@ -1,10 +1,10 @@
 import { Command } from 'commander';
+import type { CompanyVaultRecord } from '@rediacc/shared/types';
+import { handleError } from './errors.js';
+import { withSpinner } from './spinner.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
-import { withSpinner } from './spinner.js';
-import { handleError } from './errors.js';
-import type { CompanyVaultRecord } from '@rediacc/shared/types';
 import type { OutputFormat } from '../types/index.js';
 
 /**

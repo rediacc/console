@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import { authService } from '../services/auth.js';
 import { api } from '../services/api.js';
+import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
-import { withSpinner } from '../utils/spinner.js';
 import { handleError } from '../utils/errors.js';
+import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 export function registerUserCommands(program: Command): void {
   const user = program.command('user').description('User management commands');
@@ -102,7 +102,7 @@ export function registerUserCommands(program: Command): void {
 
         await withSpinner(
           `Deactivating user "${email}"...`,
-          () => api.users.deactivate(email),
+          () => api.users.deactivate({ userEmail: email }),
           'User deactivated'
         );
       } catch (error) {
@@ -202,7 +202,8 @@ export function registerUserCommands(program: Command): void {
 
         await withSpinner(
           'Updating user vault...',
-          () => api.users.updateVault(vaultData, options.vaultVersion),
+          () =>
+            api.users.updateVault({ vaultContent: vaultData, vaultVersion: options.vaultVersion }),
           'User vault updated'
         );
       } catch (error) {
@@ -223,7 +224,7 @@ export function registerUserCommands(program: Command): void {
 
         await withSpinner(
           `Assigning "${groupName}" to user "${userEmail}"...`,
-          () => api.users.assignPermissions(userEmail, groupName),
+          () => api.users.assignPermissions({ userEmail, permissionGroupName: groupName }),
           'Permission assigned'
         );
       } catch (error) {

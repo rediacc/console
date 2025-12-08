@@ -1,2 +1,2 @@
-export { RediaccSelect, RediaccOption } from './RediaccSelect';
-export type { RediaccSelectProps, RediaccSelectOption, SelectSize } from './RediaccSelect.types';
+export { RediaccOption, RediaccSelect } from './RediaccSelect';
+export type { RediaccSelectOption, RediaccSelectProps, SelectSize } from './RediaccSelect.types';

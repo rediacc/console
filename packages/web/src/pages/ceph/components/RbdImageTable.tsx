@@ -1,47 +1,48 @@
-import { useState } from 'react';
 import type { Key } from 'react';
-import { Table, Button, Space, Tag, Tooltip, message } from 'antd';
-import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
+import { useState } from 'react';
 import {
+  CameraOutlined,
+  CheckCircleOutlined,
+  CloudDownloadOutlined,
+  CloudServerOutlined,
+  CloudUploadOutlined,
+  CopyOutlined,
+  DeleteOutlined,
+  DesktopOutlined,
+  EllipsisOutlined,
+  ExpandOutlined,
+  FileImageOutlined,
+  InfoCircleOutlined,
   PlusOutlined,
   SettingOutlined,
-  DeleteOutlined,
-  EllipsisOutlined,
-  FileImageOutlined,
-  CameraOutlined,
-  CopyOutlined,
-  ExpandOutlined,
-  CloudUploadOutlined,
-  CloudDownloadOutlined,
-  InfoCircleOutlined,
-  CheckCircleOutlined,
-  DesktopOutlined,
   SyncOutlined,
-  CloudServerOutlined,
 } from '@ant-design/icons';
+import { Button, message, Space, Table, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { MenuProps } from 'antd';
-import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles';
 import {
-  useCephRbdImages,
-  useAvailableMachinesForClone,
-  type CephRbdImage,
   type CephPool,
+  type CephRbdImage,
+  useAvailableMachinesForClone,
+  useCephRbdImages,
 } from '@/api/queries/ceph';
 import {
-  useDeleteCephRbdImage,
   useCreateCephRbdImage,
+  useDeleteCephRbdImage,
   useUpdateCephPoolVault,
 } from '@/api/queries/cephMutations';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
+import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMachineReassignmentModal';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { useDialogState, useExpandableTable, useQueueTraceModal } from '@/hooks';
+import { useComponentStyles, useTableStyles } from '@/hooks/useComponentStyles';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { useDialogState, useQueueTraceModal, useExpandableTable } from '@/hooks';
-import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
+import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMachineReassignmentModal';
+import { createSorter } from '@/platform';
+import type { ImageFormValues as FullImageFormValues } from '@rediacc/shared/types';
 import SnapshotTable from './SnapshotTable';
-import { createSorter } from '@/core';
+import type { MenuProps } from 'antd';
 
 interface RbdImageTableProps {
   pool: CephPool;
@@ -54,11 +55,10 @@ interface RbdImageModalState {
   data?: CephRbdImage & { vaultContent?: string | null; vaultVersion?: number };
 }
 
-interface ImageFormValues extends Record<string, unknown> {
-  imageName: string;
-  machineName: string;
+// Form-specific subset of shared ImageFormValues (pool/team context provided separately)
+type ImageFormValues = Pick<FullImageFormValues, 'imageName' | 'machineName'> & {
   vaultContent: string;
-}
+};
 
 const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   const { t } = useTranslation('ceph');
@@ -71,7 +71,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   const managedQueueMutation = useManagedQueueItem();
   const { buildQueueVault } = useQueueVaultBuilder();
 
-  const { data: images = [], isLoading } = useCephRbdImages(pool.poolGuid);
+  const { data: images = [], isLoading } = useCephRbdImages(pool.poolGuid ?? undefined);
   const deleteImageMutation = useDeleteCephRbdImage();
   const createImageMutation = useCreateCephRbdImage();
   const updateImageVaultMutation = useUpdateCephPoolVault();
@@ -130,7 +130,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
 
       const response = await managedQueueMutation.mutateAsync({
         teamName: pool.teamName,
-        machineName: pool.clusterName, // Using cluster as machine for distributed storage
+        machineName: pool.clusterName, // Using cluster as machine for Ceph
         bridgeName: 'default',
         queueVault,
         priority: 3,
@@ -394,16 +394,17 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
         mode={modalState.mode}
         existingData={{
           ...modalState.data,
+          machineName: modalState.data?.machineName ?? undefined,
           teamName: pool.teamName,
           poolName: pool.poolName,
           pools: [pool],
           availableMachines: availableMachines.map((machine) => ({
-            machineName: machine.machineName,
+            machineName: machine.machineName ?? '',
             bridgeName: machine.bridgeName ?? '',
             regionName: machine.regionName ?? '',
             status: machine.status,
           })),
-          vaultContent: modalState.data?.vaultContent,
+          vaultContent: modalState.data?.vaultContent ?? undefined,
         }}
         teamFilter={pool.teamName}
         onSubmit={async (data) => {

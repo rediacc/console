@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import React, { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
-import { selectUser, selectCompany } from '@/store/auth/authSelectors';
-import { telemetryService, createTelemetryConfig } from '@/services/telemetryService';
+import { createTelemetryConfig, telemetryService } from '@/services/telemetryService';
+import { selectCompany, selectUser } from '@/store/auth/authSelectors';
 import { TelemetryProviderShell } from './styles';
 
 type TelemetryAttributes = Record<string, string | number | boolean>;

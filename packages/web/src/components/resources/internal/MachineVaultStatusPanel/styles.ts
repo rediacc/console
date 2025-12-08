@@ -1,30 +1,27 @@
-import styled from 'styled-components';
 import { Typography } from 'antd';
-import { CloudServerOutlined } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { RediaccTag } from '@/components/ui/Tag';
-import type { TagPreset, TagVariant } from '@/components/ui/Tag';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccCard, RediaccBadge, RediaccEmpty, RediaccList } from '@/components/ui';
+import styled from 'styled-components';
 import {
-  PanelWrapper,
+  CollapseButton,
+  ContentWrapper,
+  FieldLabel,
+  FieldRow,
+  FieldValue,
+  FieldValueMonospace,
+  FieldValueStrong,
   Header,
   HeaderRow,
-  TitleGroup,
   PanelTitle,
-  CollapseButton,
-  TagGroup,
-  ContentWrapper,
-  FieldRow,
-  FieldLabel,
-  FieldValue,
-  FieldValueStrong,
-  FieldValueMonospace,
+  PanelWrapper,
   SectionDivider,
   SectionHeader,
   SectionTitle,
-  SubduedText,
-} from '../sharedDetailPanelAliases';
+  TagGroup,
+  TitleGroup,
+} from '@/components/resources/internal/sharedDetailPanelAliases';
+import { RediaccBadge, RediaccCard, RediaccList, RediaccTag } from '@/components/ui';
+import type { TagPreset, TagVariant } from '@/components/ui/Tag';
+import { CloudServerOutlined } from '@/utils/optimizedIcons';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const { Title } = Typography;
 
@@ -74,20 +71,7 @@ export const TimestampWrapper = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const Timestamp = styled(RediaccText).attrs({
-  size: 'xs',
-  color: 'secondary',
-})`
-  && {
-    font-size: ${DESIGN_TOKENS.FONT_SIZE.CAPTION}px;
-  }
-`;
-
-export const EmptyState = styled(RediaccEmpty)`
-  margin-top: ${({ theme }) => theme.spacing.XXXL}px;
-`;
-
-export { SectionDivider, SectionHeader, SectionTitle, SubduedText };
+export { SectionDivider, SectionHeader, SectionTitle };
 
 export const SectionBlock = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.XL}px;
@@ -98,13 +82,6 @@ export const InfoCard = styled(RediaccCard)`
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     margin-bottom: ${({ theme }) => theme.spacing.LG}px;
   }
-`;
-
-export const FullWidthStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  width: 100%;
 `;
 
 export const MetricCard = styled(RediaccCard)`

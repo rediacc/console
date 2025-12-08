@@ -51,6 +51,8 @@ export const RediaccTag = forwardRef<HTMLSpanElement, RediaccTagProps>(
       size = 'md',
       preset,
       borderless = false,
+      compact = false,
+      emphasized = false,
       icon,
       closable = false,
       onClose,
@@ -68,6 +70,8 @@ export const RediaccTag = forwardRef<HTMLSpanElement, RediaccTagProps>(
         $variant={resolvedVariant}
         $size={size}
         $borderless={borderless}
+        $compact={compact}
+        $emphasized={emphasized}
         closable={closable}
         onClose={onClose}
         icon={icon}

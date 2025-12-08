@@ -1,6 +1,6 @@
-import type { Middleware, UnknownAction } from '@reduxjs/toolkit';
-import type { RootState } from '@/store/store';
 import { telemetryService } from '@/services/telemetryService';
+import type { RootState } from '@/store/store';
+import type { Middleware, UnknownAction } from '@reduxjs/toolkit';
 
 // Actions to track for business intelligence
 const TRACKED_ACTIONS = [
@@ -16,7 +16,7 @@ const TRACKED_ACTIONS = [
   // Notification actions
   'notifications/addNotification',
 
-  // Machine assignment actions (distributed storage)
+  // Machine assignment actions (Ceph)
   'machineAssignment/assignMachine',
   'machineAssignment/validateSelectedMachines',
   'machineAssignment/clearAssignments',

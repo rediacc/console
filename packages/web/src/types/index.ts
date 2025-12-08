@@ -44,9 +44,34 @@ declare global {
 }
 
 export type {
-  MachineAssignmentType,
+  GetTeamMachines_ResultSet1 as Machine,
+  GetTeamRepositories_ResultSet1 as Repo,
   MachineAssignmentStatus,
-  Machine,
-  Repo,
+  MachineAssignmentType,
   PluginContainer,
 } from '@rediacc/shared/types';
+
+// Modal types
+export type {
+  BaseModalProps,
+  FormModalProps,
+  SelectionModalProps,
+  ConfirmationModalProps,
+  DetailModalProps,
+  ModalSize as ModalSizeEnum,
+  ModalSizeValue,
+  ModalConfig,
+  ModalSizeRecommendation,
+} from './modal';
+export { ModalSize, MODAL_SIZE_RECOMMENDATIONS, getModalClassName } from './modal';
+
+// Hook types
+export type {
+  UseModalReturn,
+  UseDialogReturn,
+  UseFormReturn,
+  UsePaginationReturn,
+  UseFiltersReturn,
+  UseSelectionReturn,
+  UseAsyncReturn,
+} from './hooks';

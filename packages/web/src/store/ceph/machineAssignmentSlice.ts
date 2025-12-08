@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { ValidationResult, BulkOperationProgress, BulkOperationResult } from '@/features/ceph';
+import type { BulkOperationProgress, BulkOperationResult, ValidationResult } from '@/features/ceph';
 import type { MachineAssignmentType } from '@/types';
 
 // Types
@@ -261,8 +261,14 @@ const machineAssignmentSlice = createSlice({
       if (value === undefined || value === '') {
         delete state.activeFilters[key];
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        state.activeFilters[key] = value as any;
+        // Type assertion is safe here because the value type matches the key's expected type
+        if (key === 'assignmentType') {
+          state.activeFilters.assignmentType = value as MachineAssignmentType;
+        } else if (key === 'teamName') {
+          state.activeFilters.teamName = value as string;
+        } else if (key === 'searchQuery') {
+          state.activeFilters.searchQuery = value as string;
+        }
       }
     },
 

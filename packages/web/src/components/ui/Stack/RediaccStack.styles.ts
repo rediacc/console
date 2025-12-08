@@ -1,6 +1,33 @@
 import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { StackDirection, StackGap, StackAlign, StackJustify } from './RediaccStack.types';
+import type {
+  StackAlign,
+  StackDirection,
+  StackGap,
+  StackJustify,
+  StackVariant,
+} from './RediaccStack.types';
+
+// Resolve variant to direction, gap, and wrap
+type VariantDefaults = { direction: StackDirection; gap: StackGap; wrap?: boolean };
+
+export const resolveStackVariantDefaults = (variant: StackVariant = 'default'): VariantDefaults => {
+  switch (variant) {
+    case 'row':
+      return { direction: 'horizontal', gap: 'md' };
+    case 'column':
+      return { direction: 'vertical', gap: 'md' };
+    case 'tight-row':
+      return { direction: 'horizontal', gap: 'xs' };
+    case 'spaced-column':
+      return { direction: 'vertical', gap: 'lg' };
+    case 'wrap-grid':
+      return { direction: 'horizontal', gap: 'sm', wrap: true };
+    case 'default':
+    default:
+      return { direction: 'horizontal', gap: 'md' };
+  }
+};
 
 // Resolve gap to pixels
 export const resolveStackGap = (theme: StyledTheme, gap: StackGap | number = 'md'): number => {

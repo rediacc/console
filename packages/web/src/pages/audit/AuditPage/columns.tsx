@@ -1,19 +1,20 @@
 import { Space, Tag } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { TFunction } from 'i18next';
-import { AuditLog } from '@/api/queries/audit';
-import { createDateSorter } from '@/core';
+import { GetAuditLogs_ResultSet1 } from '@/api/queries/audit';
 import {
   createDateColumn,
   createStatusColumn,
   createTruncatedColumn,
   type StatusConfig,
 } from '@/components/common/columns';
-import { FilterHintIcon, ColumnFilterIcon, DescriptionText } from './styles';
+import { RediaccText } from '@/components/ui';
+import { createDateSorter } from '@/platform';
+import { ColumnFilterIcon, FilterHintIcon } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 interface ColumnBuilderParams {
   t: TFunction<'system' | 'common'>;
-  auditLogs?: AuditLog[];
+  auditLogs?: GetAuditLogs_ResultSet1[];
   getActionIcon: (action: string) => React.ReactNode;
   getActionColor: (action: string) => string;
 }
@@ -23,7 +24,7 @@ export const buildAuditColumns = ({
   auditLogs,
   getActionIcon,
   getActionColor,
-}: ColumnBuilderParams): ColumnsType<AuditLog> => {
+}: ColumnBuilderParams): ColumnsType<GetAuditLogs_ResultSet1> => {
   const actionStatusMap = (auditLogs || []).reduce<Record<string, StatusConfig>>((acc, log) => {
     if (!acc[log.action]) {
       acc[log.action] = {
@@ -35,16 +36,16 @@ export const buildAuditColumns = ({
     return acc;
   }, {});
 
-  const timestampColumn = createDateColumn<AuditLog>({
+  const timestampColumn = createDateColumn<GetAuditLogs_ResultSet1>({
     title: t('system:audit.columns.timestamp'),
     dataIndex: 'timestamp',
     key: 'timestamp',
     width: 180,
-    sorter: createDateSorter<AuditLog>('timestamp'),
+    sorter: createDateSorter<GetAuditLogs_ResultSet1>('timestamp'),
     defaultSortOrder: 'descend',
   });
 
-  const actionColumn = createStatusColumn<AuditLog>({
+  const actionColumn = createStatusColumn<GetAuditLogs_ResultSet1>({
     title: (
       <Space>
         {t('system:audit.columns.action')}
@@ -66,7 +67,7 @@ export const buildAuditColumns = ({
   actionColumn.onFilter = (value, record) => record.action === value;
   actionColumn.filterIcon = (filtered: boolean) => <ColumnFilterIcon $active={filtered} />;
 
-  const entityNameColumn = createTruncatedColumn<AuditLog>({
+  const entityNameColumn = createTruncatedColumn<GetAuditLogs_ResultSet1>({
     title: (
       <Space>
         {t('system:audit.columns.entityName')}
@@ -79,7 +80,11 @@ export const buildAuditColumns = ({
     maxLength: 24,
   });
   entityNameColumn.filters =
-    [...new Set(auditLogs?.map((log) => log.entityName) || [])].map((name) => ({
+    [
+      ...new Set(
+        auditLogs?.map((log) => log.entityName).filter((name): name is string => name != null) || []
+      ),
+    ].map((name) => ({
       text: name,
       value: name,
     })) || [];
@@ -87,18 +92,23 @@ export const buildAuditColumns = ({
   entityNameColumn.filterIcon = (filtered: boolean) => <ColumnFilterIcon $active={filtered} />;
 
   const userColumnFilters =
-    [...new Set(auditLogs?.map((log) => log.actionByUser) || [])].map((user) => ({
+    [
+      ...new Set(
+        auditLogs?.map((log) => log.actionByUser).filter((user): user is string => user != null) ||
+          []
+      ),
+    ].map((user) => ({
       text: user,
       value: user,
     })) || [];
 
-  const detailsColumn = createTruncatedColumn<AuditLog>({
+  const detailsColumn = createTruncatedColumn<GetAuditLogs_ResultSet1>({
     title: t('system:audit.columns.details'),
     dataIndex: 'details',
     key: 'details',
     maxLength: 48,
     renderText: (value) => value || '',
-    renderWrapper: (content) => <DescriptionText>{content}</DescriptionText>,
+    renderWrapper: (content) => <RediaccText variant="caption">{content}</RediaccText>,
   });
 
   return [

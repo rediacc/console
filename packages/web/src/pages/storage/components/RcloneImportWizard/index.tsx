@@ -1,34 +1,30 @@
 import React, { useState } from 'react';
-import { Steps, Upload, Button, Table, Space, Typography, Tag, Tooltip } from 'antd';
-import { RediaccCheckbox as Checkbox } from '@/components/ui/Form';
+import { Button, Space, Steps, Table, Tag, Tooltip, Typography, Upload } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useCreateStorage, useStorage } from '@/api/queries/storage';
+import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccAlert, RediaccCheckbox } from '@/components/ui';
+import { createSorter } from '@/platform';
 import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CloseCircleOutlined,
   CloudOutlined,
   InfoCircleOutlined,
   UploadOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useCreateStorage } from '@/api/queries/storage';
-import { useStorage } from '@/api/queries/storage';
-import type { UploadFile } from 'antd/es/upload';
-import type { ColumnsType } from 'antd/es/table';
-import type { TFunction } from 'i18next';
-import { createSorter } from '@/core';
-import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import {
-  WizardModal,
-  UploadStepWrapper,
-  InstructionsAlert,
-  StandardAlert,
-  ErrorAlert,
-  StepsContainer,
   LoadingState,
   StatusMessage,
+  StepsContainer,
+  UploadStepWrapper,
+  WizardModal,
 } from './styles';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
+import type { ColumnsType } from 'antd/es/table';
+import type { UploadFile } from 'antd/es/upload';
+import type { TFunction } from 'i18next';
 
 const { Text, Paragraph } = Typography;
 
@@ -76,7 +72,8 @@ const UploadStep: React.FC<UploadStepProps> = ({
   onFileListChange,
 }) => (
   <UploadStepWrapper>
-    <InstructionsAlert
+    <RediaccAlert
+      spacing="spacious"
       message={t('resources:storage.import.instructions')}
       description={
         <div>
@@ -107,7 +104,9 @@ const UploadStep: React.FC<UploadStepProps> = ({
       <p className="ant-upload-hint">{t('resources:storage.import.supportedFormats')}</p>
     </Upload.Dragger>
 
-    {parsingError && <ErrorAlert message={parsingError} variant="error" showIcon />}
+    {parsingError && (
+      <RediaccAlert message={parsingError} variant="error" showIcon style={{ marginTop: '16px' }} />
+    )}
   </UploadStepWrapper>
 );
 
@@ -119,7 +118,8 @@ interface SelectionStepProps {
 
 const SelectionStep: React.FC<SelectionStepProps> = ({ t, importStatuses, columns }) => (
   <div>
-    <StandardAlert
+    <RediaccAlert
+      spacing="default"
       message={t('resources:storage.import.selectStorages')}
       description={t('resources:storage.import.selectDescription')}
       variant="info"
@@ -159,7 +159,8 @@ const ResultStep: React.FC<ResultStepProps> = ({ t, importStatuses, columns, isI
       </LoadingState>
     ) : (
       <>
-        <StandardAlert
+        <RediaccAlert
+          spacing="default"
           message={t('resources:storage.import.complete')}
           description={t('resources:storage.import.completeDescription')}
           variant="success"
@@ -482,7 +483,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   const columns: ColumnsType<ImportStatus> = [
     {
       title: (
-        <Checkbox
+        <RediaccCheckbox
           checked={importStatuses.every((s) => s.selected)}
           indeterminate={
             importStatuses.some((s) => s.selected) && !importStatuses.every((s) => s.selected)
@@ -496,7 +497,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       key: 'selected',
       width: 50,
       render: (_: unknown, record: ImportStatus, index: number) => (
-        <Checkbox
+        <RediaccCheckbox
           checked={record.selected}
           onChange={() => toggleSelection(index)}
           disabled={currentStep === 2}

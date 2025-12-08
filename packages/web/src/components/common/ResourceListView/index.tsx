@@ -1,24 +1,23 @@
 import type { Key, ReactNode } from 'react';
-import { Table, Empty, type TableProps, Tooltip } from 'antd';
-import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import { Empty, Table, type TableProps, Tooltip } from 'antd';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccButton, RediaccText } from '@/components/ui';
+import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@/utils/optimizedIcons';
 import {
-  ContainerCard,
-  HeaderSection,
-  HeaderRow,
-  ControlGroup,
-  FiltersSlot,
   ActionsGroup,
-  SearchInput,
-  EmptyDescriptionStack,
-  EmptyTitle,
-  EmptySubtitle,
+  ContainerCard,
+  ControlGroup,
   EmptyActions,
+  EmptyDescriptionStack,
+  FiltersSlot,
+  HeaderRow,
+  HeaderSection,
   RefreshButton,
+  SearchInput,
   TableWrapper,
 } from './styles';
-import { RediaccButton } from '@/components/ui';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-export { COLUMN_WIDTHS, COLUMN_RESPONSIVE } from './columnConstants';
+
+export { COLUMN_RESPONSIVE, COLUMN_WIDTHS } from './columnConstants';
 
 interface ResourceListViewProps<T extends object = Record<string, unknown>> {
   title?: ReactNode;
@@ -118,12 +117,12 @@ function ResourceListView<T extends object = Record<string, unknown>>({
           <Empty
             description={
               <EmptyDescriptionStack>
-                <EmptyTitle>{resolvedEmptyDescription}</EmptyTitle>
-                <EmptySubtitle>
+                <RediaccText variant="title">{resolvedEmptyDescription}</RediaccText>
+                <RediaccText variant="description">
                   {onCreateNew
                     ? `Get started by creating your first ${singularResourceType}`
                     : `No ${resourceType} found. Try adjusting your search criteria.`}
-                </EmptySubtitle>
+                </RediaccText>
                 {(onCreateNew || onRefresh) && (
                   <EmptyActions>
                     {onCreateNew && (

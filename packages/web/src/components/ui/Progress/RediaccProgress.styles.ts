@@ -1,7 +1,7 @@
-import styled from 'styled-components';
 import { Progress as AntProgress } from 'antd';
+import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { ProgressVariant, ProgressSize, ProgressStatus } from './RediaccProgress.types';
+import type { ProgressSize, ProgressStatus, ProgressVariant } from './RediaccProgress.types';
 
 export const resolveProgressHeight = (size: ProgressSize = 'md'): number => {
   switch (size) {

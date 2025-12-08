@@ -1,5 +1,5 @@
-import { apiConnectionService } from './apiConnectionService';
 import { CONFIG_URLS } from '@/utils/apiConstants';
+import { apiConnectionService } from './apiConnectionService';
 
 interface AppConfig {
   apiUrl: string;

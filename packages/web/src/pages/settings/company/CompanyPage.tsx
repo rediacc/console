@@ -1,87 +1,84 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  Tooltip,
-  Row,
   Col,
-  Space,
-  Popconfirm,
+  Form,
   Modal,
-  Upload,
+  Popconfirm,
   Radio,
   Result,
+  Row,
+  Space,
+  Tooltip,
   Typography,
-  Form,
+  Upload,
 } from 'antd';
-import {
-  BankOutlined,
-  SettingOutlined,
-  LockOutlined,
-  UnlockOutlined,
-  DownloadOutlined,
-  ExportOutlined,
-  ImportOutlined,
-  WarningOutlined,
-  KeyOutlined,
-  UploadOutlined,
-} from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import VaultEditorModal from '@/components/common/VaultEditorModal';
-import { ModalSize } from '@/types/modal';
-import { RootState } from '@/store/store';
-import { logout } from '@/store/auth/authSlice';
-import { featureFlags } from '@/config/featureFlags';
-import { masterPasswordService } from '@/services/masterPasswordService';
-import { encryptString, decryptString } from '@/utils/encryption';
-import { showMessage } from '@/utils/messages';
-import { useDialogState } from '@/hooks/useDialogState';
-import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields';
-import { RediaccButton as Button } from '@/components/ui';
 import {
   useCompanyVault,
-  useUpdateCompanyVault,
-  useUpdateCompanyBlockUserRequests,
   useCompanyVaults,
-  useUpdateCompanyVaults,
   useExportCompanyData,
   useImportCompanyData,
+  useUpdateCompanyBlockUserRequests,
+  useUpdateCompanyVault,
+  useUpdateCompanyVaults,
 } from '@/api/queries/company';
+import VaultEditorModal from '@/components/common/VaultEditorModal';
+import { PasswordConfirmField, PasswordField } from '@/components/forms/FormFields';
 import {
-  PageWrapper as CompanyPageWrapper,
-  SectionStack as CompanySectionStack,
-  SectionHeading as CompanySectionHeading,
+  BulletedList,
+  CardActions,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardActions,
+  CenteredBlock,
+  PageWrapper as CompanyPageWrapper,
+  SectionHeading as CompanySectionHeading,
+  SectionStack as CompanySectionStack,
+  DangerDivider,
+  DangerHeading,
+  DangerSection,
+  DangerStack,
   IconWrapper,
+  ModalActions,
   ModalStack,
   ModalStackLarge,
-  ModalActions,
-  DangerSection,
-  DangerHeading,
-  DangerStack,
-  RightAlign,
-  DangerDivider,
-  BulletedList,
-  WarningNote,
-  DangerText,
   OrderedList,
-  RequirementsList,
-  CaptionText,
-  CenteredBlock,
+  RediaccButton,
   RediaccText,
+  RequirementsList,
+  RightAlign,
 } from '@/components/ui';
+import { featureFlags } from '@/config/featureFlags';
+import { useDialogState } from '@/hooks/useDialogState';
 import {
-  SettingsCard,
   DangerCard,
-  ModalAlert,
-  FormItemSpaced,
-  FormItemNoMargin,
   FormItemActionsLg,
+  FormItemNoMargin,
+  FormItemSpaced,
+  ModalAlert,
+  SettingsCard,
 } from '@/pages/system/styles';
+import { masterPasswordService } from '@/services/masterPasswordService';
+import { logout } from '@/store/auth/authSlice';
+import { RootState } from '@/store/store';
+import { ModalSize } from '@/types/modal';
+import { decryptString, encryptString } from '@/utils/encryption';
+import { showMessage } from '@/utils/messages';
+import {
+  BankOutlined,
+  DownloadOutlined,
+  ExportOutlined,
+  ImportOutlined,
+  KeyOutlined,
+  LockOutlined,
+  SettingOutlined,
+  UnlockOutlined,
+  UploadOutlined,
+  WarningOutlined,
+} from '@/utils/optimizedIcons';
 
 const CompanyPage: React.FC = () => {
   const { t } = useTranslation('settings');
@@ -358,7 +355,7 @@ const CompanyPage: React.FC = () => {
             {featureFlags.isEnabled('companyVaultConfiguration') && (
               <CardActions>
                 <Tooltip title={t('company.configureVault')}>
-                  <Button
+                  <RediaccButton
                     icon={<SettingOutlined />}
                     onClick={() => companyVaultModal.open()}
                     size="md"
@@ -421,7 +418,7 @@ const CompanyPage: React.FC = () => {
                         okButtonProps={{ danger: true }}
                       >
                         <Tooltip title={tSystem('dangerZone.blockUserRequests.blockButton')}>
-                          <Button
+                          <RediaccButton
                             variant="danger"
                             icon={<LockOutlined />}
                             loading={blockUserRequestsMutation.isPending}
@@ -439,7 +436,7 @@ const CompanyPage: React.FC = () => {
                         cancelText={tCommon('general.cancel')}
                       >
                         <Tooltip title={tSystem('dangerZone.blockUserRequests.unblockButton')}>
-                          <Button
+                          <RediaccButton
                             icon={<UnlockOutlined />}
                             loading={blockUserRequestsMutation.isPending}
                             aria-label={tSystem('dangerZone.blockUserRequests.unblockButton')}
@@ -464,7 +461,7 @@ const CompanyPage: React.FC = () => {
                   <Col xs={24} lg={8}>
                     <RightAlign>
                       <Tooltip title={tSystem('dangerZone.exportVaults.button')}>
-                        <Button
+                        <RediaccButton
                           icon={<DownloadOutlined />}
                           onClick={handleExportVaults}
                           loading={exportVaultsQuery.isFetching}
@@ -490,7 +487,7 @@ const CompanyPage: React.FC = () => {
                   <Col xs={24} lg={8}>
                     <RightAlign>
                       <Tooltip title={tSystem('dangerZone.exportData.button')}>
-                        <Button
+                        <RediaccButton
                           icon={<ExportOutlined />}
                           onClick={handleExportCompanyData}
                           loading={exportCompanyDataQuery.isFetching}
@@ -516,7 +513,7 @@ const CompanyPage: React.FC = () => {
                   <Col xs={24} lg={8}>
                     <RightAlign>
                       <Tooltip title={tSystem('dangerZone.importData.button')}>
-                        <Button
+                        <RediaccButton
                           variant="danger"
                           icon={<ImportOutlined />}
                           onClick={() => importModal.open()}
@@ -544,15 +541,15 @@ const CompanyPage: React.FC = () => {
                         <li>{tSystem('dangerZone.updateMasterPassword.effect2')}</li>
                         <li>{tSystem('dangerZone.updateMasterPassword.effect3')}</li>
                       </RequirementsList>
-                      <WarningNote color="secondary" weight="bold">
+                      <RediaccText color="secondary" weight="bold">
                         {tSystem('dangerZone.updateMasterPassword.warning')}
-                      </WarningNote>
+                      </RediaccText>
                     </Space>
                   </Col>
                   <Col xs={24} lg={8}>
                     <RightAlign>
                       <Tooltip title={tSystem('dangerZone.updateMasterPassword.button')}>
-                        <Button
+                        <RediaccButton
                           variant="danger"
                           icon={<KeyOutlined />}
                           onClick={handleOpenMasterPasswordModal}
@@ -652,13 +649,13 @@ const CompanyPage: React.FC = () => {
                 <RediaccText weight="bold">
                   {tSystem('dangerZone.updateMasterPassword.modal.warningPermanent')}
                 </RediaccText>
-                <DangerText weight="bold">
+                <RediaccText color="danger" weight="bold">
                   {tSystem(
                     masterPasswordOperation === 'remove'
                       ? 'dangerZone.updateMasterPassword.modal.warningSecureRemove'
                       : 'dangerZone.updateMasterPassword.modal.warningSecure'
                   )}
-                </DangerText>
+                </RediaccText>
               </Space>
             }
             variant="warning"
@@ -717,7 +714,7 @@ const CompanyPage: React.FC = () => {
 
           <FormItemNoMargin>
             <ModalActions>
-              <Button
+              <RediaccButton
                 onClick={() => {
                   masterPasswordModal.close();
                   masterPasswordForm.resetFields();
@@ -726,8 +723,8 @@ const CompanyPage: React.FC = () => {
                 data-testid="system-master-password-cancel-button"
               >
                 {tSystem('dangerZone.updateMasterPassword.modal.cancel')}
-              </Button>
-              <Button
+              </RediaccButton>
+              <RediaccButton
                 variant="danger"
                 htmlType="submit"
                 loading={updateVaultsMutation.isPending}
@@ -740,7 +737,7 @@ const CompanyPage: React.FC = () => {
                     masterPasswordOperation.slice(1)
                   }`
                 )}
-              </Button>
+              </RediaccButton>
             </ModalActions>
           </FormItemNoMargin>
         </Form>
@@ -798,7 +795,7 @@ const CompanyPage: React.FC = () => {
                 </RediaccText>
               </CenteredBlock>
 
-              <Button
+              <RediaccButton
                 size="md"
                 fullWidth
                 onClick={() => {
@@ -807,7 +804,7 @@ const CompanyPage: React.FC = () => {
                 }}
               >
                 {tSystem('dangerZone.updateMasterPassword.success.loginNow')}
-              </Button>
+              </RediaccButton>
             </ModalStackLarge>
           }
         />
@@ -843,31 +840,33 @@ const CompanyPage: React.FC = () => {
               maxCount={1}
               accept=".json"
             >
-              <Button icon={<UploadOutlined />}>
+              <RediaccButton icon={<UploadOutlined />}>
                 {importFile ? importFile.name : tSystem('dangerZone.importData.modal.selectFile')}
-              </Button>
+              </RediaccButton>
             </Upload>
           </Form.Item>
 
           <Form.Item label={tSystem('dangerZone.importData.modal.importMode')}>
             <Radio.Group value={importMode} onChange={(e) => setImportMode(e.target.value)}>
-              <Space direction="vertical">
+              <Space orientation="vertical">
                 <Radio value="skip">
-                  <Space direction="vertical" size={4}>
+                  <Space orientation="vertical" size={4}>
                     <RediaccText weight="bold">
                       {tSystem('dangerZone.importData.modal.modeSkip')}
                     </RediaccText>
-                    <CaptionText>{tSystem('dangerZone.importData.modal.modeSkipDesc')}</CaptionText>
+                    <RediaccText variant="caption" color="secondary">
+                      {tSystem('dangerZone.importData.modal.modeSkipDesc')}
+                    </RediaccText>
                   </Space>
                 </Radio>
                 <Radio value="override">
-                  <Space direction="vertical" size={4}>
+                  <Space orientation="vertical" size={4}>
                     <RediaccText weight="bold">
                       {tSystem('dangerZone.importData.modal.modeOverride')}
                     </RediaccText>
-                    <CaptionText>
+                    <RediaccText variant="caption" color="secondary">
                       {tSystem('dangerZone.importData.modal.modeOverrideDesc')}
-                    </CaptionText>
+                    </RediaccText>
                   </Space>
                 </Radio>
               </Space>
@@ -876,7 +875,7 @@ const CompanyPage: React.FC = () => {
 
           <FormItemActionsLg>
             <ModalActions>
-              <Button
+              <RediaccButton
                 onClick={() => {
                   importModal.close();
                   setImportFile(null);
@@ -885,14 +884,14 @@ const CompanyPage: React.FC = () => {
                 }}
               >
                 {tSystem('dangerZone.importData.modal.cancel')}
-              </Button>
-              <Button
+              </RediaccButton>
+              <RediaccButton
                 htmlType="submit"
                 loading={importCompanyDataMutation.isPending}
                 disabled={!importFile}
               >
                 {tSystem('dangerZone.importData.modal.import')}
-              </Button>
+              </RediaccButton>
             </ModalActions>
           </FormItemActionsLg>
         </Form>

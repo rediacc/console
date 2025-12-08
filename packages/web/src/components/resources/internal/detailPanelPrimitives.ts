@@ -1,8 +1,6 @@
-import styled from 'styled-components';
 import { Typography } from 'antd';
-import { RediaccButton } from '@/components/ui/Button';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccCard, RediaccDivider } from '@/components/ui';
+import styled from 'styled-components';
+import { RediaccButton, RediaccCard, RediaccDivider, RediaccText } from '@/components/ui';
 
 const { Title } = Typography;
 
@@ -51,33 +49,6 @@ const InlineField = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.MD}px;
   width: 100%;
-`;
-
-const LabelText = styled(RediaccText).attrs({ size: 'xs', color: 'secondary' })`
-  && {
-    margin: 0;
-    letter-spacing: ${({ theme }) => theme.letterSpacing.NORMAL};
-  }
-`;
-
-const ValueText = styled(RediaccText).attrs({ size: 'sm' })`
-  && {
-    margin: 0;
-    word-break: break-word;
-  }
-`;
-
-const StrongValueText = styled(ValueText)`
-  && {
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  }
-`;
-
-const MonospaceValueText = styled(ValueText)`
-  && {
-    font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    letter-spacing: ${({ theme }) => theme.letterSpacing.TIGHT};
-  }
 `;
 
 export const DetailPanelSurface = styled(BasePanelWrapper)`
@@ -166,34 +137,42 @@ export const DetailPanelFieldRow = styled(InlineField)`
   width: 100%;
 `;
 
-export const DetailPanelFieldLabel = styled(LabelText)<{ $minWidth?: number }>`
-  min-width: ${({ $minWidth = 160 }) => `${$minWidth}px`};
-  flex-shrink: 0;
-`;
-
-export const DetailPanelFieldValue = styled(ValueText)`
-  word-break: break-word;
-`;
-
-export const DetailPanelFieldStrongValue = styled(StrongValueText)`
-  word-break: break-word;
-`;
-
-export const DetailPanelFieldMonospaceValue = styled(MonospaceValueText)`
-  word-break: break-word;
-`;
-
-export const DetailPanelDivider = styled(RediaccDivider)`
+export const DetailPanelFieldLabel = styled(RediaccText).attrs({ variant: 'label' })<{
+  $minWidth?: number;
+}>`
   && {
-    margin: ${({ theme }) => `${theme.spacing.LG}px 0`};
+    min-width: ${({ $minWidth = 160 }) => `${$minWidth}px`};
+    flex-shrink: 0;
+    margin: 0;
+    letter-spacing: ${({ theme }) => theme.letterSpacing.NORMAL};
   }
 `;
 
-export const DetailPanelSecondaryTextBlock = styled(RediaccText).attrs({
-  size: 'xs',
-  color: 'muted',
+export const DetailPanelFieldValue = styled(RediaccText).attrs({ variant: 'value' })`
+  && {
+    margin: 0;
+    word-break: break-word;
+  }
+`;
+
+export const DetailPanelFieldStrongValue = styled(RediaccText).attrs({
+  variant: 'value',
+  weight: 'semibold',
 })`
   && {
     margin: 0;
+    word-break: break-word;
   }
 `;
+
+export const DetailPanelFieldMonospaceValue = styled(RediaccText).attrs({
+  variant: 'value',
+  code: true,
+})`
+  && {
+    margin: 0;
+    word-break: break-word;
+  }
+`;
+
+export const DetailPanelDivider = styled(RediaccDivider).attrs({ spacing: 'lg' })``;

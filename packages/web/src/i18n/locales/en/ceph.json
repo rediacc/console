@@ -101,11 +101,11 @@
     "machineUtilization": "Machine Utilization",
     "subtitle": "{{total}} total machines across all teams",
     "teamBreakdown": "Team Machine Distribution",
-    "title": "Distributed Storage Machines",
+    "title": "Ceph Machines",
     "totalClusters": "Total Clusters",
     "utilizationDetails": "{{used}} of {{total}} machines in use"
   },
-  "description": "Manage distributed storage clusters, pools, images, and snapshots",
+  "description": "Manage Ceph clusters, pools, images, and snapshots",
   "images": {
     "assignedMachine": "Assigned Machine",
     "name": "Image Name",
@@ -140,8 +140,8 @@
   },
   "machineSection": {
     "manageAssignment": "Manage Assignment",
-    "notAssigned": "Not assigned to any distributed storage resource",
-    "title": "Distributed Storage",
+    "notAssigned": "Not assigned to any Ceph resource",
+    "title": "Ceph",
     "viewDetails": "View Details"
   },
   "machines": {
@@ -239,7 +239,7 @@
     "machines": "Machines",
     "pools": "Pools"
   },
-  "title": "Distributed Storage",
+  "title": "Ceph",
   "warnings": {
     "dataLoss": "Warning: Removing machines may result in data loss if not properly migrated.",
     "exclusivity": "Machines can only be assigned to one resource at a time (cluster, image, or clone).",
@@ -247,11 +247,11 @@
     "exclusivityCluster": "This machine is currently assigned to a cluster. It must be removed from the cluster before it can be assigned elsewhere.",
     "exclusivityImage": "This machine is currently assigned to an image. The image must be reassigned before this machine can be used elsewhere.",
     "reassignment": "Reassigning resources requires careful planning to avoid service disruption.",
-    "machineExclusivity": "Machines can only belong to one distributed storage resource at a time."
+    "machineExclusivity": "Machines can only belong to one Ceph resource at a time."
   },
   "accessDenied": {
-    "title": "Distributed storage unavailable",
-    "description": "Your current plan does not include distributed storage. Upgrade to Business or Enterprise or contact support to enable it."
+    "title": "Ceph unavailable",
+    "description": "Your current plan does not include Ceph. Upgrade to Business or Enterprise or contact support to enable it."
   },
   "functions": {
     "cluster_dashboard": "Open Cluster Dashboard",

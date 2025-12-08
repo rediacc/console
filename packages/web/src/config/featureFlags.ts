@@ -165,7 +165,7 @@ class FeatureFlags {
     assignToCluster: {
       requiresLocalhost: true, // Hide in production builds
       requiresExpertMode: true,
-      description: 'Assign machines to distributed storage clusters',
+      description: 'Assign machines to Ceph clusters',
     },
 
     // Architecture - Expert mode feature

@@ -1,38 +1,28 @@
-import { endpoints } from '../../endpoints';
+import { parseResponse, responseExtractors } from '../parseResponse';
+import type { ApiClient } from './types';
 import type {
-  QueueItem,
+  CancelQueueItemParams,
+  CreateQueueItemParams,
+  DeleteQueueItemParams,
+  GetQueueItemTraceParams,
+  GetTeamQueueItems_ResultSet1,
+  GetTeamQueueItems_ResultSet2,
+  GetTeamQueueItemsParams,
   QueueListResult,
-  QueueStatistics,
+  QueueMachineStats,
+  QueuePlanInfo,
+  QueuePositionEntry,
   QueueTrace,
   QueueTraceLog,
   QueueTraceSummary,
   QueueVaultSnapshot,
-  QueuePositionEntry,
-  QueueMachineStats,
-  QueuePlanInfo,
+  RetryFailedQueueItemParams,
+  UpdateQueueItemResponseParams,
+  UpdateQueueItemToCompletedParams,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
-import type { ApiClient } from './types';
-import { parseResponse, responseExtractors } from '../parseResponse';
 
-export interface QueueFilters {
-  machineName?: string;
-  bridgeName?: string;
-  regionName?: string;
-  status?: string;
-  priority?: number;
-  minPriority?: number;
-  maxPriority?: number;
-  dateFrom?: string;
-  dateTo?: string;
-  taskId?: string;
-  includeCompleted?: boolean;
-  includeCancelled?: boolean;
-  onlyStale?: boolean;
-  staleThresholdMinutes?: number;
-  maxRecords?: number;
-  createdByUserEmail?: string;
-}
+export type QueueFilters = Partial<Omit<GetTeamQueueItemsParams, 'teamName'>>;
 
 export interface QueueCreateResult {
   taskId: string | null;
@@ -57,104 +47,78 @@ export function createQueueService(client: ApiClient) {
       teamName?: string | string[],
       filters: QueueFilters = {}
     ): Promise<QueueListResult> => {
-      const response = await client.get<QueueItem | QueueStatistics>(
-        endpoints.queue.getTeamQueueItems,
-        buildQueueListParams(teamName, filters)
-      );
+      const response = await client.get<
+        GetTeamQueueItems_ResultSet1 | GetTeamQueueItems_ResultSet2
+      >('/GetTeamQueueItems', buildQueueListParams(teamName, filters));
       return parseQueueList(response);
     },
 
-    getNext: async (machineName: string, itemCount = 5): Promise<QueueItem[]> => {
-      const response = await client.get<QueueItem>(endpoints.queue.getQueueItemsNext, {
+    getNext: async (
+      machineName: string,
+      itemCount = 5
+    ): Promise<GetTeamQueueItems_ResultSet1[]> => {
+      const response = await client.get<GetTeamQueueItems_ResultSet1>('/GetQueueItemsNext', {
         machineName,
         itemCount,
       });
       return parseQueueItems(response);
     },
 
-    create: async (
-      teamName: string,
-      machineName: string | undefined,
-      bridgeName: string,
-      vaultContent: string,
-      priority = 3
-    ): Promise<QueueCreateResult> => {
-      const response = await client.post(endpoints.queue.createQueueItem, {
-        teamName,
-        machineName,
-        bridgeName,
-        vaultContent,
-        priority,
-      });
+    create: async (params: CreateQueueItemParams): Promise<QueueCreateResult> => {
+      const response = await client.post('/CreateQueueItem', params);
       return parseQueueCreateResult(response);
     },
 
-    updateResponse: async (
-      taskId: string,
-      vaultContent: string,
-      vaultVersion?: number
-    ): Promise<void> => {
-      const payload: Record<string, unknown> = { taskId, vaultContent };
-      if (vaultVersion !== undefined) {
-        payload.vaultVersion = vaultVersion;
-      }
-      await client.post(endpoints.queue.updateQueueItemResponse, payload);
+    updateResponse: async (params: UpdateQueueItemResponseParams): Promise<void> => {
+      await client.post('/UpdateQueueItemResponse', params);
     },
 
-    complete: async (taskId: string, vaultContent: string, finalStatus: string): Promise<void> => {
-      await client.post(endpoints.queue.updateQueueItemToCompleted, {
-        taskId,
-        vaultContent,
-        finalStatus,
-      });
+    complete: async (params: UpdateQueueItemToCompletedParams): Promise<void> => {
+      await client.post('/UpdateQueueItemToCompleted', params);
     },
 
-    cancel: async (taskId: string): Promise<void> => {
-      await client.post(endpoints.queue.cancelQueueItem, { taskId });
+    cancel: async (params: CancelQueueItemParams): Promise<void> => {
+      await client.post('/CancelQueueItem', params);
     },
 
-    delete: async (taskId: string): Promise<void> => {
-      await client.post(endpoints.queue.deleteQueueItem, { taskId });
+    delete: async (params: DeleteQueueItemParams): Promise<void> => {
+      await client.post('/DeleteQueueItem', params);
     },
 
-    retry: async (taskId: string): Promise<void> => {
-      await client.post(endpoints.queue.retryFailedQueueItem, { taskId });
+    retry: async (params: RetryFailedQueueItemParams): Promise<void> => {
+      await client.post('/RetryFailedQueueItem', params);
     },
 
-    updatePriority: async (taskId: string, priority: number): Promise<void> => {
-      await client.post(endpoints.queue.updateQueueItemPriority, { taskId, priority });
-    },
-
-    updateProtection: async (taskId: string, isProtected: boolean): Promise<void> => {
-      await client.post(endpoints.queue.updateQueueItemProtection, { taskId, isProtected });
-    },
-
-    getTrace: async (taskId: string): Promise<QueueTrace> => {
-      const response = await client.get(endpoints.queue.getQueueItemTrace, { taskId });
+    getTrace: async (params: GetQueueItemTraceParams): Promise<QueueTrace> => {
+      const response = await client.get('/GetQueueItemTrace', params);
       return parseQueueTrace(response);
     },
   };
 }
 
-function parseQueueItems(response: ApiResponse<QueueItem>): QueueItem[] {
+function parseQueueItems(
+  response: ApiResponse<GetTeamQueueItems_ResultSet1>
+): GetTeamQueueItems_ResultSet1[] {
   return parseResponse(response, {
     extractor: responseExtractors.primaryOrSecondary,
     filter: (item) => Boolean(item?.taskId),
   });
 }
 
-function parseQueueList(response: ApiResponse<QueueItem | QueueStatistics>): QueueListResult {
-  let items: QueueItem[] = [];
-  let statistics: QueueStatistics | null = null;
+function parseQueueList(
+  response: ApiResponse<GetTeamQueueItems_ResultSet1 | GetTeamQueueItems_ResultSet2>
+): QueueListResult {
+  let items: GetTeamQueueItems_ResultSet1[] = [];
+  let statistics: GetTeamQueueItems_ResultSet2 | null = null;
 
   response.resultSets?.forEach((set) => {
     const first = set.data?.[0];
     if (!first) return;
 
     if ('taskId' in first) {
-      items = set.data as QueueItem[];
+      items = set.data as GetTeamQueueItems_ResultSet1[];
     } else if ('totalCount' in first || 'pendingCount' in first) {
-      statistics = first as QueueStatistics;
+      statistics = first as GetTeamQueueItems_ResultSet2;
     }
   });
 
@@ -166,7 +130,7 @@ function parseQueueTrace(response: ApiResponse): QueueTrace {
   // 0: NextRequestToken, 1: QUEUE_ITEM_DETAILS, 2: REQUEST_VAULT, 3: RESPONSE_VAULT,
   // 4: AUDIT_USER (traceLogs), 5: RELATED_QUEUE_ITEMS, 6: QUEUE_COUNT
   const summary = getRowByIndex<QueueTraceSummary>(response, 0);
-  const queueDetails = getRowByIndex<QueueItem>(response, 1);
+  const queueDetails = getRowByIndex<GetTeamQueueItems_ResultSet1>(response, 1);
   const vaultContent = parseVaultSnapshot(getRowByIndex<QueueVaultSnapshot>(response, 2));
   const responseVaultContent = parseVaultSnapshot(getRowByIndex<QueueVaultSnapshot>(response, 3));
   const traceLogs = getRowsByIndex<QueueTraceLog>(response, 4);

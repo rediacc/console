@@ -1,13 +1,13 @@
 import { Command } from 'commander';
+import {
+  type CreateActionOptions,
+  cancelAction,
+  createAction,
+  retryAction,
+  traceAction,
+} from './queue.js';
 import { outputService } from '../services/output.js';
 import { handleError } from '../utils/errors.js';
-import {
-  createAction,
-  traceAction,
-  cancelAction,
-  retryAction,
-  type CreateActionOptions,
-} from './queue.js';
 
 export function registerShortcuts(program: Command): void {
   // run - shortcut for queue create with optional watch

@@ -1,10 +1,10 @@
 import styled from 'styled-components';
+import { borderedCard } from '@/styles/mixins';
 
 export const EditorContainer = styled.div<{ $height: number | string }>`
   position: relative;
   height: ${({ $height }) => (typeof $height === 'number' ? `${$height}px` : $height)};
-  border: 1px solid ${({ theme }) => theme.colors.borderPrimary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+  ${borderedCard('borderPrimary')}
   overflow: hidden;
   background-color: ${({ theme }) => theme.colors.bgPrimary};
   box-shadow: ${({ theme }) => theme.shadows.SM};

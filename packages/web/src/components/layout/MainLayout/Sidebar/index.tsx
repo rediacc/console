@@ -1,21 +1,21 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { MenuItem } from '../helpers';
-import { SIDEBAR_COLLAPSED_WIDTH } from '../types';
+import { useLocation, useNavigate } from 'react-router-dom';
+import type { MenuItem } from '@/components/layout/MainLayout/helpers';
+import { SIDEBAR_COLLAPSED_WIDTH } from '@/components/layout/MainLayout/types';
 import {
-  StyledSider,
-  SidebarContent,
-  MenuScrollArea,
-  MenuItem as StyledMenuItem,
   MenuIcon,
   MenuLabel,
+  MenuScrollArea,
+  SidebarContent,
+  MenuItem as StyledMenuItem,
+  StyledSider,
+  SubMenuContainer,
+  SubMenuItem,
   TooltipContent,
   TooltipItem,
   TooltipLabel,
-  SubMenuContainer,
-  SubMenuItem,
 } from './styles';
 
 type SidebarProps = {

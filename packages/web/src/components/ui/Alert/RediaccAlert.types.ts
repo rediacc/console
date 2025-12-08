@@ -1,13 +1,20 @@
-import type { ReactNode, CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type AlertVariant = 'info' | 'warning' | 'error' | 'success' | 'neutral';
 export type AlertSize = 'sm' | 'md';
+
+/**
+ * Alert spacing variants for margin-bottom control
+ */
+export type AlertSpacing = 'none' | 'compact' | 'default' | 'spacious';
 
 export interface RediaccAlertProps {
   /** Alert type/color variant */
   variant?: AlertVariant;
   /** Padding size: sm, md */
   size?: AlertSize;
+  /** Margin-bottom spacing: none (0), compact (sm), default (md), spacious (lg) */
+  spacing?: AlertSpacing;
   /** Show icon beside message */
   showIcon?: boolean;
   /** Show close button */

@@ -1,11 +1,7 @@
-import styled from 'styled-components';
 import { Statistic } from 'antd';
-import { RediaccInput } from '@/components/ui/Form/Input';
-import { RediaccButton } from '@/components/ui/Button';
-import { RediaccTag } from '@/components/ui/Tag';
-import { RediaccText } from '@/components/ui/Text';
+import styled from 'styled-components';
+import { CardTitle, RediaccButton, RediaccCard, RediaccInput, RediaccTag } from '@/components/ui';
 import { FlexColumn } from '@/styles/primitives';
-import { CardTitle, RediaccCard } from '@/components/ui';
 
 export const TabContainer = styled(FlexColumn).attrs({
   $gap: 'LG',
@@ -58,6 +54,7 @@ export const RefreshButton = styled(RediaccButton)`
 export const SearchInput = styled(RediaccInput)`
   && {
     width: min(320px, 100%);
+    max-width: 100%;
   }
 `;
 
@@ -73,13 +70,4 @@ export const SessionTag = styled(RediaccTag).attrs({
 export const CellText = styled.span<{ $muted?: boolean }>`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
   color: ${({ $muted, theme }) => ($muted ? theme.colors.textTertiary : theme.colors.textPrimary)};
-`;
-
-export const SummaryText = styled(RediaccText).attrs({
-  size: 'xs',
-  color: 'secondary',
-})`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-  }
 `;

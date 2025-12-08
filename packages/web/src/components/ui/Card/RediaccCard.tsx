@@ -11,6 +11,8 @@ export const RediaccCard = forwardRef<HTMLDivElement, RediaccCardProps>(
       interactive = false,
       hoverable = false,
       fullWidth = false,
+      fullHeight = false,
+      spacing,
       noPadding = false,
       title,
       extra,
@@ -32,6 +34,8 @@ export const RediaccCard = forwardRef<HTMLDivElement, RediaccCardProps>(
         $selected={selected}
         $interactive={isInteractive}
         $fullWidth={fullWidth}
+        $fullHeight={fullHeight}
+        $spacing={spacing}
         $noPadding={noPadding}
         title={title}
         extra={extra}

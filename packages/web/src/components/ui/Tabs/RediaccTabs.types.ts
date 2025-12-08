@@ -1,4 +1,4 @@
-import type { ReactNode, CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type TabsVariant = 'default' | 'card' | 'pills';
 export type TabsSize = 'sm' | 'md';

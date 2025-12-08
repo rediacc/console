@@ -1,2 +1,25 @@
-export * from './machine-assignment.model';
-export * from './machine-validation.model';
+// Re-export types from shared
+export type {
+  AssignmentConflict,
+  AssignmentResult,
+  BulkOperationRequest,
+  BulkValidationResult,
+  CapacityValidation,
+  CephResource,
+  CephResourceType,
+  ConflictResolution,
+  ConflictResolutionAction,
+  ConflictResolutionResult,
+  ConflictType,
+  ExclusivityValidation,
+  InvalidMachine,
+  MachineAssignment,
+  MachineAssignmentSummary,
+  ValidationConfig,
+  ValidationContext,
+  ValidationError,
+  ValidationResult,
+  ValidationRule,
+  ValidationSummary,
+  ValidationWarning,
+} from '@rediacc/shared/services/machine';

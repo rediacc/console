@@ -1,2 +1,2 @@
+export { FUNCTION_CATEGORIES, FUNCTION_DEFINITIONS } from './definitions';
 export { FUNCTION_REQUIREMENTS } from './functionRequirements';
-export { FUNCTION_DEFINITIONS, FUNCTION_CATEGORIES } from './definitions';

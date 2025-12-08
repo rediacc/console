@@ -1,26 +1,17 @@
+import { Form, Space, Typography } from 'antd';
 import styled from 'styled-components';
-import { Space, Typography, Form } from 'antd';
+import { InlineStack } from '@/components/common/styled';
+import { RediaccAlert, RediaccInput } from '@/components/ui';
+import { FlexRow, NeutralStack, StyledIcon } from '@/styles/primitives';
 import { SafetyCertificateOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { StyledIcon, NeutralStack, FlexRow } from '@/styles/primitives';
-import { InlineStack } from '@/components/common/styled';
-import { RediaccInput } from '@/components/ui/Form/Input';
-import { RediaccAlert } from '@/components/ui';
 
 type SpacingKey = keyof typeof DESIGN_TOKENS.SPACING;
 
-export const LoadingContainer = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => `${theme.spacing.XXXL}px 0`};
-`;
-
-export const FullWidthStack = styled(NeutralStack)<{ $gap?: SpacingKey }>`
+export const CenteredStack = styled(NeutralStack)<{ $gap?: SpacingKey }>`
   && {
     gap: ${({ theme, $gap = 'MD' }) => `${theme.spacing[$gap]}px`};
   }
-`;
-
-export const CenteredStack = styled(FullWidthStack)`
   text-align: center;
   align-items: center;
 `;
@@ -28,7 +19,7 @@ export const CenteredStack = styled(FullWidthStack)`
 const ICON_TONES = {
   primary: 'var(--color-primary)',
   success: 'var(--color-success)',
-  muted: 'var(--color-text-quaternary)',
+  muted: 'var(--color-text-muted)',
 } as const;
 
 export const StatusIcon = styled(StyledIcon).attrs<{
@@ -47,10 +38,10 @@ export const SectionTitle = styled(Typography.Title)`
 `;
 
 export const QRCodeContainer = styled.div`
-  background-color: var(--color-bg-primary);
+  background-color: ${({ theme }) => theme.colors.bgPrimary};
   padding: ${({ theme }) => theme.spacing.MD}px;
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  border: 1px solid var(--color-border-secondary);
+  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   display: inline-flex;
 `;
 
@@ -87,11 +78,7 @@ export const FormActionRow = styled(FlexRow).attrs<{ $align?: 'space-between' | 
   width: 100%;
 `;
 
-export const AlertSpacer = styled(RediaccAlert)`
-  margin-bottom: ${({ theme }) => theme.spacing.LG}px;
-`;
-
-export const CardContent = styled(FullWidthStack)`
+export const CardContent = styled(NeutralStack)`
   gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 

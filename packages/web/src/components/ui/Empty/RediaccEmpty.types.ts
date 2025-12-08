@@ -1,4 +1,4 @@
-import type { ReactNode, CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type EmptyVariant = 'default' | 'minimal' | 'illustrated';
 export type EmptySize = 'sm' | 'md' | 'lg';

@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../client';
-import type { AuditLogEntry, AuditTraceResponse } from '@rediacc/shared/types';
-export type { AuditLogEntry as AuditLog, AuditTraceRecord } from '@rediacc/shared/types';
+import { api } from '@/api/client';
+import type { AuditTraceResponse, GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
+
+export type { AuditTraceRecord, GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
 
 export interface AuditLogsParams {
   startDate?: string;
@@ -11,7 +12,7 @@ export interface AuditLogsParams {
 }
 
 export const useAuditLogs = (params?: AuditLogsParams) => {
-  return useQuery<AuditLogEntry[]>({
+  return useQuery<GetAuditLogs_ResultSet1[]>({
     queryKey: ['auditLogs', params],
     queryFn: async () => {
       try {
@@ -39,7 +40,7 @@ export const useAuditLogs = (params?: AuditLogsParams) => {
 };
 
 export const useRecentAuditLogs = (maxRecords: number = 10) => {
-  return useQuery<AuditLogEntry[]>({
+  return useQuery<GetAuditLogs_ResultSet1[]>({
     queryKey: ['recentAuditLogs', maxRecords],
     queryFn: async () => {
       return api.audit.getLogs(undefined, undefined, undefined, maxRecords);
@@ -52,7 +53,7 @@ export const getEntityAuditTrace = async (
   entityType: string,
   entityIdentifier: string
 ): Promise<AuditTraceResponse> => {
-  return api.audit.getEntityTrace(entityType, entityIdentifier);
+  return api.audit.getEntityTrace({ entityType, entityIdentifier });
 };
 
 // React Query hook for entity audit trace

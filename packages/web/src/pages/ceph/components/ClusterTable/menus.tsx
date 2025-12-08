@@ -1,6 +1,6 @@
+import { ExpandOutlined, FunctionOutlined, KeyOutlined } from '@/utils/optimizedIcons';
 import type { MenuProps } from 'antd';
 import type { TFunction } from 'i18next';
-import { ExpandOutlined, KeyOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 
 export const getClusterFunctionMenuItems = (
   t: TFunction<'ceph' | 'common' | 'machines'>

@@ -54,7 +54,7 @@ body:
         - Dashboard
         - Repositories Page
         - Machines Page
-        - Distributed Storage
+        - Ceph
         - Queue Management
         - System Settings
         - Audit Logs

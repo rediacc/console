@@ -1,52 +1,52 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { Layout, Dropdown, message, Drawer } from 'antd';
-import {
-  UserOutlined,
-  MenuOutlined,
-  SmileOutlined,
-  SafetyCertificateOutlined,
-} from '@/utils/optimizedIcons';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Drawer, Dropdown, Layout, message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { selectUser, selectCompany } from '@/store/auth/authSelectors';
-import { logout, updateCompany } from '@/store/auth/authSlice';
-import { masterPasswordService } from '@/services/masterPasswordService';
-import { toggleUiMode } from '@/store/ui/uiSlice';
-import { clearAuthData, saveAuthData, getAuthData } from '@/utils/auth';
+import { useDispatch, useSelector } from 'react-redux';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '@/api/client';
-import NotificationBell from '@/components/layout/MainLayout/components/NotificationBell';
-import { useTheme } from '@/context/ThemeContext';
+import { useCompanyInfo } from '@/api/queries/dashboard';
 import logoBlack from '@/assets/logo_black.png';
 import logoWhite from '@/assets/logo_white.png';
-import { RootState } from '@/store/store';
-import { useCompanyInfo } from '@/api/queries/dashboard';
-import { useQueryClient } from '@tanstack/react-query';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
+import NotificationBell from '@/components/layout/MainLayout/components/NotificationBell';
+import { RediaccButton } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
-import { getMenuItems } from './menuItems';
-import { buildMenuItems, flattenMenuRoutes } from './helpers';
-import { UserMenu } from './UserMenu';
-import { Sidebar } from './Sidebar';
-import { SIDEBAR_EXPANDED_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from './types';
+import { useTheme } from '@/context/ThemeContext';
+import { masterPasswordService } from '@/services/masterPasswordService';
+import { selectCompany, selectUser } from '@/store/auth/authSelectors';
+import { logout, updateCompany } from '@/store/auth/authSlice';
+import { RootState } from '@/store/store';
+import { toggleUiMode } from '@/store/ui/uiSlice';
+import { clearAuthData, getAuthData, saveAuthData } from '@/utils/auth';
 import {
+  MenuOutlined,
+  SafetyCertificateOutlined,
+  SmileOutlined,
+  UserOutlined,
+} from '@/utils/optimizedIcons';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { buildMenuItems, flattenMenuRoutes } from './helpers';
+import { getMenuItems } from './menuItems';
+import { Sidebar } from './Sidebar';
+import {
+  ContentWrapper,
   HEADER_HEIGHT,
-  MainLayoutContainer,
-  StyledHeader,
   HeaderLeft,
   HeaderRight,
-  MenuToggleButton,
-  LogoWrapper,
   Logo,
+  LogoWrapper,
+  MainLayoutContainer,
+  MenuToggleButton,
   StyledContent,
-  TransitionOverlay,
+  StyledHeader,
   TransitionIcon,
+  TransitionOverlay,
   TransitionText,
-  ContentWrapper,
 } from './styles';
-import { RediaccButton } from '@/components/ui';
+import { SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_EXPANDED_WIDTH } from './types';
+import { UserMenu } from './UserMenu';
 
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);

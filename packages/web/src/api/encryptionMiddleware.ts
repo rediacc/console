@@ -1,6 +1,6 @@
 import { cryptoService } from '@/services/cryptoService';
-import { masterPasswordService } from '../services/masterPasswordService';
-import { showMessage } from '../utils/messages';
+import { masterPasswordService } from '@/services/masterPasswordService';
+import { showMessage } from '@/utils/messages';
 
 /**
  * Middleware to handle vault field encryption/decryption

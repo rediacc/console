@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { EditorContainer, EditorTextarea, ErrorBanner } from './styles';
 
 interface SimpleJsonEditorProps {

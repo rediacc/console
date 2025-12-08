@@ -1,41 +1,41 @@
 import React, { useState } from 'react';
-import { Tooltip, List, Popconfirm, Tabs, Card, Space, Modal } from 'antd';
-import { UserOutlined, DeleteOutlined, PlusOutlined } from '@/utils/optimizedIcons';
-import { RediaccButton as Button } from '@/components/ui/Button';
-import { RediaccTag as Tag } from '@/components/ui/Tag';
+import { Card, List, Modal, Popconfirm, Space, Tabs, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
+import {
+  Team,
+  TeamMember,
+  useAddTeamMember,
+  useCreateTeam,
+  useDeleteTeam,
+  useRemoveTeamMember,
+  useTeamMembers,
+  useTeams,
+  useUpdateTeamName,
+  useUpdateTeamVault,
+} from '@/api/queries/teams';
+import { useDropdownData } from '@/api/queries/useDropdownData';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal, {
   type ExistingResourceData,
 } from '@/components/common/UnifiedResourceModal';
-import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { ModalSize } from '@/types/modal';
-import { useDropdownData } from '@/api/queries/useDropdownData';
+import {
+  InlineFormRow,
+  ListSubtitle,
+  ListTitle,
+  ListTitleRow,
+  ModalStack,
+  PageWrapper,
+  RediaccButton,
+  RediaccSelect,
+  RediaccTag,
+  SectionHeading,
+  SectionStack,
+} from '@/components/ui';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { useFormModal } from '@/hooks/useFormModal';
-import {
-  useTeams,
-  useTeamMembers,
-  useCreateTeam,
-  useUpdateTeamName,
-  useDeleteTeam,
-  useUpdateTeamVault,
-  useAddTeamMember,
-  useRemoveTeamMember,
-  Team,
-  TeamMember,
-} from '@/api/queries/teams';
-import {
-  PageWrapper,
-  SectionStack,
-  SectionHeading,
-  ListTitleRow,
-  ListTitle,
-  ListSubtitle,
-  InlineFormRow,
-  ModalStack,
-  RediaccSelect as Select,
-} from '@/components/ui';
+import { ModalSize } from '@/types/modal';
+import { DeleteOutlined, PlusOutlined, UserOutlined } from '@/utils/optimizedIcons';
 import { getTeamColumns } from './data';
 
 const TeamsPage: React.FC = () => {
@@ -113,7 +113,7 @@ const TeamsPage: React.FC = () => {
 
   const handleDeleteTeam = async (teamName: string) => {
     try {
-      await deleteTeamMutation.mutateAsync(teamName);
+      await deleteTeamMutation.mutateAsync({ teamName });
     } catch {
       // handled by mutation
     }
@@ -184,7 +184,7 @@ const TeamsPage: React.FC = () => {
           data-testid="system-team-table"
           actions={
             <Tooltip title={tSystem('actions.createTeam')}>
-              <Button
+              <RediaccButton
                 variant="primary"
                 icon={<PlusOutlined />}
                 onClick={() => unifiedModal.openCreate()}
@@ -243,7 +243,7 @@ const TeamsPage: React.FC = () => {
                             okButtonProps={{ danger: true }}
                           >
                             <Tooltip title={tCommon('actions.remove')}>
-                              <Button
+                              <RediaccButton
                                 variant="primary"
                                 danger
                                 size="sm"
@@ -261,18 +261,18 @@ const TeamsPage: React.FC = () => {
                           description={
                             <Space size="small">
                               {member.isMember && (
-                                <Tag variant="success">
+                                <RediaccTag variant="success">
                                   {t('teams.manageMembers.memberStatus', {
                                     defaultValue: 'Member',
                                   })}
-                                </Tag>
+                                </RediaccTag>
                               )}
                               {member.hasAccess && (
-                                <Tag variant="primary">
+                                <RediaccTag variant="primary">
                                   {t('teams.manageMembers.accessStatus', {
                                     defaultValue: 'Has Access',
                                   })}
-                                </Tag>
+                                </RediaccTag>
                               )}
                             </Space>
                           }
@@ -289,7 +289,7 @@ const TeamsPage: React.FC = () => {
               children: (
                 <ModalStack>
                   <InlineFormRow>
-                    <Select
+                    <RediaccSelect
                       fullWidth
                       showSearch
                       placeholder={t('teams.manageMembers.selectUser', {
@@ -316,7 +316,7 @@ const TeamsPage: React.FC = () => {
                       }
                     />
                     <Tooltip title={tSystem('actions.addMember')}>
-                      <Button
+                      <RediaccButton
                         variant="primary"
                         onClick={handleAddTeamMember}
                         loading={addTeamMemberMutation.isPending}

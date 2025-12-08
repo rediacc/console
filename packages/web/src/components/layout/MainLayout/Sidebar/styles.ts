@@ -1,7 +1,7 @@
-import styled from 'styled-components';
 import { Layout } from 'antd';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import styled from 'styled-components';
 import { FlexColumn } from '@/styles/primitives';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const { Sider } = Layout;
 
@@ -45,7 +45,7 @@ export const MenuItem = styled.div<{ $isActive: boolean; $padding: string; $coll
   align-items: center;
   padding: ${({ $padding }) => $padding};
   margin: ${({ $collapsed }) => ($collapsed ? '4px' : '4px 12px')};
-  border-radius: 12px;
+  border-radius: ${({ theme }) => theme.borderRadius.XL}px;
   cursor: pointer;
   min-height: 44px;
   justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
@@ -62,14 +62,14 @@ export const MenuItem = styled.div<{ $isActive: boolean; $padding: string; $coll
 `;
 
 export const MenuIcon = styled.span<{ $isActive: boolean; $collapsed?: boolean }>`
-  font-size: 20px;
+  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
   margin-right: ${({ $collapsed }) => ($collapsed ? '0' : '12px')};
   color: ${({ $isActive }) => ($isActive ? 'var(--color-text-selected)' : 'inherit')};
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: ${({ theme }) => theme.dimensions.ICON_MD}px;
+  height: ${({ theme }) => theme.dimensions.ICON_MD}px;
   flex-shrink: 0;
 `;
 
@@ -101,7 +101,7 @@ export const TooltipItem = styled.div<{ $isActive: boolean }>`
     $isActive ? 'var(--color-text-selected)' : 'var(--color-text-primary)'};
   font-weight: ${({ $isActive }) => ($isActive ? 600 : 500)};
   cursor: pointer;
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.fontSize.SM}px;
   min-width: 160px;
   transition: all 0.2s ease;
 
@@ -116,7 +116,7 @@ export const TooltipLabel = styled.div<{ $isActive: boolean }>`
   color: ${({ $isActive }) =>
     $isActive ? 'var(--color-text-selected)' : 'var(--color-text-primary)'};
   font-weight: ${({ $isActive }) => ($isActive ? 600 : 500)};
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.fontSize.SM}px;
   min-width: 160px;
 `;
 
@@ -135,8 +135,8 @@ export const SubMenuItem = styled.div<{ $isActive: boolean }>`
   align-items: center;
   padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.LG}px`};
   margin: 2px 0;
-  border-radius: 12px;
-  font-size: 14px;
+  border-radius: ${({ theme }) => theme.borderRadius.XL}px;
+  font-size: ${({ theme }) => theme.fontSize.SM}px;
   color: ${({ $isActive }) =>
     $isActive ? 'var(--color-text-selected)' : 'var(--color-text-secondary)'};
   font-weight: ${({ $isActive }) => ($isActive ? 600 : 500)};

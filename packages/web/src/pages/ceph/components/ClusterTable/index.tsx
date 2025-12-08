@@ -1,16 +1,16 @@
 import { useCallback, useMemo } from 'react';
-import { Table, Modal } from 'antd';
+import { Modal, Table } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { ColumnsType } from 'antd/es/table';
 import { CephCluster } from '@/api/queries/ceph';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { ManageClusterMachinesModal } from '../ManageClusterMachinesModal';
+import { useDialogState, useExpandableTable, useTraceModal } from '@/hooks';
+import { ManageClusterMachinesModal } from '@/pages/ceph/components/ManageClusterMachinesModal';
+import { EmptyStatePanel } from '@/styles/primitives';
+import { confirmAction } from '@/utils/confirmations';
 import { buildClusterColumns } from './columns';
 import { ClusterMachines } from './components/ClusterMachines';
-import { useTraceModal, useExpandableTable, useDialogState } from '@/hooks';
-import { TableContainer, CreateClusterButton } from './styles';
-import { confirmAction } from '@/utils/confirmations';
-import { EmptyStatePanel } from '@/styles/primitives';
+import { CreateClusterButton, TableContainer } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 interface ClusterTableProps {
   clusters: CephCluster[];

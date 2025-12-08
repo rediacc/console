@@ -1,7 +1,8 @@
-import { useMemo, useCallback, useReducer } from 'react';
+import { useCallback, useMemo, useReducer } from 'react';
 import { useSelector } from 'react-redux';
-import { useTeams, Team } from '@/api/queries/teams';
+import { useTeams } from '@/api/queries/teams';
 import { RootState } from '@/store/store';
+import type { GetCompanyTeams_ResultSet1 as Team } from '@rediacc/shared/types';
 
 export interface UseTeamSelectionOptions {
   /** Custom logic to select initial team (e.g., for simple UI mode) */

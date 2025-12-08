@@ -1,11 +1,9 @@
-import styled from 'styled-components';
 import { Collapse, Form } from 'antd';
+import styled from 'styled-components';
+import { ActionGroup, InlineStack } from '@/components/common/styled';
+import { RediaccButton, RediaccCard, RediaccInput, RediaccTag } from '@/components/ui';
+import { borderedCard } from '@/styles/mixins';
 import { FlexColumn } from '@/styles/primitives';
-import { InlineStack, ActionGroup } from '@/components/common/styled';
-import { RediaccButton as Button, RediaccCard } from '@/components/ui';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccTag } from '@/components/ui/Tag';
-import { RediaccInput } from '@/components/ui/Form';
 
 export const EditorContainer = styled.div`
   width: 100%;
@@ -15,32 +13,15 @@ export const SummaryCard = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   padding: ${({ theme }) => theme.spacing.MD}px;
   background-color: ${({ theme }) => theme.colors.bgTertiary};
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+  ${borderedCard()}
   box-shadow: ${({ theme }) => theme.shadows.CARD};
 `;
 
-export const SummaryTitle = styled(RediaccText).attrs({
-  size: 'lg',
-  weight: 'semibold',
-})`
-  && {
-    margin: 0;
-    margin-bottom: ${({ theme }) => theme.spacing.XS}px;
-    display: block;
-  }
-`;
+// Removed: Use <RediaccText size="lg" weight="semibold" style={{ marginBottom: theme.spacing.XS }}>
+// directly in components
 
-export const SummaryDescription = styled(RediaccText).attrs({
-  size: 'sm',
-  color: 'secondary',
-})`
-  && {
-    display: flex;
-    align-items: center;
-    gap: ${({ theme }) => theme.spacing.XS}px;
-  }
-`;
+// Removed: Use <RediaccText variant="description"> with inline styles
+// for display: flex, align-items: center, gap
 
 export const SummaryBadgeRow = styled.div`
   display: flex;
@@ -55,17 +36,8 @@ export const UniformTag = styled(RediaccTag)`
   }
 `;
 
-export const FieldsBadge = styled(RediaccText).attrs({
-  variant: 'caption',
-  color: 'secondary',
-})`
-  && {
-    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
-    background-color: ${({ theme }) => theme.colors.bgSecondary};
-    padding: ${({ theme }) => `${theme.spacing.XS}px ${theme.spacing.SM}px`};
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-  }
-`;
+// Removed: Use <RediaccText variant="caption" color="secondary"> with inline styles
+// for font-family, background-color, padding, border-radius
 
 export const EditorStack = styled(FlexColumn).attrs({ $gap: 'LG' })`
   width: 100%;
@@ -74,20 +46,12 @@ export const EditorStack = styled(FlexColumn).attrs({ $gap: 'LG' })`
 export const AddEntryCard = styled(RediaccCard)`
   && {
     background-color: ${({ theme }) => theme.colors.bgSecondary};
-    border: 1px solid ${({ theme }) => theme.colors.borderPrimary};
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+    ${borderedCard('borderPrimary')}
     box-shadow: ${({ theme }) => theme.shadows.CARD};
   }
 `;
 
-export const CardHeading = styled(RediaccText).attrs({
-  size: 'sm',
-  weight: 'semibold',
-})`
-  && {
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-`;
+// Removed: Use <RediaccText size="sm" weight="semibold"> directly
 
 export const EntryActionsRow = ActionGroup;
 
@@ -105,7 +69,7 @@ export const KeyInput = styled(RediaccInput).attrs({
   }
 `;
 
-export const PrimaryActionButton = styled(Button).attrs({
+export const PrimaryActionButton = styled(RediaccButton).attrs({
   variant: 'primary',
   size: 'sm',
 })`
@@ -114,7 +78,7 @@ export const PrimaryActionButton = styled(Button).attrs({
   }
 `;
 
-export const SecondaryActionButton = styled(Button).attrs({
+export const SecondaryActionButton = styled(RediaccButton).attrs({
   size: 'sm',
 })``;
 
@@ -148,7 +112,7 @@ export const TypeTag = styled(RediaccTag).attrs({
 
 export const PanelActions = InlineStack;
 
-export const PanelDeleteButton = styled(Button).attrs({ iconOnly: true, variant: 'danger' })`
+export const PanelDeleteButton = styled(RediaccButton).attrs({ iconOnly: true, variant: 'danger' })`
   && {
     padding: 0;
   }
@@ -163,34 +127,13 @@ export const RawJsonCard = styled(RediaccCard)`
   }
 `;
 
-export const RawJsonTitle = styled(RediaccText).attrs({
-  size: 'sm',
-  weight: 'semibold',
-})`
-  && {
-    display: flex;
-    align-items: center;
-    gap: ${({ theme }) => theme.spacing.XS}px;
-  }
-`;
+// Removed: Use <RediaccText size="sm" weight="semibold"> with inline styles
+// for display: flex, align-items: center, gap
 
-export const RawJsonError = styled(RediaccText).attrs({
-  color: 'danger',
-})`
-  && {
-    display: block;
-    margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-  }
-`;
+// Removed: Use <RediaccText color="danger"> with inline styles
+// for display: block, margin-bottom
 
-export const InlineLabel = styled(RediaccText).attrs({
-  size: 'sm',
-  weight: 'medium',
-})`
-  && {
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-`;
+// Removed: Use <RediaccText variant="label"> directly (or size="sm" weight="medium")
 
 export const InlineFormItem = styled(Form.Item)`
   margin-bottom: ${({ theme }) => theme.spacing.SM}px;
@@ -206,9 +149,8 @@ export const ImagePatternCard = styled(RediaccCard)`
   }
 `;
 
-export const NumericInput = styled(RediaccInput)`
+export const NumericInput = styled(RediaccInput).attrs({ fullWidth: true })`
   && {
-    width: 100%;
     max-width: 200px;
   }
 `;

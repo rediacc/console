@@ -1,9 +1,16 @@
 import React from 'react';
 import { Table } from 'antd';
+import type { CephPool } from '@/api/queries/ceph';
+import { RediaccTag } from '@/components/ui';
+import {
+  CardHeader,
+  CardIcon,
+  CardTitle,
+  ClusterCard,
+  TableWrapper,
+} from '@/pages/ceph/components/PoolTable/styles';
 import type { ColumnsType } from 'antd/es/table';
 import type { TFunction } from 'i18next';
-import type { CephPool } from '@/api/queries/ceph';
-import { ClusterCard, CardHeader, CardIcon, CardTitle, ClusterTag, TableWrapper } from '../styles';
 
 interface ClusterPoolsCardProps {
   clusterName: string;
@@ -42,7 +49,11 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
           <CardTitle>
             {t('pools.clusterPrefix')}: {clusterName}
           </CardTitle>
-          {teamName && <ClusterTag>{teamName}</ClusterTag>}
+          {teamName && (
+            <RediaccTag variant="primary" compact>
+              {teamName}
+            </RediaccTag>
+          )}
         </CardHeader>
       }
     >
@@ -69,7 +80,7 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
               if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
                 return;
               }
-              onToggleRow(record.poolGuid);
+              onToggleRow(record.poolGuid ?? undefined);
             },
           })}
           rowClassName={() => 'pool-row'}

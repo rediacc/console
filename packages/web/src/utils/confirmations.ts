@@ -1,6 +1,6 @@
+import { showMessage } from './messages';
 import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
 import type { TFunction } from 'i18next';
-import { showMessage } from './messages';
 
 export interface ConfirmDeleteConfig {
   modal: ModalHookAPI;

@@ -1,165 +1,99 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import {
-  Modal,
-  Button,
-  Space,
-  Card,
-  Descriptions,
-  Timeline,
-  Empty,
-  Row,
-  Col,
-  Tabs,
-  Collapse,
-  Steps,
-  Progress,
-  Statistic,
-  Divider,
   Badge,
+  Button,
+  Card,
+  Col,
+  Collapse,
+  Descriptions,
+  Divider,
+  Empty,
+  Modal,
+  Progress,
+  Row,
+  Space,
+  Statistic,
+  Steps,
+  Tabs,
   Tooltip,
 } from 'antd';
-import type { CollapseProps } from 'antd';
-import { RediaccText as Text, RediaccTag as Tag } from '@/components/ui';
-import {
-  ReloadOutlined,
-  HistoryOutlined,
-  FileTextOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  SyncOutlined,
-  RightOutlined,
-  UserOutlined,
-  RetweetOutlined,
-  WarningOutlined,
-  RocketOutlined,
-  TeamOutlined,
-  DashboardOutlined,
-  ThunderboltOutlined,
-  HourglassOutlined,
-  ExclamationCircleOutlined,
-  CodeOutlined,
-  QuestionCircleOutlined,
-} from '@/utils/optimizedIcons';
-import {
-  useQueueItemTrace,
-  useRetryFailedQueueItem,
-  useCancelQueueItem,
-} from '@/api/queries/queue';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { queueMonitoringService } from '@/services/queueMonitoringService';
-import { showMessage } from '@/utils/messages';
-import { useTheme } from '@/context/ThemeContext';
-import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { formatTimestampAsIs } from '@/core';
-import { useComponentStyles } from '@/hooks/useComponentStyles';
-import { spacing } from '@/utils/styleConstants';
-import { ModalSize } from '@/types/modal';
 import {
+  useCancelQueueItem,
+  useQueueItemTrace,
+  useRetryFailedQueueItem,
+} from '@/api/queries/queue';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
+import { RediaccAlert, RediaccCard, RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
+import { useTheme } from '@/context/ThemeContext';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
+import {
+  formatDuration,
+  formatDurationFull,
+  formatTimestampAsIs,
+  normalizeToBoolean,
+  normalizeToNumber,
+  normalizeToString,
+} from '@/platform';
+import { ModalSize } from '@/types/modal';
+import { showMessage } from '@/utils/messages';
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CloseCircleOutlined,
+  CodeOutlined,
+  DashboardOutlined,
+  ExclamationCircleOutlined,
+  FileTextOutlined,
+  HistoryOutlined,
+  HourglassOutlined,
+  RetweetOutlined,
+  RightOutlined,
+  SyncOutlined,
+  TeamOutlined,
+  UserOutlined,
+  WarningOutlined,
+} from '@/utils/optimizedIcons';
+import { spacing } from '@/utils/styleConstants';
+import type { QueuePositionEntry } from '@rediacc/shared/types';
+import { ActionButtons } from './components/ActionButtons';
+import { ConsoleOutput } from './components/ConsoleOutput';
+import { StatsPanel } from './components/StatsPanel';
+import { TimelineView } from './components/TimelineView';
+import { useTraceState } from './hooks/useTraceState';
+import {
+  CenteredFooter,
+  CenteredMessage,
+  CenteredRow,
+  ItalicCaption,
+  KeyInfoCard,
+  KeyInfoValue,
+  LastFetchedText,
   ModalTitleContainer,
   ModalTitleLeft,
   ModalTitleRight,
-  LastFetchedText,
-  ConsoleOutputContainer,
   ModeSegmented,
-  SpacedAlert,
-  FullWidthSpace,
-  CenteredMessage,
   NoMarginTitle,
   NoteWrapper,
-  KeyInfoCard,
-  KeyInfoValue,
-  CaptionText,
-  CodeText,
-  SmallStatusTag,
-  ItalicCaption,
   ScrollContainer,
   ScrollItem,
   SectionMargin,
-  CenteredFooter,
-  SpacedCard,
-  ActionButton,
-  InfoList,
-  CenteredRow,
-  StatusText,
 } from './styles';
 import {
-  normalizeToString,
-  normalizeToNumber,
-  normalizeToBoolean,
-  extractMostRecentProgress,
-  extractProgressMessage,
-  formatDuration,
-  formatDurationFull,
-} from '@/core';
-import type { QueueTraceLog, QueuePositionEntry } from '@rediacc/shared/types';
+  getCurrentStep,
+  getPriorityInfo,
+  getSimplifiedStatus,
+  getTaskStaleness,
+  getTimelineTimestamp,
+  isStalePending,
+  isTaskStale,
+} from './utils';
+import type { QueueItemTraceModalProps } from './types';
+import type { CollapseProps } from 'antd';
 
 dayjs.extend(relativeTime);
-
-// Helper function to extract timestamp from trace logs for specific action
-const getTimelineTimestamp = (
-  traceLogs: QueueTraceLog[],
-  action: string,
-  fallbackAction?: string
-): string | null => {
-  if (!traceLogs || traceLogs.length === 0) return null;
-
-  // Try primary action first
-  let log = traceLogs.find((log) => normalizeToString(log, 'action', 'Action') === action);
-
-  // If not found and fallback provided, try fallback action
-  if (!log && fallbackAction) {
-    log = traceLogs.find((log) => normalizeToString(log, 'action', 'Action') === fallbackAction);
-  }
-
-  if (log) {
-    const timestamp = normalizeToString(log, 'timestamp', 'Timestamp');
-    return timestamp ? formatTimestampAsIs(timestamp, 'time') : null;
-  }
-
-  return null;
-};
-
-export interface QueueItemTraceModalProps {
-  taskId: string | null;
-  open: boolean;
-  onCancel: () => void;
-  onTaskStatusChange?: (status: string, taskId: string) => void;
-}
-
-// Shared console output component
-interface ConsoleOutputProps {
-  content: string;
-  theme: string;
-  consoleOutputRef: React.RefObject<HTMLDivElement | null>;
-  isEmpty?: boolean;
-}
-
-const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
-  content,
-  theme,
-  consoleOutputRef,
-  isEmpty,
-}) => {
-  if (isEmpty || !content) {
-    return <Empty description="No console output available" />;
-  }
-
-  return (
-    <ConsoleOutputContainer
-      ref={consoleOutputRef}
-      data-testid="queue-trace-console-output"
-      $theme={theme}
-    >
-      {content}
-    </ConsoleOutputContainer>
-  );
-};
 
 const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   taskId,
@@ -167,19 +101,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   onCancel,
   onTaskStatusChange,
 }) => {
-  const { t } = useTranslation(['queue', 'common']);
-  const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const styles = useComponentStyles();
-  const [lastTraceFetchTime, setLastTraceFetchTime] = useState<dayjs.Dayjs | null>(null);
-  const [isMonitoring, setIsMonitoring] = useState(false);
-  const [activeKeys, setActiveKeys] = useState<string[]>(['overview']); // Start with overview panel open
-  const [simpleMode, setSimpleMode] = useState(true); // Default to simple mode
-  const [accumulatedOutput, setAccumulatedOutput] = useState<string>(''); // Store accumulated console output
-  const [lastOutputStatus, setLastOutputStatus] = useState<string>(''); // Track the last status to detect completion
-  const [consoleProgress, setConsoleProgress] = useState<number | null>(null); // Progress percentage from console output
-  const [progressMessage, setProgressMessage] = useState<string | null>(null); // Current progress message text
-  const [isSimpleConsoleExpanded, setIsSimpleConsoleExpanded] = useState(false); // Console collapse state for simple mode
-  const [isDetailedConsoleExpanded, setIsDetailedConsoleExpanded] = useState(false); // Console collapse state for detailed mode
   const {
     data: traceData,
     isLoading: isTraceLoading,
@@ -188,147 +110,26 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   const { mutate: retryFailedItem, isPending: isRetrying } = useRetryFailedQueueItem();
   const { mutate: cancelQueueItem, isPending: isCancelling } = useCancelQueueItem();
   const { theme } = useTheme();
-  const consoleOutputRef = useRef<HTMLDivElement>(null);
+
+  const {
+    lastTraceFetchTime,
+    isMonitoring,
+    activeKeys,
+    simpleMode,
+    accumulatedOutput,
+    consoleProgress,
+    progressMessage,
+    isSimpleConsoleExpanded,
+    isDetailedConsoleExpanded,
+    consoleOutputRef,
+    setActiveKeys,
+    setSimpleMode,
+    setIsSimpleConsoleExpanded,
+    setIsDetailedConsoleExpanded,
+  } = useTraceState({ taskId, open, traceData });
+
   const totalDurationSeconds = traceData?.queueDetails?.totalDurationSeconds ?? 0;
   const processingDurationSeconds = traceData?.queueDetails?.processingDurationSeconds ?? 0;
-
-  // Sync last fetch time when trace data or visibility changes
-  useEffect(() => {
-    if (traceData && open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setLastTraceFetchTime(dayjs());
-    }
-  }, [traceData, open]);
-
-  // Auto-scroll console output to bottom when output updates
-  useEffect(() => {
-    if (consoleOutputRef.current && accumulatedOutput) {
-      consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
-    }
-  }, [accumulatedOutput]);
-
-  // Handle accumulating console output
-  useEffect(() => {
-    if (
-      traceData?.responseVaultContent?.hasContent &&
-      traceData.responseVaultContent.vaultContent
-    ) {
-      try {
-        const vaultContent =
-          typeof traceData.responseVaultContent.vaultContent === 'string'
-            ? JSON.parse(traceData.responseVaultContent.vaultContent)
-            : traceData.responseVaultContent.vaultContent || {};
-
-        if (vaultContent.status === 'completed') {
-          // For completed status, replace accumulated output with final result
-          let finalOutput = '';
-          if (vaultContent.result && typeof vaultContent.result === 'string') {
-            try {
-              const result = JSON.parse(vaultContent.result);
-              // Extract command output from the cleaned response structure
-              finalOutput = result.command_output || '';
-
-              // If no command output but we have a message, show it
-              if (!finalOutput && result.message) {
-                finalOutput = `[${result.status}] ${result.message}`;
-                if (result.exit_code !== undefined) {
-                  finalOutput += ` (exit code: ${result.exit_code})`;
-                }
-              }
-            } catch {
-              finalOutput = vaultContent.result;
-            }
-          }
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setAccumulatedOutput(finalOutput);
-          setLastOutputStatus('completed');
-        } else if (vaultContent.status === 'in_progress' && vaultContent.message) {
-          // For in-progress updates, check if we should append or replace
-          const newMessage = vaultContent.message;
-          if (newMessage && lastOutputStatus !== 'completed') {
-            setAccumulatedOutput((currentOutput) => {
-              // If the new message starts with the current content, only append the difference
-              if (newMessage.startsWith(currentOutput)) {
-                const newContent = newMessage.substring(currentOutput.length);
-                return currentOutput + newContent;
-              } else {
-                // Otherwise, replace the entire content
-                return newMessage;
-              }
-            });
-            setLastOutputStatus('in_progress');
-          }
-        } else if (!accumulatedOutput) {
-          // Handle initial load for already completed tasks or other formats
-          let initialOutput = '';
-          if (vaultContent.result && typeof vaultContent.result === 'string') {
-            try {
-              const result = JSON.parse(vaultContent.result);
-              // Extract command output from the cleaned response structure
-              initialOutput = result.command_output || '';
-
-              // If no command output but we have a message, show it
-              if (!initialOutput && result.message) {
-                initialOutput = `[${result.status}] ${result.message}`;
-                if (result.exit_code !== undefined) {
-                  initialOutput += ` (exit code: ${result.exit_code})`;
-                }
-              }
-            } catch {
-              initialOutput = vaultContent.result;
-            }
-          } else if (vaultContent.result && typeof vaultContent.result === 'object') {
-            const result = vaultContent.result;
-            // Same logic for object format
-            initialOutput = result.command_output || '';
-            if (!initialOutput && result.message) {
-              initialOutput = `[${result.status}] ${result.message}`;
-              if (result.exit_code !== undefined) {
-                initialOutput += ` (exit code: ${result.exit_code})`;
-              }
-            }
-          }
-          if (initialOutput) {
-            setAccumulatedOutput(initialOutput);
-          }
-        }
-      } catch {
-        // Error processing console output
-      }
-    }
-  }, [traceData?.responseVaultContent, lastOutputStatus, accumulatedOutput]);
-
-  // Extract progress percentage and message from console output
-
-  useEffect(() => {
-    const percentage = extractMostRecentProgress(accumulatedOutput);
-    const message = extractProgressMessage(accumulatedOutput);
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setConsoleProgress(percentage);
-    setProgressMessage(message);
-  }, [accumulatedOutput]);
-
-  // Reset states when modal opens with new taskId
-  useEffect(() => {
-    if (open && taskId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setLastTraceFetchTime(null);
-      // Check if this task is already being monitored
-      setIsMonitoring(queueMonitoringService.isTaskMonitored(taskId));
-      // Reset collapsed state and simple mode when opening modal
-      setActiveKeys(['overview']);
-      setSimpleMode(true); // Default to simple mode
-      // Reset accumulated output when opening modal with new task
-      setAccumulatedOutput('');
-      setLastOutputStatus('');
-      // Reset console progress, message, and collapse states
-      setConsoleProgress(null);
-      setProgressMessage(null);
-      setIsSimpleConsoleExpanded(false);
-      setIsDetailedConsoleExpanded(false);
-    }
-  }, [taskId, open, uiMode]);
 
   // Monitor status changes and notify parent component
   useEffect(() => {
@@ -396,151 +197,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
     onCancel();
   };
 
-  // Helper function to get simplified status
-  const getSimplifiedStatus = () => {
-    if (!traceData?.queueDetails) return { status: 'unknown', color: 'default', icon: null };
-    const status = normalizeToString(traceData.queueDetails, 'status', 'Status');
-    const retryCount = normalizeToNumber(traceData.queueDetails, 0, 'retryCount', 'RetryCount');
-    const lastFailureReason = normalizeToString(
-      traceData.queueDetails,
-      'lastFailureReason',
-      'LastFailureReason'
-    );
-
-    // Check if this is a PENDING status after retry (it was failed and is being retried)
-    if (status === 'PENDING' && retryCount > 0 && lastFailureReason) {
-      // If we've reached max retries (2), show as failed instead of retrying
-      if (retryCount >= 2) {
-        return { status: 'Failed (Max Retries)', color: 'error', icon: <CloseCircleOutlined /> };
-      }
-      return { status: 'Retrying', color: 'warning', icon: <RetweetOutlined spin /> };
-    }
-
-    switch (status) {
-      case 'COMPLETED':
-        return { status: 'Completed', color: 'success', icon: <CheckCircleOutlined /> };
-      case 'FAILED':
-        return { status: 'Failed', color: 'error', icon: <CloseCircleOutlined /> };
-      case 'CANCELLED':
-        return { status: 'Cancelled', color: 'error', icon: <CloseCircleOutlined /> };
-      case 'CANCELLING':
-        return { status: 'Cancelling', color: 'warning', icon: <SyncOutlined spin /> };
-      case 'PROCESSING':
-        return { status: 'Processing', color: 'processing', icon: <SyncOutlined spin /> };
-      case 'ASSIGNED':
-        return { status: 'Assigned', color: 'blue', icon: <ClockCircleOutlined /> };
-      default:
-        return { status: status || 'Pending', color: 'default', icon: <ClockCircleOutlined /> };
-    }
-  };
-
-  // Helper function to get task staleness level (progressive: none, early, stale, critical)
-  const getTaskStaleness = () => {
-    if (!traceData?.queueDetails) return 'none';
-    const lastAssigned =
-      normalizeToString(traceData.queueDetails, 'lastAssigned', 'LastAssigned') ||
-      normalizeToString(traceData.queueDetails, 'assignedTime', 'AssignedTime');
-    const lastRetryAt = normalizeToString(traceData.queueDetails, 'lastRetryAt', 'LastRetryAt');
-    const lastResponseAt = normalizeToString(
-      traceData.queueDetails,
-      'lastResponseAt',
-      'LastResponseAt'
-    );
-    const status = normalizeToString(traceData.queueDetails, 'status', 'Status');
-
-    // Only check staleness for active processing tasks
-    if (
-      !lastAssigned ||
-      status === 'COMPLETED' ||
-      status === 'CANCELLED' ||
-      status === 'CANCELLING' ||
-      status === 'FAILED' ||
-      status === 'PENDING'
-    ) {
-      return 'none';
-    }
-
-    // Find the most recent activity timestamp
-    const timestamps = [lastAssigned, lastRetryAt, lastResponseAt].filter(Boolean);
-    if (timestamps.length === 0) return 'none';
-
-    // Use the most recent timestamp as the last activity time
-    const lastActivityTime = timestamps.reduce((latest, current) => {
-      return dayjs(current).isAfter(dayjs(latest)) ? current : latest;
-    });
-
-    const secondsSinceLastActivity = dayjs().diff(dayjs(lastActivityTime), 'second');
-
-    // Progressive staleness levels
-    if (secondsSinceLastActivity >= 120) return 'critical'; // 2+ minutes - strong cancellation recommendation
-    if (secondsSinceLastActivity >= 90) return 'stale'; // 1.5+ minutes - stale with cancel option
-    if (secondsSinceLastActivity >= 60) return 'early'; // 1+ minute - early warning
-    return 'none';
-  };
-
-  // Legacy function for backward compatibility
-  const isTaskStale = () => {
-    const staleness = getTaskStaleness();
-    return staleness === 'stale' || staleness === 'critical';
-  };
-
-  // Helper function to check if task is old pending (6+ hours)
-  const isStalePending = () => {
-    if (!traceData?.queueDetails) return false;
-    const status = normalizeToString(traceData.queueDetails, 'status', 'Status');
-    const healthStatus = normalizeToString(traceData.queueDetails, 'healthStatus', 'HealthStatus');
-    const createdTime = normalizeToString(traceData.queueDetails, 'createdTime', 'CreatedTime');
-
-    if (healthStatus === 'STALE_PENDING') return true;
-
-    if (status !== 'PENDING' || !createdTime) return false;
-
-    const hoursSinceCreated = dayjs().diff(dayjs(createdTime), 'hour');
-    return hoursSinceCreated >= 6;
-  };
-
-  // Helper function to get priority color and icon
-  // Using grayscale system - only visual distinction through icons
-  const getPriorityInfo = (priority: number | undefined) => {
-    if (!priority) return { color: 'default', icon: null, label: 'Normal' };
-
-    switch (priority) {
-      case 1:
-        return { color: 'default', icon: <ThunderboltOutlined />, label: 'Highest' };
-      case 2:
-        return { color: 'default', icon: <RocketOutlined />, label: 'High' };
-      case 3:
-        return { color: 'default', icon: null, label: 'Normal' };
-      case 4:
-        return { color: 'default', icon: null, label: 'Low' };
-      case 5:
-        return { color: 'default', icon: null, label: 'Lowest' };
-      default:
-        return { color: 'default', icon: null, label: 'Normal' };
-    }
-  };
-
-  // Get current step for Steps component (3 steps: Assigned, Processing, Completed)
-  const getCurrentStep = () => {
-    if (!traceData?.queueDetails) return 0;
-    const status = normalizeToString(traceData.queueDetails, 'status', 'Status');
-
-    switch (status) {
-      case 'COMPLETED':
-        return 2;
-      case 'FAILED':
-      case 'CANCELLED':
-        return -1;
-      case 'CANCELLING':
-        return 1; // Show as processing (with cancelling description)
-      case 'PROCESSING':
-        return 1;
-      case 'ASSIGNED':
-        return 0;
-      default:
-        return 0; // PENDING - will show as waiting for assignment
-    }
-  };
+  const taskStaleness = traceData?.queueDetails ? getTaskStaleness(traceData.queueDetails) : 'none';
+  const simplifiedStatus = traceData?.queueDetails
+    ? getSimplifiedStatus(traceData.queueDetails)
+    : { status: 'unknown', color: 'default' as const, icon: null };
 
   return (
     <Modal
@@ -573,69 +233,21 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
       open={open}
       onCancel={handleClose}
       destroyOnClose
-      footer={[
-        // Show Cancel button for PENDING, ASSIGNED, or PROCESSING tasks that can be cancelled
-        // Style and text vary based on staleness level
-        traceData?.queueDetails &&
-        traceData.queueDetails.canBeCancelled &&
-        (normalizeToString(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
-          normalizeToString(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
-          normalizeToString(traceData.queueDetails, 'status', 'Status') === 'PROCESSING') ? (
-          <ActionButton
-            key="cancel"
-            data-testid="queue-trace-cancel-button"
-            danger
-            variant={getTaskStaleness() === 'critical' ? 'primary' : 'default'}
-            icon={<CloseCircleOutlined />}
-            onClick={handleCancelQueueItem}
-            loading={isCancelling}
-            style={styles.buttonPrimary}
-            $bold={getTaskStaleness() === 'critical'}
-            $large={getTaskStaleness() === 'critical'}
-          >
-            {getTaskStaleness() === 'critical'
-              ? 'Cancel Stuck Task'
-              : getTaskStaleness() === 'stale'
-                ? 'Cancel Task'
-                : 'Cancel'}
-          </ActionButton>
-        ) : null,
-        // Show Retry button only for failed tasks that haven't reached max retries
-        traceData?.queueDetails &&
-        normalizeToString(traceData.queueDetails, 'status', 'Status') === 'FAILED' &&
-        normalizeToNumber(traceData.queueDetails, 0, 'retryCount', 'RetryCount') < 2 &&
-        !normalizeToBoolean(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed') ? (
-          <Button
-            key="retry"
-            data-testid="queue-trace-retry-button"
-            danger
-            icon={<RetweetOutlined />}
-            onClick={handleRetryFailedItem}
-            loading={isRetrying}
-            style={styles.buttonPrimary}
-          >
-            Retry Again
-          </Button>
-        ) : null,
-        <Button
-          key="refresh"
-          data-testid="queue-trace-refresh-button"
-          icon={<ReloadOutlined />}
-          onClick={handleRefreshTrace}
-          loading={isTraceLoading}
-          style={styles.buttonSecondary}
-        >
-          Refresh
-        </Button>,
-        <Button
-          key="close"
-          data-testid="queue-trace-close-button"
-          onClick={handleClose}
-          style={styles.buttonSecondary}
-        >
-          Close
-        </Button>,
-      ].filter(Boolean)}
+      footer={
+        <ActionButtons
+          queueDetails={traceData?.queueDetails}
+          taskId={taskId}
+          isCancelling={isCancelling}
+          isRetrying={isRetrying}
+          isTraceLoading={isTraceLoading}
+          taskStaleness={taskStaleness}
+          onCancel={handleCancelQueueItem}
+          onRetry={handleRetryFailedItem}
+          onRefresh={handleRefreshTrace}
+          onClose={handleClose}
+          styles={styles}
+        />
+      }
     >
       {isTraceLoading ? (
         <div className="queue-trace-loading">
@@ -646,19 +258,20 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
       ) : traceData ? (
         <div>
           {/* Progressive Stale Task Warnings */}
-          {getTaskStaleness() === 'early' && (
-            <SpacedAlert
+          {taskStaleness === 'early' && (
+            <RediaccAlert
               data-testid="queue-trace-alert-early"
               message="Task May Be Inactive"
               description="Task hasn't provided updates for over 1 minute. This may be normal for long-running operations."
               variant="info"
               showIcon
               icon={<ClockCircleOutlined />}
+              spacing="default"
             />
           )}
 
-          {getTaskStaleness() === 'stale' && (
-            <SpacedAlert
+          {taskStaleness === 'stale' && (
+            <RediaccAlert
               data-testid="queue-trace-alert-stale"
               message="Task May Be Stale"
               description="Task appears inactive for over 1.5 minutes. Consider canceling if no progress is expected."
@@ -682,11 +295,12 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                   </Button>
                 ) : null
               }
+              spacing="default"
             />
           )}
 
-          {getTaskStaleness() === 'critical' && (
-            <SpacedAlert
+          {taskStaleness === 'critical' && (
+            <RediaccAlert
               data-testid="queue-trace-alert-critical"
               message="Task Likely Stuck - Cancellation Recommended"
               description="Task has been inactive for over 2 minutes. The queue processor will automatically timeout this task at 3 minutes if no activity is detected."
@@ -699,25 +313,23 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                   normalizeToString(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
                   normalizeToString(traceData.queueDetails, 'status', 'Status') ===
                     'PROCESSING') ? (
-                  <ActionButton
-                    $bold
-                    $large
+                  <Button
                     danger
-                    variant="primary"
+                    type="primary"
                     icon={<CloseCircleOutlined />}
                     onClick={handleCancelQueueItem}
                     loading={isCancelling}
                   >
                     Cancel Stuck Task
-                  </ActionButton>
+                  </Button>
                 ) : null
               }
             />
           )}
 
           {/* Old Pending Warning */}
-          {isStalePending() && (
-            <SpacedAlert
+          {isStalePending(traceData.queueDetails) && (
+            <RediaccAlert
               data-testid="queue-trace-alert-old-pending"
               message="Old Pending Task"
               description={`This task has been pending for over 6 hours. It may expire soon if not processed.`}
@@ -730,7 +342,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
           {/* Cancelling Status Alert */}
           {traceData.queueDetails &&
             normalizeToString(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' && (
-              <SpacedAlert
+              <RediaccAlert
                 data-testid="queue-trace-alert-cancelling"
                 message="Task Being Cancelled"
                 description="The task is being cancelled. The bridge will stop execution gracefully."
@@ -744,7 +356,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
           {traceData.queueDetails &&
             normalizeToString(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') &&
             normalizeToString(traceData.queueDetails, 'status', 'Status') !== 'CANCELLING' && (
-              <SpacedAlert
+              <RediaccAlert
                 data-testid="queue-trace-alert-failure"
                 message={
                   normalizeToString(traceData.queueDetails, 'status', 'Status') === 'PENDING' &&
@@ -784,17 +396,21 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
 
           {/* Simple Progress Overview */}
           {simpleMode && traceData.queueDetails && (
-            <SpacedCard data-testid="queue-trace-simple-overview">
-              <FullWidthSpace direction="vertical" gap="lg">
+            <RediaccCard
+              spacing="default"
+              style={{ marginBottom: '16px' }}
+              data-testid="queue-trace-simple-overview"
+            >
+              <RediaccStack variant="spaced-column" fullWidth>
                 {/* Status Summary */}
                 <CenteredMessage>
                   <Space size="large">
                     <span
-                      className={`queue-trace-status-icon ${getSimplifiedStatus().status === 'Processing' ? 'processing' : ''}`}
+                      className={`queue-trace-status-icon ${simplifiedStatus.status === 'Processing' ? 'processing' : ''}`}
                     >
-                      {getSimplifiedStatus().icon}
+                      {simplifiedStatus.icon}
                     </span>
-                    <NoMarginTitle level={3}>Task {getSimplifiedStatus().status}</NoMarginTitle>
+                    <NoMarginTitle level={3}>Task {simplifiedStatus.status}</NoMarginTitle>
                   </Space>
                 </CenteredMessage>
 
@@ -802,8 +418,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                 <Steps
                   data-testid="queue-trace-steps"
                   className="queue-trace-steps"
-                  current={getCurrentStep()}
-                  status={getCurrentStep() === -1 ? 'error' : undefined}
+                  current={getCurrentStep(traceData.queueDetails)}
+                  status={getCurrentStep(traceData.queueDetails) === -1 ? 'error' : undefined}
                   size="small"
                   items={[
                     {
@@ -815,7 +431,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                     {
                       title: 'Processing',
                       description: (() => {
-                        const currentStep = getCurrentStep();
+                        const currentStep = getCurrentStep(traceData.queueDetails);
                         const status = normalizeToString(
                           traceData.queueDetails,
                           'status',
@@ -884,10 +500,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                     className="queue-trace-progress"
                     percent={consoleProgress}
                     status={
-                      getSimplifiedStatus().status === 'Failed' ||
-                      getSimplifiedStatus().status === 'Cancelled'
+                      simplifiedStatus.status === 'Failed' ||
+                      simplifiedStatus.status === 'Cancelled'
                         ? 'exception'
-                        : getSimplifiedStatus().status === 'Completed'
+                        : simplifiedStatus.status === 'Completed'
                           ? 'success'
                           : 'active'
                     }
@@ -902,7 +518,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                         data-testid="queue-trace-info-duration"
                         className="queue-trace-key-info"
                       >
-                        <CaptionText>Duration</CaptionText>
+                        <RediaccText variant="caption" color="muted">
+                          Duration
+                        </RediaccText>
                         <div>
                           <KeyInfoValue>{formatDuration(totalDurationSeconds)}</KeyInfoValue>
                         </div>
@@ -913,9 +531,13 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                         data-testid="queue-trace-info-machine"
                         className="queue-trace-key-info"
                       >
-                        <CaptionText>Machine</CaptionText>
+                        <RediaccText variant="caption" color="muted">
+                          Machine
+                        </RediaccText>
                         <div>
-                          <Text weight="bold">{traceData.queueDetails.machineName}</Text>
+                          <RediaccText weight="bold">
+                            {traceData.queueDetails.machineName}
+                          </RediaccText>
                         </div>
                       </KeyInfoCard>
                     </Col>
@@ -924,9 +546,11 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                         data-testid="queue-trace-info-priority"
                         className="queue-trace-key-info"
                       >
-                        <CaptionText>Priority</CaptionText>
+                        <RediaccText variant="caption" color="muted">
+                          Priority
+                        </RediaccText>
                         <div>
-                          <Tag
+                          <RediaccTag
                             variant={
                               getPriorityInfo(
                                 normalizeToNumber(traceData.queueDetails, 0, 'priority', 'Priority')
@@ -943,14 +567,14 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                 normalizeToNumber(traceData.queueDetails, 0, 'priority', 'Priority')
                               ).label
                             }
-                          </Tag>
+                          </RediaccTag>
                         </div>
                       </KeyInfoCard>
                     </Col>
                   </CenteredRow>
                 )}
-              </FullWidthSpace>
-            </SpacedCard>
+              </RediaccStack>
+            </RediaccCard>
           )}
 
           {/* Console Output for Simple Mode */}
@@ -967,11 +591,11 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                     label: (
                       <Space>
                         <CodeOutlined />
-                        <Text>Response (Console)</Text>
+                        <RediaccText>Response (Console)</RediaccText>
                         {traceData?.queueDetails?.status === 'PROCESSING' && (
-                          <Tag icon={<SyncOutlined spin />} variant="primary">
+                          <RediaccTag icon={<SyncOutlined spin />} variant="primary">
                             Live Output
-                          </Tag>
+                          </RediaccTag>
                         )}
                       </Space>
                     ),
@@ -1011,9 +635,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <DashboardOutlined />
                               <span>Task Overview</span>
-                              <Tag
+                              <RediaccTag
                                 variant={
-                                  getSimplifiedStatus().color as
+                                  simplifiedStatus.color as
                                     | 'default'
                                     | 'success'
                                     | 'error'
@@ -1021,12 +645,12 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                     | 'primary'
                                 }
                               >
-                                {getSimplifiedStatus().status}
-                              </Tag>
-                              {isTaskStale() && (
-                                <Tag variant="warning" icon={<WarningOutlined />}>
+                                {simplifiedStatus.status}
+                              </RediaccTag>
+                              {isTaskStale(traceData.queueDetails) && (
+                                <RediaccTag variant="warning" icon={<WarningOutlined />}>
                                   Stale
-                                </Tag>
+                                </RediaccTag>
                               )}
                             </Space>
                           ),
@@ -1048,7 +672,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Row gutter={[24, 16]}>
                               {/* Left Column - Task Details */}
                               <Col xs={24} lg={12}>
-                                <FullWidthSpace direction="vertical" gap="md">
+                                <RediaccStack variant="column" fullWidth gap="md">
                                   <Card
                                     size="small"
                                     title="Task Information"
@@ -1056,30 +680,30 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                   >
                                     <Descriptions column={1} size="small">
                                       <Descriptions.Item label="Task ID">
-                                        <Text code>
+                                        <RediaccText code>
                                           {normalizeToString(
                                             traceData.queueDetails,
                                             'taskId',
                                             'TaskId'
                                           )}
-                                        </Text>
+                                        </RediaccText>
                                       </Descriptions.Item>
                                       <Descriptions.Item label="Created By">
                                         <Space>
                                           <UserOutlined />
-                                          <Text>
+                                          <RediaccText>
                                             {normalizeToString(
                                               traceData.queueDetails,
                                               'createdBy',
                                               'CreatedBy'
                                             ) || 'System'}
-                                          </Text>
+                                          </RediaccText>
                                         </Space>
                                       </Descriptions.Item>
                                       <Descriptions.Item label="Retry Status">
                                         <Space>
                                           <RetweetOutlined />
-                                          <Tag
+                                          <RediaccTag
                                             variant={
                                               normalizeToNumber(
                                                 traceData.queueDetails,
@@ -1105,12 +729,16 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                               'RetryCount'
                                             )}{' '}
                                             / 2 retries
-                                          </Tag>
+                                          </RediaccTag>
                                           {normalizeToBoolean(
                                             traceData.queueDetails,
                                             'permanentlyFailed',
                                             'PermanentlyFailed'
-                                          ) && <Tag variant="error">Permanently Failed</Tag>}
+                                          ) && (
+                                            <RediaccTag variant="error">
+                                              Permanently Failed
+                                            </RediaccTag>
+                                          )}
                                         </Space>
                                       </Descriptions.Item>
                                       <Descriptions.Item label="Priority">
@@ -1125,7 +753,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                               )
                                             ).icon
                                           }
-                                          <Tag
+                                          <RediaccTag
                                             variant={
                                               getPriorityInfo(
                                                 normalizeToNumber(
@@ -1147,7 +775,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                 )
                                               ).label
                                             }
-                                          </Tag>
+                                          </RediaccTag>
                                         </Space>
                                       </Descriptions.Item>
                                     </Descriptions>
@@ -1162,73 +790,34 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                       <Descriptions.Item label="Machine">
                                         <Space>
                                           <TeamOutlined />
-                                          <Text>{traceData.queueDetails.machineName}</Text>
+                                          <RediaccText>
+                                            {traceData.queueDetails.machineName}
+                                          </RediaccText>
                                         </Space>
                                       </Descriptions.Item>
                                       <Descriptions.Item label="Team">
-                                        <Text>{traceData.queueDetails.teamName}</Text>
+                                        <RediaccText>{traceData.queueDetails.teamName}</RediaccText>
                                       </Descriptions.Item>
                                       <Descriptions.Item label="Bridge">
-                                        <Text>{traceData.queueDetails.bridgeName}</Text>
+                                        <RediaccText>
+                                          {traceData.queueDetails.bridgeName}
+                                        </RediaccText>
                                       </Descriptions.Item>
                                       <Descriptions.Item label="Region">
-                                        <Text>{traceData.queueDetails.regionName}</Text>
+                                        <RediaccText>
+                                          {traceData.queueDetails.regionName}
+                                        </RediaccText>
                                       </Descriptions.Item>
                                     </Descriptions>
                                   </Card>
 
-                                  <Row gutter={[16, 16]}>
-                                    <Col span={8}>
-                                      <Statistic
-                                        title={t('queue:statistics.totalDuration')}
-                                        value={
-                                          totalDurationSeconds < 60
-                                            ? totalDurationSeconds
-                                            : Math.floor(totalDurationSeconds / 60)
-                                        }
-                                        suffix={totalDurationSeconds < 60 ? 'sec' : 'min'}
-                                        prefix={<ClockCircleOutlined />}
-                                      />
-                                    </Col>
-                                    <Col span={8}>
-                                      <Statistic
-                                        title={t('queue:statistics.processing')}
-                                        value={
-                                          processingDurationSeconds
-                                            ? processingDurationSeconds < 60
-                                              ? processingDurationSeconds
-                                              : Math.floor(processingDurationSeconds / 60)
-                                            : 0
-                                        }
-                                        suffix={
-                                          processingDurationSeconds &&
-                                          processingDurationSeconds < 60
-                                            ? 'sec'
-                                            : 'min'
-                                        }
-                                        prefix={<SyncOutlined />}
-                                      />
-                                    </Col>
-                                    <Col span={8}>
-                                      <Statistic
-                                        title={t('queue:statistics.timeSinceAssigned')}
-                                        value={
-                                          traceData.queueDetails.assignedTime
-                                            ? dayjs().diff(
-                                                dayjs(traceData.queueDetails.assignedTime),
-                                                'minute'
-                                              )
-                                            : 'N/A'
-                                        }
-                                        suffix={traceData.queueDetails.assignedTime ? 'min' : ''}
-                                        prefix={<HourglassOutlined />}
-                                        valueStyle={{
-                                          color: isTaskStale() ? 'var(--color-error)' : undefined,
-                                        }}
-                                      />
-                                    </Col>
-                                  </Row>
-                                </FullWidthSpace>
+                                  <StatsPanel
+                                    queueDetails={traceData.queueDetails}
+                                    totalDurationSeconds={totalDurationSeconds}
+                                    processingDurationSeconds={processingDurationSeconds}
+                                    isTaskStale={isTaskStale(traceData.queueDetails)}
+                                  />
+                                </RediaccStack>
                               </Col>
 
                               {/* Right Column - Response Console */}
@@ -1248,11 +837,14 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                       label: (
                                         <Space>
                                           <CodeOutlined />
-                                          <Text>Response (Console)</Text>
+                                          <RediaccText>Response (Console)</RediaccText>
                                           {traceData.queueDetails?.status === 'PROCESSING' && (
-                                            <Tag icon={<SyncOutlined spin />} variant="primary">
+                                            <RediaccTag
+                                              icon={<SyncOutlined spin />}
+                                              variant="primary"
+                                            >
                                               Live Output
-                                            </Tag>
+                                            </RediaccTag>
                                           )}
                                         </Space>
                                       ),
@@ -1284,18 +876,20 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <FileTextOutlined />
                               <span>Queue Item Details</span>
-                              <CaptionText>(Result Set 1)</CaptionText>
+                              <RediaccText variant="caption" color="muted">
+                                (Result Set 1)
+                              </RediaccText>
                             </Space>
                           ),
                           children: (
                             <Descriptions column={2} size="small">
                               <Descriptions.Item label="Task ID">
-                                <Text code>
+                                <RediaccText code>
                                   {normalizeToString(traceData.queueDetails, 'taskId', 'TaskId')}
-                                </Text>
+                                </RediaccText>
                               </Descriptions.Item>
                               <Descriptions.Item label="Status">
-                                <Tag
+                                <RediaccTag
                                   variant={
                                     normalizeToString(
                                       traceData.queueDetails,
@@ -1337,7 +931,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                   }
                                 >
                                   {normalizeToString(traceData.queueDetails, 'status', 'Status')}
-                                </Tag>
+                                </RediaccTag>
                               </Descriptions.Item>
                               <Descriptions.Item label="Priority">
                                 {traceData.queueDetails.priorityLabel || '-'}
@@ -1392,7 +986,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                 ) || '-'}
                               </Descriptions.Item>
                               <Descriptions.Item label="Retry Count">
-                                <Tag
+                                <RediaccTag
                                   variant={
                                     normalizeToNumber(
                                       traceData.queueDetails,
@@ -1418,7 +1012,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                     'RetryCount'
                                   )}
                                   /2
-                                </Tag>
+                                </RediaccTag>
                               </Descriptions.Item>
                               {normalizeToString(
                                 traceData.queueDetails,
@@ -1426,13 +1020,13 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                 'LastFailureReason'
                               ) && (
                                 <Descriptions.Item label="Last Failure Reason" span={2}>
-                                  <Text color="warning">
+                                  <RediaccText color="warning">
                                     {normalizeToString(
                                       traceData.queueDetails,
                                       'lastFailureReason',
                                       'LastFailureReason'
                                     )}
-                                  </Text>
+                                  </RediaccText>
                                 </Descriptions.Item>
                               )}
                             </Descriptions>
@@ -1448,52 +1042,12 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <HistoryOutlined />
                               <span>Processing Timeline</span>
-                              <CaptionText>(Result Set 4 - Audit Log)</CaptionText>
+                              <RediaccText variant="caption" color="muted">
+                                (Result Set 4 - Audit Log)
+                              </RediaccText>
                             </Space>
                           ),
-                          children: (
-                            <Timeline
-                              mode="left"
-                              className="queue-trace-timeline"
-                              data-testid="queue-trace-timeline"
-                              items={traceData.traceLogs.map((log: QueueTraceLog) => {
-                                const action = normalizeToString(log, 'action', 'Action');
-                                const timestamp = normalizeToString(log, 'timestamp', 'Timestamp');
-                                const details = normalizeToString(log, 'details', 'Details');
-                                const actionByUser = normalizeToString(
-                                  log,
-                                  'actionByUser',
-                                  'ActionByUser'
-                                );
-
-                                // Determine timeline item color based on action type
-                                // Using grayscale system - only 'red' for actual errors
-                                let color = 'gray';
-                                if (action === 'QUEUE_ITEM_CANCELLED') color = 'red';
-                                else if (action === 'QUEUE_ITEM_FAILED') color = 'red';
-                                else if (action.includes('ERROR') || action.includes('FAILED'))
-                                  color = 'red';
-
-                                return {
-                                  color,
-                                  children: (
-                                    <Space direction="vertical" size={0}>
-                                      <Text weight="bold">
-                                        {action.replace('QUEUE_ITEM_', '').replace(/_/g, ' ')}
-                                      </Text>
-                                      <Text color="secondary">
-                                        {formatTimestampAsIs(timestamp, 'datetime')}
-                                      </Text>
-                                      {details && <Text>{details}</Text>}
-                                      {actionByUser && (
-                                        <Text color="secondary">By: {actionByUser}</Text>
-                                      )}
-                                    </Space>
-                                  ),
-                                };
-                              })}
-                            />
-                          ),
+                          children: <TimelineView traceLogs={traceData.traceLogs} />,
                         }
                       : null,
 
@@ -1505,7 +1059,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <FileTextOutlined />
                               <span>Vault Content</span>
-                              <CaptionText>(Result Sets 2 & 3)</CaptionText>
+                              <RediaccText variant="caption" color="muted">
+                                (Result Sets 2 & 3)
+                              </RediaccText>
                             </Space>
                           ),
                           children: (
@@ -1536,7 +1092,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                             />
                                           );
                                         } catch {
-                                          // Failed to parse request vault content
                                           return (
                                             <Empty description="Invalid request vault content format" />
                                           );
@@ -1601,7 +1156,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                     },
                                                     unknown: {
                                                       type: 'info' as const,
-                                                      icon: <QuestionCircleOutlined />,
+                                                      icon: <ExclamationCircleOutlined />,
                                                       color: 'var(--color-info)',
                                                     },
                                                   };
@@ -1612,14 +1167,19 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                     ] || statusConfig.unknown;
 
                                                   return (
-                                                    <FullWidthSpace direction="vertical">
+                                                    <RediaccStack variant="column" fullWidth>
                                                       {/* SSH Test Result Summary */}
-                                                      <SpacedCard size="sm" title="SSH Test Result">
+                                                      <RediaccCard
+                                                        size="sm"
+                                                        spacing="default"
+                                                        style={{ marginBottom: '16px' }}
+                                                        title="SSH Test Result"
+                                                      >
                                                         <Descriptions column={2} size="small">
                                                           <Descriptions.Item label="Status">
-                                                            <Tag variant="success">
+                                                            <RediaccTag variant="success">
                                                               {result.status}
-                                                            </Tag>
+                                                            </RediaccTag>
                                                           </Descriptions.Item>
                                                           <Descriptions.Item label="Machine">
                                                             {result.machine || 'N/A'}
@@ -1631,27 +1191,29 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                             {result.user}
                                                           </Descriptions.Item>
                                                           <Descriptions.Item label="Auth Method">
-                                                            <Tag variant="default">
+                                                            <RediaccTag variant="default">
                                                               {result.auth_method}
-                                                            </Tag>
+                                                            </RediaccTag>
                                                           </Descriptions.Item>
                                                           <Descriptions.Item label="SSH Key">
                                                             {result.ssh_key_configured ? (
-                                                              <Tag variant="success">
+                                                              <RediaccTag variant="success">
                                                                 Configured
-                                                              </Tag>
+                                                              </RediaccTag>
                                                             ) : (
-                                                              <Tag variant="warning">
+                                                              <RediaccTag variant="warning">
                                                                 Not Configured
-                                                              </Tag>
+                                                              </RediaccTag>
                                                             )}
                                                           </Descriptions.Item>
                                                         </Descriptions>
-                                                      </SpacedCard>
+                                                      </RediaccCard>
 
                                                       {/* System Information */}
-                                                      <SpacedCard
+                                                      <RediaccCard
                                                         size="sm"
+                                                        spacing="default"
+                                                        style={{ marginBottom: '16px' }}
                                                         title="System Information"
                                                       >
                                                         <Descriptions column={1} size="small">
@@ -1659,10 +1221,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                             {osInfo.pretty_name || 'Unknown'}
                                                           </Descriptions.Item>
                                                           <Descriptions.Item label="Kernel Version">
-                                                            <Text code>
+                                                            <RediaccText code>
                                                               {compatibility.kernel_version ||
                                                                 'Unknown'}
-                                                            </Text>
+                                                            </RediaccText>
                                                           </Descriptions.Item>
                                                           <Descriptions.Item label="OS ID">
                                                             {osInfo.id || 'Unknown'}
@@ -1672,11 +1234,13 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                           </Descriptions.Item>
                                                           <Descriptions.Item label="BTRFS Support">
                                                             {compatibility.btrfs_available ? (
-                                                              <Tag variant="success">Available</Tag>
+                                                              <RediaccTag variant="success">
+                                                                Available
+                                                              </RediaccTag>
                                                             ) : (
-                                                              <Tag variant="warning">
+                                                              <RediaccTag variant="warning">
                                                                 Not Available
-                                                              </Tag>
+                                                              </RediaccTag>
                                                             )}
                                                           </Descriptions.Item>
                                                           <Descriptions.Item label="Sudo Support">
@@ -1686,51 +1250,56 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                                 'unknown';
                                                               if (sudoStatus === 'available') {
                                                                 return (
-                                                                  <Tag variant="success">
+                                                                  <RediaccTag variant="success">
                                                                     Available
-                                                                  </Tag>
+                                                                  </RediaccTag>
                                                                 );
                                                               } else if (
                                                                 sudoStatus === 'password_required'
                                                               ) {
                                                                 return (
-                                                                  <Tag variant="warning">
+                                                                  <RediaccTag variant="warning">
                                                                     Password Required
-                                                                  </Tag>
+                                                                  </RediaccTag>
                                                                 );
                                                               } else if (
                                                                 sudoStatus === 'not_installed'
                                                               ) {
                                                                 return (
-                                                                  <Tag variant="error">
+                                                                  <RediaccTag variant="error">
                                                                     Not Installed
-                                                                  </Tag>
+                                                                  </RediaccTag>
                                                                 );
                                                               } else {
                                                                 return (
-                                                                  <Tag variant="default">
+                                                                  <RediaccTag variant="default">
                                                                     Unknown
-                                                                  </Tag>
+                                                                  </RediaccTag>
                                                                 );
                                                               }
                                                             })()}
                                                           </Descriptions.Item>
                                                         </Descriptions>
-                                                      </SpacedCard>
+                                                      </RediaccCard>
 
                                                       {/* Compatibility Status */}
-                                                      <SpacedAlert
+                                                      <RediaccAlert
                                                         data-testid="queue-trace-ssh-compatibility-alert"
                                                         variant={config.type}
                                                         icon={config.icon}
                                                         message={
                                                           <Space>
-                                                            <Text weight="bold">
+                                                            <RediaccText weight="bold">
                                                               Compatibility Status:
-                                                            </Text>
-                                                            <StatusText $color={config.color}>
+                                                            </RediaccText>
+                                                            <RediaccText
+                                                              style={{
+                                                                color: config.color,
+                                                                textTransform: 'capitalize',
+                                                              }}
+                                                            >
                                                               {status}
-                                                            </StatusText>
+                                                            </RediaccText>
                                                           </Space>
                                                         }
                                                         description={
@@ -1739,12 +1308,14 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                               compatibility.compatibility_issues
                                                                 .length > 0 && (
                                                                 <SectionMargin $top={spacing('SM')}>
-                                                                  <Text weight="bold">
+                                                                  <RediaccText weight="bold">
                                                                     Known Issues:
-                                                                  </Text>
-                                                                  <InfoList
-                                                                    $top={spacing('XS')}
-                                                                    $bottom={spacing('SM')}
+                                                                  </RediaccText>
+                                                                  <ul
+                                                                    style={{
+                                                                      marginTop: spacing('XS'),
+                                                                      marginBottom: spacing('SM'),
+                                                                    }}
                                                                   >
                                                                     {compatibility.compatibility_issues.map(
                                                                       (
@@ -1754,17 +1325,21 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                                         <li key={index}>{issue}</li>
                                                                       )
                                                                     )}
-                                                                  </InfoList>
+                                                                  </ul>
                                                                 </SectionMargin>
                                                               )}
                                                             {compatibility.recommendations &&
                                                               compatibility.recommendations.length >
                                                                 0 && (
                                                                 <SectionMargin>
-                                                                  <Text weight="bold">
+                                                                  <RediaccText weight="bold">
                                                                     Recommendations:
-                                                                  </Text>
-                                                                  <InfoList $top={spacing('XS')}>
+                                                                  </RediaccText>
+                                                                  <ul
+                                                                    style={{
+                                                                      marginTop: spacing('XS'),
+                                                                    }}
+                                                                  >
                                                                     {compatibility.recommendations.map(
                                                                       (
                                                                         rec: string,
@@ -1773,7 +1348,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                                         <li key={index}>{rec}</li>
                                                                       )
                                                                     )}
-                                                                  </InfoList>
+                                                                  </ul>
                                                                 </SectionMargin>
                                                               )}
                                                           </>
@@ -1803,7 +1378,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                           ]}
                                                         />
                                                       </SectionMargin>
-                                                    </FullWidthSpace>
+                                                    </RediaccStack>
                                                   );
                                                 }
                                               } catch {
@@ -1820,7 +1395,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                               />
                                             );
                                           } catch {
-                                            // Failed to parse response vault content
                                             return (
                                               <Empty description="Invalid response vault content format" />
                                             );
@@ -1843,7 +1417,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <TeamOutlined />
                               <span>Related Queue Items</span>
-                              <CaptionText>(Result Set 5 - Nearby Tasks)</CaptionText>
+                              <RediaccText variant="caption" color="muted">
+                                (Result Set 5 - Nearby Tasks)
+                              </RediaccText>
                             </Space>
                           ),
                           children: (
@@ -1860,8 +1436,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                         .map((item, index) => (
                                           <ScrollItem key={index}>
                                             <Space>
-                                              <CodeText code>{item.taskId}</CodeText>
-                                              <SmallStatusTag
+                                              <RediaccText
+                                                size="xs"
+                                                code
+                                                style={{ fontFamily: 'monospace' }}
+                                              >
+                                                {item.taskId}
+                                              </RediaccText>
+                                              <RediaccTag
+                                                compact
                                                 variant={
                                                   item.status === 'PROCESSING'
                                                     ? 'primary'
@@ -1869,10 +1452,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                 }
                                               >
                                                 {item.status}
-                                              </SmallStatusTag>
-                                              <CaptionText>
+                                              </RediaccTag>
+                                              <RediaccText variant="caption" color="muted">
                                                 {dayjs(item.createdTime).fromNow()}
-                                              </CaptionText>
+                                              </RediaccText>
                                             </Space>
                                           </ScrollItem>
                                         ))}
@@ -1899,8 +1482,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                         .map((item, index) => (
                                           <ScrollItem key={index}>
                                             <Space>
-                                              <CodeText code>{item.taskId}</CodeText>
-                                              <SmallStatusTag
+                                              <RediaccText
+                                                size="xs"
+                                                code
+                                                style={{ fontFamily: 'monospace' }}
+                                              >
+                                                {item.taskId}
+                                              </RediaccText>
+                                              <RediaccTag
+                                                compact
                                                 variant={
                                                   item.status === 'PROCESSING'
                                                     ? 'primary'
@@ -1908,10 +1498,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                 }
                                               >
                                                 {item.status}
-                                              </SmallStatusTag>
-                                              <CaptionText>
+                                              </RediaccTag>
+                                              <RediaccText variant="caption" color="muted">
                                                 {dayjs(item.createdTime).fromNow()}
-                                              </CaptionText>
+                                              </RediaccText>
                                             </Space>
                                           </ScrollItem>
                                         ))}
@@ -1929,7 +1519,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                 </Col>
                               </Row>
                               <CenteredFooter>
-                                <CaptionText>
+                                <RediaccText variant="caption" color="muted">
                                   Total:{' '}
                                   {
                                     traceData.queuePosition.filter(
@@ -1945,7 +1535,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                     ).length
                                   }{' '}
                                   tasks behind
-                                </CaptionText>
+                                </RediaccText>
                               </CenteredFooter>
                             </>
                           ),
@@ -1960,7 +1550,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <DashboardOutlined />
                               <span>Performance Metrics</span>
-                              <CaptionText>(Result Set 6 - Machine Stats)</CaptionText>
+                              <RediaccText variant="caption" color="muted">
+                                (Result Set 6 - Machine Stats)
+                              </RediaccText>
                             </Space>
                           ),
                           children: (
@@ -2002,9 +1594,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                       prefix={<SyncOutlined spin />}
                                       suffix="tasks"
                                     />
-                                    <Text color="secondary">
+                                    <RediaccText color="secondary">
                                       Currently being processed on this machine
-                                    </Text>
+                                    </RediaccText>
                                   </Card>
                                 </Col>
                                 <Col span={8}>
@@ -2044,27 +1636,27 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                 </Col>
                               </Row>
                               <Divider />
-                              <SpacedAlert
+                              <RediaccAlert
                                 data-testid="queue-trace-performance-alert"
                                 message="Performance Analysis"
                                 description={
                                   <Space direction="vertical">
                                     {traceData.machineStats.currentQueueDepth > 50 && (
-                                      <Text>
-                                        ⚠️ High queue depth detected. Tasks may experience delays.
-                                      </Text>
+                                      <RediaccText>
+                                        High queue depth detected. Tasks may experience delays.
+                                      </RediaccText>
                                     )}
                                     {traceData.machineStats.activeProcessingCount >=
                                       (traceData.machineStats.maxConcurrentTasks || 0) && (
-                                      <Text>
-                                        ⚠️ Machine at full capacity. New tasks will wait in queue.
-                                      </Text>
+                                      <RediaccText>
+                                        Machine at full capacity. New tasks will wait in queue.
+                                      </RediaccText>
                                     )}
                                     {traceData.machineStats.currentQueueDepth === 0 &&
                                       traceData.machineStats.activeProcessingCount === 0 && (
-                                        <Text>
-                                          ✅ Machine is idle and ready to process tasks immediately.
-                                        </Text>
+                                        <RediaccText>
+                                          Machine is idle and ready to process tasks immediately.
+                                        </RediaccText>
                                       )}
                                   </Space>
                                 }

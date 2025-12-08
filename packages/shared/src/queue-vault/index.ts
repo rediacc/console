@@ -1,20 +1,19 @@
 // Types
-export type {
-  VaultData,
-  VaultContextData,
-  StorageSystemContextData,
-  MachineContextData,
-  GeneralSettings,
-  QueueRequestContext,
-  FunctionRequirements,
-} from './types';
+
+export type { QueueVaultBuilderConfig } from './builders';
 
 // Builders
 export { QueueVaultBuilder } from './builders';
-export type { QueueVaultBuilderConfig } from './builders';
-
-// Utils
-export { minifyJSON, isBase64, getParamArray, getParamValue } from './utils';
-
 // Data
 export { FUNCTION_REQUIREMENTS } from './data';
+export type {
+  FunctionRequirements,
+  GeneralSettings,
+  MachineContextData,
+  QueueRequestContext,
+  StorageSystemContextData,
+  VaultContextData,
+  VaultData,
+} from './types';
+// Utils
+export { getParamArray, getParamValue, isBase64, minifyJSON } from './utils';

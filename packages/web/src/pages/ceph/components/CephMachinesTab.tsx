@@ -1,25 +1,25 @@
 import React, { useState } from 'react';
-import { Space, Select, Input, Button, Card, Row, Col } from 'antd';
-import {
-  SearchOutlined,
-  FilterOutlined,
-  ExportOutlined,
-  CloudServerOutlined,
-  InfoCircleOutlined,
-} from '@/utils/optimizedIcons';
+import { Button, Card, Col, Input, Row, Select, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useComponentStyles } from '@/hooks/useComponentStyles';
-import { FilterableMachineTable } from './FilterableMachineTable';
-import { MachineAvailabilitySummary } from './MachineAvailabilitySummary';
-import { useMachines } from '@/api/queries/machines';
-import { Machine } from '@/types';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
+import { useMachines } from '@/api/queries/machines';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
+import { useDialogState } from '@/hooks/useDialogState';
 import { AssignToClusterModal } from '@/pages/ceph/components/AssignToClusterModal';
 import { RemoveFromClusterModal } from '@/pages/ceph/components/RemoveFromClusterModal';
 import { ViewAssignmentStatusModal } from '@/pages/ceph/components/ViewAssignmentStatusModal';
+import { RootState } from '@/store/store';
+import { Machine } from '@/types';
 import { showMessage } from '@/utils/messages';
-import { useDialogState } from '@/hooks/useDialogState';
+import {
+  CloudServerOutlined,
+  ExportOutlined,
+  FilterOutlined,
+  InfoCircleOutlined,
+  SearchOutlined,
+} from '@/utils/optimizedIcons';
+import { FilterableMachineTable } from './FilterableMachineTable';
+import { MachineAvailabilitySummary } from './MachineAvailabilitySummary';
 
 const { Search } = Input;
 
@@ -72,18 +72,21 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
     }
 
     // Apply assignment filter
+    // Note: assignmentStatus is now a simple string ('ASSIGNED' | 'UNASSIGNED')
     if (assignmentFilter !== 'all') {
       filtered = filtered.filter((machine: Machine) => {
-        const assignmentType = machine.assignmentStatus?.assignmentType;
+        const isAssigned = machine.assignmentStatus === 'ASSIGNED' || !!machine.cephClusterName;
         switch (assignmentFilter) {
           case 'available':
-            return (!assignmentType || assignmentType === 'AVAILABLE') && !machine.cephClusterName;
+            return !isAssigned;
           case 'cluster':
-            return assignmentType === 'CLUSTER' || !!machine.cephClusterName;
+            return !!machine.cephClusterName;
           case 'image':
-            return assignmentType === 'IMAGE';
+            // Image assignments are not currently tracked separately
+            return false;
           case 'clone':
-            return assignmentType === 'CLONE';
+            // Clone assignments are not currently tracked separately
+            return false;
           default:
             return true;
         }
@@ -117,7 +120,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `distributed-storage-machines-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `ceph-machines-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

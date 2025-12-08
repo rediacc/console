@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { useCreateQueueItem } from '@/api/queries/queue';
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
-import type { Machine } from '@/types';
 import { useTeams } from '@/api/queries/teams';
-import { waitForQueueItemCompletion, type QueueItemCompletionResult } from './helloService';
-import type { Team } from '@rediacc/shared/types';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import type { Machine } from '@/types';
+import type { GetCompanyTeams_ResultSet1 } from '@rediacc/shared/types';
+import { type QueueItemCompletionResult, waitForQueueItemCompletion } from './helloService';
 
 export interface PingFunctionParams {
   teamName: string;
@@ -179,7 +179,10 @@ export function usePingFunction(options?: { useManaged?: boolean }) {
 }
 
 // Helper functions
-function getTeamVault(params: PingFunctionParams, teams: Team[] | undefined): string {
+function getTeamVault(
+  params: PingFunctionParams,
+  teams: GetCompanyTeams_ResultSet1[] | undefined
+): string {
   if (params.teamVault && params.teamVault !== '{}') {
     return params.teamVault;
   }

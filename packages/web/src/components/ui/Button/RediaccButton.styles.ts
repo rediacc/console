@@ -1,7 +1,8 @@
-import styled, { css } from 'styled-components';
 import { Button as AntButton } from 'antd';
+import styled, { css } from 'styled-components';
+import { disabledState } from '@/styles/mixins';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { ButtonVariant, ButtonSize } from './RediaccButton.types';
+import type { ButtonSize, ButtonVariant } from './RediaccButton.types';
 
 type ButtonTokenSet = {
   bg: string;
@@ -181,8 +182,7 @@ export const StyledRediaccButton = styled(AntButton)<{
 
     /* Disabled state */
     &:disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
+      ${disabledState}
     }
   }
 `;

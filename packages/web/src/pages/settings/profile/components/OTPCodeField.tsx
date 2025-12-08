@@ -1,8 +1,8 @@
 import React from 'react';
 import { Form } from 'antd';
-import type { Rule } from 'antd/es/form';
 import styled from 'styled-components';
 import { RediaccInput } from '@/components/ui';
+import type { Rule } from 'antd/es/form';
 
 const CenteredInput = styled(RediaccInput)`
   text-align: center;

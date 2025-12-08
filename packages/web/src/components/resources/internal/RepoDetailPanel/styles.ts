@@ -1,27 +1,25 @@
 import styled from 'styled-components';
-import { FolderOutlined } from '@/utils/optimizedIcons';
-import { RediaccTag } from '@/components/ui/Tag';
-import type { TagPreset, TagVariant } from '@/components/ui/Tag';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccCard, RediaccAlert, RediaccEmpty } from '@/components/ui';
 import {
-  PanelWrapper,
-  Header,
-  HeaderRow,
-  TitleGroup,
-  PanelTitle,
-  CollapseButton,
-  TagGroup,
-  ContentWrapper,
-  FieldRow,
-  FieldLabel,
-  FieldValue,
-  FieldValueMonospace,
-  SectionCard,
   SectionDivider as BaseSectionDivider,
   SectionHeader as BaseSectionHeader,
   SectionTitle as BaseSectionTitle,
-} from '../sharedDetailPanelAliases';
+  CollapseButton,
+  ContentWrapper,
+  FieldLabel,
+  FieldRow,
+  FieldValue,
+  FieldValueMonospace,
+  Header,
+  HeaderRow,
+  PanelTitle,
+  PanelWrapper,
+  SectionCard,
+  TagGroup,
+  TitleGroup,
+} from '@/components/resources/internal/sharedDetailPanelAliases';
+import { RediaccCard, RediaccTag } from '@/components/ui';
+import type { TagPreset, TagVariant } from '@/components/ui/Tag';
+import { FolderOutlined } from '@/utils/optimizedIcons';
 
 export { PanelWrapper, PanelTitle, CollapseButton, ContentWrapper };
 
@@ -59,10 +57,6 @@ export const StyledTag = styled(RediaccTag).attrs<{ $variant: TagVariantKey }>((
   && {
     gap: ${({ theme }) => theme.spacing.XS}px;
   }
-`;
-
-export const EmptyState = styled(RediaccEmpty)`
-  margin-top: ${({ theme }) => theme.spacing.XXXL}px;
 `;
 
 export const SectionDivider = styled(BaseSectionDivider)`
@@ -106,10 +100,6 @@ export const StatusTag = styled(RediaccTag).attrs<{ $tone?: StatusToneKey }>(
   && {
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
-`;
-
-export const AlertWrapper = styled(RediaccAlert)`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const VolumeDescription = styled.div`
@@ -164,32 +154,6 @@ export const ServiceMetaItem = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.XS}px;
-`;
-
-export const ServiceMetaLabel = styled(RediaccText).attrs({
-  size: 'xs',
-  color: 'secondary',
-})`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-  }
-`;
-
-export const ServiceMetaValue = styled(RediaccText).attrs({
-  size: 'xs',
-})`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-  }
-`;
-
-export const DiskUsageMeta = styled(RediaccText).attrs({
-  size: 'xs',
-  color: 'secondary',
-})`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-  }
 `;
 
 export { SectionCard as PathsCard };

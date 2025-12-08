@@ -1,12 +1,11 @@
-import styled from 'styled-components';
 import { CameraOutlined } from '@ant-design/icons';
-import { FlexColumn, FlexRow, StyledIcon, IconActionButton } from '@/styles/primitives';
-import { RediaccTag } from '@/components/ui';
-import { TableWrapper, NameCell, NameText as BaseNameText } from '../../styles/tableAliases';
+import styled from 'styled-components';
+import { NameText as BaseNameText, NameCell, TableWrapper } from '@/pages/ceph/styles/tableAliases';
+import { FlexColumn, FlexRow, IconActionButton, StyledIcon } from '@/styles/primitives';
 
 export const Container = styled(FlexColumn).attrs({ $gap: 'MD' })`
   padding: ${({ theme }) => theme.spacing.MD}px;
-  background: var(--color-fill-quaternary);
+  background: ${({ theme }) => theme.colors.bgSecondary};
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
 `;
 
@@ -31,10 +30,7 @@ export const NameText = styled(BaseNameText)`
   font-size: ${({ theme }) => theme.fontSize.BASE}px;
 `;
 
-export const VaultTag = styled(RediaccTag).attrs({
-  variant: 'neutral',
-  size: 'sm',
-})``;
+// VaultTag removed - use <RediaccTag variant="neutral" compact> directly
 
 export const GuidText = styled.span`
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;

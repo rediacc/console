@@ -1,18 +1,8 @@
 import styled from 'styled-components';
-import { RediaccStack } from '@/components/ui';
-
-export const ContentSpace = styled(RediaccStack).attrs({ direction: 'vertical' })`
-  width: 100%;
-`;
 
 export const SourceLabel = styled.div`
   margin-bottom: 8px;
   font-weight: 500;
-`;
-
-export const SourceContainer = styled(RediaccStack).attrs({ direction: 'horizontal' })`
-  width: 100%;
-  justify-content: space-between;
 `;
 
 export const SourceSelect = styled.div`

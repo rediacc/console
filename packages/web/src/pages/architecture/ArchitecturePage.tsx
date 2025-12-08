@@ -1,49 +1,43 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Alert, Space, Tooltip, Statistic, Row, Col, Select } from 'antd';
-import { RediaccRadio as Radio } from '@/components/ui/Form';
-import {
-  FullscreenOutlined,
-  FullscreenExitOutlined,
-  ReloadOutlined,
-  CloudOutlined,
-  TeamOutlined,
-  UserOutlined,
-  ApiOutlined,
-  GlobalOutlined,
-  InboxOutlined,
-  FilterOutlined,
-  CheckOutlined,
-  MinusCircleOutlined,
-} from '@/utils/optimizedIcons';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Col, Row, Select, Space, Statistic, Tooltip } from 'antd';
+import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { useCompanyArchitecture } from '@/api/queries/architecture';
-import { useTheme } from '@/context/ThemeContext';
-import * as d3 from 'd3';
-import { PageCard, RediaccText as Text } from '@/components/ui';
-import { RediaccButton as Button } from '@/components/ui';
-import { getArchitecturePalette } from './architectureTheme';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import type { CompanyDataGraph, CompanyGraphNode } from '@rediacc/shared/types';
+import { PageCard, RediaccButton, RediaccRadio, RediaccStack, RediaccText } from '@/components/ui';
+import { useTheme } from '@/context/ThemeContext';
+import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
 import {
-  PageWrapper,
-  ContentStack,
-  HeaderStack,
-  HeaderRow,
+  ApiOutlined,
+  CheckOutlined,
+  CloudOutlined,
+  FilterOutlined,
+  FullscreenExitOutlined,
+  FullscreenOutlined,
+  GlobalOutlined,
+  InboxOutlined,
+  MinusCircleOutlined,
+  ReloadOutlined,
+  TeamOutlined,
+  UserOutlined,
+} from '@/utils/optimizedIcons';
+import type { CompanyDataGraph, CompanyGraphNode } from '@rediacc/shared/types';
+import { getArchitecturePalette } from './architectureTheme';
+import {
   ActionGroup,
-  FiltersRow,
+  CenteredMessage,
+  CenteredState,
+  FilterActions,
   FilterLabel,
   FilterSelectWrapper,
-  FilterActions,
-  VisualizationContainer,
-  LoadingOverlay,
-  LoadingMessage,
-  VisualizationCanvas,
+  FiltersRow,
   LegendGrid,
-  LegendItem,
   LegendIcon,
-  SectionTitleText,
-  CenteredState,
-  CenteredMessage,
+  LegendItem,
+  LoadingMessage,
+  LoadingOverlay,
+  VisualizationCanvas,
+  VisualizationContainer,
 } from './styles';
 
 interface GraphNode extends CompanyGraphNode, d3.SimulationNodeDatum {
@@ -679,7 +673,7 @@ const ArchitecturePage: React.FC = () => {
 
   if (error) {
     return (
-      <PageWrapper>
+      <PageContainer>
         <Alert
           message={t('messages.error', { ns: 'common' })}
           description={error instanceof Error ? error.message : t('architecture.fetchError')}
@@ -687,7 +681,7 @@ const ArchitecturePage: React.FC = () => {
           showIcon
           action={
             <Tooltip title={t('actions.retry', { ns: 'common' })}>
-              <Button
+              <RediaccButton
                 size="sm"
                 iconOnly
                 icon={<ReloadOutlined />}
@@ -697,15 +691,15 @@ const ArchitecturePage: React.FC = () => {
             </Tooltip>
           }
         />
-      </PageWrapper>
+      </PageContainer>
     );
   }
 
   if (!data) {
     return (
-      <PageWrapper>
+      <PageContainer>
         <Alert message={t('architecture.noData')} type="info" showIcon />
-      </PageWrapper>
+      </PageContainer>
     );
   }
 
@@ -721,31 +715,33 @@ const ArchitecturePage: React.FC = () => {
   };
 
   return (
-    <PageWrapper data-testid="architecture-page">
-      <ContentStack>
+    <PageContainer data-testid="architecture-page">
+      <RediaccStack variant="spaced-column" fullWidth>
         {/* Header */}
         <PageCard>
-          <HeaderStack>
-            <HeaderRow>
-              <SectionTitleText>{t('architecture.title')}</SectionTitleText>
+          <RediaccStack direction="vertical" gap="md" fullWidth>
+            <SectionHeaderRow>
+              <RediaccText size="xl" weight="semibold" style={{ margin: 0 }}>
+                {t('architecture.title')}
+              </RediaccText>
               <ActionGroup>
-                <Radio.Group
+                <RediaccRadio.Group
                   value={viewMode}
                   onChange={(e) => setViewMode(e.target.value)}
                   data-testid="architecture-view-mode-selector"
                 >
-                  <Radio.Button value="hierarchy" data-testid="architecture-view-hierarchy">
+                  <RediaccRadio.Button value="hierarchy" data-testid="architecture-view-hierarchy">
                     {t('architecture.viewHierarchy')}
-                  </Radio.Button>
-                  <Radio.Button value="force" data-testid="architecture-view-force">
+                  </RediaccRadio.Button>
+                  <RediaccRadio.Button value="force" data-testid="architecture-view-force">
                     {t('architecture.viewForce')}
-                  </Radio.Button>
-                  <Radio.Button value="radial" data-testid="architecture-view-radial">
+                  </RediaccRadio.Button>
+                  <RediaccRadio.Button value="radial" data-testid="architecture-view-radial">
                     {t('architecture.viewRadial')}
-                  </Radio.Button>
-                </Radio.Group>
+                  </RediaccRadio.Button>
+                </RediaccRadio.Group>
                 <Tooltip title={t('actions.refresh', { ns: 'common' })}>
-                  <Button
+                  <RediaccButton
                     iconOnly
                     icon={<ReloadOutlined />}
                     onClick={() => refetch()}
@@ -759,7 +755,7 @@ const ArchitecturePage: React.FC = () => {
                       : t('actions.fullscreen', { ns: 'common' })
                   }
                 >
-                  <Button
+                  <RediaccButton
                     iconOnly
                     icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
                     onClick={toggleFullscreen}
@@ -767,12 +763,14 @@ const ArchitecturePage: React.FC = () => {
                   />
                 </Tooltip>
               </ActionGroup>
-            </HeaderRow>
+            </SectionHeaderRow>
 
             <FiltersRow>
               <FilterLabel>
                 <FilterOutlined />
-                <Text weight="bold">{t('architecture.filterEntities', { ns: 'system' })}</Text>
+                <RediaccText weight="bold">
+                  {t('architecture.filterEntities', { ns: 'system' })}
+                </RediaccText>
               </FilterLabel>
               <FilterSelectWrapper>
                 <Select
@@ -801,7 +799,7 @@ const ArchitecturePage: React.FC = () => {
               </FilterSelectWrapper>
               <FilterActions>
                 <Tooltip title={t('architecture.selectAll', { ns: 'system' })}>
-                  <Button
+                  <RediaccButton
                     iconOnly
                     size="sm"
                     icon={<CheckOutlined />}
@@ -811,7 +809,7 @@ const ArchitecturePage: React.FC = () => {
                   />
                 </Tooltip>
                 <Tooltip title={t('architecture.clearAll', { ns: 'system' })}>
-                  <Button
+                  <RediaccButton
                     iconOnly
                     size="sm"
                     icon={<MinusCircleOutlined />}
@@ -875,7 +873,7 @@ const ArchitecturePage: React.FC = () => {
                 />
               </Col>
             </Row>
-          </HeaderStack>
+          </RediaccStack>
         </PageCard>
 
         {/* Visualization */}
@@ -911,13 +909,13 @@ const ArchitecturePage: React.FC = () => {
             }).map(([type, label]) => (
               <LegendItem key={type} data-testid={`architecture-legend-${type}`}>
                 <LegendIcon $color={getNodeColor(type)}>{getNodeIcon(type)}</LegendIcon>
-                <Text>{label}</Text>
+                <RediaccText>{label}</RediaccText>
               </LegendItem>
             ))}
           </LegendGrid>
         </PageCard>
-      </ContentStack>
-    </PageWrapper>
+      </RediaccStack>
+    </PageContainer>
   );
 };
 

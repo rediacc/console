@@ -1,7 +1,7 @@
-import styled from 'styled-components';
 import { Empty as AntEmpty } from 'antd';
+import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { EmptyVariant, EmptySize } from './RediaccEmpty.types';
+import type { EmptySize, EmptyVariant } from './RediaccEmpty.types';
 
 export const resolveEmptyPadding = (theme: StyledTheme, size: EmptySize = 'md'): number => {
   switch (size) {

@@ -1,28 +1,25 @@
 import React from 'react';
+import { CloudServerOutlined, TeamOutlined } from '@ant-design/icons';
 import { Empty } from 'antd';
-import { TeamOutlined, CloudServerOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
-  useCloneMachines,
-  type CephRbdClone,
-  type CephRbdSnapshot,
-  type CephRbdImage,
   type CephPool,
+  type CephRbdClone,
+  type CephRbdImage,
+  type CephRbdSnapshot,
   type CloneMachine,
+  useCloneMachines,
 } from '@/api/queries/ceph';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
 import {
   AssignButton,
   EmptyState,
-  MachineCountTag,
   MachineListButton,
   MachineListHeader,
-  MachineListStack,
   MachineListWrapper,
-  MachineTag,
   MachineTagGrid,
-} from '../styles';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccText as Text } from '@/components/ui';
+} from '@/pages/ceph/components/CloneTable/styles';
 
 interface CloneMachineTableProps {
   clone: CephRbdClone;
@@ -79,24 +76,30 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
 
   return (
     <MachineListWrapper data-testid={`clone-list-machines-container-${clone.cloneName}`}>
-      <MachineListStack>
+      <RediaccStack direction="vertical" gap="md" fullWidth>
         <MachineListHeader>
           <TeamOutlined />
-          <Text weight="bold">{t('clones.assignedMachines')}:</Text>
-          <MachineCountTag data-testid={`clone-list-machine-count-${clone.cloneName}`}>
+          <RediaccText weight="bold">{t('clones.assignedMachines')}:</RediaccText>
+          <RediaccTag
+            variant="neutral"
+            compact
+            data-testid={`clone-list-machine-count-${clone.cloneName}`}
+          >
             {machines.length} {t('machines:machines')}
-          </MachineCountTag>
+          </RediaccTag>
         </MachineListHeader>
 
         <MachineTagGrid>
           {machines.map((machine: CloneMachine) => (
-            <MachineTag
+            <RediaccTag
               key={machine.machineName}
+              preset="machine"
+              compact
               icon={<CloudServerOutlined />}
               data-testid={`clone-list-machine-tag-${clone.cloneName}-${machine.machineName}`}
             >
               {machine.machineName}
-            </MachineTag>
+            </RediaccTag>
           ))}
         </MachineTagGrid>
 
@@ -107,7 +110,7 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
         >
           {t('clones.manageMachines')}
         </MachineListButton>
-      </MachineListStack>
+      </RediaccStack>
     </MachineListWrapper>
   );
 };

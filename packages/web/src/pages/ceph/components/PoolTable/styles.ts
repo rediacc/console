@@ -1,13 +1,17 @@
 import styled from 'styled-components';
-import { CloudServerOutlined, DatabaseOutlined } from '@/utils/optimizedIcons';
+import { RediaccCard } from '@/components/ui';
+import { ActionsRow, ExpandIcon, NameCell, NameText } from '@/pages/ceph/styles/tableAliases';
+import { borderedCard } from '@/styles/mixins';
 import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
-import { RediaccTag, RediaccCard } from '@/components/ui';
-import { ActionsRow, NameCell, NameText, ExpandIcon } from '../../styles/tableAliases';
+import { CloudServerOutlined, DatabaseOutlined } from '@/utils/optimizedIcons';
 
+/**
+ * @deprecated Use <RediaccCard spacing="default" /> with inline styles
+ * Note: Cannot fully replace due to custom border/shadow - keep wrapper or use inline styles
+ */
 export const ClusterCard = styled(RediaccCard)`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+    ${borderedCard()}
     box-shadow: ${({ theme }) => theme.shadows.CARD};
     margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   }
@@ -26,10 +30,7 @@ export const CardTitle = styled.span`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export const ClusterTag = styled(RediaccTag).attrs({
-  variant: 'primary',
-  size: 'sm',
-})``;
+// ClusterTag removed - use <RediaccTag variant="primary" compact> directly
 
 export const TableWrapper = styled(BaseTableContainer)`
   margin-top: ${({ theme }) => theme.spacing.MD}px;

@@ -98,3 +98,74 @@ export const MODAL_SIZE_RECOMMENDATIONS = {
  * Type for modal size recommendation keys
  */
 export type ModalSizeRecommendation = keyof typeof MODAL_SIZE_RECOMMENDATIONS;
+
+/**
+ * Shared type definitions for modal component props.
+ * Use these base types to ensure consistency across all modal implementations.
+ */
+
+/**
+ * Base props that all modals should have
+ */
+export interface BaseModalProps {
+  /** Whether the modal is visible */
+  open: boolean;
+  /** Callback when modal is closed/cancelled */
+  onCancel: () => void;
+  /** Optional callback when modal operation succeeds */
+  onSuccess?: () => void;
+}
+
+/**
+ * Props for modals that contain forms (create/edit operations)
+ */
+export interface FormModalProps<T = Record<string, unknown>> extends BaseModalProps {
+  /** Whether this is create or edit mode */
+  mode: 'create' | 'edit';
+  /** Initial data for edit mode */
+  initialData?: Partial<T>;
+  /** Form submission handler */
+  onSubmit: (data: T) => void | Promise<void>;
+}
+
+/**
+ * Props for modals that handle resource selection
+ */
+export interface SelectionModalProps<T = unknown> extends BaseModalProps {
+  /** Available items to select from */
+  items: T[];
+  /** Currently selected items */
+  selectedItems?: T[];
+  /** Callback when selection changes */
+  onSelect: (items: T[]) => void;
+  /** Whether multiple selection is allowed */
+  multiSelect?: boolean;
+}
+
+/**
+ * Props for confirmation modals
+ */
+export interface ConfirmationModalProps extends BaseModalProps {
+  /** Title of the confirmation */
+  title: string;
+  /** Description/message to show */
+  message: string;
+  /** Callback when confirmed */
+  onConfirm: () => void | Promise<void>;
+  /** Whether the action is dangerous (affects styling) */
+  danger?: boolean;
+  /** Text for confirm button */
+  confirmText?: string;
+  /** Text for cancel button */
+  cancelText?: string;
+}
+
+/**
+ * Props for modals that display detailed information
+ */
+export interface DetailModalProps<T = unknown> extends BaseModalProps {
+  /** The data to display */
+  data: T | null;
+  /** Loading state */
+  loading?: boolean;
+}

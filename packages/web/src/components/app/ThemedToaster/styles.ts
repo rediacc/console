@@ -1,6 +1,6 @@
 import styled from 'styled-components';
-import type { DefaultToastOptions } from 'react-hot-toast';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import type { DefaultToastOptions } from 'react-hot-toast';
 
 export const ToasterContainer = styled.div`
   position: relative;

@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
-import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { join } from 'node:path';
 import type { IStorageProvider } from '../types/index.js';
 
 const CONFIG_DIR = join(homedir(), '.rediacc');

@@ -1,6 +1,12 @@
 import { Command } from 'commander';
-import { createResourceCommands } from '../utils/commandFactory.js';
+import type {
+  CreateRegionParams,
+  DeleteRegionParams,
+  UpdateRegionNameParams,
+  UpdateRegionVaultParams,
+} from '@rediacc/shared/types';
 import { api } from '../services/api.js';
+import { createResourceCommands } from '../utils/commandFactory.js';
 
 export function registerRegionCommands(program: Command): void {
   createResourceCommands(program, {
@@ -10,22 +16,16 @@ export function registerRegionCommands(program: Command): void {
     parentOption: 'none',
     operations: {
       list: () => api.regions.list(),
-      create: (payload) => api.regions.create(payload.regionName as string),
-      rename: (payload) =>
-        api.regions.rename(payload.currentRegionName as string, payload.newRegionName as string),
-      delete: (payload) => api.regions.delete(payload.regionName as string),
+      create: (payload) => api.regions.create(payload as unknown as CreateRegionParams),
+      rename: (payload) => api.regions.rename(payload as unknown as UpdateRegionNameParams),
+      delete: (payload) => api.regions.delete(payload as unknown as DeleteRegionParams),
     },
     vaultConfig: {
       fetch: (params) => api.company.getAllVaults(params),
       vaultType: 'Region',
     },
     vaultUpdateConfig: {
-      update: (payload) =>
-        api.regions.updateVault(
-          payload.regionName as string,
-          payload.vaultContent as string,
-          payload.vaultVersion as number
-        ),
+      update: (payload) => api.regions.updateVault(payload as unknown as UpdateRegionVaultParams),
       vaultFieldName: 'vaultContent',
     },
   });

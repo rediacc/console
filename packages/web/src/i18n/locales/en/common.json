@@ -105,7 +105,7 @@
     "architecture": "Architecture",
     "audit": "Audit",
     "dashboard": "Dashboard",
-    "ceph": "Distributed Storage",
+    "ceph": "Ceph",
     "logout": "Logout",
     "mainNavigation": "Main navigation",
     "queue": "Queue",
@@ -242,7 +242,7 @@
           "description": "Additional cluster configuration options",
           "label": "Configuration"
         },
-        "description": "Configure Ceph distributed storage cluster settings",
+        "description": "Configure Ceph cluster settings",
         "fsid": {
           "description": "Unique identifier for the Ceph cluster (UUID format)",
           "label": "Filesystem ID"
@@ -484,7 +484,7 @@
       }
     },
     "fields.CLONE.description": "Configure RBD clone settings",
-    "fields.CLUSTER.description": "Configure Ceph distributed storage cluster settings",
+    "fields.CLUSTER.description": "Configure Ceph cluster settings",
     "fields.IMAGE.description": "Configure RBD image settings",
     "fields.POOL.description": "Configure Ceph storage pool settings",
     "fields.SNAPSHOT.description": "Configure RBD snapshot settings",

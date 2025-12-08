@@ -73,6 +73,50 @@
     "./encryption/*": {
       "types": "./dist/encryption/*.d.ts",
       "default": "./dist/encryption/*.js"
+    },
+    "./validation": {
+      "types": "./dist/validation/index.d.ts",
+      "default": "./dist/validation/index.js"
+    },
+    "./services": {
+      "types": "./dist/services/index.d.ts",
+      "default": "./dist/services/index.js"
+    },
+    "./services/*": {
+      "types": "./dist/services/*.d.ts",
+      "default": "./dist/services/*.js"
+    },
+    "./services/repo": {
+      "types": "./dist/services/repo/index.d.ts",
+      "default": "./dist/services/repo/index.js"
+    },
+    "./services/repo/*": {
+      "types": "./dist/services/repo/*.d.ts",
+      "default": "./dist/services/repo/*.js"
+    },
+    "./services/queue": {
+      "types": "./dist/services/queue/index.d.ts",
+      "default": "./dist/services/queue/index.js"
+    },
+    "./services/queue/*": {
+      "types": "./dist/services/queue/*.d.ts",
+      "default": "./dist/services/queue/*.js"
+    },
+    "./services/machine": {
+      "types": "./dist/services/machine/index.d.ts",
+      "default": "./dist/services/machine/index.js"
+    },
+    "./services/machine/*": {
+      "types": "./dist/services/machine/*.d.ts",
+      "default": "./dist/services/machine/*.js"
+    },
+    "./services/batch": {
+      "types": "./dist/services/batch/index.d.ts",
+      "default": "./dist/services/batch/index.js"
+    },
+    "./services/batch/*": {
+      "types": "./dist/services/batch/*.d.ts",
+      "default": "./dist/services/batch/*.js"
     }
   },
   "files": [

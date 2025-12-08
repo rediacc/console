@@ -39,7 +39,7 @@ body:
         - Dashboard (Widget Loading)
         - Repositories List
         - Machines Table
-        - Distributed Storage
+        - Ceph
         - Queue Management
         - Audit Logs
         - System Settings

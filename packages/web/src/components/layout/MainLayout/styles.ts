@@ -1,9 +1,9 @@
+import { Avatar, Layout } from 'antd';
 import styled from 'styled-components';
-import { Layout, Avatar } from 'antd';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { FlexRow } from '@/styles/primitives';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccText, RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccText } from '@/components/ui';
+import { FlexRow } from '@/styles/primitives';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const { Header, Content } = Layout;
 
@@ -38,7 +38,7 @@ export const HeaderRight = styled(InlineStack)``;
 
 export const MenuToggleButton = styled(RediaccButton)`
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  font-size: 18px;
+  font-size: ${({ theme }) => theme.fontSize.LG}px;
   color: var(--color-text-primary);
   transition: all 0.2s ease;
 
@@ -94,7 +94,7 @@ export const TransitionIcon = styled.div`
 `;
 
 export const TransitionText = styled(RediaccText)`
-  font-size: 18px;
+  font-size: ${({ theme }) => theme.fontSize.LG}px;
   color: var(--color-text-secondary);
 `;
 

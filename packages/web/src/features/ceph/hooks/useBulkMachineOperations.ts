@@ -1,11 +1,10 @@
-import { useState, useCallback, useMemo } from 'react';
-import { useMachineAssignment } from './useMachineAssignment';
-import type { CloneIdentifier } from './useMachineAssignment';
-import type { Machine } from '@/types';
-import { MachineValidationService } from '../services';
-import { showMessage } from '@/utils/messages';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { BulkValidationResult } from '../models/machine-validation.model';
+import type { CloneIdentifier } from '@/features/ceph/hooks/useMachineAssignment';
+import { useMachineAssignment } from '@/features/ceph/hooks/useMachineAssignment';
+import { type BulkValidationResult, MachineValidationService } from '@/features/ceph/services';
+import type { Machine } from '@/types';
+import { showMessage } from '@/utils/messages';
 
 export interface BulkOperationProgress {
   total: number;

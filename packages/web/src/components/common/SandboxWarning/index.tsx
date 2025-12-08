@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { configService } from '@/services/configService';
-import { SandboxBanner, BannerMessage } from './styles';
+import { BannerMessage, SandboxBanner } from './styles';
 
 const SandboxWarning: React.FC = () => {
   const { t } = useTranslation('common');

@@ -1,8 +1,7 @@
 import styled from 'styled-components';
-import { RediaccButton as Button } from '@/components/ui';
-import { RediaccSelect } from '@/components/ui/Form';
+import { RediaccButton, RediaccSelect } from '@/components/ui';
 
-export const LanguageButton = styled(Button).attrs({ iconOnly: true })`
+export const LanguageButton = styled(RediaccButton).attrs({ iconOnly: true })`
   && {
     color: ${({ theme }) => theme.colors.textPrimary};
 

@@ -1,69 +1,65 @@
-import React, { useState, useEffect } from 'react';
 import type { ComponentPropsWithoutRef } from 'react';
-import { Row, Col, List } from 'antd';
-import { RediaccTag as Tag } from '@/components/ui';
-import { ModalSize } from '@/types/modal';
-import {
-  RocketOutlined,
-  FileTextOutlined,
-  CodeOutlined,
-  SafetyOutlined,
-  AppstoreOutlined,
-  CheckCircleOutlined,
-  FileOutlined,
-} from '@/utils/optimizedIcons';
+import React, { useEffect, useState } from 'react';
+import { Col, List, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
-import type { Components as MarkdownComponents } from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { templateService } from '@/services/templateService';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { TabLabel } from '@/styles/primitives';
 import {
-  StyledModal,
-  TitleStack,
-  TemplateAvatar,
-  TemplateIconWrapper,
-  DifficultyTag,
-  StyledTabs,
-  OverviewScroll,
+  RediaccButton,
+  RediaccDivider,
+  RediaccStack,
+  RediaccTag,
+  RediaccText,
+} from '@/components/ui';
+import { templateService } from '@/services/templateService';
+import { NoMarginTitle, TabLabel } from '@/styles/primitives';
+import { ModalSize } from '@/types/modal';
+import {
+  AppstoreOutlined,
+  CheckCircleOutlined,
+  CodeOutlined,
+  FileOutlined,
+  FileTextOutlined,
+  RocketOutlined,
+  SafetyOutlined,
+} from '@/utils/optimizedIcons';
+import {
+  AlertStack,
+  BodyParagraph,
+  CenteredLoadingContainer,
+  Checklist,
+  ChecklistItem,
   DescriptionCard,
+  DifficultyTag,
   FeatureCard,
-  CardTitle,
-  MarkdownContent,
-  FeatureList,
-  FeatureItem,
   FeatureText,
-  LoadingContainer,
-  LoadingText,
-  FilesLayout,
-  FileListColumn,
-  FilePreviewColumn,
   FileListCard,
+  FileListColumn,
   FileListItem,
   FileMeta,
   FileName,
-  FilePreviewCard,
-  FilePreviewHeader,
   FilePath,
   FilePreviewBody,
-  SecurityScroll,
-  SecurityCard,
-  AlertStack,
-  RoundedAlert,
-  Checklist,
-  ChecklistItem,
-  BodyParagraph,
-  BodyText,
-  SectionDivider,
-  SecurityTitle,
+  FilePreviewCard,
+  FilePreviewColumn,
+  FilesLayout,
   IconLabel,
+  MarkdownContent,
+  OverviewScroll,
+  RoundedAlert,
+  SecurityCard,
+  SecurityScroll,
+  SecurityTitle,
+  StyledModal,
+  StyledTabs,
   SuccessIcon,
+  TemplateAvatar,
+  TemplateIconWrapper,
 } from './styles';
-import { NoMarginTitle } from '@/styles/primitives';
-import { RediaccButton } from '@/components/ui';
+import type { Components as MarkdownComponents } from 'react-markdown';
+import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 
 interface TemplateFile {
   name: string;
@@ -283,11 +279,11 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         <Col xs={24} md={context === 'marketplace' ? 16 : 24}>
           <DescriptionCard
             title={
-              <CardTitle>
+              <RediaccText variant="title">
                 {context === 'marketplace'
                   ? t('marketplace:description')
                   : t('resources:templates.overview')}
-              </CardTitle>
+              </RediaccText>
             }
             data-testid={context === 'marketplace' ? undefined : 'template-details-readme-content'}
           >
@@ -298,17 +294,19 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         </Col>
         {context === 'marketplace' && (
           <Col xs={24} md={8}>
-            <FeatureCard title={<CardTitle>{t('marketplace:features')}</CardTitle>}>
-              <FeatureList direction="vertical" gap="sm">
+            <FeatureCard
+              title={<RediaccText variant="title">{t('marketplace:features')}</RediaccText>}
+            >
+              <RediaccStack direction="vertical" gap="sm" fullWidth>
                 {effectiveTemplate.tags?.map((tag) => (
-                  <FeatureItem key={tag} gap="sm">
+                  <RediaccStack key={tag} direction="horizontal" gap="sm" fullWidth align="center">
                     <SuccessIcon>
                       <CheckCircleOutlined />
                     </SuccessIcon>
                     <FeatureText>{tag}</FeatureText>
-                  </FeatureItem>
+                  </RediaccStack>
                 ))}
-              </FeatureList>
+              </RediaccStack>
             </FeatureCard>
           </Col>
         )}
@@ -317,18 +315,18 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   );
 
   const filesContent = loading ? (
-    <LoadingContainer
+    <CenteredLoadingContainer
       data-testid={context === 'marketplace' ? undefined : 'template-details-loading'}
     >
       <LoadingWrapper loading centered minHeight={160}>
         <div />
       </LoadingWrapper>
-      <LoadingText>
+      <RediaccText color="secondary">
         {context === 'marketplace'
           ? t('marketplace:loadingFiles')
           : t('resources:templates.loadingDetails')}
-      </LoadingText>
-    </LoadingContainer>
+      </RediaccText>
+    </CenteredLoadingContainer>
   ) : templateDetails && templateDetails.files.length > 0 ? (
     <FilesLayout>
       <FileListColumn>
@@ -370,7 +368,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       <FilePreviewColumn>
         <FilePreviewCard
           title={
-            <FilePreviewHeader gap="sm">
+            <RediaccStack direction="horizontal" gap="sm" align="center" justify="between">
               <IconLabel>
                 <CodeOutlined />
                 <FilePath>
@@ -378,7 +376,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                     templateDetails.files[selectedFileIndex]?.name}
                 </FilePath>
               </IconLabel>
-            </FilePreviewHeader>
+            </RediaccStack>
           }
           data-testid={
             context === 'marketplace'
@@ -411,16 +409,16 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         <AlertStack>
           <RoundedAlert
             message={
-              <BodyText weight="semibold">
+              <RediaccText weight="semibold">
                 {context === 'marketplace' ? t('marketplace:securityReview') : 'Security Review'}
-              </BodyText>
+              </RediaccText>
             }
             description={
-              <BodyText>
+              <RediaccText variant="description">
                 {context === 'marketplace'
                   ? t('marketplace:securityReviewDesc')
                   : 'Please review the template files for security considerations before deployment.'}
-              </BodyText>
+              </RediaccText>
             }
             variant="info"
             showIcon
@@ -436,7 +434,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             <ChecklistItem>Keep software components up to date</ChecklistItem>
           </Checklist>
 
-          <SectionDivider />
+          <RediaccDivider spacing="lg" />
 
           <SecurityTitle>Container Security</SecurityTitle>
           <BodyParagraph>
@@ -491,7 +489,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         context === 'marketplace' ? 'marketplace-preview-modal' : 'template-details-modal'
       }
       title={
-        <TitleStack>
+        <RediaccStack direction="horizontal" gap="md" align="center">
           {effectiveTemplate.iconUrl && !iconFailed ? (
             <TemplateAvatar
               src={effectiveTemplate.iconUrl}
@@ -504,9 +502,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           <div>
             <NoMarginTitle level={4}>{modalTitle}</NoMarginTitle>
             {context === 'repo-creation' && (
-              <Tag variant="primary" data-testid="template-details-name-tag">
+              <RediaccTag variant="primary" data-testid="template-details-name-tag">
                 {effectiveTemplate.name}
-              </Tag>
+              </RediaccTag>
             )}
             {context === 'marketplace' && effectiveTemplate.difficulty && (
               <DifficultyTag variant={getDifficultyColor(effectiveTemplate.difficulty)}>
@@ -518,7 +516,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
               </DifficultyTag>
             )}
           </div>
-        </TitleStack>
+        </RediaccStack>
       }
       open={open}
       onCancel={onClose}

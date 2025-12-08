@@ -1,15 +1,21 @@
 import axios, {
   AxiosError,
   AxiosInstance,
+  AxiosRequestConfig,
   AxiosResponse,
   InternalAxiosRequestConfig,
-  AxiosRequestConfig,
   isAxiosError,
 } from 'axios';
-import type { ApiResponse } from '@rediacc/shared/types';
-import { normalizeResponse, createApiServices } from '@rediacc/shared/api';
+import { apiConnectionService } from '@/services/apiConnectionService';
+import { telemetryService } from '@/services/telemetryService';
+import { tokenService } from '@/services/tokenService';
+import { logout, showSessionExpiredDialog } from '@/store/auth/authSlice';
+import { store } from '@/store/store';
+import { showMessage } from '@/utils/messages';
+import { createApiServices, normalizeResponse } from '@rediacc/shared/api';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
-import { endpoints } from '@rediacc/shared/endpoints';
+import type { ApiResponse } from '@rediacc/shared/types';
+import { decryptResponseData, encryptRequestData, hasVaultFields } from './encryptionMiddleware';
 
 // Extend axios config to include metadata
 declare module 'axios' {
@@ -19,16 +25,9 @@ declare module 'axios' {
     };
   }
 }
-import { store } from '@/store/store';
-import { logout, showSessionExpiredDialog } from '@/store/auth/authSlice';
-import { showMessage } from '@/utils/messages';
-import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware';
-import { tokenService } from '@/services/tokenService';
-import { apiConnectionService } from '@/services/apiConnectionService';
-import { telemetryService } from '@/services/telemetryService';
 
 // API configuration
-const API_PREFIX = endpoints.base.storedProcedure;
+const API_PREFIX = '/StoredProcedure';
 
 // API URL will be determined dynamically based on connection health check
 let API_BASE_URL = '';
@@ -143,7 +142,7 @@ class ApiClient implements SharedApiClient {
     return this.queueRequest(async () => {
       // Use the configured axios instance for consistent interceptor handling
       return this.client.post<ApiResponse>(
-        endpoints.auth.createAuthenticationRequest,
+        '/CreateAuthenticationRequest',
         { name: sessionName },
         {
           headers: {
@@ -156,12 +155,12 @@ class ApiClient implements SharedApiClient {
   }
 
   async logout() {
-    return (await this.client.post<ApiResponse>(endpoints.users.deleteUserRequest, {})).data;
+    return (await this.client.post<ApiResponse>('/DeleteUserRequest', {})).data;
   }
 
   async activateUser(email: string, activationCode: string, passwordHash: string) {
     const response = await this.client.post<ApiResponse>(
-      endpoints.auth.activateUserAccount,
+      '/ActivateUserAccount',
       { activationCode },
       {
         headers: {

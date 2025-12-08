@@ -1,8 +1,8 @@
 import toast from 'react-hot-toast';
-import { store } from '@/store/store';
-import { addNotification } from '@/store/notifications/notificationSlice';
 import i18n from '@/i18n/config';
 import { telemetryService } from '@/services/telemetryService';
+import { addNotification } from '@/store/notifications/notificationSlice';
+import { store } from '@/store/store';
 
 export type MessageType = 'success' | 'error' | 'warning' | 'info';
 

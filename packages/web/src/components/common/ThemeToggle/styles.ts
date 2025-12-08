@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { RediaccButton } from '@/components/ui/Button';
+import { RediaccButton } from '@/components/ui';
 
 export const ToggleButton = styled(RediaccButton)`
   && {

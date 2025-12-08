@@ -18,7 +18,7 @@ body:
         - Dashboard
         - Repositories Management
         - Machines Management
-        - Distributed Storage
+        - Ceph
         - Queue Management
         - System Settings
         - Audit/Logs

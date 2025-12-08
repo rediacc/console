@@ -1,4 +1,4 @@
-import type { IStorageProvider } from '@/core/types';
+import type { IStorageProvider } from '@/platform/types';
 
 class WebStorageAdapter implements IStorageProvider {
   private readonly storage: Storage | null;

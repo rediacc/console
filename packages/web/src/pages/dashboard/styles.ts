@@ -1,41 +1,29 @@
-import styled from 'styled-components';
-import { Typography, Timeline } from 'antd';
+import { Timeline, Typography } from 'antd';
 import { Link as RouterLink } from 'react-router-dom';
+import styled from 'styled-components';
 import {
-  RediaccText as UnifiedText,
-  RediaccCard,
-  RediaccBadge,
-  RediaccProgress,
-  RediaccList,
-  RediaccStack,
-} from '@/components/ui';
-import { PageContainer, scrollbarStyles, FlexRow, FlexColumn } from '@/styles/primitives';
-import {
-  ContentStack,
   CenteredState,
+  ContentStack,
+  Divider,
   FlexBetween,
   InlineStack,
   StatRow,
-  StatLabel as BaseStatLabel,
-  StatValue as BaseStatValue,
-  Divider,
 } from '@/components/common/styled';
-
-export const PageWrapper = PageContainer;
+import { RediaccBadge, RediaccList, RediaccProgress, RediaccText } from '@/components/ui';
+import { borderedCard } from '@/styles/mixins';
+import {
+  StatValue as BaseStatValue,
+  FlexColumn,
+  FlexRow,
+  scrollbarStyles,
+} from '@/styles/primitives';
 
 // Re-export from common/styled
 export { ContentStack, CenteredState, FlexBetween, InlineStack, StatRow, Divider };
 
-export const DashboardCard = styled(RediaccCard)`
-  width: 100%;
-`;
-
-export const SectionDescription = styled(UnifiedText).attrs({ color: 'secondary' })``;
-
 export const ResourceTile = styled.div`
   padding: ${({ theme }) => theme.spacing.MD}px;
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  ${borderedCard()}
   background-color: ${({ theme }) => theme.colors.bgSecondary};
   height: 100%;
   transition: ${({ theme }) => theme.transitions.DEFAULT};
@@ -49,7 +37,7 @@ export const TileHeader = styled(FlexRow).attrs({ $justify: 'space-between', $ga
   width: 100%;
 `;
 
-export const TileMeta = styled(UnifiedText).attrs({ color: 'secondary', weight: 'medium' })`
+export const TileMeta = styled(RediaccText).attrs({ color: 'secondary', weight: 'medium' })`
   && {
     display: inline-block;
   }
@@ -59,14 +47,12 @@ export const ResourceProgress = styled(RediaccProgress)`
   margin: ${({ theme }) => theme.spacing.SM}px 0;
 `;
 
-export const SectionLabel = styled(UnifiedText).attrs({ color: 'secondary', size: 'sm' })`
-  && {
-    display: block;
-    letter-spacing: ${({ theme }) => theme.letterSpacing.WIDE};
-  }
+export const SectionLabelWrapper = styled.div`
+  letter-spacing: ${({ theme }) => theme.letterSpacing.WIDE};
+  display: block;
 `;
 
-export const SectionTitle = styled(Typography.Title)`
+export const SectionTitleWrapper = styled(Typography.Title)`
   && {
     margin: ${({ theme }) => theme.spacing.XS}px 0 ${({ theme }) => theme.spacing.MD}px;
   }
@@ -87,8 +73,7 @@ export const HorizontalScroll = styled.div`
 export const LicenseItem = styled.div`
   padding: ${({ theme }) => theme.spacing.SM}px ${({ theme }) => theme.spacing.MD}px;
   background-color: ${({ theme }) => theme.colors.bgSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  ${borderedCard('borderSecondary', 'MD')}
   width: 100%;
 `;
 
@@ -96,12 +81,7 @@ export const LicenseHeader = styled(FlexRow).attrs({ $justify: 'space-between', 
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const StatList = styled(RediaccStack).attrs({ direction: 'vertical', gap: 'md' })`
-  width: 100%;
-`;
-
 // Use base components from common/styled with dashboard-specific variants
-export const StatLabel = BaseStatLabel;
 export const StatValue = BaseStatValue;
 
 export const InlineLink = styled(RouterLink)`
@@ -160,7 +140,7 @@ export const BorderlessListItem = styled(AntListItem)`
   }
 `;
 
-export const AuditMeta = styled(UnifiedText).attrs({ size: 'sm', color: 'secondary' })``;
+export const AuditMeta = styled(RediaccText).attrs({ size: 'sm', color: 'secondary' })``;
 
 export const SectionFooter = styled(FlexRow).attrs({ $justify: 'space-between' })`
   width: 100%;

@@ -1,30 +1,30 @@
-import type { ColumnsType } from 'antd/es/table';
-import type { TFunction } from 'i18next';
-import {
-  EditOutlined,
-  DeleteOutlined,
-  FunctionOutlined,
-  HistoryOutlined,
-} from '@/utils/optimizedIcons';
 import type { CephCluster } from '@/api/queries/ceph';
-import { createSorter } from '@/core';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
   createActionColumn,
   createTruncatedColumn,
   createVersionColumn,
 } from '@/components/common/columns';
+import { RediaccTag } from '@/components/ui';
+import { createSorter } from '@/platform';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  FunctionOutlined,
+  HistoryOutlined,
+} from '@/utils/optimizedIcons';
 import { MachineCountBadge } from './components/MachineCountBadge';
 import { getClusterFunctionMenuItems } from './menus';
 import {
-  ClusterNameCell,
-  ExpandIcon,
   ClusterIcon,
+  ClusterNameCell,
   ClusterNameText,
-  TeamTag,
-  ManageMachinesButton,
+  ExpandIcon,
   MachineManageCell,
+  ManageMachinesButton,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
+import type { TFunction } from 'i18next';
 
 interface BuildClusterColumnsParams {
   t: TFunction<'ceph' | 'common' | 'machines'>;
@@ -79,7 +79,9 @@ export const buildClusterColumns = ({
     {
       ...teamColumn,
       render: (teamName: string, record: CephCluster, index) => (
-        <TeamTag>{teamColumn.render?.(teamName, record, index) as React.ReactNode}</TeamTag>
+        <RediaccTag preset="team" compact borderless>
+          {teamColumn.render?.(teamName, record, index) as React.ReactNode}
+        </RediaccTag>
       ),
     },
     {

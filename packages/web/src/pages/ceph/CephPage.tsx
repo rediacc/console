@@ -1,40 +1,41 @@
 import React, { useState } from 'react';
-import { Empty, Alert, Tooltip } from 'antd';
-import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimizedIcons';
+import { Alert, Empty, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useCompanyInfo } from '@/api/queries/dashboard';
-import { useTeamSelection, useQueueTraceModal } from '@/hooks';
-import TeamSelector from '@/components/common/TeamSelector';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { ClusterTable } from './components/ClusterTable';
-import { PoolTable } from './components/PoolTable';
-import { CephMachinesTab } from './components/CephMachinesTab';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { showMessage } from '@/utils/messages';
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import type { CephCluster, CephPool } from '@/api/queries/ceph';
 import { useCephClusters, useCephPools } from '@/api/queries/ceph';
 import {
   useCreateCephCluster,
   useCreateCephPool,
-  useUpdateCephClusterVault,
-  useUpdateCephPoolVault,
   useDeleteCephCluster,
   useDeleteCephPool,
+  useUpdateCephClusterVault,
+  useUpdateCephPoolVault,
 } from '@/api/queries/cephMutations';
-import type { CephCluster, CephPool } from '@/api/queries/ceph';
-import { PageCard } from '@/styles/primitives';
-import { RediaccButton as Button } from '@/components/ui';
+import { useCompanyInfo } from '@/api/queries/dashboard';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import TeamSelector from '@/components/common/TeamSelector';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { RediaccButton } from '@/components/ui';
+import { useQueueTraceModal, useTeamSelection } from '@/hooks';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import {
-  PageWrapper,
-  HeaderSection,
-  HeaderRow,
-  TitleGroup,
-  HeaderTitle,
-  TeamSelectorWrapper,
-  ActionGroup,
-  EmptyState,
-} from './styles';
+  EmptyStateWrapper,
+  PageCard,
+  PageContainer,
+  SectionHeaderRow,
+  SectionStack,
+} from '@/styles/primitives';
+import { showMessage } from '@/utils/messages';
+import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimizedIcons';
+import type {
+  ClusterFormValues as BaseClusterFormValues,
+  PoolFormValues as BasePoolFormValues,
+} from '@rediacc/shared/types';
+import { CephMachinesTab } from './components/CephMachinesTab';
+import { ClusterTable } from './components/ClusterTable';
+import { PoolTable } from './components/PoolTable';
+import { ActionGroup, HeaderTitle, TeamSelectorWrapper, TitleGroup } from './styles';
 
 type CephView = 'clusters' | 'pools' | 'machines';
 
@@ -46,19 +47,9 @@ type ModalData =
   | (Partial<CephCluster> & Record<string, unknown>)
   | (Partial<CephPool> & Record<string, unknown>);
 
-interface ClusterFormValues extends Record<string, unknown> {
-  clusterName: string;
-  vaultContent: string;
-  vaultVersion?: number;
-}
-
-interface PoolFormValues extends Record<string, unknown> {
-  teamName: string;
-  clusterName: string;
-  poolName: string;
-  vaultContent: string;
-  vaultVersion?: number;
-}
+// Extend shared types with vault version for edit operations and required vaultContent
+type ClusterFormValues = BaseClusterFormValues & { vaultVersion?: number; vaultContent: string };
+type PoolFormValues = BasePoolFormValues & { vaultVersion?: number; vaultContent: string };
 
 type ModalFormValues = ClusterFormValues | PoolFormValues;
 
@@ -119,11 +110,11 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
 
   if (!companyData) {
     return (
-      <PageWrapper>
+      <PageContainer>
         <PageCard>
           <Alert message="Loading company data..." type="info" showIcon />
         </PageCard>
-      </PageWrapper>
+      </PageContainer>
     );
   }
 
@@ -149,37 +140,38 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
     });
   };
 
-  const handleModalSubmit = async (data: ModalFormValues) => {
+  const handleModalSubmit = async (data: Record<string, unknown>) => {
     try {
       const { type, mode } = modalState;
+      const formValues = data as ModalFormValues;
 
       if (mode === 'create') {
-        if (type === 'cluster' && !isPoolFormValues(data)) {
+        if (type === 'cluster' && !isPoolFormValues(formValues)) {
           await createClusterMutation.mutateAsync({
-            clusterName: data.clusterName,
-            vaultContent: data.vaultContent,
+            clusterName: formValues.clusterName,
+            vaultContent: formValues.vaultContent,
           });
-        } else if (type === 'pool' && isPoolFormValues(data)) {
+        } else if (type === 'pool' && isPoolFormValues(formValues)) {
           await createPoolMutation.mutateAsync({
-            teamName: data.teamName,
-            clusterName: data.clusterName,
-            poolName: data.poolName,
-            vaultContent: data.vaultContent,
+            teamName: formValues.teamName,
+            clusterName: formValues.clusterName,
+            poolName: formValues.poolName,
+            vaultContent: formValues.vaultContent,
           });
         }
       } else if (mode === 'edit' || mode === 'vault') {
-        if (type === 'cluster' && !isPoolFormValues(data)) {
+        if (type === 'cluster' && !isPoolFormValues(formValues)) {
           await updateClusterVaultMutation.mutateAsync({
-            clusterName: data.clusterName,
-            vaultContent: data.vaultContent,
-            vaultVersion: data.vaultVersion ?? 0,
+            clusterName: formValues.clusterName,
+            vaultContent: formValues.vaultContent,
+            vaultVersion: formValues.vaultVersion ?? 0,
           });
-        } else if (type === 'pool' && isPoolFormValues(data)) {
+        } else if (type === 'pool' && isPoolFormValues(formValues)) {
           await updatePoolVaultMutation.mutateAsync({
-            poolName: data.poolName,
-            teamName: data.teamName,
-            vaultContent: data.vaultContent,
-            vaultVersion: data.vaultVersion ?? 0,
+            poolName: formValues.poolName,
+            teamName: formValues.teamName,
+            vaultContent: formValues.vaultContent,
+            vaultVersion: formValues.vaultVersion ?? 0,
           });
         }
       }
@@ -214,7 +206,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
 
   if (!hasCephAccess) {
     return (
-      <PageWrapper>
+      <PageContainer>
         <PageCard>
           <Alert
             message={t('accessDenied.title')}
@@ -237,16 +229,16 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             icon={<SettingOutlined />}
           />
         </PageCard>
-      </PageWrapper>
+      </PageContainer>
     );
   }
 
   const renderContent = () => {
     if (!hasSelectedTeam) {
       return (
-        <EmptyState>
+        <EmptyStateWrapper>
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('selectTeamPrompt')} />
-        </EmptyState>
+        </EmptyStateWrapper>
       );
     }
 
@@ -295,7 +287,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
     return (
       <ActionGroup>
         <Tooltip title={createLabel}>
-          <Button
+          <RediaccButton
             iconOnly
             icon={<PlusOutlined />}
             onClick={() => {
@@ -310,7 +302,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
           />
         </Tooltip>
         <Tooltip title={t('common:actions.refresh')}>
-          <Button
+          <RediaccButton
             iconOnly
             icon={<ReloadOutlined />}
             onClick={() => {
@@ -329,10 +321,10 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   };
 
   return (
-    <PageWrapper>
+    <PageContainer>
       <PageCard>
-        <HeaderSection>
-          <HeaderRow>
+        <SectionStack>
+          <SectionHeaderRow>
             <TitleGroup>
               <HeaderTitle level={4}>{t('title')}</HeaderTitle>
               <TeamSelectorWrapper>
@@ -347,8 +339,8 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
               </TeamSelectorWrapper>
             </TitleGroup>
             {renderActions()}
-          </HeaderRow>
-        </HeaderSection>
+          </SectionHeaderRow>
+        </SectionStack>
 
         {renderContent()}
       </PageCard>
@@ -371,8 +363,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
                 undefined) as string | undefined,
             }}
             teamFilter={primaryTeam}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            onSubmit={handleModalSubmit as any}
+            onSubmit={handleModalSubmit}
             onFunctionSubmit={handleFunctionSubmit}
             onUpdateVault={async (vault: string, version: number) => {
               const data = modalState.data || {};
@@ -431,7 +422,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
           />
         </>
       )}
-    </PageWrapper>
+    </PageContainer>
   );
 };
 

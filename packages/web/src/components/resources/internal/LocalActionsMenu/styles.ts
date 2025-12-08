@@ -1,6 +1,5 @@
 import styled from 'styled-components';
-import { RediaccButton } from '@/components/ui/Button';
-import { RediaccText } from '@/components/ui/Text';
+import { RediaccButton, RediaccText } from '@/components/ui';
 
 export const TriggerButton = styled(RediaccButton)`
   && {

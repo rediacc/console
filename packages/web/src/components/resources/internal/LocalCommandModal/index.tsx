@@ -1,41 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Button, message } from 'antd';
+import { Button, Form, Input, message } from 'antd';
+import { useTranslation } from 'react-i18next';
+import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import {
-  RediaccCheckbox as Checkbox,
-  RediaccRadio as Radio,
   type CheckboxChangeEvent,
   type RadioChangeEvent,
-} from '@/components/ui/Form';
-import {
-  CopyOutlined,
-  CodeOutlined,
-  WindowsOutlined,
-  AppleOutlined,
-  DesktopOutlined,
-  FileTextOutlined,
-} from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { RediaccText as Text } from '@/components/ui';
+  RediaccCheckbox,
+  RediaccRadio,
+  RediaccText,
+} from '@/components/ui';
 import { createFreshForkToken } from '@/services/forkTokenService';
 import type { PluginContainer } from '@/types';
 import {
-  StyledModal,
-  Description,
-  SettingsForm,
-  CheckboxHelper,
-  TabsWrapper,
-  CommandPreview,
-  PreviewHeader,
-  PreviewTitle,
-  PreviewError,
-  PreviewErrorText,
-  PreviewHelper,
-  CommandParagraph,
-  PreviewMetaRow,
-  PreviewMetaText,
+  AppleOutlined,
+  CodeOutlined,
+  CopyOutlined,
+  DesktopOutlined,
+  FileTextOutlined,
+  WindowsOutlined,
+} from '@/utils/optimizedIcons';
+import {
   ActionsRow,
+  CommandParagraph,
+  CommandPreview,
+  PreviewError,
+  PreviewHeader,
+  PreviewMetaRow,
+  SettingsForm,
+  StyledModal,
+  TabsWrapper,
 } from './styles';
-import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 
 type CommandTab = 'vscode' | 'terminal' | 'desktop';
 type OperatingSystem = 'unix' | 'windows';
@@ -223,35 +217,39 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       onCancel={onClose}
       footer={null}
     >
-      <Description>{t('resources:localCommandBuilder.description', { machine, repo })}</Description>
+      <RediaccText variant="description" style={{ display: 'block' }}>
+        {t('resources:localCommandBuilder.description', { machine, repo })}
+      </RediaccText>
 
       <SettingsForm layout="vertical">
         <Form.Item label={t('resources:localCommandBuilder.operatingSystem')}>
-          <Radio.Group value={os} onChange={handleOsChange}>
-            <Radio.Button value="unix">
+          <RediaccRadio.Group value={os} onChange={handleOsChange}>
+            <RediaccRadio.Button value="unix">
               <AppleOutlined /> {t('resources:localCommandBuilder.unixLinuxMac')}
-            </Radio.Button>
-            <Radio.Button value="windows">
+            </RediaccRadio.Button>
+            <RediaccRadio.Button value="windows">
               <WindowsOutlined /> {t('resources:localCommandBuilder.windows')}
-            </Radio.Button>
-          </Radio.Group>
+            </RediaccRadio.Button>
+          </RediaccRadio.Group>
         </Form.Item>
 
         <Form.Item>
-          <Checkbox checked={useDocker} onChange={handleDockerChange}>
+          <RediaccCheckbox checked={useDocker} onChange={handleDockerChange}>
             {t('resources:localCommandBuilder.useDocker')}
-            <CheckboxHelper>{t('resources:localCommandBuilder.useDockerHelp')}</CheckboxHelper>
-          </Checkbox>
+            <RediaccText variant="helper" style={{ marginLeft: 8 }}>
+              {t('resources:localCommandBuilder.useDockerHelp')}
+            </RediaccText>
+          </RediaccCheckbox>
         </Form.Item>
 
         {useDocker && (
           <Form.Item>
-            <Checkbox checked={useNetworkHost} onChange={handleNetworkHostChange}>
+            <RediaccCheckbox checked={useNetworkHost} onChange={handleNetworkHostChange}>
               {t('resources:localCommandBuilder.useNetworkHost')}
-              <CheckboxHelper>
+              <RediaccText variant="helper" style={{ marginLeft: 8 }}>
                 {t('resources:localCommandBuilder.useNetworkHostHelp')}
-              </CheckboxHelper>
-            </Checkbox>
+              </RediaccText>
+            </RediaccCheckbox>
           </Form.Item>
         )}
       </SettingsForm>
@@ -267,9 +265,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             children: (
               <Form layout="vertical">
                 <Form.Item help={t('resources:localCommandBuilder.vscodeHelp')}>
-                  <Text color="secondary">
+                  <RediaccText color="secondary">
                     {t('resources:localCommandBuilder.vscodeDescription')}
-                  </Text>
+                  </RediaccText>
                 </Form.Item>
               </Form>
             ),
@@ -301,9 +299,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             children: (
               <Form layout="vertical">
                 <Form.Item help={t('resources:localCommandBuilder.desktopHelp')}>
-                  <Text color="secondary">
+                  <RediaccText color="secondary">
                     {t('resources:localCommandBuilder.desktopDescription')}
-                  </Text>
+                  </RediaccText>
                 </Form.Item>
               </Form>
             ),
@@ -313,7 +311,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
 
       <CommandPreview>
         <PreviewHeader>
-          <PreviewTitle>{t('resources:localCommandBuilder.generatedCommand')}:</PreviewTitle>
+          <RediaccText weight="semibold">
+            {t('resources:localCommandBuilder.generatedCommand')}:
+          </RediaccText>
           {isGeneratingToken && (
             <InlineLoadingIndicator
               width={64}
@@ -326,10 +326,10 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
 
         {tokenError && (
           <PreviewError>
-            <PreviewErrorText>Token generation failed: {tokenError}</PreviewErrorText>
-            <PreviewHelper>
+            <RediaccText color="danger">Token generation failed: {tokenError}</RediaccText>
+            <RediaccText variant="helper">
               Copy will attempt without secure token. You may need to login manually.
-            </PreviewHelper>
+            </RediaccText>
           </PreviewError>
         )}
 
@@ -344,10 +344,10 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         </CommandParagraph>
 
         <PreviewMetaRow>
-          <PreviewMetaText>
+          <RediaccText variant="caption">
             {t('resources:localCommandBuilder.apiUrl')}: {apiUrl}
-          </PreviewMetaText>
-          <PreviewMetaText>Token: Secure token will be generated on copy</PreviewMetaText>
+          </RediaccText>
+          <RediaccText variant="caption">Token: Secure token will be generated on copy</RediaccText>
         </PreviewMetaRow>
       </CommandPreview>
 

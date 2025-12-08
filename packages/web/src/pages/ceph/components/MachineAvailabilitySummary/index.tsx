@@ -1,27 +1,26 @@
 import React from 'react';
-import { Row, Col } from 'antd';
-import {
-  DesktopOutlined,
-  CheckCircleOutlined,
-  CloudServerOutlined,
-  HddOutlined,
-  CopyOutlined,
-} from '@/utils/optimizedIcons';
+import { Col, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { useMachines } from '@/api/queries/machines';
-import { MachineAvailabilitySummaryProps, MachineStats } from './types';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccCard } from '@/components/ui';
 import {
-  SummaryCard,
-  LoadingCard,
+  CheckCircleOutlined,
+  CloudServerOutlined,
+  CopyOutlined,
+  DesktopOutlined,
+  HddOutlined,
+} from '@/utils/optimizedIcons';
+import {
   LoadingContent,
+  PercentageSuffix,
   RefreshButton,
   RefreshIcon,
   StatCard,
   SummaryStatistic,
-  PercentageSuffix,
 } from './styles';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { MachineAvailabilitySummaryProps, MachineStats } from './types';
 
 export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProps> = ({
   teamFilter,
@@ -61,11 +60,11 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
 
   if (isLoading) {
     return (
-      <LoadingCard>
+      <RediaccCard style={{ marginBottom: `${styledTheme.spacing.MD}px` }}>
         <LoadingWrapper loading centered minHeight={160}>
           <LoadingContent />
         </LoadingWrapper>
-      </LoadingCard>
+      </RediaccCard>
     );
   }
 
@@ -123,7 +122,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
   ];
 
   return (
-    <SummaryCard
+    <RediaccCard
       title={t('machines.summary.title')}
       extra={
         <RefreshButton
@@ -135,6 +134,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
           <RefreshIcon spin={isLoading} />
         </RefreshButton>
       }
+      style={{ marginBottom: `${styledTheme.spacing.MD}px` }}
       data-testid="ds-machines-summary-card"
     >
       <Row gutter={16}>
@@ -152,7 +152,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
           </Col>
         ))}
       </Row>
-    </SummaryCard>
+    </RediaccCard>
   );
 };
 

@@ -1,4 +1,4 @@
-import type { ReactNode, CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type SelectSize = 'sm' | 'md' | 'lg';
 
@@ -82,5 +82,5 @@ export interface RediaccSelectProps<T = any> {
     value: any;
     closable: boolean;
     onClose: () => void;
-  }) => ReactNode;
+  }) => React.ReactElement;
 }

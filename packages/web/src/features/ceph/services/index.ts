@@ -1,29 +1,33 @@
-export { MachineAssignmentService } from './machine-assignment.service';
-export { MachineValidationService } from './machine-validation.service';
-export { BatchApiService } from './batch-api.service';
+// Re-export services from shared
 
-// Re-export models for convenience
+// Re-export types from shared for convenience
 export type {
-  MachineAssignment,
-  BulkOperationRequest,
   AssignmentConflict,
-  ConflictResolution,
-  ConflictResolutionResult,
-  CephResource,
   AssignmentResult,
-  MachineAssignmentSummary,
-} from '../models/machine-assignment.model';
-
-export type {
-  ValidationResult,
-  ValidationError,
-  ValidationWarning,
-  InvalidMachine,
+  BulkOperationRequest,
   BulkValidationResult,
-  ValidationSummary,
-  ValidationRule,
-  ValidationContext,
-  ExclusivityValidation,
   CapacityValidation,
+  CephResource,
+  CephResourceType,
+  ConflictResolution,
+  ConflictResolutionAction,
+  ConflictResolutionResult,
+  ConflictType,
+  ExclusivityValidation,
+  InvalidMachine,
+  MachineAssignment,
+  MachineAssignmentSummary,
   ValidationConfig,
-} from '../models/machine-validation.model';
+  ValidationContext,
+  ValidationError,
+  ValidationResult,
+  ValidationRule,
+  ValidationSummary,
+  ValidationWarning,
+} from '@rediacc/shared/services/machine';
+export {
+  MachineAssignmentService,
+  MachineValidationService,
+} from '@rediacc/shared/services/machine';
+// BatchApiService - uses web-specific API, keep local implementation
+export { BatchApiService } from './batch-api.service';

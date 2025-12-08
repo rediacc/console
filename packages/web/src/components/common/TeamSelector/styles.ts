@@ -1,16 +1,11 @@
 import styled from 'styled-components';
-import { RediaccInput, RediaccSelect } from '@/components/ui/Form';
-import { RediaccTag } from '@/components/ui/Tag';
 import { InlineStack } from '@/components/common/styled';
+import { RediaccTag } from '@/components/ui';
+import { RediaccInput, RediaccSelect } from '@/components/ui/Form';
 
-export const TeamSelect = styled(RediaccSelect)`
-  && {
-    width: 100%;
-  }
-
+export const TeamSelect = styled(RediaccSelect).attrs({ fullWidth: true })`
   && .ant-select-selector {
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
   }
 `;
 
@@ -22,6 +17,7 @@ export const TeamTag = styled(RediaccTag).attrs({
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     display: inline-flex;
     align-items: center;
+    padding: 2px 4px;
   }
 `;
 

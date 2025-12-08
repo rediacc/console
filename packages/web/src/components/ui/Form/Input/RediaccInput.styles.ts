@@ -1,7 +1,7 @@
-import styled, { css } from 'styled-components';
 import { Input as AntInput, InputNumber as AntInputNumber } from 'antd';
+import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { InputVariant, InputSize } from './RediaccInput.types';
+import type { InputSize, InputVariant } from './RediaccInput.types';
 
 const { TextArea: AntTextArea, Password: AntPassword, Search: AntSearch } = AntInput;
 

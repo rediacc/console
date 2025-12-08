@@ -1,35 +1,33 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Button as AntButton, Space, Tag, Alert, Tooltip } from 'antd';
-import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optimizedIcons';
+﻿import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Button as AntButton, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { usePanelWidth } from '@/hooks/usePanelWidth';
-import { DETAIL_PANEL } from '@/constants/layout';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
 import { useRepos } from '@/api/queries/repos';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ActionGroup, CenteredState } from '@/components/common/styled';
+import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
+import { RediaccButton, RediaccCard, RediaccText } from '@/components/ui';
+import { DETAIL_PANEL } from '@/constants/layout';
+import { useQueueTraceModal } from '@/hooks/useDialogState';
+import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { RepoContainerTable } from '@/pages/resources/components/RepoContainerTable';
 import { Machine, PluginContainer } from '@/types';
-import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { useQueueTraceModal } from '@/hooks/useDialogState';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton as Button, RediaccText as Text } from '@/components/ui';
-import { ActionGroup } from '@/components/common/styled';
+import { DoubleLeftOutlined, InboxOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import {
-  PageWrapper,
-  FullHeightCard,
+  ActionsRow,
   BreadcrumbWrapper,
-  HeaderSection,
+  DetailBackdrop,
+  ErrorWrapper,
   HeaderRow,
+  HeaderSection,
+  HeaderTitleText,
+  ListPanel,
+  PageWrapper,
+  SplitLayout,
   TitleColumn,
   TitleRow,
-  ActionsRow,
-  SplitLayout,
-  ListPanel,
-  DetailBackdrop,
-  CenteredState,
-  ErrorWrapper,
-  HeaderTitleText,
 } from './styles';
 
 // Repo interface from vaultStatus (runtime data)
@@ -170,14 +168,14 @@ const RepoContainersPage: React.FC = () => {
   if (machinesLoading || reposLoading) {
     return (
       <PageWrapper>
-        <FullHeightCard>
+        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
           <CenteredState>
             <LoadingWrapper loading centered minHeight={160}>
               <div />
             </LoadingWrapper>
-            <Text color="secondary">{t('common:general.loading')}</Text>
+            <RediaccText color="secondary">{t('common:general.loading')}</RediaccText>
           </CenteredState>
-        </FullHeightCard>
+        </RediaccCard>
       </PageWrapper>
     );
   }
@@ -186,7 +184,7 @@ const RepoContainersPage: React.FC = () => {
   if (!actualMachine) {
     return (
       <PageWrapper>
-        <FullHeightCard>
+        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
           <Alert
             message={t('machines:machineNotFound')}
             description={
@@ -200,7 +198,7 @@ const RepoContainersPage: React.FC = () => {
             type="error"
             showIcon
           />
-        </FullHeightCard>
+        </RediaccCard>
       </PageWrapper>
     );
   }
@@ -209,7 +207,7 @@ const RepoContainersPage: React.FC = () => {
   if (!actualRepo) {
     return (
       <PageWrapper>
-        <FullHeightCard>
+        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
           <Alert
             message={t('machines:repoNotFound')}
             description={
@@ -223,7 +221,7 @@ const RepoContainersPage: React.FC = () => {
             type="error"
             showIcon
           />
-        </FullHeightCard>
+        </RediaccCard>
       </PageWrapper>
     );
   }
@@ -232,7 +230,7 @@ const RepoContainersPage: React.FC = () => {
 
   return (
     <PageWrapper>
-      <FullHeightCard>
+      <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
         <HeaderSection>
           <BreadcrumbWrapper
             items={[
@@ -264,7 +262,7 @@ const RepoContainersPage: React.FC = () => {
             <TitleColumn>
               <TitleRow>
                 <Tooltip title={t('machines:backToRepos')}>
-                  <Button
+                  <RediaccButton
                     iconOnly
                     icon={<DoubleLeftOutlined />}
                     onClick={handleBackToRepos}
@@ -301,7 +299,7 @@ const RepoContainersPage: React.FC = () => {
 
             <ActionsRow>
               <Tooltip title={t('common:actions.refresh')}>
-                <Button
+                <RediaccButton
                   iconOnly
                   icon={<ReloadOutlined />}
                   onClick={handleRefresh}
@@ -357,7 +355,7 @@ const RepoContainersPage: React.FC = () => {
             />
           )}
         </SplitLayout>
-      </FullHeightCard>
+      </RediaccCard>
 
       {queueTrace.state.open && (
         <QueueItemTraceModal

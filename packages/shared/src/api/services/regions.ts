@@ -1,43 +1,42 @@
-import { endpoints } from '../../endpoints';
-import type { Bridge, Region } from '../../types';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type {
+  CreateRegionParams,
+  DeleteRegionParams,
+  GetCompanyRegions_ResultSet1,
+  GetRegionBridges_ResultSet1,
+  GetRegionBridgesParams,
+  UpdateRegionNameParams,
+  UpdateRegionVaultParams,
+  WithOptionalVault,
+} from '../../types';
 
 export function createRegionsService(client: ApiClient) {
   return {
-    list: async (): Promise<Region[]> => {
-      const response = await client.get<Region>(endpoints.company.getCompanyRegions);
+    list: async (): Promise<GetCompanyRegions_ResultSet1[]> => {
+      const response = await client.get<GetCompanyRegions_ResultSet1>('/GetCompanyRegions');
       return parseResponse(response, {
         extractor: responseExtractors.primaryOrSecondary,
         filter: (region) => Boolean(region.regionName),
       });
     },
 
-    create: (regionName: string, vaultContent?: string) =>
-      client.post(endpoints.regions.createRegion, {
-        regionName,
-        vaultContent: vaultContent ?? '{}',
+    create: (params: WithOptionalVault<CreateRegionParams>) =>
+      client.post('/CreateRegion', {
+        ...params,
+        vaultContent: params.vaultContent ?? '{}',
       }),
 
-    rename: (currentName: string, newName: string) =>
-      client.post(endpoints.regions.updateRegionName, {
-        currentRegionName: currentName,
-        newRegionName: newName,
-      }),
+    rename: (params: UpdateRegionNameParams) => client.post('/UpdateRegionName', params),
 
-    delete: (regionName: string) => client.post(endpoints.regions.deleteRegion, { regionName }),
+    delete: (params: DeleteRegionParams) => client.post('/DeleteRegion', params),
 
-    updateVault: (regionName: string, vault: string, vaultVersion: number) =>
-      client.post(endpoints.regions.updateRegionVault, {
-        regionName,
-        vaultContent: vault,
-        vaultVersion,
-      }),
+    updateVault: (params: UpdateRegionVaultParams) => client.post('/UpdateRegionVault', params),
 
-    getBridges: async (regionName: string): Promise<Bridge[]> => {
-      const response = await client.get<Bridge>(endpoints.regions.getRegionBridges, { regionName });
+    getBridges: async (params: GetRegionBridgesParams): Promise<GetRegionBridges_ResultSet1[]> => {
+      const response = await client.get<GetRegionBridges_ResultSet1>('/GetRegionBridges', params);
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<Bridge>(1),
+        extractor: responseExtractors.byIndex<GetRegionBridges_ResultSet1>(1),
         filter: (bridge) => Boolean(bridge.bridgeName),
       });
     },

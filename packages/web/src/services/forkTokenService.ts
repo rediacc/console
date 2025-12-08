@@ -5,8 +5,8 @@
  * Fork tokens are isolated from the main session and have limited lifespans.
  */
 
-import { secureStorage } from '@/utils/secureMemoryStorage';
 import { api } from '@/api/client';
+import { secureStorage } from '@/utils/secureMemoryStorage';
 
 export interface ForkTokenInfo {
   token: string;

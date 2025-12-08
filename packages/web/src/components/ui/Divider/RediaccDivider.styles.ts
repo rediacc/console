@@ -1,5 +1,5 @@
-import styled from 'styled-components';
 import { Divider as AntDivider } from 'antd';
+import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { DividerOrientation, DividerSpacing } from './RediaccDivider.types';
 

@@ -1,19 +1,27 @@
 import { useQuery } from '@tanstack/react-query';
+import { api } from '@/api/client';
 import {
+  createMutation,
   createResourceMutation,
   createVaultUpdateMutation,
-  createMutation,
 } from '@/hooks/api/mutationFactory';
-import { api } from '@/api/client';
-import type { Bridge } from '@rediacc/shared/types';
+import type {
+  CreateBridgeParams,
+  DeleteBridgeParams,
+  GetRegionBridges_ResultSet1,
+  ResetBridgeAuthorizationParams,
+  UpdateBridgeNameParams,
+  UpdateBridgeVaultParams,
+  WithOptionalVault,
+} from '@rediacc/shared/types';
 
 // Get bridges for a region
 export const useBridges = (regionName?: string) => {
-  return useQuery<Bridge[]>({
+  return useQuery<GetRegionBridges_ResultSet1[]>({
     queryKey: ['bridges', regionName],
     queryFn: async () => {
       if (!regionName) return [];
-      return api.bridges.list(regionName);
+      return api.bridges.list({ regionName });
     },
     enabled: !!regionName,
     staleTime: 30 * 1000, // 30 seconds
@@ -21,13 +29,8 @@ export const useBridges = (regionName?: string) => {
 };
 
 // Create bridge
-export const useCreateBridge = createMutation<{
-  regionName: string;
-  bridgeName: string;
-  vaultContent?: string;
-}>({
-  request: ({ regionName, bridgeName, vaultContent }) =>
-    api.bridges.create(regionName, bridgeName, vaultContent),
+export const useCreateBridge = createMutation<WithOptionalVault<CreateBridgeParams>>({
+  request: (params) => api.bridges.create(params),
   invalidateKeys: ['bridges', 'regions', 'dropdown-data'],
   successMessage: (vars) => `Bridge "${vars.bridgeName}" created successfully`,
   errorMessage: 'Failed to create bridge',
@@ -39,13 +42,8 @@ export const useCreateBridge = createMutation<{
 });
 
 // Update bridge name
-export const useUpdateBridgeName = createMutation<{
-  regionName: string;
-  currentBridgeName: string;
-  newBridgeName: string;
-}>({
-  request: ({ regionName, currentBridgeName, newBridgeName }) =>
-    api.bridges.rename(regionName, currentBridgeName, newBridgeName),
+export const useUpdateBridgeName = createMutation<UpdateBridgeNameParams>({
+  request: (params) => api.bridges.rename(params),
   invalidateKeys: ['bridges', 'dropdown-data'],
   successMessage: (vars) => `Bridge renamed to "${vars.newBridgeName}"`,
   errorMessage: 'Failed to update bridge name',
@@ -53,42 +51,26 @@ export const useUpdateBridgeName = createMutation<{
 });
 
 // Update bridge vault
-export const useUpdateBridgeVault = createVaultUpdateMutation<{
-  regionName: string;
-  bridgeName: string;
-  vaultContent: string;
-  vaultVersion: number;
-}>(
-  'Bridge',
-  (data) =>
-    api.bridges.updateVault(data.regionName, data.bridgeName, data.vaultContent, data.vaultVersion),
-  'bridgeName',
-  'vaultContent'
-);
+export const useUpdateBridgeVault = createVaultUpdateMutation<
+  UpdateBridgeVaultParams & Record<string, unknown>
+>('Bridge', (params) => api.bridges.updateVault(params), 'bridgeName', 'vaultContent');
 
 // Delete bridge
-export const useDeleteBridge = createResourceMutation<{
-  regionName: string;
-  bridgeName: string;
-}>(
+export const useDeleteBridge = createResourceMutation<DeleteBridgeParams & Record<string, unknown>>(
   'Bridge',
   'delete',
-  (variables) => api.bridges.delete(variables.regionName, variables.bridgeName),
+  (params) => api.bridges.delete(params),
   'bridgeName',
   ['regions']
 );
 
 // Reset bridge authorization
-export const useResetBridgeAuthorization = createMutation<{
-  regionName: string;
-  bridgeName: string;
-  isCloudManaged?: boolean;
-}>({
-  request: ({ regionName, bridgeName }) => api.bridges.resetAuthorization(regionName, bridgeName),
+export const useResetBridgeAuthorization = createMutation<ResetBridgeAuthorizationParams>({
+  request: (params) => api.bridges.resetAuthorization(params),
   invalidateKeys: ['bridges'],
   successMessage: (vars) => `Bridge authorization reset for "${vars.bridgeName}"`,
   errorMessage: 'Failed to reset bridge authorization',
   operationName: 'bridges.resetAuthorization',
 });
 
-export type { Bridge };
+export type { GetRegionBridges_ResultSet1, GetRegionBridges_ResultSet1 as Bridge };

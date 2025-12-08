@@ -1,6 +1,6 @@
 // Authentication and password utilities for browser environment
-import { secureStorage } from './secureMemoryStorage';
 import { tokenService } from '@/services/tokenService';
+import { secureStorage } from './secureMemoryStorage';
 
 // Static salt for password hashing - provides additional protection against dictionary attacks
 // This salt is concatenated with the password before hashing to ensure even common passwords

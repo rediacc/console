@@ -1,28 +1,28 @@
 import React, { useCallback, useState } from 'react';
-import { Dropdown, Tooltip, message } from 'antd';
-import type { MenuProps } from 'antd';
-type ItemType = NonNullable<MenuProps['items']>[number];
-import {
-  DesktopOutlined,
-  CodeOutlined,
-  BuildOutlined,
-  FileTextOutlined,
-} from '@/utils/optimizedIcons';
+import { Dropdown, message, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
+import { LocalCommandModal } from '@/components/resources/internal/LocalCommandModal';
+import { PipInstallationModal } from '@/components/resources/internal/PipInstallationModal';
+import { IconWrapper } from '@/components/ui';
+import { useDialogState } from '@/hooks/useDialogState';
 import {
-  protocolUrlService,
-  type ProtocolAction,
   type ContainerParams,
+  type ProtocolAction,
+  protocolUrlService,
 } from '@/services/protocolUrlService';
-import { PipInstallationModal } from '../PipInstallationModal';
-import { LocalCommandModal } from '../LocalCommandModal';
 import type { RootState } from '@/store/store';
 import type { PluginContainer } from '@/types';
-import { useDialogState } from '@/hooks/useDialogState';
+import {
+  BuildOutlined,
+  CodeOutlined,
+  DesktopOutlined,
+  FileTextOutlined,
+} from '@/utils/optimizedIcons';
 import { MenuLabel, TriggerButton } from './styles';
-import { IconWrapper } from '@/components/ui';
+import type { MenuProps } from 'antd';
 
+type ItemType = NonNullable<MenuProps['items']>[number];
 type ContainerMenuAction = 'terminal' | 'logs' | 'stats';
 
 type MenuItemWithTestId = ItemType & { ['data-testid']?: string };

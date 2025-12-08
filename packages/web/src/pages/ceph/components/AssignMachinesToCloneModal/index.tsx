@@ -1,42 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { Tabs } from 'antd';
-import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import {
+  type AvailableMachine,
+  type CephRbdClone,
+  type CloneMachine,
   useAvailableMachinesForClone,
   useCloneMachines,
-  type CephRbdClone,
-  type AvailableMachine,
-  type CloneMachine,
 } from '@/api/queries/ceph';
 import {
   useUpdateCloneMachineAssignments,
   useUpdateCloneMachineRemovals,
 } from '@/api/queries/cephMutations';
-import { showMessage } from '@/utils/messages';
-import type { ColumnsType } from 'antd/es/table';
-import type { TableRowSelection } from 'antd/es/table/interface';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { createTruncatedColumn } from '@/components/common/columns';
-import { RediaccButton as Button } from '@/components/ui';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccButton, RediaccSelect, RediaccTag, RediaccText } from '@/components/ui';
+import { AlertCard } from '@/styles/primitives';
+import { showMessage } from '@/utils/messages';
+import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';
 import {
+  AssignTabContainer,
+  BridgeTag,
+  EmptyState,
+  FieldGroup,
+  MachineNameRow,
+  MachinesTable,
+  ManageTabContainer,
   StyledModal,
   TitleStack,
-  CloneTag,
-  AssignTabContainer,
-  ManageTabContainer,
-  InfoAlert,
-  WarningAlert,
-  FieldGroup,
-  FieldLabel,
-  StyledSelect,
-  EmptyState,
-  MachinesTable,
-  MachineNameRow,
-  MachineNameText,
-  BridgeTag,
-  SelectionCount,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
+import type { TableRowSelection } from 'antd/es/table/interface';
 
 interface AssignMachinesToCloneModalProps {
   open: boolean;
@@ -157,11 +151,19 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
 
     return (
       <AssignTabContainer>
-        <InfoAlert message={t('ceph:clones.assignMachinesInfo')} variant="info" showIcon />
+        <AlertCard
+          $variant="info"
+          message={t('ceph:clones.assignMachinesInfo')}
+          variant="info"
+          showIcon
+        />
 
         <FieldGroup>
-          <FieldLabel>{t('ceph:machines.selectMachines')}:</FieldLabel>
-          <StyledSelect
+          <RediaccText weight="medium" size="sm">
+            {t('ceph:machines.selectMachines')}:
+          </RediaccText>
+          <RediaccSelect
+            size="sm"
             fullWidth
             mode="multiple"
             placeholder={t('machines:selectMachines')}
@@ -177,9 +179,9 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             }))}
             data-testid="assign-clone-machine-select"
           />
-          <SelectionCount data-testid="assign-clone-selected-count">
+          <RediaccText variant="caption" color="muted" data-testid="assign-clone-selected-count">
             {t('machines:bulkOperations.selectedCount', { count: selectedMachines.length })}
-          </SelectionCount>
+          </RediaccText>
         </FieldGroup>
       </AssignTabContainer>
     );
@@ -205,7 +207,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       renderWrapper: (content) => (
         <MachineNameRow>
           <CloudServerOutlined />
-          <MachineNameText>{content}</MachineNameText>
+          <RediaccText weight="medium">{content}</RediaccText>
         </MachineNameRow>
       ),
     });
@@ -229,13 +231,16 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
 
     return (
       <ManageTabContainer>
-        <WarningAlert message={t('ceph:clones.removeMachinesInfo')} variant="warning" showIcon />
+        <AlertCard
+          $variant="warning"
+          message={t('ceph:clones.removeMachinesInfo')}
+          variant="warning"
+          showIcon
+        />
 
         <MachinesTable
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          rowSelection={rowSelection as any}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          columns={columns as any}
+          rowSelection={rowSelection as TableRowSelection<unknown>}
+          columns={columns as ColumnsType<unknown>}
           dataSource={assignedMachines}
           rowKey="machineName"
           size="small"
@@ -244,9 +249,13 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           data-testid="assign-clone-machines-table"
         />
 
-        <SelectionCount data-testid="assign-clone-remove-selected-count">
+        <RediaccText
+          variant="caption"
+          color="muted"
+          data-testid="assign-clone-remove-selected-count"
+        >
           {t('machines:bulkOperations.selectedCount', { count: removingMachines.length })}
-        </SelectionCount>
+        </RediaccText>
       </ManageTabContainer>
     );
   };
@@ -254,10 +263,10 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
   const footerButtons =
     activeTab === 'assign'
       ? [
-          <Button key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
+          <RediaccButton key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
             {t('common:actions.cancel')}
-          </Button>,
-          <Button
+          </RediaccButton>,
+          <RediaccButton
             key="assign"
             loading={assignMutation.isPending}
             disabled={selectedMachines.length === 0}
@@ -265,13 +274,13 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             data-testid="assign-clone-submit"
           >
             {t('ceph:machines.assignMachine')}
-          </Button>,
+          </RediaccButton>,
         ]
       : [
-          <Button key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
+          <RediaccButton key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
             {t('common:actions.cancel')}
-          </Button>,
-          <Button
+          </RediaccButton>,
+          <RediaccButton
             key="remove"
             variant="danger"
             loading={removeMutation.isPending}
@@ -280,7 +289,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             data-testid="assign-clone-remove-submit"
           >
             {t('ceph:machines.unassignMachine')}
-          </Button>,
+          </RediaccButton>,
         ];
 
   return (
@@ -290,7 +299,11 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
         <TitleStack>
           <CopyOutlined />
           {t('ceph:clones.manageMachines')}
-          {clone && <CloneTag>{clone.cloneName}</CloneTag>}
+          {clone && (
+            <RediaccTag variant="warning" size="md" borderless>
+              {clone.cloneName}
+            </RediaccTag>
+          )}
         </TitleStack>
       }
       open={open}

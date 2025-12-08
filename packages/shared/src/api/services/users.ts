@@ -1,7 +1,16 @@
-import { endpoints } from '../../endpoints';
-import type { User, UserVault } from '../../types';
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type {
+  GetCompanyUsers_ResultSet1,
+  UpdateUserAssignedPermissionsParams,
+  UpdateUserEmailParams,
+  UpdateUserLanguageParams,
+  UpdateUserPasswordParams,
+  UpdateUserToActivatedParams,
+  UpdateUserToDeactivatedParams,
+  UpdateUserVaultParams,
+  UserVault,
+} from '../../types';
 
 export interface CreateUserOptions {
   passwordHash?: string;
@@ -15,10 +24,10 @@ export interface CreateUserResult {
 
 export function createUsersService(client: ApiClient) {
   return {
-    list: async (): Promise<User[]> => {
-      const response = await client.get<User>(endpoints.company.getCompanyUsers);
+    list: async (): Promise<GetCompanyUsers_ResultSet1[]> => {
+      const response = await client.get<GetCompanyUsers_ResultSet1>('/GetCompanyUsers');
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<User>(1),
+        extractor: responseExtractors.byIndex<GetCompanyUsers_ResultSet1>(1),
         filter: (user) => Boolean(user.userEmail),
         map: (user) => ({
           ...user,
@@ -38,10 +47,7 @@ export function createUsersService(client: ApiClient) {
       if (passwordHash) payload.newUserHash = passwordHash;
       if (options.language) payload.languagePreference = options.language;
       if (options.fullName) payload.fullName = options.fullName;
-      const response = await client.post<{ activationCode?: string }>(
-        endpoints.users.createUser,
-        payload
-      );
+      const response = await client.post<{ activationCode?: string }>('/CreateNewUser', payload);
       const row = parseFirst<{ activationCode?: string }>(response, {
         extractor: responseExtractors.byIndex(0),
       });
@@ -50,23 +56,19 @@ export function createUsersService(client: ApiClient) {
       };
     },
 
-    activate: (email: string) =>
-      client.post(endpoints.users.updateUserToActivated, { userEmail: email }),
+    activate: (params: UpdateUserToActivatedParams) =>
+      client.post('/UpdateUserToActivated', params),
 
-    deactivate: (email: string) =>
-      client.post(endpoints.users.updateUserToDeactivated, { userEmail: email }),
+    deactivate: (params: UpdateUserToDeactivatedParams) =>
+      client.post('/UpdateUserToDeactivated', params),
 
-    updateEmail: (currentEmail: string, newEmail: string) =>
-      client.post(endpoints.users.updateUserEmail, {
-        currentUserEmail: currentEmail,
-        newUserEmail: newEmail,
-      }),
+    updateEmail: (params: UpdateUserEmailParams) => client.post('/UpdateUserEmail', params),
 
-    updatePassword: (passwordHash: string) =>
-      client.post(endpoints.users.updateUserPassword, { userNewPass: passwordHash }),
+    updatePassword: (params: UpdateUserPasswordParams) =>
+      client.post('/UpdateUserPassword', params),
 
-    updateLanguage: (language: string) =>
-      client.post(endpoints.users.updateUserLanguage, { language }),
+    updateLanguage: (params: UpdateUserLanguageParams) =>
+      client.post('/UpdateUserLanguage', params),
 
     getVault: async (): Promise<UserVault> => {
       interface UserVaultRow {
@@ -75,7 +77,7 @@ export function createUsersService(client: ApiClient) {
         userCredential?: string | null;
       }
 
-      const response = await client.get<UserVaultRow>(endpoints.users.getUserVault);
+      const response = await client.get<UserVaultRow>('/GetUserVault');
       const first = parseFirst<UserVaultRow>(response, {
         extractor: responseExtractors.byIndex(1),
       });
@@ -86,16 +88,9 @@ export function createUsersService(client: ApiClient) {
       };
     },
 
-    updateVault: (vault: string, vaultVersion: number) =>
-      client.post(endpoints.users.updateUserVault, {
-        vaultContent: vault,
-        vaultVersion,
-      }),
+    updateVault: (params: UpdateUserVaultParams) => client.post('/UpdateUserVault', params),
 
-    assignPermissions: (email: string, groupName: string) =>
-      client.post(endpoints.users.updateUserAssignedPermissions, {
-        userEmail: email,
-        permissionGroupName: groupName,
-      }),
+    assignPermissions: (params: UpdateUserAssignedPermissionsParams) =>
+      client.post('/UpdateUserAssignedPermissions', params),
   };
 }

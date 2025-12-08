@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import type { TFunction } from 'i18next';
 import functionDefinitions from '@rediacc/shared/queue-vault/data/definitions';
+import type { TFunction } from 'i18next';
 
 // Base function definition without translatable content
 export interface FunctionDefinition {

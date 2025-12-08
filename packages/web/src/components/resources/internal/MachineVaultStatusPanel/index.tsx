@@ -1,72 +1,72 @@
 import React, { useEffect, useMemo } from 'react';
-import { Row, Col, Progress, Tooltip } from 'antd';
-import type { ListProps } from 'antd';
-import {
-  DoubleRightOutlined,
-  DesktopOutlined,
-  DatabaseOutlined,
-  GlobalOutlined,
-  HddOutlined,
-  WifiOutlined,
-  ApiOutlined,
-  ContainerOutlined,
-  InfoCircleOutlined,
-  AppstoreOutlined,
-  CodeOutlined,
-  CompassOutlined,
-} from '@/utils/optimizedIcons';
+import { Col, Progress, Row, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { TFunction } from 'i18next';
-import type { Machine } from '@/types';
-import { getLocalizedRelativeTime, formatTimestampAsIs } from '@/core';
-import { calculateResourcePercent } from '@/core';
-import { parseVaultStatus } from '@/core/services/machine';
-import { abbreviatePath } from '@/utils/pathUtils';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { CephSection } from '../CephSection';
+import { CephSection } from '@/components/resources/internal/CephSection';
+import { RediaccEmpty, RediaccStack, RediaccText } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTraceModal } from '@/hooks/useDialogState';
 import {
-  PanelWrapper,
-  Header,
-  HeaderRow,
-  TitleGroup,
-  HeaderIcon,
-  PanelTitle,
+  calculateResourcePercent,
+  formatTimestampAsIs,
+  getLocalizedRelativeTime,
+} from '@/platform';
+import type { Machine } from '@/types';
+import {
+  ApiOutlined,
+  AppstoreOutlined,
+  CodeOutlined,
+  CompassOutlined,
+  ContainerOutlined,
+  DatabaseOutlined,
+  DesktopOutlined,
+  DoubleRightOutlined,
+  GlobalOutlined,
+  HddOutlined,
+  InfoCircleOutlined,
+  WifiOutlined,
+} from '@/utils/optimizedIcons';
+import { abbreviatePath } from '@/utils/pathUtils';
+import { parseVaultStatus } from '@rediacc/shared/services/machine';
+import {
+  AddressTag,
+  CardBodyStack,
+  CardHeader,
+  CardTagGroup,
+  CardTitle,
   CollapseButton,
-  TagRow,
-  StyledTag,
-  QueueBadge,
-  TimestampWrapper,
-  Timestamp,
   ContentWrapper,
-  EmptyState,
-  SectionDivider,
-  SectionHeader,
-  SectionTitle,
-  SubduedText,
-  IconWrapper,
-  SectionBlock,
-  InfoCard,
-  FullWidthStack,
-  FieldRow,
   FieldLabel,
+  FieldRow,
   FieldValue,
   FieldValueMonospace,
   FieldValueStrong,
-  MetricCard,
-  CardHeader,
-  CardTitle,
-  CardTagGroup,
-  StyledList,
-  ListCard,
-  CardBodyStack,
-  KeyValueRow,
+  Header,
+  HeaderIcon,
+  HeaderRow,
+  IconWrapper,
   IndentedBlock,
+  InfoCard,
+  KeyValueRow,
+  ListCard,
+  MetricCard,
+  PanelTitle,
+  PanelWrapper,
   PartitionRow,
+  QueueBadge,
+  SectionBlock,
+  SectionDivider,
+  SectionHeader,
+  SectionTitle,
   StatusTag,
-  AddressTag,
+  StyledList,
+  StyledTag,
+  TagRow,
+  TimestampWrapper,
+  TitleGroup,
 } from './styles';
+import type { ListProps } from 'antd';
+import type { TFunction } from 'i18next';
 
 interface MachineVaultStatusPanelProps {
   machine: Machine | null;
@@ -263,7 +263,10 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                 {t('machines:region')}: {machine.regionName}
               </StyledTag>
             )}
-            <QueueBadge count={machine.queueCount} data-testid="vault-status-queue-badge">
+            <QueueBadge
+              count={machine.queueCount ?? undefined}
+              data-testid="vault-status-queue-badge"
+            >
               <StyledTag $variant="queue">{t('machines:queueItems')}</StyledTag>
             </QueueBadge>
             <StyledTag $variant="version" data-testid="vault-status-version-tag">
@@ -274,10 +277,10 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
           {machine.vaultStatusTime && (
             <TimestampWrapper>
               <Tooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
-                <Timestamp data-testid="vault-status-last-updated">
+                <RediaccText variant="caption" data-testid="vault-status-last-updated">
                   {t('machines:lastUpdated')}:{' '}
                   {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
-                </Timestamp>
+                </RediaccText>
               </Tooltip>
             </TimestampWrapper>
           )}
@@ -285,7 +288,11 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
         <ContentWrapper data-testid="vault-status-content">
           {!vaultData ? (
-            <EmptyState description={t('machines:noVaultData')} data-testid="vault-status-empty" />
+            <RediaccEmpty
+              description={t('machines:noVaultData')}
+              data-testid="vault-status-empty"
+              style={{ marginTop: 120 }}
+            />
           ) : (
             <>
               {vaultData.system && (
@@ -308,7 +315,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
               )}
 
               {featureFlags.isEnabled('ceph') && machine && (
-                <SectionBlock data-testid="vault-status-distributed-storage">
+                <SectionBlock data-testid="vault-status-ceph">
                   <CephSection
                     machine={machine}
                     onViewDetails={() =>
@@ -357,7 +364,7 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
     </SectionHeader>
 
     <InfoCard size="sm" data-testid="vault-status-system-info-card">
-      <FullWidthStack>
+      <RediaccStack direction="vertical" gap="sm" fullWidth>
         <FieldRow>
           <FieldLabel>{t('resources:repos.hostname')}:</FieldLabel>
           <FieldValue data-testid="vault-status-hostname">{system.hostname}</FieldValue>
@@ -386,7 +393,7 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
             {system.system_time_human} ({system.timezone})
           </FieldValue>
         </FieldRow>
-      </FullWidthStack>
+      </RediaccStack>
     </InfoCard>
   </SectionBlock>
 );
@@ -422,12 +429,12 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               <CardTitle level={5}>{t('resources:repos.memory')}</CardTitle>
             </CardHeader>
             <Progress percent={Math.round(memoryPercent)} strokeColor="var(--color-info)" />
-            <SubduedText>
+            <RediaccText size="xs" color="muted">
               {t('resources:repos.used')}: {system.memory.used} / {system.memory.total}
-            </SubduedText>
-            <SubduedText>
+            </RediaccText>
+            <RediaccText size="xs" color="muted">
               {t('resources:repos.available')}: {system.memory.available}
-            </SubduedText>
+            </RediaccText>
           </MetricCard>
         </Col>
 
@@ -440,12 +447,12 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               <CardTitle level={5}>{t('resources:repos.disk')}</CardTitle>
             </CardHeader>
             <Progress percent={diskPercent} strokeColor={diskStroke} />
-            <SubduedText>
+            <RediaccText size="xs" color="muted">
               {t('resources:repos.used')}: {system.disk.used} / {system.disk.total}
-            </SubduedText>
-            <SubduedText>
+            </RediaccText>
+            <RediaccText size="xs" color="muted">
               {t('resources:repos.available')}: {system.disk.available}
-            </SubduedText>
+            </RediaccText>
           </MetricCard>
         </Col>
 
@@ -466,12 +473,12 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               </FieldRow>
             )}
             <Progress percent={datastorePercent} strokeColor={datastoreStroke} />
-            <SubduedText>
+            <RediaccText size="xs" color="muted">
               {t('resources:repos.used')}: {system.datastore.used} / {system.datastore.total}
-            </SubduedText>
-            <SubduedText>
+            </RediaccText>
+            <RediaccText size="xs" color="muted">
               {t('resources:repos.available')}: {system.datastore.available}
-            </SubduedText>
+            </RediaccText>
           </MetricCard>
         </Col>
       </Row>
@@ -499,7 +506,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
 
       {network.default_gateway && (
         <InfoCard size="sm" data-testid="vault-status-gateway-card">
-          <FullWidthStack>
+          <RediaccStack direction="vertical" gap="sm" fullWidth>
             <FieldRow>
               <FieldLabel>{t('resources:repos.defaultGateway')}:</FieldLabel>
               <FieldValue data-testid="vault-status-gateway">{network.default_gateway}</FieldValue>
@@ -512,7 +519,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
                 </FieldValue>
               </FieldRow>
             )}
-          </FullWidthStack>
+          </RediaccStack>
         </InfoCard>
       )}
 
@@ -625,11 +632,11 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
                     {device.partitions.map((part: BlockDevicePartition) => (
                       <PartitionRow key={`${device.name}-${part.name}`}>
                         <CodeOutlined />
-                        <SubduedText as="span">
+                        <RediaccText as="span" size="xs" color="muted">
                           {part.name}: {part.size_human}
                           {part.filesystem && ` (${part.filesystem})`}
                           {part.mountpoint && ` • ${part.mountpoint}`}
-                        </SubduedText>
+                        </RediaccText>
                       </PartitionRow>
                     ))}
                   </IndentedBlock>
@@ -680,7 +687,11 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
             </CardHeader>
 
             <CardBodyStack>
-              {container.image && <SubduedText ellipsis>{container.image}</SubduedText>}
+              {container.image && (
+                <RediaccText ellipsis size="xs" color="muted">
+                  {container.image}
+                </RediaccText>
+              )}
               {container.cpu_percent && (
                 <KeyValueRow>
                   <FieldLabel>CPU:</FieldLabel>

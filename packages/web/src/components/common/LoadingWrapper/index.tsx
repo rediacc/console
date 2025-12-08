@@ -1,5 +1,5 @@
 import React from 'react';
-import { Spin, Empty } from 'antd';
+import { Empty, Spin } from 'antd';
 import styled from 'styled-components';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 

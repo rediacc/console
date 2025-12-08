@@ -1,17 +1,17 @@
 import { forwardRef } from 'react';
 import {
   StyledRediaccInput,
-  StyledRediaccPasswordInput,
-  StyledRediaccTextArea,
   StyledRediaccInputNumber,
+  StyledRediaccPasswordInput,
   StyledRediaccSearchInput,
+  StyledRediaccTextArea,
 } from './RediaccInput.styles';
 import type {
+  RediaccInputNumberProps,
   RediaccInputProps,
   RediaccPasswordInputProps,
-  RediaccTextAreaProps,
-  RediaccInputNumberProps,
   RediaccSearchInputProps,
+  RediaccTextAreaProps,
 } from './RediaccInput.types';
 
 /**

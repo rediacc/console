@@ -1,38 +1,33 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CloudServerOutlined } from '@/utils/optimizedIcons';
+import { Select, Table } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { Machine } from '@/types';
-import { useCephClusters, type CephCluster } from '@/api/queries/ceph';
+import { type CephCluster, useCephClusters } from '@/api/queries/ceph';
 import {
   useUpdateMachineCeph,
   useUpdateMachineClusterAssignment,
 } from '@/api/queries/cephMutations';
-import { showMessage } from '@/utils/messages';
-import { Select, Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { ModalSize } from '@/types/modal';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { createTruncatedColumn } from '@/components/common/columns';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccStack, RediaccText } from '@/components/ui';
+import { AlertCard } from '@/styles/primitives';
+import type { Machine } from '@/types';
+import { ModalSize } from '@/types/modal';
+import { showMessage } from '@/utils/messages';
+import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import {
-  StyledModal,
-  TitleStack,
-  ContentStack,
-  InfoAlert,
-  MachineDetailsSection,
-  DetailRow,
-  DetailLabel,
-  DetailValue,
-  ClusterAlert,
-  FieldGroup,
-  FieldLabel,
-  HelperText,
-  StyledSelect,
-  MachinesTable,
-  MachineNameRow,
-  MachineNameText,
-  TeamTag,
   AssignmentTag,
+  ClusterAlert,
+  DetailRow,
+  FieldGroup,
+  MachineDetailsSection,
+  MachineNameRow,
+  MachinesTable,
+  StyledModal,
+  StyledSelect,
+  TeamTag,
+  TitleStack,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 interface AssignToClusterModalProps {
   open: boolean;
@@ -149,7 +144,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       renderWrapper: (content) => (
         <MachineNameRow>
           <CloudServerOutlined />
-          <MachineNameText>{content}</MachineNameText>
+          <RediaccText weight="medium">{content}</RediaccText>
         </MachineNameRow>
       ),
     });
@@ -209,10 +204,11 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       }}
       data-testid="ds-assign-cluster-modal"
     >
-      <ContentStack>
+      <RediaccStack variant="spaced-column" fullWidth>
         {isBulkMode ? (
           <>
-            <InfoAlert
+            <AlertCard
+              $variant="info"
               message={t('machines:bulkOperations.selectedCount', { count: targetMachines.length })}
               description={t('machines:bulkAssignDescription')}
               variant="info"
@@ -234,12 +230,12 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
             <>
               <MachineDetailsSection>
                 <DetailRow>
-                  <DetailLabel>{t('machines:machine')}:</DetailLabel>
-                  <DetailValue>{machine.machineName}</DetailValue>
+                  <RediaccText weight="semibold">{t('machines:machine')}:</RediaccText>
+                  <RediaccText color="muted">{machine.machineName}</RediaccText>
                 </DetailRow>
                 <DetailRow>
-                  <DetailLabel>{t('machines:team')}:</DetailLabel>
-                  <DetailValue>{machine.teamName}</DetailValue>
+                  <RediaccText weight="semibold">{t('machines:team')}:</RediaccText>
+                  <RediaccText color="muted">{machine.teamName}</RediaccText>
                 </DetailRow>
               </MachineDetailsSection>
 
@@ -257,7 +253,9 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
         )}
 
         <FieldGroup>
-          <FieldLabel>{t('ceph:clusters.cluster')}:</FieldLabel>
+          <RediaccText weight="medium" size="sm">
+            {t('ceph:clusters.cluster')}:
+          </RediaccText>
           {clustersLoading ? (
             <LoadingWrapper loading centered minHeight={80}>
               <div />
@@ -283,11 +281,15 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
                   </Select.Option>
                 ))}
               </StyledSelect>
-              {!isBulkMode && <HelperText>{t('machines:clusterAssignmentHelp')}</HelperText>}
+              {!isBulkMode && (
+                <RediaccText size="xs" color="muted">
+                  {t('machines:clusterAssignmentHelp')}
+                </RediaccText>
+              )}
             </>
           )}
         </FieldGroup>
-      </ContentStack>
+      </RediaccStack>
     </StyledModal>
   );
 };

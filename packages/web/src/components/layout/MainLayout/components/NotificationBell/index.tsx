@@ -1,52 +1,55 @@
 import React, { useState } from 'react';
-import { Badge, Dropdown, List, Empty, Space, Tag } from 'antd';
+import { Badge, Dropdown, Empty, Grid, List, Space, Tag } from 'antd';
+import dayjs from 'dayjs';
+import 'dayjs/locale/es';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { useTranslation } from 'react-i18next';
+import { useDispatch, useSelector } from 'react-redux';
+import { RediaccButton, RediaccText } from '@/components/ui';
+import {
+  clearAllNotifications,
+  clearNotification,
+  markAllAsRead,
+  markAsRead,
+  Notification,
+  NotificationType,
+} from '@/store/notifications/notificationSlice';
+import { RootState } from '@/store/store';
 import {
   BellOutlined,
+  CheckCircleOutlined,
   CloseOutlined,
   ExclamationCircleOutlined,
   InfoCircleOutlined,
   WarningOutlined,
-  CheckCircleOutlined,
 } from '@/utils/optimizedIcons';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store/store';
 import {
-  markAsRead,
-  markAllAsRead,
-  clearNotification,
-  clearAllNotifications,
-  NotificationType,
-  Notification,
-} from '@/store/notifications/notificationSlice';
-import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/es';
-import {
+  BellButton,
+  EmptyWrapper,
+  NotificationCloseButton,
   NotificationDropdown,
   NotificationHeader,
-  NotificationTitle,
-  NotificationListWrapper,
-  NotificationItem,
   NotificationIconWrapper,
-  NotificationTitleRow,
-  NotificationTitleContent,
-  NotificationText,
+  NotificationItem,
+  NotificationListWrapper,
+  NotificationMessageWrapper,
   NotificationTag,
-  NotificationCloseButton,
-  NotificationMessage,
-  NotificationTimestamp,
-  EmptyWrapper,
-  BellButton,
+  NotificationText,
+  NotificationTitleContent,
+  NotificationTitleRow,
 } from './styles';
-import { RediaccButton } from '@/components/ui';
 
 dayjs.extend(relativeTime);
+
+const { useBreakpoint } = Grid;
 
 const NotificationBell: React.FC = () => {
   const dispatch = useDispatch();
   const { t, i18n } = useTranslation('common');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   const { notifications, unreadCount } = useSelector((state: RootState) => state.notifications);
 
@@ -113,7 +116,7 @@ const NotificationBell: React.FC = () => {
   const dropdownContent = (
     <NotificationDropdown className="notification-dropdown" data-testid="notification-dropdown">
       <NotificationHeader>
-        <NotificationTitle>{t('notifications.title', 'Notifications')}</NotificationTitle>
+        <RediaccText variant="title">{t('notifications.title', 'Notifications')}</RediaccText>
         {notifications.length > 0 && (
           <Space>
             <RediaccButton
@@ -179,12 +182,12 @@ const NotificationBell: React.FC = () => {
                   }
                   description={
                     <div>
-                      <NotificationMessage className="notification-message">
-                        {notification.message}
-                      </NotificationMessage>
-                      <NotificationTimestamp>
+                      <NotificationMessageWrapper className="notification-message">
+                        <RediaccText variant="description">{notification.message}</RediaccText>
+                      </NotificationMessageWrapper>
+                      <RediaccText variant="caption">
                         {dayjs(notification.timestamp).fromNow()}
-                      </NotificationTimestamp>
+                      </RediaccText>
                     </div>
                   }
                 />
@@ -200,7 +203,7 @@ const NotificationBell: React.FC = () => {
     <Badge count={unreadCount} offset={[-4, 4]}>
       <Dropdown
         trigger={['click']}
-        placement="bottomRight"
+        placement={isMobile ? 'bottom' : 'bottomRight'}
         open={dropdownOpen}
         onOpenChange={setDropdownOpen}
         menu={{ items: [] }}

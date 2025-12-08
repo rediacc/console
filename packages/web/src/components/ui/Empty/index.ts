@@ -1,8 +1,8 @@
 export { RediaccEmpty } from './RediaccEmpty';
-export type { RediaccEmptyProps, EmptyVariant, EmptySize } from './RediaccEmpty.types';
 export {
-  resolveEmptyPadding,
-  resolveEmptyImageSize,
-  EmptyTitle,
   EmptyAction,
+  EmptyTitle,
+  resolveEmptyImageSize,
+  resolveEmptyPadding,
 } from './RediaccEmpty.styles';
+export type { EmptySize, EmptyVariant, RediaccEmptyProps } from './RediaccEmpty.types';

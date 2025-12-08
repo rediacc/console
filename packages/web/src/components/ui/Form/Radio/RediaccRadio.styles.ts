@@ -1,5 +1,6 @@
-import styled from 'styled-components';
 import { Radio as AntRadio } from 'antd';
+import styled from 'styled-components';
+import { disabledState } from '@/styles/mixins';
 
 const { Group: AntRadioGroup, Button: AntRadioButton } = AntRadio;
 
@@ -54,8 +55,7 @@ export const StyledRediaccRadioGroup = styled(AntRadioGroup)`
 
     /* Disabled state */
     .ant-radio-button-wrapper-disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
+      ${disabledState}
       background-color: ${({ theme }) => theme.colors.bgSecondary};
       border-color: ${({ theme }) => theme.colors.borderSecondary};
       color: ${({ theme }) => theme.colors.textTertiary};

@@ -1,15 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { TeamOutlined, SearchOutlined } from '@/utils/optimizedIcons';
-import type { Team } from '@/api/queries/teams';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SearchOutlined, TeamOutlined } from '@/utils/optimizedIcons';
+import type { GetCompanyTeams_ResultSet1 as Team } from '@rediacc/shared/types';
 import {
+  DropdownMenuWrapper,
+  DropdownSearchContainer,
+  OptionIcon,
+  OptionLabel,
+  SearchInput,
   TeamSelect,
   TeamTag,
-  DropdownSearchContainer,
-  DropdownMenuWrapper,
-  SearchInput,
-  OptionLabel,
-  OptionIcon,
 } from './styles';
 
 interface TeamSelectorProps {
@@ -54,6 +54,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
   return (
     <TeamSelect
       mode="multiple"
+      size="sm"
       style={style}
       placeholder={placeholder}
       value={selectedTeams}

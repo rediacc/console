@@ -1,23 +1,23 @@
-import { Space, Badge, Tooltip, Button, Popconfirm } from 'antd';
-import type { TableProps } from 'antd';
-import {
-  TeamOutlined,
-  UserOutlined,
-  DesktopOutlined,
-  DatabaseOutlined,
-  CloudServerOutlined,
-  EditOutlined,
-  HistoryOutlined,
-  DeleteOutlined,
-} from '@/utils/optimizedIcons';
-import { featureFlags } from '@/config/featureFlags';
+import { Badge, Button, Popconfirm, Space, Tooltip } from 'antd';
 import type { Team } from '@/api/queries/teams';
-import type { TFunction } from 'i18next';
 import {
   createCountColumn,
-  createVersionColumn,
   createTruncatedColumn,
+  createVersionColumn,
 } from '@/components/common/columns';
+import { featureFlags } from '@/config/featureFlags';
+import {
+  CloudServerOutlined,
+  DatabaseOutlined,
+  DeleteOutlined,
+  DesktopOutlined,
+  EditOutlined,
+  HistoryOutlined,
+  TeamOutlined,
+  UserOutlined,
+} from '@/utils/optimizedIcons';
+import type { TableProps } from 'antd';
+import type { TFunction } from 'i18next';
 
 interface GetTeamColumnsParams {
   tSystem: TFunction<'system'>;

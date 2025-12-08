@@ -9,4 +9,4 @@
  */
 
 export { RediaccTag } from './RediaccTag';
-export type { RediaccTagProps, TagVariant, TagSize, TagPreset } from './RediaccTag.types';
+export type { RediaccTagProps, TagPreset, TagSize, TagVariant } from './RediaccTag.types';

@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Skeleton } from 'antd';
-import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
-import { MachineAssignmentService } from '../../services';
 import { useMachineAssignmentStatus } from '@/api/queries/ceph';
+import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
+import { MachineAssignmentService } from '@/features/ceph/services';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import type { Machine, MachineAssignmentType } from '@/types';
 

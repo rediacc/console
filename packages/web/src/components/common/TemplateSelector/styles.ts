@@ -1,35 +1,17 @@
-import styled from 'styled-components';
 import { Row } from 'antd';
-import { RediaccSearchInput as UnifiedSearchInput } from '@/components/ui/Form';
+import styled from 'styled-components';
+import { RediaccButton, RediaccCard, RediaccTag, RediaccText } from '@/components/ui';
+import { RediaccSearchInput } from '@/components/ui/Form';
 import { FlexRow } from '@/styles/primitives';
-import {
-  RediaccText as UnifiedText,
-  RediaccCard,
-  RediaccStack,
-  RediaccEmpty,
-} from '@/components/ui';
-import { RediaccButton } from '@/components/ui/Button';
-import { RediaccTag } from '@/components/ui/Tag';
 
 export const SelectorContainer = styled.div`
   width: 100%;
-`;
-
-export const HeaderStack = styled(RediaccStack).attrs({ direction: 'vertical' })`
-  && {
-    width: 100%;
-    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-  }
 `;
 
 export const HelperRow = styled(FlexRow).attrs({
   $gap: 'SM',
   $justify: 'space-between',
   $wrap: true,
-})``;
-
-export const HelperText = styled(UnifiedText).attrs({
-  variant: 'caption',
 })``;
 
 export const ClearButton = styled(RediaccButton).attrs({
@@ -41,25 +23,19 @@ export const ClearButton = styled(RediaccButton).attrs({
   }
 `;
 
-export const SearchInput = styled(UnifiedSearchInput)`
+export const SearchInput = styled(RediaccSearchInput)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
   }
 `;
 
-export const ResultCount = styled(UnifiedText).attrs({
+export const ResultCount = styled(RediaccText).attrs({
   color: 'muted',
 })`
   && {
     margin-bottom: ${({ theme }) => theme.spacing.SM}px;
     display: block;
-  }
-`;
-
-export const NoResultsEmpty = styled(RediaccEmpty)`
-  && {
-    margin: ${({ theme }) => theme.spacing.MD}px 0;
   }
 `;
 
@@ -96,12 +72,6 @@ export const SelectionIndicator = styled.span<{ $variant?: 'default' | 'none' }>
   font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
 `;
 
-export const CardStack = styled(RediaccStack).attrs({ direction: 'vertical' })`
-  && {
-    width: 100%;
-  }
-`;
-
 export const TemplateIconWrapper = styled.div<{ $muted?: boolean }>`
   text-align: center;
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
@@ -113,20 +83,9 @@ export const TemplateIconWrapper = styled.div<{ $muted?: boolean }>`
   }
 `;
 
-export const TemplateTitle = styled(UnifiedText)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.BASE}px;
-  }
-`;
+// TemplateTitle removed - use <RediaccText variant="title"> directly
 
-export const TemplateDescription = styled(UnifiedText)`
-  && {
-    display: block;
-    margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    line-height: ${({ theme }) => theme.lineHeight.RELAXED};
-  }
-`;
+// TemplateDescription removed - use <RediaccText variant="description"> directly
 
 export const DetailsButton = styled(RediaccButton).attrs({
   size: 'sm',

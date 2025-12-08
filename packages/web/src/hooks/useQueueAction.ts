@@ -1,11 +1,11 @@
-import { useMemo, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTeams } from '@/api/queries/teams';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import {
-  QueueActionService,
   QueueActionParams,
   QueueActionResult,
+  QueueActionService,
 } from '@/services/queueActionService';
 
 export type { QueueActionParams, QueueActionResult } from '@/services/queueActionService';

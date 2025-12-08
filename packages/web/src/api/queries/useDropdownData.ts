@@ -20,7 +20,7 @@ export const useDropdownData = (context?: string) => {
   return useQuery({
     queryKey: ['dropdown-data', context],
     queryFn: async () => {
-      const data = await api.company.getLookupData(context);
+      const data = await api.company.getLookupData(context ? { context } : undefined);
       return { ...EMPTY_DROPDOWN_DATA, ...data };
     },
     staleTime: 30 * 60 * 1000, // 30 minutes

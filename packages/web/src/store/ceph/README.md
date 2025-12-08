@@ -1,6 +1,6 @@
 # Machine Assignment Redux Store
 
-This Redux store manages the state for distributed storage machine assignments, including selection, validation, and bulk operations.
+This Redux store manages the state for Ceph machine assignments, including selection, validation, and bulk operations.
 
 ## Usage Example
 

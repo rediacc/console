@@ -1,10 +1,10 @@
+import { createTruncatedColumn } from '@/components/common/columns';
+import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
+import { createSorter } from '@/platform';
+import type { Machine } from '@/types';
+import { AssignmentTag, QueueBadge } from './styles';
 import type { ColumnsType } from 'antd/es/table/interface';
 import type { TFunction } from 'i18next';
-import type { Machine } from '@/types';
-import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
-import { createSorter } from '@/core';
-import { createTruncatedColumn } from '@/components/common/columns';
-import { AssignmentTag, QueueBadge } from './styles';
 
 export const buildMachineTableColumns = (
   t: TFunction<'machines' | 'ceph'>

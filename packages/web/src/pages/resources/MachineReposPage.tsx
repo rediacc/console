@@ -1,45 +1,42 @@
-﻿import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Button as AntButton, Space, Tag, Alert, Tooltip } from 'antd';
-import {
-  DoubleLeftOutlined,
-  ReloadOutlined,
-  DesktopOutlined,
-  PlusOutlined,
-  CloudDownloadOutlined,
-} from '@/utils/optimizedIcons';
+﻿import React, { useEffect, useState } from 'react';
+import { Alert, Button as AntButton, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccText as Text } from '@/components/ui';
-import { usePanelWidth } from '@/hooks/usePanelWidth';
-import { DETAIL_PANEL } from '@/constants/layout';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
 import { useRepos } from '@/api/queries/repos';
-import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
-import { Machine, Repo, PluginContainer } from '@/types';
-import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { useRepoCreation } from '@/hooks/useRepoCreation';
-import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton as Button } from '@/components/ui';
-import { ActionGroup } from '@/components/common/styled';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ActionGroup, CenteredState } from '@/components/common/styled';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
+import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
+import { RediaccButton, RediaccCard, RediaccText } from '@/components/ui';
+import { DETAIL_PANEL } from '@/constants/layout';
+import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
+import { usePanelWidth } from '@/hooks/usePanelWidth';
+import { useRepoCreation } from '@/hooks/useRepoCreation';
+import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
+import { Machine, PluginContainer, Repo } from '@/types';
 import {
-  PageWrapper,
-  FullHeightCard,
+  CloudDownloadOutlined,
+  DesktopOutlined,
+  DoubleLeftOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from '@/utils/optimizedIcons';
+import {
+  ActionsRow,
   BreadcrumbWrapper,
-  HeaderSection,
+  DetailBackdrop,
+  ErrorWrapper,
   HeaderRow,
+  HeaderSection,
+  HeaderTitleText,
+  ListPanel,
+  PageWrapper,
+  SplitLayout,
   TitleColumn,
   TitleRow,
-  ActionsRow,
-  HeaderTitleText,
-  SplitLayout,
-  ListPanel,
-  DetailBackdrop,
-  CenteredState,
-  ErrorWrapper,
 } from './styles';
 
 interface ContainerData {
@@ -176,8 +173,8 @@ const MachineReposPage: React.FC = () => {
     fileBrowserModal.open(machine);
   };
 
-  const handleUnifiedModalSubmit = async (data: Parameters<typeof createRepo>[0]) => {
-    const result = await createRepo(data);
+  const handleUnifiedModalSubmit = async (data: Record<string, unknown>) => {
+    const result = await createRepo(data as unknown as Parameters<typeof createRepo>[0]);
 
     if (result.success) {
       unifiedModal.close();
@@ -199,9 +196,12 @@ const MachineReposPage: React.FC = () => {
       repoGuid: repoRow.originalGuid || repoRow.name,
       teamName: machine!.teamName,
       vaultVersion: 0,
-      vaultContent: undefined,
-      grandGuid: undefined,
-      repoTag: repoRow.repoTag,
+      vaultContent: null,
+      grandGuid: '',
+      parentGuid: null,
+      repoNetworkMode: '',
+      repoNetworkId: 0,
+      repoTag: repoRow.repoTag || '',
     };
 
     // Find the actual Repo from the API data - must match both name AND tag to distinguish forks
@@ -262,14 +262,14 @@ const MachineReposPage: React.FC = () => {
   if (machinesLoading && !machine) {
     return (
       <PageWrapper>
-        <FullHeightCard>
+        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
           <CenteredState>
             <LoadingWrapper loading centered minHeight={160}>
               <div />
             </LoadingWrapper>
-            <Text color="secondary">{t('common:general.loading')}</Text>
+            <RediaccText color="secondary">{t('common:general.loading')}</RediaccText>
           </CenteredState>
-        </FullHeightCard>
+        </RediaccCard>
       </PageWrapper>
     );
   }
@@ -278,7 +278,7 @@ const MachineReposPage: React.FC = () => {
   if (machinesError || (!machinesLoading && !machine)) {
     return (
       <PageWrapper>
-        <FullHeightCard>
+        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
           <Alert
             message={t('machines:machineNotFound')}
             description={
@@ -292,14 +292,14 @@ const MachineReposPage: React.FC = () => {
             type="error"
             showIcon
           />
-        </FullHeightCard>
+        </RediaccCard>
       </PageWrapper>
     );
   }
 
   return (
     <PageWrapper>
-      <FullHeightCard>
+      <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
         <HeaderSection>
           <BreadcrumbWrapper
             items={[
@@ -321,7 +321,7 @@ const MachineReposPage: React.FC = () => {
             <TitleColumn>
               <TitleRow>
                 <Tooltip title={t('machines:backToMachines')}>
-                  <Button
+                  <RediaccButton
                     iconOnly
                     icon={<DoubleLeftOutlined />}
                     onClick={handleBackToMachines}
@@ -355,7 +355,7 @@ const MachineReposPage: React.FC = () => {
 
             <ActionsRow>
               <Tooltip title={t('machines:createRepo')}>
-                <Button
+                <RediaccButton
                   iconOnly
                   icon={<PlusOutlined />}
                   onClick={handleCreateRepo}
@@ -363,7 +363,7 @@ const MachineReposPage: React.FC = () => {
                 />
               </Tooltip>
               <Tooltip title={t('functions:functions.pull.name')}>
-                <Button
+                <RediaccButton
                   iconOnly
                   icon={<CloudDownloadOutlined />}
                   onClick={handlePull}
@@ -371,7 +371,7 @@ const MachineReposPage: React.FC = () => {
                 />
               </Tooltip>
               <Tooltip title={t('common:actions.refresh')}>
-                <Button
+                <RediaccButton
                   iconOnly
                   icon={<ReloadOutlined />}
                   onClick={handleRefresh}
@@ -422,7 +422,7 @@ const MachineReposPage: React.FC = () => {
             />
           )}
         </SplitLayout>
-      </FullHeightCard>
+      </RediaccCard>
 
       <QueueItemTraceModal
         taskId={queueTrace.state.taskId}
@@ -455,8 +455,7 @@ const MachineReposPage: React.FC = () => {
         existingData={unifiedModal.state.data?.data}
         teamFilter={machine?.teamName ? [machine.teamName] : undefined}
         creationContext={unifiedModal.state.data?.creationContext}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        onSubmit={handleUnifiedModalSubmit as any}
+        onSubmit={handleUnifiedModalSubmit}
       />
     </PageWrapper>
   );

@@ -1,15 +1,16 @@
 import { forwardRef } from 'react';
-import { StyledRediaccStack } from './RediaccStack.styles';
+import { resolveStackVariantDefaults, StyledRediaccStack } from './RediaccStack.styles';
 import type { RediaccStackProps } from './RediaccStack.types';
 
 export const RediaccStack = forwardRef<HTMLDivElement, RediaccStackProps>(
   (
     {
-      direction = 'horizontal',
-      gap = 'md',
+      variant,
+      direction,
+      gap,
       align = 'stretch',
       justify = 'start',
-      wrap = false,
+      wrap,
       fullWidth = false,
       children,
       as,
@@ -17,15 +18,23 @@ export const RediaccStack = forwardRef<HTMLDivElement, RediaccStackProps>(
     },
     ref
   ) => {
+    // Resolve variant defaults if variant is provided
+    const variantDefaults = resolveStackVariantDefaults(variant);
+
+    // Use explicit props if provided, otherwise fall back to variant defaults
+    const resolvedDirection = direction ?? variantDefaults.direction;
+    const resolvedGap = gap ?? variantDefaults.gap;
+    const resolvedWrap = wrap ?? variantDefaults.wrap ?? false;
+
     return (
       <StyledRediaccStack
         ref={ref}
         as={as}
-        $direction={direction}
-        $gap={gap}
+        $direction={resolvedDirection}
+        $gap={resolvedGap}
         $align={align}
         $justify={justify}
-        $wrap={wrap}
+        $wrap={resolvedWrap}
         $fullWidth={fullWidth}
         {...rest}
       >

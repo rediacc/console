@@ -1,35 +1,34 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Modal, Form, Input, Select } from 'antd';
-import styled from 'styled-components';
-import { PlusOutlined } from '@/utils/optimizedIcons';
-import { endpointService, Endpoint } from '@/services/endpointService';
-import { apiConnectionService } from '@/services/apiConnectionService';
-import { showMessage } from '@/utils/messages';
-import apiClient from '@/api/client';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Form, Input, Modal, Select } from 'antd';
 import axios from 'axios';
-import { useDialogState } from '@/hooks/useDialogState';
+import styled from 'styled-components';
+import apiClient from '@/api/client';
+import { RediaccButton, RediaccStack } from '@/components/ui';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
-import { RediaccButton as Button } from '@/components/ui';
+import { useDialogState } from '@/hooks/useDialogState';
+import { apiConnectionService } from '@/services/apiConnectionService';
+import { Endpoint, endpointService } from '@/services/endpointService';
+import { showMessage } from '@/utils/messages';
+import { PlusOutlined } from '@/utils/optimizedIcons';
 import {
-  StyledSelect,
-  LoadingText,
+  AddCustomOption,
+  CheckingSpinner,
+  DeleteEndpointIcon,
+  EmojiIcon,
+  EndpointName,
+  EndpointNameText,
+  EndpointSuffixIcon,
   EndpointUrlText,
-  OptionWrapper,
+  HealthIndicator,
+  LabelContent,
+  LoadingText,
   OptionLeft,
   OptionRight,
-  HealthIndicator,
-  EndpointName,
-  VersionLabel,
-  EmojiIcon,
-  LabelContent,
-  AddCustomOption,
-  EndpointNameText,
-  CheckingSpinner,
+  OptionWrapper,
   SelectorWrapper,
-  EndpointSuffixIcon,
-  DeleteEndpointIcon,
   SpinnerWrapper,
-  FormActions,
+  StyledSelect,
+  VersionLabel,
 } from './styles';
 
 const { Option } = Select;
@@ -473,23 +472,23 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           </Form.Item>
 
           <FormActionsRow>
-            <FormActions>
-              <Button
+            <RediaccStack direction="horizontal" justify="end" fullWidth>
+              <RediaccButton
                 onClick={() => {
                   customModal.close();
                   customForm.resetFields();
                 }}
               >
                 Cancel
-              </Button>
-              <Button
+              </RediaccButton>
+              <RediaccButton
                 variant="primary"
                 htmlType="submit"
                 data-testid="custom-endpoint-submit-button"
               >
                 Add Endpoint
-              </Button>
-            </FormActions>
+              </RediaccButton>
+            </RediaccStack>
           </FormActionsRow>
         </Form>
       </Modal>

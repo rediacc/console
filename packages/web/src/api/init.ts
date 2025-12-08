@@ -1,5 +1,5 @@
-import { configService } from '@/services/configService';
 import { apiConnectionService } from '@/services/apiConnectionService';
+import { configService } from '@/services/configService';
 import { apiClient } from './client';
 
 export async function initializeApiClient() {

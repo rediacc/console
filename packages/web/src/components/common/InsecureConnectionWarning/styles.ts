@@ -1,28 +1,4 @@
 import styled from 'styled-components';
-import { RediaccAlert } from '@/components/ui';
-
-export const WarningAlert = styled(RediaccAlert)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    border: 2px solid ${({ theme }) => theme.colors.error};
-    background-color: ${({ theme }) => theme.colors.bgError};
-    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-
-    .ant-alert-icon {
-      color: ${({ theme }) => theme.colors.error};
-      font-size: ${({ theme }) => theme.dimensions.ICON_LG}px;
-    }
-
-    .ant-alert-close-icon {
-      color: ${({ theme }) => theme.colors.error};
-    }
-  }
-`;
-
-export const WarningTitle = styled.span`
-  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  color: ${({ theme }) => theme.colors.error};
-`;
 
 export const WarningDescription = styled.div`
   color: ${({ theme }) => theme.colors.textSecondary};

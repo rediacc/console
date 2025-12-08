@@ -1,3 +1,3 @@
 export { RediaccAlert } from './RediaccAlert';
-export type { RediaccAlertProps, AlertVariant, AlertSize } from './RediaccAlert.types';
-export { resolveAlertVariantTokens, resolveAlertPadding } from './RediaccAlert.styles';
+export { resolveAlertPadding, resolveAlertVariantTokens } from './RediaccAlert.styles';
+export type { AlertSize, AlertVariant, RediaccAlertProps } from './RediaccAlert.types';

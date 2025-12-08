@@ -1,47 +1,43 @@
 import React, { useMemo } from 'react';
 import { Progress, Tag } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { IconWrapper, RediaccText } from '@/components/ui';
 import {
-  DoubleRightOutlined,
   ApiOutlined,
   AppstoreOutlined,
   CloudServerOutlined,
-  WifiOutlined,
-  HddOutlined,
-  FolderOutlined,
-  PlayCircleOutlined,
-  PauseCircleOutlined,
   ContainerOutlined,
+  DoubleRightOutlined,
+  FolderOutlined,
+  HddOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
+  WifiOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
 import {
-  PanelWrapper,
-  Header,
-  HeaderRow,
-  TitleGroup,
-  PanelTitle,
   CollapseButton,
-  TagGroup,
   ContentWrapper,
-  SectionHeader,
-  SectionTitle,
-  SectionCard,
+  DividerLabel,
+  FieldLabel,
   FieldList,
   FieldRow,
-  FieldLabel,
   FieldValue,
-  FieldValueStrong,
   FieldValueMonospace,
-  SectionDivider,
-  DividerLabel,
-  MetricsGrid,
+  FieldValueStrong,
+  Header,
+  HeaderRow,
   MetricCard,
-  MetricLabel,
-  MetricValue,
+  MetricsGrid,
+  PanelTitle,
+  PanelWrapper,
+  SectionCard,
+  SectionDivider,
+  SectionHeader,
   SectionStack,
-  InlineText,
-  SubduedText,
+  SectionTitle,
+  TagGroup,
+  TitleGroup,
 } from './styles';
-import { IconWrapper } from '@/components/ui';
 
 interface ContainerData {
   id: string;
@@ -138,7 +134,11 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
     }
 
     if (container.ports) {
-      return <InlineText data-testid="container-detail-ports-text">{container.ports}</InlineText>;
+      return (
+        <RediaccText variant="value" data-testid="container-detail-ports-text">
+          {container.ports}
+        </RediaccText>
+      );
     }
 
     return null;
@@ -225,10 +225,10 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
 
         <MetricsGrid>
           <MetricCard data-testid="container-detail-cpu-card">
-            <MetricLabel>{t('resources:containers.cpuUsage')}</MetricLabel>
-            <MetricValue $isWarning={cpuWarning}>
+            <RediaccText variant="label">{t('resources:containers.cpuUsage')}</RediaccText>
+            <RediaccText size="lg" weight="semibold" color={cpuWarning ? 'danger' : 'primary'}>
               {resourceUsage?.cpu?.toFixed(2) ?? '0'}%
-            </MetricValue>
+            </RediaccText>
             <Progress
               percent={resourceUsage?.cpu || 0}
               showInfo={false}
@@ -236,26 +236,26 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             />
           </MetricCard>
           <MetricCard data-testid="container-detail-memory-card">
-            <MetricLabel>{t('resources:containers.memoryUsage')}</MetricLabel>
-            <MetricValue $isWarning={memoryWarning}>
+            <RediaccText variant="label">{t('resources:containers.memoryUsage')}</RediaccText>
+            <RediaccText size="lg" weight="semibold" color={memoryWarning ? 'danger' : 'primary'}>
               {resourceUsage ? `${resourceUsage.memoryUsed} / ${resourceUsage.memoryTotal}` : '-'}
-            </MetricValue>
+            </RediaccText>
             <Progress
               percent={resourceUsage?.memoryPercent || 0}
               status={memoryWarning ? 'exception' : 'normal'}
             />
           </MetricCard>
           <MetricCard data-testid="container-detail-network-card">
-            <MetricLabel>{t('resources:containers.networkIO')}</MetricLabel>
-            <InlineText>
+            <RediaccText variant="label">{t('resources:containers.networkIO')}</RediaccText>
+            <RediaccText variant="value">
               <WifiOutlined /> {resourceUsage?.netIn} / {resourceUsage?.netOut}
-            </InlineText>
+            </RediaccText>
           </MetricCard>
           <MetricCard data-testid="container-detail-block-io-card">
-            <MetricLabel>{t('resources:containers.blockIO')}</MetricLabel>
-            <InlineText>
+            <RediaccText variant="label">{t('resources:containers.blockIO')}</RediaccText>
+            <RediaccText variant="value">
               <HddOutlined /> {resourceUsage?.blockRead} / {resourceUsage?.blockWrite}
-            </InlineText>
+            </RediaccText>
           </MetricCard>
         </MetricsGrid>
 
@@ -300,14 +300,18 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         <SectionCard data-testid="container-detail-environment">
           <SectionStack>
             <div>
-              <SubduedText>{t('resources:containers.mounts')}:</SubduedText>
+              <RediaccText size="xs" color="muted">
+                {t('resources:containers.mounts')}:
+              </RediaccText>
               <FieldValueMonospace data-testid="container-detail-mounts">
                 {container.mounts}
               </FieldValueMonospace>
             </div>
             {container.labels && (
               <div>
-                <SubduedText>{t('resources:containers.labels')}:</SubduedText>
+                <RediaccText size="xs" color="muted">
+                  {t('resources:containers.labels')}:
+                </RediaccText>
                 <FieldValueMonospace data-testid="container-detail-labels">
                   {container.labels}
                 </FieldValueMonospace>

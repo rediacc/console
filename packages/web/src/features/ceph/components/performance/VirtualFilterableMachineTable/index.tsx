@@ -1,21 +1,21 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { Badge, Select } from 'antd';
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Machine, MachineAssignmentType } from '@/types';
-import { MachineAssignmentService } from '@/features/ceph';
-import { useDebounce } from '@/features/ceph/utils/useDebounce';
 import { ActionGroup } from '@/components/common/styled';
-import { VirtualMachineTable } from '../VirtualMachineTable';
+import { MachineAssignmentService } from '@/features/ceph';
 import {
-  Container,
-  ToolbarStack,
-  FilterInput,
   AssignmentSelect,
+  Container,
+  FilterInput,
+  OptionLabel,
   PageSizeSelect,
   RefreshButton,
   StatusText,
-  OptionLabel,
-} from './styles';
+  ToolbarStack,
+} from '@/features/ceph/components/performance/VirtualFilterableMachineTable/styles';
+import { VirtualMachineTable } from '@/features/ceph/components/performance/VirtualMachineTable';
+import { useDebounce } from '@/features/ceph/utils/useDebounce';
+import { Machine, MachineAssignmentType } from '@/types';
 
 const { Option } = Select;
 

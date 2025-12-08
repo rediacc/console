@@ -1,7 +1,7 @@
-import { Upload, Button, Space, Tooltip } from 'antd';
+import { Button, Space, Tooltip, Upload } from 'antd';
+import { ImportExportRow } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/styles';
+import { DownloadOutlined, UploadOutlined } from '@/utils/optimizedIcons';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons';
-import { ImportExportRow } from '../styles';
 
 interface ImportExportControlsProps {
   importLabel: string;

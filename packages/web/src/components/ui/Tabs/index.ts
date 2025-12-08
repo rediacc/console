@@ -1,3 +1,3 @@
 export { RediaccTabs } from './RediaccTabs';
-export type { RediaccTabsProps, TabsVariant, TabsSize, TabItem } from './RediaccTabs.types';
-export { resolveTabFontSize, mapVariantToAntType } from './RediaccTabs.styles';
+export { mapVariantToAntType, resolveTabFontSize } from './RediaccTabs.styles';
+export type { RediaccTabsProps, TabItem, TabsSize, TabsVariant } from './RediaccTabs.types';

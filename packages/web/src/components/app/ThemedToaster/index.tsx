@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useTheme } from '@/context/ThemeContext';
-import { ToasterContainer, createToastOptions } from './styles';
+import { createToastOptions, ToasterContainer } from './styles';
 
 export const ThemedToaster: React.FC = () => {
   const { theme } = useTheme();
