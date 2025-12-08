@@ -6,11 +6,11 @@ import {
   type VaultData,
 } from '@rediacc/shared/queue-vault';
 import type {
-  Bridge,
-  Machine,
-  Repo,
+  GetRegionBridges_ResultSet1,
+  GetTeamMachines_ResultSet1,
+  GetTeamRepositories_ResultSet1,
   GetTeamStorages_ResultSet1,
-  Team,
+  GetCompanyTeams_ResultSet1,
 } from '@rediacc/shared/types';
 import { apiClient, api } from './api.js';
 
@@ -99,7 +99,7 @@ export class CliQueueService {
     if (requirements.team) {
       try {
         const teams = await api.teams.list();
-        const team = teams.find((t: Team) => t.teamName === context.teamName);
+        const team = teams.find((t: GetCompanyTeams_ResultSet1) => t.teamName === context.teamName);
         const parsed = this.parseVaultContent(team?.vaultContent);
         if (parsed) {
           vaults.teamVault = parsed;
@@ -112,7 +112,7 @@ export class CliQueueService {
     if (requirements.machine && context.machineName) {
       try {
         const machines = await api.machines.list(context.teamName);
-        const machine = machines.find((m: Machine) => m.machineName === context.machineName);
+        const machine = machines.find((m: GetTeamMachines_ResultSet1) => m.machineName === context.machineName);
         const parsed = this.parseVaultContent(machine?.vaultContent);
         if (parsed) {
           vaults.machineVault = parsed;
@@ -126,7 +126,7 @@ export class CliQueueService {
       try {
         const repoGuid = context.params.repo as string;
         const repos = await api.repos.list({ teamName: context.teamName });
-        const repo = repos.find((r: Repo) => r.repoGuid === repoGuid);
+        const repo = repos.find((r: GetTeamRepositories_ResultSet1) => r.repoGuid === repoGuid);
         const vaultContent = this.parseVaultContent(repo?.vaultContent);
         if (vaultContent) {
           if (repo?.repoNetworkId !== undefined) {
@@ -167,7 +167,7 @@ export class CliQueueService {
     if (requirements.bridge && context.bridgeName && context.regionName) {
       try {
         const bridges = await api.regions.getBridges({ regionName: context.regionName });
-        const bridge = bridges.find((b: Bridge) => b.bridgeName === context.bridgeName);
+        const bridge = bridges.find((b: GetRegionBridges_ResultSet1) => b.bridgeName === context.bridgeName);
         const parsed = this.parseVaultContent(bridge?.vaultContent);
         if (parsed) {
           vaults.bridgeVault = parsed;

@@ -61,7 +61,7 @@ function mapTraceToSummary(trace: QueueTrace): QueueTraceSummary | null {
     priority: summary?.priority ?? details?.priority ?? undefined,
     retryCount: summary?.retryCount ?? details?.retryCount ?? undefined,
     ageInMinutes: summary?.ageInMinutes ?? details?.ageInMinutes ?? undefined,
-    hasResponse: summary?.hasResponse ?? details?.hasResponse ?? undefined,
+    hasResponse: summary?.hasResponse ?? (details?.hasResponse ? true : false),
     teamName: summary?.teamName ?? details?.teamName ?? undefined,
     machineName: summary?.machineName ?? details?.machineName ?? undefined,
     bridgeName: summary?.bridgeName ?? details?.bridgeName ?? undefined,
@@ -276,7 +276,7 @@ export function registerQueueCommands(program: Command): void {
             machine: item.machineName || '-',
             bridge: item.bridgeName || '-',
             retries: item.retryCount != null ? formatRetryCount(item.retryCount) : '-',
-            hasResponse: formatBoolean(item.hasResponse),
+            hasResponse: formatBoolean(item.hasResponse === 1),
             error: item.lastFailureReason ? formatError(item.lastFailureReason) : '-',
           }));
           outputService.print(formattedItems, format);
