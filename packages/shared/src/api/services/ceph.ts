@@ -3,14 +3,14 @@ import type { ApiClient } from './types';
 import type {
   CephAvailableMachine,
   CephCloneMachine,
-  CephCluster,
+  GetCephClusters_ResultSet1,
   CephMachineAssignmentStatus,
   CephMachineAssignmentValidation,
-  CephPool,
-  CephRbdClone,
-  CephRbdImage,
-  CephRbdSnapshot,
-  Machine,
+  GetCephPools_ResultSet1,
+  GetCephRbdClones_ResultSet1,
+  GetCephRbdImages_ResultSet1,
+  GetCephRbdSnapshots_ResultSet1,
+  GetCephClusterMachines_ResultSet1,
   CreateCephClusterParams,
   DeleteCephClusterParams,
   UpdateCephClusterVaultParams,
@@ -45,10 +45,10 @@ function toMachineNamesValue(machineNames: string | string[]): string {
 export function createCephService(client: ApiClient) {
   return {
     // Clusters
-    listClusters: async (): Promise<CephCluster[]> => {
-      const response = await client.post<CephCluster>('/GetCephClusters', {});
+    listClusters: async (): Promise<GetCephClusters_ResultSet1[]> => {
+      const response = await client.post<GetCephClusters_ResultSet1>('/GetCephClusters', {});
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<CephCluster>(1),
+        extractor: responseExtractors.byIndex<GetCephClusters_ResultSet1>(1),
       });
     },
 
@@ -64,18 +64,23 @@ export function createCephService(client: ApiClient) {
       await client.post('/UpdateCephClusterVault', params);
     },
 
-    getClusterMachines: async (params: GetCephClusterMachinesParams): Promise<Machine[]> => {
-      const response = await client.post<Machine>('/GetCephClusterMachines', params);
+    getClusterMachines: async (
+      params: GetCephClusterMachinesParams
+    ): Promise<GetCephClusterMachines_ResultSet1[]> => {
+      const response = await client.post<GetCephClusterMachines_ResultSet1>(
+        '/GetCephClusterMachines',
+        params
+      );
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<Machine>(1),
+        extractor: responseExtractors.byIndex<GetCephClusterMachines_ResultSet1>(1),
       });
     },
 
     // Pools
-    listPools: async (params: GetCephPoolsParams): Promise<CephPool[]> => {
-      const response = await client.post<CephPool>('/GetCephPools', params);
+    listPools: async (params: GetCephPoolsParams): Promise<GetCephPools_ResultSet1[]> => {
+      const response = await client.post<GetCephPools_ResultSet1>('/GetCephPools', params);
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<CephPool>(1),
+        extractor: responseExtractors.byIndex<GetCephPools_ResultSet1>(1),
       });
     },
 
@@ -92,10 +97,10 @@ export function createCephService(client: ApiClient) {
     },
 
     // Images
-    listImages: async (params: GetCephRbdImagesParams): Promise<CephRbdImage[]> => {
-      const response = await client.post<CephRbdImage>('/GetCephRbdImages', params);
+    listImages: async (params: GetCephRbdImagesParams): Promise<GetCephRbdImages_ResultSet1[]> => {
+      const response = await client.post<GetCephRbdImages_ResultSet1>('/GetCephRbdImages', params);
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<CephRbdImage>(1),
+        extractor: responseExtractors.byIndex<GetCephRbdImages_ResultSet1>(1),
       });
     },
 
@@ -112,10 +117,15 @@ export function createCephService(client: ApiClient) {
     },
 
     // Snapshots
-    listSnapshots: async (params: GetCephRbdSnapshotsParams): Promise<CephRbdSnapshot[]> => {
-      const response = await client.post<CephRbdSnapshot>('/GetCephRbdSnapshots', params);
+    listSnapshots: async (
+      params: GetCephRbdSnapshotsParams
+    ): Promise<GetCephRbdSnapshots_ResultSet1[]> => {
+      const response = await client.post<GetCephRbdSnapshots_ResultSet1>(
+        '/GetCephRbdSnapshots',
+        params
+      );
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<CephRbdSnapshot>(1),
+        extractor: responseExtractors.byIndex<GetCephRbdSnapshots_ResultSet1>(1),
       });
     },
 
@@ -130,10 +140,10 @@ export function createCephService(client: ApiClient) {
     },
 
     // Clones
-    listClones: async (params: GetCephRbdClonesParams): Promise<CephRbdClone[]> => {
-      const response = await client.post<CephRbdClone>('/GetCephRbdClones', params);
+    listClones: async (params: GetCephRbdClonesParams): Promise<GetCephRbdClones_ResultSet1[]> => {
+      const response = await client.post<GetCephRbdClones_ResultSet1>('/GetCephRbdClones', params);
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<CephRbdClone>(1),
+        extractor: responseExtractors.byIndex<GetCephRbdClones_ResultSet1>(1),
       });
     },
 

@@ -1,7 +1,8 @@
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { Team, TeamMember } from '../../types';
 import type {
+  GetCompanyTeams_ResultSet1,
+  GetTeamMembers_ResultSet1,
   WithOptionalVault,
   CreateTeamParams,
   UpdateTeamNameParams,
@@ -14,16 +15,18 @@ import type {
 
 export function createTeamsService(client: ApiClient) {
   return {
-    list: async (): Promise<Team[]> => {
-      const response = await client.get<Team>('/GetCompanyTeams');
+    list: async (): Promise<GetCompanyTeams_ResultSet1[]> => {
+      const response = await client.get<GetCompanyTeams_ResultSet1>('/GetCompanyTeams');
       return parseResponse(response, {
         extractor: responseExtractors.primaryOrSecondary,
         filter: (team) => Boolean(team.teamName),
       });
     },
 
-    create: async (params: WithOptionalVault<CreateTeamParams>): Promise<Team | null> => {
-      const response = await client.post<Team>('/CreateTeam', {
+    create: async (
+      params: WithOptionalVault<CreateTeamParams>
+    ): Promise<GetCompanyTeams_ResultSet1 | null> => {
+      const response = await client.post<GetCompanyTeams_ResultSet1>('/CreateTeam', {
         ...params,
         vaultContent: params.vaultContent ?? '{}',
       });
@@ -38,10 +41,10 @@ export function createTeamsService(client: ApiClient) {
 
     updateVault: (params: UpdateTeamVaultParams) => client.post('/UpdateTeamVault', params),
 
-    getMembers: async (params: GetTeamMembersParams): Promise<TeamMember[]> => {
-      const response = await client.get<TeamMember>('/GetTeamMembers', params);
+    getMembers: async (params: GetTeamMembersParams): Promise<GetTeamMembers_ResultSet1[]> => {
+      const response = await client.get<GetTeamMembers_ResultSet1>('/GetTeamMembers', params);
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<TeamMember>(1),
+        extractor: responseExtractors.byIndex<GetTeamMembers_ResultSet1>(1),
       });
     },
 

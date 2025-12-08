@@ -10,7 +10,7 @@ import {
   useUpdateStorageName,
   useDeleteStorage,
   useUpdateStorageVault,
-  Storage,
+  GetTeamStorages_ResultSet1,
 } from '@/api/queries/storage';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import { ActionButtonGroup, ActionButtonConfig } from '@/components/common/ActionButtonGroup';
@@ -96,7 +96,7 @@ const StoragePage: React.FC = () => {
     openModal: openUnifiedModal,
     closeModal: closeUnifiedModal,
     setCurrentResource,
-  } = useUnifiedModal<Storage & Record<string, unknown>>('storage');
+  } = useUnifiedModal<GetTeamStorages_ResultSet1 & Record<string, unknown>>('storage');
   const {
     page: storagePage,
     pageSize: storagePageSize,
@@ -134,7 +134,7 @@ const StoragePage: React.FC = () => {
   const updateStorageVaultMutation = useUpdateStorageVault();
 
   const handleDeleteStorage = useCallback(
-    (storage: Storage) => {
+    (storage: GetTeamStorages_ResultSet1) => {
       confirmDelete({
         modal,
         t,
@@ -360,25 +360,28 @@ const StoragePage: React.FC = () => {
             },
           ]
         : []),
-      createActionColumn<Storage>({
+      createActionColumn<GetTeamStorages_ResultSet1>({
         width: COLUMN_WIDTHS.ACTIONS_WIDE,
         renderActions: (record) => {
-          const buttons: ActionButtonConfig<Storage>[] = [
+          const buttons: ActionButtonConfig<GetTeamStorages_ResultSet1>[] = [
             {
               type: 'edit',
               icon: <EditOutlined />,
               tooltip: 'common:actions.edit',
-              onClick: (r: Storage) =>
-                openUnifiedModal('edit', r as Storage & Record<string, unknown>),
+              onClick: (r: GetTeamStorages_ResultSet1) =>
+                openUnifiedModal('edit', r as GetTeamStorages_ResultSet1 & Record<string, unknown>),
               variant: 'primary',
             },
             {
               type: 'run',
               icon: <FunctionOutlined />,
               tooltip: 'common:actions.runFunction',
-              onClick: (r: Storage) => {
-                setCurrentResource(r as Storage & Record<string, unknown>);
-                openUnifiedModal('create', r as Storage & Record<string, unknown>);
+              onClick: (r: GetTeamStorages_ResultSet1) => {
+                setCurrentResource(r as GetTeamStorages_ResultSet1 & Record<string, unknown>);
+                openUnifiedModal(
+                  'create',
+                  r as GetTeamStorages_ResultSet1 & Record<string, unknown>
+                );
               },
               variant: 'primary',
             },
@@ -386,7 +389,7 @@ const StoragePage: React.FC = () => {
               type: 'trace',
               icon: <HistoryOutlined />,
               tooltip: 'machines:trace',
-              onClick: (r: Storage) =>
+              onClick: (r: GetTeamStorages_ResultSet1) =>
                 auditTrace.open({
                   entityType: 'Storage',
                   entityIdentifier: r.storageName,
@@ -405,7 +408,7 @@ const StoragePage: React.FC = () => {
           ];
 
           return (
-            <ActionButtonGroup<Storage>
+            <ActionButtonGroup<GetTeamStorages_ResultSet1>
               buttons={buttons}
               record={record}
               idField="storageName"
@@ -453,7 +456,7 @@ const StoragePage: React.FC = () => {
             />
           </TeamSelectorWrapper>
 
-          <ResourceListView<Storage>
+          <ResourceListView<GetTeamStorages_ResultSet1>
             title={
               <ListTitleRow>
                 <ListTitle>{t('storage.title', { defaultValue: 'Storage Locations' })}</ListTitle>

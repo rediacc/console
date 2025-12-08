@@ -18,7 +18,7 @@ export type RepoWithRelations = {
   repoNetworkId?: number | null;
   repoNetworkMode?: string | null;
   mounted?: boolean;
-  vaultContent?: string;
+  vaultContent?: string | null;
 };
 
 /**

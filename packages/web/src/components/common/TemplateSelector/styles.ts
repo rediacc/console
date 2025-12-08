@@ -1,6 +1,13 @@
 import { Row } from 'antd';
 import styled from 'styled-components';
-import { RediaccText, RediaccCard, RediaccStack, RediaccEmpty, RediaccButton, RediaccTag } from '@/components/ui';
+import {
+  RediaccText,
+  RediaccCard,
+  RediaccStack,
+  RediaccEmpty,
+  RediaccButton,
+  RediaccTag,
+} from '@/components/ui';
 import { RediaccSearchInput } from '@/components/ui/Form';
 import { FlexRow } from '@/styles/primitives';
 

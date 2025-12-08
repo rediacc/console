@@ -177,11 +177,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             }))}
             data-testid="assign-clone-machine-select"
           />
-          <RediaccText
-            variant="caption"
-            color="muted"
-            data-testid="assign-clone-selected-count"
-          >
+          <RediaccText variant="caption" color="muted" data-testid="assign-clone-selected-count">
             {t('machines:bulkOperations.selectedCount', { count: selectedMachines.length })}
           </RediaccText>
         </FieldGroup>

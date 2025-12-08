@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import type { AuditLogEntry, AuditTraceResponse } from '@rediacc/shared/types';
-export type { AuditLogEntry as AuditLog, AuditTraceRecord } from '@rediacc/shared/types';
+import type { GetAuditLogs_ResultSet1, AuditTraceResponse } from '@rediacc/shared/types';
+export type { GetAuditLogs_ResultSet1, AuditTraceRecord } from '@rediacc/shared/types';
 
 export interface AuditLogsParams {
   startDate?: string;
@@ -11,7 +11,7 @@ export interface AuditLogsParams {
 }
 
 export const useAuditLogs = (params?: AuditLogsParams) => {
-  return useQuery<AuditLogEntry[]>({
+  return useQuery<GetAuditLogs_ResultSet1[]>({
     queryKey: ['auditLogs', params],
     queryFn: async () => {
       try {
@@ -39,7 +39,7 @@ export const useAuditLogs = (params?: AuditLogsParams) => {
 };
 
 export const useRecentAuditLogs = (maxRecords: number = 10) => {
-  return useQuery<AuditLogEntry[]>({
+  return useQuery<GetAuditLogs_ResultSet1[]>({
     queryKey: ['recentAuditLogs', maxRecords],
     queryFn: async () => {
       return api.audit.getLogs(undefined, undefined, undefined, maxRecords);

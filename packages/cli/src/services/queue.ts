@@ -5,7 +5,13 @@ import {
   type FunctionRequirements,
   type VaultData,
 } from '@rediacc/shared/queue-vault';
-import type { Bridge, Machine, Repo, Storage, Team } from '@rediacc/shared/types';
+import type {
+  Bridge,
+  Machine,
+  Repo,
+  GetTeamStorages_ResultSet1,
+  Team,
+} from '@rediacc/shared/types';
 import { apiClient, api } from './api.js';
 
 interface QueueContext {
@@ -145,7 +151,9 @@ export class CliQueueService {
       if (storageName) {
         try {
           const storageList = await api.storage.list({ teamName: context.teamName });
-          const storage = storageList.find((s: Storage) => s.storageName === storageName);
+          const storage = storageList.find(
+            (s: GetTeamStorages_ResultSet1) => s.storageName === storageName
+          );
           const parsed = this.parseVaultContent(storage?.vaultContent);
           if (parsed) {
             vaults.storageVault = parsed;

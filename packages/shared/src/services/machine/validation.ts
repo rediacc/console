@@ -16,13 +16,13 @@ import type {
   CephResource,
   CephResourceType,
 } from './types';
-import type { Machine } from '../../types';
+import type { MachineWithAssignmentStatus } from './types';
 
 export class MachineValidationService {
   /**
    * Validate if a machine is available for assignment
    */
-  static validateMachineAvailability(machine: Machine): ValidationResult {
+  static validateMachineAvailability(machine: MachineWithAssignmentStatus): ValidationResult {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
 
@@ -65,7 +65,10 @@ export class MachineValidationService {
   /**
    * Validate exclusivity rules for machine assignment
    */
-  static validateExclusivityRule(machine: Machine, targetType: CephResourceType): ValidationResult {
+  static validateExclusivityRule(
+    machine: MachineWithAssignmentStatus,
+    targetType: CephResourceType
+  ): ValidationResult {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
 
@@ -112,7 +115,7 @@ export class MachineValidationService {
    * Validate a complete machine assignment operation
    */
   static validateMachineAssignment(
-    machine: Machine,
+    machine: MachineWithAssignmentStatus,
     targetResource: CephResource,
     context?: ValidationContext
   ): ValidationResult {
@@ -167,7 +170,7 @@ export class MachineValidationService {
    * Validate a single machine for assignment
    */
   static validateSingleMachine(
-    machine: Machine,
+    machine: MachineWithAssignmentStatus,
     targetType: CephResourceType,
     _context?: ValidationContext
   ): ValidationResult {
@@ -193,11 +196,11 @@ export class MachineValidationService {
    * Validate bulk machine assignment
    */
   static validateBulkAssignment(
-    machines: Machine[],
+    machines: MachineWithAssignmentStatus[],
     targetType: CephResourceType,
     context?: ValidationContext
   ): BulkValidationResult {
-    const validMachines: Machine[] = [];
+    const validMachines: MachineWithAssignmentStatus[] = [];
     const invalidMachines: InvalidMachine[] = [];
     const errorTypes = new Map<string, number>();
     let warningCount = 0;
@@ -277,7 +280,10 @@ export class MachineValidationService {
   /**
    * Get all invalid machines from a list
    */
-  static getInvalidMachines(machines: Machine[], targetType: CephResourceType): InvalidMachine[] {
+  static getInvalidMachines(
+    machines: MachineWithAssignmentStatus[],
+    targetType: CephResourceType
+  ): InvalidMachine[] {
     const result = this.validateBulkAssignment(machines, targetType);
     return result.invalidMachines;
   }
@@ -314,14 +320,14 @@ export class MachineValidationService {
   /**
    * Check if a machine has cluster exclusivity
    */
-  static isClusterExclusive(machine: Machine): boolean {
+  static isClusterExclusive(machine: MachineWithAssignmentStatus): boolean {
     return !!machine.cephClusterName;
   }
 
   /**
    * Check if a machine has image exclusivity
    */
-  static isImageExclusive(machine: Machine): boolean {
+  static isImageExclusive(machine: MachineWithAssignmentStatus): boolean {
     // Images are tracked via the assignment status, not directly on the machine
     return machine.assignmentStatus?.assignmentType === 'IMAGE';
   }
@@ -329,7 +335,7 @@ export class MachineValidationService {
   /**
    * Check if a machine can be assigned to multiple clones
    */
-  static canAssignMultipleClones(_machine: Machine): boolean {
+  static canAssignMultipleClones(_machine: MachineWithAssignmentStatus): boolean {
     // Clones don't have exclusivity restrictions
     return true;
   }
@@ -353,7 +359,9 @@ export class MachineValidationService {
   /**
    * Private helper to check machine exclusivity
    */
-  private static checkMachineExclusivity(machine: Machine): ExclusivityValidation {
+  private static checkMachineExclusivity(
+    machine: MachineWithAssignmentStatus
+  ): ExclusivityValidation {
     // Check cluster assignment
     if (machine.cephClusterName) {
       return {

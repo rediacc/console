@@ -1,7 +1,7 @@
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type {
-  Machine,
+  GetTeamMachines_ResultSet1,
   CreateMachineParams,
   UpdateMachineNameParams,
   DeleteMachineParams,
@@ -27,8 +27,8 @@ function normalizeTeamName(teamName?: string | string[]) {
 
 export function createMachinesService(client: ApiClient) {
   return {
-    list: async (teamName?: string | string[]): Promise<Machine[]> => {
-      const response = await client.get<Machine>(
+    list: async (teamName?: string | string[]): Promise<GetTeamMachines_ResultSet1[]> => {
+      const response = await client.get<GetTeamMachines_ResultSet1>(
         '/GetTeamMachines',
         teamName ? { teamName: normalizeTeamName(teamName) } : undefined
       );

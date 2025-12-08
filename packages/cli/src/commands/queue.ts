@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import type { QueueTrace } from '@rediacc/shared/types';
+import type { QueueTrace, QueueTraceSummary } from '@rediacc/shared/types';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -15,7 +15,6 @@ import {
   formatBoolean,
 } from '../utils/queueFormatters.js';
 import { withSpinner, startSpinner, stopSpinner } from '../utils/spinner.js';
-import type { QueueItemResponse } from '../types/api-responses.js';
 import type { OutputFormat } from '../types/index.js';
 
 // Exported action handlers for reuse in shortcuts
@@ -24,16 +23,16 @@ import type { OutputFormat } from '../types/index.js';
  * Helper function to format and print trace output
  * Reduces duplication between watch mode and single-fetch mode
  */
-function printTrace(trace: QueueItemResponse, program: Command): void {
+function printTrace(trace: QueueTraceSummary, program: Command): void {
   const format = program.opts().output as OutputFormat;
 
   if (format === 'table') {
     const formattedTrace = {
       taskId: trace.taskId,
       status: formatStatus(trace.status || 'UNKNOWN'),
-      age: trace.ageInMinutes !== undefined ? formatAge(trace.ageInMinutes) : '-',
+      age: trace.ageInMinutes != null ? formatAge(trace.ageInMinutes) : '-',
       priority: trace.priority ? formatPriority(trace.priority) : '-',
-      retries: trace.retryCount !== undefined ? formatRetryCount(trace.retryCount) : '-',
+      retries: trace.retryCount != null ? formatRetryCount(trace.retryCount) : '-',
       progress: trace.progress || '-',
       consoleOutput: trace.consoleOutput || '-',
     };
@@ -43,7 +42,7 @@ function printTrace(trace: QueueItemResponse, program: Command): void {
   }
 }
 
-function mapTraceToQueueItem(trace: QueueTrace): QueueItemResponse | null {
+function mapTraceToSummary(trace: QueueTrace): QueueTraceSummary | null {
   const summary = trace.summary;
   const details = trace.queueDetails;
   if (!summary && !details) {
@@ -51,22 +50,24 @@ function mapTraceToQueueItem(trace: QueueTrace): QueueItemResponse | null {
   }
 
   return {
-    taskId: summary?.taskId ?? details?.taskId,
-    status: summary?.status ?? details?.status,
-    healthStatus: summary?.healthStatus ?? details?.healthStatus,
+    taskId: summary?.taskId ?? details?.taskId ?? undefined,
+    status: summary?.status ?? (details?.status as QueueTraceSummary['status']),
+    healthStatus:
+      summary?.healthStatus ?? (details?.healthStatus as QueueTraceSummary['healthStatus']),
     progress: summary?.progress,
     consoleOutput: summary?.consoleOutput,
     errorMessage: summary?.errorMessage,
-    lastFailureReason: summary?.lastFailureReason ?? details?.lastFailureReason,
-    priority: summary?.priority ?? details?.priority,
-    retryCount: summary?.retryCount ?? details?.retryCount,
-    ageInMinutes: summary?.ageInMinutes ?? details?.ageInMinutes,
-    hasResponse: summary?.hasResponse ?? details?.hasResponse,
-    teamName: summary?.teamName ?? details?.teamName,
-    machineName: summary?.machineName ?? details?.machineName,
-    bridgeName: summary?.bridgeName ?? details?.bridgeName,
-    createdAt: summary?.createdTime ?? details?.createdTime,
-    updatedAt: summary?.updatedTime ?? details?.lastAssigned ?? details?.lastResponseAt,
+    lastFailureReason: summary?.lastFailureReason ?? details?.lastFailureReason ?? undefined,
+    priority: summary?.priority ?? details?.priority ?? undefined,
+    retryCount: summary?.retryCount ?? details?.retryCount ?? undefined,
+    ageInMinutes: summary?.ageInMinutes ?? details?.ageInMinutes ?? undefined,
+    hasResponse: summary?.hasResponse ?? details?.hasResponse ?? undefined,
+    teamName: summary?.teamName ?? details?.teamName ?? undefined,
+    machineName: summary?.machineName ?? details?.machineName ?? undefined,
+    bridgeName: summary?.bridgeName ?? details?.bridgeName ?? undefined,
+    createdTime: summary?.createdTime ?? details?.createdTime ?? undefined,
+    updatedTime:
+      summary?.updatedTime ?? details?.lastAssigned ?? details?.lastResponseAt ?? undefined,
   };
 }
 
@@ -154,12 +155,11 @@ export async function traceAction(
 
     while (!isComplete) {
       const trace = await fetchTrace();
-      const summary = mapTraceToQueueItem(trace);
+      const summary = mapTraceToSummary(trace);
 
       if (summary) {
         const statusText = formatStatus(summary.status || 'UNKNOWN');
-        const ageText =
-          summary.ageInMinutes !== undefined ? formatAge(summary.ageInMinutes) : 'unknown';
+        const ageText = summary.ageInMinutes != null ? formatAge(summary.ageInMinutes) : 'unknown';
         const progressText = summary.progress || 'No progress';
         spinner.text = `${statusText} | Age: ${ageText} | ${progressText}`;
 
@@ -187,7 +187,7 @@ export async function traceAction(
     // Single fetch
     const trace = await withSpinner('Fetching queue trace...', fetchTrace, 'Trace fetched');
 
-    const summary = mapTraceToQueueItem(trace);
+    const summary = mapTraceToSummary(trace);
 
     if (summary) {
       // Show formatted error if task failed
@@ -271,11 +271,11 @@ export function registerQueueCommands(program: Command): void {
             taskId: item.taskId,
             status: formatStatus(item.status || item.healthStatus),
             priority: item.priority ? formatPriority(item.priority) : '-',
-            age: item.ageInMinutes !== undefined ? formatAge(item.ageInMinutes) : '-',
+            age: item.ageInMinutes != null ? formatAge(item.ageInMinutes) : '-',
             team: item.teamName || '-',
             machine: item.machineName || '-',
             bridge: item.bridgeName || '-',
-            retries: item.retryCount !== undefined ? formatRetryCount(item.retryCount) : '-',
+            retries: item.retryCount != null ? formatRetryCount(item.retryCount) : '-',
             hasResponse: formatBoolean(item.hasResponse),
             error: item.lastFailureReason ? formatError(item.lastFailureReason) : '-',
           }));

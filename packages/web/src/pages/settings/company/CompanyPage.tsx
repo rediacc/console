@@ -848,9 +848,9 @@ const CompanyPage: React.FC = () => {
 
           <Form.Item label={tSystem('dangerZone.importData.modal.importMode')}>
             <Radio.Group value={importMode} onChange={(e) => setImportMode(e.target.value)}>
-              <Space orientation='vertical'>
+              <Space orientation="vertical">
                 <Radio value="skip">
-                  <Space orientation='vertical' size={4}>
+                  <Space orientation="vertical" size={4}>
                     <RediaccText weight="bold">
                       {tSystem('dangerZone.importData.modal.modeSkip')}
                     </RediaccText>
@@ -860,7 +860,7 @@ const CompanyPage: React.FC = () => {
                   </Space>
                 </Radio>
                 <Radio value="override">
-                  <Space orientation='vertical' size={4}>
+                  <Space orientation="vertical" size={4}>
                     <RediaccText weight="bold">
                       {tSystem('dangerZone.importData.modal.modeOverride')}
                     </RediaccText>

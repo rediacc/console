@@ -38,7 +38,11 @@ export type TextAlign = 'left' | 'center' | 'right';
  * HTML element to render as
  */
 export type TextElement = 'span' | 'p' | 'div' | 'label';
-export type RediaccTextRef = HTMLSpanElement | HTMLDivElement | HTMLParagraphElement | HTMLLabelElement;
+export type RediaccTextRef =
+  | HTMLSpanElement
+  | HTMLDivElement
+  | HTMLParagraphElement
+  | HTMLLabelElement;
 
 export interface RediaccTextProps {
   /** Visual style variant - applies preset styling */

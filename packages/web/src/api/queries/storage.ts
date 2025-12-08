@@ -6,7 +6,7 @@ import {
   createMutation,
 } from '@/hooks/api/mutationFactory';
 import type {
-  Storage,
+  GetTeamStorages_ResultSet1,
   CreateStorageParams,
   UpdateStorageNameParams,
   UpdateStorageVaultParams,
@@ -16,7 +16,7 @@ import type {
 
 // Get storage for a team or multiple teams
 export const useStorage = (teamFilter?: string | string[]) => {
-  return useQuery<Storage[]>({
+  return useQuery<GetTeamStorages_ResultSet1[]>({
     queryKey: ['storage', teamFilter],
     queryFn: async () => {
       if (!teamFilter || (Array.isArray(teamFilter) && teamFilter.length === 0)) return [];
@@ -61,4 +61,4 @@ export const useDeleteStorage = createResourceMutation<
   DeleteStorageParams & Record<string, unknown>
 >('Storage', 'delete', (params) => api.storage.delete(params), 'storageName', ['teams']);
 
-export type { Storage };
+export type { GetTeamStorages_ResultSet1 };

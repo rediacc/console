@@ -1,6 +1,6 @@
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { User, UserVault } from '../../types';
+import type { GetCompanyUsers_ResultSet1, UserVault } from '../../types';
 import type {
   UpdateUserToActivatedParams,
   UpdateUserToDeactivatedParams,
@@ -23,10 +23,10 @@ export interface CreateUserResult {
 
 export function createUsersService(client: ApiClient) {
   return {
-    list: async (): Promise<User[]> => {
-      const response = await client.get<User>('/GetCompanyUsers');
+    list: async (): Promise<GetCompanyUsers_ResultSet1[]> => {
+      const response = await client.get<GetCompanyUsers_ResultSet1>('/GetCompanyUsers');
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<User>(1),
+        extractor: responseExtractors.byIndex<GetCompanyUsers_ResultSet1>(1),
         filter: (user) => Boolean(user.userEmail),
         map: (user) => ({
           ...user,

@@ -480,7 +480,7 @@ class QueueMonitoringService {
   }
 
   private getLastFailureReason(queueDetails: QueueItem): string | undefined {
-    return queueDetails.lastFailureReason;
+    return queueDetails.lastFailureReason ?? undefined;
   }
 
   // Clear old tasks (older than 24 hours)

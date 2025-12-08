@@ -199,8 +199,10 @@ const MachineReposPage: React.FC = () => {
       repoGuid: repoRow.originalGuid || repoRow.name,
       teamName: machine!.teamName,
       vaultVersion: 0,
-      vaultContent: undefined,
-      grandGuid: undefined,
+      vaultContent: null,
+      grandGuid: null,
+      parentGuid: null,
+      repoNetworkMode: '',
       repoTag: repoRow.repoTag,
     };
 

@@ -1,6 +1,6 @@
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { Bridge, BridgeAuthorizationToken } from '../../types';
+import type { GetRegionBridges_ResultSet1, BridgeAuthorizationToken } from '../../types';
 import type {
   WithOptionalVault,
   CreateBridgeParams,
@@ -13,10 +13,10 @@ import type {
 
 export function createBridgesService(client: ApiClient) {
   return {
-    list: async (params: GetRegionBridgesParams): Promise<Bridge[]> => {
-      const response = await client.get<Bridge>('/GetRegionBridges', params);
+    list: async (params: GetRegionBridgesParams): Promise<GetRegionBridges_ResultSet1[]> => {
+      const response = await client.get<GetRegionBridges_ResultSet1>('/GetRegionBridges', params);
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<Bridge>(1),
+        extractor: responseExtractors.byIndex<GetRegionBridges_ResultSet1>(1),
         filter: (bridge) => Boolean(bridge.bridgeName),
       });
     },

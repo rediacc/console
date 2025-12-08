@@ -173,9 +173,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                     ))}
                   </StyledSelect>
 
-                  <RediaccText variant="caption">
-                    {t('ceph:images.reassignmentInfo')}
-                  </RediaccText>
+                  <RediaccText variant="caption">{t('ceph:images.reassignmentInfo')}</RediaccText>
                 </>
               </LoadingWrapper>
             </LoadingContainer>

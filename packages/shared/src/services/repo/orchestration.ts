@@ -323,9 +323,9 @@ export function prepareForkCreation(
  */
 export function getGrandVaultForOperation(
   repoGuid: string,
-  grandGuid: string | undefined,
+  grandGuid: string | null | undefined,
   allRepos: RepoWithRelations[]
-): string | undefined {
+): string | null | undefined {
   // If has a grand, use the grand's vault
   if (grandGuid && grandGuid !== repoGuid) {
     const grandRepo = allRepos.find((r) => r.repoGuid === grandGuid);

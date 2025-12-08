@@ -1,6 +1,6 @@
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { Permission, PermissionGroup } from '../../types';
+import type { Permission, GetCompanyPermissionGroups_ResultSet1 } from '../../types';
 import type {
   CreatePermissionGroupParams,
   DeletePermissionGroupParams,
@@ -9,13 +9,20 @@ import type {
   GetPermissionGroupDetailsParams,
 } from '../../types';
 
+export interface PermissionGroupWithParsedPermissions
+  extends Omit<GetCompanyPermissionGroups_ResultSet1, 'permissions'> {
+  permissions: string[];
+}
+
 export function createPermissionsService(client: ApiClient) {
   return {
-    listGroups: async (): Promise<PermissionGroup[]> => {
-      const response = await client.get<PermissionGroup>('/GetCompanyPermissionGroups');
+    listGroups: async (): Promise<PermissionGroupWithParsedPermissions[]> => {
+      const response = await client.get<GetCompanyPermissionGroups_ResultSet1>(
+        '/GetCompanyPermissionGroups'
+      );
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<PermissionGroup>(1),
-        map: (group) => {
+        extractor: responseExtractors.byIndex<GetCompanyPermissionGroups_ResultSet1>(1),
+        map: (group): PermissionGroupWithParsedPermissions => {
           const rawPermissions = group.permissions as unknown;
           const permissions =
             typeof rawPermissions === 'string'
@@ -25,7 +32,7 @@ export function createPermissionsService(client: ApiClient) {
                   .filter(Boolean)
               : Array.isArray(rawPermissions)
                 ? rawPermissions
-                : (group.permissions ?? []);
+                : [];
 
           return {
             ...group,

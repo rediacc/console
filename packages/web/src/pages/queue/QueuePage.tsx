@@ -495,7 +495,7 @@ const QueuePage: React.FC = () => {
       key: 'ageInMinutes',
       width: 100,
       render: (minutes: number) => formatAge(minutes),
-      sorter: (a, b) => a.ageInMinutes - b.ageInMinutes,
+      sorter: (a, b) => (a.ageInMinutes ?? 0) - (b.ageInMinutes ?? 0),
     },
     {
       title: 'Team',
@@ -648,7 +648,7 @@ const QueuePage: React.FC = () => {
 
         return <AgeValue $tone={color}>{ageText}</AgeValue>;
       },
-      sorter: (a, b) => a.ageInMinutes - b.ageInMinutes,
+      sorter: (a, b) => (a.ageInMinutes ?? 0) - (b.ageInMinutes ?? 0),
     },
     {
       title: 'Created',
@@ -656,7 +656,8 @@ const QueuePage: React.FC = () => {
       key: 'createdTime',
       width: 180,
       render: (date: string) => renderTimestamp(date),
-      sorter: (a, b) => new Date(a.createdTime).getTime() - new Date(b.createdTime).getTime(),
+      sorter: (a, b) =>
+        new Date(a.createdTime ?? 0).getTime() - new Date(b.createdTime ?? 0).getTime(),
     },
     {
       title: 'Actions',

@@ -1,9 +1,9 @@
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type {
-  QueueItem,
+  GetTeamQueueItems_ResultSet1,
+  GetTeamQueueItems_ResultSet2,
   QueueListResult,
-  QueueStatistics,
   QueueTrace,
   QueueTraceLog,
   QueueTraceSummary,
@@ -47,15 +47,17 @@ export function createQueueService(client: ApiClient) {
       teamName?: string | string[],
       filters: QueueFilters = {}
     ): Promise<QueueListResult> => {
-      const response = await client.get<QueueItem | QueueStatistics>(
-        '/GetTeamQueueItems',
-        buildQueueListParams(teamName, filters)
-      );
+      const response = await client.get<
+        GetTeamQueueItems_ResultSet1 | GetTeamQueueItems_ResultSet2
+      >('/GetTeamQueueItems', buildQueueListParams(teamName, filters));
       return parseQueueList(response);
     },
 
-    getNext: async (machineName: string, itemCount = 5): Promise<QueueItem[]> => {
-      const response = await client.get<QueueItem>('/GetQueueItemsNext', {
+    getNext: async (
+      machineName: string,
+      itemCount = 5
+    ): Promise<GetTeamQueueItems_ResultSet1[]> => {
+      const response = await client.get<GetTeamQueueItems_ResultSet1>('/GetQueueItemsNext', {
         machineName,
         itemCount,
       });
@@ -94,25 +96,29 @@ export function createQueueService(client: ApiClient) {
   };
 }
 
-function parseQueueItems(response: ApiResponse<QueueItem>): QueueItem[] {
+function parseQueueItems(
+  response: ApiResponse<GetTeamQueueItems_ResultSet1>
+): GetTeamQueueItems_ResultSet1[] {
   return parseResponse(response, {
     extractor: responseExtractors.primaryOrSecondary,
     filter: (item) => Boolean(item?.taskId),
   });
 }
 
-function parseQueueList(response: ApiResponse<QueueItem | QueueStatistics>): QueueListResult {
-  let items: QueueItem[] = [];
-  let statistics: QueueStatistics | null = null;
+function parseQueueList(
+  response: ApiResponse<GetTeamQueueItems_ResultSet1 | GetTeamQueueItems_ResultSet2>
+): QueueListResult {
+  let items: GetTeamQueueItems_ResultSet1[] = [];
+  let statistics: GetTeamQueueItems_ResultSet2 | null = null;
 
   response.resultSets?.forEach((set) => {
     const first = set.data?.[0];
     if (!first) return;
 
     if ('taskId' in first) {
-      items = set.data as QueueItem[];
+      items = set.data as GetTeamQueueItems_ResultSet1[];
     } else if ('totalCount' in first || 'pendingCount' in first) {
-      statistics = first as QueueStatistics;
+      statistics = first as GetTeamQueueItems_ResultSet2;
     }
   });
 
@@ -124,7 +130,7 @@ function parseQueueTrace(response: ApiResponse): QueueTrace {
   // 0: NextRequestToken, 1: QUEUE_ITEM_DETAILS, 2: REQUEST_VAULT, 3: RESPONSE_VAULT,
   // 4: AUDIT_USER (traceLogs), 5: RELATED_QUEUE_ITEMS, 6: QUEUE_COUNT
   const summary = getRowByIndex<QueueTraceSummary>(response, 0);
-  const queueDetails = getRowByIndex<QueueItem>(response, 1);
+  const queueDetails = getRowByIndex<GetTeamQueueItems_ResultSet1>(response, 1);
   const vaultContent = parseVaultSnapshot(getRowByIndex<QueueVaultSnapshot>(response, 2));
   const responseVaultContent = parseVaultSnapshot(getRowByIndex<QueueVaultSnapshot>(response, 3));
   const traceLogs = getRowsByIndex<QueueTraceLog>(response, 4);

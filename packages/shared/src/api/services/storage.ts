@@ -1,7 +1,7 @@
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { Storage } from '../../types';
 import type {
+  GetTeamStorages_ResultSet1,
   WithOptionalVault,
   CreateStorageParams,
   GetTeamStoragesParams,
@@ -12,10 +12,10 @@ import type {
 
 export function createStorageService(client: ApiClient) {
   return {
-    list: async (params: GetTeamStoragesParams): Promise<Storage[]> => {
-      const response = await client.get<Storage>('/GetTeamStorages', params);
+    list: async (params: GetTeamStoragesParams): Promise<GetTeamStorages_ResultSet1[]> => {
+      const response = await client.get<GetTeamStorages_ResultSet1>('/GetTeamStorages', params);
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<Storage>(1),
+        extractor: responseExtractors.byIndex<GetTeamStorages_ResultSet1>(1),
         filter: (storage) => Boolean(storage.storageName),
       });
     },

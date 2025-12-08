@@ -11,7 +11,6 @@ import type { ApiResponse } from '@rediacc/shared/types';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { nodeStorageAdapter } from '../adapters/storage.js';
 import { EXIT_CODES } from '../types/index.js';
-import type { AuthResponse } from '../types/api-responses.js';
 
 const API_PREFIX = '/StoredProcedure';
 const STORAGE_KEYS = {
@@ -222,9 +221,12 @@ class CliApiClient implements SharedApiClient {
   }
 
   private async handleTokenRotation(response: ApiResponse): Promise<void> {
-    const row = parseFirst<AuthResponse>(response as ApiResponse<AuthResponse>, {
-      extractor: responseExtractors.primaryOrSecondary,
-    });
+    const row = parseFirst<{ nextRequestToken?: string }>(
+      response as ApiResponse<{ nextRequestToken?: string }>,
+      {
+        extractor: responseExtractors.primaryOrSecondary,
+      }
+    );
     const newToken = row?.nextRequestToken;
     if (newToken) {
       await nodeStorageAdapter.setItem(STORAGE_KEYS.TOKEN, newToken);

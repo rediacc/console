@@ -29,7 +29,7 @@ export interface DeployedRepo {
   /** Repo GUID (if resolved) */
   repoGuid?: string;
   /** Grand GUID (if resolved) */
-  grandGuid?: string;
+  grandGuid?: string | null;
   /** Size in bytes */
   size?: number;
   /** Human-readable size */
@@ -52,7 +52,7 @@ export interface DeployedRepo {
 export interface RepoInfo {
   repoGuid: string;
   repoName: string;
-  grandGuid?: string;
+  grandGuid?: string | null;
 }
 
 /**

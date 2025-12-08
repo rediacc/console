@@ -1,6 +1,6 @@
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { Repo } from '../../types';
+import type { GetTeamRepositories_ResultSet1 } from '../../types';
 import type {
   GetTeamRepositoriesParams,
   UpdateRepositoryNameParams,
@@ -18,16 +18,20 @@ export interface CreateRepoOptions {
   repoGuid?: string;
 }
 
-const mapRepo = (repo: Repo): Repo => ({
+const mapRepo = (repo: GetTeamRepositories_ResultSet1): GetTeamRepositories_ResultSet1 => ({
   ...repo,
   repoTag: repo.repoTag || 'latest',
 });
 
 export function createReposService(client: ApiClient) {
   return {
-    list: async (params: GetTeamRepositoriesParams | { teamName: string[] }): Promise<Repo[]> => {
+    list: async (
+      params: GetTeamRepositoriesParams | { teamName: string[] }
+    ): Promise<GetTeamRepositories_ResultSet1[]> => {
       const teamName = Array.isArray(params.teamName) ? params.teamName.join(',') : params.teamName;
-      const response = await client.get<Repo>('/GetTeamRepositories', { teamName });
+      const response = await client.get<GetTeamRepositories_ResultSet1>('/GetTeamRepositories', {
+        teamName,
+      });
       return parseResponse(response, {
         extractor: responseExtractors.primaryOrSecondary,
         filter: (repo) => Boolean(repo.repoName),
@@ -39,7 +43,7 @@ export function createReposService(client: ApiClient) {
       teamName: string,
       repoName: string,
       options: CreateRepoOptions = {}
-    ): Promise<Repo | null> => {
+    ): Promise<GetTeamRepositories_ResultSet1 | null> => {
       const payload: Record<string, unknown> = {
         teamName,
         repoName,
@@ -58,7 +62,10 @@ export function createReposService(client: ApiClient) {
       if (options.repoGuid && options.repoGuid.trim() !== '') {
         payload.repoGuid = options.repoGuid;
       }
-      const response = await client.post<Repo>('/CreateRepository', payload);
+      const response = await client.post<GetTeamRepositories_ResultSet1>(
+        '/CreateRepository',
+        payload
+      );
 
       return parseFirst(response, {
         extractor: responseExtractors.primaryOrSecondary,

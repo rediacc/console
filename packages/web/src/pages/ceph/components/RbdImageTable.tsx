@@ -394,16 +394,17 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
         mode={modalState.mode}
         existingData={{
           ...modalState.data,
+          machineName: modalState.data?.machineName ?? undefined,
           teamName: pool.teamName,
           poolName: pool.poolName,
           pools: [pool],
           availableMachines: availableMachines.map((machine) => ({
-            machineName: machine.machineName,
+            machineName: machine.machineName ?? '',
             bridgeName: machine.bridgeName ?? '',
             regionName: machine.regionName ?? '',
             status: machine.status,
           })),
-          vaultContent: modalState.data?.vaultContent,
+          vaultContent: modalState.data?.vaultContent ?? undefined,
         }}
         teamFilter={pool.teamName}
         onSubmit={async (data) => {

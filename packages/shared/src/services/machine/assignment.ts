@@ -15,7 +15,8 @@ import type {
   ValidationContext,
   CephResourceType,
 } from './types';
-import type { Machine, MachineAssignmentType } from '../../types';
+import type { MachineAssignmentType } from '../../types';
+import type { MachineWithAssignmentStatus } from './types';
 
 interface AssignmentOperationResult {
   success: boolean;
@@ -26,7 +27,7 @@ export class MachineAssignmentService {
   /**
    * Get the assignment type for a machine
    */
-  static getMachineAssignmentType(machine: Machine): MachineAssignmentType {
+  static getMachineAssignmentType(machine: MachineWithAssignmentStatus): MachineAssignmentType {
     // Check cluster assignment first (stored directly on machine)
     if (machine.cephClusterName) {
       return 'CLUSTER';
@@ -44,7 +45,7 @@ export class MachineAssignmentService {
   /**
    * Get detailed assignment information for a machine
    */
-  static getMachineAssignmentDetails(machine: Machine): string | null {
+  static getMachineAssignmentDetails(machine: MachineWithAssignmentStatus): string | null {
     // Cluster assignment
     if (machine.cephClusterName) {
       return `Assigned to cluster: ${machine.cephClusterName}`;
@@ -61,7 +62,7 @@ export class MachineAssignmentService {
   /**
    * Get full assignment information for a machine
    */
-  static getAssignmentInfo(machine: Machine): MachineAssignment {
+  static getAssignmentInfo(machine: MachineWithAssignmentStatus): MachineAssignment {
     return {
       machineId: machine.machineGuid || '',
       machineName: machine.machineName,
@@ -74,7 +75,10 @@ export class MachineAssignmentService {
   /**
    * Check if a machine can be assigned to a specific resource type
    */
-  static canAssignMachine(machine: Machine, targetType: 'cluster' | 'image' | 'clone'): boolean {
+  static canAssignMachine(
+    machine: MachineWithAssignmentStatus,
+    targetType: 'cluster' | 'image' | 'clone'
+  ): boolean {
     const currentType = this.getMachineAssignmentType(machine);
 
     // Available machines can be assigned to anything
@@ -119,17 +123,19 @@ export class MachineAssignmentService {
    * Filter machines that are available for a specific assignment type
    */
   static filterAvailableMachines(
-    machines: Machine[],
+    machines: MachineWithAssignmentStatus[],
     targetType: 'cluster' | 'image' | 'clone'
-  ): Machine[] {
+  ): MachineWithAssignmentStatus[] {
     return machines.filter((machine) => this.canAssignMachine(machine, targetType));
   }
 
   /**
    * Group machines by their assignment type
    */
-  static groupMachinesByAssignment(machines: Machine[]): Map<MachineAssignmentType, Machine[]> {
-    const groups = new Map<MachineAssignmentType, Machine[]>();
+  static groupMachinesByAssignment(
+    machines: MachineWithAssignmentStatus[]
+  ): Map<MachineAssignmentType, MachineWithAssignmentStatus[]> {
+    const groups = new Map<MachineAssignmentType, MachineWithAssignmentStatus[]>();
 
     // Initialize all types
     const types: MachineAssignmentType[] = ['AVAILABLE', 'CLUSTER', 'IMAGE', 'CLONE'];
@@ -169,7 +175,7 @@ export class MachineAssignmentService {
    * Get assignment conflicts for a list of machines
    */
   static getAssignmentConflicts(
-    machines: Machine[],
+    machines: MachineWithAssignmentStatus[],
     targetType: 'cluster' | 'image' | 'clone',
     targetResource: string
   ): AssignmentConflict[] {
@@ -234,7 +240,9 @@ export class MachineAssignmentService {
   /**
    * Calculate assignment statistics for a set of machines
    */
-  static calculateAssignmentSummary(machines: Machine[]): MachineAssignmentSummary {
+  static calculateAssignmentSummary(
+    machines: MachineWithAssignmentStatus[]
+  ): MachineAssignmentSummary {
     const groups = this.groupMachinesByAssignment(machines);
     const breakdown = new Map<MachineAssignmentType, number>();
 
@@ -291,15 +299,15 @@ export class MachineAssignmentService {
    * Validate and prepare machines for assignment
    */
   static validateAndPrepareAssignment(
-    machines: Machine[],
+    machines: MachineWithAssignmentStatus[],
     targetResource: CephResource,
     context: ValidationContext
   ): {
-    validMachines: Machine[];
+    validMachines: MachineWithAssignmentStatus[];
     conflicts: AssignmentConflict[];
     canProceed: boolean;
   } {
-    const validMachines: Machine[] = [];
+    const validMachines: MachineWithAssignmentStatus[] = [];
     const conflicts: AssignmentConflict[] = [];
 
     // Validate each machine
@@ -342,7 +350,7 @@ export class MachineAssignmentService {
    * Get assignment statistics by team
    */
   static getTeamAssignmentStats(
-    machines: Machine[],
+    machines: MachineWithAssignmentStatus[],
     teamName?: string
   ): Map<string, MachineAssignmentSummary> {
     const teamStats = new Map<string, MachineAssignmentSummary>();
@@ -351,7 +359,7 @@ export class MachineAssignmentService {
     const filteredMachines = teamName ? machines.filter((m) => m.teamName === teamName) : machines;
 
     // Group by team
-    const machinesByTeam = new Map<string, Machine[]>();
+    const machinesByTeam = new Map<string, MachineWithAssignmentStatus[]>();
     filteredMachines.forEach((machine) => {
       const team = machine.teamName;
       if (!machinesByTeam.has(team)) {

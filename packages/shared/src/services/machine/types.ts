@@ -3,7 +3,26 @@
  * Platform-agnostic type definitions for machine operations
  */
 
-import type { Machine, MachineAssignmentType } from '../../types';
+import type {
+  GetTeamMachines_ResultSet1,
+  MachineAssignmentType,
+  MachineAssignmentStatus,
+} from '../../types';
+
+// Re-export for convenience
+export type { MachineAssignmentStatus };
+
+// ============================================================================
+// Machine Type Extensions
+// ============================================================================
+
+/**
+ * Extended machine type with optional assignment status
+ * Used when machines need computed assignment information
+ */
+export interface MachineWithAssignmentStatus extends GetTeamMachines_ResultSet1 {
+  assignmentStatus?: MachineAssignmentStatus;
+}
 
 // ============================================================================
 // Assignment Types
@@ -39,7 +58,7 @@ export interface CephResource {
 export type ConflictType = 'exclusivity' | 'availability' | 'permission';
 
 export interface AssignmentConflict {
-  machine: Machine;
+  machine: MachineWithAssignmentStatus;
   machineName: string;
   currentAssignment: MachineAssignment;
   requestedAssignment: string;
@@ -107,14 +126,14 @@ export interface ValidationWarning {
 }
 
 export interface InvalidMachine {
-  machine: Machine;
+  machine: MachineWithAssignmentStatus;
   machineName: string;
   errors: ValidationError[];
   canOverride: boolean;
 }
 
 export interface BulkValidationResult {
-  validMachines: Machine[];
+  validMachines: MachineWithAssignmentStatus[];
   invalidMachines: InvalidMachine[];
   summary: ValidationSummary;
   canProceed: boolean;

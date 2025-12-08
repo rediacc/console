@@ -1,6 +1,6 @@
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { Bridge, Region } from '../../types';
+import type { GetRegionBridges_ResultSet1, GetCompanyRegions_ResultSet1 } from '../../types';
 import type {
   WithOptionalVault,
   CreateRegionParams,
@@ -12,8 +12,8 @@ import type {
 
 export function createRegionsService(client: ApiClient) {
   return {
-    list: async (): Promise<Region[]> => {
-      const response = await client.get<Region>('/GetCompanyRegions');
+    list: async (): Promise<GetCompanyRegions_ResultSet1[]> => {
+      const response = await client.get<GetCompanyRegions_ResultSet1>('/GetCompanyRegions');
       return parseResponse(response, {
         extractor: responseExtractors.primaryOrSecondary,
         filter: (region) => Boolean(region.regionName),
@@ -32,10 +32,10 @@ export function createRegionsService(client: ApiClient) {
 
     updateVault: (params: UpdateRegionVaultParams) => client.post('/UpdateRegionVault', params),
 
-    getBridges: async (params: GetRegionBridgesParams): Promise<Bridge[]> => {
-      const response = await client.get<Bridge>('/GetRegionBridges', params);
+    getBridges: async (params: GetRegionBridgesParams): Promise<GetRegionBridges_ResultSet1[]> => {
+      const response = await client.get<GetRegionBridges_ResultSet1>('/GetRegionBridges', params);
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<Bridge>(1),
+        extractor: responseExtractors.byIndex<GetRegionBridges_ResultSet1>(1),
         filter: (bridge) => Boolean(bridge.bridgeName),
       });
     },
