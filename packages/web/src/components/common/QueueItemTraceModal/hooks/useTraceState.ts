@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import { extractMostRecentProgress, extractProgressMessage } from '@/platform';
 import { queueMonitoringService } from '@/services/queueMonitoringService';
+import type { QueueTrace } from '@rediacc/shared/types';
 import type { TraceState, TraceStateActions } from '../types';
 
 interface UseTraceStateProps {
   taskId: string | null;
   open: boolean;
-  traceData: any;
+  traceData: QueueTrace | null | undefined;
 }
 
 interface UseTraceStateReturn extends TraceState, TraceStateActions {
@@ -25,15 +26,25 @@ export const useTraceState = ({
   const [simpleMode, setSimpleMode] = useState(true); // Default to simple mode
   const [accumulatedOutput, setAccumulatedOutput] = useState<string>(''); // Store accumulated console output
   const [lastOutputStatus, setLastOutputStatus] = useState<string>(''); // Track the last status to detect completion
-  const [consoleProgress, setConsoleProgress] = useState<number | null>(null); // Progress percentage from console output
-  const [progressMessage, setProgressMessage] = useState<string | null>(null); // Current progress message text
   const [isSimpleConsoleExpanded, setIsSimpleConsoleExpanded] = useState(false); // Console collapse state for simple mode
   const [isDetailedConsoleExpanded, setIsDetailedConsoleExpanded] = useState(false); // Console collapse state for detailed mode
   const consoleOutputRef = useRef<HTMLDivElement>(null);
 
+  // Derive progress values from accumulated output (computed, not stored)
+  const consoleProgress = useMemo(
+    () => extractMostRecentProgress(accumulatedOutput),
+    [accumulatedOutput]
+  );
+  const progressMessage = useMemo(
+    () => extractProgressMessage(accumulatedOutput),
+    [accumulatedOutput]
+  );
+
   // Sync last fetch time when trace data or visibility changes
+  // Note: This setState is intentional - we're tracking when data was fetched, not deriving state
   useEffect(() => {
     if (traceData && open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Tracking fetch timestamp, not derived state
       setLastTraceFetchTime(dayjs());
     }
   }, [traceData, open]);
@@ -46,6 +57,7 @@ export const useTraceState = ({
   }, [accumulatedOutput]);
 
   // Handle accumulating console output
+  // Note: These setState calls process incoming data, not derived state
   useEffect(() => {
     if (
       traceData?.responseVaultContent?.hasContent &&
@@ -77,6 +89,7 @@ export const useTraceState = ({
               finalOutput = vaultContent.result;
             }
           }
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- Processing incoming data
           setAccumulatedOutput(finalOutput);
           setLastOutputStatus('completed');
         } else if (vaultContent.status === 'in_progress' && vaultContent.message) {
@@ -135,18 +148,11 @@ export const useTraceState = ({
     }
   }, [traceData?.responseVaultContent, lastOutputStatus, accumulatedOutput]);
 
-  // Extract progress percentage and message from console output
-  useEffect(() => {
-    const percentage = extractMostRecentProgress(accumulatedOutput);
-    const message = extractProgressMessage(accumulatedOutput);
-
-    setConsoleProgress(percentage);
-    setProgressMessage(message);
-  }, [accumulatedOutput]);
-
   // Reset states when modal opens with new taskId
+  // Note: These setState calls are intentional initialization, not derived state
   useEffect(() => {
     if (open && taskId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional initialization when modal opens
       setLastTraceFetchTime(null);
       // Check if this task is already being monitored
       setIsMonitoring(queueMonitoringService.isTaskMonitored(taskId));
@@ -156,9 +162,7 @@ export const useTraceState = ({
       // Reset accumulated output when opening modal with new task
       setAccumulatedOutput('');
       setLastOutputStatus('');
-      // Reset console progress, message, and collapse states
-      setConsoleProgress(null);
-      setProgressMessage(null);
+      // Reset collapse states (consoleProgress/progressMessage are now derived via useMemo)
       setIsSimpleConsoleExpanded(false);
       setIsDetailedConsoleExpanded(false);
     }
@@ -182,8 +186,6 @@ export const useTraceState = ({
     setSimpleMode,
     setAccumulatedOutput,
     setLastOutputStatus,
-    setConsoleProgress,
-    setProgressMessage,
     setIsSimpleConsoleExpanded,
     setIsDetailedConsoleExpanded,
   };

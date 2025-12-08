@@ -2,9 +2,9 @@
  * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
  *
  * Generated from: middleware/AppData/stored-procedures.json
- * Generated at: 2025-12-08T06:03:21Z
+ * Generated at: 2025-12-08T13:31:15Z
  * Schema version: 3.0.0
- * Schema generated: 2025-12-08T06:03:21.0055553Z
+ * Schema generated: 2025-12-08T13:31:15.3412698Z
  *
  * To regenerate, run: ./go deploy prep
  * Or directly: ./_scripts/console-schema.sh --generate
@@ -1559,7 +1559,7 @@ export interface GetCephClusterMachines_ResultSet1 {
   regionName: string;
   /** @sqlType nvarchar */
   clusterName: string;
-  /** @sqlType datetimeoffset */
+  /** @sqlType datetime2 */
   assignedDate: string | null;
 }
 
@@ -2530,8 +2530,8 @@ export interface GetTeamMachines_ResultSet1 {
   machineGuid: string | null;
   /** @sqlType nvarchar */
   cephClusterName: string | null;
-  /** @sqlType nvarchar */
-  assignmentStatus: string | null;
+  /** @sqlType varchar */
+  assignmentStatus: string;
 }
 
 export type GetTeamMachinesResults = [
@@ -4186,7 +4186,7 @@ export const PROCEDURE_GUID_PARAMS: Partial<Record<StoredProcedureName, readonly
 
 export const API_SCHEMA_METADATA = {
   version: '3.0.0',
-  generated: '2025-12-08T06:03:21.0055553Z',
+  generated: '2025-12-08T13:31:15.3412698Z',
   procedureCount: 116,
 } as const;
 

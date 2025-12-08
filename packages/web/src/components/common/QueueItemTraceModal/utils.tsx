@@ -9,7 +9,7 @@ import {
   SyncOutlined,
   ThunderboltOutlined,
 } from '@/utils/optimizedIcons';
-import type { QueueTraceLog } from '@rediacc/shared/types';
+import type { GetTeamQueueItems_ResultSet1, QueueTraceLog } from '@rediacc/shared/types';
 import type { PriorityInfo, SimplifiedStatus, TaskStalenessLevel } from './types';
 
 // Helper function to extract timestamp from trace logs for specific action
@@ -37,7 +37,9 @@ export const getTimelineTimestamp = (
 };
 
 // Helper function to get simplified status
-export const getSimplifiedStatus = (queueDetails: any): SimplifiedStatus => {
+export const getSimplifiedStatus = (
+  queueDetails: GetTeamQueueItems_ResultSet1 | null
+): SimplifiedStatus => {
   if (!queueDetails) return { status: 'unknown', color: 'default', icon: null };
   const status = normalizeToString(queueDetails, 'status', 'Status');
   const retryCount = normalizeToNumber(queueDetails, 0, 'retryCount', 'RetryCount');
@@ -75,7 +77,9 @@ export const getSimplifiedStatus = (queueDetails: any): SimplifiedStatus => {
 };
 
 // Helper function to get task staleness level (progressive: none, early, stale, critical)
-export const getTaskStaleness = (queueDetails: any): TaskStalenessLevel => {
+export const getTaskStaleness = (
+  queueDetails: GetTeamQueueItems_ResultSet1 | null
+): TaskStalenessLevel => {
   if (!queueDetails) return 'none';
   const lastAssigned =
     normalizeToString(queueDetails, 'lastAssigned', 'LastAssigned') ||
@@ -115,13 +119,13 @@ export const getTaskStaleness = (queueDetails: any): TaskStalenessLevel => {
 };
 
 // Legacy function for backward compatibility
-export const isTaskStale = (queueDetails: any): boolean => {
+export const isTaskStale = (queueDetails: GetTeamQueueItems_ResultSet1 | null): boolean => {
   const staleness = getTaskStaleness(queueDetails);
   return staleness === 'stale' || staleness === 'critical';
 };
 
 // Helper function to check if task is old pending (6+ hours)
-export const isStalePending = (queueDetails: any): boolean => {
+export const isStalePending = (queueDetails: GetTeamQueueItems_ResultSet1 | null): boolean => {
   if (!queueDetails) return false;
   const status = normalizeToString(queueDetails, 'status', 'Status');
   const healthStatus = normalizeToString(queueDetails, 'healthStatus', 'HealthStatus');
@@ -157,7 +161,7 @@ export const getPriorityInfo = (priority: number | undefined): PriorityInfo => {
 };
 
 // Get current step for Steps component (3 steps: Assigned, Processing, Completed)
-export const getCurrentStep = (queueDetails: any): number => {
+export const getCurrentStep = (queueDetails: GetTeamQueueItems_ResultSet1 | null): number => {
   if (!queueDetails) return 0;
   const status = normalizeToString(queueDetails, 'status', 'Status');
 

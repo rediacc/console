@@ -10,11 +10,12 @@ import {
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 import { spacing } from '@/utils/styleConstants';
+import type { QueueVaultSnapshot } from '@rediacc/shared/types';
 import { InfoList, SectionMargin } from '../styles';
 import type { ResponseViewerProps } from '../types';
 
 export const ResponseViewer: React.FC<ResponseViewerProps> = ({ responseVaultContent }) => {
-  const renderRequestVault = (vaultContent: any) => {
+  const renderRequestVault = (vaultContent: QueueVaultSnapshot | null) => {
     if (!vaultContent || !vaultContent.hasContent) {
       return <Empty description="No request vault content" />;
     }
@@ -32,7 +33,7 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({ responseVaultCon
     }
   };
 
-  const renderResponseVault = (responseVaultContent: any) => {
+  const renderResponseVault = (responseVaultContent: QueueVaultSnapshot | null) => {
     if (!responseVaultContent || !responseVaultContent.hasContent) {
       return null;
     }

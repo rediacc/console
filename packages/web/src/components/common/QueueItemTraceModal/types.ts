@@ -1,4 +1,8 @@
-import type { QueueTraceLog } from '@rediacc/shared/types';
+import type {
+  GetTeamQueueItems_ResultSet1,
+  QueueTraceLog,
+  QueueVaultSnapshot,
+} from '@rediacc/shared/types';
 import type { Dayjs } from 'dayjs';
 
 export interface QueueItemTraceModalProps {
@@ -49,8 +53,6 @@ export interface TraceStateActions {
   setSimpleMode: (simple: boolean) => void;
   setAccumulatedOutput: (output: string | ((prev: string) => string)) => void;
   setLastOutputStatus: (status: string) => void;
-  setConsoleProgress: (progress: number | null) => void;
-  setProgressMessage: (message: string | null) => void;
   setIsSimpleConsoleExpanded: (expanded: boolean) => void;
   setIsDetailedConsoleExpanded: (expanded: boolean) => void;
 }
@@ -60,20 +62,25 @@ export interface TimelineViewProps {
 }
 
 export interface StatsPanelProps {
-  queueDetails: any;
+  queueDetails: GetTeamQueueItems_ResultSet1;
   totalDurationSeconds: number;
   processingDurationSeconds: number;
   isTaskStale: boolean;
 }
 
 export interface ResponseViewerProps {
-  responseVaultContent: any;
+  responseVaultContent: QueueVaultSnapshot | null;
   theme: string;
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
 }
 
+export interface ActionButtonStyles {
+  buttonPrimary?: React.CSSProperties;
+  buttonSecondary?: React.CSSProperties;
+}
+
 export interface ActionButtonsProps {
-  queueDetails: any;
+  queueDetails: GetTeamQueueItems_ResultSet1 | null | undefined;
   taskId: string | null;
   isCancelling: boolean;
   isRetrying: boolean;
@@ -83,5 +90,5 @@ export interface ActionButtonsProps {
   onRetry: () => void;
   onRefresh: () => void;
   onClose: () => void;
-  styles: any;
+  styles: ActionButtonStyles;
 }

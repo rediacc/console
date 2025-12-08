@@ -284,7 +284,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
       reader.readAsText(fileSource);
       return false;
     },
-    [entityDef, form, handleFormChange]
+    [entityDef, form, handleFormChange, setExtraFields, setImportedData]
   );
 
   const handleExport = useCallback(() => {
@@ -336,8 +336,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
         handleExport,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onImportExport]);
+  }, [onImportExport, handleImport, handleExport]);
 
   const renderField = (
     fieldName: string,
