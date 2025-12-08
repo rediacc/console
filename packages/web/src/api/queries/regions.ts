@@ -6,8 +6,8 @@ import {
   createMutation,
 } from '@/hooks/api/mutationFactory';
 import type {
-  Region,
-  Bridge,
+  GetCompanyRegions_ResultSet1,
+  GetRegionBridges_ResultSet1,
   CreateRegionParams,
   UpdateRegionNameParams,
   UpdateRegionVaultParams,
@@ -17,7 +17,7 @@ import type {
 
 // Get all regions
 export const useRegions = (enabled: boolean = true) => {
-  return useQuery<Region[]>({
+  return useQuery<GetCompanyRegions_ResultSet1[]>({
     queryKey: ['regions'],
     queryFn: async () => {
       return api.regions.list();
@@ -29,7 +29,7 @@ export const useRegions = (enabled: boolean = true) => {
 
 // Get bridges for a region
 export const useRegionBridges = (regionName: string) => {
-  return useQuery<Bridge[]>({
+  return useQuery<GetRegionBridges_ResultSet1[]>({
     queryKey: ['region-bridges', regionName],
     queryFn: async () => {
       return api.regions.getBridges({ regionName });
@@ -38,7 +38,7 @@ export const useRegionBridges = (regionName: string) => {
   });
 };
 
-export type { Region };
+export type { GetCompanyRegions_ResultSet1, GetCompanyRegions_ResultSet1 as Region };
 
 // Create region
 export const useCreateRegion = createResourceMutation<WithOptionalVault<CreateRegionParams>>(

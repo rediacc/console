@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Repo as TeamRepo } from '@rediacc/shared/types';
+import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import { isValidGuid } from '@/platform/utils/validation';
 import type {

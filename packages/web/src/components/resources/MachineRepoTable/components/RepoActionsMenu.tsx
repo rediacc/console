@@ -24,7 +24,7 @@ import {
   ControlOutlined,
 } from '@/utils/optimizedIcons';
 import { isFork as coreIsFork, isCredential as coreIsCredential } from '@/platform';
-import type { Repo as TeamRepo } from '@rediacc/shared/types';
+import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
 import type { Machine } from '@/types';
 import type { RepoTableRow, RepoContainersState, MenuClickEvent } from '../types';
 

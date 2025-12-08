@@ -326,10 +326,12 @@ export class MachineValidationService {
 
   /**
    * Check if a machine has image exclusivity
+   * Note: Currently only cluster assignments are tracked via assignmentStatus
    */
-  static isImageExclusive(machine: MachineWithAssignmentStatus): boolean {
-    // Images are tracked via the assignment status, not directly on the machine
-    return machine.assignmentStatus?.assignmentType === 'IMAGE';
+  static isImageExclusive(_machine: MachineWithAssignmentStatus): boolean {
+    // Image exclusivity would need to be tracked separately in the future
+    // Currently, assignmentStatus is a simple string ('ASSIGNED' | 'UNASSIGNED')
+    return false;
   }
 
   /**
@@ -358,11 +360,13 @@ export class MachineValidationService {
 
   /**
    * Private helper to check machine exclusivity
+   * Note: assignmentStatus is now a simple string ('ASSIGNED' | 'UNASSIGNED')
+   * Only cluster assignments are currently tracked via cephClusterName
    */
   private static checkMachineExclusivity(
     machine: MachineWithAssignmentStatus
   ): ExclusivityValidation {
-    // Check cluster assignment
+    // Check cluster assignment (the only type currently tracked)
     if (machine.cephClusterName) {
       return {
         isExclusive: true,
@@ -372,27 +376,13 @@ export class MachineValidationService {
       };
     }
 
-    // Check image assignment via status
-    if (machine.assignmentStatus?.assignmentType === 'IMAGE') {
-      const imageName =
-        machine.assignmentStatus.assignmentDetails?.match(/Assigned to image: (.+)/)?.[1];
+    // If marked as assigned but no cluster, treat as potentially assigned
+    if (machine.assignmentStatus === 'ASSIGNED') {
       return {
         isExclusive: true,
-        conflictType: 'image',
-        conflictResource: imageName || 'Unknown Image',
+        conflictType: 'cluster',
+        conflictResource: 'Unknown',
         canOverride: false,
-      };
-    }
-
-    // Check clone assignment
-    if (machine.assignmentStatus?.assignmentType === 'CLONE') {
-      const cloneName =
-        machine.assignmentStatus.assignmentDetails?.match(/Assigned to clone: (.+)/)?.[1];
-      return {
-        isExclusive: false, // Clones are not exclusive
-        conflictType: 'clone',
-        conflictResource: cloneName || 'Unknown Clone',
-        canOverride: true,
       };
     }
 

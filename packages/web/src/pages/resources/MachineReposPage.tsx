@@ -199,10 +199,11 @@ const MachineReposPage: React.FC = () => {
       teamName: machine!.teamName,
       vaultVersion: 0,
       vaultContent: null,
-      grandGuid: null,
+      grandGuid: '',
       parentGuid: null,
       repoNetworkMode: '',
-      repoTag: repoRow.repoTag,
+      repoNetworkId: 0,
+      repoTag: repoRow.repoTag || '',
     };
 
     // Find the actual Repo from the API data - must match both name AND tag to distinguish forks

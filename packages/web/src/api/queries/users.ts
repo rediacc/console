@@ -6,8 +6,7 @@ import { hashPassword } from '@/utils/auth';
 import { showMessage } from '@/utils/messages';
 import { createErrorHandler } from '@/utils/mutationUtils';
 import type {
-  PermissionGroup,
-  User,
+  GetCompanyUsers_ResultSet1,
   UserRequest,
   UserVault,
   UpdateUserToDeactivatedParams,
@@ -20,10 +19,11 @@ import type {
   DeleteUserRequestParams,
   UpdateUserPasswordParams,
 } from '@rediacc/shared/types';
+import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 
 // Get all users
 export const useUsers = () => {
-  return useQuery<User[]>({
+  return useQuery<GetCompanyUsers_ResultSet1[]>({
     queryKey: ['users'],
     queryFn: () => api.users.list(),
   });
@@ -117,7 +117,7 @@ export const useUpdateUserLanguage = createMutation<UpdateUserLanguageParams>({
 
 // Get permission groups
 export const usePermissionGroups = () => {
-  return useQuery<PermissionGroup[]>({
+  return useQuery<PermissionGroupWithParsedPermissions[]>({
     queryKey: ['permission-groups'],
     queryFn: () => api.permissions.listGroups(),
   });
@@ -203,4 +203,10 @@ export const useUpdateUserVault = createMutation<UpdateUserVaultParams>({
   operationName: 'users.updateVault',
 });
 
-export type { User, PermissionGroup, UserRequest, UserVault };
+export type {
+  GetCompanyUsers_ResultSet1,
+  GetCompanyUsers_ResultSet1 as User,
+  PermissionGroupWithParsedPermissions,
+  UserRequest,
+  UserVault,
+};

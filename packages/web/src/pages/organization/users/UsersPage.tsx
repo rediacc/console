@@ -195,7 +195,7 @@ const UsersPage: React.FC = () => {
               icon={<SafetyOutlined />}
               onClick={() => {
                 assignPermissionModal.open(record);
-                setSelectedUserGroup(record.permissionGroupName || '');
+                setSelectedUserGroup(record.permissionsName || '');
               }}
               data-testid={`system-user-permissions-button-${record.userEmail}`}
               aria-label={tSystem('actions.permissions')}

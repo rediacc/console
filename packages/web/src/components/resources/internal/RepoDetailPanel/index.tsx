@@ -2,7 +2,7 @@
 import { Row, Col, Progress, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
-import type { Repo } from '@/api/queries/repos';
+import type { GetTeamRepositories_ResultSet1 as Repo } from '@rediacc/shared/types';
 import { IconWrapper, RediaccText, RediaccEmpty, RediaccAlert } from '@/components/ui';
 import type { Machine } from '@/types';
 import {

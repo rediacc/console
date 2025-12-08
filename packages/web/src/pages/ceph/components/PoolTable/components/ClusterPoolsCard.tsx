@@ -80,7 +80,7 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
               if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
                 return;
               }
-              onToggleRow(record.poolGuid);
+              onToggleRow(record.poolGuid ?? undefined);
             },
           })}
           rowClassName={() => 'pool-row'}

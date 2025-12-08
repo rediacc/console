@@ -3,7 +3,7 @@ import { Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import type { ColumnsType } from 'antd/es/table';
-import type { Repo as TeamRepo } from '@rediacc/shared/types';
+import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
 import { StatusIcon } from '@/components/common/styled';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import { createSorter, createCustomSorter, createArrayLengthSorter } from '@/platform';

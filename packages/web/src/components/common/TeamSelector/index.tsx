@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Team } from '@/api/queries/teams';
+import type { GetCompanyTeams_ResultSet1 as Team } from '@rediacc/shared/types';
 import { TeamOutlined, SearchOutlined } from '@/utils/optimizedIcons';
 import {
   TeamSelect,

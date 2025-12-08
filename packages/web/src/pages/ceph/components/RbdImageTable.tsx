@@ -71,7 +71,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   const managedQueueMutation = useManagedQueueItem();
   const { buildQueueVault } = useQueueVaultBuilder();
 
-  const { data: images = [], isLoading } = useCephRbdImages(pool.poolGuid);
+  const { data: images = [], isLoading } = useCephRbdImages(pool.poolGuid ?? undefined);
   const deleteImageMutation = useDeleteCephRbdImage();
   const createImageMutation = useCreateCephRbdImage();
   const updateImageVaultMutation = useUpdateCephPoolVault();

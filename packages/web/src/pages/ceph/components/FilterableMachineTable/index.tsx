@@ -74,7 +74,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
           expandedRowKeys,
           onExpandedRowsChange: onExpandedRowsChange ? handleExpandedRowsChange : undefined,
           expandedRowRender: renderExpandedRow,
-          rowExpandable: (machine) => machine.queueCount > 0,
+          rowExpandable: (machine) => (machine.queueCount ?? 0) > 0,
         }}
         scroll={{ x: 800 }}
         pagination={{

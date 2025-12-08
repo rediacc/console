@@ -32,3 +32,4 @@ export function createApiServices(client: ApiClient) {
 }
 
 export type { ApiClient, ApiRequestConfig } from './types';
+export type { PermissionGroupWithParsedPermissions } from './permissions';

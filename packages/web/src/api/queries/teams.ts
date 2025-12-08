@@ -7,8 +7,8 @@ import {
   createMutation,
 } from '@/hooks/api/mutationFactory';
 import type {
-  Team,
-  TeamMember,
+  GetCompanyTeams_ResultSet1,
+  GetTeamMembers_ResultSet1,
   CreateTeamParams,
   UpdateTeamNameParams,
   UpdateTeamVaultParams,
@@ -20,7 +20,7 @@ import type {
 
 // Get all teams
 export const useTeams = () => {
-  return useQuery<Team[]>({
+  return useQuery<GetCompanyTeams_ResultSet1[]>({
     queryKey: QUERY_KEYS.teams.all,
     queryFn: async () => {
       return api.teams.list();
@@ -31,7 +31,7 @@ export const useTeams = () => {
 
 // Get team members
 export const useTeamMembers = (teamName: string) => {
-  return useQuery<TeamMember[]>({
+  return useQuery<GetTeamMembers_ResultSet1[]>({
     queryKey: QUERY_KEYS.teams.members(teamName),
     queryFn: async () => {
       return api.teams.getMembers({ teamName });
@@ -40,7 +40,12 @@ export const useTeamMembers = (teamName: string) => {
   });
 };
 
-export type { Team, TeamMember };
+export type {
+  GetCompanyTeams_ResultSet1,
+  GetCompanyTeams_ResultSet1 as Team,
+  GetTeamMembers_ResultSet1,
+  GetTeamMembers_ResultSet1 as TeamMember,
+};
 
 // Create team
 export const useCreateTeam = createResourceMutation<WithOptionalVault<CreateTeamParams>>(

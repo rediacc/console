@@ -26,16 +26,18 @@ interface AssignmentOperationResult {
 export class MachineAssignmentService {
   /**
    * Get the assignment type for a machine
+   * assignmentStatus is now a simple string: 'ASSIGNED' | 'UNASSIGNED'
    */
   static getMachineAssignmentType(machine: MachineWithAssignmentStatus): MachineAssignmentType {
-    // Check cluster assignment first (stored directly on machine)
+    // Check cluster assignment (indicated by cephClusterName being set)
     if (machine.cephClusterName) {
       return 'CLUSTER';
     }
 
-    // Check assignment status for other types
-    if (machine.assignmentStatus) {
-      return machine.assignmentStatus.assignmentType;
+    // If assigned but no cluster, it could be image/clone (future use)
+    // For now, treat 'ASSIGNED' without cluster as available
+    if (machine.assignmentStatus === 'ASSIGNED') {
+      return 'CLUSTER'; // Currently only cluster assignments are tracked
     }
 
     // Default to available
@@ -51,9 +53,9 @@ export class MachineAssignmentService {
       return `Assigned to cluster: ${machine.cephClusterName}`;
     }
 
-    // Other assignments from status
-    if (machine.assignmentStatus?.assignmentDetails) {
-      return machine.assignmentStatus.assignmentDetails;
+    // If assigned but no specific resource name
+    if (machine.assignmentStatus === 'ASSIGNED') {
+      return 'Assigned';
     }
 
     return null;
@@ -67,8 +69,7 @@ export class MachineAssignmentService {
       machineId: machine.machineGuid || '',
       machineName: machine.machineName,
       assignmentType: this.getMachineAssignmentType(machine),
-      resourceName:
-        machine.cephClusterName || machine.assignmentStatus?.assignmentDetails?.split(': ')[1],
+      resourceName: machine.cephClusterName || undefined,
     };
   }
 
@@ -189,8 +190,7 @@ export class MachineAssignmentService {
           machineId: machine.machineGuid || '',
           machineName: machine.machineName,
           assignmentType: this.getMachineAssignmentType(machine),
-          resourceName:
-            machine.cephClusterName || machine.assignmentStatus?.assignmentDetails?.split(': ')[1],
+          resourceName: machine.cephClusterName || undefined,
         };
 
         conflicts.push({

@@ -72,18 +72,21 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
     }
 
     // Apply assignment filter
+    // Note: assignmentStatus is now a simple string ('ASSIGNED' | 'UNASSIGNED')
     if (assignmentFilter !== 'all') {
       filtered = filtered.filter((machine: Machine) => {
-        const assignmentType = machine.assignmentStatus?.assignmentType;
+        const isAssigned = machine.assignmentStatus === 'ASSIGNED' || !!machine.cephClusterName;
         switch (assignmentFilter) {
           case 'available':
-            return (!assignmentType || assignmentType === 'AVAILABLE') && !machine.cephClusterName;
+            return !isAssigned;
           case 'cluster':
-            return assignmentType === 'CLUSTER' || !!machine.cephClusterName;
+            return !!machine.cephClusterName;
           case 'image':
-            return assignmentType === 'IMAGE';
+            // Image assignments are not currently tracked separately
+            return false;
           case 'clone':
-            return assignmentType === 'CLONE';
+            // Clone assignments are not currently tracked separately
+            return false;
           default:
             return true;
         }

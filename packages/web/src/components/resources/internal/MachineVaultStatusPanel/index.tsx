@@ -260,7 +260,10 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                 {t('machines:region')}: {machine.regionName}
               </StyledTag>
             )}
-            <QueueBadge count={machine.queueCount} data-testid="vault-status-queue-badge">
+            <QueueBadge
+              count={machine.queueCount ?? undefined}
+              data-testid="vault-status-queue-badge"
+            >
               <StyledTag $variant="queue">{t('machines:queueItems')}</StyledTag>
             </QueueBadge>
             <StyledTag $variant="version" data-testid="vault-status-version-tag">

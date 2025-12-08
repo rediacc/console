@@ -3,7 +3,7 @@ import { createMutation } from '@/hooks/api/mutationFactory';
 import { createResourceQuery } from '@/hooks/api/queryFactory';
 import { minifyJSON } from '@/utils/json';
 import type {
-  Repo,
+  GetTeamRepositories_ResultSet1,
   CreateRepositoryParams,
   UpdateRepositoryNameParams,
   UpdateRepositoryTagParams,
@@ -13,7 +13,7 @@ import type {
 } from '@rediacc/shared/types';
 
 // Get repos for a team or multiple teams
-export const useRepos = createResourceQuery<Repo>({
+export const useRepos = createResourceQuery<GetTeamRepositories_ResultSet1>({
   queryKey: 'repos',
   fetcher: (teamFilter) => {
     if (!teamFilter) {
@@ -115,4 +115,4 @@ export const usePromoteRepoToGrand = createMutation<PromoteRepositoryToGrandPara
   operationName: 'repos.promoteToGrand',
 });
 
-export type { Repo };
+export type { GetTeamRepositories_ResultSet1, GetTeamRepositories_ResultSet1 as Repo };

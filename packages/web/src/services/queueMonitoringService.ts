@@ -2,7 +2,7 @@ import { isAxiosError } from 'axios';
 import { api } from '@/api/client';
 import { showTranslatedMessage } from '@/utils/messages';
 import { isPermanentFailure, STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
-import type { QueueItem, QueueTrace } from '@rediacc/shared/types';
+import type { GetTeamQueueItems_ResultSet1, QueueTrace } from '@rediacc/shared/types';
 
 interface MonitoredTask {
   taskId: string;
@@ -244,6 +244,11 @@ class QueueMonitoringService {
 
       const currentStatus = queueDetails.status;
 
+      // Skip if status is null
+      if (!currentStatus) {
+        return;
+      }
+
       // Check for permanent failure flag
       if (queueDetails.permanentlyFailed) {
         this.notifyQueue(task.taskId, 'failed');
@@ -471,15 +476,15 @@ class QueueMonitoringService {
     return Array.from(this.monitoredTasks.values());
   }
 
-  private extractQueueDetails(response: QueueTrace): QueueItem | null {
+  private extractQueueDetails(response: QueueTrace): GetTeamQueueItems_ResultSet1 | null {
     return response.queueDetails;
   }
 
-  private getRetryCount(queueDetails: QueueItem): number {
+  private getRetryCount(queueDetails: GetTeamQueueItems_ResultSet1): number {
     return queueDetails.retryCount ?? 0;
   }
 
-  private getLastFailureReason(queueDetails: QueueItem): string | undefined {
+  private getLastFailureReason(queueDetails: GetTeamQueueItems_ResultSet1): string | undefined {
     return queueDetails.lastFailureReason ?? undefined;
   }
 

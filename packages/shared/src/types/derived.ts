@@ -60,3 +60,20 @@ export type PoolFormValues = WithOptionalVault<CreateCephPoolParams>;
 export type ImageFormValues = WithOptionalVault<CreateCephRbdImageParams>;
 export type SnapshotFormValues = WithOptionalVault<CreateCephRbdSnapshotParams>;
 export type CloneFormValues = WithOptionalVault<CreateCephRbdCloneParams>;
+
+// =============================================================================
+// COMPUTED TYPES (not from stored procedures)
+// =============================================================================
+
+/** Queue statistics summary - computed from queue items */
+export interface QueueStatistics {
+  totalCount: number;
+  pendingCount: number;
+  assignedCount: number;
+  processingCount: number;
+  cancellingCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  failedCount: number;
+  staleCount: number;
+}

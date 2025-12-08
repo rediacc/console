@@ -3,14 +3,14 @@ import { api } from '@/api/client';
 import type {
   CephAvailableMachine,
   CephCloneMachine,
-  CephCluster,
+  GetCephClusters_ResultSet1,
   CephMachineAssignmentStatus,
   CephMachineAssignmentValidation,
-  CephPool,
-  CephRbdClone,
-  CephRbdImage,
-  CephRbdSnapshot,
-  Machine,
+  GetCephPools_ResultSet1,
+  GetCephRbdClones_ResultSet1,
+  GetCephRbdImages_ResultSet1,
+  GetCephRbdSnapshots_ResultSet1,
+  GetCephClusterMachines_ResultSet1,
   GetCephPoolsParams,
   GetCephRbdImagesParams,
   GetCephRbdSnapshotsParams,
@@ -67,7 +67,7 @@ export const CEPH_QUERY_KEYS = {
 
 // Clusters
 export const useCephClusters = (teamFilter?: string | string[], enabled = true) => {
-  return useQuery<CephCluster[]>({
+  return useQuery<GetCephClusters_ResultSet1[]>({
     queryKey: CEPH_QUERY_KEYS.clusters(teamFilter),
     queryFn: () => api.ceph.listClusters(),
     enabled: enabled,
@@ -76,7 +76,7 @@ export const useCephClusters = (teamFilter?: string | string[], enabled = true) 
 
 // Pools
 export const useCephPools = (teamFilter?: string | string[], enabled = true) => {
-  return useQuery<CephPool[]>({
+  return useQuery<GetCephPools_ResultSet1[]>({
     queryKey: CEPH_QUERY_KEYS.pools(teamFilter),
     queryFn: async () => {
       const teamName = Array.isArray(teamFilter) ? teamFilter?.[0] : teamFilter;
@@ -92,7 +92,7 @@ export const useCephPools = (teamFilter?: string | string[], enabled = true) => 
 
 // RBD Images
 export const useCephRbdImages = (poolName?: string, teamName?: string, enabled = true) => {
-  return useQuery<CephRbdImage[]>({
+  return useQuery<GetCephRbdImages_ResultSet1[]>({
     queryKey: CEPH_QUERY_KEYS.images(poolName, teamName),
     queryFn: () => {
       const params: GetCephRbdImagesParams = { poolName: poolName!, teamName: teamName! };
@@ -109,7 +109,7 @@ export const useCephRbdSnapshots = (
   teamName?: string,
   enabled = true
 ) => {
-  return useQuery<CephRbdSnapshot[]>({
+  return useQuery<GetCephRbdSnapshots_ResultSet1[]>({
     queryKey: CEPH_QUERY_KEYS.snapshots(imageName, poolName, teamName),
     queryFn: () => {
       const params: GetCephRbdSnapshotsParams = {
@@ -131,7 +131,7 @@ export const useCephRbdClones = (
   teamName?: string,
   enabled = true
 ) => {
-  return useQuery<CephRbdClone[]>({
+  return useQuery<GetCephRbdClones_ResultSet1[]>({
     queryKey: CEPH_QUERY_KEYS.clones(snapshotName, imageName, poolName, teamName),
     queryFn: () => {
       const params: GetCephRbdClonesParams = {
@@ -148,7 +148,7 @@ export const useCephRbdClones = (
 
 // Cluster Machines
 export const useCephClusterMachines = (clusterName: string, enabled = true) => {
-  return useQuery<Machine[]>({
+  return useQuery<GetCephClusterMachines_ResultSet1[]>({
     queryKey: CEPH_QUERY_KEYS.clusterMachines(clusterName),
     queryFn: () => {
       const params: GetCephClusterMachinesParams = { clusterName };
@@ -231,11 +231,18 @@ export const useCloneMachines = (
 };
 
 export type {
-  CephCluster,
-  CephPool,
-  CephRbdImage,
-  CephRbdSnapshot,
-  CephRbdClone,
+  GetCephClusters_ResultSet1,
+  GetCephClusters_ResultSet1 as CephCluster,
+  GetCephPools_ResultSet1,
+  GetCephPools_ResultSet1 as CephPool,
+  GetCephRbdImages_ResultSet1,
+  GetCephRbdImages_ResultSet1 as CephRbdImage,
+  GetCephRbdSnapshots_ResultSet1,
+  GetCephRbdSnapshots_ResultSet1 as CephRbdSnapshot,
+  GetCephRbdClones_ResultSet1,
+  GetCephRbdClones_ResultSet1 as CephRbdClone,
+  GetCephClusterMachines_ResultSet1,
+  GetCephClusterMachines_ResultSet1 as CephClusterMachine,
   CephMachineAssignmentStatus as MachineAssignmentStatus,
   CephAvailableMachine as AvailableMachine,
   CephCloneMachine as CloneMachine,

@@ -6,7 +6,7 @@ import {
   createMutation,
 } from '@/hooks/api/mutationFactory';
 import type {
-  Bridge,
+  GetRegionBridges_ResultSet1,
   CreateBridgeParams,
   UpdateBridgeNameParams,
   UpdateBridgeVaultParams,
@@ -17,7 +17,7 @@ import type {
 
 // Get bridges for a region
 export const useBridges = (regionName?: string) => {
-  return useQuery<Bridge[]>({
+  return useQuery<GetRegionBridges_ResultSet1[]>({
     queryKey: ['bridges', regionName],
     queryFn: async () => {
       if (!regionName) return [];
@@ -73,4 +73,4 @@ export const useResetBridgeAuthorization = createMutation<ResetBridgeAuthorizati
   operationName: 'bridges.resetAuthorization',
 });
 
-export type { Bridge };
+export type { GetRegionBridges_ResultSet1, GetRegionBridges_ResultSet1 as Bridge };

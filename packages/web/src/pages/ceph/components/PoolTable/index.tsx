@@ -149,7 +149,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
           <ClusterPoolsCard
             key={clusterName}
             clusterName={clusterName}
-            teamName={cluster?.teamName}
+            teamName={cluster?.teamName ?? undefined}
             pools={clusterPools}
             loading={loading}
             columns={columns}

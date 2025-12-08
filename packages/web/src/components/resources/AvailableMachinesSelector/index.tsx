@@ -3,7 +3,6 @@ import { Select, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAvailableMachinesForClone } from '@/api/queries/ceph';
 import { StatusIcon } from '@/components/common/styled';
-import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import { RediaccText, RediaccTag } from '@/components/ui';
 import type { Machine } from '@/types';
 import { CloudServerOutlined, CheckCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
@@ -72,8 +71,8 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
   };
 
   const renderMachineOption = (machine: Machine) => {
-    const isAssigned =
-      machine.cephClusterName || machine.assignmentStatus?.assignmentType !== 'AVAILABLE';
+    // assignmentStatus is now a simple string: 'ASSIGNED' | 'UNASSIGNED'
+    const isAssigned = machine.cephClusterName || machine.assignmentStatus === 'ASSIGNED';
     const isDisabled = !allowSelectAssigned && isAssigned;
 
     return (
@@ -110,13 +109,17 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                       {t('machines:assignmentStatus.cluster')}: {machine.cephClusterName}
                     </RediaccText>
                   </RediaccTag>
-                ) : machine.assignmentStatus ? (
-                  <MachineAssignmentStatusBadge
-                    assignmentType={machine.assignmentStatus.assignmentType}
-                    assignmentDetails={machine.assignmentStatus.assignmentDetails}
-                    size="small"
-                  />
-                ) : null
+                ) : (
+                  <RediaccTag
+                    variant="warning"
+                    data-testid={`available-machines-assigned-tag-${machine.machineName}`}
+                  >
+                    <StatusIcon as={WarningOutlined} />
+                    <RediaccText variant="caption">
+                      {t('machines:assignmentStatus.assigned', 'Assigned')}
+                    </RediaccText>
+                  </RediaccTag>
+                )
               ) : (
                 <RediaccTag
                   variant="success"

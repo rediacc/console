@@ -77,7 +77,7 @@ import {
 } from '@/utils/optimizedIcons';
 import { renderQueueStatus, renderPriority } from '@/utils/queueRenderers';
 import type { ParsedError } from '@rediacc/shared/error-parser';
-import type { QueueItem } from '@rediacc/shared/types';
+import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
 import type { ColumnsType } from 'antd/es/table';
 
 const TooltipContent = styled.div`
@@ -652,7 +652,7 @@ const QueuePage: React.FC = () => {
               size="sm"
               iconOnly
               icon={<HistoryOutlined />}
-              onClick={() => handleViewTrace(record.taskId)}
+              onClick={() => record.taskId && handleViewTrace(record.taskId)}
               data-testid={`queue-trace-button-${record.taskId}`}
               aria-label="Trace"
             />
@@ -666,7 +666,7 @@ const QueuePage: React.FC = () => {
                   danger
                   iconOnly
                   icon={<CloseCircleOutlined />}
-                  onClick={() => handleCancelQueueItem(record.taskId)}
+                  onClick={() => record.taskId && handleCancelQueueItem(record.taskId)}
                   loading={cancelQueueItemMutation.isPending}
                   data-testid={`queue-cancel-button-${record.taskId}`}
                   aria-label="Cancel"

@@ -4,7 +4,7 @@ import { useTeams } from '@/api/queries/teams';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import type { Machine } from '@/types';
-import type { Team } from '@rediacc/shared/types';
+import type { GetCompanyTeams_ResultSet1 } from '@rediacc/shared/types';
 import { waitForQueueItemCompletion, type QueueItemCompletionResult } from './helloService';
 
 export interface PingFunctionParams {
@@ -179,7 +179,10 @@ export function usePingFunction(options?: { useManaged?: boolean }) {
 }
 
 // Helper functions
-function getTeamVault(params: PingFunctionParams, teams: Team[] | undefined): string {
+function getTeamVault(
+  params: PingFunctionParams,
+  teams: GetCompanyTeams_ResultSet1[] | undefined
+): string {
   if (params.teamVault && params.teamVault !== '{}') {
     return params.teamVault;
   }

@@ -57,7 +57,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
   const managedQueueMutation = useManagedQueueItem();
   const { buildQueueVault } = useQueueVaultBuilder();
 
-  const { data: snapshots = [], isLoading } = useCephRbdSnapshots(image.imageGuid);
+  const { data: snapshots = [], isLoading } = useCephRbdSnapshots(String(image.imageGuid));
   const deleteSnapshotMutation = useDeleteCephRbdSnapshot();
   const createSnapshotMutation = useCreateCephRbdSnapshot();
   const updateVaultMutation = useUpdateCephPoolVault();

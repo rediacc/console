@@ -1,5 +1,5 @@
 import { isAxiosError } from 'axios';
-import type { Repo as TeamRepo } from '@rediacc/shared/types';
+import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
 import type { Repo, GroupedRepo } from './types';
 
 export const getRepoDisplayName = (repo: Repo): string => {

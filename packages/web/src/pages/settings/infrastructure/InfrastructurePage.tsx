@@ -762,7 +762,12 @@ const InfrastructurePage: React.FC = () => {
         resourceType={unifiedModal.state.data?.resourceType || 'region'}
         mode={unifiedModal.state.data?.mode || 'create'}
         existingData={
-          unifiedModal.state.data?.data as Partial<Region> | Partial<Bridge> | undefined
+          unifiedModal.state.data?.data
+            ? {
+                ...unifiedModal.state.data.data,
+                vaultVersion: unifiedModal.state.data.data.vaultVersion ?? undefined,
+              }
+            : undefined
         }
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={

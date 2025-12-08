@@ -1559,6 +1559,8 @@ export interface GetCephClusterMachines_ResultSet1 {
   regionName: string;
   /** @sqlType nvarchar */
   clusterName: string;
+  /** @sqlType datetimeoffset */
+  assignedDate: string | null;
 }
 
 export type GetCephClusterMachinesResults = [
@@ -1581,6 +1583,8 @@ export interface GetCephClusters_ResultSet1 {
   poolCount: number | null;
   /** @sqlType nvarchar */
   clusterVault: string | null;
+  /** @sqlType nvarchar */
+  teamName: string | null;
 }
 
 export type GetCephClustersResults = [
@@ -1605,6 +1609,8 @@ export interface GetCephPools_ResultSet1 {
   rbdImageCount: number | null;
   /** @sqlType nvarchar */
   poolVault: string | null;
+  /** @sqlType nvarchar */
+  poolGuid: string | null;
 }
 
 export type GetCephPoolsResults = [
@@ -1632,7 +1638,9 @@ export interface GetCephRbdClones_ResultSet1 {
   /** @sqlType datetime2 */
   snapshotCreatedDate: string;
   /** @sqlType nvarchar */
-  cloneVault: string | null;
+  vaultContent: string | null;
+  /** @sqlType nvarchar */
+  snapshotGuid: string | null;
 }
 
 export type GetCephRbdClonesResults = [
@@ -1660,7 +1668,7 @@ export interface GetCephRbdImages_ResultSet1 {
   /** @sqlType int */
   snapshotCount: number | null;
   /** @sqlType nvarchar */
-  imageVault: string | null;
+  vaultContent: string | null;
 }
 
 export type GetCephRbdImagesResults = [
@@ -1688,7 +1696,9 @@ export interface GetCephRbdSnapshots_ResultSet1 {
   /** @sqlType int */
   cloneCount: number | null;
   /** @sqlType nvarchar */
-  snapshotVault: string | null;
+  vaultContent: string | null;
+  /** @sqlType nvarchar */
+  snapshotGuid: string | null;
 }
 
 export type GetCephRbdSnapshotsResults = [
@@ -2520,6 +2530,8 @@ export interface GetTeamMachines_ResultSet1 {
   machineGuid: string | null;
   /** @sqlType nvarchar */
   cephClusterName: string | null;
+  /** @sqlType nvarchar */
+  assignmentStatus: string | null;
 }
 
 export type GetTeamMachinesResults = [

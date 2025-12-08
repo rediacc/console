@@ -60,7 +60,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   const managedQueueMutation = useManagedQueueItem();
   const { buildQueueVault } = useQueueVaultBuilder();
 
-  const { data: clones = [], isLoading } = useCephRbdClones(snapshot.snapshotGuid);
+  const { data: clones = [], isLoading } = useCephRbdClones(snapshot.snapshotGuid ?? undefined);
   const deleteCloneMutation = useDeleteCephRbdClone();
   const createCloneMutation = useCreateCephRbdClone();
   const updateVaultMutation = useUpdateCephPoolVault();
@@ -73,7 +73,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
     (clone: CephRbdClone) => {
       cloneModal.openEdit({
         ...clone,
-        vaultContent: clone.vaultContent,
+        vaultContent: clone.vaultContent ?? '',
       });
     },
     [cloneModal]

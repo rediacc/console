@@ -37,7 +37,7 @@ import {
   createSnapshotSchema,
   createCloneSchema,
 } from '@/utils/validation';
-import type { Team } from '@rediacc/shared/types';
+import type { GetCompanyTeams_ResultSet1 } from '@rediacc/shared/types';
 import {
   FooterLeftActions,
   AutoSetupCheckbox,
@@ -83,7 +83,7 @@ type ResourceFormValues = Record<string, unknown>;
 
 type ExistingResourceData = Partial<Machine> &
   Partial<Repo> &
-  Partial<Team> & {
+  Partial<GetCompanyTeams_ResultSet1> & {
     prefilledMachine?: boolean;
     clusters?: ClusterOption[];
     pools?: PoolOption[];

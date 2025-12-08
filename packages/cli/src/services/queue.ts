@@ -112,7 +112,9 @@ export class CliQueueService {
     if (requirements.machine && context.machineName) {
       try {
         const machines = await api.machines.list(context.teamName);
-        const machine = machines.find((m: GetTeamMachines_ResultSet1) => m.machineName === context.machineName);
+        const machine = machines.find(
+          (m: GetTeamMachines_ResultSet1) => m.machineName === context.machineName
+        );
         const parsed = this.parseVaultContent(machine?.vaultContent);
         if (parsed) {
           vaults.machineVault = parsed;
@@ -167,7 +169,9 @@ export class CliQueueService {
     if (requirements.bridge && context.bridgeName && context.regionName) {
       try {
         const bridges = await api.regions.getBridges({ regionName: context.regionName });
-        const bridge = bridges.find((b: GetRegionBridges_ResultSet1) => b.bridgeName === context.bridgeName);
+        const bridge = bridges.find(
+          (b: GetRegionBridges_ResultSet1) => b.bridgeName === context.bridgeName
+        );
         const parsed = this.parseVaultContent(bridge?.vaultContent);
         if (parsed) {
           vaults.bridgeVault = parsed;

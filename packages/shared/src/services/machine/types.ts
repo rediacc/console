@@ -17,12 +17,10 @@ export type { MachineAssignmentStatus };
 // ============================================================================
 
 /**
- * Extended machine type with optional assignment status
- * Used when machines need computed assignment information
+ * Extended machine type with assignment status
+ * Now inherits assignmentStatus from base type GetTeamMachines_ResultSet1
  */
-export interface MachineWithAssignmentStatus extends GetTeamMachines_ResultSet1 {
-  assignmentStatus?: MachineAssignmentStatus;
-}
+export type MachineWithAssignmentStatus = GetTeamMachines_ResultSet1;
 
 // ============================================================================
 // Assignment Types

@@ -5,17 +5,17 @@ import { showMessage } from '@/utils/messages';
 import { createErrorHandler } from '@/utils/mutationUtils';
 import type {
   Permission,
-  PermissionGroup,
   CreatePermissionGroupParams,
   DeletePermissionGroupParams,
   CreatePermissionInGroupParams,
   DeletePermissionFromGroupParams,
   UpdateUserAssignedPermissionsParams,
 } from '@rediacc/shared/types';
+import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 
 // Get all permission groups
 export const usePermissionGroups = () => {
-  return useQuery<PermissionGroup[]>({
+  return useQuery<PermissionGroupWithParsedPermissions[]>({
     queryKey: ['permissionGroups'],
     queryFn: async () => {
       return api.permissions.listGroups();
@@ -149,4 +149,8 @@ export const useAssignUserToGroup = () => {
   });
 };
 
-export type { PermissionGroup, Permission };
+export type {
+  PermissionGroupWithParsedPermissions,
+  PermissionGroupWithParsedPermissions as PermissionGroup,
+  Permission,
+};
