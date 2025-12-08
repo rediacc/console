@@ -1,7 +1,15 @@
 import { forwardRef } from 'react';
 import { List } from 'antd';
 import { StyledRediaccList } from './RediaccList.styles';
-import type { RediaccListProps } from './RediaccList.types';
+import type { RediaccListProps, ListVariant, ListSize } from './RediaccList.types';
+import type { ListProps } from 'antd';
+
+// Styled props for the list component
+interface StyledListProps {
+  $variant: ListVariant;
+  $size: ListSize;
+  $split?: boolean;
+}
 
 // Using a function component with generics
 function RediaccListInner<T>(
@@ -16,12 +24,18 @@ function RediaccListInner<T>(
     loading,
     locale,
     rowKey,
-    ...rest
+    className,
+    style,
+    'data-testid': dataTestId,
   }: RediaccListProps<T>,
-  ref: React.Ref<HTMLDivElement>
+  ref: React.ForwardedRef<HTMLDivElement>
 ) {
+  // Cast to a component that accepts both styled props and List props
+  const ListComponent = StyledRediaccList as React.ComponentType<
+    ListProps<T> & StyledListProps & { ref?: React.ForwardedRef<HTMLDivElement> }
+  >;
   return (
-    <StyledRediaccList<T>
+    <ListComponent
       ref={ref}
       $variant={variant}
       $size={size}
@@ -34,7 +48,9 @@ function RediaccListInner<T>(
       loading={loading}
       locale={locale}
       rowKey={rowKey}
-      {...rest}
+      className={className}
+      style={style}
+      data-testid={dataTestId}
     />
   );
 }

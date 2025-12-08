@@ -62,7 +62,7 @@ export interface UseExportDataReturn {
  * @param options - Configuration options
  * @returns Export functions and state
  */
-export function useExportData<T extends Record<string, unknown>>(
+export function useExportData<T extends object>(
   options: UseExportDataOptions<T>
 ): UseExportDataReturn {
   const { data, filename, columns, onSuccess } = options;

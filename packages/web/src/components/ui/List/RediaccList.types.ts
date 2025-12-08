@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, Key, ReactNode } from 'react';
 
 export type ListVariant = 'default' | 'bordered' | 'card';
 export type ListSize = 'sm' | 'md';
@@ -22,8 +22,8 @@ export interface RediaccListProps<T = unknown> {
   loading?: boolean;
   /** Empty state content */
   locale?: { emptyText: ReactNode };
-  /** Row key getter */
-  rowKey?: string | ((item: T) => string);
+  /** Row key getter - keyof T or function returning Key */
+  rowKey?: keyof T | ((item: T) => Key);
   /** Additional class name */
   className?: string;
   /** Inline styles */

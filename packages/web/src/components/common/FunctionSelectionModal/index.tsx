@@ -87,7 +87,18 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   additionalContext,
 }) => {
   const { t } = useTranslation(['functions', 'common', 'machines']);
-  const { functions: localizedFunctions, categories } = useLocalizedFunctions();
+  const { functions: rawLocalizedFunctions, categories } = useLocalizedFunctions();
+
+  // Filter out null values from localizedFunctions to satisfy the type constraint
+  const localizedFunctions = useMemo(() => {
+    const filtered: Record<string, QueueFunction> = {};
+    for (const [key, value] of Object.entries(rawLocalizedFunctions)) {
+      if (value !== null) {
+        filtered[key] = value as QueueFunction;
+      }
+    }
+    return filtered;
+  }, [rawLocalizedFunctions]);
 
   const [selectedFunction, setSelectedFunction] = useState<QueueFunction | null>(null);
   const [functionParams, setFunctionParams] = useState<FunctionParams>({});

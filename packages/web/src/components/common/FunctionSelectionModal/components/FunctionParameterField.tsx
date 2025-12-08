@@ -1,11 +1,10 @@
 import React from 'react';
 import { Checkbox, Input, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { Machine } from '@/api/queries/machines';
-import type { QueueFunction, QueueFunctionParam } from '@/api/queries/queue';
-import type { Repo } from '@/api/queries/repos';
-import type { Storage } from '@/api/queries/storage';
+import type { QueueFunction, QueueFunctionParameter } from '@/api/queries/queue';
 import TemplateSelector from '@/components/common/TemplateSelector';
+import type { Machine, Repo } from '@/types';
+import type { GetTeamStorages_ResultSet1 as Storage } from '@rediacc/shared/types';
 import {
   AdditionalOptionsInput,
   CheckboxGroupStack,
@@ -19,7 +18,7 @@ type FunctionParams = Record<string, FunctionParamValue>;
 
 interface FunctionParameterFieldProps {
   paramName: string;
-  paramInfo: QueueFunctionParam;
+  paramInfo: QueueFunctionParameter;
   functionParams: FunctionParams;
   selectedFunction?: QueueFunction;
   onParamChange: (paramName: string, value: FunctionParamValue) => void;
@@ -108,7 +107,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
               typeof currentValue === 'number' ? `${currentValue}${unit}` : ''
             );
           }}
-          options={paramInfo.units.map((unit) => ({
+          options={paramInfo.units.map((unit: string) => ({
             value: unit === 'percentage' ? '%' : unit,
             label: unit === 'percentage' ? '%' : unit === 'G' ? 'GB' : 'TB',
           }))}
@@ -132,7 +131,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
           }
         }}
         placeholder={paramInfo.help || ''}
-        options={paramInfo.options.map((option) => ({
+        options={paramInfo.options.map((option: string) => ({
           value: option,
           label: option,
         }))}

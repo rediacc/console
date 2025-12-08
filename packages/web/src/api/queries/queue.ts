@@ -33,11 +33,27 @@ export interface QueueFunctionParameter {
   checkboxOptions?: Array<{ value: string; label: string }>;
 }
 
+export interface QueueFunctionRequirements {
+  machine?: boolean;
+  team?: boolean;
+  company?: boolean;
+  repo?: boolean;
+  storage?: boolean;
+  plugin?: boolean;
+  bridge?: boolean;
+}
+
 export interface QueueFunction {
   name: string;
   description: string;
   category: string;
   params: Record<string, QueueFunctionParameter>;
+  showInMenu?: boolean;
+  requirements?: QueueFunctionRequirements;
+}
+
+export interface QueueCreateResult {
+  taskId: string | null;
 }
 
 // Queue functions will be loaded via the functionsService instead
@@ -76,13 +92,16 @@ export const useQueueItemsByBridge = (bridgeName: string, teamName?: string) => 
 };
 
 // Create queue item (direct API call - use useManagedQueueItem for high-priority items)
-export const useCreateQueueItem = createMutation<{
-  teamName: string;
-  machineName?: string;
-  bridgeName: string;
-  queueVault: string;
-  priority?: number;
-}>({
+export const useCreateQueueItem = createMutation<
+  {
+    teamName: string;
+    machineName?: string;
+    bridgeName: string;
+    queueVault: string;
+    priority?: number;
+  },
+  QueueCreateResult
+>({
   request: async (data) => {
     // Ensure priority is within valid range
     const priority = data.priority && data.priority >= 1 && data.priority <= 5 ? data.priority : 3;
