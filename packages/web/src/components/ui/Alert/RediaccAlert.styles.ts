@@ -1,7 +1,7 @@
 import { Alert as AntAlert } from 'antd';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { AlertVariant, AlertSize } from './RediaccAlert.types';
+import type { AlertVariant, AlertSize, AlertSpacing } from './RediaccAlert.types';
 
 type AlertTokenSet = { bg: string; border: string; color: string };
 
@@ -54,19 +54,39 @@ export const mapVariantToAntType = (
   return variant;
 };
 
+// Resolve spacing to margin-bottom pixels
+export const resolveAlertSpacing = (theme: StyledTheme, spacing?: AlertSpacing): number => {
+  switch (spacing) {
+    case 'compact':
+      return theme.spacing.SM; // 8px
+    case 'default':
+      return theme.spacing.MD; // 16px
+    case 'spacious':
+      return theme.spacing.LG; // 24px
+    case 'none':
+    default:
+      return 0;
+  }
+};
+
 export const StyledRediaccAlert = styled(AntAlert).withConfig({
-  shouldForwardProp: (prop) => !['$variant', '$size', '$rounded', '$banner'].includes(prop),
+  shouldForwardProp: (prop) =>
+    !['$variant', '$size', '$rounded', '$banner', '$spacing'].includes(prop),
 })<{
   $variant: AlertVariant;
   $size: AlertSize;
   $rounded?: boolean;
   $banner?: boolean;
+  $spacing?: AlertSpacing;
 }>`
   && {
     background-color: ${({ theme, $variant }) => resolveAlertVariantTokens($variant, theme).bg};
     border: 1px solid ${({ theme, $variant }) => resolveAlertVariantTokens($variant, theme).border};
     color: ${({ theme }) => theme.colors.textPrimary};
     padding: ${({ theme, $size }) => resolveAlertPadding(theme, $size)};
+
+    /* Spacing (margin-bottom) */
+    ${({ theme, $spacing }) => $spacing && css`margin-bottom: ${resolveAlertSpacing(theme, $spacing)}px;`}
 
     /* Border radius */
     border-radius: ${({ theme, $rounded = true, $banner }) =>

@@ -3,6 +3,7 @@ import { Row, Col, Progress, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
+import { RediaccText } from '@/components/ui';
 import {
   CloudServerOutlined,
   DatabaseOutlined,
@@ -15,14 +16,12 @@ import {
   WidgetCard,
   TitleIcon,
   TitleText,
-  Subtitle,
   WidgetBody,
   AssignmentCard,
   AssignmentStack,
   AssignmentIcon,
   AssignmentStatistic,
   SummaryPanel,
-  SummaryTitle,
   TeamSection,
   TeamHeader,
   TeamListStyled,
@@ -149,7 +148,11 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
           <TitleText>{t('ceph:dashboard.title')}</TitleText>
         </InlineStack>
       }
-      extra={<Subtitle>{t('ceph:dashboard.subtitle', { total: stats.total_machines })}</Subtitle>}
+      extra={
+        <RediaccText variant="description">
+          {t('ceph:dashboard.subtitle', { total: stats.total_machines })}
+        </RediaccText>
+      }
     >
       <WidgetBody>
         <Row gutter={[16, 16]}>
@@ -178,7 +181,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
         <Row gutter={[16, 16]}>
           <Col xs={24} md={12}>
             <SummaryPanel data-testid="ds-widget-cluster-summary">
-              <SummaryTitle>{t('ceph:dashboard.clusterSummary')}</SummaryTitle>
+              <RediaccText variant="title">{t('ceph:dashboard.clusterSummary')}</RediaccText>
               <Row gutter={16}>
                 <Col span={12}>
                   <AssignmentStatistic
@@ -203,7 +206,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
 
           <Col xs={24} md={12}>
             <SummaryPanel data-testid="ds-widget-machine-utilization">
-              <SummaryTitle>{t('ceph:dashboard.machineUtilization')}</SummaryTitle>
+              <RediaccText variant="title">{t('ceph:dashboard.machineUtilization')}</RediaccText>
               <Progress
                 data-testid="ds-widget-progress-utilization"
                 percent={utilizationPercent}
@@ -213,12 +216,12 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
                 }}
                 format={(percent) => `${percent}% ${t('common:utilized')}`}
               />
-              <Subtitle>
+              <RediaccText variant="description">
                 {t('ceph:dashboard.utilizationDetails', {
                   used: stats.total_machines - stats.truly_available_machines,
                   total: stats.total_machines,
                 })}
-              </Subtitle>
+              </RediaccText>
             </SummaryPanel>
           </Col>
         </Row>
@@ -229,7 +232,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
               <TitleIcon>
                 <TeamOutlined />
               </TitleIcon>
-              <SummaryTitle>{t('ceph:dashboard.teamBreakdown')}</SummaryTitle>
+              <RediaccText variant="title">{t('ceph:dashboard.teamBreakdown')}</RediaccText>
             </TeamHeader>
             <TeamListStyled
               data-testid="ds-widget-team-list"

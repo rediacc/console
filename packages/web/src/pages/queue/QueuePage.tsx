@@ -26,7 +26,13 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { renderTimestamp, renderBoolean } from '@/components/common/columns';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import ResourceListView from '@/components/common/ResourceListView';
-import { PageWrapper, RediaccButton, RediaccText, RediaccStack } from '@/components/ui';
+import {
+  PageWrapper,
+  RediaccButton,
+  RediaccText,
+  RediaccStack,
+  RediaccCard,
+} from '@/components/ui';
 import { RediaccTag } from '@/components/ui/Tag';
 import { useFilters, useMultiPagination, useQueueTraceModal } from '@/hooks';
 import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay';
@@ -43,14 +49,9 @@ import {
   STALE_TASK_CONSTANTS,
 } from '@/platform';
 import {
-  FiltersCard,
-  FiltersGrid,
   FilterSelect,
   FilterRangePicker,
   FilterInput,
-  StatsBar,
-  StatItem,
-  StatLabel,
   StatValue,
   StatDivider,
   StatIcon,
@@ -79,19 +80,6 @@ import type { ParsedError } from '@rediacc/shared/error-parser';
 import type { QueueItem } from '@rediacc/shared/types';
 import type { ColumnsType } from 'antd/es/table';
 
-const PriorityTooltipHeading = styled(RediaccText)`
-  && {
-    margin: 0 0 ${({ theme }) => theme.spacing.XS / 2}px 0;
-    display: block;
-  }
-`;
-
-const FullWidthSpace = styled(RediaccStack).attrs({ direction: 'vertical', gap: 2 })`
-  && {
-    width: 100%;
-  }
-`;
-
 const TooltipContent = styled.div`
   display: flex;
   flex-direction: column;
@@ -99,26 +87,13 @@ const TooltipContent = styled.div`
   min-width: 240px;
 `;
 
-const TooltipErrorText = styled(RediaccText).attrs({ size: 'sm' })<{ $isLast?: boolean }>`
-  && {
-    display: block;
-    margin-bottom: ${({ theme, $isLast }) => ($isLast ? 0 : theme.spacing.XS / 2)}px;
-  }
-`;
-
-const TooltipFooterNote = styled(RediaccText).attrs({ size: 'sm' })`
-  && {
-    display: block;
-    margin-top: ${({ theme }) => theme.spacing.XS}px;
-    padding-top: ${({ theme }) => theme.spacing.XS / 2}px;
-    border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  }
-`;
-
 const TooltipContentSection = styled.div`
   width: 100%;
 `;
 
+/**
+ * @deprecated Use <RediaccStack variant="row" gap={4} fullWidth /> with inline style for margin
+ */
 const TooltipPrimaryRow = styled(RediaccStack).attrs({ direction: 'horizontal', gap: 4 })`
   && {
     width: 100%;
@@ -145,22 +120,10 @@ const TruncatedErrorText = styled(RediaccText).attrs({ size: 'sm', color: 'muted
   }
 `;
 
-const AdditionalErrorsNote = styled(RediaccText).attrs({ size: 'xs', color: 'muted' })`
-  && {
-    font-style: italic;
-  }
-`;
-
 const RetrySummaryTag = styled(RediaccTag)<{ $color?: string }>`
   && {
     margin: 0;
     ${({ $color }) => $color && `background-color: ${$color}; border-color: ${$color}; color: white;`}
-  }
-`;
-
-const AgeValue = styled(RediaccText)<{ $tone?: string }>`
-  && {
-    color: ${({ $tone, theme }) => $tone || theme.colors.textPrimary};
   }
 `;
 const QueuePage: React.FC = () => {
@@ -473,7 +436,12 @@ const QueuePage: React.FC = () => {
       render: (priorityLabel: string | undefined, record: QueueItem) => {
         const tooltipContent = (
           <TooltipContent>
-            <PriorityTooltipHeading weight="bold">{priorityLabel}</PriorityTooltipHeading>
+            <RediaccText
+              weight="bold"
+              style={{ margin: 0, display: 'block', marginBottom: theme.spacing.XS / 2 }}
+            >
+              {priorityLabel}
+            </RediaccText>
             <RediaccText variant="caption" as="div">
               {record.priority === 1
                 ? t('queue:priorityTooltipP1')
@@ -562,24 +530,36 @@ const QueuePage: React.FC = () => {
         const { allErrors, primaryError } = parseFailureReason(record.lastFailureReason);
 
         return (
-          <FullWidthSpace>
+          <RediaccStack variant="column" fullWidth gap="xs">
             {/* Error messages with severity badges */}
             {allErrors.length > 0 && (
               <Tooltip
                 title={
                   <TooltipContent>
                     {allErrors.map((error: ParsedError, index: number) => (
-                      <TooltipErrorText
+                      <RediaccText
                         key={`${error.message}-${index}`}
-                        $isLast={index === allErrors.length - 1}
+                        size="sm"
+                        style={{
+                          display: 'block',
+                          marginBottom: index === allErrors.length - 1 ? 0 : theme.spacing.XS / 2,
+                        }}
                       >
                         {error.severity && <strong>[{error.severity}]</strong>} {error.message}
-                      </TooltipErrorText>
+                      </RediaccText>
                     ))}
                     {record.lastRetryAt && (
-                      <TooltipFooterNote>
+                      <RediaccText
+                        size="sm"
+                        style={{
+                          display: 'block',
+                          marginTop: theme.spacing.XS,
+                          paddingTop: theme.spacing.XS / 2,
+                          borderTop: `1px solid ${theme.colors.borderSecondary}`,
+                        }}
+                      >
                         Last retry: {formatTimestampAsIs(record.lastRetryAt, 'datetime')}
-                      </TooltipFooterNote>
+                      </RediaccText>
                     )}
                   </TooltipContent>
                 }
@@ -596,10 +576,10 @@ const QueuePage: React.FC = () => {
                   </TooltipPrimaryRow>
                   {/* Show count of additional errors if any */}
                   {allErrors.length > 1 && (
-                    <AdditionalErrorsNote>
+                    <RediaccText size="xs" color="muted" style={{ fontStyle: 'italic' }}>
                       +{allErrors.length - 1} more{' '}
                       {allErrors.length - 1 === 1 ? 'message' : 'messages'}
-                    </AdditionalErrorsNote>
+                    </RediaccText>
                   )}
                 </TooltipContentSection>
               </Tooltip>
@@ -609,7 +589,7 @@ const QueuePage: React.FC = () => {
             <RetrySummaryTag $color={retryColor} icon={icon}>
               {retryCount}/{maxRetries} retries
             </RetrySummaryTag>
-          </FullWidthSpace>
+          </RediaccStack>
         );
       },
       sorter: (a, b) => (a.retryCount ?? 0) - (b.retryCount ?? 0),
@@ -646,7 +626,9 @@ const QueuePage: React.FC = () => {
           color = 'orange';
         }
 
-        return <AgeValue $tone={color}>{ageText}</AgeValue>;
+        return (
+          <RediaccText style={{ color: color || theme.colors.textPrimary }}>{ageText}</RediaccText>
+        );
       },
       sorter: (a, b) => (a.ageInMinutes ?? 0) - (b.ageInMinutes ?? 0),
     },
@@ -699,8 +681,13 @@ const QueuePage: React.FC = () => {
   return (
     <PageWrapper data-testid="queue-page-container">
       {contextHolder}
-      <FiltersCard size="sm" data-testid="queue-filters-card">
-        <FiltersGrid direction="vertical">
+      <RediaccCard
+        size="sm"
+        spacing="default"
+        style={{ padding: '8px 16px', marginBottom: '16px' }}
+        data-testid="queue-filters-card"
+      >
+        <RediaccStack variant="column" fullWidth gap="sm">
           <Space size={8} wrap>
             <FilterSelect
               size="sm"
@@ -800,39 +787,47 @@ const QueuePage: React.FC = () => {
             />
           )}
 
-          <StatsBar>
-            <StatItem>
+          <RediaccStack variant="wrap-grid" align="center" gap="sm">
+            <RediaccStack variant="tight-row" align="center" gap="xs">
               <StatIcon>
                 <ThunderboltOutlined />
               </StatIcon>
-              <StatLabel>{t('queue:statistics.total')}:</StatLabel>
+              <RediaccText variant="caption" color="secondary">
+                {t('queue:statistics.total')}:
+              </RediaccText>
               <StatValue>{totalCount}</StatValue>
-            </StatItem>
+            </RediaccStack>
             <StatDivider />
-            <StatItem>
+            <RediaccStack variant="tight-row" align="center" gap="xs">
               <StatIcon $color="var(--color-info)">
                 <PlayCircleOutlined />
               </StatIcon>
-              <StatLabel>{t('queue:statistics.active')}:</StatLabel>
+              <RediaccText variant="caption" color="secondary">
+                {t('queue:statistics.active')}:
+              </RediaccText>
               <StatValue $color="var(--color-info)">{activeCount}</StatValue>
-            </StatItem>
+            </RediaccStack>
             <StatDivider />
-            <StatItem>
+            <RediaccStack variant="tight-row" align="center" gap="xs">
               <StatIcon $color="var(--color-error)">
                 <ExclamationCircleOutlined />
               </StatIcon>
-              <StatLabel>{t('queue:statistics.failed')}:</StatLabel>
+              <RediaccText variant="caption" color="secondary">
+                {t('queue:statistics.failed')}:
+              </RediaccText>
               <StatValue $color="var(--color-error)">{failedCount}</StatValue>
-            </StatItem>
+            </RediaccStack>
             <StatDivider />
-            <StatItem>
+            <RediaccStack variant="tight-row" align="center" gap="xs">
               <StatIcon $color="var(--color-warning)">
                 <WarningOutlined />
               </StatIcon>
-              <StatLabel>{t('queue:statistics.stale')}:</StatLabel>
+              <RediaccText variant="caption" color="secondary">
+                {t('queue:statistics.stale')}:
+              </RediaccText>
               <StatValue $color="var(--color-warning)">{staleCount}</StatValue>
-            </StatItem>
-          </StatsBar>
+            </RediaccStack>
+          </RediaccStack>
 
           <Space size={4}>
             <Tooltip title={t('common:actions.refresh')}>
@@ -867,8 +862,8 @@ const QueuePage: React.FC = () => {
               </Tooltip>
             </Dropdown>
           </Space>
-        </FiltersGrid>
-      </FiltersCard>
+        </RediaccStack>
+      </RediaccCard>
 
       <Tabs
         activeKey={activeTab}

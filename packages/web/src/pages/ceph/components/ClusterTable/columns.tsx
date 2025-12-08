@@ -5,6 +5,7 @@ import {
   createTruncatedColumn,
   createVersionColumn,
 } from '@/components/common/columns';
+import { RediaccTag } from '@/components/ui';
 import { createSorter } from '@/platform';
 import {
   EditOutlined,
@@ -19,7 +20,6 @@ import {
   ExpandIcon,
   ClusterIcon,
   ClusterNameText,
-  TeamTag,
   ManageMachinesButton,
   MachineManageCell,
 } from './styles';
@@ -79,7 +79,9 @@ export const buildClusterColumns = ({
     {
       ...teamColumn,
       render: (teamName: string, record: CephCluster, index) => (
-        <TeamTag>{teamColumn.render?.(teamName, record, index) as React.ReactNode}</TeamTag>
+        <RediaccTag preset="team" compact borderless>
+          {teamColumn.render?.(teamName, record, index) as React.ReactNode}
+        </RediaccTag>
       ),
     },
     {

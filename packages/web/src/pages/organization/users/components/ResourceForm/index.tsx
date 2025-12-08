@@ -7,8 +7,8 @@ import {
   PasswordInput,
   FieldSelect,
   FormActions,
-  ActionButtons,
 } from './styles';
+import { RediaccStack } from '@/components/ui';
 import { FormFieldConfig, ResourceFormProps } from './types';
 
 function ResourceForm<T extends FieldValues = FieldValues>({
@@ -125,7 +125,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
       })}
 
       <FormActions wrapperCol={{ offset: labelCol.span, span: wrapperCol.span }}>
-        <ActionButtons>
+        <RediaccStack direction="horizontal" justify="end" fullWidth>
           {onCancel && (
             <Button onClick={onCancel} disabled={loading} data-testid="resource-form-cancel-button">
               {cancelText}
@@ -139,7 +139,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
           >
             {submitText}
           </Button>
-        </ActionButtons>
+        </RediaccStack>
       </FormActions>
     </StyledForm>
   );

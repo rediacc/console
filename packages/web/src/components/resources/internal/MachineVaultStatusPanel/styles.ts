@@ -18,14 +18,7 @@ import {
   SectionHeader,
   SectionTitle,
 } from '@/components/resources/internal/sharedDetailPanelAliases';
-import {
-  RediaccTag,
-  RediaccText,
-  RediaccCard,
-  RediaccBadge,
-  RediaccEmpty,
-  RediaccList,
-} from '@/components/ui';
+import { RediaccTag, RediaccCard, RediaccBadge, RediaccList } from '@/components/ui';
 import type { TagPreset, TagVariant } from '@/components/ui/Tag';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
@@ -78,19 +71,6 @@ export const TimestampWrapper = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const Timestamp = styled(RediaccText).attrs({
-  size: 'xs',
-  color: 'secondary',
-})`
-  && {
-    font-size: ${DESIGN_TOKENS.FONT_SIZE.CAPTION}px;
-  }
-`;
-
-export const EmptyState = styled(RediaccEmpty)`
-  margin-top: ${({ theme }) => theme.spacing.XXXL}px;
-`;
-
 export { SectionDivider, SectionHeader, SectionTitle };
 
 export const SectionBlock = styled.div`
@@ -102,13 +82,6 @@ export const InfoCard = styled(RediaccCard)`
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     margin-bottom: ${({ theme }) => theme.spacing.LG}px;
   }
-`;
-
-export const FullWidthStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  width: 100%;
 `;
 
 export const MetricCard = styled(RediaccCard)`

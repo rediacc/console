@@ -1,5 +1,6 @@
 import { DatePicker as AntDatePicker } from 'antd';
 import styled, { css } from 'styled-components';
+import { disabledState } from '@/styles/mixins';
 
 const { RangePicker: AntRangePicker } = AntDatePicker;
 
@@ -73,8 +74,7 @@ const baseDatePickerStyles = css<{ $minWidth?: number }>`
 
     /* Disabled state */
     &.ant-picker-disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
+      ${disabledState}
       background-color: ${({ theme }) => theme.colors.bgSecondary};
     }
   }

@@ -23,8 +23,6 @@ export const TitleText = styled.span`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export const Subtitle = styled(RediaccText).attrs({ size: 'sm', color: 'secondary' })``;
-
 // Use FlexColumn from primitives
 export const WidgetBody = styled(FlexColumn).attrs({ $gap: 'LG' })`
   padding: ${({ theme }) => theme.spacing.MD}px;
@@ -66,8 +64,6 @@ export const SummaryPanel = styled(FlexColumn).attrs({ $gap: 'MD' })`
   border: 1px solid var(--color-border-secondary);
   box-shadow: ${({ theme }) => theme.shadows.CARD};
 `;
-
-export const SummaryTitle = styled(RediaccText).attrs({ size: 'lg', weight: 'semibold' })``;
 
 // Use FlexColumn from primitives
 export const TeamSection = styled(FlexColumn).attrs({ $gap: 'SM' })``;

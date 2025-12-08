@@ -6,6 +6,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { RediaccButton } from '@/components/ui';
+import { RediaccText } from '@/components/ui';
 import {
   markAsRead,
   markAllAsRead,
@@ -26,7 +27,6 @@ import {
 import {
   NotificationDropdown,
   NotificationHeader,
-  NotificationTitle,
   NotificationListWrapper,
   NotificationItem,
   NotificationIconWrapper,
@@ -35,8 +35,7 @@ import {
   NotificationText,
   NotificationTag,
   NotificationCloseButton,
-  NotificationMessage,
-  NotificationTimestamp,
+  NotificationMessageWrapper,
   EmptyWrapper,
   BellButton,
 } from './styles';
@@ -118,7 +117,7 @@ const NotificationBell: React.FC = () => {
   const dropdownContent = (
     <NotificationDropdown className="notification-dropdown" data-testid="notification-dropdown">
       <NotificationHeader>
-        <NotificationTitle>{t('notifications.title', 'Notifications')}</NotificationTitle>
+        <RediaccText variant="title">{t('notifications.title', 'Notifications')}</RediaccText>
         {notifications.length > 0 && (
           <Space>
             <RediaccButton
@@ -184,12 +183,12 @@ const NotificationBell: React.FC = () => {
                   }
                   description={
                     <div>
-                      <NotificationMessage className="notification-message">
-                        {notification.message}
-                      </NotificationMessage>
-                      <NotificationTimestamp>
+                      <NotificationMessageWrapper className="notification-message">
+                        <RediaccText variant="description">{notification.message}</RediaccText>
+                      </NotificationMessageWrapper>
+                      <RediaccText variant="caption">
                         {dayjs(notification.timestamp).fromNow()}
-                      </NotificationTimestamp>
+                      </RediaccText>
                     </div>
                   }
                 />

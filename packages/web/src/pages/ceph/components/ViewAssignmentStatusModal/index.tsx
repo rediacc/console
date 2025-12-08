@@ -1,10 +1,10 @@
 import React from 'react';
 import { Table } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccText } from '@/components/ui';
 import { createTruncatedColumn } from '@/components/common/columns';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
+import { RediaccText } from '@/components/ui';
 import type { Machine } from '@/types';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import {

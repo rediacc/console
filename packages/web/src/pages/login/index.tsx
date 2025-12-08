@@ -46,6 +46,7 @@ import {
 } from '@/utils/vaultProtocol';
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import type { ApiResponse, AuthLoginResult } from '@rediacc/shared/types';
+import { RediaccStack } from '@/components/ui';
 import {
   LoginContainer,
   LogoContainer,
@@ -63,7 +64,6 @@ import {
   TFAButtonContainer,
   StyledInput,
   StyledPasswordInput,
-  FullWidthStack,
   LargeGapFormItem,
   NoMarginFormItem,
 } from './styles';
@@ -478,7 +478,7 @@ const LoginPage: React.FC = () => {
     <>
       <SandboxWarning />
       <LoginContainer>
-        <FullWidthStack direction="vertical" gap="xl">
+        <RediaccStack direction="vertical" gap="xl" fullWidth>
           <LogoContainer>
             <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Rediacc Logo" />
           </LogoContainer>
@@ -653,7 +653,7 @@ const LoginPage: React.FC = () => {
             {/* Always-visible version display */}
             <VersionSelector />
           </SelectorsContainer>
-        </FullWidthStack>
+        </RediaccStack>
       </LoginContainer>
 
       {/* TFA Verification Modal */}
@@ -673,7 +673,7 @@ const LoginPage: React.FC = () => {
         footer={null}
         className={ModalSize.Medium}
       >
-        <FullWidthStack direction="vertical" gap="md">
+        <RediaccStack direction="vertical" gap="md" fullWidth>
           <Alert
             message={t('login.twoFactorAuth.required')}
             description={t('login.twoFactorAuth.description')}
@@ -726,7 +726,7 @@ const LoginPage: React.FC = () => {
               </TFAButtonContainer>
             </NoMarginFormItem>
           </Form>
-        </FullWidthStack>
+        </RediaccStack>
       </Modal>
 
       {/* Registration Modal */}

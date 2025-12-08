@@ -1,7 +1,7 @@
 import { Avatar, Segmented } from 'antd';
 import styled from 'styled-components';
 import { InlineStack, FlexBetween } from '@/components/common/styled';
-import { RediaccText, RediaccButton, RediaccTag, RediaccDivider } from '@/components/ui';
+import { RediaccButton, RediaccTag } from '@/components/ui';
 import { FlexColumn } from '@/styles/primitives';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
@@ -21,16 +21,6 @@ export const UserDetails = styled.div`
   min-width: 0;
 `;
 
-export const UserEmail = styled(RediaccText).attrs({ weight: 'semibold' })`
-  display: block;
-`;
-
-export const CompanyName = styled(RediaccText)`
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  display: block;
-`;
-
 export const PlanBadge = styled(RediaccTag).attrs({ variant: 'primary', size: 'sm' })`
   && {
     margin-top: ${({ theme }) => theme.spacing.XS}px;
@@ -40,15 +30,6 @@ export const PlanBadge = styled(RediaccTag).attrs({ variant: 'primary', size: 's
   }
 `;
 
-export const MenuDivider = styled(RediaccDivider)`
-  margin: 0;
-`;
-
-export const SectionLabel = styled(RediaccText)`
-  font-size: 12px;
-  color: var(--color-text-secondary);
-`;
-
 export const ModeSegmented = styled(Segmented)`
   margin-top: ${({ theme }) => theme.spacing.XS}px;
   background: var(--color-bg-tertiary);
@@ -56,21 +37,7 @@ export const ModeSegmented = styled(Segmented)`
 
 export const AppearanceRow = styled(FlexBetween)``;
 
-export const SectionTitle = styled(RediaccText).attrs({ weight: 'semibold' })`
-  display: block;
-`;
-
-export const SectionDescription = styled(RediaccText)`
-  font-size: 12px;
-  color: var(--color-text-secondary);
-`;
-
 export const LanguageSection = styled.div``;
-
-export const LanguageTitle = styled(RediaccText).attrs({ weight: 'semibold' })`
-  display: block;
-  margin-bottom: ${({ theme }) => theme.spacing.XS}px;
-`;
 
 export const LogoutButton = styled(RediaccButton)`
   width: 100%;

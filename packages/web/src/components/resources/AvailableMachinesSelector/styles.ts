@@ -67,12 +67,6 @@ export const StatusContainer = styled(FlexRow)`
   margin-left: auto;
 `;
 
-export const StatusIcon = styled.span`
-  display: inline-flex;
-  align-items: center;
-  font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
-`;
-
 export const SpinnerWrapper = styled(FlexRow).attrs({ $justify: 'center' })`
   width: 100%;
   padding: ${({ theme }) => theme.spacing.LG}px 0;

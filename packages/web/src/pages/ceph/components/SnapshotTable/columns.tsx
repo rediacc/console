@@ -4,8 +4,9 @@ import { TFunction } from 'i18next';
 import type { CephRbdSnapshot } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
+import { RediaccTag } from '@/components/ui';
 import { createSorter } from '@/platform';
-import { NameCell, NameIcon, NameText, VaultTag } from './styles';
+import { NameCell, NameIcon, NameText } from './styles';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -31,9 +32,13 @@ export const buildSnapshotColumns = ({
         <NameText>{text}</NameText>
         {record.vaultContent && (
           <Tooltip title={t('common.hasVault')}>
-            <VaultTag data-testid={`snapshot-list-vault-indicator-${record.snapshotName}`}>
+            <RediaccTag
+              variant="neutral"
+              compact
+              data-testid={`snapshot-list-vault-indicator-${record.snapshotName}`}
+            >
               {t('common.vault')}
-            </VaultTag>
+            </RediaccTag>
           </Tooltip>
         )}
       </NameCell>

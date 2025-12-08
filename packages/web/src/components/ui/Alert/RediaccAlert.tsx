@@ -8,6 +8,7 @@ export const RediaccAlert = forwardRef<any, RediaccAlertProps>(
     {
       variant = 'info',
       size = 'md',
+      spacing,
       showIcon = true,
       closable = false,
       banner = false,
@@ -28,6 +29,7 @@ export const RediaccAlert = forwardRef<any, RediaccAlertProps>(
         type={mapVariantToAntType(variant)}
         $variant={variant}
         $size={size}
+        $spacing={spacing}
         $rounded={rounded}
         $banner={banner}
         showIcon={showIcon}

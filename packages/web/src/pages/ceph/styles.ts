@@ -1,18 +1,8 @@
 import { Typography } from 'antd';
 import styled from 'styled-components';
 import { ActionGroup as BaseActionGroup } from '@/components/common/styled';
-import {
-  PageContainer,
-  SectionStack,
-  SectionHeaderRow,
-  EmptyStateWrapper,
-} from '@/styles/primitives';
 
 const { Title } = Typography;
-
-export const PageWrapper = PageContainer;
-export const HeaderSection = SectionStack;
-export const HeaderRow = SectionHeaderRow;
 
 export const TitleGroup = styled.div`
   display: flex;
@@ -38,8 +28,10 @@ export const TeamSelectorWrapper = styled.div`
   }
 `;
 
+/**
+ * Prevent action buttons from shrinking when team selector takes space
+ * in the space-between header layout (TitleGroup grows, ActionGroup stays fixed)
+ */
 export const ActionGroup = styled(BaseActionGroup)`
   flex-shrink: 0;
 `;
-
-export const EmptyState = EmptyStateWrapper;

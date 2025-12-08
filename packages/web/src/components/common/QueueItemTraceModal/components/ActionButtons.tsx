@@ -1,0 +1,95 @@
+import React from 'react';
+import { Button } from 'antd';
+import {
+  CloseCircleOutlined,
+  RetweetOutlined,
+  ReloadOutlined,
+} from '@/utils/optimizedIcons';
+import { normalizeToString, normalizeToNumber, normalizeToBoolean } from '@/platform';
+import { ActionButton } from '../styles';
+import type { ActionButtonsProps } from '../types';
+
+export const ActionButtons: React.FC<ActionButtonsProps> = ({
+  queueDetails,
+  isCancelling,
+  isRetrying,
+  isTraceLoading,
+  taskStaleness,
+  onCancel,
+  onRetry,
+  onRefresh,
+  onClose,
+  styles,
+}) => {
+  const status = queueDetails ? normalizeToString(queueDetails, 'status', 'Status') : '';
+  const retryCount = queueDetails ? normalizeToNumber(queueDetails, 0, 'retryCount', 'RetryCount') : 0;
+  const permanentlyFailed = queueDetails
+    ? normalizeToBoolean(queueDetails, 'permanentlyFailed', 'PermanentlyFailed')
+    : false;
+  const canBeCancelled = queueDetails?.canBeCancelled || false;
+
+  const showCancelButton =
+    queueDetails &&
+    canBeCancelled &&
+    (status === 'PENDING' || status === 'ASSIGNED' || status === 'PROCESSING');
+
+  const showRetryButton =
+    queueDetails && status === 'FAILED' && retryCount < 2 && !permanentlyFailed;
+
+  return [
+    // Show Cancel button for PENDING, ASSIGNED, or PROCESSING tasks that can be cancelled
+    // Style and text vary based on staleness level
+    showCancelButton ? (
+      <ActionButton
+        key="cancel"
+        data-testid="queue-trace-cancel-button"
+        danger
+        variant={taskStaleness === 'critical' ? 'primary' : 'default'}
+        icon={<CloseCircleOutlined />}
+        onClick={onCancel}
+        loading={isCancelling}
+        style={styles.buttonPrimary}
+        $bold={taskStaleness === 'critical'}
+        $large={taskStaleness === 'critical'}
+      >
+        {taskStaleness === 'critical'
+          ? 'Cancel Stuck Task'
+          : taskStaleness === 'stale'
+            ? 'Cancel Task'
+            : 'Cancel'}
+      </ActionButton>
+    ) : null,
+    // Show Retry button only for failed tasks that haven't reached max retries
+    showRetryButton ? (
+      <Button
+        key="retry"
+        data-testid="queue-trace-retry-button"
+        danger
+        icon={<RetweetOutlined />}
+        onClick={onRetry}
+        loading={isRetrying}
+        style={styles.buttonPrimary}
+      >
+        Retry Again
+      </Button>
+    ) : null,
+    <Button
+      key="refresh"
+      data-testid="queue-trace-refresh-button"
+      icon={<ReloadOutlined />}
+      onClick={onRefresh}
+      loading={isTraceLoading}
+      style={styles.buttonSecondary}
+    >
+      Refresh
+    </Button>,
+    <Button
+      key="close"
+      data-testid="queue-trace-close-button"
+      onClick={onClose}
+      style={styles.buttonSecondary}
+    >
+      Close
+    </Button>,
+  ].filter(Boolean);
+};

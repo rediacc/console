@@ -7,8 +7,9 @@ import {
   createTruncatedColumn,
   type StatusConfig,
 } from '@/components/common/columns';
+import { RediaccText } from '@/components/ui';
 import { createDateSorter } from '@/platform';
-import { FilterHintIcon, ColumnFilterIcon, DescriptionText } from './styles';
+import { FilterHintIcon, ColumnFilterIcon } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ColumnBuilderParams {
@@ -107,7 +108,7 @@ export const buildAuditColumns = ({
     key: 'details',
     maxLength: 48,
     renderText: (value) => value || '',
-    renderWrapper: (content) => <DescriptionText>{content}</DescriptionText>,
+    renderWrapper: (content) => <RediaccText variant="caption">{content}</RediaccText>,
   });
 
   return [

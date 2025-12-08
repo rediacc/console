@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Table } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccText } from '@/components/ui';
 import { useUpdateMachineClusterAssignment } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
+import { RediaccText } from '@/components/ui';
+import { AlertCard } from '@/styles/primitives';
 import type { Machine } from '@/types';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
@@ -11,8 +12,6 @@ import {
   StyledModal,
   TitleStack,
   DangerIcon,
-  InfoAlert,
-  WarningAlert,
   MachinesTable,
   MachineNameRow,
   ClusterTag,
@@ -152,14 +151,21 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
       data-testid="ds-remove-cluster-modal"
     >
       {machinesWithClusters.length === 0 ? (
-        <InfoAlert message={t('machines:noMachinesWithClusters')} variant="info" showIcon />
+        <AlertCard
+          $variant="info"
+          message={t('machines:noMachinesWithClusters')}
+          variant="info"
+          showIcon
+        />
       ) : (
         <>
-          <WarningAlert
+          <AlertCard
+            $variant="warning"
             message={t('machines:removeFromClusterWarning', { count: machinesWithClusters.length })}
             description={t('machines:removeFromClusterDescription')}
             variant="warning"
             showIcon
+            style={{ marginBottom: '16px' }}
           />
 
           <MachinesTable

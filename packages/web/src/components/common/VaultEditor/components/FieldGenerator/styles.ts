@@ -1,8 +1,6 @@
 import styled from 'styled-components';
-import { InlineStack } from '@/components/common/styled';
 import {
   RediaccButton,
-  RediaccStack,
   RediaccRadioGroup,
   RediaccRadioButton,
 } from '@/components/ui';
@@ -61,14 +59,6 @@ export const ValueContent = styled.div`
   line-height: ${({ theme }) => theme.lineHeight.NORMAL};
 `;
 
-export const ActionRow = styled(RediaccStack).attrs({ direction: 'horizontal' })`
-  && {
-    margin-top: ${({ theme }) => theme.spacing.MD}px;
-    width: 100%;
-    justify-content: flex-end;
-  }
-`;
-
 export const ControlButton = styled(RediaccButton).attrs({
   size: 'sm',
 })`
@@ -90,8 +80,6 @@ export const GeneratorButton = styled(RediaccButton).attrs({
   }
 `;
 
-export const TitleStack = InlineStack;
-
 export const CopyButton = styled(RediaccButton).attrs({
   size: 'sm',
 })`
@@ -101,8 +89,3 @@ export const CopyButton = styled(RediaccButton).attrs({
   }
 `;
 
-export const OptionsStack = styled(RediaccStack).attrs({ direction: 'vertical' })`
-  && {
-    width: 100%;
-  }
-`;

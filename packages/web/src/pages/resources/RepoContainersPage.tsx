@@ -6,7 +6,7 @@ import { useMachines } from '@/api/queries/machines';
 import { useRepos } from '@/api/queries/repos';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { ActionGroup } from '@/components/common/styled';
+import { ActionGroup, CenteredState } from '@/components/common/styled';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
 import { RediaccButton, RediaccText } from '@/components/ui';
 import { DETAIL_PANEL } from '@/constants/layout';
@@ -17,7 +17,6 @@ import { Machine, PluginContainer } from '@/types';
 import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optimizedIcons';
 import {
   PageWrapper,
-  FullHeightCard,
   BreadcrumbWrapper,
   HeaderSection,
   HeaderRow,
@@ -27,10 +26,10 @@ import {
   SplitLayout,
   ListPanel,
   DetailBackdrop,
-  CenteredState,
   ErrorWrapper,
   HeaderTitleText,
 } from './styles';
+import { RediaccCard } from '@/components/ui';
 
 // Repo interface from vaultStatus (runtime data)
 interface Repo {
@@ -170,14 +169,14 @@ const RepoContainersPage: React.FC = () => {
   if (machinesLoading || reposLoading) {
     return (
       <PageWrapper>
-        <FullHeightCard>
+        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
           <CenteredState>
             <LoadingWrapper loading centered minHeight={160}>
               <div />
             </LoadingWrapper>
             <RediaccText color="secondary">{t('common:general.loading')}</RediaccText>
           </CenteredState>
-        </FullHeightCard>
+        </RediaccCard>
       </PageWrapper>
     );
   }
@@ -186,7 +185,7 @@ const RepoContainersPage: React.FC = () => {
   if (!actualMachine) {
     return (
       <PageWrapper>
-        <FullHeightCard>
+        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
           <Alert
             message={t('machines:machineNotFound')}
             description={
@@ -200,7 +199,7 @@ const RepoContainersPage: React.FC = () => {
             type="error"
             showIcon
           />
-        </FullHeightCard>
+        </RediaccCard>
       </PageWrapper>
     );
   }
@@ -209,7 +208,7 @@ const RepoContainersPage: React.FC = () => {
   if (!actualRepo) {
     return (
       <PageWrapper>
-        <FullHeightCard>
+        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
           <Alert
             message={t('machines:repoNotFound')}
             description={
@@ -223,7 +222,7 @@ const RepoContainersPage: React.FC = () => {
             type="error"
             showIcon
           />
-        </FullHeightCard>
+        </RediaccCard>
       </PageWrapper>
     );
   }
@@ -232,7 +231,7 @@ const RepoContainersPage: React.FC = () => {
 
   return (
     <PageWrapper>
-      <FullHeightCard>
+      <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
         <HeaderSection>
           <BreadcrumbWrapper
             items={[
@@ -357,7 +356,7 @@ const RepoContainersPage: React.FC = () => {
             />
           )}
         </SplitLayout>
-      </FullHeightCard>
+      </RediaccCard>
 
       {queueTrace.state.open && (
         <QueueItemTraceModal

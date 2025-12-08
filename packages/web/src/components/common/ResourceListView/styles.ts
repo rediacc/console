@@ -1,6 +1,6 @@
 import styled, { css } from 'styled-components';
 import { ActionGroup } from '@/components/common/styled';
-import { RediaccText, RediaccCard, RediaccStack, RediaccButton } from '@/components/ui';
+import { RediaccCard, RediaccStack, RediaccButton } from '@/components/ui';
 import { RediaccSearchInput } from '@/components/ui/Form';
 
 export const ContainerCard = styled(RediaccCard)`
@@ -78,14 +78,9 @@ export const EmptyDescriptionStack = styled(RediaccStack).attrs({
   padding: ${({ theme }) => theme.spacing.LG}px;
 `;
 
-export const EmptyTitle = styled(RediaccText).attrs({
-  size: 'xl',
-  weight: 'semibold',
-})``;
+// EmptyTitle removed - use <RediaccText variant="title"> directly
 
-export const EmptySubtitle = styled(RediaccText).attrs({
-  variant: 'caption',
-})``;
+// EmptySubtitle removed - use <RediaccText variant="description"> directly
 
 export const EmptyActions = styled(RediaccStack).attrs({
   direction: 'horizontal',

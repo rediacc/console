@@ -5,7 +5,8 @@ import { TFunction } from 'i18next';
 import type { CephRbdClone } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn } from '@/components/common/columns';
-import { CloneIcon, CloneName, NameCell, VaultTag } from './styles';
+import { RediaccTag } from '@/components/ui';
+import { CloneIcon, CloneName, NameCell } from './styles';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -32,9 +33,13 @@ export const buildCloneColumns = ({
         <CloneName>{text}</CloneName>
         {record.vaultContent && (
           <Tooltip title={t('common.hasVault')}>
-            <VaultTag data-testid={`clone-list-vault-tag-${record.cloneName}`}>
+            <RediaccTag
+              variant="neutral"
+              compact
+              data-testid={`clone-list-vault-tag-${record.cloneName}`}
+            >
               {t('common.vault')}
-            </VaultTag>
+            </RediaccTag>
           </Tooltip>
         )}
       </NameCell>

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { useMachines } from '@/api/queries/machines';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccCard } from '@/components/ui';
 import {
   DesktopOutlined,
   CheckCircleOutlined,
@@ -12,8 +13,6 @@ import {
   CopyOutlined,
 } from '@/utils/optimizedIcons';
 import {
-  SummaryCard,
-  LoadingCard,
   LoadingContent,
   RefreshButton,
   RefreshIcon,
@@ -61,11 +60,11 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
 
   if (isLoading) {
     return (
-      <LoadingCard>
+      <RediaccCard style={{ marginBottom: `${styledTheme.spacing.MD}px` }}>
         <LoadingWrapper loading centered minHeight={160}>
           <LoadingContent />
         </LoadingWrapper>
-      </LoadingCard>
+      </RediaccCard>
     );
   }
 
@@ -123,7 +122,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
   ];
 
   return (
-    <SummaryCard
+    <RediaccCard
       title={t('machines.summary.title')}
       extra={
         <RefreshButton
@@ -135,6 +134,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
           <RefreshIcon spin={isLoading} />
         </RefreshButton>
       }
+      style={{ marginBottom: `${styledTheme.spacing.MD}px` }}
       data-testid="ds-machines-summary-card"
     >
       <Row gutter={16}>
@@ -152,7 +152,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
           </Col>
         ))}
       </Row>
-    </SummaryCard>
+    </RediaccCard>
   );
 };
 

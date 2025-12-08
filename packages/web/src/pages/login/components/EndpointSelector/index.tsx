@@ -29,8 +29,8 @@ import {
   EndpointSuffixIcon,
   DeleteEndpointIcon,
   SpinnerWrapper,
-  FormActions,
 } from './styles';
+import { RediaccStack } from '@/components/ui';
 
 const { Option } = Select;
 
@@ -473,7 +473,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           </Form.Item>
 
           <FormActionsRow>
-            <FormActions>
+            <RediaccStack direction="horizontal" justify="end" fullWidth>
               <RediaccButton
                 onClick={() => {
                   customModal.close();
@@ -489,7 +489,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
               >
                 Add Endpoint
               </RediaccButton>
-            </FormActions>
+            </RediaccStack>
           </FormActionsRow>
         </Form>
       </Modal>

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
-import { InlineStack } from '@/components/common/styled';
-import { RediaccButton } from '@/components/ui';
+import { InlineStack, StatusIcon } from '@/components/common/styled';
+import { RediaccButton, RediaccText, RediaccAlert, RediaccStack } from '@/components/ui';
 import type { QueueItemCompletionResult } from '@/services/helloService';
 import { usePingFunction } from '@/services/pingService';
 import { ModalContentStack, ModalFooterActions } from '@/styles/primitives';
@@ -20,19 +20,13 @@ import {
 import {
   StyledModal,
   ModalContent,
-  TitleStack,
   ProgressSection,
   ProgressBar,
-  ProgressNote,
-  InfoAlert,
   SummaryContainer,
   SummaryMetrics,
   SummaryMetric,
-  SummaryLabel,
   SummaryValue,
   StyledTable,
-  MachineName,
-  StatusIcon,
   ResourceTag,
   MessageText,
 } from './styles';
@@ -252,7 +246,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
         return (
           <InlineStack data-testid={`connectivity-machine-${name}`}>
             <StatusIcon $variant={record.status}>{renderIcon()}</StatusIcon>
-            <MachineName>{name}</MachineName>
+            <RediaccText weight="semibold">{name}</RediaccText>
           </InlineStack>
         );
       },
@@ -294,10 +288,10 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     <StyledModal
       data-testid="connectivity-modal"
       title={
-        <TitleStack>
+        <RediaccStack direction="horizontal" gap="sm" align="center">
           <WifiOutlined />
-          {t('machines:connectivityTest')}
-        </TitleStack>
+          <span>{t('machines:connectivityTest')}</span>
+        </RediaccStack>
       }
       open={open}
       onCancel={onClose}
@@ -336,21 +330,22 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
                 data-testid="connectivity-progress-bar"
               />
               {currentMachineIndex >= 0 && currentMachineIndex < machines.length && (
-                <ProgressNote data-testid="connectivity-progress-text">
+                <RediaccText size="xs" color="secondary" data-testid="connectivity-progress-text">
                   {t('machines:testingMachine', {
                     machineName: machines[currentMachineIndex].machineName,
                   })}
-                </ProgressNote>
+                </RediaccText>
               )}
             </ProgressSection>
           )}
 
-          <InfoAlert
+          <RediaccAlert
             message={t('machines:connectivityTestDescription')}
             variant="info"
             showIcon
             icon={<WifiOutlined />}
             data-testid="connectivity-info-alert"
+            style={{ borderRadius: '12px', fontSize: '14px' }}
           />
 
           <StyledTable
@@ -370,23 +365,23 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             <SummaryContainer data-testid="connectivity-summary-statistics">
               <SummaryMetrics>
                 <SummaryMetric data-testid="connectivity-total-machines">
-                  <SummaryLabel>{t('machines:totalMachines')}:</SummaryLabel>
+                  <RediaccText color="secondary">{t('machines:totalMachines')}:</RediaccText>
                   <SummaryValue>{machines.length}</SummaryValue>
                 </SummaryMetric>
                 <SummaryMetric data-testid="connectivity-connected-count">
-                  <SummaryLabel>{t('machines:connected')}:</SummaryLabel>
+                  <RediaccText color="secondary">{t('machines:connected')}:</RediaccText>
                   <SummaryValue $variant="success">
                     {testResults.filter((r) => r.status === 'success').length}
                   </SummaryValue>
                 </SummaryMetric>
                 <SummaryMetric data-testid="connectivity-failed-count">
-                  <SummaryLabel>{t('machines:failed')}:</SummaryLabel>
+                  <RediaccText color="secondary">{t('machines:failed')}:</RediaccText>
                   <SummaryValue $variant="error">
                     {testResults.filter((r) => r.status === 'failed').length}
                   </SummaryValue>
                 </SummaryMetric>
                 <SummaryMetric data-testid="connectivity-average-response">
-                  <SummaryLabel>{t('machines:averageResponse')}:</SummaryLabel>
+                  <RediaccText color="secondary">{t('machines:averageResponse')}:</RediaccText>
                   <SummaryValue>
                     {(() => {
                       const successfulTests = testResults.filter(

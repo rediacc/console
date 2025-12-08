@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Table, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CephCluster, useCephClusterMachines } from '@/api/queries/ceph';
+import { RediaccTag } from '@/components/ui';
 import {
   ExpandedRowContainer,
   ExpandedRowTitle,
@@ -9,7 +10,6 @@ import {
   MachineNameCell,
   MachineNameIcon,
   MachineNameText,
-  MachineBridgeTag,
   AssignedDateText,
 } from '@/pages/ceph/components/ClusterTable/styles';
 import { createSorter } from '@/platform';
@@ -43,7 +43,11 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
         dataIndex: 'bridgeName',
         key: 'bridgeName',
         sorter: createSorter<Machine>('bridgeName'),
-        render: (name: string) => <MachineBridgeTag>{name}</MachineBridgeTag>,
+        render: (name: string) => (
+          <RediaccTag preset="bridge" compact borderless>
+            {name}
+          </RediaccTag>
+        ),
       },
       {
         title: t('machines.assignedDate'),

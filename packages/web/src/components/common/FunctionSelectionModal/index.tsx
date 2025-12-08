@@ -22,7 +22,7 @@ import { useRepos } from '@/api/queries/repos';
 import { useStorage } from '@/api/queries/storage';
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
 import TemplateSelector from '@/components/common/TemplateSelector';
-import { RediaccButton, RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccText, RediaccStack } from '@/components/ui';
 import { useLocalizedFunctions } from '@/services/functionsService';
 import { templateService } from '@/services/templateService';
 import { ModalHeader, ModalTitle, ModalSubtitle } from '@/styles/primitives';
@@ -35,15 +35,11 @@ import {
   SearchInput,
   FunctionList,
   CategorySection,
-  CategoryTitle,
   FunctionOption,
   FunctionItemHeader,
-  FunctionDescriptionText,
   QuickTaskTag,
-  ContentStack,
   PushAlertsRow,
   PushAlertCard,
-  AlertBodyText,
   AlertLinkWrapper,
   AlertLink,
   LineageTag,
@@ -56,10 +52,8 @@ import {
   CheckboxGroupStack,
   AdditionalOptionsInput,
   PriorityPopoverContent,
-  PriorityPopoverHeader,
   PriorityLegendRow,
   PriorityLegendTag,
-  PriorityLegendText,
   PriorityTagWrapper,
   PriorityStatusTag,
   PriorityAlert,
@@ -549,7 +543,9 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       key={category}
                       data-testid={`function-modal-category-${category}`}
                     >
-                      <CategoryTitle>{categories[category]?.name || category}</CategoryTitle>
+                      <RediaccText variant="title" style={{ display: 'block', marginBottom: 8 }}>
+                        {categories[category]?.name || category}
+                      </RediaccText>
                       {funcs.map((func) => {
                         const isQuickTask =
                           QUICK_TASK_NAMES.includes(func.name) ||
@@ -569,7 +565,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 <QuickTaskTag>⚡ {t('functions:quickTaskBadge')}</QuickTaskTag>
                               )}
                             </FunctionItemHeader>
-                            <FunctionDescriptionText>{func.description}</FunctionDescriptionText>
+                            <RediaccText variant="description">{func.description}</RediaccText>
                           </FunctionOption>
                         );
                       })}
@@ -582,7 +578,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 
           <Col span={preselectedFunction ? 24 : 14}>
             {selectedFunction ? (
-              <ContentStack>
+              <RediaccStack variant="spaced-column" fullWidth>
                 <ConfigCard
                   title={`${t('functions:configure')}: ${selectedFunction.name}`}
                   size="sm"
@@ -628,15 +624,18 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                   <LineageTag $variant="source">
                                     {additionalContext.sourceRepo}
                                   </LineageTag>
-                                  <AlertBodyText as="span"> (Original)</AlertBodyText>
+                                  <RediaccText variant="description" as="span">
+                                    {' '}
+                                    (Original)
+                                  </RediaccText>
                                 </div>
                               )}
                               <div>
-                                <AlertBodyText>
+                                <RediaccText variant="description">
                                   {functionParams.state === 'online'
                                     ? 'The repo will be pushed in online state (mounted).'
                                     : 'The repo will be pushed in offline state (unmounted).'}
-                                </AlertBodyText>
+                                </RediaccText>
                               </div>
                             </Space>
                           }
@@ -649,9 +648,9 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             message={t('functions:onlinePushWarningTitle')}
                             description={
                               <Space direction="vertical" size="small">
-                                <AlertBodyText>
+                                <RediaccText variant="description">
                                   {t('functions:onlinePushWarningMessage')}
-                                </AlertBodyText>
+                                </RediaccText>
                                 <AlertLinkWrapper>
                                   <AlertLink
                                     href="https://docs.rediacc.com/concepts/repo-push-operations"
@@ -1058,15 +1057,20 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             <Popover
                               content={
                                 <PriorityPopoverContent>
-                                  <PriorityPopoverHeader>
+                                  <RediaccText
+                                    variant="title"
+                                    style={{ display: 'block', marginBottom: 8 }}
+                                  >
                                     {t('functions:priorityPopoverLevels')}
-                                  </PriorityPopoverHeader>
+                                  </RediaccText>
                                   {priorityLegendItems.map((item) => (
                                     <PriorityLegendRow key={item.level}>
                                       <PriorityLegendTag $level={item.level}>
                                         P{item.level} ({item.label})
                                       </PriorityLegendTag>
-                                      <PriorityLegendText>{item.description}</PriorityLegendText>
+                                      <RediaccText variant="description">
+                                        {item.description}
+                                      </RediaccText>
                                     </PriorityLegendRow>
                                   ))}
                                 </PriorityPopoverContent>
@@ -1182,7 +1186,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                     )}
                   </Form>
                 </ConfigCard>
-              </ContentStack>
+              </RediaccStack>
             ) : (
               <ConfigCard>
                 <Empty description={t('functions:selectFunctionToConfigure')} />

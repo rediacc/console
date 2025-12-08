@@ -6,7 +6,7 @@ import { useMachines } from '@/api/queries/machines';
 import { useRepos } from '@/api/queries/repos';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { ActionGroup } from '@/components/common/styled';
+import { ActionGroup, CenteredState } from '@/components/common/styled';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
@@ -27,7 +27,6 @@ import {
 } from '@/utils/optimizedIcons';
 import {
   PageWrapper,
-  FullHeightCard,
   BreadcrumbWrapper,
   HeaderSection,
   HeaderRow,
@@ -38,9 +37,9 @@ import {
   SplitLayout,
   ListPanel,
   DetailBackdrop,
-  CenteredState,
   ErrorWrapper,
 } from './styles';
+import { RediaccCard } from '@/components/ui';
 
 interface ContainerData {
   id: string;
@@ -264,14 +263,14 @@ const MachineReposPage: React.FC = () => {
   if (machinesLoading && !machine) {
     return (
       <PageWrapper>
-        <FullHeightCard>
+        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
           <CenteredState>
             <LoadingWrapper loading centered minHeight={160}>
               <div />
             </LoadingWrapper>
             <RediaccText color="secondary">{t('common:general.loading')}</RediaccText>
           </CenteredState>
-        </FullHeightCard>
+        </RediaccCard>
       </PageWrapper>
     );
   }
@@ -280,7 +279,7 @@ const MachineReposPage: React.FC = () => {
   if (machinesError || (!machinesLoading && !machine)) {
     return (
       <PageWrapper>
-        <FullHeightCard>
+        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
           <Alert
             message={t('machines:machineNotFound')}
             description={
@@ -294,14 +293,14 @@ const MachineReposPage: React.FC = () => {
             type="error"
             showIcon
           />
-        </FullHeightCard>
+        </RediaccCard>
       </PageWrapper>
     );
   }
 
   return (
     <PageWrapper>
-      <FullHeightCard>
+      <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
         <HeaderSection>
           <BreadcrumbWrapper
             items={[
@@ -424,7 +423,7 @@ const MachineReposPage: React.FC = () => {
             />
           )}
         </SplitLayout>
-      </FullHeightCard>
+      </RediaccCard>
 
       <QueueItemTraceModal
         taskId={queueTrace.state.taskId}

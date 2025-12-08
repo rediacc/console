@@ -5,7 +5,7 @@ import { useCreateStorage } from '@/api/queries/storage';
 import { useStorage } from '@/api/queries/storage';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccCheckbox } from '@/components/ui';
+import { RediaccCheckbox, RediaccAlert } from '@/components/ui';
 import { createSorter } from '@/platform';
 import {
   CloudOutlined,
@@ -19,9 +19,6 @@ import {
 import {
   WizardModal,
   UploadStepWrapper,
-  InstructionsAlert,
-  StandardAlert,
-  ErrorAlert,
   StepsContainer,
   LoadingState,
   StatusMessage,
@@ -76,7 +73,8 @@ const UploadStep: React.FC<UploadStepProps> = ({
   onFileListChange,
 }) => (
   <UploadStepWrapper>
-    <InstructionsAlert
+    <RediaccAlert
+      spacing="spacious"
       message={t('resources:storage.import.instructions')}
       description={
         <div>
@@ -107,7 +105,9 @@ const UploadStep: React.FC<UploadStepProps> = ({
       <p className="ant-upload-hint">{t('resources:storage.import.supportedFormats')}</p>
     </Upload.Dragger>
 
-    {parsingError && <ErrorAlert message={parsingError} variant="error" showIcon />}
+    {parsingError && (
+      <RediaccAlert message={parsingError} variant="error" showIcon style={{ marginTop: '16px' }} />
+    )}
   </UploadStepWrapper>
 );
 
@@ -119,7 +119,8 @@ interface SelectionStepProps {
 
 const SelectionStep: React.FC<SelectionStepProps> = ({ t, importStatuses, columns }) => (
   <div>
-    <StandardAlert
+    <RediaccAlert
+      spacing="default"
       message={t('resources:storage.import.selectStorages')}
       description={t('resources:storage.import.selectDescription')}
       variant="info"
@@ -159,7 +160,8 @@ const ResultStep: React.FC<ResultStepProps> = ({ t, importStatuses, columns, isI
       </LoadingState>
     ) : (
       <>
-        <StandardAlert
+        <RediaccAlert
+          spacing="default"
           message={t('resources:storage.import.complete')}
           description={t('resources:storage.import.completeDescription')}
           variant="success"

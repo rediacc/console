@@ -2,6 +2,7 @@ import React from 'react';
 import { Select, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAvailableMachinesForClone } from '@/api/queries/ceph';
+import { StatusIcon } from '@/components/common/styled';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import { RediaccText, RediaccTag } from '@/components/ui';
 import type { Machine } from '@/types';
@@ -15,7 +16,6 @@ import {
   TeamTag,
   BridgeTag,
   StatusContainer,
-  StatusIcon,
   EmptyDescription,
 } from './styles';
 import type { DefaultOptionType } from 'antd/es/select';

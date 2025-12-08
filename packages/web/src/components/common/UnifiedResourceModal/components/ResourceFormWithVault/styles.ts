@@ -1,7 +1,7 @@
 import { Form, InputNumber } from 'antd';
 import styled from 'styled-components';
 import { FlexBetween } from '@/components/common/styled';
-import { RediaccAlert, RediaccDivider, RediaccSelect } from '@/components/ui';
+import { RediaccAlert, RediaccSelect } from '@/components/ui';
 import { FlexColumn, FlexRow } from '@/styles/primitives';
 
 export const FormWrapper = styled(FlexColumn).attrs({ $gap: 'SM' })`
@@ -10,10 +10,6 @@ export const FormWrapper = styled(FlexColumn).attrs({ $gap: 'SM' })`
 
 export const StyledForm = styled(Form)`
   flex-shrink: 0;
-`;
-
-export const SectionDivider = styled(RediaccDivider)`
-  margin: ${({ theme }) => `${theme.spacing.SM}px 0`};
 `;
 
 export const VaultSection = styled.div`

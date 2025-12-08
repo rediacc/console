@@ -1,7 +1,22 @@
 import { Card as AntCard } from 'antd';
 import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { CardVariant, CardSize } from './RediaccCard.types';
+import type { CardVariant, CardSize, CardSpacing } from './RediaccCard.types';
+
+// Resolve spacing to margin-bottom pixels
+export const resolveCardSpacing = (theme: StyledTheme, spacing?: CardSpacing): number => {
+  switch (spacing) {
+    case 'compact':
+      return theme.spacing.SM; // 8px
+    case 'default':
+      return theme.spacing.MD; // 16px
+    case 'spacious':
+      return theme.spacing.LG; // 24px
+    case 'none':
+    default:
+      return 0;
+  }
+};
 
 // Resolve padding based on size
 export const resolveCardPadding = (theme: StyledTheme, size: CardSize = 'md'): number => {
@@ -44,6 +59,8 @@ export const StyledRediaccCard = styled(AntCard)<{
   $selected?: boolean;
   $interactive?: boolean;
   $fullWidth?: boolean;
+  $fullHeight?: boolean;
+  $spacing?: CardSpacing;
   $noPadding?: boolean;
 }>`
   && {
@@ -53,8 +70,14 @@ export const StyledRediaccCard = styled(AntCard)<{
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     box-shadow: ${({ theme, $variant }) => resolveCardVariantTokens($variant, theme).shadow};
 
+    /* Spacing (margin-bottom) */
+    ${({ theme, $spacing }) => $spacing && css`margin-bottom: ${resolveCardSpacing(theme, $spacing)}px;`}
+
     /* Width */
     ${({ $fullWidth }) => $fullWidth && css`width: 100%;`}
+
+    /* Height */
+    ${({ $fullHeight }) => $fullHeight && css`height: 100%;`}
 
     /* Padding */
     .ant-card-body {

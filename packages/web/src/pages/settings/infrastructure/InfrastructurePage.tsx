@@ -12,7 +12,6 @@ import {
   Alert,
   Popconfirm,
   Result,
-  Empty,
   Form,
   Checkbox,
 } from 'antd';
@@ -50,11 +49,11 @@ import {
   ListSubtitle,
   CardHeaderRow,
   CardTitle,
-  PaddedEmpty,
   ModalStack,
   ModalStackLarge,
   ErrorWrapper,
   RediaccText,
+  RediaccEmpty,
 } from '@/components/ui';
 import { RediaccInput } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
@@ -636,9 +635,10 @@ const InfrastructurePage: React.FC = () => {
                 </CardHeaderRow>
 
                 {!effectiveRegion ? (
-                  <PaddedEmpty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  <RediaccEmpty
+                    variant="minimal"
                     description={t('regions.selectRegionPrompt')}
+                    style={{ paddingTop: 80, paddingBottom: 80 }}
                   />
                 ) : (
                   <LoadingWrapper

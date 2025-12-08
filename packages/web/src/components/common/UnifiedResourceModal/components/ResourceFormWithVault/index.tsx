@@ -3,10 +3,11 @@ import { message, Form, Row, Col } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import VaultEditor from '@/components/common/VaultEditor';
+import { RediaccDivider } from '@/components/ui';
 import { DefaultsBanner } from './components/DefaultsBanner';
 import { FieldRenderer } from './components/FieldRenderer';
 import { ImportExportControls } from './components/ImportExportControls';
-import { FormWrapper, StyledForm, SectionDivider, VaultSection } from './styles';
+import { FormWrapper, StyledForm, VaultSection } from './styles';
 import type {
   ResourceFormWithVaultRef,
   ResourceFormWithVaultProps,
@@ -152,7 +153,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
         {beforeVaultContent}
 
-        <SectionDivider>{t('vaultEditor.vaultConfiguration')}</SectionDivider>
+        <RediaccDivider spacing="sm">{t('vaultEditor.vaultConfiguration')}</RediaccDivider>
 
         <VaultSection data-testid="resource-modal-vault-editor-section">
           <VaultEditor

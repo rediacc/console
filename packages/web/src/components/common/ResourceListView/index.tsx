@@ -1,7 +1,7 @@
 import type { Key, ReactNode } from 'react';
 import { Table, Empty, type TableProps, Tooltip } from 'antd';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccText } from '@/components/ui';
 import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import {
   ContainerCard,
@@ -12,8 +12,6 @@ import {
   ActionsGroup,
   SearchInput,
   EmptyDescriptionStack,
-  EmptyTitle,
-  EmptySubtitle,
   EmptyActions,
   RefreshButton,
   TableWrapper,
@@ -118,12 +116,12 @@ function ResourceListView<T extends object = Record<string, unknown>>({
           <Empty
             description={
               <EmptyDescriptionStack>
-                <EmptyTitle>{resolvedEmptyDescription}</EmptyTitle>
-                <EmptySubtitle>
+                <RediaccText variant="title">{resolvedEmptyDescription}</RediaccText>
+                <RediaccText variant="description">
                   {onCreateNew
                     ? `Get started by creating your first ${singularResourceType}`
                     : `No ${resourceType} found. Try adjusting your search criteria.`}
-                </EmptySubtitle>
+                </RediaccText>
                 {(onCreateNew || onRefresh) && (
                   <EmptyActions>
                     {onCreateNew && (

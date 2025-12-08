@@ -2,26 +2,21 @@
 import { Modal, Space, message, Upload, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import VaultEditor from '@/components/common/VaultEditor';
-import { RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccText, RediaccStack } from '@/components/ui';
+import { ActionGroup } from '@/components/common/styled';
 import { ModalSize } from '@/types/modal';
 import { CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons';
 import {
-  ActionGroup,
-  ContentStack,
   DownloadIcon,
   FileActionButton,
   FileActions,
   FooterBar,
   FooterWrapper,
   UnsavedChangesText,
-  UnsavedVersionHint,
   UploadIcon,
   ValidationAlert,
   ValidationList,
-  ValidationTitle,
   VersionBanner,
-  VersionDescription,
-  VersionLabel,
   VersionTag,
   WarningIcon,
 } from './styles';
@@ -123,18 +118,26 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       data-testid="vault-modal"
       destroyOnClose
     >
-      <ContentStack>
+      <RediaccStack variant="spaced-column" fullWidth>
         <VersionBanner>
           <Space size="small">
-            <VersionLabel weight="bold">{t('vaultEditor.vaultVersion')}</VersionLabel>
+            <RediaccText variant="label" weight="bold">
+              {t('vaultEditor.vaultVersion')}
+            </RediaccText>
             <VersionTag variant="info">{vaultVersion}</VersionTag>
           </Space>
-          <VersionDescription>{t('vaultEditor.versionAutoIncrement')}</VersionDescription>
+          <RediaccText variant="helper">{t('vaultEditor.versionAutoIncrement')}</RediaccText>
         </VersionBanner>
 
         {showValidationErrors && validationErrors.length > 0 && (
           <ValidationAlert ref={validationErrorsRef}>
-            <ValidationTitle weight="bold">{t('vaultEditor.validationErrors')}</ValidationTitle>
+            <RediaccText
+              variant="title"
+              weight="bold"
+              style={{ display: 'block', marginBottom: 4 }}
+            >
+              {t('vaultEditor.validationErrors')}
+            </RediaccText>
             <ValidationList>
               {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>
@@ -156,7 +159,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
           }}
           data-testid="vault-modal-editor"
         />
-      </ContentStack>
+      </RediaccStack>
 
       <FooterWrapper>
         <FooterBar>
@@ -201,10 +204,10 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                   <WarningIcon />
                   {t('vaultEditor.unsavedChanges')}
                 </UnsavedChangesText>
-                <UnsavedVersionHint>
+                <RediaccText variant="helper">
                   {VERSION_HINT_BULLET}{' '}
                   {t('vaultEditor.versionWillIncrement', { version: vaultVersion + 1 })}
-                </UnsavedVersionHint>
+                </RediaccText>
               </>
             )}
             <Tooltip title={t('actions.cancel')}>

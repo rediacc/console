@@ -19,7 +19,13 @@ import { RediaccButton } from '@/components/ui';
 import { useTeamSelection, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { PageCard } from '@/styles/primitives';
+import {
+  PageCard,
+  PageContainer,
+  SectionStack,
+  SectionHeaderRow,
+  EmptyStateWrapper,
+} from '@/styles/primitives';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimizedIcons';
 import type {
@@ -29,16 +35,7 @@ import type {
 import { CephMachinesTab } from './components/CephMachinesTab';
 import { ClusterTable } from './components/ClusterTable';
 import { PoolTable } from './components/PoolTable';
-import {
-  PageWrapper,
-  HeaderSection,
-  HeaderRow,
-  TitleGroup,
-  HeaderTitle,
-  TeamSelectorWrapper,
-  ActionGroup,
-  EmptyState,
-} from './styles';
+import { TitleGroup, HeaderTitle, TeamSelectorWrapper, ActionGroup } from './styles';
 
 type CephView = 'clusters' | 'pools' | 'machines';
 
@@ -113,11 +110,11 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
 
   if (!companyData) {
     return (
-      <PageWrapper>
+      <PageContainer>
         <PageCard>
           <Alert message="Loading company data..." type="info" showIcon />
         </PageCard>
-      </PageWrapper>
+      </PageContainer>
     );
   }
 
@@ -208,7 +205,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
 
   if (!hasCephAccess) {
     return (
-      <PageWrapper>
+      <PageContainer>
         <PageCard>
           <Alert
             message={t('accessDenied.title')}
@@ -231,16 +228,16 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             icon={<SettingOutlined />}
           />
         </PageCard>
-      </PageWrapper>
+      </PageContainer>
     );
   }
 
   const renderContent = () => {
     if (!hasSelectedTeam) {
       return (
-        <EmptyState>
+        <EmptyStateWrapper>
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('selectTeamPrompt')} />
-        </EmptyState>
+        </EmptyStateWrapper>
       );
     }
 
@@ -323,10 +320,10 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   };
 
   return (
-    <PageWrapper>
+    <PageContainer>
       <PageCard>
-        <HeaderSection>
-          <HeaderRow>
+        <SectionStack>
+          <SectionHeaderRow>
             <TitleGroup>
               <HeaderTitle level={4}>{t('title')}</HeaderTitle>
               <TeamSelectorWrapper>
@@ -341,8 +338,8 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
               </TeamSelectorWrapper>
             </TitleGroup>
             {renderActions()}
-          </HeaderRow>
-        </HeaderSection>
+          </SectionHeaderRow>
+        </SectionStack>
 
         {renderContent()}
       </PageCard>
@@ -425,7 +422,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
           />
         </>
       )}
-    </PageWrapper>
+    </PageContainer>
   );
 };
 

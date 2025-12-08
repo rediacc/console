@@ -1,7 +1,7 @@
 import styled from 'styled-components';
+import { InlineStack } from '@/components/common/styled';
 import { RediaccTag } from '@/components/ui';
 import { FlexRow } from '@/styles/primitives';
-import { InlineStack } from '@/components/common/styled';
 
 // Use FlexRow from primitives
 export const FooterContainer = styled(FlexRow).attrs({

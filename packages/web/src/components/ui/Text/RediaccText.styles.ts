@@ -39,6 +39,41 @@ export const resolveTextVariantTokens = (
         color: theme.colors.textSecondary,
         lineHeight: theme.lineHeight.NORMAL,
       };
+    case 'label':
+      return {
+        fontSize: theme.fontSize.XS,
+        fontWeight: theme.fontWeight.REGULAR,
+        color: theme.colors.textSecondary,
+        lineHeight: theme.lineHeight.NORMAL,
+      };
+    case 'value':
+      return {
+        fontSize: theme.fontSize.SM,
+        fontWeight: theme.fontWeight.REGULAR,
+        color: theme.colors.textPrimary,
+        lineHeight: theme.lineHeight.NORMAL,
+      };
+    case 'title':
+      return {
+        fontSize: theme.fontSize.LG,
+        fontWeight: theme.fontWeight.SEMIBOLD,
+        color: theme.colors.textPrimary,
+        lineHeight: theme.lineHeight.NORMAL,
+      };
+    case 'description':
+      return {
+        fontSize: theme.fontSize.SM,
+        fontWeight: theme.fontWeight.REGULAR,
+        color: theme.colors.textSecondary,
+        lineHeight: theme.lineHeight.NORMAL,
+      };
+    case 'helper':
+      return {
+        fontSize: theme.fontSize.SM,
+        fontWeight: theme.fontWeight.REGULAR,
+        color: theme.colors.textSecondary,
+        lineHeight: theme.lineHeight.NORMAL,
+      };
     default:
       // Default styling (previously 'body')
       return {

@@ -38,7 +38,7 @@ export const HeaderRight = styled(InlineStack)``;
 
 export const MenuToggleButton = styled(RediaccButton)`
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  font-size: 18px;
+  font-size: ${({ theme }) => theme.fontSize.LG}px;
   color: var(--color-text-primary);
   transition: all 0.2s ease;
 
@@ -94,7 +94,7 @@ export const TransitionIcon = styled.div`
 `;
 
 export const TransitionText = styled(RediaccText)`
-  font-size: 18px;
+  font-size: ${({ theme }) => theme.fontSize.LG}px;
   color: var(--color-text-secondary);
 `;
 

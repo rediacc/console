@@ -1,9 +1,9 @@
 import type { ComponentType } from 'react';
 import { Table as AntTable } from 'antd';
 import styled, { css } from 'styled-components';
-import { RediaccText } from '@/components/ui';
 import { ExpandIcon as BaseExpandIcon } from '@/styles/primitives';
 import type { TableProps } from 'antd';
+import { borderedCard } from '@/styles/mixins';
 
 const withAlpha = (color: string, alphaHex: string) =>
   color.startsWith('#') ? `${color}${alphaHex}` : color;
@@ -37,7 +37,7 @@ export const MachineTitle = styled.div`
 `;
 
 export const MachineIcon = styled.span`
-  font-size: 20px;
+  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
   color: ${({ theme }) => theme.colors.iconSystem};
 `;
 
@@ -67,8 +67,7 @@ export const PluginsSection = styled.div`
 
 const StyledTableBase = styled(AntTable)<{ $removeMargins?: boolean }>`
   background-color: ${({ theme }) => theme.colors.bgPrimary};
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+  ${borderedCard()}
   overflow: hidden;
 
   .ant-table {
@@ -120,11 +119,6 @@ export const SystemContainersTitle = styled.div`
   margin-top: ${({ theme }) => theme.spacing.XL}px;
 `;
 
-export const StatusIcon = styled.span<{ $color: string }>`
-  font-size: ${({ theme }) => theme.fontSize.LG}px;
-  color: ${(props) => props.$color};
-`;
-
 export const ExpandIcon = styled(BaseExpandIcon).attrs<{
   $isExpanded: boolean;
   $visible: boolean;
@@ -135,6 +129,4 @@ export const ExpandIcon = styled(BaseExpandIcon).attrs<{
   width: 12px;
 `;
 
-export const PortText = styled(RediaccText).attrs({
-  size: 'xs',
-})``;
+// PortText removed - use <RediaccText size="xs"> directly if needed

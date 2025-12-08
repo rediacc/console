@@ -22,8 +22,6 @@ export const ContentStack = styled(ModalContentStack)`
   width: 100%;
 `;
 
-export const InfoAlert = styled(AlertCard).attrs({ $variant: 'info' })``;
-
 export const ClusterAlert = styled(AlertCard).attrs({ $variant: 'warning' })`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;

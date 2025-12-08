@@ -25,11 +25,6 @@ export const NotificationHeader = styled(FlexBetween)`
   background-color: var(--color-bg-secondary);
 `;
 
-export const NotificationTitle = styled(RediaccText)`
-  font-size: ${({ theme }) => theme.fontSize.LG}px;
-  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-`;
-
 export const NotificationListWrapper = styled.div`
   max-height: 400px;
   overflow-y: auto;
@@ -119,17 +114,10 @@ export const NotificationCloseButton = styled(RediaccButton)`
   flex-shrink: 0;
 `;
 
-export const NotificationMessage = styled(RediaccText)`
+export const NotificationMessageWrapper = styled.div`
   display: block;
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
   word-break: break-word;
-  font-size: ${({ theme }) => theme.fontSize.SM}px;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-export const NotificationTimestamp = styled(RediaccText)`
-  font-size: ${({ theme }) => theme.fontSize.XS}px;
-  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const EmptyWrapper = styled.div`

@@ -8,6 +8,7 @@ import {
   RediaccInput,
 } from '@/components/ui/Form';
 import { BaseModal, ContentCard, FlexColumn, FlexRow, scrollbarStyles } from '@/styles/primitives';
+import { borderedCard, focusRing } from '@/styles/mixins';
 import type { StyledTheme } from '@/styles/styledTheme';
 import { InfoCircleOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons';
 
@@ -64,8 +65,7 @@ export const FunctionList = styled.div`
   overflow: auto;
   padding: ${({ theme }) => theme.spacing.XS}px;
   background-color: ${({ theme }) => theme.colors.bgSecondary};
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+  ${borderedCard()}
   ${scrollbarStyles}
 `;
 
@@ -73,15 +73,7 @@ export const CategorySection = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const CategoryTitle = styled(RediaccText).attrs({
-  size: 'lg',
-  weight: 'semibold',
-})`
-  && {
-    display: block;
-    margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-  }
-`;
+// CategoryTitle removed - use <RediaccText variant="title"> directly
 
 export const FunctionItemHeader = styled(FlexRow).attrs({ $gap: 'XS' })``;
 
@@ -112,8 +104,7 @@ export const FunctionOption = styled.button.attrs({ type: 'button' })<{
   }
 
   &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: 2px;
+    ${focusRing('outline')}
   }
 `;
 
@@ -126,10 +117,7 @@ export const QuickTaskTag = styled(RediaccTag).attrs({
   }
 `;
 
-export const FunctionDescriptionText = styled(RediaccText).attrs({
-  variant: 'caption',
-  color: 'muted',
-})``;
+// FunctionDescriptionText removed - use <RediaccText variant="description"> directly
 
 export { ContentStack };
 
@@ -161,9 +149,7 @@ export const PushAlertCard = styled(RediaccAlert)<{ $variant?: string }>`
         `}
 `;
 
-export const AlertBodyText = styled(RediaccText).attrs({
-  variant: 'caption',
-})``;
+// AlertBodyText removed - use <RediaccText variant="description"> directly
 
 export const AlertLinkWrapper = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
@@ -237,14 +223,7 @@ export const PriorityPopoverContent = styled.div`
   max-width: 400px;
 `;
 
-export const PriorityPopoverHeader = styled(RediaccText).attrs({
-  weight: 'semibold',
-})`
-  && {
-    display: block;
-    margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-  }
-`;
+// PriorityPopoverHeader removed - use <RediaccText variant="title"> directly
 
 export const PriorityLegendRow = styled(FlexRow).attrs({ $gap: 'SM' })`
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
@@ -265,9 +244,7 @@ export const PriorityLegendTag = styled(RediaccTag)<{ $level: number }>`
   }
 `;
 
-export const PriorityLegendText = styled(RediaccText).attrs({
-  variant: 'caption',
-})``;
+// PriorityLegendText removed - use <RediaccText variant="description"> directly
 
 export const PriorityTagWrapper = styled.div`
   text-align: center;

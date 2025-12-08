@@ -1,12 +1,6 @@
 import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
-import {
-  RediaccButton,
-  RediaccTag,
-  RediaccCard,
-  RediaccBadge,
-  RediaccEmpty,
-} from '@/components/ui';
+import { RediaccButton, RediaccTag, RediaccCard, RediaccBadge } from '@/components/ui';
 import type { TagVariant, TagPreset } from '@/components/ui/Tag';
 import { FlexColumn } from '@/styles/primitives';
 import { DesktopOutlined } from '@/utils/optimizedIcons';
@@ -74,12 +68,6 @@ export const ViewToggleDivider = styled.span`
   margin: 0 ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const EmptyState = styled(RediaccEmpty).attrs({
-  image: RediaccEmpty.PRESENTED_IMAGE_SIMPLE,
-})`
-  margin-top: ${({ theme }) => theme.spacing.XL}px;
-`;
-
 export const GroupedCardStack = styled.div`
   display: flex;
   flex-direction: column;
@@ -117,13 +105,13 @@ export const GroupCardIndicator = styled.div<{ $color?: string }>`
 `;
 
 export const GroupCardTitle = styled.span`
-  font-size: 18px;
+  font-size: ${({ theme }) => theme.fontSize.LG}px;
   font-weight: 700;
   color: var(--color-text-primary);
 `;
 
 export const GroupCardCount = styled.span`
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.fontSize.SM}px;
   color: var(--color-text-secondary);
 `;
 
@@ -168,7 +156,7 @@ export const GroupRowInfo = styled.div`
 `;
 
 export const GroupRowName = styled.span`
-  font-size: 16px;
+  font-size: ${({ theme }) => theme.fontSize.BASE}px;
   font-weight: 600;
   color: var(--color-text-primary);
 `;
@@ -180,23 +168,6 @@ export const GroupRowActionButton = styled(RediaccButton).attrs({
     /* Maintain compact pill styling to mirror historical control surface */
     gap: ${({ theme }) => theme.spacing.XS}px;
   }
-`;
-
-export const StatusIcon = styled.span<{ $status: 'online' | 'offline' | 'unknown' }>`
-  font-size: 18px;
-  color: ${({ $status }) => {
-    switch ($status) {
-      case 'online':
-        return 'var(--color-success)';
-      case 'offline':
-        return 'var(--color-text-tertiary)';
-      default:
-        return 'var(--color-text-quaternary)';
-    }
-  }};
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 `;
 
 export const StyledTag = styled(RediaccTag).attrs<{ $preset?: TagPreset; $variant?: TagPreset }>(
@@ -214,7 +185,7 @@ export const GroupHeaderTag = styled(RediaccTag).attrs<{ $preset?: string; $vari
   })
 )<{ $preset?: string; $variant?: string }>`
   && {
-    font-size: 16px;
+    font-size: ${({ theme }) => theme.fontSize.BASE}px;
     padding: 4px ${({ theme }) => theme.spacing.MD}px;
   }
 `;

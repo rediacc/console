@@ -3,6 +3,7 @@ import { Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '@/components/common/LanguageSelector';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
+import { RediaccText, RediaccDivider } from '@/components/ui';
 import {
   UserOutlined,
   LogoutOutlined,
@@ -15,17 +16,10 @@ import {
   MenuContainer,
   UserInfo,
   UserDetails,
-  UserEmail,
-  CompanyName,
   PlanBadge,
-  MenuDivider,
-  SectionLabel,
   ModeSegmented,
   AppearanceRow,
-  SectionTitle,
-  SectionDescription,
   LanguageSection,
-  LanguageTitle,
   LogoutButton,
   UserAvatar,
 } from './styles';
@@ -54,18 +48,26 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       <UserInfo>
         <UserAvatar icon={<UserOutlined />} size={DESIGN_TOKENS.DIMENSIONS.ICON_XXL} />
         <UserDetails>
-          <UserEmail>{user?.email}</UserEmail>
-          {company && <CompanyName>{company}</CompanyName>}
+          <RediaccText variant="value" weight="semibold" style={{ display: 'block' }}>
+            {user?.email}
+          </RediaccText>
+          {company && (
+            <RediaccText variant="caption" style={{ display: 'block' }}>
+              {company}
+            </RediaccText>
+          )}
           {companyData?.activeSubscription && (
             <PlanBadge>{companyData.activeSubscription.planCode ?? 'UNKNOWN'}</PlanBadge>
           )}
         </UserDetails>
       </UserInfo>
 
-      <MenuDivider />
+      <RediaccDivider spacing="none" />
 
       <div>
-        <SectionLabel>{t('uiMode.label', { defaultValue: 'Interface Mode' })}</SectionLabel>
+        <RediaccText variant="label">
+          {t('uiMode.label', { defaultValue: 'Interface Mode' })}
+        </RediaccText>
         <ModeSegmented
           block
           value={uiMode}
@@ -98,26 +100,34 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         />
       </div>
 
-      <MenuDivider />
+      <RediaccDivider spacing="none" />
 
       <AppearanceRow>
         <div>
-          <SectionTitle>{t('appearance.label', { defaultValue: 'Appearance' })}</SectionTitle>
-          <SectionDescription>
+          <RediaccText variant="value" weight="semibold" style={{ display: 'block' }}>
+            {t('appearance.label', { defaultValue: 'Appearance' })}
+          </RediaccText>
+          <RediaccText variant="caption">
             {t('appearance.description', { defaultValue: 'Device theme' })}
-          </SectionDescription>
+          </RediaccText>
         </div>
         <ThemeToggle />
       </AppearanceRow>
 
-      <MenuDivider />
+      <RediaccDivider spacing="none" />
 
       <LanguageSection>
-        <LanguageTitle>{t('language.label', { defaultValue: 'Language' })}</LanguageTitle>
+        <RediaccText
+          variant="value"
+          weight="semibold"
+          style={{ display: 'block', marginBottom: '8px' }}
+        >
+          {t('language.label', { defaultValue: 'Language' })}
+        </RediaccText>
         <LanguageSelector iconOnly={false} />
       </LanguageSection>
 
-      <MenuDivider />
+      <RediaccDivider spacing="none" />
 
       <LogoutButton
         variant="danger"

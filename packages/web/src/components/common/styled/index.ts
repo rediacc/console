@@ -8,7 +8,16 @@
 import type { ComponentType } from 'react';
 import { Table } from 'antd';
 import styled from 'styled-components';
-import { RediaccButton, RediaccStack, RediaccText, RediaccSelect } from '@/components/ui';
+import { RediaccButton, RediaccStack, RediaccSelect } from '@/components/ui';
+
+/**
+ * Stack layout with vertical direction, large gap, and full width.
+ * Use this for main content sections.
+ */
+export const ContentStack = styled(RediaccStack).attrs({
+  variant: 'spaced-column',
+  fullWidth: true,
+})``;
 import type { StatusVariant } from '@/styles/primitives';
 import type { TableProps } from 'antd';
 
@@ -47,71 +56,8 @@ export const CenteredState = styled.div<CenteredStateProps>`
 // =============================================================================
 // STAT DISPLAY COMPONENTS
 // =============================================================================
-
-export type StatVariant = 'default' | 'success' | 'warning' | 'error' | 'info';
-
-export interface StatLabelProps {
-  /** Font size */
-  $size?: 'XS' | 'SM' | 'BASE';
-}
-
-/**
- * Label for stat values (e.g., "Total Items", "Active")
- */
-export const StatLabel = styled(RediaccText)<StatLabelProps>`
-  && {
-    font-size: ${({ $size = 'SM', theme }) => {
-      const sizes = { XS: theme.fontSize.XS, SM: theme.fontSize.CAPTION, BASE: theme.fontSize.SM };
-      return `${sizes[$size]}px`;
-    }};
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`;
-
-export interface StatValueProps {
-  /** Color variant based on status */
-  $variant?: StatVariant;
-  /** Custom color (overrides variant) */
-  $color?: string;
-  /** Font size */
-  $size?: 'SM' | 'BASE' | 'LG' | 'XL';
-}
-
-/**
- * Value display for stats with color variants
- *
- * @example
- * <StatValue $variant="success" $size="LG">42</StatValue>
- */
-export const StatValue = styled(RediaccText)<StatValueProps>`
-  && {
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-    font-size: ${({ $size = 'LG', theme }) => {
-      const sizes = {
-        SM: theme.fontSize.SM,
-        BASE: theme.fontSize.BASE,
-        LG: theme.fontSize.LG,
-        XL: theme.fontSize.XL,
-      };
-      return `${sizes[$size]}px`;
-    }};
-    color: ${({ $color, $variant = 'default', theme }) => {
-      if ($color) return $color;
-      switch ($variant) {
-        case 'success':
-          return theme.colors.success;
-        case 'warning':
-          return theme.colors.warning;
-        case 'error':
-          return theme.colors.error;
-        case 'info':
-          return theme.colors.info;
-        default:
-          return theme.colors.textPrimary;
-      }
-    }};
-  }
-`;
+// NOTE: StatLabel, StatValue, and related types have been moved to @/styles/primitives
+// to consolidate shared components. Import from there instead.
 
 /**
  * Row for displaying stat label and value
@@ -213,13 +159,6 @@ export const HeaderSection = styled.div<HeaderSectionProps>`
   margin-bottom: ${({ $margin = 'LG', theme }) => theme.spacing[$margin]}px;
 `;
 
-/**
- * Content stack using RediaccStack
- */
-export const ContentStack = styled(RediaccStack).attrs({ direction: 'vertical', gap: 'lg' })`
-  width: 100%;
-`;
-
 export const InlineStack = styled.div<{ $align?: 'flex-start' | 'center' | 'flex-end' }>`
   display: inline-flex;
   align-items: ${({ $align = 'center' }) => $align};
@@ -294,6 +233,100 @@ export const StatusDot = styled.span<{ $variant?: StatusVariant }>`
     return theme.colors[colorKey];
   }};
   flex-shrink: 0;
+`;
+
+// =============================================================================
+// STATUS ICON COMPONENTS
+// =============================================================================
+
+export type StatusIconVariant =
+  | 'success'
+  | 'error'
+  | 'warning'
+  | 'info'
+  | 'default'
+  | 'online'
+  | 'offline'
+  | 'unknown'
+  | 'testing'
+  | 'pending'
+  | 'failed';
+
+export interface StatusIconProps {
+  /** Status variant - determines color */
+  $status?: StatusIconVariant;
+  /** Legacy variant prop (maps to $status) */
+  $variant?: StatusIconVariant;
+  /** Direct color override (use when status variants don't fit) */
+  $color?: string;
+  /** Icon size - defaults to ICON_SM */
+  $size?: 'SM' | 'MD' | 'LG' | number;
+}
+
+/**
+ * Status icon for displaying status indicators with appropriate colors
+ *
+ * @example
+ * // Using status variant
+ * <StatusIcon $status="success"><CheckCircleFilled /></StatusIcon>
+ *
+ * @example
+ * // Using direct color
+ * <StatusIcon $color={theme.colors.primary}><InfoCircleFilled /></StatusIcon>
+ *
+ * @example
+ * // Custom size
+ * <StatusIcon $status="error" $size="LG"><CloseCircleFilled /></StatusIcon>
+ */
+export const StatusIcon = styled.span<StatusIconProps>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: ${({ theme, $size = 'SM' }) => {
+    if (typeof $size === 'number') {
+      return `${$size}px`;
+    }
+    return `${theme.dimensions[`ICON_${$size}`]}px`;
+  }};
+  color: ${({ theme, $status, $variant, $color }) => {
+    if ($color) {
+      return $color;
+    }
+
+    // Support both $status and $variant for backwards compatibility
+    const status = $status || $variant;
+
+    switch (status) {
+      case 'success':
+      case 'online':
+        return theme.colors.success;
+      case 'error':
+      case 'failed':
+        return theme.colors.error;
+      case 'warning':
+        return theme.colors.warning;
+      case 'info':
+      case 'testing':
+        return theme.colors.primary;
+      case 'offline':
+        return theme.colors.textTertiary;
+      case 'unknown':
+        return theme.colors.textTertiary;
+      case 'pending':
+      default:
+        return theme.colors.textSecondary;
+    }
+  }};
+
+  .anticon {
+    font-size: ${({ theme, $size = 'SM' }) => {
+      if (typeof $size === 'number') {
+        return `${$size}px`;
+      }
+      // For child icons, use LG size by default for better visibility
+      return `${theme.fontSize.LG}px`;
+    }};
+  }
 `;
 
 // =============================================================================

@@ -1,5 +1,6 @@
 import { Checkbox as AntCheckbox } from 'antd';
 import styled from 'styled-components';
+import { disabledState } from '@/styles/mixins';
 
 /**
  * Styled RediaccCheckbox component
@@ -47,8 +48,7 @@ export const StyledRediaccCheckbox = styled(AntCheckbox)`
 
     /* Disabled state */
     &.ant-checkbox-wrapper-disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
+      ${disabledState}
 
       .ant-checkbox-disabled .ant-checkbox-inner {
         background-color: ${({ theme }) => theme.colors.bgSecondary};

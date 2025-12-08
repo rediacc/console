@@ -2,8 +2,14 @@ import type { ReactNode, CSSProperties } from 'react';
 
 /**
  * Text variants for different use cases
+ * - caption: Extra small text (xs), secondary color - for timestamps, metadata
+ * - label: Extra small text (xs), secondary color - for form labels, metadata labels
+ * - value: Small text (sm), primary color - for data values, content
+ * - title: Large text (lg), semibold weight - for section/card titles
+ * - description: Small text (sm), secondary color - for descriptions, subtitles
+ * - helper: Small text (sm), secondary color - for helper text, hints
  */
-export type TextVariant = 'caption'; // Small text
+export type TextVariant = 'caption' | 'label' | 'value' | 'title' | 'description' | 'helper';
 
 /**
  * Font size scale

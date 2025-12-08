@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo } from 'react';
 import { Row, Col, Progress, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccText } from '@/components/ui';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { CephSection } from '@/components/resources/internal/CephSection';
+import { RediaccText, RediaccEmpty, RediaccStack } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTraceModal } from '@/hooks/useDialogState';
 import { calculateResourcePercent } from '@/platform';
@@ -37,16 +37,13 @@ import {
   StyledTag,
   QueueBadge,
   TimestampWrapper,
-  Timestamp,
   ContentWrapper,
-  EmptyState,
   SectionDivider,
   SectionHeader,
   SectionTitle,
   IconWrapper,
   SectionBlock,
   InfoCard,
-  FullWidthStack,
   FieldRow,
   FieldLabel,
   FieldValue,
@@ -274,10 +271,10 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
           {machine.vaultStatusTime && (
             <TimestampWrapper>
               <Tooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
-                <Timestamp data-testid="vault-status-last-updated">
+                <RediaccText variant="caption" data-testid="vault-status-last-updated">
                   {t('machines:lastUpdated')}:{' '}
                   {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
-                </Timestamp>
+                </RediaccText>
               </Tooltip>
             </TimestampWrapper>
           )}
@@ -285,7 +282,11 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
         <ContentWrapper data-testid="vault-status-content">
           {!vaultData ? (
-            <EmptyState description={t('machines:noVaultData')} data-testid="vault-status-empty" />
+            <RediaccEmpty
+              description={t('machines:noVaultData')}
+              data-testid="vault-status-empty"
+              style={{ marginTop: 120 }}
+            />
           ) : (
             <>
               {vaultData.system && (
@@ -357,7 +358,7 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
     </SectionHeader>
 
     <InfoCard size="sm" data-testid="vault-status-system-info-card">
-      <FullWidthStack>
+      <RediaccStack direction="vertical" gap="sm" fullWidth>
         <FieldRow>
           <FieldLabel>{t('resources:repos.hostname')}:</FieldLabel>
           <FieldValue data-testid="vault-status-hostname">{system.hostname}</FieldValue>
@@ -386,7 +387,7 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
             {system.system_time_human} ({system.timezone})
           </FieldValue>
         </FieldRow>
-      </FullWidthStack>
+      </RediaccStack>
     </InfoCard>
   </SectionBlock>
 );
@@ -499,7 +500,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
 
       {network.default_gateway && (
         <InfoCard size="sm" data-testid="vault-status-gateway-card">
-          <FullWidthStack>
+          <RediaccStack direction="vertical" gap="sm" fullWidth>
             <FieldRow>
               <FieldLabel>{t('resources:repos.defaultGateway')}:</FieldLabel>
               <FieldValue data-testid="vault-status-gateway">{network.default_gateway}</FieldValue>
@@ -512,7 +513,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
                 </FieldValue>
               </FieldRow>
             )}
-          </FullWidthStack>
+          </RediaccStack>
         </InfoCard>
       )}
 

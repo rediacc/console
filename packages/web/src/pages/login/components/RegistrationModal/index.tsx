@@ -20,7 +20,6 @@ import {
 } from '@/utils/optimizedIcons';
 import {
   StyledModal,
-  VerticalStack,
   FormField,
   TermsRow,
   TermsField,
@@ -32,6 +31,7 @@ import {
   SuccessDescription,
   StepsWrapper,
 } from './styles';
+import { RediaccStack } from '@/components/ui';
 
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
 const isCaptchaEnabled = !!turnstileSiteKey;
@@ -445,7 +445,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       requiredMark={false}
       data-testid="registration-verification-form"
     >
-      <VerticalStack direction="vertical">
+      <RediaccStack direction="vertical" fullWidth>
         <Alert
           message={t('auth:registration.verificationRequired')}
           description={t('auth:registration.verificationDescription')}
@@ -483,7 +483,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             {t('auth:registration.verifyAccount')}
           </RediaccButton>
         </FormField>
-      </VerticalStack>
+      </RediaccStack>
     </Form>
   );
 
@@ -523,7 +523,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       destroyOnClose
       data-testid="registration-modal"
     >
-      <VerticalStack direction="vertical">
+      <RediaccStack direction="vertical" fullWidth>
         <StepsWrapper
           current={currentStep}
           size="small"
@@ -550,7 +550,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         )}
 
         {renderContent()}
-      </VerticalStack>
+      </RediaccStack>
     </StyledModal>
   );
 };

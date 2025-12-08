@@ -1,20 +1,11 @@
 import styled from 'styled-components';
-import { InlineStack } from '@/components/common/styled';
-import { RediaccText, RediaccButton } from '@/components/ui';
+import { RediaccButton } from '@/components/ui';
 import { BaseModal, ModalBody } from '@/styles/primitives';
+import { borderedCard } from '@/styles/mixins';
 
 export const StyledModal = styled(BaseModal)`
   .ant-modal-content {
-    border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  }
-`;
-
-export const TitleStack = InlineStack;
-
-export const DangerTitle = styled(RediaccText).attrs({ size: 'xl', weight: 'semibold' })`
-  && {
-    margin: 0;
-    color: ${({ theme }) => theme.colors.error};
+    ${borderedCard()}
   }
 `;
 
@@ -22,20 +13,11 @@ export const ContentStack = styled(ModalBody)`
   gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const DescriptionText = styled(RediaccText).attrs({ color: 'secondary' })``;
-
 export const CountdownCard = styled.div`
   background: ${({ theme }) => theme.colors.bgSecondary};
   padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   text-align: center;
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-`;
-
-export const CountdownText = styled(RediaccText).attrs({ weight: 'semibold' })`
-  && {
-    color: ${({ theme }) => theme.colors.error};
-  }
+  ${borderedCard('borderSecondary', 'MD')}
 `;
 
 export const FooterButton = styled(RediaccButton)`

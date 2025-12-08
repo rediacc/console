@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Select, Table } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccText } from '@/components/ui';
 import { useCephClusters, type CephCluster } from '@/api/queries/ceph';
 import {
   useUpdateMachineCeph,
@@ -9,6 +8,8 @@ import {
 } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccText, RediaccStack } from '@/components/ui';
+import { AlertCard } from '@/styles/primitives';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
@@ -16,8 +17,6 @@ import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import {
   StyledModal,
   TitleStack,
-  ContentStack,
-  InfoAlert,
   MachineDetailsSection,
   DetailRow,
   ClusterAlert,
@@ -205,10 +204,11 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       }}
       data-testid="ds-assign-cluster-modal"
     >
-      <ContentStack>
+      <RediaccStack variant="spaced-column" fullWidth>
         {isBulkMode ? (
           <>
-            <InfoAlert
+            <AlertCard
+              $variant="info"
               message={t('machines:bulkOperations.selectedCount', { count: targetMachines.length })}
               description={t('machines:bulkAssignDescription')}
               variant="info"
@@ -289,7 +289,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
             </>
           )}
         </FieldGroup>
-      </ContentStack>
+      </RediaccStack>
     </StyledModal>
   );
 };

@@ -6,8 +6,8 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccTag } from '@/components/ui';
-import { RediaccButton } from '@/components/ui';
+import { RediaccTag, RediaccButton, RediaccText, RediaccStack } from '@/components/ui';
+import { RediaccDivider } from '@/components/ui';
 import { templateService } from '@/services/templateService';
 import { TabLabel } from '@/styles/primitives';
 import { NoMarginTitle } from '@/styles/primitives';
@@ -23,7 +23,6 @@ import {
 } from '@/utils/optimizedIcons';
 import {
   StyledModal,
-  TitleStack,
   TemplateAvatar,
   TemplateIconWrapper,
   DifficultyTag,
@@ -31,13 +30,9 @@ import {
   OverviewScroll,
   DescriptionCard,
   FeatureCard,
-  CardTitle,
   MarkdownContent,
-  FeatureList,
-  FeatureItem,
   FeatureText,
-  LoadingContainer,
-  LoadingText,
+  CenteredLoadingContainer,
   FilesLayout,
   FileListColumn,
   FilePreviewColumn,
@@ -46,7 +41,6 @@ import {
   FileMeta,
   FileName,
   FilePreviewCard,
-  FilePreviewHeader,
   FilePath,
   FilePreviewBody,
   SecurityScroll,
@@ -56,8 +50,6 @@ import {
   Checklist,
   ChecklistItem,
   BodyParagraph,
-  BodyText,
-  SectionDivider,
   SecurityTitle,
   IconLabel,
   SuccessIcon,
@@ -283,11 +275,11 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         <Col xs={24} md={context === 'marketplace' ? 16 : 24}>
           <DescriptionCard
             title={
-              <CardTitle>
+              <RediaccText variant="title">
                 {context === 'marketplace'
                   ? t('marketplace:description')
                   : t('resources:templates.overview')}
-              </CardTitle>
+              </RediaccText>
             }
             data-testid={context === 'marketplace' ? undefined : 'template-details-readme-content'}
           >
@@ -298,17 +290,19 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         </Col>
         {context === 'marketplace' && (
           <Col xs={24} md={8}>
-            <FeatureCard title={<CardTitle>{t('marketplace:features')}</CardTitle>}>
-              <FeatureList direction="vertical" gap="sm">
+            <FeatureCard
+              title={<RediaccText variant="title">{t('marketplace:features')}</RediaccText>}
+            >
+              <RediaccStack direction="vertical" gap="sm" fullWidth>
                 {effectiveTemplate.tags?.map((tag) => (
-                  <FeatureItem key={tag} gap="sm">
+                  <RediaccStack key={tag} direction="horizontal" gap="sm" fullWidth align="center">
                     <SuccessIcon>
                       <CheckCircleOutlined />
                     </SuccessIcon>
                     <FeatureText>{tag}</FeatureText>
-                  </FeatureItem>
+                  </RediaccStack>
                 ))}
-              </FeatureList>
+              </RediaccStack>
             </FeatureCard>
           </Col>
         )}
@@ -317,18 +311,18 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   );
 
   const filesContent = loading ? (
-    <LoadingContainer
+    <CenteredLoadingContainer
       data-testid={context === 'marketplace' ? undefined : 'template-details-loading'}
     >
       <LoadingWrapper loading centered minHeight={160}>
         <div />
       </LoadingWrapper>
-      <LoadingText>
+      <RediaccText color="secondary">
         {context === 'marketplace'
           ? t('marketplace:loadingFiles')
           : t('resources:templates.loadingDetails')}
-      </LoadingText>
-    </LoadingContainer>
+      </RediaccText>
+    </CenteredLoadingContainer>
   ) : templateDetails && templateDetails.files.length > 0 ? (
     <FilesLayout>
       <FileListColumn>
@@ -370,7 +364,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       <FilePreviewColumn>
         <FilePreviewCard
           title={
-            <FilePreviewHeader gap="sm">
+            <RediaccStack direction="horizontal" gap="sm" align="center" justify="between">
               <IconLabel>
                 <CodeOutlined />
                 <FilePath>
@@ -378,7 +372,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                     templateDetails.files[selectedFileIndex]?.name}
                 </FilePath>
               </IconLabel>
-            </FilePreviewHeader>
+            </RediaccStack>
           }
           data-testid={
             context === 'marketplace'
@@ -411,16 +405,16 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         <AlertStack>
           <RoundedAlert
             message={
-              <BodyText weight="semibold">
+              <RediaccText weight="semibold">
                 {context === 'marketplace' ? t('marketplace:securityReview') : 'Security Review'}
-              </BodyText>
+              </RediaccText>
             }
             description={
-              <BodyText>
+              <RediaccText variant="description">
                 {context === 'marketplace'
                   ? t('marketplace:securityReviewDesc')
                   : 'Please review the template files for security considerations before deployment.'}
-              </BodyText>
+              </RediaccText>
             }
             variant="info"
             showIcon
@@ -436,7 +430,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             <ChecklistItem>Keep software components up to date</ChecklistItem>
           </Checklist>
 
-          <SectionDivider />
+          <RediaccDivider spacing="lg" />
 
           <SecurityTitle>Container Security</SecurityTitle>
           <BodyParagraph>
@@ -491,7 +485,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         context === 'marketplace' ? 'marketplace-preview-modal' : 'template-details-modal'
       }
       title={
-        <TitleStack>
+        <RediaccStack direction="horizontal" gap="md" align="center">
           {effectiveTemplate.iconUrl && !iconFailed ? (
             <TemplateAvatar
               src={effectiveTemplate.iconUrl}
@@ -518,7 +512,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
               </DifficultyTag>
             )}
           </div>
-        </TitleStack>
+        </RediaccStack>
       }
       open={open}
       onCancel={onClose}

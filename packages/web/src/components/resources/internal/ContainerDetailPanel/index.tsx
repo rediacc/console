@@ -36,10 +36,7 @@ import {
   DividerLabel,
   MetricsGrid,
   MetricCard,
-  MetricLabel,
-  MetricValue,
   SectionStack,
-  InlineText,
 } from './styles';
 
 interface ContainerData {
@@ -137,7 +134,11 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
     }
 
     if (container.ports) {
-      return <InlineText data-testid="container-detail-ports-text">{container.ports}</InlineText>;
+      return (
+        <RediaccText variant="value" data-testid="container-detail-ports-text">
+          {container.ports}
+        </RediaccText>
+      );
     }
 
     return null;
@@ -224,10 +225,10 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
 
         <MetricsGrid>
           <MetricCard data-testid="container-detail-cpu-card">
-            <MetricLabel>{t('resources:containers.cpuUsage')}</MetricLabel>
-            <MetricValue $isWarning={cpuWarning}>
+            <RediaccText variant="label">{t('resources:containers.cpuUsage')}</RediaccText>
+            <RediaccText size="lg" weight="semibold" color={cpuWarning ? 'danger' : 'primary'}>
               {resourceUsage?.cpu?.toFixed(2) ?? '0'}%
-            </MetricValue>
+            </RediaccText>
             <Progress
               percent={resourceUsage?.cpu || 0}
               showInfo={false}
@@ -235,26 +236,26 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             />
           </MetricCard>
           <MetricCard data-testid="container-detail-memory-card">
-            <MetricLabel>{t('resources:containers.memoryUsage')}</MetricLabel>
-            <MetricValue $isWarning={memoryWarning}>
+            <RediaccText variant="label">{t('resources:containers.memoryUsage')}</RediaccText>
+            <RediaccText size="lg" weight="semibold" color={memoryWarning ? 'danger' : 'primary'}>
               {resourceUsage ? `${resourceUsage.memoryUsed} / ${resourceUsage.memoryTotal}` : '-'}
-            </MetricValue>
+            </RediaccText>
             <Progress
               percent={resourceUsage?.memoryPercent || 0}
               status={memoryWarning ? 'exception' : 'normal'}
             />
           </MetricCard>
           <MetricCard data-testid="container-detail-network-card">
-            <MetricLabel>{t('resources:containers.networkIO')}</MetricLabel>
-            <InlineText>
+            <RediaccText variant="label">{t('resources:containers.networkIO')}</RediaccText>
+            <RediaccText variant="value">
               <WifiOutlined /> {resourceUsage?.netIn} / {resourceUsage?.netOut}
-            </InlineText>
+            </RediaccText>
           </MetricCard>
           <MetricCard data-testid="container-detail-block-io-card">
-            <MetricLabel>{t('resources:containers.blockIO')}</MetricLabel>
-            <InlineText>
+            <RediaccText variant="label">{t('resources:containers.blockIO')}</RediaccText>
+            <RediaccText variant="value">
               <HddOutlined /> {resourceUsage?.blockRead} / {resourceUsage?.blockWrite}
-            </InlineText>
+            </RediaccText>
           </MetricCard>
         </MetricsGrid>
 

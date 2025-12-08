@@ -1,6 +1,6 @@
 import { Form, Steps, Typography } from 'antd';
 import styled from 'styled-components';
-import { RediaccInput, RediaccText, RediaccStack } from '@/components/ui';
+import { RediaccInput, RediaccText } from '@/components/ui';
 import { BaseModal, FlexRow } from '@/styles/primitives';
 
 const { Title } = Typography;
@@ -8,12 +8,6 @@ const { Title } = Typography;
 export const StyledModal = styled(BaseModal)`
   .ant-modal-body {
     padding-top: ${({ theme }) => theme.spacing.LG}px;
-  }
-`;
-
-export const VerticalStack = styled(RediaccStack).attrs({ direction: 'vertical' })`
-  && {
-    width: 100%;
   }
 `;
 

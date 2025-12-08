@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Tabs } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccText } from '@/components/ui';
 import {
   useAvailableMachinesForClone,
   useCloneMachines,
@@ -15,19 +14,18 @@ import {
 } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccText } from '@/components/ui';
 import { RediaccButton } from '@/components/ui';
+import { AlertCard } from '@/styles/primitives';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';
+import { RediaccSelect, RediaccTag } from '@/components/ui';
 import {
   StyledModal,
   TitleStack,
-  CloneTag,
   AssignTabContainer,
   ManageTabContainer,
-  InfoAlert,
-  WarningAlert,
   FieldGroup,
-  StyledSelect,
   EmptyState,
   MachinesTable,
   MachineNameRow,
@@ -155,13 +153,19 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
 
     return (
       <AssignTabContainer>
-        <InfoAlert message={t('ceph:clones.assignMachinesInfo')} variant="info" showIcon />
+        <AlertCard
+          $variant="info"
+          message={t('ceph:clones.assignMachinesInfo')}
+          variant="info"
+          showIcon
+        />
 
         <FieldGroup>
           <RediaccText weight="medium" size="sm">
             {t('ceph:machines.selectMachines')}:
           </RediaccText>
-          <StyledSelect
+          <RediaccSelect
+            size="sm"
             fullWidth
             mode="multiple"
             placeholder={t('machines:selectMachines')}
@@ -229,7 +233,12 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
 
     return (
       <ManageTabContainer>
-        <WarningAlert message={t('ceph:clones.removeMachinesInfo')} variant="warning" showIcon />
+        <AlertCard
+          $variant="warning"
+          message={t('ceph:clones.removeMachinesInfo')}
+          variant="warning"
+          showIcon
+        />
 
         <MachinesTable
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -294,7 +303,11 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
         <TitleStack>
           <CopyOutlined />
           {t('ceph:clones.manageMachines')}
-          {clone && <CloneTag>{clone.cloneName}</CloneTag>}
+          {clone && (
+            <RediaccTag variant="warning" size="md" borderless>
+              {clone.cloneName}
+            </RediaccTag>
+          )}
         </TitleStack>
       }
       open={open}

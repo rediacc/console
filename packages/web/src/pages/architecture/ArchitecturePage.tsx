@@ -4,8 +4,8 @@ import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { useCompanyArchitecture } from '@/api/queries/architecture';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccRadio } from '@/components/ui';
-import { PageCard, RediaccText, RediaccButton } from '@/components/ui';
+import { RediaccRadio, RediaccStack, RediaccText, RediaccButton } from '@/components/ui';
+import { PageCard } from '@/components/ui';
 import { useTheme } from '@/context/ThemeContext';
 import {
   FullscreenOutlined,
@@ -24,10 +24,6 @@ import {
 import type { CompanyDataGraph, CompanyGraphNode } from '@rediacc/shared/types';
 import { getArchitecturePalette } from './architectureTheme';
 import {
-  PageWrapper,
-  ContentStack,
-  HeaderStack,
-  HeaderRow,
   ActionGroup,
   FiltersRow,
   FilterLabel,
@@ -40,10 +36,10 @@ import {
   LegendGrid,
   LegendItem,
   LegendIcon,
-  SectionTitleText,
   CenteredState,
   CenteredMessage,
 } from './styles';
+import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
 
 interface GraphNode extends CompanyGraphNode, d3.SimulationNodeDatum {
   memberCount?: number;
@@ -678,7 +674,7 @@ const ArchitecturePage: React.FC = () => {
 
   if (error) {
     return (
-      <PageWrapper>
+      <PageContainer>
         <Alert
           message={t('messages.error', { ns: 'common' })}
           description={error instanceof Error ? error.message : t('architecture.fetchError')}
@@ -696,15 +692,15 @@ const ArchitecturePage: React.FC = () => {
             </Tooltip>
           }
         />
-      </PageWrapper>
+      </PageContainer>
     );
   }
 
   if (!data) {
     return (
-      <PageWrapper>
+      <PageContainer>
         <Alert message={t('architecture.noData')} type="info" showIcon />
-      </PageWrapper>
+      </PageContainer>
     );
   }
 
@@ -720,13 +716,15 @@ const ArchitecturePage: React.FC = () => {
   };
 
   return (
-    <PageWrapper data-testid="architecture-page">
-      <ContentStack>
+    <PageContainer data-testid="architecture-page">
+      <RediaccStack variant="spaced-column" fullWidth>
         {/* Header */}
         <PageCard>
-          <HeaderStack>
-            <HeaderRow>
-              <SectionTitleText>{t('architecture.title')}</SectionTitleText>
+          <RediaccStack direction="vertical" gap="md" fullWidth>
+            <SectionHeaderRow>
+              <RediaccText size="xl" weight="semibold" style={{ margin: 0 }}>
+                {t('architecture.title')}
+              </RediaccText>
               <ActionGroup>
                 <RediaccRadio.Group
                   value={viewMode}
@@ -766,7 +764,7 @@ const ArchitecturePage: React.FC = () => {
                   />
                 </Tooltip>
               </ActionGroup>
-            </HeaderRow>
+            </SectionHeaderRow>
 
             <FiltersRow>
               <FilterLabel>
@@ -876,7 +874,7 @@ const ArchitecturePage: React.FC = () => {
                 />
               </Col>
             </Row>
-          </HeaderStack>
+          </RediaccStack>
         </PageCard>
 
         {/* Visualization */}
@@ -917,8 +915,8 @@ const ArchitecturePage: React.FC = () => {
             ))}
           </LegendGrid>
         </PageCard>
-      </ContentStack>
-    </PageWrapper>
+      </RediaccStack>
+    </PageContainer>
   );
 };
 

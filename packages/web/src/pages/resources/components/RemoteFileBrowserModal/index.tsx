@@ -37,14 +37,13 @@ import { waitForQueueItemCompletion } from '@/services/helloService';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import {
-  ContentSpace,
   SourceLabel,
-  SourceContainer,
   SourceSelect,
   SearchInput,
   FolderIcon,
   FileIcon,
 } from './styles';
+import { RediaccStack } from '@/components/ui';
 import type { TableProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table/interface';
 
@@ -778,13 +777,13 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         </Tooltip>,
       ]}
     >
-      <ContentSpace direction="vertical" gap="md">
+      <RediaccStack direction="vertical" gap="md" fullWidth>
         {/* Source selector with label */}
         <div data-testid="file-browser-source-container">
           <SourceLabel data-testid="file-browser-source-label">
             {t('resources:remoteFiles.sourceLabel')}
           </SourceLabel>
-          <SourceContainer>
+          <RediaccStack direction="horizontal" justify="between" fullWidth>
             <Space>
               <SourceSelect>
                 <Select
@@ -837,7 +836,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                 data-testid="file-browser-search-input"
               />
             </SearchInput>
-          </SourceContainer>
+          </RediaccStack>
         </div>
 
         {/* Breadcrumb navigation */}
@@ -898,7 +897,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           showIcon
           data-testid="file-browser-info-alert"
         />
-      </ContentSpace>
+      </RediaccStack>
     </Modal>
   );
 };

@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
 import { RediaccTag } from '@/components/ui';
-import { BaseModal, BaseTable, ModalTitleRow, AlertCard } from '@/styles/primitives';
+import { BaseModal, BaseTable, ModalTitleRow } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import { WarningOutlined } from '@/utils/optimizedIcons';
 
@@ -14,12 +14,6 @@ export const TitleStack = styled(ModalTitleRow)``;
 export const DangerIcon = styled(WarningOutlined)`
   color: ${({ theme }) => theme.colors.error};
   font-size: ${({ theme }) => theme.fontSize.XL}px;
-`;
-
-export const InfoAlert = styled(AlertCard).attrs({ $variant: 'info' })``;
-
-export const WarningAlert = styled(AlertCard).attrs({ $variant: 'warning' })`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const MachinesTable = styled(BaseTable)`

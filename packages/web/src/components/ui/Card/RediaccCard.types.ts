@@ -3,6 +3,11 @@ import type { ReactNode, CSSProperties } from 'react';
 export type CardVariant = 'default' | 'section' | 'selectable' | 'bordered' | 'elevated';
 export type CardSize = 'sm' | 'md' | 'lg';
 
+/**
+ * Card spacing variants for margin-bottom control
+ */
+export type CardSpacing = 'none' | 'compact' | 'default' | 'spacious';
+
 export interface RediaccCardProps {
   /** Visual style variant */
   variant?: CardVariant;
@@ -16,6 +21,10 @@ export interface RediaccCardProps {
   hoverable?: boolean;
   /** Stretch to full container width */
   fullWidth?: boolean;
+  /** Stretch to full container height */
+  fullHeight?: boolean;
+  /** Margin-bottom spacing: none (0), compact (sm), default (md), spacious (lg) */
+  spacing?: CardSpacing;
   /** Remove all padding */
   noPadding?: boolean;
   /** Card title (renders a header section) */

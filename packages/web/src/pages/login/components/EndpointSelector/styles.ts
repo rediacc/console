@@ -1,6 +1,6 @@
 import { Typography } from 'antd';
 import styled from 'styled-components';
-import { RediaccSelect, RediaccStack } from '@/components/ui';
+import { RediaccSelect } from '@/components/ui';
 import { FlexRow } from '@/styles/primitives';
 import { LoadingOutlined, ApiOutlined, DeleteOutlined } from '@/utils/optimizedIcons';
 
@@ -72,7 +72,7 @@ export const OptionRight = styled(FlexRow).attrs({ $gap: 8 })`
 `;
 
 export const HealthIndicator = styled.span<{ $isHealthy: boolean; $isChecking?: boolean }>`
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: ${({ $isHealthy, $isChecking }) =>
     $isChecking
       ? 'var(--color-warning)'
@@ -104,7 +104,7 @@ export const VersionLabel = styled.span`
 `;
 
 export const EmojiIcon = styled.span`
-  font-size: 16px;
+  font-size: ${({ theme }) => theme.fontSize.BASE}px;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -128,7 +128,7 @@ export const AddCustomOption = styled.span`
 `;
 
 export const CheckingSpinner = styled(LoadingOutlined)`
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: var(--color-warning);
 `;
 
@@ -136,11 +136,4 @@ export const SpinnerWrapper = styled.span`
   margin-left: ${({ theme }) => theme.spacing.SM}px;
   display: inline-flex;
   align-items: center;
-`;
-
-export const FormActions = styled(RediaccStack).attrs({ direction: 'horizontal' })`
-  && {
-    width: 100%;
-    justify-content: flex-end;
-  }
 `;

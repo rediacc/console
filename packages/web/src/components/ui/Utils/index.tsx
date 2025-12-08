@@ -4,16 +4,12 @@
  * General-purpose layout utilities:
  * - IconWrapper: Icon container with sizing
  * - RightAlign, CenteredState, CenteredBlock, ErrorWrapper
- * - PaddedEmpty: Ant Design Empty with padding
  * - LoadingState: Flexible loading state container
  * - RegionsSection: Special section for infrastructure page
  */
 
 import styled, { type DefaultTheme } from 'styled-components';
-import {
-  PaddedEmpty as PrimitivePaddedEmpty,
-  LoadingState as PrimitiveLoadingState,
-} from '@/styles/primitives';
+import { LoadingState as PrimitiveLoadingState } from '@/styles/primitives';
 
 type IconSize = 'sm' | 'md' | 'lg';
 type IconTone = 'primary' | 'inherit' | 'success' | 'warning' | 'danger' | 'info' | 'muted';
@@ -94,8 +90,6 @@ export const ErrorWrapper = styled.div`
   margin: 0 auto;
   width: 100%;
 `;
-
-export const PaddedEmpty = PrimitivePaddedEmpty;
 
 export const LoadingState = PrimitiveLoadingState;
 

@@ -1,5 +1,5 @@
 ﻿import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { Table, Button, Space, Tooltip } from 'antd';
+import { Table, Button, Space, Tooltip, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { useMachines } from '@/api/queries/machines';
 import { useRepos } from '@/api/queries/repos';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
+import { RediaccEmpty } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
@@ -40,7 +41,6 @@ import {
   ViewToggleContainer,
   ViewToggleButton,
   ViewToggleDivider,
-  EmptyState,
   GroupedCardStack,
   GroupCardContainer,
   GroupCardHeader,
@@ -504,7 +504,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   // Render grouped table view
   const renderGroupedTableView = () => {
     if (Object.keys(groupedMachinesForTable).length === 0) {
-      return <EmptyState description={t('resources:repos.noRepos')} />;
+      return (
+        <RediaccEmpty
+          variant="minimal"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={t('resources:repos.noRepos')}
+          style={{ marginTop: 64 }}
+        />
+      );
     }
 
     const variantMap: Record<GroupByMode, GroupVariant> = {

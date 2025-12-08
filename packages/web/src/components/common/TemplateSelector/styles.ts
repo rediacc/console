@@ -1,25 +1,11 @@
 import { Row } from 'antd';
 import styled from 'styled-components';
-import {
-  RediaccText,
-  RediaccCard,
-  RediaccStack,
-  RediaccEmpty,
-  RediaccButton,
-  RediaccTag,
-} from '@/components/ui';
+import { RediaccText, RediaccCard, RediaccButton, RediaccTag } from '@/components/ui';
 import { RediaccSearchInput } from '@/components/ui/Form';
 import { FlexRow } from '@/styles/primitives';
 
 export const SelectorContainer = styled.div`
   width: 100%;
-`;
-
-export const HeaderStack = styled(RediaccStack).attrs({ direction: 'vertical' })`
-  && {
-    width: 100%;
-    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-  }
 `;
 
 export const HelperRow = styled(FlexRow).attrs({
@@ -50,12 +36,6 @@ export const ResultCount = styled(RediaccText).attrs({
   && {
     margin-bottom: ${({ theme }) => theme.spacing.SM}px;
     display: block;
-  }
-`;
-
-export const NoResultsEmpty = styled(RediaccEmpty)`
-  && {
-    margin: ${({ theme }) => theme.spacing.MD}px 0;
   }
 `;
 
@@ -92,12 +72,6 @@ export const SelectionIndicator = styled.span<{ $variant?: 'default' | 'none' }>
   font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
 `;
 
-export const CardStack = styled(RediaccStack).attrs({ direction: 'vertical' })`
-  && {
-    width: 100%;
-  }
-`;
-
 export const TemplateIconWrapper = styled.div<{ $muted?: boolean }>`
   text-align: center;
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
@@ -109,20 +83,9 @@ export const TemplateIconWrapper = styled.div<{ $muted?: boolean }>`
   }
 `;
 
-export const TemplateTitle = styled(RediaccText)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.BASE}px;
-  }
-`;
+// TemplateTitle removed - use <RediaccText variant="title"> directly
 
-export const TemplateDescription = styled(RediaccText)`
-  && {
-    display: block;
-    margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    line-height: ${({ theme }) => theme.lineHeight.RELAXED};
-  }
-`;
+// TemplateDescription removed - use <RediaccText variant="description"> directly
 
 export const DetailsButton = styled(RediaccButton).attrs({
   size: 'sm',

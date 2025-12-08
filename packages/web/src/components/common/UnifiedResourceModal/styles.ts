@@ -2,10 +2,8 @@ import { Collapse } from 'antd';
 import styled from 'styled-components';
 import { RediaccTag } from '@/components/ui';
 import { RediaccCheckbox } from '@/components/ui/Form';
-import { StyledIcon, FlexColumn } from '@/styles/primitives';
+import { StyledIcon } from '@/styles/primitives';
 import { UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons';
-
-export const TitleStack = FlexColumn;
 
 export const FooterLeftActions = styled.div`
   margin-right: auto;

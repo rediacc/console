@@ -10,6 +10,10 @@ export interface RediaccButtonProps {
   size?: ButtonSize;
   /** Render as icon-only button (square, no text) */
   iconOnly?: boolean;
+  /** Alias for iconOnly - square button with icon only */
+  square?: boolean;
+  /** Compact mode: smaller size with tighter padding (equivalent to size='sm') */
+  compact?: boolean;
   /** Icon element to render before children */
   icon?: ReactNode;
   /** Loading state - shows spinner and disables button */

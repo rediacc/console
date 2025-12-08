@@ -1,18 +1,8 @@
 import styled from 'styled-components';
 import { ContentStack, CenteredState, ActionGroup } from '@/components/common/styled';
-import { RediaccText, RediaccStack } from '@/components/ui';
-import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
-
-export const PageWrapper = PageContainer;
 
 // Re-export from common/styled
 export { ContentStack, ActionGroup };
-
-export const HeaderStack = styled(RediaccStack).attrs({ direction: 'vertical', gap: 'md' })`
-  width: 100%;
-`;
-
-export const HeaderRow = SectionHeaderRow;
 
 export const FiltersRow = styled.div`
   display: flex;
@@ -89,13 +79,6 @@ export const LegendIcon = styled.div<{ $color: string }>`
   justify-content: center;
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
   background-color: ${({ $color }) => $color};
-`;
-
-export const SectionTitleText = styled(RediaccText).attrs({ size: 'xl', weight: 'semibold' })`
-  && {
-    margin: 0;
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
 `;
 
 export { CenteredState };

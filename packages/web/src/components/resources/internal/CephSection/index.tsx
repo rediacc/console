@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useMachineAssignmentStatus } from '@/api/queries/ceph';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
-import { IconWrapper } from '@/components/ui';
+import { IconWrapper, RediaccText, RediaccDivider, RediaccStack } from '@/components/ui';
 import type { Machine, MachineAssignmentType } from '@/types';
 import {
   DatabaseOutlined,
@@ -15,17 +15,12 @@ import {
 } from '@/utils/optimizedIcons';
 import {
   LoadingState,
-  SectionDivider,
   DividerContent,
   SectionTitle,
   SectionCard,
-  ContentStack,
-  AssignmentLabel,
   AlertWrapper,
-  AlertMessage,
   ActionsRow,
   ActionButton,
-  ButtonLabel,
 } from './styles';
 
 interface CephSectionProps {
@@ -85,21 +80,25 @@ export const CephSection: React.FC<CephSectionProps> = ({
 
   return (
     <>
-      <SectionDivider data-testid="ds-section-divider">
+      <RediaccDivider spacing="lg" data-testid="ds-section-divider">
         <DividerContent>
           <IconWrapper $size="lg">
             <CloudServerOutlined />
           </IconWrapper>
           <SectionTitle>{t('machineSection.title')}</SectionTitle>
         </DividerContent>
-      </SectionDivider>
+      </RediaccDivider>
 
       <SectionCard size="sm" data-testid="ds-section-card">
-        <ContentStack>
+        <RediaccStack variant="spaced-column" fullWidth>
           <div>
-            <AssignmentLabel data-testid="ds-section-assignment-label">
+            <RediaccText
+              variant="label"
+              style={{ display: 'block', marginBottom: 4 }}
+              data-testid="ds-section-assignment-label"
+            >
               {t('assignment.currentAssignment')}
-            </AssignmentLabel>
+            </RediaccText>
             <MachineAssignmentStatusBadge
               assignmentType={assignmentType}
               assignmentDetails={assignmentDetails}
@@ -110,7 +109,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
 
           {showAssignmentAlert && assignmentDetails && (
             <AlertWrapper
-              message={<AlertMessage>{assignmentDetails}</AlertMessage>}
+              message={<RediaccText variant="value">{assignmentDetails}</RediaccText>}
               variant="info"
               showIcon
               icon={
@@ -133,7 +132,9 @@ export const CephSection: React.FC<CephSectionProps> = ({
                 onClick={onViewDetails}
                 data-testid="ds-section-history-button"
               >
-                <ButtonLabel>{t('assignment.history')}</ButtonLabel>
+                <RediaccText variant="caption" weight="medium">
+                  {t('assignment.history')}
+                </RediaccText>
               </ActionButton>
             )}
 
@@ -148,14 +149,16 @@ export const CephSection: React.FC<CephSectionProps> = ({
                 onClick={onManageAssignment}
                 data-testid="ds-section-manage-button"
               >
-                <ButtonLabel>{t('machineSection.manageAssignment')}</ButtonLabel>
+                <RediaccText variant="caption" weight="medium">
+                  {t('machineSection.manageAssignment')}
+                </RediaccText>
               </ActionButton>
             )}
           </ActionsRow>
 
           {assignmentType !== 'AVAILABLE' && (
             <AlertWrapper
-              message={<AlertMessage>{t('warnings.exclusivity')}</AlertMessage>}
+              message={<RediaccText variant="value">{t('warnings.exclusivity')}</RediaccText>}
               variant="warning"
               showIcon
               icon={
@@ -166,7 +169,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
               data-testid="ds-section-exclusivity-warning"
             />
           )}
-        </ContentStack>
+        </RediaccStack>
       </SectionCard>
     </>
   );

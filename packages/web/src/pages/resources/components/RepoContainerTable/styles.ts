@@ -19,7 +19,7 @@ export const PluginContainersSection = styled(ContainersSection)`
 `;
 
 export const EmptyState = styled.div`
-  padding: ${({ theme }) => `${theme.spacing.XXL}px 0`};
+  padding: ${({ theme }) => theme.spacing.XXL}px 0;
   text-align: center;
 `;
 

@@ -7,7 +7,7 @@ import { useSelector } from 'react-redux';
 import { useTFAStatus, useEnableTFA, useDisableTFA } from '@/api/queries/twoFactor';
 import type { EnableTwoFactorResponse } from '@/api/queries/twoFactor';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton, RediaccText, RediaccPasswordInput } from '@/components/ui';
+import { RediaccButton, RediaccText, RediaccPasswordInput, RediaccAlert } from '@/components/ui';
 import { useDialogState } from '@/hooks/useDialogState';
 import { OTPCodeField } from '@/pages/settings/profile/components/OTPCodeField';
 import { RootState } from '@/store/store';
@@ -19,8 +19,8 @@ import {
   CopyOutlined,
 } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { RediaccStack } from '@/components/ui';
 import {
-  FullWidthStack,
   CenteredStack,
   StatusIcon,
   SectionTitle,
@@ -29,7 +29,6 @@ import {
   SecretInputRow,
   SecretInput,
   FormActionRow,
-  AlertSpacer,
   CardContent,
   FormItemNoMargin,
   ModalTitleIcon,
@@ -284,7 +283,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
         <ManualSetupAlert
           message={t('twoFactorAuth.manualSetup.title')}
           description={
-            <FullWidthStack>
+            <RediaccStack direction="vertical" gap="sm" fullWidth>
               <RediaccText>{t('twoFactorAuth.manualSetup.instructions')}</RediaccText>
               <SecretInputRow>
                 <SecretInput value={secret} readOnly data-testid="tfa-settings-secret-key-input" />
@@ -294,7 +293,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
                   data-testid="tfa-settings-copy-secret-button"
                 />
               </SecretInputRow>
-            </FullWidthStack>
+            </RediaccStack>
           }
           variant="info"
           data-testid="tfa-settings-manual-setup-alert"
@@ -304,7 +303,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
   ];
 
   return (
-    <FullWidthStack $gap="LG">
+    <RediaccStack direction="vertical" gap="lg" fullWidth>
       <CenteredStack>
         <StatusIcon />
         <SectionTitle level={4}>{t('twoFactorAuth.verification.title')}</SectionTitle>
@@ -339,7 +338,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
           </FormActionRow>
         </FormItemNoMargin>
       </Form>
-    </FullWidthStack>
+    </RediaccStack>
   );
 };
 
@@ -355,8 +354,9 @@ const SuccessContent: React.FC<SuccessContentProps> = ({ t, onDone }) => (
     subTitle={t('twoFactorAuth.enableSuccess.subtitle')}
     data-testid="tfa-settings-success-result"
     extra={
-      <FullWidthStack $gap="LG">
-        <AlertSpacer
+      <RediaccStack direction="vertical" gap="lg" fullWidth>
+        <RediaccAlert
+          spacing="spacious"
           message={t('twoFactorAuth.enableSuccess.verified')}
           description={t('twoFactorAuth.enableSuccess.verifiedDescription')}
           variant="success"
@@ -373,7 +373,7 @@ const SuccessContent: React.FC<SuccessContentProps> = ({ t, onDone }) => (
         >
           {t('twoFactorAuth.done')}
         </RediaccButton>
-      </FullWidthStack>
+      </RediaccStack>
     }
   />
 );
@@ -386,7 +386,7 @@ interface StatusOverviewProps {
 }
 
 const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, onDisable, t }) => (
-  <FullWidthStack $gap="LG">
+  <RediaccStack direction="vertical" gap="lg" fullWidth>
     <CenteredStack>
       <StatusIcon $tone={isEnabled ? 'success' : 'muted'} $size={DESIGN_TOKENS.FONT_SIZE.XXXXXXL} />
       <SectionTitle level={4}>
@@ -433,7 +433,7 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
         {t('twoFactorAuth.enable')}
       </RediaccButton>
     )}
-  </FullWidthStack>
+  </RediaccStack>
 );
 
 interface EnableModalProps {
@@ -462,7 +462,8 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
     data-testid="tfa-settings-enable-modal"
   >
     <Form form={form} layout="vertical" onFinish={onSubmit}>
-      <AlertSpacer
+      <RediaccAlert
+        spacing="spacious"
         message={t('twoFactorAuth.enableModal.warning')}
         description={t('twoFactorAuth.enableModal.warningDescription')}
         variant="warning"
@@ -528,7 +529,8 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
     data-testid="tfa-settings-disable-modal"
   >
     <Form form={form} layout="vertical" onFinish={onSubmit}>
-      <AlertSpacer
+      <RediaccAlert
+        spacing="spacious"
         message={t('twoFactorAuth.disableModal.warning')}
         description={t('twoFactorAuth.disableModal.warningDescription')}
         variant="error"

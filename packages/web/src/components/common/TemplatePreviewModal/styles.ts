@@ -3,8 +3,6 @@ import styled from 'styled-components';
 import {
   RediaccText,
   RediaccAlert,
-  RediaccStack,
-  RediaccDivider,
   RediaccList,
   RediaccTabs,
   RediaccTag,
@@ -12,11 +10,11 @@ import {
 import {
   BaseModal,
   ContentCard,
-  LoadingContainer as BaseLoadingContainer,
-  LoadingText as BaseLoadingText,
+  LoadingContainer,
   FlexColumn,
   FlexRow,
 } from '@/styles/primitives';
+import { borderedCard } from '@/styles/mixins';
 
 const { Title } = Typography;
 
@@ -30,8 +28,6 @@ export const StyledModal = styled(BaseModal)`
     padding: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
-
-export const TitleStack = styled(FlexRow).attrs({ $gap: 'MD' })``;
 
 export const TemplateAvatar = styled.img`
   width: ${({ theme }) => theme.dimensions.ICON_XXL}px;
@@ -78,10 +74,7 @@ export const DescriptionCard = styled(ContentCard)`
 
 export const FeatureCard = DescriptionCard;
 
-export const CardTitle = styled(RediaccText).attrs({
-  size: 'xl',
-  weight: 'semibold',
-})``;
+// CardTitle removed - use <RediaccText variant="title"> directly
 
 export const MarkdownContent = styled.div`
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -92,34 +85,19 @@ export const MarkdownContent = styled.div`
   }
 `;
 
-export const FeatureList = styled(RediaccStack).attrs({ direction: 'vertical' })`
-  && {
-    width: 100%;
-  }
-`;
-
-export const FeatureItem = styled(RediaccStack).attrs({ direction: 'horizontal' })`
-  && {
-    width: 100%;
-    align-items: center;
-  }
-`;
-
 export const FeatureText = styled(RediaccText)`
   && {
     color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
 
-export const LoadingContainer = styled(BaseLoadingContainer)`
+export const CenteredLoadingContainer = styled(LoadingContainer)`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: ${({ theme }) => theme.spacing.SM}px;
 `;
-
-export const LoadingText = BaseLoadingText;
 
 export const FilesLayout = styled(FlexRow).attrs({ $gap: 'MD' })`
   height: calc(90vh - 340px);
@@ -185,13 +163,6 @@ export const FilePreviewCard = styled(ContentCard)`
   }
 `;
 
-export const FilePreviewHeader = styled(RediaccStack).attrs({ direction: 'horizontal' })`
-  && {
-    align-items: center;
-    justify-content: space-between;
-  }
-`;
-
 export const FilePath = styled(RediaccText)`
   && {
     font-family: monospace;
@@ -201,8 +172,7 @@ export const FilePath = styled(RediaccText)`
 export const FilePreviewBody = styled.div`
   flex: 1 1 auto;
   overflow: auto;
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
+  ${borderedCard('borderSecondary', 'MD')}
 `;
 
 export const SecurityScroll = styled.div`
@@ -244,16 +214,7 @@ export const BodyParagraph = styled(RediaccText)`
   }
 `;
 
-// BodyText accepts weight prop to allow both regular and bold text
-export const BodyText = styled(RediaccText).attrs({
-  color: 'muted',
-})``;
-
-export const SectionDivider = styled(RediaccDivider)`
-  && {
-    margin: ${({ theme }) => `${theme.spacing.LG}px 0`};
-  }
-`;
+// BodyText removed - use <RediaccText variant="description"> directly
 
 export const SecurityTitle = styled(Title).attrs({ level: 5 })`
   && {

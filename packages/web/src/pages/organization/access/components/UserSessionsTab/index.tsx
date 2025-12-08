@@ -12,6 +12,7 @@ import {
   createTruncatedColumn,
 } from '@/components/common/columns';
 import { InlineStack } from '@/components/common/styled';
+import { RediaccText } from '@/components/ui';
 import { createDateSorter } from '@/platform';
 import { selectUser } from '@/store/auth/authSelectors';
 import { TableContainer } from '@/styles/primitives';
@@ -36,7 +37,6 @@ import {
   SearchInput,
   SessionTag,
   CellText,
-  SummaryText,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -333,7 +333,9 @@ const UserSessionsTab: React.FC = () => {
               pageSize: 10,
               showSizeChanger: true,
               showTotal: (total) => (
-                <SummaryText>{t('userSessions.totalCount', { count: total })}</SummaryText>
+                <RediaccText variant="caption">
+                  {t('userSessions.totalCount', { count: total })}
+                </RediaccText>
               ),
             }}
             scroll={{ x: 1500 }}

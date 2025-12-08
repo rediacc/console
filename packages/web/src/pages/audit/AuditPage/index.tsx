@@ -16,7 +16,7 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useAuditLogs } from '@/api/queries/audit';
-import { RediaccText, RediaccButton } from '@/components/ui';
+import { RediaccText, RediaccButton, RediaccStack } from '@/components/ui';
 import { useFilters, usePagination } from '@/hooks';
 import {
   findActionConfig,
@@ -28,7 +28,7 @@ import {
   downloadJSON,
   generateTimestampedFilename,
 } from '@/platform';
-import { PageCard } from '@/styles/primitives';
+import { PageCard, PageContainer } from '@/styles/primitives';
 import {
   ReloadOutlined,
   SearchOutlined,
@@ -37,16 +37,7 @@ import {
   FileTextOutlined,
 } from '@/utils/optimizedIcons';
 import { buildAuditColumns } from './columns';
-import {
-  PageWrapper,
-  ContentStack,
-  FilterField,
-  FilterLabel,
-  PlaceholderLabel,
-  ActionButtonFull,
-  LinkButton,
-  ActionIcon,
-} from './styles';
+import { FilterLabel, PlaceholderLabel, ActionButtonFull, LinkButton, ActionIcon } from './styles';
 
 interface AuditPageFilters extends Record<string, unknown> {
   dateRange: [Dayjs | null, Dayjs | null];
@@ -188,14 +179,14 @@ const AuditPage = () => {
   ];
 
   return (
-    <PageWrapper>
-      <ContentStack>
+    <PageContainer>
+      <RediaccStack variant="spaced-column" fullWidth>
         {/* Filters */}
         <PageCard data-testid="audit-filter-card">
           <Space direction="vertical" size="large">
             <Row gutter={[24, 16]}>
               <Col xs={24} sm={24} md={8}>
-                <FilterField>
+                <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <FilterLabel>{t('system:audit.filters.dateRange')}</FilterLabel>
                   <RangePicker
                     data-testid="audit-filter-date"
@@ -242,10 +233,10 @@ const AuditPage = () => {
                       },
                     ]}
                   />
-                </FilterField>
+                </RediaccStack>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <FilterField>
+                <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <FilterLabel>{t('system:audit.filters.entityType')}</FilterLabel>
                   <Select
                     data-testid="audit-filter-entity"
@@ -258,10 +249,10 @@ const AuditPage = () => {
                       ...entityTypes.map((entity) => ({ label: entity, value: entity })),
                     ]}
                   />
-                </FilterField>
+                </RediaccStack>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <FilterField>
+                <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <FilterLabel>{t('system:audit.filters.search')}</FilterLabel>
                   <Input
                     data-testid="audit-filter-search"
@@ -272,10 +263,10 @@ const AuditPage = () => {
                     allowClear
                     autoComplete="off"
                   />
-                </FilterField>
+                </RediaccStack>
               </Col>
               <Col xs={24} sm={12} md={2}>
-                <FilterField>
+                <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <PlaceholderLabel>{t('system:audit.filters.actions')}</PlaceholderLabel>
                   <ActionButtonFull
                     data-testid="audit-refresh-button"
@@ -285,10 +276,10 @@ const AuditPage = () => {
                   >
                     {t('common:actions.refresh')}
                   </ActionButtonFull>
-                </FilterField>
+                </RediaccStack>
               </Col>
               <Col xs={24} sm={12} md={2}>
-                <FilterField>
+                <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <PlaceholderLabel>{t('system:audit.filters.export')}</PlaceholderLabel>
                   <Tooltip
                     title={
@@ -309,7 +300,7 @@ const AuditPage = () => {
                       </ActionButtonFull>
                     </Dropdown>
                   </Tooltip>
-                </FilterField>
+                </RediaccStack>
               </Col>
             </Row>
           </Space>
@@ -376,8 +367,8 @@ const AuditPage = () => {
             }}
           />
         </PageCard>
-      </ContentStack>
-    </PageWrapper>
+      </RediaccStack>
+    </PageContainer>
   );
 };
 

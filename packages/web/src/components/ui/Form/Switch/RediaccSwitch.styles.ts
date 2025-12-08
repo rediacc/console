@@ -1,5 +1,6 @@
 import { Switch as AntSwitch } from 'antd';
 import styled from 'styled-components';
+import { disabledState } from '@/styles/mixins';
 
 /**
  * Styled RediaccSwitch component
@@ -35,8 +36,7 @@ export const StyledRediaccSwitch = styled(AntSwitch)`
 
     /* Disabled state */
     &.ant-switch-disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
+      ${disabledState}
     }
 
     /* Loading state */

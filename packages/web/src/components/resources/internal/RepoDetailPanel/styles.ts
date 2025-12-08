@@ -17,7 +17,7 @@ import {
   SectionHeader as BaseSectionHeader,
   SectionTitle as BaseSectionTitle,
 } from '@/components/resources/internal/sharedDetailPanelAliases';
-import { RediaccTag, RediaccText, RediaccCard, RediaccAlert, RediaccEmpty } from '@/components/ui';
+import { RediaccTag, RediaccCard } from '@/components/ui';
 import type { TagPreset, TagVariant } from '@/components/ui/Tag';
 import { FolderOutlined } from '@/utils/optimizedIcons';
 
@@ -57,10 +57,6 @@ export const StyledTag = styled(RediaccTag).attrs<{ $variant: TagVariantKey }>((
   && {
     gap: ${({ theme }) => theme.spacing.XS}px;
   }
-`;
-
-export const EmptyState = styled(RediaccEmpty)`
-  margin-top: ${({ theme }) => theme.spacing.XXXL}px;
 `;
 
 export const SectionDivider = styled(BaseSectionDivider)`
@@ -104,10 +100,6 @@ export const StatusTag = styled(RediaccTag).attrs<{ $tone?: StatusToneKey }>(
   && {
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
-`;
-
-export const AlertWrapper = styled(RediaccAlert)`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const VolumeDescription = styled.div`
@@ -162,32 +154,6 @@ export const ServiceMetaItem = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.XS}px;
-`;
-
-export const ServiceMetaLabel = styled(RediaccText).attrs({
-  size: 'xs',
-  color: 'secondary',
-})`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-  }
-`;
-
-export const ServiceMetaValue = styled(RediaccText).attrs({
-  size: 'xs',
-})`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-  }
-`;
-
-export const DiskUsageMeta = styled(RediaccText).attrs({
-  size: 'xs',
-  color: 'secondary',
-})`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-  }
 `;
 
 export { SectionCard as PathsCard };

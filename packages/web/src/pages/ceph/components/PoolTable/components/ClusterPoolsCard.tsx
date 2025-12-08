@@ -1,12 +1,12 @@
 import React from 'react';
 import { Table } from 'antd';
 import type { CephPool } from '@/api/queries/ceph';
+import { RediaccTag } from '@/components/ui';
 import {
   ClusterCard,
   CardHeader,
   CardIcon,
   CardTitle,
-  ClusterTag,
   TableWrapper,
 } from '@/pages/ceph/components/PoolTable/styles';
 import type { ColumnsType } from 'antd/es/table';
@@ -49,7 +49,11 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
           <CardTitle>
             {t('pools.clusterPrefix')}: {clusterName}
           </CardTitle>
-          {teamName && <ClusterTag>{teamName}</ClusterTag>}
+          {teamName && (
+            <RediaccTag variant="primary" compact>
+              {teamName}
+            </RediaccTag>
+          )}
         </CardHeader>
       }
     >

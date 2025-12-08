@@ -16,7 +16,7 @@ import ResourceFormWithVault, {
   type ResourceFormWithVaultRef,
 } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
-import { RediaccButton, RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccText, RediaccStack } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState } from '@/hooks/useDialogState';
 import { templateService } from '@/services/templateService';
@@ -39,7 +39,6 @@ import {
 } from '@/utils/validation';
 import type { Team } from '@rediacc/shared/types';
 import {
-  TitleStack,
   FooterLeftActions,
   AutoSetupCheckbox,
   UploadIcon,
@@ -1006,7 +1005,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     if (mode === 'create' && resourceType === 'machine') {
       const subtitle = getModalSubtitle();
       return (
-        <TitleStack>
+        <RediaccStack direction="vertical" gap="xs">
           <RediaccText size="lg" weight="semibold">
             {baseTitle}
           </RediaccText>
@@ -1015,7 +1014,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
               {t('general.team')}: {subtitle}
             </RediaccText>
           )}
-        </TitleStack>
+        </RediaccStack>
       );
     }
 

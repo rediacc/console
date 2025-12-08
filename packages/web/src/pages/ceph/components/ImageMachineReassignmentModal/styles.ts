@@ -1,11 +1,11 @@
 import styled from 'styled-components';
 import { ContentStack, InlineStack } from '@/components/common/styled';
 import { RediaccSelect } from '@/components/ui';
-import { BaseModal, StyledIcon, AlertCard } from '@/styles/primitives';
+import { BaseModal, StyledIcon, LoadingContainer } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons';
 
-export { ContentStack };
+export { ContentStack, LoadingContainer };
 
 export const StyledModal = styled(BaseModal).attrs({
   className: `${ModalSize.Medium} image-machine-reassignment-modal`,
@@ -37,9 +37,6 @@ export const FieldRow = styled.div`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const InfoAlert = styled(AlertCard).attrs({ $variant: 'info' })``;
-export const WarningAlert = styled(AlertCard).attrs({ $variant: 'warning' })``;
-
 export const MachineIcon = styled(StyledIcon).attrs(({ theme }) => ({
   as: CloudServerOutlined,
   $size: theme.fontSize.BASE,
@@ -55,10 +52,4 @@ export const SelectOptionText = styled.span`
 
 export const DisabledOptionText = styled(SelectOptionText)`
   opacity: 0.6;
-`;
-
-export const LoadingContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  padding: ${({ theme }) => theme.spacing.MD}px 0;
 `;

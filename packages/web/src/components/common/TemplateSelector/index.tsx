@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Col, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccText, RediaccEmpty, RediaccStack } from '@/components/ui';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { templateService } from '@/services/templateService';
-import { RediaccText } from '@/components/ui';
 import {
   DatabaseOutlined,
   GlobalOutlined,
@@ -16,19 +16,14 @@ import {
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import {
   SelectorContainer,
-  HeaderStack,
   HelperRow,
   ClearButton,
   SearchInput,
   ResultCount,
-  NoResultsEmpty,
   TemplateGrid,
   TemplateCard,
   SelectionIndicator,
-  CardStack,
   TemplateIconWrapper,
-  TemplateTitle,
-  TemplateDescription,
   DetailsButton,
   DefaultTag,
   ErrorState,
@@ -154,7 +149,12 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   return (
     <SelectorContainer>
-      <HeaderStack direction="vertical" gap="md">
+      <RediaccStack
+        direction="vertical"
+        gap="md"
+        fullWidth
+        style={{ marginBottom: `${DESIGN_TOKENS.SPACING.MD}px` }}
+      >
         <HelperRow>
           <RediaccText variant="caption">
             {multiple
@@ -183,7 +183,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           allowClear
           data-testid="resource-modal-template-search-input"
         />
-      </HeaderStack>
+      </RediaccStack>
 
       {searchQuery.trim() && (
         <ResultCount>
@@ -196,11 +196,13 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       )}
 
       {searchQuery.trim() && filteredTemplates.length === 0 && (
-        <NoResultsEmpty
+        <RediaccEmpty
+          variant="minimal"
           description={t('resources:templates.noResults', {
             defaultValue: `No templates found matching "${searchQuery}"`,
             query: searchQuery,
           })}
+          style={{ margin: '16px 0' }}
         />
       )}
 
@@ -243,16 +245,23 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   </SelectionIndicator>
                 )}
 
-                <CardStack direction="vertical" gap="sm">
+                <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <TemplateIconWrapper>
                     <TemplateIconComponent />
                   </TemplateIconWrapper>
 
-                  <TemplateTitle weight="bold">{getTemplateTitle(template.name)}</TemplateTitle>
+                  <RediaccText variant="title" weight="bold">
+                    {getTemplateTitle(template.name)}
+                  </RediaccText>
 
-                  <TemplateDescription truncate maxLines={2} color="secondary">
+                  <RediaccText
+                    variant="description"
+                    truncate
+                    maxLines={2}
+                    style={{ display: 'block', marginBottom: 8 }}
+                  >
                     {getTemplateDescription(template.readme)}
-                  </TemplateDescription>
+                  </RediaccText>
 
                   <DetailsButton
                     variant="link"
@@ -266,7 +275,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   >
                     {t('resources:templates.viewDetails')}
                   </DetailsButton>
-                </CardStack>
+                </RediaccStack>
               </TemplateCard>
             </Col>
           );
@@ -288,19 +297,21 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 </SelectionIndicator>
               )}
 
-              <CardStack direction="vertical" gap="sm">
+              <RediaccStack direction="vertical" gap="sm" fullWidth>
                 <TemplateIconWrapper $muted>
                   <AppstoreOutlined />
                 </TemplateIconWrapper>
 
-                <TemplateTitle weight="bold">{t('resources:templates.noTemplate')}</TemplateTitle>
+                <RediaccText variant="title" weight="bold">
+                  {t('resources:templates.noTemplate')}
+                </RediaccText>
 
-                <TemplateDescription color="secondary">
+                <RediaccText variant="description">
                   {t('resources:templates.startEmpty')}
-                </TemplateDescription>
+                </RediaccText>
 
                 <DefaultTag variant="default">{t('resources:templates.default')}</DefaultTag>
-              </CardStack>
+              </RediaccStack>
             </TemplateCard>
           </Col>
         )}

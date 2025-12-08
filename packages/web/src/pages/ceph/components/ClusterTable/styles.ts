@@ -1,6 +1,5 @@
 import styled from 'styled-components';
-import { RediaccBadge } from '@/components/ui';
-import { RediaccTag, RediaccButton } from '@/components/ui';
+import { RediaccBadge, RediaccButton } from '@/components/ui';
 import {
   NameCell,
   NameText,
@@ -36,11 +35,7 @@ export const ClusterIcon = styled(StyledIcon).attrs(({ theme }) => ({
   $color: theme.colors.primary,
 }))``;
 
-export const TeamTag = styled(RediaccTag).attrs({
-  preset: 'team',
-  size: 'sm',
-  borderless: true,
-})``;
+// TeamTag removed - use <RediaccTag preset="team" compact borderless> directly
 
 export const MachineCountBadgeWrapper = styled(RediaccBadge)<{ $hasMachines: boolean }>`
   .ant-badge-count {
@@ -97,11 +92,7 @@ export const MachineNameIcon = styled(StyledIcon).attrs(({ theme }) => ({
   $color: theme.colors.primary,
 }))``;
 
-export const MachineBridgeTag = styled(RediaccTag).attrs({
-  preset: 'bridge',
-  size: 'sm',
-  borderless: true,
-})``;
+// MachineBridgeTag removed - use <RediaccTag preset="bridge" compact borderless> directly
 
 export const AssignedDateText = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Select } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccText } from '@/components/ui';
 import {
   useAvailableMachinesForClone,
   type CephRbdImage,
@@ -9,14 +8,13 @@ import {
 } from '@/api/queries/ceph';
 import { useUpdateImageMachineAssignment } from '@/api/queries/cephMutations';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccText, RediaccStack } from '@/components/ui';
+import { AlertCard } from '@/styles/primitives';
 import {
   StyledModal,
   TitleStack,
   TitleIcon,
-  ContentStack,
   FieldRow,
-  InfoAlert,
-  WarningAlert,
   MachineIcon,
   StyledSelect,
   SelectOptionText,
@@ -100,7 +98,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       data-testid="image-reassign-modal"
     >
       {image && (
-        <ContentStack>
+        <RediaccStack variant="spaced-column" fullWidth>
           <FieldRow>
             <RediaccText weight="semibold" size="sm">
               {t('ceph:images.image')}:
@@ -116,7 +114,8 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
           </FieldRow>
 
           {image.machineName && (
-            <InfoAlert
+            <AlertCard
+              $variant="info"
               message={t('machines:currentMachineAssignment', { machine: image.machineName })}
               variant="info"
               icon={<MachineIcon />}
@@ -179,14 +178,15 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
             </LoadingContainer>
           </div>
 
-          <WarningAlert
+          <AlertCard
+            $variant="warning"
             message={<RediaccText>{t('common:important')}</RediaccText>}
             description={<RediaccText>{t('ceph:images.reassignmentWarning')}</RediaccText>}
             variant="warning"
             showIcon
             data-testid="image-reassign-warning"
           />
-        </ContentStack>
+        </RediaccStack>
       )}
     </StyledModal>
   );

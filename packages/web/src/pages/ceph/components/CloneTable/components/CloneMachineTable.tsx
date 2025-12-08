@@ -11,16 +11,13 @@ import {
   type CloneMachine,
 } from '@/api/queries/ceph';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccText } from '@/components/ui';
+import { RediaccText, RediaccTag, RediaccStack } from '@/components/ui';
 import {
   AssignButton,
   EmptyState,
-  MachineCountTag,
   MachineListButton,
   MachineListHeader,
-  MachineListStack,
   MachineListWrapper,
-  MachineTag,
   MachineTagGrid,
 } from '@/pages/ceph/components/CloneTable/styles';
 
@@ -79,24 +76,30 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
 
   return (
     <MachineListWrapper data-testid={`clone-list-machines-container-${clone.cloneName}`}>
-      <MachineListStack>
+      <RediaccStack direction="vertical" gap="md" fullWidth>
         <MachineListHeader>
           <TeamOutlined />
           <RediaccText weight="bold">{t('clones.assignedMachines')}:</RediaccText>
-          <MachineCountTag data-testid={`clone-list-machine-count-${clone.cloneName}`}>
+          <RediaccTag
+            variant="neutral"
+            compact
+            data-testid={`clone-list-machine-count-${clone.cloneName}`}
+          >
             {machines.length} {t('machines:machines')}
-          </MachineCountTag>
+          </RediaccTag>
         </MachineListHeader>
 
         <MachineTagGrid>
           {machines.map((machine: CloneMachine) => (
-            <MachineTag
+            <RediaccTag
               key={machine.machineName}
+              preset="machine"
+              compact
               icon={<CloudServerOutlined />}
               data-testid={`clone-list-machine-tag-${clone.cloneName}-${machine.machineName}`}
             >
               {machine.machineName}
-            </MachineTag>
+            </RediaccTag>
           ))}
         </MachineTagGrid>
 
@@ -107,7 +110,7 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
         >
           {t('clones.manageMachines')}
         </MachineListButton>
-      </MachineListStack>
+      </RediaccStack>
     </MachineListWrapper>
   );
 };
