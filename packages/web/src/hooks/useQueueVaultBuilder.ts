@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { api } from '@/api/client';
-import { queueService, type QueueRequestContext } from '@/services/queueService';
+import { type QueueRequestContext, queueService } from '@/services/queueService';
 import { minifyJSON } from '@/utils/json';
 
 /**

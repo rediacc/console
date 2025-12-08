@@ -1,4 +1,4 @@
-import type { ReactNode, MouseEvent, CSSProperties } from 'react';
+import type { CSSProperties, MouseEvent, ReactNode } from 'react';
 
 export type ButtonVariant = 'primary' | 'danger' | 'default' | 'text' | 'link' | 'ghost';
 export type ButtonSize = 'sm' | 'md';

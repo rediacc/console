@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { RediaccTag } from '@/components/ui';
 import { RediaccCheckbox } from '@/components/ui/Form';
 import { StyledIcon } from '@/styles/primitives';
-import { UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons';
+import { DownloadOutlined, UploadOutlined } from '@/utils/optimizedIcons';
 
 export const FooterLeftActions = styled.div`
   margin-right: auto;

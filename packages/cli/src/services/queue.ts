@@ -1,18 +1,18 @@
 import {
+  type FunctionRequirements,
+  type QueueRequestContext,
   QueueVaultBuilder,
   type QueueVaultBuilderConfig,
-  type QueueRequestContext,
-  type FunctionRequirements,
   type VaultData,
 } from '@rediacc/shared/queue-vault';
 import type {
+  GetCompanyTeams_ResultSet1,
   GetRegionBridges_ResultSet1,
   GetTeamMachines_ResultSet1,
   GetTeamRepositories_ResultSet1,
   GetTeamStorages_ResultSet1,
-  GetCompanyTeams_ResultSet1,
 } from '@rediacc/shared/types';
-import { apiClient, api } from './api.js';
+import { api, apiClient } from './api.js';
 
 interface QueueContext {
   teamName: string;

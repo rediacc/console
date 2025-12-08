@@ -1,28 +1,27 @@
 import React, { useState } from 'react';
-import { Popover, message, Tooltip } from 'antd';
+import { message, Popover, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccText } from '@/components/ui';
+import { RediaccStack, RediaccText } from '@/components/ui';
 import {
-  generateSSHKeyPair,
-  generateRepoCredential,
   GenerationOptions,
+  generateRepoCredential,
+  generateSSHKeyPair,
 } from '@/utils/cryptoGenerators';
-import { KeyOutlined, ReloadOutlined, CopyOutlined, CheckOutlined } from '@/utils/optimizedIcons';
+import { CheckOutlined, CopyOutlined, KeyOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import {
-  PopoverContainer,
-  OptionLabel,
-  OptionGroup,
-  OptionRadio,
-  GeneratedValueCard,
-  ValueHeader,
-  ValueContent,
   ControlButton,
-  GeneratorButton,
   CopyButton,
+  GeneratedValueCard,
+  GeneratorButton,
+  OptionGroup,
+  OptionLabel,
+  OptionRadio,
+  PopoverContainer,
+  ValueContent,
+  ValueHeader,
 } from './styles';
-import { RediaccStack } from '@/components/ui';
 
 interface FieldGeneratorProps {
   fieldType: 'ssh_keys' | 'repo_credential';

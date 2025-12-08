@@ -1,12 +1,12 @@
 import { Form, Row } from 'antd';
 import styled from 'styled-components';
-import { RediaccButton, RediaccAlert } from '@/components/ui';
+import { RediaccAlert, RediaccButton } from '@/components/ui';
 import { FlexColumn, FlexRow } from '@/styles/primitives';
 import {
-  InfoCircleOutlined,
   BulbOutlined,
-  WarningOutlined,
   ExclamationCircleOutlined,
+  InfoCircleOutlined,
+  WarningOutlined,
 } from '@/utils/optimizedIcons';
 
 export const EditorContainer = styled(FlexColumn).attrs({ $gap: 'MD' })``;

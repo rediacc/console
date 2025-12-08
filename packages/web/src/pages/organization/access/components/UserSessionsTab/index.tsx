@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Table, Button, Row, Col, Space, Popconfirm, message, Tooltip } from 'antd';
+import { Button, Col, message, Popconfirm, Row, Space, Table, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { useUserRequests, useDeleteUserRequest, type UserRequest } from '@/api/queries/users';
+import { type UserRequest, useDeleteUserRequest, useUserRequests } from '@/api/queries/users';
 import {
   createActionColumn,
   createDateColumn,
@@ -17,26 +17,26 @@ import { createDateSorter } from '@/platform';
 import { selectUser } from '@/store/auth/authSelectors';
 import { TableContainer } from '@/styles/primitives';
 import {
-  SearchOutlined,
-  CloseCircleOutlined,
-  ReloadOutlined,
-  LinkOutlined,
   BranchesOutlined,
   CheckCircleOutlined,
+  CloseCircleOutlined,
+  LinkOutlined,
+  ReloadOutlined,
+  SearchOutlined,
   StopOutlined,
 } from '@/utils/optimizedIcons';
 import {
-  TabContainer,
-  StatCard,
-  StatTitle,
-  StatMetric,
-  StatSuffix,
-  TableCard,
   CardTitleText,
+  CellText,
   RefreshButton,
   SearchInput,
   SessionTag,
-  CellText,
+  StatCard,
+  StatMetric,
+  StatSuffix,
+  StatTitle,
+  TabContainer,
+  TableCard,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 

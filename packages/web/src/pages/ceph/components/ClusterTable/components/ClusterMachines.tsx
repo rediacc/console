@@ -1,19 +1,18 @@
 import React, { useMemo } from 'react';
-import { Table, Empty } from 'antd';
+import { Empty, Table } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { CephCluster, useCephClusterMachines, CephClusterMachine } from '@/api/queries/ceph';
+import { CephCluster, CephClusterMachine, useCephClusterMachines } from '@/api/queries/ceph';
 import { RediaccTag } from '@/components/ui';
 import {
+  AssignedDateText,
   ExpandedRowContainer,
   ExpandedRowTitle,
-  MachinesTableWrapper,
   MachineNameCell,
   MachineNameIcon,
   MachineNameText,
-  AssignedDateText,
+  MachinesTableWrapper,
 } from '@/pages/ceph/components/ClusterTable/styles';
-import { createSorter } from '@/platform';
-import { formatTimestampAsIs } from '@/platform';
+import { createSorter, formatTimestampAsIs } from '@/platform';
 
 interface ClusterMachinesProps {
   cluster: CephCluster;

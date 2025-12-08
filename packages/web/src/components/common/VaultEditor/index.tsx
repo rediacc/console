@@ -1,69 +1,74 @@
-import React, { useCallback, type JSX } from 'react';
+import React, { type JSX, useCallback } from 'react';
 import {
-  Form,
-  Space,
   Alert,
   Card,
-  Tooltip,
-  message,
-  Divider,
   Col,
   Descriptions,
+  Divider,
+  Form,
+  message,
   Select,
+  Space,
+  Tooltip,
 } from 'antd';
-import { RediaccSwitch, RediaccTag, RediaccAlert, RediaccStack } from '@/components/ui';
-import { RediaccText } from '@/components/ui';
+import {
+  RediaccAlert,
+  RediaccStack,
+  RediaccSwitch,
+  RediaccTag,
+  RediaccText,
+} from '@/components/ui';
 import {
   RediaccInput,
-  RediaccPasswordInput,
-  RediaccTextArea,
   RediaccInputNumber,
+  RediaccPasswordInput,
   RediaccSelect,
+  RediaccTextArea,
 } from '@/components/ui/Form';
 import { featureFlags } from '@/config/featureFlags';
 import {
-  InfoCircleOutlined,
-  WarningOutlined,
+  CheckCircleOutlined,
   CodeOutlined,
   ExclamationCircleOutlined,
+  InfoCircleOutlined,
   QuestionCircleOutlined,
-  CheckCircleOutlined,
+  WarningOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
+import { FieldFormItem } from './components/FieldFormItem';
 import FieldGenerator from './components/FieldGenerator';
+import { FieldLabel } from './components/FieldLabel';
 import { NestedObjectEditor } from './components/NestedObjectEditor';
 import { SimpleJsonEditor } from './components/SimpleJsonEditor';
-import { FieldLabel } from './components/FieldLabel';
-import { FieldFormItem } from './components/FieldFormItem';
+import { MACHINE_BASIC_FIELD_ORDER, vaultDefinitionConfig } from './constants';
 import { useVaultEditorState } from './hooks/useVaultEditorState';
 import {
-  getFieldDefinition,
-  buildValidationRules,
-  getJsonFieldProps,
-  decodeBase64,
-  encodeBase64,
-} from './utils';
-import { vaultDefinitionConfig, MACHINE_BASIC_FIELD_ORDER } from './constants';
-import type { VaultEditorProps, FieldDefinition, VaultFormValues } from './types';
-import {
-  EditorContainer,
-  InfoBanner,
-  EditorForm,
-  FormRow,
-  FieldItem,
-  TestConnectionButton,
-  ListSection,
-  IssueList,
-  RecommendationList,
-  ProviderSectionSpacer,
-  TipsDividerIcon,
-  TipsAlert,
-  ExtraFieldsWarningIcon,
-  RawJsonPreview,
   DangerAlertIcon,
+  EditorContainer,
+  EditorForm,
+  ExtraFieldsWarningIcon,
+  FieldItem,
   FormatActions,
   FormatButton,
+  FormRow,
+  InfoBanner,
+  IssueList,
+  ListSection,
+  ProviderSectionSpacer,
+  RawJsonPreview,
+  RecommendationList,
+  TestConnectionButton,
+  TipsAlert,
+  TipsDividerIcon,
 } from './styles';
+import {
+  buildValidationRules,
+  decodeBase64,
+  encodeBase64,
+  getFieldDefinition,
+  getJsonFieldProps,
+} from './utils';
+import type { FieldDefinition, VaultEditorProps, VaultFormValues } from './types';
 import type { UploadFile } from 'antd/es/upload/interface';
 
 type NestedFieldDefinition = React.ComponentProps<typeof NestedObjectEditor>['fieldDefinition'];

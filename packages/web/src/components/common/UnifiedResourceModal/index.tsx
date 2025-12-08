@@ -1,7 +1,7 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Modal, Space, Upload, message } from 'antd';
-import { useForm, type Resolver } from 'react-hook-form';
+import { Modal, message, Space, Upload } from 'antd';
+import { type Resolver, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { z } from 'zod';
@@ -16,7 +16,7 @@ import ResourceFormWithVault, {
   type ResourceFormWithVaultRef,
 } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
-import { RediaccButton, RediaccText, RediaccStack } from '@/components/ui';
+import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState } from '@/hooks/useDialogState';
 import { templateService } from '@/services/templateService';
@@ -25,26 +25,26 @@ import type { Machine, Repo } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { AppstoreOutlined } from '@/utils/optimizedIcons';
 import {
+  createBridgeSchema,
+  createCloneSchema,
+  createClusterSchema,
+  createImageSchema,
   createMachineSchema,
+  createPoolSchema,
+  createRegionSchema,
   createRepoSchema,
+  createSnapshotSchema,
   createStorageSchema,
   createTeamSchema,
-  createRegionSchema,
-  createBridgeSchema,
-  createClusterSchema,
-  createPoolSchema,
-  createImageSchema,
-  createSnapshotSchema,
-  createCloneSchema,
 } from '@/utils/validation';
 import type { GetCompanyTeams_ResultSet1 } from '@rediacc/shared/types';
 import {
-  FooterLeftActions,
   AutoSetupCheckbox,
-  UploadIcon,
   DownloadIcon,
-  TemplateCollapse,
+  FooterLeftActions,
   SelectedTemplateTag,
+  TemplateCollapse,
+  UploadIcon,
 } from './styles';
 
 export type ResourceType =

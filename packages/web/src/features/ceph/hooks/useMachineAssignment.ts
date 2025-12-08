@@ -1,11 +1,11 @@
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  useUpdateMachineClusterAssignment,
-  useUpdateMachineClusterRemoval,
   useUpdateCloneMachineAssignments,
   useUpdateCloneMachineRemovals,
   useUpdateImageMachineAssignment,
+  useUpdateMachineClusterAssignment,
+  useUpdateMachineClusterRemoval,
 } from '@/api/queries/cephMutations';
 import { MachineAssignmentService } from '@/features/ceph/services';
 import type { Machine } from '@/types';

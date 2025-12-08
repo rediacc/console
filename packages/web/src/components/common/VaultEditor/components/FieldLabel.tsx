@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tooltip } from 'antd';
-import { FieldLabelStack, FieldInfoIcon } from '../styles';
+import { FieldInfoIcon, FieldLabelStack } from '../styles';
 import type { FieldLabelProps } from '../types';
 
 export const FieldLabel: React.FC<FieldLabelProps> = ({ label, description }) => (

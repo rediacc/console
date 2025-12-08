@@ -1,8 +1,8 @@
-import { Space, Typography, Form } from 'antd';
+import { Form, Space, Typography } from 'antd';
 import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccInput, RediaccAlert } from '@/components/ui';
-import { StyledIcon, NeutralStack, FlexRow } from '@/styles/primitives';
+import { RediaccAlert, RediaccInput } from '@/components/ui';
+import { FlexRow, NeutralStack, StyledIcon } from '@/styles/primitives';
 import { SafetyCertificateOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 

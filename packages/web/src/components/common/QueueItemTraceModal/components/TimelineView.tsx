@@ -1,7 +1,7 @@
 import React from 'react';
-import { Timeline, Space } from 'antd';
+import { Space, Timeline } from 'antd';
 import { RediaccText } from '@/components/ui';
-import { normalizeToString, formatTimestampAsIs } from '@/platform';
+import { formatTimestampAsIs, normalizeToString } from '@/platform';
 import type { QueueTraceLog } from '@rediacc/shared/types';
 import type { TimelineViewProps } from '../types';
 

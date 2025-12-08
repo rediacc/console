@@ -15,24 +15,24 @@ import { featureFlags } from '@/config/featureFlags';
 import { useTableStyles } from '@/hooks/useComponentStyles';
 import { useQueueAction } from '@/hooks/useQueueAction';
 import {
-  createSorter,
-  createCustomSorter,
   createArrayLengthSorter,
+  createCustomSorter,
+  createSorter,
   getGrandVaultForOperation,
 } from '@/platform';
 import { useAppSelector } from '@/store/store';
 import { Machine, PluginContainer } from '@/types';
 import { showMessage } from '@/utils/messages';
 import {
-  FunctionOutlined,
-  PlayCircleOutlined,
-  StopOutlined,
-  ReloadOutlined,
-  DeleteOutlined,
-  PauseCircleOutlined,
   CheckCircleOutlined,
+  DeleteOutlined,
   DisconnectOutlined,
   EyeOutlined,
+  FunctionOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
+  ReloadOutlined,
+  StopOutlined,
 } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';

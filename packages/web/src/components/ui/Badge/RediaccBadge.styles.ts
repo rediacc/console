@@ -1,7 +1,7 @@
 import { Badge as AntBadge } from 'antd';
 import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { BadgeVariant, BadgeSize } from './RediaccBadge.types';
+import type { BadgeSize, BadgeVariant } from './RediaccBadge.types';
 
 // Get badge color based on variant
 export const resolveBadgeColor = (

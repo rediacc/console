@@ -6,18 +6,18 @@
 import React from 'react';
 import { Tag, Tooltip } from 'antd';
 import {
-  QUEUE_STATUS_CONFIG,
-  PRIORITY_CONFIG,
   formatAge,
+  PRIORITY_CONFIG,
+  QUEUE_STATUS_CONFIG,
   type QueueHealthStatus,
 } from '@/platform';
 import {
+  CheckCircleOutlined,
   ClockCircleOutlined,
+  CloseCircleOutlined,
+  ExclamationCircleOutlined,
   PlayCircleOutlined,
   WarningOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  CloseCircleOutlined,
 } from '@/utils/optimizedIcons';
 
 /**

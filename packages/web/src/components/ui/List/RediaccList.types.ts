@@ -1,4 +1,4 @@
-import type { ReactNode, CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type ListVariant = 'default' | 'bordered' | 'card';
 export type ListSize = 'sm' | 'md';

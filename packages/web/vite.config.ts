@@ -1,8 +1,8 @@
-import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
-import tsconfigPaths from 'vite-tsconfig-paths';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+import { defineConfig, Plugin } from 'vite';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 // Custom plugin to resolve @rediacc/shared to source files in dev mode
 // This runs before other resolution, ensuring source files are used

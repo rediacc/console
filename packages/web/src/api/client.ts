@@ -1,9 +1,9 @@
 import axios, {
   AxiosError,
   AxiosInstance,
+  AxiosRequestConfig,
   AxiosResponse,
   InternalAxiosRequestConfig,
-  AxiosRequestConfig,
   isAxiosError,
 } from 'axios';
 import { apiConnectionService } from '@/services/apiConnectionService';
@@ -12,10 +12,10 @@ import { tokenService } from '@/services/tokenService';
 import { logout, showSessionExpiredDialog } from '@/store/auth/authSlice';
 import { store } from '@/store/store';
 import { showMessage } from '@/utils/messages';
-import { normalizeResponse, createApiServices } from '@rediacc/shared/api';
+import { createApiServices, normalizeResponse } from '@rediacc/shared/api';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import type { ApiResponse } from '@rediacc/shared/types';
-import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware';
+import { decryptResponseData, encryptRequestData, hasVaultFields } from './encryptionMiddleware';
 
 // Extend axios config to include metadata
 declare module 'axios' {

@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { ContentStack, CenteredState, ActionGroup } from '@/components/common/styled';
+import { ActionGroup, CenteredState, ContentStack } from '@/components/common/styled';
 
 // Re-export from common/styled
 export { ContentStack, ActionGroup };

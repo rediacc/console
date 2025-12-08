@@ -1,13 +1,13 @@
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type {
-  GetTeamStorages_ResultSet1,
-  WithOptionalVault,
   CreateStorageParams,
+  DeleteStorageParams,
+  GetTeamStorages_ResultSet1,
   GetTeamStoragesParams,
   UpdateStorageNameParams,
-  DeleteStorageParams,
   UpdateStorageVaultParams,
+  WithOptionalVault,
 } from '../../types';
 
 export function createStorageService(client: ApiClient) {

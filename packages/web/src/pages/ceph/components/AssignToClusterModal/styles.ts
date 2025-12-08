@@ -2,13 +2,13 @@ import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
 import { RediaccSelect, RediaccTag } from '@/components/ui';
 import {
+  AlertCard,
   BaseModal,
   BaseTable,
   FlexColumn,
   FlexRow,
   ModalContentStack,
   ModalTitleRow,
-  AlertCard,
 } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 

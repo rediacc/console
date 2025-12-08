@@ -3,7 +3,7 @@
  * Handles validation for promoting forks to grand repos
  */
 
-import { type RepoWithRelations, isFork } from './core';
+import { isFork, type RepoWithRelations } from './core';
 
 /**
  * Result of promotion validation

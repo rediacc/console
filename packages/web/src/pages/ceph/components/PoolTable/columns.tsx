@@ -3,13 +3,13 @@ import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn, createVersionColumn } from '@/components/common/columns';
 import { createSorter } from '@/platform';
 import {
+  DeleteOutlined,
   EditOutlined,
   FunctionOutlined,
   HistoryOutlined,
-  DeleteOutlined,
 } from '@/utils/optimizedIcons';
 import { getPoolFunctionMenuItems } from './menus';
-import { PoolNameCell, ExpandIcon, PoolIcon, PoolNameText } from './styles';
+import { ExpandIcon, PoolIcon, PoolNameCell, PoolNameText } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 import type { TFunction } from 'i18next';
 

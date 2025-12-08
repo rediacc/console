@@ -3,7 +3,7 @@
  * Handles validation for deleting grand (credential) repos
  */
 
-import { type RepoWithRelations, isCredential, isFork } from './core';
+import { isCredential, isFork, type RepoWithRelations } from './core';
 
 /**
  * Child clone information

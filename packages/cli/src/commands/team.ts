@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import type {
   CreateTeamParams,
-  UpdateTeamNameParams,
   DeleteTeamParams,
+  UpdateTeamNameParams,
   UpdateTeamVaultParams,
 } from '@rediacc/shared/types';
 import { api } from '../services/api.js';

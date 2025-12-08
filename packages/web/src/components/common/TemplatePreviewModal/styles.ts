@@ -1,8 +1,8 @@
 import { Typography } from 'antd';
 import styled from 'styled-components';
-import { RediaccText, RediaccAlert, RediaccList, RediaccTabs, RediaccTag } from '@/components/ui';
-import { BaseModal, ContentCard, LoadingContainer, FlexColumn, FlexRow } from '@/styles/primitives';
+import { RediaccAlert, RediaccList, RediaccTabs, RediaccTag, RediaccText } from '@/components/ui';
 import { borderedCard } from '@/styles/mixins';
+import { BaseModal, ContentCard, FlexColumn, FlexRow, LoadingContainer } from '@/styles/primitives';
 
 const { Title } = Typography;
 

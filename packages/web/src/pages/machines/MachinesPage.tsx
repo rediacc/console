@@ -1,36 +1,36 @@
-﻿import React, { useState, useCallback, useEffect } from 'react';
+﻿import React, { useCallback, useEffect, useState } from 'react';
 import { Empty, Modal, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from 'styled-components';
 import {
   useCreateMachine,
-  useUpdateMachineName,
-  useUpdateMachineBridge,
-  useUpdateMachineVault,
   useDeleteMachine,
   useMachines,
+  useUpdateMachineBridge,
+  useUpdateMachineName,
+  useUpdateMachineVault,
 } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
-import { useRepos, Repo } from '@/api/queries/repos';
+import { Repo, useRepos } from '@/api/queries/repos';
 import { useStorage } from '@/api/queries/storage';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import {
-  SectionStack,
-  SectionHeading,
-  PageWrapper,
-  PageCard,
-  SectionStack as HeaderSection,
-  SectionHeaderRow as HeaderRow,
-  ControlStack as TeamControls,
-  InputSlot as TeamSelectorWrapper,
   ActionBar as ButtonGroup,
   ContentSection,
+  SectionHeaderRow as HeaderRow,
+  SectionStack as HeaderSection,
+  PageCard,
+  PageWrapper,
   RediaccButton,
+  SectionHeading,
+  SectionStack,
+  ControlStack as TeamControls,
+  InputSlot as TeamSelectorWrapper,
 } from '@/components/ui';
-import { useUnifiedModal, useTeamSelection, useQueueTraceModal, useDialogState } from '@/hooks';
+import { useDialogState, useQueueTraceModal, useTeamSelection, useUnifiedModal } from '@/hooks';
 import { useQueueAction } from '@/hooks/useQueueAction';
 import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
 import type { ContainerData } from '@/pages/machines/components/SplitResourceView';
@@ -40,7 +40,7 @@ import type { QueueActionParams } from '@/services/queueActionService';
 import { type Machine } from '@/types';
 import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
-import { PlusOutlined, WifiOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import { PlusOutlined, ReloadOutlined, WifiOutlined } from '@/utils/optimizedIcons';
 import type { MachineFormValues as BaseMachineFormValues } from '@rediacc/shared/types';
 
 // Extend shared type with UI-specific field for auto-setup option

@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
-import { Form, Button } from 'antd';
+import { Button, Form } from 'antd';
 import { Controller, FieldValues } from 'react-hook-form';
-import { StyledForm, TextInput, PasswordInput, FieldSelect, FormActions } from './styles';
 import { RediaccStack } from '@/components/ui';
+import { FieldSelect, FormActions, PasswordInput, StyledForm, TextInput } from './styles';
 import { FormFieldConfig, ResourceFormProps } from './types';
 
 function ResourceForm<T extends FieldValues = FieldValues>({

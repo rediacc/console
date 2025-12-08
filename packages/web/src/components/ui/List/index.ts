@@ -1,8 +1,8 @@
 import styled from 'styled-components';
 
 export { RediaccList } from './RediaccList';
-export type { RediaccListProps, ListVariant, ListSize } from './RediaccList.types';
 export { resolveListPadding } from './RediaccList.styles';
+export type { ListSize, ListVariant, RediaccListProps } from './RediaccList.types';
 
 export const ListTitleRow = styled.div`
   display: flex;

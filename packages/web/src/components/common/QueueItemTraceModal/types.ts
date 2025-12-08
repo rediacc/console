@@ -1,5 +1,5 @@
-import type { Dayjs } from 'dayjs';
 import type { QueueTraceLog } from '@rediacc/shared/types';
+import type { Dayjs } from 'dayjs';
 
 export interface QueueItemTraceModalProps {
   taskId: string | null;

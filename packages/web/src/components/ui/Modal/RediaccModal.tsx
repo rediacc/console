@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { StyledRediaccModal, resolveModalWidth } from './RediaccModal.styles';
+import { resolveModalWidth, StyledRediaccModal } from './RediaccModal.styles';
 import type { RediaccModalProps } from './RediaccModal.types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

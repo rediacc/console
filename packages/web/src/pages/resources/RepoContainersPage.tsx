@@ -1,35 +1,34 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
-import { Button as AntButton, Space, Tag, Alert, Tooltip } from 'antd';
+﻿import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Button as AntButton, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
 import { useRepos } from '@/api/queries/repos';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ActionGroup, CenteredState } from '@/components/common/styled';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import { RediaccButton, RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccCard, RediaccText } from '@/components/ui';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { useQueueTraceModal } from '@/hooks/useDialogState';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { RepoContainerTable } from '@/pages/resources/components/RepoContainerTable';
 import { Machine, PluginContainer } from '@/types';
-import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optimizedIcons';
+import { DoubleLeftOutlined, InboxOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import {
-  PageWrapper,
-  BreadcrumbWrapper,
-  HeaderSection,
-  HeaderRow,
-  TitleColumn,
-  TitleRow,
   ActionsRow,
-  SplitLayout,
-  ListPanel,
+  BreadcrumbWrapper,
   DetailBackdrop,
   ErrorWrapper,
+  HeaderRow,
+  HeaderSection,
   HeaderTitleText,
+  ListPanel,
+  PageWrapper,
+  SplitLayout,
+  TitleColumn,
+  TitleRow,
 } from './styles';
-import { RediaccCard } from '@/components/ui';
 
 // Repo interface from vaultStatus (runtime data)
 interface Repo {

@@ -1,10 +1,10 @@
 import { configureStore, Middleware } from '@reduxjs/toolkit';
-import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
+import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import authSlice from './auth/authSlice';
 import {
+  machineAssignmentLoggingMiddleware,
   machineAssignmentMiddleware,
   machineSelectionPersistenceMiddleware,
-  machineAssignmentLoggingMiddleware,
 } from './ceph/machineAssignmentMiddleware';
 import machineAssignmentSlice from './ceph/machineAssignmentSlice';
 import { telemetryMiddleware } from './middleware/telemetryMiddleware';

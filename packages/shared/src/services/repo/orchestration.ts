@@ -5,9 +5,9 @@
  */
 
 import { canBackupToStorage } from './backup-validation';
-import { type RepoWithRelations, isFork } from './core';
+import { isFork, type RepoWithRelations } from './core';
 import { canDeleteFork, findForkParent } from './fork-operations';
-import { canDeleteGrandRepo, type ChildClone } from './grand-deletion';
+import { type ChildClone, canDeleteGrandRepo } from './grand-deletion';
 import { canPromoteToGrand, findSiblingClones, type SiblingClone } from './promotion';
 
 /**

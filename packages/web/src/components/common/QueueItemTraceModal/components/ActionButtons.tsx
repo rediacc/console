@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from 'antd';
-import { CloseCircleOutlined, RetweetOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
-import { normalizeToString, normalizeToNumber, normalizeToBoolean } from '@/platform';
+import { normalizeToBoolean, normalizeToNumber, normalizeToString } from '@/platform';
+import { CloseCircleOutlined, ReloadOutlined, RetweetOutlined } from '@/utils/optimizedIcons';
 import { ActionButton } from '../styles';
 import type { ActionButtonsProps } from '../types';
 

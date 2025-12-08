@@ -1,20 +1,20 @@
-import { Space, Badge, Tooltip, Button, Popconfirm } from 'antd';
+import { Badge, Button, Popconfirm, Space, Tooltip } from 'antd';
 import type { Team } from '@/api/queries/teams';
 import {
   createCountColumn,
-  createVersionColumn,
   createTruncatedColumn,
+  createVersionColumn,
 } from '@/components/common/columns';
 import { featureFlags } from '@/config/featureFlags';
 import {
-  TeamOutlined,
-  UserOutlined,
-  DesktopOutlined,
-  DatabaseOutlined,
   CloudServerOutlined,
+  DatabaseOutlined,
+  DeleteOutlined,
+  DesktopOutlined,
   EditOutlined,
   HistoryOutlined,
-  DeleteOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@/utils/optimizedIcons';
 import type { TableProps } from 'antd';
 import type { TFunction } from 'i18next';

@@ -8,10 +8,10 @@ import type { Machine } from '@/types';
 import {
   BatchProcessor,
   type BatchProgress,
-  type BatchResult,
   type BatchRequest,
-  type RetryConfig,
+  type BatchResult,
   DEFAULT_RETRY_CONFIG,
+  type RetryConfig,
 } from '@rediacc/shared/services/batch';
 
 // Re-export shared types

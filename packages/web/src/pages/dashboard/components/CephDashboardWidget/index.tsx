@@ -1,37 +1,37 @@
 import React from 'react';
-import { Row, Col, Progress, Tag, Tooltip } from 'antd';
+import { Col, Progress, Row, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
 import { RediaccText } from '@/components/ui';
 import {
   CloudServerOutlined,
+  CopyOutlined,
   DatabaseOutlined,
   HddOutlined,
-  CopyOutlined,
   TeamOutlined,
 } from '@/utils/optimizedIcons';
 import type { CephTeamBreakdown } from '@rediacc/shared/types';
 import {
-  WidgetCard,
+  AssignmentCard,
+  AssignmentIcon,
+  AssignmentStack,
+  AssignmentStatistic,
+  PercentageText,
+  SummaryPanel,
+  TeamHeader,
+  TeamListContent,
+  TeamListHeader,
+  TeamListItem,
+  TeamListStyled,
+  TeamMeta,
+  TeamName,
+  TeamSection,
+  TeamTagGroup,
   TitleIcon,
   TitleText,
   WidgetBody,
-  AssignmentCard,
-  AssignmentStack,
-  AssignmentIcon,
-  AssignmentStatistic,
-  SummaryPanel,
-  TeamSection,
-  TeamHeader,
-  TeamListStyled,
-  TeamListItem,
-  TeamListContent,
-  TeamListHeader,
-  TeamName,
-  TeamMeta,
-  TeamTagGroup,
-  PercentageText,
+  WidgetCard,
 } from './styles';
 import { CephDashboardWidgetProps } from './types';
 

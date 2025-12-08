@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
 import type { Machine } from '@/types';
 import { buildMachineTableColumns } from './columns';
-import { TableContainer, ExpandedRowContent } from './styles';
+import { ExpandedRowContent, TableContainer } from './styles';
 import type { TableRowSelection } from 'antd/es/table/interface';
 
 export interface FilterableMachineTableProps {

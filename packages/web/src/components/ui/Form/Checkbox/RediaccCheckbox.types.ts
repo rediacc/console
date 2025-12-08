@@ -1,4 +1,4 @@
-import type { ReactNode, CSSProperties, MouseEvent } from 'react';
+import type { CSSProperties, MouseEvent, ReactNode } from 'react';
 import type { CheckboxChangeEvent } from 'antd/es/checkbox';
 
 export { CheckboxChangeEvent };

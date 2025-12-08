@@ -1,8 +1,8 @@
 import styled, { keyframes } from 'styled-components';
 import { ActionGroup } from '@/components/common/styled';
-import { RediaccTag, RediaccText, RediaccProgress } from '@/components/ui';
+import { RediaccProgress, RediaccTag, RediaccText } from '@/components/ui';
 import type { TagVariant } from '@/components/ui/Tag';
-import { BaseModal, BaseTable, ModalBody, FlexColumn } from '@/styles/primitives';
+import { BaseModal, BaseTable, FlexColumn, ModalBody } from '@/styles/primitives';
 
 const pulse = keyframes`
   0% {

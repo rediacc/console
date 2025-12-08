@@ -1,36 +1,35 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Modal, Form, Input, Select } from 'antd';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Form, Input, Modal, Select } from 'antd';
 import axios from 'axios';
 import styled from 'styled-components';
 import apiClient from '@/api/client';
-import { RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccStack } from '@/components/ui';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { apiConnectionService } from '@/services/apiConnectionService';
-import { endpointService, Endpoint } from '@/services/endpointService';
+import { Endpoint, endpointService } from '@/services/endpointService';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined } from '@/utils/optimizedIcons';
 import {
-  StyledSelect,
-  LoadingText,
+  AddCustomOption,
+  CheckingSpinner,
+  DeleteEndpointIcon,
+  EmojiIcon,
+  EndpointName,
+  EndpointNameText,
+  EndpointSuffixIcon,
   EndpointUrlText,
-  OptionWrapper,
+  HealthIndicator,
+  LabelContent,
+  LoadingText,
   OptionLeft,
   OptionRight,
-  HealthIndicator,
-  EndpointName,
-  VersionLabel,
-  EmojiIcon,
-  LabelContent,
-  AddCustomOption,
-  EndpointNameText,
-  CheckingSpinner,
+  OptionWrapper,
   SelectorWrapper,
-  EndpointSuffixIcon,
-  DeleteEndpointIcon,
   SpinnerWrapper,
+  StyledSelect,
+  VersionLabel,
 } from './styles';
-import { RediaccStack } from '@/components/ui';
 
 const { Option } = Select;
 

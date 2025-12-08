@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { StyledRediaccTabs, mapVariantToAntType } from './RediaccTabs.styles';
+import { mapVariantToAntType, StyledRediaccTabs } from './RediaccTabs.styles';
 import type { RediaccTabsProps } from './RediaccTabs.types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

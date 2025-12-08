@@ -1,24 +1,24 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
-  FolderOutlined,
-  FileOutlined,
-  CloudDownloadOutlined,
-  ReloadOutlined,
-  HomeOutlined,
-  FolderOpenOutlined,
-  RightOutlined,
   CloseOutlined,
+  CloudDownloadOutlined,
+  FileOutlined,
+  FolderOpenOutlined,
+  FolderOutlined,
+  HomeOutlined,
+  ReloadOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
 import {
-  Modal,
-  Table,
-  Button,
-  Space,
-  Input,
-  Select,
-  Empty,
   Alert,
   Breadcrumb,
+  Button,
+  Empty,
+  Input,
+  Modal,
+  Select,
+  Space,
+  Table,
   Tooltip,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -30,14 +30,14 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { createTruncatedColumn } from '@/components/common/columns';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccStack } from '@/components/ui';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { createSorter, createCustomSorter } from '@/platform';
+import { createCustomSorter, createSorter } from '@/platform';
 import { waitForQueueItemCompletion } from '@/services/helloService';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
-import { SourceLabel, SourceSelect, SearchInput, FolderIcon, FileIcon } from './styles';
-import { RediaccStack } from '@/components/ui';
+import { FileIcon, FolderIcon, SearchInput, SourceLabel, SourceSelect } from './styles';
 import type { TableProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table/interface';
 

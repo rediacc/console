@@ -1,30 +1,30 @@
 import React, { useState } from 'react';
-import { Empty, Alert, Tooltip } from 'antd';
+import { Alert, Empty, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useCephClusters, useCephPools } from '@/api/queries/ceph';
 import type { CephCluster, CephPool } from '@/api/queries/ceph';
+import { useCephClusters, useCephPools } from '@/api/queries/ceph';
 import {
   useCreateCephCluster,
   useCreateCephPool,
-  useUpdateCephClusterVault,
-  useUpdateCephPoolVault,
   useDeleteCephCluster,
   useDeleteCephPool,
+  useUpdateCephClusterVault,
+  useUpdateCephPoolVault,
 } from '@/api/queries/cephMutations';
 import { useCompanyInfo } from '@/api/queries/dashboard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { RediaccButton } from '@/components/ui';
-import { useTeamSelection, useQueueTraceModal } from '@/hooks';
+import { useQueueTraceModal, useTeamSelection } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import {
+  EmptyStateWrapper,
   PageCard,
   PageContainer,
-  SectionStack,
   SectionHeaderRow,
-  EmptyStateWrapper,
+  SectionStack,
 } from '@/styles/primitives';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimizedIcons';
@@ -35,7 +35,7 @@ import type {
 import { CephMachinesTab } from './components/CephMachinesTab';
 import { ClusterTable } from './components/ClusterTable';
 import { PoolTable } from './components/PoolTable';
-import { TitleGroup, HeaderTitle, TeamSelectorWrapper, ActionGroup } from './styles';
+import { ActionGroup, HeaderTitle, TeamSelectorWrapper, TitleGroup } from './styles';
 
 type CephView = 'clusters' | 'pools' | 'machines';
 

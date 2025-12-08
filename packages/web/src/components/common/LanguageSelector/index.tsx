@@ -1,5 +1,5 @@
 import React from 'react';
-import { Select, Dropdown } from 'antd';
+import { Dropdown, Select } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,7 @@ import { InlineStack } from '@/components/common/styled';
 import type { RootState } from '@/store/store';
 import { GlobalOutlined } from '@/utils/optimizedIcons';
 import { LanguageButton, LanguageSelect } from './styles';
+
 const { Option } = Select;
 
 interface Language {

@@ -1,6 +1,6 @@
 import { Statistic } from 'antd';
 import styled from 'styled-components';
-import { RediaccInput, RediaccButton, RediaccTag, CardTitle, RediaccCard } from '@/components/ui';
+import { CardTitle, RediaccButton, RediaccCard, RediaccInput, RediaccTag } from '@/components/ui';
 import { FlexColumn } from '@/styles/primitives';
 
 export const TabContainer = styled(FlexColumn).attrs({

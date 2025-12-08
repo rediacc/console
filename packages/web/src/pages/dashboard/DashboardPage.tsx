@@ -1,11 +1,11 @@
 import React from 'react';
-import { Col, Row, Alert, Tag, Statistic, Empty, Tooltip, Table } from 'antd';
+import { Alert, Col, Empty, Row, Statistic, Table, Tag, Tooltip } from 'antd';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { useRecentAuditLogs } from '@/api/queries/audit';
 import { useDashboard } from '@/api/queries/dashboard';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccText, RediaccStack, RediaccCard } from '@/components/ui';
+import { RediaccCard, RediaccStack, RediaccText } from '@/components/ui';
 import CephDashboardWidget from '@/pages/dashboard/components/CephDashboardWidget';
 import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
 import { createSorter } from '@/platform';
@@ -14,51 +14,51 @@ import {
   AlertOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  SafetyCertificateOutlined,
-  ExclamationCircleOutlined,
+  CloseCircleOutlined,
   CrownOutlined,
   DesktopOutlined,
-  InboxOutlined,
-  HistoryOutlined,
-  CloseCircleOutlined,
   EditOutlined,
-  LoginOutlined,
-  SwapOutlined,
+  ExclamationCircleOutlined,
+  FieldTimeOutlined,
+  HistoryOutlined,
+  InboxOutlined,
   InfoCircleOutlined,
+  LoginOutlined,
+  RobotOutlined,
+  SafetyCertificateOutlined,
+  SwapOutlined,
   SyncOutlined,
+  TeamOutlined,
   ThunderboltOutlined,
   WarningOutlined,
-  FieldTimeOutlined,
-  RobotOutlined,
-  TeamOutlined,
 } from '@/utils/optimizedIcons';
-import type { QueueTeamIssue, QueueMachineIssue } from '@rediacc/shared/types';
+import type { QueueMachineIssue, QueueTeamIssue } from '@rediacc/shared/types';
 import {
-  CenteredState,
-  ResourceTile,
-  TileHeader,
-  TileMeta,
-  ResourceProgress,
-  SectionLabelWrapper,
-  SectionTitleWrapper,
-  ScrollContainer,
-  LicenseItem,
-  LicenseHeader,
-  FlexBetween,
-  InlineStack,
-  StatRow,
-  StatValue,
-  InlineLink,
-  QueueBadgeRow,
-  QueueBadge,
-  TimelineWrapper,
+  AuditMeta,
   BorderlessList,
   BorderlessListItem,
-  AuditMeta,
-  SectionFooter,
+  CenteredState,
+  FlexBetween,
+  HorizontalScroll,
+  InlineLink,
+  InlineStack,
+  LicenseHeader,
+  LicenseItem,
   PlanCountBadge,
   QuantityBadge,
-  HorizontalScroll,
+  QueueBadge,
+  QueueBadgeRow,
+  ResourceProgress,
+  ResourceTile,
+  ScrollContainer,
+  SectionFooter,
+  SectionLabelWrapper,
+  SectionTitleWrapper,
+  StatRow,
+  StatValue,
+  TileHeader,
+  TileMeta,
+  TimelineWrapper,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 

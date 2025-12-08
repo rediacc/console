@@ -6,42 +6,42 @@ import styled, { useTheme } from 'styled-components';
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
 import {
-  useRepos,
-  useCreateRepo,
-  useUpdateRepoName,
-  useDeleteRepo,
-  useUpdateRepoVault,
   Repo,
+  useCreateRepo,
+  useDeleteRepo,
+  useRepos,
+  useUpdateRepoName,
+  useUpdateRepoVault,
 } from '@/api/queries/repos';
 import { useStorage } from '@/api/queries/storage';
 import { useDropdownData } from '@/api/queries/useDropdownData';
-import { ActionButtonGroup, ActionButtonConfig } from '@/components/common/ActionButtonGroup';
+import { ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { createActionColumn } from '@/components/common/columns';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import ResourceListView, {
-  COLUMN_WIDTHS,
   COLUMN_RESPONSIVE,
+  COLUMN_WIDTHS,
 } from '@/components/common/ResourceListView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import {
-  RediaccText,
-  PageWrapper,
-  SectionStack,
-  SectionHeading,
-  ListTitleRow,
-  ListTitle,
   ListSubtitle,
+  ListTitle,
+  ListTitleRow,
+  PageWrapper,
+  RediaccText,
+  SectionHeading,
+  SectionStack,
 } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import {
-  useUnifiedModal,
-  useTeamSelection,
-  usePagination,
-  useTraceModal,
-  useQueueTraceModal,
   useAsyncAction,
+  usePagination,
+  useQueueTraceModal,
+  useTeamSelection,
+  useTraceModal,
+  useUnifiedModal,
 } from '@/hooks';
 import { useQueueAction } from '@/hooks/useQueueAction';
 import { useRepoCreation } from '@/hooks/useRepoCreation';
@@ -49,12 +49,12 @@ import { getAffectedResources as coreGetAffectedResources } from '@/platform';
 import type { QueueActionParams } from '@/services/queueActionService';
 import { showMessage } from '@/utils/messages';
 import {
-  PlusOutlined,
-  ReloadOutlined,
-  EditOutlined,
   DeleteOutlined,
+  EditOutlined,
   HistoryOutlined,
   InboxOutlined,
+  PlusOutlined,
+  ReloadOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 

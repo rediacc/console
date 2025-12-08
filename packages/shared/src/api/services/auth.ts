@@ -3,12 +3,13 @@ import type { ApiClient } from './types';
 import type {
   AuthLoginResult,
   AuthRequestStatus,
+  DeleteUserRequestParams,
   EnableTfaResponse,
   ForkSessionCredentials,
+  IsRegisteredParams,
   UserRequest,
   VerifyTfaResult,
 } from '../../types';
-import type { DeleteUserRequestParams, IsRegisteredParams } from '../../types';
 import type { ApiResponse } from '../../types/api';
 
 export interface ForkSessionOptions {

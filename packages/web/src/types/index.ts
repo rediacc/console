@@ -44,9 +44,9 @@ declare global {
 }
 
 export type {
-  MachineAssignmentType,
-  MachineAssignmentStatus,
   GetTeamMachines_ResultSet1 as Machine,
   GetTeamRepositories_ResultSet1 as Repo,
+  MachineAssignmentStatus,
+  MachineAssignmentType,
   PluginContainer,
 } from '@rediacc/shared/types';

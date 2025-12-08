@@ -1,13 +1,14 @@
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { GetRegionBridges_ResultSet1, GetCompanyRegions_ResultSet1 } from '../../types';
 import type {
-  WithOptionalVault,
   CreateRegionParams,
-  UpdateRegionNameParams,
   DeleteRegionParams,
-  UpdateRegionVaultParams,
+  GetCompanyRegions_ResultSet1,
+  GetRegionBridges_ResultSet1,
   GetRegionBridgesParams,
+  UpdateRegionNameParams,
+  UpdateRegionVaultParams,
+  WithOptionalVault,
 } from '../../types';
 
 export function createRegionsService(client: ApiClient) {

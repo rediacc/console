@@ -1,9 +1,9 @@
 import { Collapse, Form } from 'antd';
 import styled from 'styled-components';
-import { InlineStack, ActionGroup } from '@/components/common/styled';
-import { RediaccButton, RediaccCard, RediaccTag, RediaccInput } from '@/components/ui';
-import { FlexColumn } from '@/styles/primitives';
+import { ActionGroup, InlineStack } from '@/components/common/styled';
+import { RediaccButton, RediaccCard, RediaccInput, RediaccTag } from '@/components/ui';
 import { borderedCard } from '@/styles/mixins';
+import { FlexColumn } from '@/styles/primitives';
 
 export const EditorContainer = styled.div`
   width: 100%;

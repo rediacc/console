@@ -1,4 +1,4 @@
-import { EllipsisOutlined, CloudUploadOutlined } from '@ant-design/icons';
+import { CloudUploadOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import { TFunction } from 'i18next';
 import type { CephRbdSnapshot } from '@/api/queries/ceph';

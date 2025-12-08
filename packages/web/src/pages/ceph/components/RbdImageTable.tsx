@@ -1,41 +1,41 @@
-import { useState } from 'react';
 import type { Key } from 'react';
+import { useState } from 'react';
 import {
+  CameraOutlined,
+  CheckCircleOutlined,
+  CloudDownloadOutlined,
+  CloudServerOutlined,
+  CloudUploadOutlined,
+  CopyOutlined,
+  DeleteOutlined,
+  DesktopOutlined,
+  EllipsisOutlined,
+  ExpandOutlined,
+  FileImageOutlined,
+  InfoCircleOutlined,
   PlusOutlined,
   SettingOutlined,
-  DeleteOutlined,
-  EllipsisOutlined,
-  FileImageOutlined,
-  CameraOutlined,
-  CopyOutlined,
-  ExpandOutlined,
-  CloudUploadOutlined,
-  CloudDownloadOutlined,
-  InfoCircleOutlined,
-  CheckCircleOutlined,
-  DesktopOutlined,
   SyncOutlined,
-  CloudServerOutlined,
 } from '@ant-design/icons';
-import { Table, Button, Space, Tag, Tooltip, message } from 'antd';
+import { Button, message, Space, Table, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  useCephRbdImages,
-  useAvailableMachinesForClone,
-  type CephRbdImage,
   type CephPool,
+  type CephRbdImage,
+  useAvailableMachinesForClone,
+  useCephRbdImages,
 } from '@/api/queries/ceph';
 import {
-  useDeleteCephRbdImage,
   useCreateCephRbdImage,
+  useDeleteCephRbdImage,
   useUpdateCephPoolVault,
 } from '@/api/queries/cephMutations';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { useDialogState, useQueueTraceModal, useExpandableTable } from '@/hooks';
-import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles';
+import { useDialogState, useExpandableTable, useQueueTraceModal } from '@/hooks';
+import { useComponentStyles, useTableStyles } from '@/hooks/useComponentStyles';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMachineReassignmentModal';

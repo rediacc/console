@@ -1,97 +1,97 @@
 import React, { useEffect } from 'react';
 import {
-  Modal,
-  Button,
-  Space,
-  Card,
-  Descriptions,
-  Empty,
-  Row,
-  Col,
-  Tabs,
-  Collapse,
-  Steps,
-  Progress,
-  Statistic,
-  Divider,
   Badge,
+  Button,
+  Card,
+  Col,
+  Collapse,
+  Descriptions,
+  Divider,
+  Empty,
+  Modal,
+  Progress,
+  Row,
+  Space,
+  Statistic,
+  Steps,
+  Tabs,
   Tooltip,
 } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import {
+  useCancelQueueItem,
   useQueueItemTrace,
   useRetryFailedQueueItem,
-  useCancelQueueItem,
 } from '@/api/queries/queue';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
-import { RediaccText, RediaccTag, RediaccAlert, RediaccCard, RediaccStack } from '@/components/ui';
+import { RediaccAlert, RediaccCard, RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
 import { useTheme } from '@/context/ThemeContext';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
-import { formatTimestampAsIs } from '@/platform';
 import {
-  normalizeToString,
-  normalizeToNumber,
-  normalizeToBoolean,
   formatDuration,
   formatDurationFull,
+  formatTimestampAsIs,
+  normalizeToBoolean,
+  normalizeToNumber,
+  normalizeToString,
 } from '@/platform';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import {
-  HistoryOutlined,
-  FileTextOutlined,
-  ClockCircleOutlined,
   CheckCircleOutlined,
+  ClockCircleOutlined,
   CloseCircleOutlined,
-  SyncOutlined,
-  RightOutlined,
-  UserOutlined,
-  RetweetOutlined,
-  WarningOutlined,
-  TeamOutlined,
-  DashboardOutlined,
-  HourglassOutlined,
-  ExclamationCircleOutlined,
   CodeOutlined,
+  DashboardOutlined,
+  ExclamationCircleOutlined,
+  FileTextOutlined,
+  HistoryOutlined,
+  HourglassOutlined,
+  RetweetOutlined,
+  RightOutlined,
+  SyncOutlined,
+  TeamOutlined,
+  UserOutlined,
+  WarningOutlined,
 } from '@/utils/optimizedIcons';
 import { spacing } from '@/utils/styleConstants';
 import type { QueuePositionEntry } from '@rediacc/shared/types';
+import { ActionButtons } from './components/ActionButtons';
+import { ConsoleOutput } from './components/ConsoleOutput';
+import { StatsPanel } from './components/StatsPanel';
+import { TimelineView } from './components/TimelineView';
+import { useTraceState } from './hooks/useTraceState';
 import {
+  CenteredFooter,
+  CenteredMessage,
+  CenteredRow,
+  ItalicCaption,
+  KeyInfoCard,
+  KeyInfoValue,
+  LastFetchedText,
   ModalTitleContainer,
   ModalTitleLeft,
   ModalTitleRight,
-  LastFetchedText,
   ModeSegmented,
-  CenteredMessage,
   NoMarginTitle,
   NoteWrapper,
-  KeyInfoCard,
-  KeyInfoValue,
-  ItalicCaption,
   ScrollContainer,
   ScrollItem,
   SectionMargin,
-  CenteredFooter,
-  CenteredRow,
 } from './styles';
-import type { CollapseProps } from 'antd';
-import type { QueueItemTraceModalProps } from './types';
-import { ConsoleOutput } from './components/ConsoleOutput';
-import { TimelineView } from './components/TimelineView';
-import { StatsPanel } from './components/StatsPanel';
-import { ActionButtons } from './components/ActionButtons';
-import { useTraceState } from './hooks/useTraceState';
 import {
-  getTimelineTimestamp,
+  getCurrentStep,
+  getPriorityInfo,
   getSimplifiedStatus,
   getTaskStaleness,
-  isTaskStale,
+  getTimelineTimestamp,
   isStalePending,
-  getPriorityInfo,
-  getCurrentStep,
+  isTaskStale,
 } from './utils';
+import type { QueueItemTraceModalProps } from './types';
+import type { CollapseProps } from 'antd';
 
 dayjs.extend(relativeTime);
 

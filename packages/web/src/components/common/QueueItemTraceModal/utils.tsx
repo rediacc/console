@@ -1,16 +1,16 @@
 import dayjs from 'dayjs';
-import type { QueueTraceLog } from '@rediacc/shared/types';
-import { normalizeToString, normalizeToNumber, formatTimestampAsIs } from '@/platform';
+import { formatTimestampAsIs, normalizeToNumber, normalizeToString } from '@/platform';
 import {
   CheckCircleOutlined,
-  CloseCircleOutlined,
-  SyncOutlined,
   ClockCircleOutlined,
+  CloseCircleOutlined,
   RetweetOutlined,
-  ThunderboltOutlined,
   RocketOutlined,
+  SyncOutlined,
+  ThunderboltOutlined,
 } from '@/utils/optimizedIcons';
-import type { SimplifiedStatus, PriorityInfo, TaskStalenessLevel } from './types';
+import type { QueueTraceLog } from '@rediacc/shared/types';
+import type { PriorityInfo, SimplifiedStatus, TaskStalenessLevel } from './types';
 
 // Helper function to extract timestamp from trace logs for specific action
 export const getTimelineTimestamp = (

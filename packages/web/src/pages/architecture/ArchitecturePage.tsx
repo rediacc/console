@@ -1,45 +1,44 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Alert, Space, Tooltip, Statistic, Row, Col, Select } from 'antd';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Col, Row, Select, Space, Statistic, Tooltip } from 'antd';
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { useCompanyArchitecture } from '@/api/queries/architecture';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccRadio, RediaccStack, RediaccText, RediaccButton } from '@/components/ui';
-import { PageCard } from '@/components/ui';
+import { PageCard, RediaccButton, RediaccRadio, RediaccStack, RediaccText } from '@/components/ui';
 import { useTheme } from '@/context/ThemeContext';
+import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
 import {
-  FullscreenOutlined,
-  FullscreenExitOutlined,
-  ReloadOutlined,
-  CloudOutlined,
-  TeamOutlined,
-  UserOutlined,
   ApiOutlined,
+  CheckOutlined,
+  CloudOutlined,
+  FilterOutlined,
+  FullscreenExitOutlined,
+  FullscreenOutlined,
   GlobalOutlined,
   InboxOutlined,
-  FilterOutlined,
-  CheckOutlined,
   MinusCircleOutlined,
+  ReloadOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@/utils/optimizedIcons';
 import type { CompanyDataGraph, CompanyGraphNode } from '@rediacc/shared/types';
 import { getArchitecturePalette } from './architectureTheme';
 import {
   ActionGroup,
-  FiltersRow,
+  CenteredMessage,
+  CenteredState,
+  FilterActions,
   FilterLabel,
   FilterSelectWrapper,
-  FilterActions,
-  VisualizationContainer,
-  LoadingOverlay,
-  LoadingMessage,
-  VisualizationCanvas,
+  FiltersRow,
   LegendGrid,
-  LegendItem,
   LegendIcon,
-  CenteredState,
-  CenteredMessage,
+  LegendItem,
+  LoadingMessage,
+  LoadingOverlay,
+  VisualizationCanvas,
+  VisualizationContainer,
 } from './styles';
-import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
 
 interface GraphNode extends CompanyGraphNode, d3.SimulationNodeDatum {
   memberCount?: number;

@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { RediaccTag, RediaccBadge } from '@/components/ui';
+import { RediaccBadge, RediaccTag } from '@/components/ui';
 import { borderedCard } from '@/styles/mixins';
 
 export const TableContainer = styled.div`

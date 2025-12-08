@@ -1,18 +1,18 @@
 import { api } from '@/api/client';
 import { QUERY_KEY_STRINGS } from '@/api/queryKeys';
 import {
+  createMutation,
   createResourceMutation,
   createVaultUpdateMutation,
-  createMutation,
 } from '@/hooks/api/mutationFactory';
 import { createResourceQuery } from '@/hooks/api/queryFactory';
 import type { Machine } from '@/types';
 import type {
   CreateMachineParams,
-  UpdateMachineNameParams,
-  UpdateMachineAssignedBridgeParams,
-  UpdateMachineVaultParams,
   DeleteMachineParams,
+  UpdateMachineAssignedBridgeParams,
+  UpdateMachineNameParams,
+  UpdateMachineVaultParams,
   WithOptionalVault,
 } from '@rediacc/shared/types';
 

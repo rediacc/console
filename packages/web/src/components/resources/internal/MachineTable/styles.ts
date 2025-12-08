@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccButton, RediaccTag, RediaccCard, RediaccBadge } from '@/components/ui';
-import type { TagVariant, TagPreset } from '@/components/ui/Tag';
+import { RediaccBadge, RediaccButton, RediaccCard, RediaccTag } from '@/components/ui';
+import type { TagPreset, TagVariant } from '@/components/ui/Tag';
 import { FlexColumn } from '@/styles/primitives';
 import { DesktopOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';

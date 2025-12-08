@@ -1,58 +1,62 @@
-import React, { useState, useEffect } from 'react';
 import type { ComponentPropsWithoutRef } from 'react';
-import { Row, Col, List } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Col, List, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccTag, RediaccButton, RediaccText, RediaccStack } from '@/components/ui';
-import { RediaccDivider } from '@/components/ui';
+import {
+  RediaccButton,
+  RediaccDivider,
+  RediaccStack,
+  RediaccTag,
+  RediaccText,
+} from '@/components/ui';
 import { templateService } from '@/services/templateService';
-import { TabLabel } from '@/styles/primitives';
-import { NoMarginTitle } from '@/styles/primitives';
+import { NoMarginTitle, TabLabel } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import {
-  RocketOutlined,
-  FileTextOutlined,
-  CodeOutlined,
-  SafetyOutlined,
   AppstoreOutlined,
   CheckCircleOutlined,
+  CodeOutlined,
   FileOutlined,
+  FileTextOutlined,
+  RocketOutlined,
+  SafetyOutlined,
 } from '@/utils/optimizedIcons';
 import {
-  StyledModal,
-  TemplateAvatar,
-  TemplateIconWrapper,
-  DifficultyTag,
-  StyledTabs,
-  OverviewScroll,
-  DescriptionCard,
-  FeatureCard,
-  MarkdownContent,
-  FeatureText,
+  AlertStack,
+  BodyParagraph,
   CenteredLoadingContainer,
-  FilesLayout,
-  FileListColumn,
-  FilePreviewColumn,
+  Checklist,
+  ChecklistItem,
+  DescriptionCard,
+  DifficultyTag,
+  FeatureCard,
+  FeatureText,
   FileListCard,
+  FileListColumn,
   FileListItem,
   FileMeta,
   FileName,
-  FilePreviewCard,
   FilePath,
   FilePreviewBody,
-  SecurityScroll,
-  SecurityCard,
-  AlertStack,
-  RoundedAlert,
-  Checklist,
-  ChecklistItem,
-  BodyParagraph,
-  SecurityTitle,
+  FilePreviewCard,
+  FilePreviewColumn,
+  FilesLayout,
   IconLabel,
+  MarkdownContent,
+  OverviewScroll,
+  RoundedAlert,
+  SecurityCard,
+  SecurityScroll,
+  SecurityTitle,
+  StyledModal,
+  StyledTabs,
   SuccessIcon,
+  TemplateAvatar,
+  TemplateIconWrapper,
 } from './styles';
 import type { Components as MarkdownComponents } from 'react-markdown';
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';

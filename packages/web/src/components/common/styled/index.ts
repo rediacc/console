@@ -8,7 +8,9 @@
 import type { ComponentType } from 'react';
 import { Table } from 'antd';
 import styled from 'styled-components';
-import { RediaccButton, RediaccStack, RediaccSelect } from '@/components/ui';
+import { RediaccButton, RediaccSelect, RediaccStack } from '@/components/ui';
+import type { StatusVariant } from '@/styles/primitives';
+import type { TableProps } from 'antd';
 
 /**
  * Stack layout with vertical direction, large gap, and full width.
@@ -18,8 +20,6 @@ export const ContentStack = styled(RediaccStack).attrs({
   variant: 'spaced-column',
   fullWidth: true,
 })``;
-import type { StatusVariant } from '@/styles/primitives';
-import type { TableProps } from 'antd';
 
 // =============================================================================
 // SPACING TYPES
@@ -355,13 +355,12 @@ export const ModalSelect = styled(RediaccSelect).attrs<ModalSelectProps>((props)
 // RE-EXPORTS FROM PRIMITIVES AND UI COMPONENTS
 // =============================================================================
 
+export type { StatusVariant } from '@/styles/primitives';
 // Re-export commonly used primitives for convenience
 export {
-  PageContainer,
-  PageCard,
-  ContentSection,
-  SectionHeaderRow,
   ActionBar,
+  ContentSection,
+  PageCard,
+  PageContainer,
+  SectionHeaderRow,
 } from '@/styles/primitives';
-
-export type { StatusVariant } from '@/styles/primitives';

@@ -1,7 +1,7 @@
 import { Breadcrumb, Typography } from 'antd';
 import styled from 'styled-components';
 import { ActionsRow } from '@/components/common/styled';
-import { PageContainer, SectionStack, SectionHeaderRow, FlexRow } from '@/styles/primitives';
+import { FlexRow, PageContainer, SectionHeaderRow, SectionStack } from '@/styles/primitives';
 
 export const PageWrapper = styled(PageContainer)`
   height: 100%;

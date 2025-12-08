@@ -1,4 +1,4 @@
-import { QueueService, type QueueMonitoringEvent } from '@/platform/services/queue';
+import { type QueueMonitoringEvent, QueueService } from '@/platform/services/queue';
 import type { QueueRequestContext } from '@/platform/types';
 import { queueMonitoringService } from '@/services/queueMonitoringService';
 import { showMessage } from '@/utils/messages';

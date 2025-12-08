@@ -1,6 +1,6 @@
 import React from 'react';
 import { CloudServerOutlined } from '@ant-design/icons';
-import { useCloneMachines, type CephRbdClone } from '@/api/queries/ceph';
+import { type CephRbdClone, useCloneMachines } from '@/api/queries/ceph';
 import { MachineCountBadgeWrapper } from '@/pages/ceph/components/CloneTable/styles';
 
 interface MachineCountBadgeProps {

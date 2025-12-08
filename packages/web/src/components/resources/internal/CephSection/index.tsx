@@ -3,24 +3,24 @@ import { useTranslation } from 'react-i18next';
 import { useMachineAssignmentStatus } from '@/api/queries/ceph';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
-import { IconWrapper, RediaccText, RediaccDivider, RediaccStack } from '@/components/ui';
+import { IconWrapper, RediaccDivider, RediaccStack, RediaccText } from '@/components/ui';
 import type { Machine, MachineAssignmentType } from '@/types';
 import {
-  DatabaseOutlined,
   CloudServerOutlined,
-  HddOutlined,
   CopyOutlined,
+  DatabaseOutlined,
+  HddOutlined,
   HistoryOutlined,
   RightOutlined,
 } from '@/utils/optimizedIcons';
 import {
-  LoadingState,
-  DividerContent,
-  SectionTitle,
-  SectionCard,
-  AlertWrapper,
-  ActionsRow,
   ActionButton,
+  ActionsRow,
+  AlertWrapper,
+  DividerContent,
+  LoadingState,
+  SectionCard,
+  SectionTitle,
 } from './styles';
 
 interface CephSectionProps {

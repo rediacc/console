@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Space, Select, Input, Button, Card, Row, Col } from 'antd';
+import { Button, Card, Col, Input, Row, Select, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useMachines } from '@/api/queries/machines';
@@ -12,11 +12,11 @@ import { RootState } from '@/store/store';
 import { Machine } from '@/types';
 import { showMessage } from '@/utils/messages';
 import {
-  SearchOutlined,
-  FilterOutlined,
-  ExportOutlined,
   CloudServerOutlined,
+  ExportOutlined,
+  FilterOutlined,
   InfoCircleOutlined,
+  SearchOutlined,
 } from '@/utils/optimizedIcons';
 import { FilterableMachineTable } from './FilterableMachineTable';
 import { MachineAvailabilitySummary } from './MachineAvailabilitySummary';

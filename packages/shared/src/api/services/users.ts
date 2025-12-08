@@ -1,14 +1,15 @@
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { GetCompanyUsers_ResultSet1, UserVault } from '../../types';
 import type {
+  GetCompanyUsers_ResultSet1,
+  UpdateUserAssignedPermissionsParams,
+  UpdateUserEmailParams,
+  UpdateUserLanguageParams,
+  UpdateUserPasswordParams,
   UpdateUserToActivatedParams,
   UpdateUserToDeactivatedParams,
-  UpdateUserEmailParams,
-  UpdateUserPasswordParams,
-  UpdateUserLanguageParams,
   UpdateUserVaultParams,
-  UpdateUserAssignedPermissionsParams,
+  UserVault,
 } from '../../types';
 
 export interface CreateUserOptions {

@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { StyledRediaccStack, resolveStackVariantDefaults } from './RediaccStack.styles';
+import { resolveStackVariantDefaults, StyledRediaccStack } from './RediaccStack.styles';
 import type { RediaccStackProps } from './RediaccStack.types';
 
 export const RediaccStack = forwardRef<HTMLDivElement, RediaccStackProps>(

@@ -1,4 +1,4 @@
-import type { ReactNode, CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type StackDirection = 'horizontal' | 'vertical';
 export type StackGap = 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';

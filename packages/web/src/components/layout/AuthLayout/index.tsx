@@ -3,7 +3,7 @@ import { Space } from 'antd';
 import { Outlet } from 'react-router-dom';
 import LanguageSelector from '@/components/common/LanguageSelector';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
-import { AuthLayoutContainer, ControlsWrapper, AuthContent } from './styles';
+import { AuthContent, AuthLayoutContainer, ControlsWrapper } from './styles';
 
 const AuthLayout: React.FC = () => {
   return (

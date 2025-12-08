@@ -1,4 +1,4 @@
-import { encryptString, decryptString } from './encryption';
+import { decryptString, encryptString } from './encryption';
 
 /**
  * Vault Protocol using VaultCompany as an encryption indicator

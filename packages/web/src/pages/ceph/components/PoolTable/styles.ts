@@ -1,9 +1,9 @@
 import styled from 'styled-components';
 import { RediaccCard } from '@/components/ui';
-import { ActionsRow, NameCell, NameText, ExpandIcon } from '@/pages/ceph/styles/tableAliases';
+import { ActionsRow, ExpandIcon, NameCell, NameText } from '@/pages/ceph/styles/tableAliases';
+import { borderedCard } from '@/styles/mixins';
 import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
 import { CloudServerOutlined, DatabaseOutlined } from '@/utils/optimizedIcons';
-import { borderedCard } from '@/styles/mixins';
 
 /**
  * @deprecated Use <RediaccCard spacing="default" /> with inline styles

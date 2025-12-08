@@ -1,18 +1,18 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form, message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue';
 import { useTeams } from '@/api/queries/teams';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import { STORAGE_FIELDS_TO_KEEP, storageProviderConfig, vaultDefinitionConfig } from '../constants';
+import { decodeBase64, encodeBase64, formatValidationErrors, processExtraFields } from '../utils';
 import type {
-  VaultFormValues,
-  VaultEditorProps,
-  ValidateErrorEntity,
   FieldDefinition,
+  ValidateErrorEntity,
+  VaultEditorProps,
+  VaultFormValues,
 } from '../types';
-import { formatValidationErrors, processExtraFields, decodeBase64, encodeBase64 } from '../utils';
-import { vaultDefinitionConfig, storageProviderConfig, STORAGE_FIELDS_TO_KEEP } from '../constants';
 
 export const useVaultEditorState = (props: VaultEditorProps) => {
   const {

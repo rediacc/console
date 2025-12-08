@@ -1,9 +1,9 @@
 import React from 'react';
 import { LockOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { RediaccText, RediaccAlert } from '@/components/ui';
+import { RediaccAlert, RediaccText } from '@/components/ui';
 import { getSecurityContextInfo } from '@/utils/secureContext';
-import { WarningDescription, ResolutionText } from './styles';
+import { ResolutionText, WarningDescription } from './styles';
 
 interface InsecureConnectionWarningProps {
   onClose?: () => void;

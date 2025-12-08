@@ -8,15 +8,15 @@ import { RediaccText } from '@/components/ui';
 import type { Machine } from '@/types';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import {
-  StyledModal,
-  TitleStack,
-  InfoIcon,
-  SummaryRow,
-  SummaryItem,
-  MachinesTable,
-  MachineNameRow,
-  TeamTag,
   ClusterTag,
+  InfoIcon,
+  MachineNameRow,
+  MachinesTable,
+  StyledModal,
+  SummaryItem,
+  SummaryRow,
+  TeamTag,
+  TitleStack,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 

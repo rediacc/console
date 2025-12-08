@@ -1,4 +1,4 @@
-import { DatabaseOutlined, PlusOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
+import { DatabaseOutlined, FunctionOutlined, PlusOutlined } from '@/utils/optimizedIcons';
 import type { MenuProps } from 'antd';
 import type { TFunction } from 'i18next';
 

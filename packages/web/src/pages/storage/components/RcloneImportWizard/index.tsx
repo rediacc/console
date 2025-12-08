@@ -1,27 +1,26 @@
 import React, { useState } from 'react';
-import { Steps, Upload, Button, Table, Space, Typography, Tag, Tooltip } from 'antd';
+import { Button, Space, Steps, Table, Tag, Tooltip, Typography, Upload } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useCreateStorage } from '@/api/queries/storage';
-import { useStorage } from '@/api/queries/storage';
+import { useCreateStorage, useStorage } from '@/api/queries/storage';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccCheckbox, RediaccAlert } from '@/components/ui';
+import { RediaccAlert, RediaccCheckbox } from '@/components/ui';
 import { createSorter } from '@/platform';
 import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CloseCircleOutlined,
   CloudOutlined,
   InfoCircleOutlined,
   UploadOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 import {
-  WizardModal,
-  UploadStepWrapper,
-  StepsContainer,
   LoadingState,
   StatusMessage,
+  StepsContainer,
+  UploadStepWrapper,
+  WizardModal,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload';

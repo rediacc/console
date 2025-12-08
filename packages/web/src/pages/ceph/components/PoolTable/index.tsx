@@ -1,10 +1,10 @@
 import { useCallback, useMemo } from 'react';
 import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { CephPool, CephCluster } from '@/api/queries/ceph';
+import { CephCluster, CephPool } from '@/api/queries/ceph';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { RediaccButton } from '@/components/ui';
-import { useTraceModal, useExpandableTable } from '@/hooks';
+import { useExpandableTable, useTraceModal } from '@/hooks';
 import RbdImageTable from '@/pages/ceph/components/RbdImageTable';
 import { EmptyStatePanel } from '@/styles/primitives';
 import { confirmAction } from '@/utils/confirmations';

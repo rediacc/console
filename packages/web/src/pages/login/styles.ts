@@ -1,8 +1,8 @@
-import { Form, Input as AntdInput } from 'antd';
+import { Input as AntdInput, Form } from 'antd';
 import styled from 'styled-components';
-import { RediaccInput, RediaccPasswordInput, RediaccButton } from '@/components/ui';
-import { fadeInAnimation, AlertCard, FlexRow } from '@/styles/primitives';
+import { RediaccButton, RediaccInput, RediaccPasswordInput } from '@/components/ui';
 import { focusRing } from '@/styles/mixins';
+import { AlertCard, FlexRow, fadeInAnimation } from '@/styles/primitives';
 
 export const LoginContainer = styled.div`
   width: 100%;

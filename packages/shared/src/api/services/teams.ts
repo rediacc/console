@@ -1,16 +1,16 @@
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type {
+  CreateTeamMembershipParams,
+  CreateTeamParams,
+  DeleteTeamParams,
+  DeleteUserFromTeamParams,
   GetCompanyTeams_ResultSet1,
   GetTeamMembers_ResultSet1,
-  WithOptionalVault,
-  CreateTeamParams,
-  UpdateTeamNameParams,
-  DeleteTeamParams,
-  UpdateTeamVaultParams,
   GetTeamMembersParams,
-  CreateTeamMembershipParams,
-  DeleteUserFromTeamParams,
+  UpdateTeamNameParams,
+  UpdateTeamVaultParams,
+  WithOptionalVault,
 } from '../../types';
 
 export function createTeamsService(client: ApiClient) {

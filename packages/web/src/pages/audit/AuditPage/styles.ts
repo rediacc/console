@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { ContentStack } from '@/components/common/styled';
-import { RediaccText, RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccText } from '@/components/ui';
 import { StyledIcon } from '@/styles/primitives';
 import { FilterOutlined } from '@/utils/optimizedIcons';
 

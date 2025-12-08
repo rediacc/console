@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { ContentStack, InlineStack } from '@/components/common/styled';
 import { RediaccSelect } from '@/components/ui';
-import { BaseModal, StyledIcon, LoadingContainer } from '@/styles/primitives';
+import { BaseModal, LoadingContainer, StyledIcon } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons';
 

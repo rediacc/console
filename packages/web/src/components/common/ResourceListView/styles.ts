@@ -1,6 +1,6 @@
 import styled, { css } from 'styled-components';
 import { ActionGroup } from '@/components/common/styled';
-import { RediaccCard, RediaccStack, RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccCard, RediaccStack } from '@/components/ui';
 import { RediaccSearchInput } from '@/components/ui/Form';
 
 export const ContainerCard = styled(RediaccCard)`

@@ -1,14 +1,14 @@
 import styled from 'styled-components';
 import { RediaccBadge, RediaccButton } from '@/components/ui';
 import {
+  ActionsRow,
+  ExpandIcon,
   NameCell,
   NameText,
-  ExpandIcon,
-  ActionsRow,
   TableWrapper,
 } from '@/pages/ceph/styles/tableAliases';
 import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
-import { CloudServerOutlined, TeamOutlined, DesktopOutlined } from '@/utils/optimizedIcons';
+import { CloudServerOutlined, DesktopOutlined, TeamOutlined } from '@/utils/optimizedIcons';
 
 export const TableContainer = styled(BaseTableContainer)`
   .cluster-row {

@@ -1,56 +1,56 @@
 ﻿import React, { useEffect, useMemo } from 'react';
-import { Row, Col, Progress, Space } from 'antd';
+import { Col, Progress, Row, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
-import type { GetTeamRepositories_ResultSet1 as Repo } from '@rediacc/shared/types';
-import { IconWrapper, RediaccText, RediaccEmpty, RediaccAlert } from '@/components/ui';
+import { IconWrapper, RediaccAlert, RediaccEmpty, RediaccText } from '@/components/ui';
 import type { Machine } from '@/types';
 import {
-  DoubleRightOutlined,
-  DatabaseOutlined,
-  InfoCircleOutlined,
   AppstoreOutlined,
-  FieldTimeOutlined,
-  CloudServerOutlined,
-  FolderOutlined,
   CheckCircleOutlined,
-  StopOutlined,
+  CloudServerOutlined,
   CodeOutlined,
+  DatabaseOutlined,
+  DoubleRightOutlined,
+  FieldTimeOutlined,
+  FolderOutlined,
+  InfoCircleOutlined,
+  StopOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 import { abbreviatePath } from '@/utils/pathUtils';
+import type { GetTeamRepositories_ResultSet1 as Repo } from '@rediacc/shared/types';
 import {
-  PanelWrapper,
-  Header,
-  HeaderRow,
-  TitleGroup,
-  HeaderIcon,
-  PanelTitle,
+  ActivityCard,
+  ActivityMetrics,
   CollapseButton,
-  TagGroup,
-  StyledTag,
   ContentWrapper,
-  SectionHeader,
-  SectionTitle,
-  SectionCard,
-  FieldRow,
   FieldLabel,
+  FieldRow,
   FieldValue,
   FieldValueMonospace,
-  SectionDivider,
+  Header,
+  HeaderIcon,
+  HeaderRow,
+  PanelTitle,
+  PanelWrapper,
+  PathsCard,
   Section,
-  StatusTag,
-  VolumeDescription,
-  VolumeList,
-  Stack,
-  ServicesList,
+  SectionCard,
+  SectionDivider,
+  SectionHeader,
+  SectionTitle,
   ServiceCard,
   ServiceHeader,
   ServiceMetaGrid,
   ServiceMetaItem,
-  PathsCard,
-  ActivityCard,
-  ActivityMetrics,
+  ServicesList,
+  Stack,
+  StatusTag,
+  StyledTag,
+  TagGroup,
+  TitleGroup,
+  VolumeDescription,
+  VolumeList,
 } from './styles';
 import type { TFunction } from 'i18next';
 

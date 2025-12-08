@@ -1,6 +1,6 @@
-import React, { useEffect, lazy, Suspense } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React, { lazy, Suspense, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { initializeApiClient } from '@/api/init';
 import { AppProviders } from '@/components/app/AppProviders';
 import { ErrorBoundary } from '@/components/app/ErrorBoundary';

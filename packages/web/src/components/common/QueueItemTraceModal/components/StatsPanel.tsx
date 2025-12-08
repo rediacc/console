@@ -1,8 +1,8 @@
 import React from 'react';
-import { Row, Col, Statistic } from 'antd';
+import { Col, Row, Statistic } from 'antd';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { ClockCircleOutlined, SyncOutlined, HourglassOutlined } from '@/utils/optimizedIcons';
+import { ClockCircleOutlined, HourglassOutlined, SyncOutlined } from '@/utils/optimizedIcons';
 import type { StatsPanelProps } from '../types';
 
 export const StatsPanel: React.FC<StatsPanelProps> = ({

@@ -1,9 +1,9 @@
 import React, { Component, ReactNode } from 'react';
-import { ReloadOutlined, BugOutlined } from '@ant-design/icons';
+import { BugOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Result } from 'antd';
 import { RediaccButton } from '@/components/ui';
 import { telemetryService } from '@/services/telemetryService';
-import { FallbackContainer, ErrorDetails, ErrorSummary, ErrorContent } from './styles';
+import { ErrorContent, ErrorDetails, ErrorSummary, FallbackContainer } from './styles';
 
 interface ErrorBoundaryState {
   hasError: boolean;

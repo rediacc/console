@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MachineTable } from '@/components/resources/internal/MachineTable';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
 import { DETAIL_PANEL } from '@/constants/layout';

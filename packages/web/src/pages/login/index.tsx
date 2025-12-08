@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Form, Alert, Tooltip, Modal } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Alert, Form, Modal, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -10,8 +10,7 @@ import logoWhite from '@/assets/logo_white.png';
 import InsecureConnectionWarning from '@/components/common/InsecureConnectionWarning';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
-import { RediaccText } from '@/components/ui';
-import { RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTheme } from '@/context/ThemeContext';
 import EndpointSelector from '@/pages/login/components/EndpointSelector';
@@ -21,51 +20,49 @@ import { apiConnectionService } from '@/services/apiConnectionService';
 import { masterPasswordService } from '@/services/masterPasswordService';
 import { loginSuccess } from '@/store/auth/authSlice';
 import { ModalSize } from '@/types/modal';
-import { hashPassword } from '@/utils/auth';
-import { saveAuthData } from '@/utils/auth';
+import { hashPassword, saveAuthData } from '@/utils/auth';
 import {
-  generateRandomEmail,
   generateRandomCompanyName,
+  generateRandomEmail,
   generateRandomPassword,
 } from '@/utils/cryptoGenerators';
 import { showMessage } from '@/utils/messages';
 import {
-  UserOutlined,
-  LockOutlined,
-  KeyOutlined,
   InfoCircleOutlined,
+  KeyOutlined,
+  LockOutlined,
   SafetyCertificateOutlined,
+  UserOutlined,
 } from '@/utils/optimizedIcons';
 import { isSecureContext } from '@/utils/secureContext';
 import {
-  isEncrypted,
-  validateMasterPassword,
-  VaultProtocolState,
   analyzeVaultProtocolState,
   getVaultProtocolMessage,
+  isEncrypted,
+  VaultProtocolState,
+  validateMasterPassword,
 } from '@/utils/vaultProtocol';
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import type { ApiResponse, AuthLoginResult } from '@rediacc/shared/types';
-import { RediaccStack } from '@/components/ui';
 import {
+  AdvancedOptionsButton,
+  AdvancedOptionsContainer,
+  FormLabel,
+  LargeGapFormItem,
   LoginContainer,
   LogoContainer,
-  StyledAlert,
-  FormLabel,
-  MasterPasswordLabel,
   MasterPasswordFormItem,
-  AdvancedOptionsContainer,
-  AdvancedOptionsButton,
+  MasterPasswordLabel,
+  NoMarginFormItem,
   RegisterContainer,
   RegisterLink,
   SelectorsContainer,
-  TFAModalTitle,
-  TFACodeInput,
-  TFAButtonContainer,
+  StyledAlert,
   StyledInput,
   StyledPasswordInput,
-  LargeGapFormItem,
-  NoMarginFormItem,
+  TFAButtonContainer,
+  TFACodeInput,
+  TFAModalTitle,
 } from './styles';
 import type { FormInstance } from 'antd/es/form';
 

@@ -1,15 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SearchOutlined, TeamOutlined } from '@/utils/optimizedIcons';
 import type { GetCompanyTeams_ResultSet1 as Team } from '@rediacc/shared/types';
-import { TeamOutlined, SearchOutlined } from '@/utils/optimizedIcons';
 import {
+  DropdownMenuWrapper,
+  DropdownSearchContainer,
+  OptionIcon,
+  OptionLabel,
+  SearchInput,
   TeamSelect,
   TeamTag,
-  DropdownSearchContainer,
-  DropdownMenuWrapper,
-  SearchInput,
-  OptionLabel,
-  OptionIcon,
 } from './styles';
 
 interface TeamSelectorProps {

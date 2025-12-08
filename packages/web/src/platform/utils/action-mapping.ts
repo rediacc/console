@@ -7,9 +7,9 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   EditOutlined,
+  InfoCircleOutlined,
   LoginOutlined,
   SwapOutlined,
-  InfoCircleOutlined,
 } from '@ant-design/icons';
 
 /**

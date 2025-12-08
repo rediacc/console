@@ -1,9 +1,9 @@
 import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type {
+  StackAlign,
   StackDirection,
   StackGap,
-  StackAlign,
   StackJustify,
   StackVariant,
 } from './RediaccStack.types';

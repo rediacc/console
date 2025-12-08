@@ -4,8 +4,8 @@ import styled from 'styled-components';
 const { Title, Text } = Typography;
 
 export { RediaccCard } from './RediaccCard';
-export type { RediaccCardProps, CardVariant, CardSize } from './RediaccCard.types';
 export { resolveCardPadding, resolveCardVariantTokens } from './RediaccCard.styles';
+export type { CardSize, CardVariant, RediaccCardProps } from './RediaccCard.types';
 
 export const PageCard = styled(Card).attrs({ className: 'page-card' })``;
 

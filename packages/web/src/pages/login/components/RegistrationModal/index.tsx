@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Form, Input, Alert } from 'antd';
+import { Alert, Form, Input } from 'antd';
 import { useTranslation } from 'react-i18next';
 import apiClient, { api } from '@/api/client';
-import { RediaccCheckbox } from '@/components/ui';
-import { RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccCheckbox, RediaccStack } from '@/components/ui';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { LanguageLink } from '@/pages/login/components/LanguageLink';
 import { Turnstile } from '@/pages/login/components/Turnstile';
@@ -11,27 +10,26 @@ import { apiConnectionService } from '@/services/apiConnectionService';
 import { hashPassword } from '@/utils/auth';
 import { showMessage } from '@/utils/messages';
 import {
-  UserOutlined,
+  BankOutlined,
+  CheckCircleOutlined,
   LockOutlined,
   MailOutlined,
-  BankOutlined,
   SafetyCertificateOutlined,
-  CheckCircleOutlined,
+  UserOutlined,
 } from '@/utils/optimizedIcons';
 import {
-  StyledModal,
-  FormField,
-  TermsRow,
-  TermsField,
   CaptchaWrapper,
   CodeInput,
+  FormField,
+  StepsWrapper,
+  StyledModal,
   SuccessContainer,
+  SuccessDescription,
   SuccessIcon,
   SuccessTitle,
-  SuccessDescription,
-  StepsWrapper,
+  TermsField,
+  TermsRow,
 } from './styles';
-import { RediaccStack } from '@/components/ui';
 
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
 const isCaptchaEnabled = !!turnstileSiteKey;

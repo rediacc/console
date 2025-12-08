@@ -1,7 +1,7 @@
-import { Layout, Avatar } from 'antd';
+import { Avatar, Layout } from 'antd';
 import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccText, RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccText } from '@/components/ui';
 import { FlexRow } from '@/styles/primitives';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 

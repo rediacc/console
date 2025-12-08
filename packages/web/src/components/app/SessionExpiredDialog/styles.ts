@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { RediaccButton } from '@/components/ui';
-import { BaseModal, ModalBody } from '@/styles/primitives';
 import { borderedCard } from '@/styles/mixins';
+import { BaseModal, ModalBody } from '@/styles/primitives';
 
 export const StyledModal = styled(BaseModal)`
   .ant-modal-content {

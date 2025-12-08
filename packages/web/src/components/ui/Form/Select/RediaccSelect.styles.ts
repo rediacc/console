@@ -1,8 +1,8 @@
 import { Select as AntSelect } from 'antd';
 import styled, { css } from 'styled-components';
+import { disabledState } from '@/styles/mixins';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { SelectSize } from './RediaccSelect.types';
-import { disabledState } from '@/styles/mixins';
 
 /**
  * Resolves height for each select size

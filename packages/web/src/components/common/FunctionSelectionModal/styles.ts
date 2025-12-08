@@ -1,14 +1,14 @@
 import styled, { css } from 'styled-components';
 import { ContentStack } from '@/components/common/styled';
-import { RediaccText, RediaccTag, RediaccAlert } from '@/components/ui';
+import { RediaccAlert, RediaccTag, RediaccText } from '@/components/ui';
 import {
-  RediaccSearchInput,
-  RediaccInputNumber,
-  RediaccSelect,
   RediaccInput,
+  RediaccInputNumber,
+  RediaccSearchInput,
+  RediaccSelect,
 } from '@/components/ui/Form';
-import { BaseModal, ContentCard, FlexColumn, FlexRow, scrollbarStyles } from '@/styles/primitives';
 import { borderedCard, focusRing } from '@/styles/mixins';
+import { BaseModal, ContentCard, FlexColumn, FlexRow, scrollbarStyles } from '@/styles/primitives';
 import type { StyledTheme } from '@/styles/styledTheme';
 import { InfoCircleOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons';
 

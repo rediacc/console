@@ -5,41 +5,41 @@ import styled, { useTheme } from 'styled-components';
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
 import {
-  useStorage,
-  useCreateStorage,
-  useUpdateStorageName,
-  useDeleteStorage,
-  useUpdateStorageVault,
   GetTeamStorages_ResultSet1,
+  useCreateStorage,
+  useDeleteStorage,
+  useStorage,
+  useUpdateStorageName,
+  useUpdateStorageVault,
 } from '@/api/queries/storage';
 import { useDropdownData } from '@/api/queries/useDropdownData';
-import { ActionButtonGroup, ActionButtonConfig } from '@/components/common/ActionButtonGroup';
+import { ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { createActionColumn } from '@/components/common/columns';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import ResourceListView, {
-  COLUMN_WIDTHS,
   COLUMN_RESPONSIVE,
+  COLUMN_WIDTHS,
 } from '@/components/common/ResourceListView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import {
-  PageWrapper,
-  SectionStack,
-  SectionHeading,
-  ListTitleRow,
-  ListTitle,
   ListSubtitle,
+  ListTitle,
+  ListTitleRow,
+  PageWrapper,
+  SectionHeading,
+  SectionStack,
 } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import {
-  useUnifiedModal,
-  useTeamSelection,
-  usePagination,
-  useTraceModal,
-  useQueueTraceModal,
-  useDialogState,
   useAsyncAction,
+  useDialogState,
+  usePagination,
+  useQueueTraceModal,
+  useTeamSelection,
+  useTraceModal,
+  useUnifiedModal,
 } from '@/hooks';
 import { useQueueAction } from '@/hooks/useQueueAction';
 import RcloneImportWizard from '@/pages/storage/components/RcloneImportWizard';
@@ -47,16 +47,14 @@ import type { QueueActionParams } from '@/services/queueActionService';
 import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
 import {
-  FunctionOutlined,
-  EditOutlined,
+  CloudOutlined,
   DeleteOutlined,
+  EditOutlined,
+  FunctionOutlined,
   HistoryOutlined,
-} from '@/utils/optimizedIcons';
-import {
+  ImportOutlined,
   PlusOutlined,
   ReloadOutlined,
-  ImportOutlined,
-  CloudOutlined,
 } from '@/utils/optimizedIcons';
 import type { StorageFormValues } from '@rediacc/shared/types';
 

@@ -1,31 +1,31 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Modal,
-  Typography,
-  Space,
   Alert,
   Button,
-  Collapse,
   Checkbox,
+  Collapse,
+  Modal,
+  message,
+  Space,
   Tabs,
   Tag,
-  message,
+  Typography,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccText, RediaccStack } from '@/components/ui';
-import { pipInstallationService, InstallOptions } from '@/services/pipInstallationService';
+import { RediaccStack, RediaccText } from '@/components/ui';
+import { InstallOptions, pipInstallationService } from '@/services/pipInstallationService';
 import { ModalSize } from '@/types/modal';
 import {
-  RocketOutlined,
-  CopyOutlined,
+  AppleOutlined,
   CheckOutlined,
   CodeOutlined,
-  QuestionCircleOutlined,
-  WindowsOutlined,
-  AppleOutlined,
+  CopyOutlined,
   DesktopOutlined,
+  QuestionCircleOutlined,
+  RocketOutlined,
+  WindowsOutlined,
 } from '@/utils/optimizedIcons';
-import { CommandContainer, CommandBox, CopyButton, NotesList } from './styles';
+import { CommandBox, CommandContainer, CopyButton, NotesList } from './styles';
 
 const { Text, Title } = Typography;
 

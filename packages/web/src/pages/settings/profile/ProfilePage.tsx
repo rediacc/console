@@ -1,34 +1,37 @@
 import React from 'react';
-import { Tooltip, Modal, Form } from 'antd';
+import { Form, Modal, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useUserVault, useUpdateUserVault, useUpdateUserPassword } from '@/api/queries/users';
+import { useUpdateUserPassword, useUpdateUserVault, useUserVault } from '@/api/queries/users';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
-import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields';
-import { RediaccButton, PageWrapper, SectionStack, SectionHeading } from '@/components/ui';
+import { PasswordConfirmField, PasswordField } from '@/components/forms/FormFields';
 import {
+  CardActions,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardActions,
   IconWrapper,
-  RequirementsList,
   ModalActions,
+  PageWrapper,
+  RediaccButton,
+  RequirementsList,
+  SectionHeading,
+  SectionStack,
 } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState, useModalForm } from '@/hooks';
 import TwoFactorSettings from '@/pages/settings/profile/components/TwoFactorSettings';
-import { SettingsCard, ModalAlert, FormItemActions } from '@/pages/system/styles';
+import { FormItemActions, ModalAlert, SettingsCard } from '@/pages/system/styles';
 import { logout } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import {
-  UserOutlined,
-  SettingOutlined,
   KeyOutlined,
   SafetyCertificateOutlined,
+  SettingOutlined,
+  UserOutlined,
 } from '@/utils/optimizedIcons';
 
 const ProfilePage: React.FC = () => {

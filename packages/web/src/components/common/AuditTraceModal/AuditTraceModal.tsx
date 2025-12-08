@@ -1,39 +1,37 @@
 import React from 'react';
-import { Table, Tag, Typography, Space, Button, Dropdown, message } from 'antd';
+import { Button, Dropdown, message, Space, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit';
+import { AuditTraceRecord, useEntityAuditTrace } from '@/api/queries/audit';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccText, RediaccAlert } from '@/components/ui';
-import { IconWrapper } from '@/components/ui';
+import { IconWrapper, RediaccAlert, RediaccText } from '@/components/ui';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
-import { formatTimestampAsIs } from '@/platform';
-import { createSorter, createDateSorter } from '@/platform';
+import { createDateSorter, createSorter, formatTimestampAsIs } from '@/platform';
 import {
-  PlusCircleOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  LockOutlined,
-  KeyOutlined,
-  UserOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  InfoCircleOutlined,
-  HistoryOutlined,
-  DownloadOutlined,
-  FileTextOutlined,
-  FileExcelOutlined,
-  DatabaseOutlined,
-  HddOutlined,
   CopyOutlined,
+  DatabaseOutlined,
+  DeleteOutlined,
+  DownloadOutlined,
+  EditOutlined,
+  FileExcelOutlined,
+  FileTextOutlined,
+  HddOutlined,
+  HistoryOutlined,
+  InfoCircleOutlined,
+  KeyOutlined,
+  LockOutlined,
+  PlusCircleOutlined,
+  UserOutlined,
 } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import {
+  StatItem,
+  StatValue,
   StyledModal,
   SummaryContainer,
   SummaryRow,
   SummaryStats,
-  StatItem,
-  StatValue,
 } from './styles';
 
 const { Text: AntText } = Typography;

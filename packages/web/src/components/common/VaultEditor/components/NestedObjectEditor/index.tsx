@@ -1,36 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { Input, Popconfirm, Empty, Row, Col } from 'antd';
+import { Col, Empty, Input, Popconfirm, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
 import { RediaccSwitch, RediaccText } from '@/components/ui';
 import {
-  PlusOutlined,
+  CodeOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
-  CodeOutlined,
+  PlusOutlined,
 } from '@/utils/optimizedIcons';
 import {
-  EditorContainer,
-  SummaryCard,
-  SummaryBadgeRow,
-  UniformTag,
-  EditorStack,
   AddEntryCard,
-  EntryActionsRow,
-  KeyInputWrapper,
-  KeyInput,
-  PrimaryActionButton,
-  SecondaryActionButton,
   CollapseWrapper,
+  EditorContainer,
+  EditorStack,
+  EntryActionsRow,
   EntryHeader,
+  ImagePatternCard,
+  InlineFormItem,
+  KeyInput,
+  KeyInputWrapper,
   KeyTag,
-  TypeTag,
+  NumericInput,
   PanelActions,
   PanelDeleteButton,
+  PrimaryActionButton,
   RawJsonCard,
-  InlineFormItem,
-  ImagePatternCard,
-  NumericInput,
+  SecondaryActionButton,
+  SummaryBadgeRow,
+  SummaryCard,
+  TypeTag,
+  UniformTag,
 } from './styles';
 
 type NestedEntryValue = unknown;

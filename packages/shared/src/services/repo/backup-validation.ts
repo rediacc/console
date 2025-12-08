@@ -3,7 +3,7 @@
  * Handles validation for repo backup operations
  */
 
-import { type RepoWithRelations, isFork } from './core';
+import { isFork, type RepoWithRelations } from './core';
 
 /**
  * Result of backup validation

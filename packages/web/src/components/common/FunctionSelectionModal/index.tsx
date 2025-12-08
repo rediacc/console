@@ -1,19 +1,19 @@
-﻿import React, { useState, useMemo, useRef, useEffect, useCallback, startTransition } from 'react';
+﻿import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Modal,
-  Row,
-  Col,
-  Input,
-  Space,
-  Form,
-  Slider,
-  Empty,
-  Typography,
-  Select,
-  Tooltip,
   Checkbox,
-  Popover,
+  Col,
+  Empty,
+  Form,
+  Input,
+  Modal,
   message,
+  Popover,
+  Row,
+  Select,
+  Slider,
+  Space,
+  Tooltip,
+  Typography,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
@@ -22,43 +22,43 @@ import { useRepos } from '@/api/queries/repos';
 import { useStorage } from '@/api/queries/storage';
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
 import TemplateSelector from '@/components/common/TemplateSelector';
-import { RediaccButton, RediaccText, RediaccStack } from '@/components/ui';
+import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
 import { useLocalizedFunctions } from '@/services/functionsService';
 import { templateService } from '@/services/templateService';
-import { ModalHeader, ModalTitle, ModalSubtitle } from '@/styles/primitives';
+import { ModalHeader, ModalSubtitle, ModalTitle } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import { ExclamationCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 import {
-  StyledModal,
-  FunctionListCard,
-  ConfigCard,
-  SearchInput,
-  FunctionList,
-  CategorySection,
-  FunctionOption,
-  FunctionItemHeader,
-  QuickTaskTag,
-  PushAlertsRow,
-  PushAlertCard,
-  AlertLinkWrapper,
-  AlertLink,
-  LineageTag,
-  LineageSeparator,
-  HelpTooltipIcon,
-  PriorityHelpIcon,
-  SizeInputGroup,
-  SizeValueInput,
-  SizeUnitSelect,
-  CheckboxGroupStack,
   AdditionalOptionsInput,
-  PriorityPopoverContent,
+  AlertLink,
+  AlertLinkWrapper,
+  CategorySection,
+  CheckboxGroupStack,
+  ConfigCard,
+  FunctionItemHeader,
+  FunctionList,
+  FunctionListCard,
+  FunctionOption,
+  HelpTooltipIcon,
+  LineageSeparator,
+  LineageTag,
+  PriorityAlert,
+  PriorityAlertDetail,
+  PriorityAlertNote,
+  PriorityHelpIcon,
   PriorityLegendRow,
   PriorityLegendTag,
-  PriorityTagWrapper,
+  PriorityPopoverContent,
   PriorityStatusTag,
-  PriorityAlert,
-  PriorityAlertNote,
-  PriorityAlertDetail,
+  PriorityTagWrapper,
+  PushAlertCard,
+  PushAlertsRow,
+  QuickTaskTag,
+  SearchInput,
+  SizeInputGroup,
+  SizeUnitSelect,
+  SizeValueInput,
+  StyledModal,
 } from './styles';
 
 type FunctionParamValue = string | number | string[] | undefined;

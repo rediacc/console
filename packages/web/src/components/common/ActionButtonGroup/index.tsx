@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tooltip, Dropdown } from 'antd';
+import { Dropdown, Tooltip } from 'antd';
 import styled from 'styled-components';
 // eslint-disable-next-line import/order -- False positive: no empty line exists
 import { TableActionButton } from '@/components/common/styled';
@@ -247,19 +247,19 @@ export function ActionButtonGroup<T>({
 // PRESET FACTORIES
 // =============================================================================
 
-/**
- * Common icon imports for presets
- */
 import {
-  EditOutlined,
   DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
   FunctionOutlined,
   HistoryOutlined,
-  EyeOutlined,
   LockOutlined,
 } from '@/utils/optimizedIcons';
 import type { MenuProps } from 'antd';
 import type { TFunction } from 'i18next';
+/**
+ * Common icon imports for presets
+ */
 
 /**
  * Preset button configurations for common patterns

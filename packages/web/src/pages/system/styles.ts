@@ -14,7 +14,7 @@
 
 import { Form, Space } from 'antd';
 import styled from 'styled-components';
-import { RediaccCard, RediaccBadge, RediaccAlert } from '@/components/ui';
+import { RediaccAlert, RediaccBadge, RediaccCard } from '@/components/ui';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const SpaceCompact = Space.Compact;

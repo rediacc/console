@@ -1,7 +1,7 @@
 import { Alert as AntAlert } from 'antd';
 import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { AlertVariant, AlertSize, AlertSpacing } from './RediaccAlert.types';
+import type { AlertSize, AlertSpacing, AlertVariant } from './RediaccAlert.types';
 
 type AlertTokenSet = { bg: string; border: string; color: string };
 

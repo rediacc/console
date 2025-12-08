@@ -1,38 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, Form, Typography, Result, Tabs, Card } from 'antd';
-import { message } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Card, Form, Modal, message, Result, Tabs, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
 import { useSelector } from 'react-redux';
-import { useTFAStatus, useEnableTFA, useDisableTFA } from '@/api/queries/twoFactor';
 import type { EnableTwoFactorResponse } from '@/api/queries/twoFactor';
+import { useDisableTFA, useEnableTFA, useTFAStatus } from '@/api/queries/twoFactor';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton, RediaccText, RediaccPasswordInput, RediaccAlert } from '@/components/ui';
+import {
+  RediaccAlert,
+  RediaccButton,
+  RediaccPasswordInput,
+  RediaccStack,
+  RediaccText,
+} from '@/components/ui';
 import { useDialogState } from '@/hooks/useDialogState';
 import { OTPCodeField } from '@/pages/settings/profile/components/OTPCodeField';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import {
-  KeyOutlined,
   CheckCircleOutlined,
-  WarningOutlined,
   CopyOutlined,
+  KeyOutlined,
+  WarningOutlined,
 } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { RediaccStack } from '@/components/ui';
 import {
-  CenteredStack,
-  StatusIcon,
-  SectionTitle,
-  QRCodeContainer,
-  ManualSetupAlert,
-  SecretInputRow,
-  SecretInput,
-  FormActionRow,
   CardContent,
+  CenteredStack,
+  FormActionRow,
   FormItemNoMargin,
+  ManualSetupAlert,
   ModalTitleIcon,
   ModalTitleWrapper,
+  QRCodeContainer,
+  SecretInput,
+  SecretInputRow,
+  SectionTitle,
+  StatusIcon,
 } from './styles';
 import type { FormInstance } from 'antd/es/form';
 import type { TFunction } from 'i18next';

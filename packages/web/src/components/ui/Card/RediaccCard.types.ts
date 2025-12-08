@@ -1,4 +1,4 @@
-import type { ReactNode, CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type CardVariant = 'default' | 'section' | 'selectable' | 'bordered' | 'elevated';
 export type CardSize = 'sm' | 'md' | 'lg';

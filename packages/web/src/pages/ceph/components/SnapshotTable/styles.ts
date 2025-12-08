@@ -1,7 +1,7 @@
 import { CameraOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
-import { TableWrapper, NameCell, NameText as BaseNameText } from '@/pages/ceph/styles/tableAliases';
-import { FlexColumn, FlexRow, StyledIcon, IconActionButton } from '@/styles/primitives';
+import { NameText as BaseNameText, NameCell, TableWrapper } from '@/pages/ceph/styles/tableAliases';
+import { FlexColumn, FlexRow, IconActionButton, StyledIcon } from '@/styles/primitives';
 
 export const Container = styled(FlexColumn).attrs({ $gap: 'MD' })`
   padding: ${({ theme }) => theme.spacing.MD}px;

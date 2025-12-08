@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
-import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
-import { parseVaultStatus } from '@rediacc/shared/services/machine';
+import { useEffect, useState } from 'react';
 import { isValidGuid } from '@/platform/utils/validation';
-import type {
-  Repo,
-  SystemInfo,
-  GroupedRepo,
-  RepoServicesState,
-  RepoContainersState,
-  Container,
-  RepoService,
-} from '../types';
-import { groupReposByName } from '../utils';
 import type { Machine } from '@/types';
+import { parseVaultStatus } from '@rediacc/shared/services/machine';
+import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
+import { groupReposByName } from '../utils';
+import type {
+  Container,
+  GroupedRepo,
+  Repo,
+  RepoContainersState,
+  RepoService,
+  RepoServicesState,
+  SystemInfo,
+} from '../types';
 
 interface UseRepoTableStateProps {
   machine: Machine;

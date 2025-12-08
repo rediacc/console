@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Tabs } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
+  type AvailableMachine,
+  type CephRbdClone,
+  type CloneMachine,
   useAvailableMachinesForClone,
   useCloneMachines,
-  type CephRbdClone,
-  type AvailableMachine,
-  type CloneMachine,
 } from '@/api/queries/ceph';
 import {
   useUpdateCloneMachineAssignments,
@@ -14,22 +14,20 @@ import {
 } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccText } from '@/components/ui';
-import { RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccSelect, RediaccTag, RediaccText } from '@/components/ui';
 import { AlertCard } from '@/styles/primitives';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';
-import { RediaccSelect, RediaccTag } from '@/components/ui';
 import {
+  AssignTabContainer,
+  BridgeTag,
+  EmptyState,
+  FieldGroup,
+  MachineNameRow,
+  MachinesTable,
+  ManageTabContainer,
   StyledModal,
   TitleStack,
-  AssignTabContainer,
-  ManageTabContainer,
-  FieldGroup,
-  EmptyState,
-  MachinesTable,
-  MachineNameRow,
-  BridgeTag,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 import type { TableRowSelection } from 'antd/es/table/interface';

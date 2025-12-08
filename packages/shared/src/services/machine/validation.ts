@@ -4,19 +4,19 @@
  */
 
 import type {
-  ValidationResult,
-  ValidationError,
-  ValidationWarning,
   BulkValidationResult,
-  InvalidMachine,
-  ValidationSummary,
-  ValidationContext,
-  ExclusivityValidation,
   CapacityValidation,
   CephResource,
   CephResourceType,
+  ExclusivityValidation,
+  InvalidMachine,
+  MachineWithAssignmentStatus,
+  ValidationContext,
+  ValidationError,
+  ValidationResult,
+  ValidationSummary,
+  ValidationWarning,
 } from './types';
-import type { MachineWithAssignmentStatus } from './types';
 
 export class MachineValidationService {
   /**

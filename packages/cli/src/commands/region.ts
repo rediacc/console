@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import type {
   CreateRegionParams,
-  UpdateRegionNameParams,
   DeleteRegionParams,
+  UpdateRegionNameParams,
   UpdateRegionVaultParams,
 } from '@rediacc/shared/types';
 import { api } from '../services/api.js';

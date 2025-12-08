@@ -1,10 +1,10 @@
 import { Command } from 'commander';
 import {
-  createAction,
-  traceAction,
-  cancelAction,
-  retryAction,
   type CreateActionOptions,
+  cancelAction,
+  createAction,
+  retryAction,
+  traceAction,
 } from './queue.js';
 import { outputService } from '../services/output.js';
 import { handleError } from '../utils/errors.js';

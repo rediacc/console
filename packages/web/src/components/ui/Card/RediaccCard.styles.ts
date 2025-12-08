@@ -1,7 +1,7 @@
 import { Card as AntCard } from 'antd';
 import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { CardVariant, CardSize, CardSpacing } from './RediaccCard.types';
+import type { CardSize, CardSpacing, CardVariant } from './RediaccCard.types';
 
 // Resolve spacing to margin-bottom pixels
 export const resolveCardSpacing = (theme: StyledTheme, spacing?: CardSpacing): number => {

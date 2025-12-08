@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Modal, Tabs, Table, Button, Space, Tag, Empty, message } from 'antd';
+import { Button, Empty, Modal, message, Space, Table, Tabs, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  useCephClusterMachines,
-  useAvailableMachinesForClone,
   CephClusterMachine,
+  useAvailableMachinesForClone,
+  useCephClusterMachines,
 } from '@/api/queries/ceph';
 import {
   useUpdateMachineClusterAssignment,
@@ -13,16 +13,15 @@ import {
 import { createDateColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector';
-import { formatTimestampAsIs } from '@/platform';
-import { createSorter } from '@/platform';
+import { createSorter, formatTimestampAsIs } from '@/platform';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { confirmAction } from '@/utils/confirmations';
 import {
   CloudServerOutlined,
+  DeleteOutlined,
   DesktopOutlined,
   PlusOutlined,
-  DeleteOutlined,
 } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 

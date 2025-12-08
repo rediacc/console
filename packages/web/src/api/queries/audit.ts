@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import type { GetAuditLogs_ResultSet1, AuditTraceResponse } from '@rediacc/shared/types';
-export type { GetAuditLogs_ResultSet1, AuditTraceRecord } from '@rediacc/shared/types';
+import type { AuditTraceResponse, GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
+
+export type { AuditTraceRecord, GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
 
 export interface AuditLogsParams {
   startDate?: string;

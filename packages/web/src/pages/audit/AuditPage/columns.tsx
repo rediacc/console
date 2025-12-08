@@ -9,7 +9,7 @@ import {
 } from '@/components/common/columns';
 import { RediaccText } from '@/components/ui';
 import { createDateSorter } from '@/platform';
-import { FilterHintIcon, ColumnFilterIcon } from './styles';
+import { ColumnFilterIcon, FilterHintIcon } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ColumnBuilderParams {

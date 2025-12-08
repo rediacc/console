@@ -1,10 +1,10 @@
 import { Form } from 'antd';
 import styled from 'styled-components';
 import { ActionsRow as CommonActionsRow } from '@/components/common/styled';
-import { RediaccText, RediaccTabs } from '@/components/ui';
+import { RediaccTabs, RediaccText } from '@/components/ui';
+import { borderedCard } from '@/styles/mixins';
 import { BaseModal, FlexColumn, FlexRow } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
-import { borderedCard } from '@/styles/mixins';
 
 export const StyledModal = styled(BaseModal).attrs({
   className: `${ModalSize.Large} local-command-modal`,

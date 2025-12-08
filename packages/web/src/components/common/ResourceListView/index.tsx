@@ -1,22 +1,23 @@
 import type { Key, ReactNode } from 'react';
-import { Table, Empty, type TableProps, Tooltip } from 'antd';
+import { Empty, Table, type TableProps, Tooltip } from 'antd';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { RediaccButton, RediaccText } from '@/components/ui';
-import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@/utils/optimizedIcons';
 import {
-  ContainerCard,
-  HeaderSection,
-  HeaderRow,
-  ControlGroup,
-  FiltersSlot,
   ActionsGroup,
-  SearchInput,
-  EmptyDescriptionStack,
+  ContainerCard,
+  ControlGroup,
   EmptyActions,
+  EmptyDescriptionStack,
+  FiltersSlot,
+  HeaderRow,
+  HeaderSection,
   RefreshButton,
+  SearchInput,
   TableWrapper,
 } from './styles';
-export { COLUMN_WIDTHS, COLUMN_RESPONSIVE } from './columnConstants';
+
+export { COLUMN_RESPONSIVE, COLUMN_WIDTHS } from './columnConstants';
 
 interface ResourceListViewProps<T extends object = Record<string, unknown>> {
   title?: ReactNode;

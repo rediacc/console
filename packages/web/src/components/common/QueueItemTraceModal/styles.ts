@@ -1,20 +1,20 @@
 import styled from 'styled-components';
-import { RediaccButton, RediaccText, RediaccStack, RediaccCard } from '@/components/ui';
+import { RediaccButton, RediaccCard, RediaccStack, RediaccText } from '@/components/ui';
 import {
-  LargeModal,
-  ModeSegmented as BaseModeSegmented,
-  CenteredContent,
-  NoMarginTitle as BaseNoMarginTitle,
-  ScrollContainer as BaseScrollContainer,
-  SectionMargin as BaseSectionMargin,
   CenteredFooter as BaseCenteredFooter,
-  InfoList as BaseInfoList,
   CenteredRow as BaseCenteredRow,
+  InfoList as BaseInfoList,
+  LastFetchedText as BaseLastFetchedText,
   ModalTitleContainer as BaseModalTitleContainer,
   ModalTitleLeft as BaseModalTitleLeft,
   ModalTitleRight as BaseModalTitleRight,
-  LastFetchedText as BaseLastFetchedText,
+  ModeSegmented as BaseModeSegmented,
+  NoMarginTitle as BaseNoMarginTitle,
+  ScrollContainer as BaseScrollContainer,
+  SectionMargin as BaseSectionMargin,
+  CenteredContent,
   ConsoleOutput,
+  LargeModal,
   TitleText,
 } from '@/styles/primitives';
 

@@ -1,17 +1,17 @@
-import React, { useMemo, useState, useCallback } from 'react';
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { Badge, Select } from 'antd';
 import { ActionGroup } from '@/components/common/styled';
 import { MachineAssignmentService } from '@/features/ceph';
 import {
-  Container,
-  ToolbarStack,
-  FilterInput,
   AssignmentSelect,
+  Container,
+  FilterInput,
+  OptionLabel,
   PageSizeSelect,
   RefreshButton,
   StatusText,
-  OptionLabel,
+  ToolbarStack,
 } from '@/features/ceph/components/performance/VirtualFilterableMachineTable/styles';
 import { VirtualMachineTable } from '@/features/ceph/components/performance/VirtualMachineTable';
 import { useDebounce } from '@/features/ceph/utils/useDebounce';

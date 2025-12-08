@@ -7,14 +7,14 @@ import { outputService } from '../services/output.js';
 import { queueService } from '../services/queue.js';
 import { handleError } from '../utils/errors.js';
 import {
-  formatStatus,
   formatAge,
+  formatBoolean,
   formatError,
   formatPriority,
   formatRetryCount,
-  formatBoolean,
+  formatStatus,
 } from '../utils/queueFormatters.js';
-import { withSpinner, startSpinner, stopSpinner } from '../utils/spinner.js';
+import { startSpinner, stopSpinner, withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 
 // Exported action handlers for reuse in shortcuts

@@ -2,24 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { Select } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  useAvailableMachinesForClone,
-  type CephRbdImage,
   type AvailableMachine,
+  type CephRbdImage,
+  useAvailableMachinesForClone,
 } from '@/api/queries/ceph';
 import { useUpdateImageMachineAssignment } from '@/api/queries/cephMutations';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccText, RediaccStack } from '@/components/ui';
+import { RediaccStack, RediaccText } from '@/components/ui';
 import { AlertCard } from '@/styles/primitives';
 import {
-  StyledModal,
-  TitleStack,
-  TitleIcon,
-  FieldRow,
-  MachineIcon,
-  StyledSelect,
-  SelectOptionText,
   DisabledOptionText,
+  FieldRow,
   LoadingContainer,
+  MachineIcon,
+  SelectOptionText,
+  StyledModal,
+  StyledSelect,
+  TitleIcon,
+  TitleStack,
 } from './styles';
 
 interface ImageMachineReassignmentModalProps {

@@ -1,6 +1,6 @@
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import type { ApiResponse } from '@rediacc/shared/types';
-import { apiClient, api } from './api.js';
+import { api, apiClient } from './api.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { nodeStorageAdapter } from '../adapters/storage.js';
 import { EXIT_CODES } from '../types/index.js';

@@ -1,7 +1,7 @@
 import { Tag as AntTag } from 'antd';
 import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { TagVariant, TagSize } from './RediaccTag.types';
+import type { TagSize, TagVariant } from './RediaccTag.types';
 
 type TagTokenSet = {
   bg: string;

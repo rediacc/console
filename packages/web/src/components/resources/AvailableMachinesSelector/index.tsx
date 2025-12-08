@@ -1,21 +1,21 @@
 import React from 'react';
-import { Select, Empty } from 'antd';
+import { Empty, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAvailableMachinesForClone } from '@/api/queries/ceph';
 import { StatusIcon } from '@/components/common/styled';
-import { RediaccText, RediaccTag } from '@/components/ui';
+import { RediaccTag, RediaccText } from '@/components/ui';
 import type { Machine } from '@/types';
-import { CloudServerOutlined, CheckCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
+import { CheckCircleOutlined, CloudServerOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 import {
-  StyledSelect,
-  OptionContent,
-  MachineMeta,
-  MachineIcon,
-  MachineName,
-  TeamTag,
   BridgeTag,
-  StatusContainer,
   EmptyDescription,
+  MachineIcon,
+  MachineMeta,
+  MachineName,
+  OptionContent,
+  StatusContainer,
+  StyledSelect,
+  TeamTag,
 } from './styles';
 import type { DefaultOptionType } from 'antd/es/select';
 

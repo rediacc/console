@@ -5,18 +5,18 @@
 
 import { MachineValidationService } from './validation';
 import type {
-  MachineAssignment,
-  BulkOperationRequest,
   AssignmentConflict,
-  ConflictResolutionResult,
-  CephResource,
   AssignmentResult,
-  MachineAssignmentSummary,
-  ValidationContext,
+  BulkOperationRequest,
+  CephResource,
   CephResourceType,
+  ConflictResolutionResult,
+  MachineAssignment,
+  MachineAssignmentSummary,
+  MachineWithAssignmentStatus,
+  ValidationContext,
 } from './types';
 import type { MachineAssignmentType } from '../../types';
-import type { MachineWithAssignmentStatus } from './types';
 
 interface AssignmentOperationResult {
   success: boolean;

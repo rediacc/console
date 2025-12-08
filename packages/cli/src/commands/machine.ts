@@ -1,25 +1,25 @@
 import { Command } from 'commander';
 import {
-  parseVaultStatus,
   getDeploymentSummary,
   getMachineRepos,
   type MachineWithVaultStatus,
+  parseVaultStatus,
 } from '@rediacc/shared/services/machine';
 import type {
   CreateMachineParams,
-  UpdateMachineNameParams,
   DeleteMachineParams,
-  UpdateMachineVaultParams,
   UpdateMachineAssignedBridgeParams,
+  UpdateMachineNameParams,
+  UpdateMachineVaultParams,
 } from '@rediacc/shared/types';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import {
-  createResourceCommands,
-  addStatusCommand,
   addAssignCommand,
+  addStatusCommand,
+  createResourceCommands,
 } from '../utils/commandFactory.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';

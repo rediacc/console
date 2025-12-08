@@ -1,32 +1,32 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Col, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccText, RediaccEmpty, RediaccStack } from '@/components/ui';
+import { RediaccEmpty, RediaccStack, RediaccText } from '@/components/ui';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { templateService } from '@/services/templateService';
 import {
+  AppstoreOutlined,
+  CheckCircleOutlined,
+  CloudOutlined,
   DatabaseOutlined,
   GlobalOutlined,
-  CloudOutlined,
-  CheckCircleOutlined,
   InfoCircleOutlined,
-  AppstoreOutlined,
 } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import {
-  SelectorContainer,
-  HelperRow,
   ClearButton,
-  SearchInput,
-  ResultCount,
-  TemplateGrid,
-  TemplateCard,
-  SelectionIndicator,
-  TemplateIconWrapper,
-  DetailsButton,
   DefaultTag,
+  DetailsButton,
   ErrorState,
+  HelperRow,
+  ResultCount,
+  SearchInput,
+  SelectionIndicator,
+  SelectorContainer,
+  TemplateCard,
+  TemplateGrid,
+  TemplateIconWrapper,
 } from './styles';
 
 interface Template {

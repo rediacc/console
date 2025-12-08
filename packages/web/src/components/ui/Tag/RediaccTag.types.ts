@@ -1,4 +1,4 @@
-import type { ReactNode, MouseEvent } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 
 export type TagVariant =
   | 'default'

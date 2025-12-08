@@ -1,9 +1,9 @@
 // Core repo functions
-export * from './core';
 
 // Specialized repo services
 export * from './backup-validation';
+export * from './core';
 export * from './fork-operations';
 export * from './grand-deletion';
-export * from './promotion';
 export * from './orchestration';
+export * from './promotion';

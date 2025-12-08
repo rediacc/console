@@ -3,12 +3,12 @@ import { Tooltip } from 'antd';
 import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
 import { RepoDetailPanel } from '@/components/resources/internal/RepoDetailPanel';
-import type { Machine, Repo, PluginContainer } from '@/types';
+import type { Machine, PluginContainer, Repo } from '@/types';
 import {
-  DoubleLeftOutlined,
-  DesktopOutlined,
-  InboxOutlined,
   ContainerOutlined,
+  DesktopOutlined,
+  DoubleLeftOutlined,
+  InboxOutlined,
 } from '@/utils/optimizedIcons';
 import {
   CollapsedIcon,

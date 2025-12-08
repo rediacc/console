@@ -1,12 +1,12 @@
 import React from 'react';
-import { MoreOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, EyeOutlined, MoreOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Space, Tooltip } from 'antd';
 import { RediaccText } from '@/components/ui';
 import i18n from '@/i18n/config';
 import {
   createStatusRenderer,
-  type StatusConfig,
   renderTimestampElement,
+  type StatusConfig,
   VersionTag,
 } from './renderers';
 import type { MenuProps, TooltipProps } from 'antd';

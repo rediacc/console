@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Layout, Dropdown, message, Drawer } from 'antd';
+import { Drawer, Dropdown, Layout, message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useSelector, useDispatch } from 'react-redux';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '@/api/client';
 import { useCompanyInfo } from '@/api/queries/dashboard';
 import logoBlack from '@/assets/logo_black.png';
@@ -15,37 +15,37 @@ import { RediaccButton } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTheme } from '@/context/ThemeContext';
 import { masterPasswordService } from '@/services/masterPasswordService';
-import { selectUser, selectCompany } from '@/store/auth/authSelectors';
+import { selectCompany, selectUser } from '@/store/auth/authSelectors';
 import { logout, updateCompany } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { toggleUiMode } from '@/store/ui/uiSlice';
-import { clearAuthData, saveAuthData, getAuthData } from '@/utils/auth';
+import { clearAuthData, getAuthData, saveAuthData } from '@/utils/auth';
 import {
-  UserOutlined,
   MenuOutlined,
-  SmileOutlined,
   SafetyCertificateOutlined,
+  SmileOutlined,
+  UserOutlined,
 } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { buildMenuItems, flattenMenuRoutes } from './helpers';
 import { getMenuItems } from './menuItems';
 import { Sidebar } from './Sidebar';
 import {
+  ContentWrapper,
   HEADER_HEIGHT,
-  MainLayoutContainer,
-  StyledHeader,
   HeaderLeft,
   HeaderRight,
-  MenuToggleButton,
-  LogoWrapper,
   Logo,
+  LogoWrapper,
+  MainLayoutContainer,
+  MenuToggleButton,
   StyledContent,
-  TransitionOverlay,
+  StyledHeader,
   TransitionIcon,
+  TransitionOverlay,
   TransitionText,
-  ContentWrapper,
 } from './styles';
-import { SIDEBAR_EXPANDED_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from './types';
+import { SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_EXPANDED_WIDTH } from './types';
 import { UserMenu } from './UserMenu';
 
 const MainLayout: React.FC = () => {

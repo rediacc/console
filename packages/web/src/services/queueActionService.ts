@@ -1,7 +1,7 @@
 // Re-export from shared
 export {
-  QueueActionService,
+  type QueueActionDependencies,
   type QueueActionParams,
   type QueueActionResult,
-  type QueueActionDependencies,
+  QueueActionService,
 } from '@rediacc/shared/services/queue';

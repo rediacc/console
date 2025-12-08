@@ -1,6 +1,6 @@
-import vaultDefinitions from '@/data/vaults.json';
 import storageProviders from '@/data/storageProviders.json';
-import type { VaultDefinitionsConfig, StorageProvidersConfig } from './types';
+import vaultDefinitions from '@/data/vaults.json';
+import type { StorageProvidersConfig, VaultDefinitionsConfig } from './types';
 
 /**
  * Vault definitions configuration

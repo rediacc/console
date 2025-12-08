@@ -1,16 +1,16 @@
 import React from 'react';
-import { Tabs, Space, Empty, Descriptions, Collapse } from 'antd';
-import {
-  FileTextOutlined,
-  CheckCircleOutlined,
-  WarningOutlined,
-  ExclamationCircleOutlined,
-  QuestionCircleOutlined,
-} from '@/utils/optimizedIcons';
-import { RediaccText, RediaccTag, RediaccAlert, RediaccCard, RediaccStack } from '@/components/ui';
+import { Collapse, Descriptions, Empty, Space, Tabs } from 'antd';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
+import { RediaccAlert, RediaccCard, RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
+import {
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  FileTextOutlined,
+  QuestionCircleOutlined,
+  WarningOutlined,
+} from '@/utils/optimizedIcons';
 import { spacing } from '@/utils/styleConstants';
-import { SectionMargin, InfoList } from '../styles';
+import { InfoList, SectionMargin } from '../styles';
 import type { ResponseViewerProps } from '../types';
 
 export const ResponseViewer: React.FC<ResponseViewerProps> = ({ responseVaultContent }) => {

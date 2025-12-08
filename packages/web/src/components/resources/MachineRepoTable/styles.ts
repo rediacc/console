@@ -1,9 +1,9 @@
 import type { ComponentType } from 'react';
 import { Table as AntTable } from 'antd';
 import styled, { css } from 'styled-components';
+import { borderedCard } from '@/styles/mixins';
 import { ExpandIcon as BaseExpandIcon } from '@/styles/primitives';
 import type { TableProps } from 'antd';
-import { borderedCard } from '@/styles/mixins';
 
 const withAlpha = (color: string, alphaHex: string) =>
   color.startsWith('#') ? `${color}${alphaHex}` : color;

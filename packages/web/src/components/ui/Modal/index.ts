@@ -1,8 +1,8 @@
 import styled from 'styled-components';
 
 export { RediaccModal } from './RediaccModal';
-export type { RediaccModalProps, ModalSize, ModalVariant } from './RediaccModal.types';
-export { resolveModalWidth, fadeInAnimation } from './RediaccModal.styles';
+export { fadeInAnimation, resolveModalWidth } from './RediaccModal.styles';
+export type { ModalSize, ModalVariant, RediaccModalProps } from './RediaccModal.types';
 
 export const ModalStack = styled.div`
   display: flex;

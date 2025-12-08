@@ -1,7 +1,7 @@
 import { Statistic } from 'antd';
 import styled from 'styled-components';
 import { ActionGroup } from '@/components/common/styled';
-import { RediaccText, RediaccCard, RediaccList } from '@/components/ui';
+import { RediaccCard, RediaccList, RediaccText } from '@/components/ui';
 import { FlexColumn, FlexRow } from '@/styles/primitives';
 
 export const WidgetCard = styled(RediaccCard)`

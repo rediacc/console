@@ -1,13 +1,13 @@
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { GetTeamRepositories_ResultSet1 } from '../../types';
 import type {
+  DeleteRepositoryParams,
+  GetTeamRepositories_ResultSet1,
   GetTeamRepositoriesParams,
+  PromoteRepositoryToGrandParams,
   UpdateRepositoryNameParams,
   UpdateRepositoryTagParams,
-  DeleteRepositoryParams,
   UpdateRepositoryVaultParams,
-  PromoteRepositoryToGrandParams,
 } from '../../types';
 
 export interface CreateRepoOptions {

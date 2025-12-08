@@ -1,34 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Button, message } from 'antd';
+import { Button, Form, Input, message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import {
-  RediaccCheckbox,
-  RediaccRadio,
   type CheckboxChangeEvent,
   type RadioChangeEvent,
+  RediaccCheckbox,
+  RediaccRadio,
   RediaccText,
 } from '@/components/ui';
 import { createFreshForkToken } from '@/services/forkTokenService';
 import type { PluginContainer } from '@/types';
 import {
-  CopyOutlined,
-  CodeOutlined,
-  WindowsOutlined,
   AppleOutlined,
+  CodeOutlined,
+  CopyOutlined,
   DesktopOutlined,
   FileTextOutlined,
+  WindowsOutlined,
 } from '@/utils/optimizedIcons';
 import {
-  StyledModal,
-  SettingsForm,
-  TabsWrapper,
-  CommandPreview,
-  PreviewHeader,
-  PreviewError,
-  CommandParagraph,
-  PreviewMetaRow,
   ActionsRow,
+  CommandParagraph,
+  CommandPreview,
+  PreviewError,
+  PreviewHeader,
+  PreviewMetaRow,
+  SettingsForm,
+  StyledModal,
+  TabsWrapper,
 } from './styles';
 
 type CommandTab = 'vscode' | 'terminal' | 'desktop';

@@ -1,4 +1,4 @@
-import type { ReactNode, CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type AlertVariant = 'info' | 'warning' | 'error' | 'success' | 'neutral';
 export type AlertSize = 'sm' | 'md';

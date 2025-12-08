@@ -1,25 +1,25 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { createMutation } from '@/hooks/api/mutationFactory';
 import i18n from '@/i18n/config';
 import { hashPassword } from '@/utils/auth';
 import { showMessage } from '@/utils/messages';
 import { createErrorHandler } from '@/utils/mutationUtils';
+import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 import type {
-  GetCompanyUsers_ResultSet1,
-  UserRequest,
-  UserVault,
-  UpdateUserToDeactivatedParams,
-  UpdateUserToActivatedParams,
-  UpdateUserEmailParams,
-  UpdateUserLanguageParams,
-  UpdateUserVaultParams,
-  UpdateUserAssignedPermissionsParams,
   CreatePermissionGroupParams,
   DeleteUserRequestParams,
+  GetCompanyUsers_ResultSet1,
+  UpdateUserAssignedPermissionsParams,
+  UpdateUserEmailParams,
+  UpdateUserLanguageParams,
   UpdateUserPasswordParams,
+  UpdateUserToActivatedParams,
+  UpdateUserToDeactivatedParams,
+  UpdateUserVaultParams,
+  UserRequest,
+  UserVault,
 } from '@rediacc/shared/types';
-import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 
 // Get all users
 export const useUsers = () => {

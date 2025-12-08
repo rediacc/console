@@ -1,23 +1,23 @@
 import styled from 'styled-components';
 import {
-  PanelWrapper,
-  Header,
-  HeaderRow,
-  TitleGroup,
-  PanelTitle,
-  CollapseButton,
-  TagGroup,
-  ContentWrapper,
-  FieldRow,
-  FieldLabel,
-  FieldValue,
-  FieldValueMonospace,
-  SectionCard,
   SectionDivider as BaseSectionDivider,
   SectionHeader as BaseSectionHeader,
   SectionTitle as BaseSectionTitle,
+  CollapseButton,
+  ContentWrapper,
+  FieldLabel,
+  FieldRow,
+  FieldValue,
+  FieldValueMonospace,
+  Header,
+  HeaderRow,
+  PanelTitle,
+  PanelWrapper,
+  SectionCard,
+  TagGroup,
+  TitleGroup,
 } from '@/components/resources/internal/sharedDetailPanelAliases';
-import { RediaccTag, RediaccCard } from '@/components/ui';
+import { RediaccCard, RediaccTag } from '@/components/ui';
 import type { TagPreset, TagVariant } from '@/components/ui/Tag';
 import { FolderOutlined } from '@/utils/optimizedIcons';
 

@@ -1,43 +1,42 @@
 import React, { useState } from 'react';
-import { Badge, Dropdown, List, Empty, Space, Tag, Grid } from 'antd';
+import { Badge, Dropdown, Empty, Grid, List, Space, Tag } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
-import { useSelector, useDispatch } from 'react-redux';
-import { RediaccButton } from '@/components/ui';
-import { RediaccText } from '@/components/ui';
+import { useDispatch, useSelector } from 'react-redux';
+import { RediaccButton, RediaccText } from '@/components/ui';
 import {
-  markAsRead,
-  markAllAsRead,
-  clearNotification,
   clearAllNotifications,
-  NotificationType,
+  clearNotification,
+  markAllAsRead,
+  markAsRead,
   Notification,
+  NotificationType,
 } from '@/store/notifications/notificationSlice';
 import { RootState } from '@/store/store';
 import {
   BellOutlined,
+  CheckCircleOutlined,
   CloseOutlined,
   ExclamationCircleOutlined,
   InfoCircleOutlined,
   WarningOutlined,
-  CheckCircleOutlined,
 } from '@/utils/optimizedIcons';
 import {
+  BellButton,
+  EmptyWrapper,
+  NotificationCloseButton,
   NotificationDropdown,
   NotificationHeader,
-  NotificationListWrapper,
-  NotificationItem,
   NotificationIconWrapper,
-  NotificationTitleRow,
-  NotificationTitleContent,
-  NotificationText,
-  NotificationTag,
-  NotificationCloseButton,
+  NotificationItem,
+  NotificationListWrapper,
   NotificationMessageWrapper,
-  EmptyWrapper,
-  BellButton,
+  NotificationTag,
+  NotificationText,
+  NotificationTitleContent,
+  NotificationTitleRow,
 } from './styles';
 
 dayjs.extend(relativeTime);

@@ -9,12 +9,12 @@ import type { Machine } from '@/types';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import {
+  ClusterTag,
+  DangerIcon,
+  MachineNameRow,
+  MachinesTable,
   StyledModal,
   TitleStack,
-  DangerIcon,
-  MachinesTable,
-  MachineNameRow,
-  ClusterTag,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 

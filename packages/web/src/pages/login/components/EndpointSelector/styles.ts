@@ -2,7 +2,7 @@ import { Typography } from 'antd';
 import styled from 'styled-components';
 import { RediaccSelect } from '@/components/ui';
 import { FlexRow } from '@/styles/primitives';
-import { LoadingOutlined, ApiOutlined, DeleteOutlined } from '@/utils/optimizedIcons';
+import { ApiOutlined, DeleteOutlined, LoadingOutlined } from '@/utils/optimizedIcons';
 
 const { Text: AntText } = Typography;
 

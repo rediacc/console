@@ -5,8 +5,8 @@
 
 import type {
   GetTeamMachines_ResultSet1,
-  MachineAssignmentType,
   MachineAssignmentStatus,
+  MachineAssignmentType,
 } from '../../types';
 
 // Re-export for convenience

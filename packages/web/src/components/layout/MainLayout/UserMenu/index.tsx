@@ -3,25 +3,25 @@ import { Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '@/components/common/LanguageSelector';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
-import { RediaccText, RediaccDivider } from '@/components/ui';
+import { RediaccDivider, RediaccText } from '@/components/ui';
 import {
-  UserOutlined,
   LogoutOutlined,
-  SmileOutlined,
   SafetyCertificateOutlined,
+  SmileOutlined,
+  UserOutlined,
 } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
 import {
-  MenuContainer,
-  UserInfo,
-  UserDetails,
-  PlanBadge,
-  ModeSegmented,
   AppearanceRow,
   LanguageSection,
   LogoutButton,
+  MenuContainer,
+  ModeSegmented,
+  PlanBadge,
   UserAvatar,
+  UserDetails,
+  UserInfo,
 } from './styles';
 
 type UserMenuProps = {

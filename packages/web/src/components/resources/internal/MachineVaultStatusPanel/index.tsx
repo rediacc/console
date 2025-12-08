@@ -1,66 +1,69 @@
 import React, { useEffect, useMemo } from 'react';
-import { Row, Col, Progress, Tooltip } from 'antd';
+import { Col, Progress, Row, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { CephSection } from '@/components/resources/internal/CephSection';
-import { RediaccText, RediaccEmpty, RediaccStack } from '@/components/ui';
+import { RediaccEmpty, RediaccStack, RediaccText } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTraceModal } from '@/hooks/useDialogState';
-import { calculateResourcePercent } from '@/platform';
-import { getLocalizedRelativeTime, formatTimestampAsIs } from '@/platform';
+import {
+  calculateResourcePercent,
+  formatTimestampAsIs,
+  getLocalizedRelativeTime,
+} from '@/platform';
 import type { Machine } from '@/types';
 import {
-  DoubleRightOutlined,
-  DesktopOutlined,
-  DatabaseOutlined,
-  GlobalOutlined,
-  HddOutlined,
-  WifiOutlined,
   ApiOutlined,
-  ContainerOutlined,
-  InfoCircleOutlined,
   AppstoreOutlined,
   CodeOutlined,
   CompassOutlined,
+  ContainerOutlined,
+  DatabaseOutlined,
+  DesktopOutlined,
+  DoubleRightOutlined,
+  GlobalOutlined,
+  HddOutlined,
+  InfoCircleOutlined,
+  WifiOutlined,
 } from '@/utils/optimizedIcons';
 import { abbreviatePath } from '@/utils/pathUtils';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import {
-  PanelWrapper,
-  Header,
-  HeaderRow,
-  TitleGroup,
-  HeaderIcon,
-  PanelTitle,
+  AddressTag,
+  CardBodyStack,
+  CardHeader,
+  CardTagGroup,
+  CardTitle,
   CollapseButton,
-  TagRow,
-  StyledTag,
-  QueueBadge,
-  TimestampWrapper,
   ContentWrapper,
-  SectionDivider,
-  SectionHeader,
-  SectionTitle,
-  IconWrapper,
-  SectionBlock,
-  InfoCard,
-  FieldRow,
   FieldLabel,
+  FieldRow,
   FieldValue,
   FieldValueMonospace,
   FieldValueStrong,
-  MetricCard,
-  CardHeader,
-  CardTitle,
-  CardTagGroup,
-  StyledList,
-  ListCard,
-  CardBodyStack,
-  KeyValueRow,
+  Header,
+  HeaderIcon,
+  HeaderRow,
+  IconWrapper,
   IndentedBlock,
+  InfoCard,
+  KeyValueRow,
+  ListCard,
+  MetricCard,
+  PanelTitle,
+  PanelWrapper,
   PartitionRow,
+  QueueBadge,
+  SectionBlock,
+  SectionDivider,
+  SectionHeader,
+  SectionTitle,
   StatusTag,
-  AddressTag,
+  StyledList,
+  StyledTag,
+  TagRow,
+  TimestampWrapper,
+  TitleGroup,
 } from './styles';
 import type { ListProps } from 'antd';
 import type { TFunction } from 'i18next';

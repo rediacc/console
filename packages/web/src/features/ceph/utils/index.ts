@@ -1,6 +1,6 @@
 export {
   useDebounce,
   useDebouncedCallback,
-  useDebouncedValidation,
   useDebouncedSearch,
+  useDebouncedValidation,
 } from './useDebounce';

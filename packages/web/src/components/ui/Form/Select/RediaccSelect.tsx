@@ -1,7 +1,6 @@
 import { forwardRef } from 'react';
 import { StyledRediaccSelect } from './RediaccSelect.styles';
-import type { RediaccSelectProps } from './RediaccSelect.types';
-import type { SelectSize } from './RediaccSelect.types';
+import type { RediaccSelectProps, SelectSize } from './RediaccSelect.types';
 
 const mapToAntdSize = (size: SelectSize = 'md'): 'small' | 'middle' | 'large' => {
   switch (size) {

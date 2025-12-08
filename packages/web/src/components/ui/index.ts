@@ -11,39 +11,34 @@
  *   import { PageWrapper } from '@/components/ui/page'
  */
 
-// Page structure
-export * from './Page';
-
 // Form inputs and layout
 export * from './Form';
 export * from './Form/layout';
+// Page structure
+export * from './Page';
 
 // Text components
 // (legacy lowercase text.tsx now re-exports from Text/index to avoid case issues)
 
-// Danger zone components
-export * from './Danger';
-
-// Utility components
-export * from './Utils';
+export * from './Alert';
+export * from './Badge';
 
 // Button component
 export * from './Button';
-
-// Tag component
-export * from './Tag';
-
-// Text component (unified)
-export * from './Text';
-
 // Rediacc unified components
 export * from './Card';
-export * from './Alert';
-export * from './Stack';
-export * from './Badge';
+// Danger zone components
+export * from './Danger';
 export * from './Divider';
 export * from './Empty';
-export * from './Modal';
-export * from './Tabs';
-export * from './Progress';
 export * from './List';
+export * from './Modal';
+export * from './Progress';
+export * from './Stack';
+export * from './Tabs';
+// Tag component
+export * from './Tag';
+// Text component (unified)
+export * from './Text';
+// Utility components
+export * from './Utils';

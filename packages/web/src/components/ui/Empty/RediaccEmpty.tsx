@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import { Empty } from 'antd';
-import { StyledRediaccEmpty, EmptyTitle, EmptyAction } from './RediaccEmpty.styles';
+import { EmptyAction, EmptyTitle, StyledRediaccEmpty } from './RediaccEmpty.styles';
 import type { RediaccEmptyProps } from './RediaccEmpty.types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

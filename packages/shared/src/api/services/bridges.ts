@@ -1,14 +1,15 @@
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { GetRegionBridges_ResultSet1, BridgeAuthorizationToken } from '../../types';
 import type {
-  WithOptionalVault,
+  BridgeAuthorizationToken,
   CreateBridgeParams,
-  GetRegionBridgesParams,
-  UpdateBridgeNameParams,
   DeleteBridgeParams,
-  UpdateBridgeVaultParams,
+  GetRegionBridges_ResultSet1,
+  GetRegionBridgesParams,
   ResetBridgeAuthorizationParams,
+  UpdateBridgeNameParams,
+  UpdateBridgeVaultParams,
+  WithOptionalVault,
 } from '../../types';
 
 export function createBridgesService(client: ApiClient) {

@@ -1,12 +1,13 @@
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
-import type { Permission, GetCompanyPermissionGroups_ResultSet1 } from '../../types';
 import type {
   CreatePermissionGroupParams,
-  DeletePermissionGroupParams,
   CreatePermissionInGroupParams,
   DeletePermissionFromGroupParams,
+  DeletePermissionGroupParams,
+  GetCompanyPermissionGroups_ResultSet1,
   GetPermissionGroupDetailsParams,
+  Permission,
 } from '../../types';
 
 export interface PermissionGroupWithParsedPermissions

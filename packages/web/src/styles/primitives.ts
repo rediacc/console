@@ -1,7 +1,6 @@
 import type { ComponentType } from 'react';
-import { Table, Typography, Segmented, Row } from 'antd';
+import { Row, Segmented, Table, Typography } from 'antd';
 import styled, { css, keyframes } from 'styled-components';
-import { borderedCard } from '@/styles/mixins';
 // Import Rediacc components directly to avoid circular dependencies
 // (barrel export @/components/ui includes card.tsx which imports from primitives)
 import { RediaccAlert } from '@/components/ui/Alert';
@@ -11,16 +10,17 @@ import { RediaccCard } from '@/components/ui/Card';
 import { RediaccEmpty } from '@/components/ui/Empty';
 // Import unified form components
 import {
+  RediaccCheckbox,
+  RediaccDatePicker,
   RediaccInput,
   RediaccPasswordInput,
   RediaccSearchInput,
   RediaccSelect,
-  RediaccCheckbox,
-  RediaccDatePicker,
 } from '@/components/ui/Form';
 import { RediaccModal } from '@/components/ui/Modal';
 import { RediaccTag } from '@/components/ui/Tag';
 import { RediaccText } from '@/components/ui/Text';
+import { borderedCard } from '@/styles/mixins';
 import type { StyledTheme } from '@/styles/styledTheme';
 import { RightOutlined } from '@/utils/optimizedIcons';
 import type { TableProps } from 'antd';

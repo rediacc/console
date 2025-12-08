@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tooltip } from 'antd';
 import { useApiHealth } from '@/api/queries/health';
 import { RediaccText } from '@/components/ui';
 import { versionService } from '@/services/versionService';
-import { CloudServerOutlined, DesktopOutlined, ClockCircleOutlined } from '@/utils/optimizedIcons';
-import { FooterContainer, VersionItem, Separator, EnvironmentTag } from './styles';
+import { ClockCircleOutlined, CloudServerOutlined, DesktopOutlined } from '@/utils/optimizedIcons';
+import { EnvironmentTag, FooterContainer, Separator, VersionItem } from './styles';
 
 const formatUptime = (uptime: { days: number; hours: number; minutes: number }): string => {
   const parts: string[] = [];

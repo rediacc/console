@@ -6,9 +6,9 @@ import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import type { Machine } from '@/types';
 import type {
-  QueueTrace,
-  GetTeamQueueItems_ResultSet1,
   GetCompanyTeams_ResultSet1,
+  GetTeamQueueItems_ResultSet1,
+  QueueTrace,
 } from '@rediacc/shared/types';
 
 export interface HelloFunctionParams {

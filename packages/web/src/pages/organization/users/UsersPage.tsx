@@ -1,42 +1,42 @@
 import React, { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Tooltip, Space, Tag, Popconfirm, Modal, Form, Select } from 'antd';
+import { Button, Form, Modal, Popconfirm, Select, Space, Tag, Tooltip } from 'antd';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
-  usePermissionGroups as usePermissionGroupsQuery,
   PermissionGroup,
+  usePermissionGroups as usePermissionGroupsQuery,
 } from '@/api/queries/permissions';
 import {
-  useUsers,
+  User,
+  useAssignUserPermissions,
   useCreateUser,
   useDeactivateUser,
   useReactivateUser,
-  useAssignUserPermissions,
-  User,
+  useUsers,
 } from '@/api/queries/users';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import ResourceListView from '@/components/common/ResourceListView';
 import {
-  PageWrapper as UsersPageWrapper,
-  SectionStack as UsersSectionStack,
-  SectionHeading as UsersSectionHeading,
   ListTitleRow as UsersListHeader,
-  ListTitle as UsersListTitle,
   ListSubtitle as UsersListSubtitle,
+  ListTitle as UsersListTitle,
+  PageWrapper as UsersPageWrapper,
+  SectionHeading as UsersSectionHeading,
+  SectionStack as UsersSectionStack,
 } from '@/components/ui';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import ResourceForm from '@/pages/organization/users/components/ResourceForm';
 import {
-  UserOutlined,
-  SafetyOutlined,
   CheckCircleOutlined,
   CheckOutlined,
-  StopOutlined,
   HistoryOutlined,
   PlusOutlined,
+  SafetyOutlined,
+  StopOutlined,
+  UserOutlined,
 } from '@/utils/optimizedIcons';
-import { createUserSchema, CreateUserForm } from '@/utils/validation';
+import { CreateUserForm, createUserSchema } from '@/utils/validation';
 
 const UsersPage: React.FC = () => {
   const { t } = useTranslation('organization');

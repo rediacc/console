@@ -1,5 +1,5 @@
 import React from 'react';
-import { ConfigProvider, App as AntApp } from 'antd';
+import { App as AntApp, ConfigProvider } from 'antd';
 import arEG from 'antd/locale/ar_EG';
 import deDE from 'antd/locale/de_DE';
 import enUS from 'antd/locale/en_US';
@@ -10,7 +10,7 @@ import ruRU from 'antd/locale/ru_RU';
 import trTR from 'antd/locale/tr_TR';
 import zhCN from 'antd/locale/zh_CN';
 import { useTranslation } from 'react-i18next';
-import { lightTheme, darkTheme } from '@/config/antdTheme';
+import { darkTheme, lightTheme } from '@/config/antdTheme';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { ProvidersContainer } from './styles';
 

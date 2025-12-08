@@ -1,24 +1,24 @@
 import React from 'react';
-import { Row, Col } from 'antd';
+import { Col, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { useMachines } from '@/api/queries/machines';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { RediaccCard } from '@/components/ui';
 import {
-  DesktopOutlined,
   CheckCircleOutlined,
   CloudServerOutlined,
-  HddOutlined,
   CopyOutlined,
+  DesktopOutlined,
+  HddOutlined,
 } from '@/utils/optimizedIcons';
 import {
   LoadingContent,
+  PercentageSuffix,
   RefreshButton,
   RefreshIcon,
   StatCard,
   SummaryStatistic,
-  PercentageSuffix,
 } from './styles';
 import { MachineAvailabilitySummaryProps, MachineStats } from './types';
 

@@ -1,24 +1,24 @@
 import { Typography } from 'antd';
 import styled from 'styled-components';
 import {
-  PanelWrapper,
+  CollapseButton,
+  ContentWrapper,
+  FieldLabel,
+  FieldRow,
+  FieldValue,
+  FieldValueMonospace,
+  FieldValueStrong,
   Header,
   HeaderRow,
-  TitleGroup,
   PanelTitle,
-  CollapseButton,
-  TagGroup,
-  ContentWrapper,
-  FieldRow,
-  FieldLabel,
-  FieldValue,
-  FieldValueStrong,
-  FieldValueMonospace,
+  PanelWrapper,
   SectionDivider,
   SectionHeader,
   SectionTitle,
+  TagGroup,
+  TitleGroup,
 } from '@/components/resources/internal/sharedDetailPanelAliases';
-import { RediaccTag, RediaccCard, RediaccBadge, RediaccList } from '@/components/ui';
+import { RediaccBadge, RediaccCard, RediaccList, RediaccTag } from '@/components/ui';
 import type { TagPreset, TagVariant } from '@/components/ui/Tag';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';

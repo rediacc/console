@@ -1,38 +1,38 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  Button,
-  Tooltip,
-  Space,
-  Tag,
-  Card,
-  Row,
-  Col,
-  Table,
-  Modal,
   Alert,
+  Button,
+  Card,
+  Checkbox,
+  Col,
+  Form,
+  Modal,
   Popconfirm,
   Result,
-  Form,
-  Checkbox,
+  Row,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
+  Bridge,
   useBridges,
   useCreateBridge,
-  useUpdateBridgeName,
   useDeleteBridge,
-  useUpdateBridgeVault,
   useResetBridgeAuthorization,
-  Bridge,
+  useUpdateBridgeName,
+  useUpdateBridgeVault,
 } from '@/api/queries/bridges';
 import {
-  useRegions,
-  useCreateRegion,
-  useUpdateRegionName,
-  useDeleteRegion,
-  useUpdateRegionVault,
   Region,
+  useCreateRegion,
+  useDeleteRegion,
+  useRegions,
+  useUpdateRegionName,
+  useUpdateRegionVault,
 } from '@/api/queries/regions';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { createVersionColumn } from '@/components/common/columns';
@@ -40,40 +40,40 @@ import LoadingWrapper from '@/components/common/LoadingWrapper';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import {
-  PageWrapper,
-  SectionStack,
-  SectionHeading,
-  RegionsListWrapper,
-  ListTitleRow,
-  ListTitle,
-  ListSubtitle,
   CardHeaderRow,
   CardTitle,
+  ErrorWrapper,
+  ListSubtitle,
+  ListTitle,
+  ListTitleRow,
   ModalStack,
   ModalStackLarge,
-  ErrorWrapper,
-  RediaccText,
+  PageWrapper,
   RediaccEmpty,
+  RediaccInput,
+  RediaccText,
+  RegionsListWrapper,
+  SectionHeading,
+  SectionStack,
 } from '@/components/ui';
-import { RediaccInput } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
-import { ModalAlert, TokenCopyRow, ACTIONS_COLUMN_WIDTH } from '@/pages/system/styles';
+import { ACTIONS_COLUMN_WIDTH, ModalAlert, TokenCopyRow } from '@/pages/system/styles';
 import { createSorter } from '@/platform';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import {
-  EnvironmentOutlined,
   ApiOutlined,
-  EditOutlined,
-  HistoryOutlined,
-  PlusOutlined,
-  DeleteOutlined,
-  KeyOutlined,
-  SyncOutlined,
-  DesktopOutlined,
-  CloudServerOutlined,
   CheckCircleOutlined,
+  CloudServerOutlined,
+  DeleteOutlined,
+  DesktopOutlined,
+  EditOutlined,
+  EnvironmentOutlined,
+  HistoryOutlined,
+  KeyOutlined,
+  PlusOutlined,
+  SyncOutlined,
 } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 

@@ -1,5 +1,5 @@
-﻿import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { Table, Button, Space, Tooltip, Empty } from 'antd';
+﻿import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Button, Empty, Space, Table, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -21,42 +21,43 @@ import { usePingFunction } from '@/services/pingService';
 import { RootState } from '@/store/store';
 import type { Machine } from '@/types';
 import {
-  InboxOutlined,
-  TeamOutlined,
-  GlobalOutlined,
-  CloudServerOutlined,
   BranchesOutlined,
-  DesktopOutlined,
+  CloudServerOutlined,
   DashboardOutlined,
-  RightOutlined,
+  DesktopOutlined,
+  GlobalOutlined,
+  InboxOutlined,
   InfoCircleOutlined,
+  RightOutlined,
+  TeamOutlined,
 } from '@/utils/optimizedIcons';
 import type { DeployedRepo } from '@rediacc/shared/services/machine';
 import { buildMachineTableColumns } from './columns';
 import {
-  MachineTableWrapper,
-  TableContainer,
   BulkActionsBar,
   BulkActionsSummary,
-  ViewToggleContainer,
-  ViewToggleButton,
-  ViewToggleDivider,
-  GroupedCardStack,
   GroupCardContainer,
+  GroupCardCount,
   GroupCardHeader,
   GroupCardIndicator,
-  GroupCardTitle,
-  GroupCardCount,
   GroupCardRow,
+  GroupCardTitle,
+  GroupedCardStack,
+  GroupHeaderTag,
+  GroupRowActionButton,
   GroupRowContent,
   GroupRowIcon,
   GroupRowInfo,
   GroupRowName,
-  GroupRowActionButton,
-  GroupHeaderTag,
+  MachineTableWrapper,
   StyledTag,
+  TableContainer,
+  ViewToggleButton,
+  ViewToggleContainer,
+  ViewToggleDivider,
 } from './styles';
 import type { MachineFunctionAction } from './columns';
+
 // Local type for group variants - maps to preset prop
 type GroupVariant = 'repo' | 'bridge' | 'team' | 'region' | 'status' | 'grand';
 

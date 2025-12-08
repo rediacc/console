@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMachineAssignment } from '@/features/ceph/hooks/useMachineAssignment';
 import type { CloneIdentifier } from '@/features/ceph/hooks/useMachineAssignment';
-import { MachineValidationService, type BulkValidationResult } from '@/features/ceph/services';
+import { useMachineAssignment } from '@/features/ceph/hooks/useMachineAssignment';
+import { type BulkValidationResult, MachineValidationService } from '@/features/ceph/services';
 import type { Machine } from '@/types';
 import { showMessage } from '@/utils/messages';
 

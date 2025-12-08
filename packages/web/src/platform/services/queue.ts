@@ -11,14 +11,14 @@ import { QueueService as SharedQueueService } from '@rediacc/shared/services/que
 // Note: QueueItem is not exported from shared to avoid conflict with types/domain.ts
 // Use LocalQueueItem from shared if you need the client-side queue item type
 export type {
-  QueueNotificationLevel,
-  QueueNotification,
-  QueueMonitoringEvent,
-  QueueItemData,
-  QueueItemStatus,
   ActiveTask,
-  QueueListener,
+  QueueItemData,
   QueueItemListener,
+  QueueItemStatus,
+  QueueListener,
+  QueueMonitoringEvent,
+  QueueNotification,
+  QueueNotificationLevel,
 } from '@rediacc/shared/services/queue';
 
 /**

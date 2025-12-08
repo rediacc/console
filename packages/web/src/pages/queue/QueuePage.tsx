@@ -1,6 +1,72 @@
-import React, { useMemo, useCallback } from 'react';
-import { Modal, Tabs, Tooltip, Dropdown, Space } from 'antd';
+import React, { useCallback, useMemo } from 'react';
+import { Dropdown, Modal, Space, Tabs, Tooltip } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
+import { useTranslation } from 'react-i18next';
+import styled, { useTheme as useStyledTheme } from 'styled-components';
+import {
+  QueueFilters,
+  type QueueStatistics,
+  useCancelQueueItem,
+  useQueueItems,
+} from '@/api/queries/queue';
+import { useDropdownData } from '@/api/queries/useDropdownData';
+import { renderBoolean, renderTimestamp } from '@/components/common/columns';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import ResourceListView from '@/components/common/ResourceListView';
+import {
+  PageWrapper,
+  RediaccButton,
+  RediaccCard,
+  RediaccStack,
+  RediaccText,
+} from '@/components/ui';
+import { RediaccTag } from '@/components/ui/Tag';
+import { useFilters, useMultiPagination, useQueueTraceModal } from '@/hooks';
+import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay';
+import {
+  filterActiveItems,
+  filterCancelledItems,
+  filterCompletedItems,
+  filterFailedItems,
+  formatAge,
+  formatTimestampAsIs,
+  getSeverityColor,
+  isValidGuid,
+  parseFailureReason,
+  STALE_TASK_CONSTANTS,
+} from '@/platform';
+import {
+  FilterCheckbox,
+  FilterInput,
+  FilterRangePicker,
+  FilterSelect,
+  StatDivider,
+  StatIcon,
+  StatValue,
+  TabCount,
+  TabLabel,
+} from '@/styles/primitives';
+import { confirmAction } from '@/utils/confirmations';
+import { showMessage } from '@/utils/messages';
+import {
+  ApiOutlined,
+  CloseCircleOutlined,
+  DesktopOutlined,
+  ExclamationCircleOutlined,
+  ExportOutlined,
+  GlobalOutlined,
+  HistoryOutlined,
+  PlayCircleOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  ThunderboltOutlined,
+  WarningOutlined,
+} from '@/utils/optimizedIcons';
+import { renderPriority, renderQueueStatus } from '@/utils/queueRenderers';
+import type { ParsedError } from '@rediacc/shared/error-parser';
+import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
+import type { ColumnsType } from 'antd/es/table';
+
 // Page-level filter state type
 type QueuePageFilters = {
   teamName: string;
@@ -14,71 +80,6 @@ type QueuePageFilters = {
   includeCompleted: boolean;
   includeCancelled: boolean;
 };
-import { useTranslation } from 'react-i18next';
-import styled, { useTheme as useStyledTheme } from 'styled-components';
-import {
-  useQueueItems,
-  useCancelQueueItem,
-  QueueFilters,
-  type QueueStatistics,
-} from '@/api/queries/queue';
-import { useDropdownData } from '@/api/queries/useDropdownData';
-import { renderTimestamp, renderBoolean } from '@/components/common/columns';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import ResourceListView from '@/components/common/ResourceListView';
-import {
-  PageWrapper,
-  RediaccButton,
-  RediaccText,
-  RediaccStack,
-  RediaccCard,
-} from '@/components/ui';
-import { RediaccTag } from '@/components/ui/Tag';
-import { useFilters, useMultiPagination, useQueueTraceModal } from '@/hooks';
-import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay';
-import {
-  formatTimestampAsIs,
-  isValidGuid,
-  filterActiveItems,
-  filterCompletedItems,
-  filterCancelledItems,
-  filterFailedItems,
-  parseFailureReason,
-  getSeverityColor,
-  formatAge,
-  STALE_TASK_CONSTANTS,
-} from '@/platform';
-import {
-  FilterSelect,
-  FilterRangePicker,
-  FilterInput,
-  StatValue,
-  StatDivider,
-  StatIcon,
-  TabLabel,
-  TabCount,
-  FilterCheckbox,
-} from '@/styles/primitives';
-import { confirmAction } from '@/utils/confirmations';
-import { showMessage } from '@/utils/messages';
-import {
-  ThunderboltOutlined,
-  DesktopOutlined,
-  ApiOutlined,
-  ExclamationCircleOutlined,
-  GlobalOutlined,
-  ReloadOutlined,
-  ExportOutlined,
-  HistoryOutlined,
-  SearchOutlined,
-  CloseCircleOutlined,
-  PlayCircleOutlined,
-  WarningOutlined,
-} from '@/utils/optimizedIcons';
-import { renderQueueStatus, renderPriority } from '@/utils/queueRenderers';
-import type { ParsedError } from '@rediacc/shared/error-parser';
-import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
-import type { ColumnsType } from 'antd/es/table';
 
 const TooltipContent = styled.div`
   display: flex;

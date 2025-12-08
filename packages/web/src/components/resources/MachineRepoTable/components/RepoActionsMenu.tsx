@@ -1,32 +1,32 @@
 import React from 'react';
-import type { MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
-import {
-  PlayCircleOutlined,
-  PauseCircleOutlined,
-  CheckCircleOutlined,
-  CopyOutlined,
-  CloudUploadOutlined,
-  SaveOutlined,
-  AppstoreOutlined,
-  DatabaseOutlined,
-  DisconnectOutlined,
-  ExpandOutlined,
-  ShrinkOutlined,
-  FunctionOutlined,
-  DeleteOutlined,
-  RiseOutlined,
-  EditOutlined,
-  EyeOutlined,
-  KeyOutlined,
-  ControlOutlined,
-} from '@/utils/optimizedIcons';
-import { isFork as coreIsFork, isCredential as coreIsCredential } from '@/platform';
-import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
+import { isCredential as coreIsCredential, isFork as coreIsFork } from '@/platform';
 import type { Machine } from '@/types';
-import type { RepoTableRow, RepoContainersState, MenuClickEvent } from '../types';
+import {
+  AppstoreOutlined,
+  CheckCircleOutlined,
+  CloudUploadOutlined,
+  ControlOutlined,
+  CopyOutlined,
+  DatabaseOutlined,
+  DeleteOutlined,
+  DisconnectOutlined,
+  EditOutlined,
+  ExpandOutlined,
+  EyeOutlined,
+  FunctionOutlined,
+  KeyOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
+  RiseOutlined,
+  SaveOutlined,
+  ShrinkOutlined,
+} from '@/utils/optimizedIcons';
+import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
+import type { MenuClickEvent, RepoContainersState, RepoTableRow } from '../types';
+import type { MenuProps } from 'antd';
 
 interface RepoActionsMenuProps {
   record: RepoTableRow;

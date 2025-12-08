@@ -1,31 +1,31 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Select, Table } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useCephClusters, type CephCluster } from '@/api/queries/ceph';
+import { type CephCluster, useCephClusters } from '@/api/queries/ceph';
 import {
   useUpdateMachineCeph,
   useUpdateMachineClusterAssignment,
 } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccText, RediaccStack } from '@/components/ui';
+import { RediaccStack, RediaccText } from '@/components/ui';
 import { AlertCard } from '@/styles/primitives';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import {
-  StyledModal,
-  TitleStack,
-  MachineDetailsSection,
-  DetailRow,
-  ClusterAlert,
-  FieldGroup,
-  StyledSelect,
-  MachinesTable,
-  MachineNameRow,
-  TeamTag,
   AssignmentTag,
+  ClusterAlert,
+  DetailRow,
+  FieldGroup,
+  MachineDetailsSection,
+  MachineNameRow,
+  MachinesTable,
+  StyledModal,
+  StyledSelect,
+  TeamTag,
+  TitleStack,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 

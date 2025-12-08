@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
-import { queueMonitoringService } from '@/services/queueMonitoringService';
 import { extractMostRecentProgress, extractProgressMessage } from '@/platform';
+import { queueMonitoringService } from '@/services/queueMonitoringService';
 import type { TraceState, TraceStateActions } from '../types';
 
 interface UseTraceStateProps {

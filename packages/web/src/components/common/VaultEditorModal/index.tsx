@@ -1,9 +1,9 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
-import { Modal, Space, message, Upload, Tooltip } from 'antd';
+﻿import React, { useEffect, useRef, useState } from 'react';
+import { Modal, message, Space, Tooltip, Upload } from 'antd';
 import { useTranslation } from 'react-i18next';
-import VaultEditor from '@/components/common/VaultEditor';
-import { RediaccButton, RediaccText, RediaccStack } from '@/components/ui';
 import { ActionGroup } from '@/components/common/styled';
+import VaultEditor from '@/components/common/VaultEditor';
+import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
 import { ModalSize } from '@/types/modal';
 import { CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons';
 import {

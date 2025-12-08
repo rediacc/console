@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { Tooltip, List, Popconfirm, Tabs, Card, Space, Modal } from 'antd';
+import { Card, List, Modal, Popconfirm, Space, Tabs, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  useTeams,
-  useTeamMembers,
-  useCreateTeam,
-  useUpdateTeamName,
-  useDeleteTeam,
-  useUpdateTeamVault,
-  useAddTeamMember,
-  useRemoveTeamMember,
   Team,
   TeamMember,
+  useAddTeamMember,
+  useCreateTeam,
+  useDeleteTeam,
+  useRemoveTeamMember,
+  useTeamMembers,
+  useTeams,
+  useUpdateTeamName,
+  useUpdateTeamVault,
 } from '@/api/queries/teams';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
@@ -19,22 +19,23 @@ import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal, {
   type ExistingResourceData,
 } from '@/components/common/UnifiedResourceModal';
-import { RediaccButton, RediaccTag } from '@/components/ui';
 import {
-  PageWrapper,
-  SectionStack,
-  SectionHeading,
-  ListTitleRow,
-  ListTitle,
-  ListSubtitle,
   InlineFormRow,
+  ListSubtitle,
+  ListTitle,
+  ListTitleRow,
   ModalStack,
+  PageWrapper,
+  RediaccButton,
   RediaccSelect,
+  RediaccTag,
+  SectionHeading,
+  SectionStack,
 } from '@/components/ui';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { useFormModal } from '@/hooks/useFormModal';
 import { ModalSize } from '@/types/modal';
-import { UserOutlined, DeleteOutlined, PlusOutlined } from '@/utils/optimizedIcons';
+import { DeleteOutlined, PlusOutlined, UserOutlined } from '@/utils/optimizedIcons';
 import { getTeamColumns } from './data';
 
 const TeamsPage: React.FC = () => {

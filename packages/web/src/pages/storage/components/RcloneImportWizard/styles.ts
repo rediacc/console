@@ -1,6 +1,6 @@
 import { Typography } from 'antd';
 import styled from 'styled-components';
-import { RediaccText, RediaccModal } from '@/components/ui';
+import { RediaccModal, RediaccText } from '@/components/ui';
 import { LoadingState as BaseLoadingState } from '@/styles/primitives';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 

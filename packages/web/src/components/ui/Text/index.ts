@@ -4,18 +4,18 @@
  * Unified text component with variants for all text styling needs.
  */
 export { RediaccText } from './RediaccText';
+export {
+  resolveTextColor,
+  resolveTextSize,
+  resolveTextVariantTokens,
+  resolveTextWeight,
+} from './RediaccText.styles';
 export type {
   RediaccTextProps,
-  TextVariant,
-  TextSize,
-  TextWeight,
-  TextColor,
   TextAlign,
+  TextColor,
   TextElement,
+  TextSize,
+  TextVariant,
+  TextWeight,
 } from './RediaccText.types';
-export {
-  resolveTextVariantTokens,
-  resolveTextSize,
-  resolveTextWeight,
-  resolveTextColor,
-} from './RediaccText.styles';

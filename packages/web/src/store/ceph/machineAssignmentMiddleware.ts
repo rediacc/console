@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { MachineValidationService } from '@/features/ceph';
 import type { BulkValidationResult, ValidationResult } from '@/features/ceph';
+import { MachineValidationService } from '@/features/ceph';
 import type { RootState } from '@/store/store';
 import type { Machine } from '@/types';
 import { clearStaleValidations, setMultipleValidationResults } from './machineAssignmentSlice';

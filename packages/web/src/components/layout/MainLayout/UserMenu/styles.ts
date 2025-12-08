@@ -1,6 +1,6 @@
 import { Avatar, Segmented } from 'antd';
 import styled from 'styled-components';
-import { InlineStack, FlexBetween } from '@/components/common/styled';
+import { FlexBetween, InlineStack } from '@/components/common/styled';
 import { RediaccButton, RediaccTag } from '@/components/ui';
 import { FlexColumn } from '@/styles/primitives';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';

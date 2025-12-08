@@ -1,8 +1,8 @@
 import { forwardRef } from 'react';
 import {
-  StyledRediaccProgress,
-  resolveProgressHeight,
   resolveCircleWidth,
+  resolveProgressHeight,
+  StyledRediaccProgress,
 } from './RediaccProgress.styles';
 import type { RediaccProgressProps } from './RediaccProgress.types';
 

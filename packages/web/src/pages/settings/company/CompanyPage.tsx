@@ -1,83 +1,83 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  Tooltip,
-  Row,
   Col,
-  Space,
-  Popconfirm,
+  Form,
   Modal,
-  Upload,
+  Popconfirm,
   Radio,
   Result,
+  Row,
+  Space,
+  Tooltip,
   Typography,
-  Form,
+  Upload,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   useCompanyVault,
-  useUpdateCompanyVault,
-  useUpdateCompanyBlockUserRequests,
   useCompanyVaults,
-  useUpdateCompanyVaults,
   useExportCompanyData,
   useImportCompanyData,
+  useUpdateCompanyBlockUserRequests,
+  useUpdateCompanyVault,
+  useUpdateCompanyVaults,
 } from '@/api/queries/company';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
-import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields';
-import { RediaccButton } from '@/components/ui';
+import { PasswordConfirmField, PasswordField } from '@/components/forms/FormFields';
 import {
-  PageWrapper as CompanyPageWrapper,
-  SectionStack as CompanySectionStack,
-  SectionHeading as CompanySectionHeading,
+  BulletedList,
+  CardActions,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardActions,
+  CenteredBlock,
+  PageWrapper as CompanyPageWrapper,
+  SectionHeading as CompanySectionHeading,
+  SectionStack as CompanySectionStack,
+  DangerDivider,
+  DangerHeading,
+  DangerSection,
+  DangerStack,
   IconWrapper,
+  ModalActions,
   ModalStack,
   ModalStackLarge,
-  ModalActions,
-  DangerSection,
-  DangerHeading,
-  DangerStack,
-  RightAlign,
-  DangerDivider,
-  BulletedList,
   OrderedList,
-  RequirementsList,
-  CenteredBlock,
+  RediaccButton,
   RediaccText,
+  RequirementsList,
+  RightAlign,
 } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState } from '@/hooks/useDialogState';
 import {
-  SettingsCard,
   DangerCard,
-  ModalAlert,
-  FormItemSpaced,
-  FormItemNoMargin,
   FormItemActionsLg,
+  FormItemNoMargin,
+  FormItemSpaced,
+  ModalAlert,
+  SettingsCard,
 } from '@/pages/system/styles';
 import { masterPasswordService } from '@/services/masterPasswordService';
 import { logout } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
-import { encryptString, decryptString } from '@/utils/encryption';
+import { decryptString, encryptString } from '@/utils/encryption';
 import { showMessage } from '@/utils/messages';
 import {
   BankOutlined,
-  SettingOutlined,
-  LockOutlined,
-  UnlockOutlined,
   DownloadOutlined,
   ExportOutlined,
   ImportOutlined,
-  WarningOutlined,
   KeyOutlined,
+  LockOutlined,
+  SettingOutlined,
+  UnlockOutlined,
   UploadOutlined,
+  WarningOutlined,
 } from '@/utils/optimizedIcons';
 
 const CompanyPage: React.FC = () => {

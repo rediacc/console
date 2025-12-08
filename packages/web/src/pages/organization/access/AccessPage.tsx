@@ -1,41 +1,41 @@
 import React, { useState } from 'react';
 import {
-  Button,
-  Tooltip,
-  Space,
-  Modal,
-  Input,
-  Tabs,
-  Card,
-  List,
   Select as AntSelect,
+  Button,
+  Card,
+  Input,
+  List,
+  Modal,
   Popconfirm,
   Result,
+  Space,
+  Tabs,
+  Tooltip,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
-  usePermissionGroups as usePermissionGroupsQuery,
-  usePermissionGroupDetails,
+  PermissionGroup,
+  useAddPermissionToGroup,
+  useAssignUserToGroup,
   useCreatePermissionGroup,
   useDeletePermissionGroup,
-  useAddPermissionToGroup,
+  usePermissionGroupDetails,
+  usePermissionGroups as usePermissionGroupsQuery,
   useRemovePermissionFromGroup,
-  useAssignUserToGroup,
-  PermissionGroup,
 } from '@/api/queries/permissions';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import ResourceListView from '@/components/common/ResourceListView';
 import {
-  PageWrapper as AccessPageWrapper,
-  SectionStack as AccessSectionStack,
-  SectionHeading as AccessSectionHeading,
   ListTitleRow as AccessListHeader,
-  ListTitle as AccessListTitle,
   ListSubtitle as AccessListSubtitle,
-  ModalStack,
+  ListTitle as AccessListTitle,
+  PageWrapper as AccessPageWrapper,
+  SectionHeading as AccessSectionHeading,
+  SectionStack as AccessSectionStack,
   InlineFormRow,
+  ModalStack,
   RediaccSelect,
 } from '@/components/ui';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
@@ -44,12 +44,12 @@ import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import {
-  SafetyOutlined,
-  KeyOutlined,
-  UserOutlined,
-  HistoryOutlined,
-  PlusOutlined,
   DeleteOutlined,
+  HistoryOutlined,
+  KeyOutlined,
+  PlusOutlined,
+  SafetyOutlined,
+  UserOutlined,
 } from '@/utils/optimizedIcons';
 
 const AccessPage: React.FC = () => {

@@ -1,12 +1,12 @@
-import type { Rule } from 'antd/es/form';
 import type {
-  VaultFormValues,
-  FieldDefinition,
-  VaultDefinitionsConfig,
-  ValidateErrorEntity,
-  JsonFieldValidatorResult,
   ExtraFieldsResult,
+  FieldDefinition,
+  JsonFieldValidatorResult,
+  ValidateErrorEntity,
+  VaultDefinitionsConfig,
+  VaultFormValues,
 } from './types';
+import type { Rule } from 'antd/es/form';
 
 /**
  * Base64 utility functions for fields with format: "base64"

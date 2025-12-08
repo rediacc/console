@@ -1,12 +1,12 @@
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
 import type {
-  GetAuditLogs_ResultSet1,
-  AuditTraceResponse,
   AuditTraceRecord,
+  AuditTraceResponse,
   AuditTraceSummary,
+  GetAuditLogs_ResultSet1,
+  GetEntityAuditTraceParams,
 } from '../../types';
-import type { GetEntityAuditTraceParams } from '../../types';
 import type { ApiResponse } from '../../types/api';
 
 export interface AuditLogOptions {

@@ -4,7 +4,7 @@
  */
 
 // Re-export types from queue-vault for convenience
-export type { QueueRequestContext, FunctionRequirements } from '../../queue-vault';
+export type { FunctionRequirements, QueueRequestContext } from '../../queue-vault';
 
 /**
  * Timer provider interface for platform-agnostic timer operations

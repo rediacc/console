@@ -5,7 +5,7 @@ import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import type { Machine } from '@/types';
 import type { GetCompanyTeams_ResultSet1 } from '@rediacc/shared/types';
-import { waitForQueueItemCompletion, type QueueItemCompletionResult } from './helloService';
+import { type QueueItemCompletionResult, waitForQueueItemCompletion } from './helloService';
 
 export interface PingFunctionParams {
   teamName: string;

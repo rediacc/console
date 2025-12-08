@@ -1,8 +1,8 @@
-import React from 'react';
 import type { ReactNode } from 'react';
+import React from 'react';
 import {
-  DefaultsWrapper,
   DefaultsAlert,
+  DefaultsWrapper,
 } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/styles';
 
 interface DefaultsBannerProps {

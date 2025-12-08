@@ -1,5 +1,5 @@
 import { Input } from 'antd';
-import { Controller, Control } from 'react-hook-form';
+import { Control, Controller } from 'react-hook-form';
 import {
   SizeInputGroup,
   SizeNumberInput,

@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import type {
   CreateBridgeParams,
-  UpdateBridgeNameParams,
   DeleteBridgeParams,
+  UpdateBridgeNameParams,
   UpdateBridgeVaultParams,
 } from '@rediacc/shared/types';
 import { api } from '../services/api.js';

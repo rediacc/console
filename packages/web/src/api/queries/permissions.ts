@@ -1,17 +1,17 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import i18n from '@/i18n/config';
 import { showMessage } from '@/utils/messages';
 import { createErrorHandler } from '@/utils/mutationUtils';
+import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 import type {
-  Permission,
   CreatePermissionGroupParams,
-  DeletePermissionGroupParams,
   CreatePermissionInGroupParams,
   DeletePermissionFromGroupParams,
+  DeletePermissionGroupParams,
+  Permission,
   UpdateUserAssignedPermissionsParams,
 } from '@rediacc/shared/types';
-import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 
 // Get all permission groups
 export const usePermissionGroups = () => {

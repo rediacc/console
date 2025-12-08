@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { telemetryService } from '@/services/telemetryService';
-import { lightTheme, darkTheme } from '@/styles/styledTheme';
+import { darkTheme, lightTheme } from '@/styles/styledTheme';
 
 type Theme = 'light' | 'dark';
 

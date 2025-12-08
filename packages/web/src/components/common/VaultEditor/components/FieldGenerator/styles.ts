@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { RediaccButton, RediaccRadioGroup, RediaccRadioButton } from '@/components/ui';
+import { RediaccButton, RediaccRadioButton, RediaccRadioGroup } from '@/components/ui';
 
 export const PopoverContainer = styled.div`
   width: 400px;

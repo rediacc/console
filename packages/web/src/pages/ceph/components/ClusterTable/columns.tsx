@@ -8,20 +8,20 @@ import {
 import { RediaccTag } from '@/components/ui';
 import { createSorter } from '@/platform';
 import {
-  EditOutlined,
   DeleteOutlined,
+  EditOutlined,
   FunctionOutlined,
   HistoryOutlined,
 } from '@/utils/optimizedIcons';
 import { MachineCountBadge } from './components/MachineCountBadge';
 import { getClusterFunctionMenuItems } from './menus';
 import {
-  ClusterNameCell,
-  ExpandIcon,
   ClusterIcon,
+  ClusterNameCell,
   ClusterNameText,
-  ManageMachinesButton,
+  ExpandIcon,
   MachineManageCell,
+  ManageMachinesButton,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 import type { TFunction } from 'i18next';

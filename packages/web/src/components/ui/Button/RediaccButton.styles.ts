@@ -1,8 +1,8 @@
 import { Button as AntButton } from 'antd';
 import styled, { css } from 'styled-components';
-import type { StyledTheme } from '@/styles/styledTheme';
-import type { ButtonVariant, ButtonSize } from './RediaccButton.types';
 import { disabledState } from '@/styles/mixins';
+import type { StyledTheme } from '@/styles/styledTheme';
+import type { ButtonSize, ButtonVariant } from './RediaccButton.types';
 
 type ButtonTokenSet = {
   bg: string;

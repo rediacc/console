@@ -1,6 +1,6 @@
 import { Typography } from 'antd';
 import styled from 'styled-components';
-import { RediaccTag, RediaccSelect } from '@/components/ui';
+import { RediaccSelect, RediaccTag } from '@/components/ui';
 import { FlexRow } from '@/styles/primitives';
 
 const { Text: AntText } = Typography;

@@ -1,6 +1,6 @@
 import styled from 'styled-components';
-import { InlineStack, FlexBetween } from '@/components/common/styled';
-import { RediaccText, RediaccButton } from '@/components/ui';
+import { FlexBetween, InlineStack } from '@/components/common/styled';
+import { RediaccButton, RediaccText } from '@/components/ui';
 import { FlexRow } from '@/styles/primitives';
 
 export const NotificationDropdown = styled.div`

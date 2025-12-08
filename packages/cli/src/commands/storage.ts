@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import type {
   CreateStorageParams,
-  UpdateStorageNameParams,
   DeleteStorageParams,
+  UpdateStorageNameParams,
   UpdateStorageVaultParams,
 } from '@rediacc/shared/types';
 import { api } from '../services/api.js';

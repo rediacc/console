@@ -1,7 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Button as AntButton, Space, Tag, Alert, Tooltip } from 'antd';
+﻿import React, { useEffect, useState } from 'react';
+import { Alert, Button as AntButton, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
 import { useRepos } from '@/api/queries/repos';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
@@ -10,36 +10,34 @@ import { ActionGroup, CenteredState } from '@/components/common/styled';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import { RediaccButton } from '@/components/ui';
-import { RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccCard, RediaccText } from '@/components/ui';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { useRepoCreation } from '@/hooks/useRepoCreation';
 import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
-import { Machine, Repo, PluginContainer } from '@/types';
+import { Machine, PluginContainer, Repo } from '@/types';
 import {
-  DoubleLeftOutlined,
-  ReloadOutlined,
-  DesktopOutlined,
-  PlusOutlined,
   CloudDownloadOutlined,
+  DesktopOutlined,
+  DoubleLeftOutlined,
+  PlusOutlined,
+  ReloadOutlined,
 } from '@/utils/optimizedIcons';
 import {
-  PageWrapper,
-  BreadcrumbWrapper,
-  HeaderSection,
-  HeaderRow,
-  TitleColumn,
-  TitleRow,
   ActionsRow,
-  HeaderTitleText,
-  SplitLayout,
-  ListPanel,
+  BreadcrumbWrapper,
   DetailBackdrop,
   ErrorWrapper,
+  HeaderRow,
+  HeaderSection,
+  HeaderTitleText,
+  ListPanel,
+  PageWrapper,
+  SplitLayout,
+  TitleColumn,
+  TitleRow,
 } from './styles';
-import { RediaccCard } from '@/components/ui';
 
 interface ContainerData {
   id: string;

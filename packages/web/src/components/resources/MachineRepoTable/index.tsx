@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Typography, Button, Tooltip, Input, Space, Alert } from 'antd';
+import { Alert, Button, Input, Space, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
 import { type QueueFunction } from '@/api/queries/queue';
 import {
-  useRepos,
   useCreateRepo,
   usePromoteRepoToGrand,
+  useRepos,
   useUpdateRepoName,
   useUpdateRepoTag,
 } from '@/api/queries/repos';
@@ -23,32 +23,32 @@ import { useQueueAction } from '@/hooks/useQueueAction';
 import {
   canBackupToStorage,
   isFork as coreIsFork,
+  getGrandVaultForOperation,
   prepareForkDeletion,
   prepareGrandDeletion,
   preparePromotion,
-  getGrandVaultForOperation,
 } from '@/platform';
 import { useAppSelector } from '@/store/store';
 import { showMessage } from '@/utils/messages';
 import { DesktopOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import type { TableProps } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import * as S from './styles';
-import type { MachineRepoTableProps, RepoTableRow, Container, Repo } from './types';
-import { getAxiosErrorMessage } from './utils';
 import { useRepoColumns, useSystemContainerColumns } from './columns';
 import { RepoActionsMenu } from './components/RepoActionsMenu';
 import { useRepoTableState } from './hooks/useRepoTableState';
 import {
-  ModalContent,
   ConfirmationInput,
-  TableStateContainer,
-  SmallText,
+  InfoTag,
   InlineTag,
   MachineTag,
-  InfoTag,
+  ModalContent,
+  SmallText,
+  TableStateContainer,
 } from './styledComponents';
+import * as S from './styles';
+import { getAxiosErrorMessage } from './utils';
+import type { Container, MachineRepoTableProps, Repo, RepoTableRow } from './types';
+import type { TableProps } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 const RepoTableComponent = S.StyledTable as React.ComponentType<TableProps<RepoTableRow>>;
 const SystemTableComponent = S.StyledTable as React.ComponentType<TableProps<Container>>;

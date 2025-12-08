@@ -5,18 +5,18 @@
 
 import { QueueStateManager } from './state-manager';
 import {
-  QueueVaultBuilder,
-  type QueueVaultBuilderConfig,
   type FunctionRequirements,
   type QueueRequestContext,
+  QueueVaultBuilder,
+  type QueueVaultBuilderConfig,
 } from '../../queue-vault';
 import type {
+  ActiveTask,
   LocalQueueItem,
   LocalQueueItemData,
-  ActiveTask,
-  QueueServiceConfig,
-  QueueListener,
   QueueItemListener,
+  QueueListener,
+  QueueServiceConfig,
 } from './types';
 
 /**

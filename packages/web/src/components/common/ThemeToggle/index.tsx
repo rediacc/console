@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
-import { SunOutlined, MoonOutlined } from '@/utils/optimizedIcons';
+import { MoonOutlined, SunOutlined } from '@/utils/optimizedIcons';
 import { ToggleButton } from './styles';
 
 export const ThemeToggle: React.FC = () => {

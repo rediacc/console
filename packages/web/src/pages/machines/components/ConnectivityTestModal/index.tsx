@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import { InlineStack, StatusIcon } from '@/components/common/styled';
-import { RediaccButton, RediaccText, RediaccAlert, RediaccStack } from '@/components/ui';
+import { RediaccAlert, RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
 import type { QueueItemCompletionResult } from '@/services/helloService';
 import { usePingFunction } from '@/services/pingService';
 import { ModalContentStack, ModalFooterActions } from '@/styles/primitives';
@@ -11,24 +11,24 @@ import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import {
-  SyncOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined,
-  WifiOutlined,
   ClockCircleOutlined,
+  CloseCircleOutlined,
+  SyncOutlined,
+  WifiOutlined,
 } from '@/utils/optimizedIcons';
 import {
-  StyledModal,
-  ModalContent,
-  ProgressSection,
-  ProgressBar,
-  SummaryContainer,
-  SummaryMetrics,
-  SummaryMetric,
-  SummaryValue,
-  StyledTable,
-  ResourceTag,
   MessageText,
+  ModalContent,
+  ProgressBar,
+  ProgressSection,
+  ResourceTag,
+  StyledModal,
+  StyledTable,
+  SummaryContainer,
+  SummaryMetric,
+  SummaryMetrics,
+  SummaryValue,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table/interface';
 

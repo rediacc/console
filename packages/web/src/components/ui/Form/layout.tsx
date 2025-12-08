@@ -11,10 +11,10 @@
 
 import styled from 'styled-components';
 import {
-  ControlStack as PrimitiveControlStack,
-  InputSlot as PrimitiveInputSlot,
   ActionBar as PrimitiveActionBar,
   ContentSection as PrimitiveContentSection,
+  ControlStack as PrimitiveControlStack,
+  InputSlot as PrimitiveInputSlot,
 } from '@/styles/primitives';
 
 export const ControlStack = PrimitiveControlStack;

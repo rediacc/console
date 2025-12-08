@@ -1,7 +1,7 @@
 export { RediaccDivider } from './RediaccDivider';
+export { resolveDividerSpacing } from './RediaccDivider.styles';
 export type {
-  RediaccDividerProps,
   DividerOrientation,
   DividerSpacing,
+  RediaccDividerProps,
 } from './RediaccDivider.types';
-export { resolveDividerSpacing } from './RediaccDivider.styles';

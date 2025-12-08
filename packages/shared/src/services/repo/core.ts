@@ -3,7 +3,7 @@
  * Handles grand/fork detection, affected resources, and repo grouping
  */
 
-import { parseVaultStatus, type MachineWithVaultStatus } from '../machine';
+import { type MachineWithVaultStatus, parseVaultStatus } from '../machine';
 
 /**
  * Repo information for relationship analysis

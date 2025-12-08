@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Skeleton } from 'antd';
 import { useMachineAssignmentStatus } from '@/api/queries/ceph';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';

@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { InlineStack } from '@/components/common/styled';
-import { IconWrapper, RediaccText, RediaccStack } from '@/components/ui';
+import { IconWrapper, RediaccStack, RediaccText } from '@/components/ui';
 import { hideSessionExpiredDialog, setStayLoggedOutMode } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import { ClockCircleOutlined, LogoutOutlined } from '@/utils/optimizedIcons';
-import { StyledModal, CountdownCard, FooterButton } from './styles';
+import { CountdownCard, FooterButton, StyledModal } from './styles';
 
 const COUNTDOWN_DURATION = 60; // 60 seconds
 

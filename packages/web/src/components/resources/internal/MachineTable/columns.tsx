@@ -8,23 +8,23 @@ import {
 } from '@/components/common/columns';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
-import { createSorter, createCustomSorter } from '@/platform';
+import { createCustomSorter, createSorter } from '@/platform';
 import type { usePingFunction } from '@/services/pingService';
 import type { Machine } from '@/types';
 import { showMessage } from '@/utils/messages';
 import {
-  EditOutlined,
-  FunctionOutlined,
-  WifiOutlined,
-  CloudServerOutlined,
-  HistoryOutlined,
-  DeleteOutlined,
-  EyeOutlined,
   CheckCircleOutlined,
+  CloudServerOutlined,
+  DeleteOutlined,
   DisconnectOutlined,
+  EditOutlined,
+  EyeOutlined,
+  FunctionOutlined,
+  HistoryOutlined,
+  WifiOutlined,
 } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { MachineNameIcon, StyledTag, StyledBadge } from './styles';
+import { MachineNameIcon, StyledBadge, StyledTag } from './styles';
 import type { ColumnsType } from 'antd/es/table/interface';
 
 type ExecutePingForMachineAndWait = ReturnType<

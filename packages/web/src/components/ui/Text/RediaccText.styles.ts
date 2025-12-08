@@ -2,12 +2,12 @@ import { Typography } from 'antd';
 import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type {
-  TextVariant,
-  TextSize,
-  TextWeight,
-  TextColor,
   TextAlign,
+  TextColor,
   TextElement,
+  TextSize,
+  TextVariant,
+  TextWeight,
 } from './RediaccText.types';
 
 const { Text: AntText } = Typography;

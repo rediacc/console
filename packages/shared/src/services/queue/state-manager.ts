@@ -4,16 +4,16 @@
  */
 
 import type {
+  ActiveTask,
   LocalQueueItem,
   LocalQueueItemData,
   LocalQueueItemStatus,
-  ActiveTask,
-  QueueNotificationLevel,
-  QueueNotification,
-  QueueMonitoringEvent,
-  QueueStateManagerConfig,
-  QueueListener,
   QueueItemListener,
+  QueueListener,
+  QueueMonitoringEvent,
+  QueueNotification,
+  QueueNotificationLevel,
+  QueueStateManagerConfig,
   TimerProvider,
 } from './types';
 

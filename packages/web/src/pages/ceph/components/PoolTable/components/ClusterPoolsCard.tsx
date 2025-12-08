@@ -3,10 +3,10 @@ import { Table } from 'antd';
 import type { CephPool } from '@/api/queries/ceph';
 import { RediaccTag } from '@/components/ui';
 import {
-  ClusterCard,
   CardHeader,
   CardIcon,
   CardTitle,
+  ClusterCard,
   TableWrapper,
 } from '@/pages/ceph/components/PoolTable/styles';
 import type { ColumnsType } from 'antd/es/table';

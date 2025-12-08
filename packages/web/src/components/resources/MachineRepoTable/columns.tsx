@@ -2,27 +2,31 @@ import React from 'react';
 import { Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
-import type { ColumnsType } from 'antd/es/table';
-import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
-import { StatusIcon } from '@/components/common/styled';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
-import { createSorter, createCustomSorter, createArrayLengthSorter } from '@/platform';
+import { StatusIcon } from '@/components/common/styled';
+import {
+  isCredential as coreIsCredential,
+  createArrayLengthSorter,
+  createCustomSorter,
+  createSorter,
+} from '@/platform';
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
-  DisconnectOutlined,
-  PlayCircleOutlined,
-  PauseCircleOutlined,
-  ReloadOutlined,
-  StopOutlined,
   CloudServerOutlined,
-  StarOutlined,
   CopyOutlined,
+  DisconnectOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
+  ReloadOutlined,
+  StarOutlined,
+  StopOutlined,
 } from '@/utils/optimizedIcons';
-import { isCredential as coreIsCredential } from '@/platform';
-import type { Container, RepoTableRow, PortMapping } from './types';
+import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
+import { GrandTag, SmallText } from './styledComponents';
 import { getRepoDisplayName } from './utils';
-import { SmallText, GrandTag } from './styledComponents';
+import type { Container, PortMapping, RepoTableRow } from './types';
+import type { ColumnsType } from 'antd/es/table';
 
 export const useRepoColumns = (teamRepos: TeamRepo[]) => {
   const { t } = useTranslation(['resources', 'common']);

@@ -1,18 +1,22 @@
-import { Typography, Timeline } from 'antd';
+import { Timeline, Typography } from 'antd';
 import { Link as RouterLink } from 'react-router-dom';
 import styled from 'styled-components';
 import {
-  ContentStack,
   CenteredState,
+  ContentStack,
+  Divider,
   FlexBetween,
   InlineStack,
   StatRow,
-  Divider,
 } from '@/components/common/styled';
-import { RediaccText, RediaccBadge, RediaccProgress, RediaccList } from '@/components/ui';
-import { StatValue as BaseStatValue } from '@/styles/primitives';
+import { RediaccBadge, RediaccList, RediaccProgress, RediaccText } from '@/components/ui';
 import { borderedCard } from '@/styles/mixins';
-import { scrollbarStyles, FlexRow, FlexColumn } from '@/styles/primitives';
+import {
+  StatValue as BaseStatValue,
+  FlexColumn,
+  FlexRow,
+  scrollbarStyles,
+} from '@/styles/primitives';
 
 // Re-export from common/styled
 export { ContentStack, CenteredState, FlexBetween, InlineStack, StatRow, Divider };
