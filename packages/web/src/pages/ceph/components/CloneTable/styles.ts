@@ -1,20 +1,13 @@
+import { CloudUploadOutlined, CopyOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
-import { CopyOutlined, CloudUploadOutlined } from '@ant-design/icons';
-import { RediaccBadge } from '@/components/ui';
-import {
-  FlexColumn,
-  EmptyStateWrapper,
-  TableCellText,
-  StyledIcon,
-  IconActionButton,
-} from '@/styles/primitives';
-import { RediaccTag, RediaccButton, RediaccStack } from '@/components/ui';
-import { TableWrapper, NameCell, ActionsRow } from '../../styles/tableAliases';
+import { RediaccBadge, RediaccButton } from '@/components/ui';
+import { ActionsRow, NameCell, TableWrapper } from '@/pages/ceph/styles/tableAliases';
+import { FlexColumn, IconActionButton, StyledIcon, TableCellText } from '@/styles/primitives';
 
 export const Container = styled(FlexColumn).attrs({ $gap: 'MD' })`
   padding: ${({ theme }) =>
     `${theme.spacing.MD}px ${theme.spacing.MD}px ${theme.spacing.MD}px ${theme.spacing.LG}px`};
-  background: var(--color-fill-quaternary);
+  background: ${({ theme }) => theme.colors.bgSecondary};
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
 `;
 
@@ -42,16 +35,13 @@ export const CloneName = styled(TableCellText)`
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
 `;
 
-export const VaultTag = styled(RediaccTag).attrs({
-  variant: 'neutral',
-  size: 'sm',
-})``;
+// VaultTag removed - use <RediaccTag variant="neutral" compact> directly
 
 export const MachineCountBadgeWrapper = styled(RediaccBadge)<{ $active?: boolean }>`
   .ant-badge-count {
-    background-color: ${({ $active }) =>
-      $active ? 'var(--color-primary)' : 'var(--color-fill-tertiary)'};
-    color: ${({ $active }) => ($active ? 'var(--color-white)' : 'var(--color-text-secondary)')};
+    background-color: ${({ $active, theme }) =>
+      $active ? theme.colors.primary : theme.colors.bgHover};
+    color: ${({ $active, theme }) => ($active ? '#ffffff' : theme.colors.textSecondary)};
     box-shadow: none;
     min-width: ${({ theme }) => theme.spacing.MD}px;
   }
@@ -65,19 +55,9 @@ export const MachineListWrapper = styled.div`
   padding: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const MachineListStack = styled(RediaccStack).attrs({
-  direction: 'vertical',
-  gap: 'md',
-})`
-  width: 100%;
-`;
-
 export { ActionsRow as MachineListHeader };
 
-export const MachineCountTag = styled(RediaccTag).attrs({
-  variant: 'neutral',
-  size: 'sm',
-})``;
+// MachineCountTag removed - use <RediaccTag variant="neutral" compact> directly
 
 export const MachineTagGrid = styled.div`
   display: flex;
@@ -85,10 +65,7 @@ export const MachineTagGrid = styled.div`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const MachineTag = styled(RediaccTag).attrs({
-  preset: 'machine',
-  size: 'sm',
-})``;
+// MachineTag removed - use <RediaccTag preset="machine" compact> directly
 
 export const MachineListButton = styled(RediaccButton)`
   && {
@@ -96,11 +73,10 @@ export const MachineListButton = styled(RediaccButton)`
   }
 `;
 
-export const MachineListActions = styled(RediaccStack).attrs({ direction: 'horizontal' })`
-  width: 100%;
-`;
-
-export const EmptyState = styled(EmptyStateWrapper)`
+export const EmptyState = styled(FlexColumn).attrs({
+  $gap: 'MD',
+  $align: 'center',
+})`
   padding: ${({ theme }) => `${theme.spacing.LG}px ${theme.spacing.MD}px`};
 `;
 

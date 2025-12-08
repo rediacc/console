@@ -1,83 +1,81 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  Button,
-  Tooltip,
-  Space,
-  Tag,
-  Card,
-  Row,
-  Col,
-  Table,
-  Modal,
   Alert,
+  Button,
+  Card,
+  Checkbox,
+  Col,
+  Form,
+  Modal,
   Popconfirm,
   Result,
-  Empty,
-  Form,
-  Checkbox,
+  Row,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
 } from 'antd';
-import {
-  EnvironmentOutlined,
-  ApiOutlined,
-  EditOutlined,
-  HistoryOutlined,
-  PlusOutlined,
-  DeleteOutlined,
-  KeyOutlined,
-  SyncOutlined,
-  DesktopOutlined,
-  CloudServerOutlined,
-  CheckCircleOutlined,
-} from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
-import ResourceListView from '@/components/common/ResourceListView';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
-import { ModalSize } from '@/types/modal';
-import { featureFlags } from '@/config/featureFlags';
-import type { ColumnsType } from 'antd/es/table';
+import { useSelector } from 'react-redux';
 import {
-  useRegions,
-  useCreateRegion,
-  useUpdateRegionName,
-  useDeleteRegion,
-  useUpdateRegionVault,
-  Region,
-} from '@/api/queries/regions';
-import {
+  Bridge,
   useBridges,
   useCreateBridge,
-  useUpdateBridgeName,
   useDeleteBridge,
-  useUpdateBridgeVault,
   useResetBridgeAuthorization,
-  Bridge,
+  useUpdateBridgeName,
+  useUpdateBridgeVault,
 } from '@/api/queries/bridges';
 import {
-  PageWrapper,
-  SectionStack,
-  SectionHeading,
-  RegionsListWrapper,
-  ListTitleRow,
-  ListTitle,
-  ListSubtitle,
+  Region,
+  useCreateRegion,
+  useDeleteRegion,
+  useRegions,
+  useUpdateRegionName,
+  useUpdateRegionVault,
+} from '@/api/queries/regions';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { createVersionColumn } from '@/components/common/columns';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import ResourceListView from '@/components/common/ResourceListView';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import {
   CardHeaderRow,
   CardTitle,
-  SecondaryText,
-  PaddedEmpty,
+  ErrorWrapper,
+  ListSubtitle,
+  ListTitle,
+  ListTitleRow,
   ModalStack,
   ModalStackLarge,
-  ErrorWrapper,
+  PageWrapper,
+  RediaccEmpty,
+  RediaccInput,
   RediaccText,
+  RegionsListWrapper,
+  SectionHeading,
+  SectionStack,
 } from '@/components/ui';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccInput as Input } from '@/components/ui';
-import { ModalAlert, TokenCopyRow, ACTIONS_COLUMN_WIDTH } from '@/pages/system/styles';
-import { useSelector } from 'react-redux';
+import { featureFlags } from '@/config/featureFlags';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import { ACTIONS_COLUMN_WIDTH, ModalAlert, TokenCopyRow } from '@/pages/system/styles';
+import { createSorter } from '@/platform';
 import { RootState } from '@/store/store';
-import { createSorter } from '@/core';
-import { createVersionColumn } from '@/components/common/columns';
+import { ModalSize } from '@/types/modal';
+import {
+  ApiOutlined,
+  CheckCircleOutlined,
+  CloudServerOutlined,
+  DeleteOutlined,
+  DesktopOutlined,
+  EditOutlined,
+  EnvironmentOutlined,
+  HistoryOutlined,
+  KeyOutlined,
+  PlusOutlined,
+  SyncOutlined,
+} from '@/utils/optimizedIcons';
+import type { ColumnsType } from 'antd/es/table';
 
 const InfrastructurePage: React.FC = () => {
   const { t } = useTranslation('resources');
@@ -228,7 +226,7 @@ const InfrastructurePage: React.FC = () => {
 
   const handleDeleteRegion = async (regionName: string) => {
     try {
-      await deleteRegionMutation.mutateAsync(regionName);
+      await deleteRegionMutation.mutateAsync({ regionName });
       if (selectedRegion === regionName) {
         setSelectedRegion(null);
       }
@@ -254,7 +252,6 @@ const InfrastructurePage: React.FC = () => {
 
     try {
       await resetBridgeAuthMutation.mutateAsync({
-        regionName: data.regionName,
         bridgeName: data.bridgeName,
         isCloudManaged: data.isCloudManaged,
       });
@@ -617,7 +614,9 @@ const InfrastructurePage: React.FC = () => {
                         : t('bridges.title')}
                     </CardTitle>
                     {!effectiveRegion && (
-                      <SecondaryText>{t('regions.selectRegionToView')}</SecondaryText>
+                      <RediaccText size="sm" color="secondary">
+                        {t('regions.selectRegionToView')}
+                      </RediaccText>
                     )}
                   </div>
                   {effectiveRegion && (
@@ -636,9 +635,10 @@ const InfrastructurePage: React.FC = () => {
                 </CardHeaderRow>
 
                 {!effectiveRegion ? (
-                  <PaddedEmpty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  <RediaccEmpty
+                    variant="minimal"
                     description={t('regions.selectRegionPrompt')}
+                    style={{ paddingTop: 80, paddingBottom: 80 }}
                   />
                 ) : (
                   <LoadingWrapper
@@ -724,7 +724,7 @@ const InfrastructurePage: React.FC = () => {
                 <div>
                   <RediaccText weight="bold">{t('bridges.tokenLabel')}</RediaccText>
                   <TokenCopyRow>
-                    <Input fullWidth value={token} readOnly autoComplete="off" />
+                    <RediaccInput fullWidth value={token} readOnly autoComplete="off" />
                     <Button
                       icon={<KeyOutlined />}
                       onClick={() => {
@@ -762,7 +762,12 @@ const InfrastructurePage: React.FC = () => {
         resourceType={unifiedModal.state.data?.resourceType || 'region'}
         mode={unifiedModal.state.data?.mode || 'create'}
         existingData={
-          unifiedModal.state.data?.data as Partial<Region> | Partial<Bridge> | undefined
+          unifiedModal.state.data?.data
+            ? {
+                ...unifiedModal.state.data.data,
+                vaultVersion: unifiedModal.state.data.data.vaultVersion ?? undefined,
+              }
+            : undefined
         }
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={

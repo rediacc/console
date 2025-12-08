@@ -1,38 +1,31 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Modal,
-  Typography,
-  Space,
   Alert,
   Button,
-  Collapse,
   Checkbox,
+  Collapse,
+  Modal,
+  message,
+  Space,
   Tabs,
   Tag,
-  message,
+  Typography,
 } from 'antd';
-import {
-  RocketOutlined,
-  CopyOutlined,
-  CheckOutlined,
-  CodeOutlined,
-  QuestionCircleOutlined,
-  WindowsOutlined,
-  AppleOutlined,
-  DesktopOutlined,
-} from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
-import { pipInstallationService, InstallOptions } from '@/services/pipInstallationService';
+import { RediaccStack, RediaccText } from '@/components/ui';
+import { InstallOptions, pipInstallationService } from '@/services/pipInstallationService';
 import { ModalSize } from '@/types/modal';
 import {
-  CommandContainer,
-  CommandDescription,
-  CommandBox,
-  CommandCode,
-  CopyButton,
-  ContentSpace,
-  NotesList,
-} from './styles';
+  AppleOutlined,
+  CheckOutlined,
+  CodeOutlined,
+  CopyOutlined,
+  DesktopOutlined,
+  QuestionCircleOutlined,
+  RocketOutlined,
+  WindowsOutlined,
+} from '@/utils/optimizedIcons';
+import { CommandBox, CommandContainer, CopyButton, NotesList } from './styles';
 
 const { Text, Title } = Typography;
 
@@ -70,13 +63,31 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
   const formattedCommands = pipInstallationService.formatCommandsForDisplay([command]);
   const { isCommand, isComment } = formattedCommands[0];
 
+  const getCodeColor = (isComment: boolean, isCommand: boolean) => {
+    if (isComment) return 'tertiary';
+    if (isCommand) return 'primary';
+    return 'primary';
+  };
+
   return (
     <CommandContainer data-testid="pip-install-command-display">
-      {description && <CommandDescription color="secondary">{description}</CommandDescription>}
+      {description && (
+        <RediaccText variant="description" style={{ display: 'block', marginBottom: 4 }}>
+          {description}
+        </RediaccText>
+      )}
       <CommandBox data-testid="pip-install-command-text">
-        <CommandCode code $isComment={isComment} $isCommand={isCommand}>
+        <RediaccText
+          size="sm"
+          color={getCodeColor(isComment, isCommand)}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            fontFamily: "'Monaco', 'Menlo', 'Consolas', monospace",
+          }}
+        >
           {command}
-        </CommandCode>
+        </RediaccText>
         {showCopy && (
           <CopyButton
             icon={copied ? <CheckOutlined /> : <CopyOutlined />}
@@ -131,7 +142,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   };
 
   const renderQuickInstall = () => (
-    <ContentSpace direction="vertical" gap="lg">
+    <RediaccStack direction="vertical" gap="lg" fullWidth>
       <Alert
         message={t('resources:pipInstall.quickInstallTitle')}
         description={t('resources:pipInstall.quickInstallDesc')}
@@ -203,7 +214,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
       >
         {t('resources:pipInstall.copyAllCommands')}
       </Button>
-    </ContentSpace>
+    </RediaccStack>
   );
 
   const renderAdvancedOptions = () => (
@@ -216,19 +227,19 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           label: t('resources:pipInstall.virtualEnvironment'),
           extra: <Tag color="green">{t('resources:pipInstall.recommended')}</Tag>,
           children: (
-            <ContentSpace direction="vertical">
+            <RediaccStack direction="vertical" fullWidth>
               <Text>{virtualEnvInstructions.description}</Text>
               {virtualEnvInstructions.commands.map((cmd, index) => (
                 <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
               ))}
-            </ContentSpace>
+            </RediaccStack>
           ),
         },
         {
           key: 'version',
           label: t('resources:pipInstall.specificVersion'),
           children: (
-            <ContentSpace direction="vertical">
+            <RediaccStack direction="vertical" fullWidth>
               <Text>{t('resources:pipInstall.versionDesc')}</Text>
               <CommandDisplay command="pip install rediacc==1.0.0" />
               <CommandDisplay command="pip install rediacc>=1.0.0,<2.0.0" />
@@ -236,19 +247,19 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                 command="pip install --upgrade rediacc"
                 description={t('resources:pipInstall.upgradeDesc')}
               />
-            </ContentSpace>
+            </RediaccStack>
           ),
         },
         {
           key: 'uninstall',
           label: t('resources:pipInstall.uninstall'),
           children: (
-            <ContentSpace direction="vertical">
+            <RediaccStack direction="vertical" fullWidth>
               <Text>{uninstallInstructions.description}</Text>
               {uninstallInstructions.commands.map((cmd, index) => (
                 <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
               ))}
-            </ContentSpace>
+            </RediaccStack>
           ),
         },
       ]}
@@ -256,7 +267,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   );
 
   const renderTroubleshooting = () => (
-    <ContentSpace direction="vertical" gap="lg">
+    <RediaccStack direction="vertical" gap="lg" fullWidth>
       <Alert
         message={t('resources:pipInstall.commonIssues')}
         type="info"
@@ -276,12 +287,12 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
               const troubleshooting =
                 pipInstallationService.getTroubleshootingCommands('pip-not-found');
               return (
-                <ContentSpace direction="vertical">
+                <RediaccStack direction="vertical" fullWidth>
                   <Text>{troubleshooting.description}</Text>
                   {troubleshooting.commands.map((cmd, index) => (
                     <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
                   ))}
-                </ContentSpace>
+                </RediaccStack>
               );
             })(),
           },
@@ -293,12 +304,12 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
               const troubleshooting =
                 pipInstallationService.getTroubleshootingCommands('permission-denied');
               return (
-                <ContentSpace direction="vertical">
+                <RediaccStack direction="vertical" fullWidth>
                   <Text>{troubleshooting.description}</Text>
                   {troubleshooting.commands.map((cmd, index) => (
                     <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
                   ))}
-                </ContentSpace>
+                </RediaccStack>
               );
             })(),
           },
@@ -309,12 +320,12 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
               const troubleshooting =
                 pipInstallationService.getTroubleshootingCommands('python-version');
               return (
-                <ContentSpace direction="vertical">
+                <RediaccStack direction="vertical" fullWidth>
                   <Text>{troubleshooting.description}</Text>
                   {troubleshooting.commands.map((cmd, index) => (
                     <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
                   ))}
-                </ContentSpace>
+                </RediaccStack>
               );
             })(),
           },
@@ -324,7 +335,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
       <Alert
         message={t('resources:pipInstall.stillNeedHelp')}
         description={
-          <ContentSpace direction="vertical">
+          <RediaccStack direction="vertical" fullWidth>
             <Text>
               {t('resources:pipInstall.checkDocs')}:{' '}
               <a
@@ -347,12 +358,12 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                 GitHub Issues
               </a>
             </Text>
-          </ContentSpace>
+          </RediaccStack>
         }
         type="info"
         data-testid="pip-install-help-alert"
       />
-    </ContentSpace>
+    </RediaccStack>
   );
 
   const getModalTitle = () => {

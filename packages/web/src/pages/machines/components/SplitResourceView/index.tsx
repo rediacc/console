@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Machine, Repo } from '@/types';
+import React, { useEffect, useState } from 'react';
 import { MachineTable } from '@/components/resources/internal/MachineTable';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { DETAIL_PANEL } from '@/constants/layout';
+import { usePanelWidth } from '@/hooks/usePanelWidth';
+import { Machine, Repo } from '@/types';
 import { Backdrop, LeftPanel, SplitViewContainer } from './styles';
 
 export interface ContainerData {

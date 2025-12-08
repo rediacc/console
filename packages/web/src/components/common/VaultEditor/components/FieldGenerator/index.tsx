@@ -1,28 +1,26 @@
 import React, { useState } from 'react';
-import { Popover, message, Tooltip } from 'antd';
-import { KeyOutlined, ReloadOutlined, CopyOutlined, CheckOutlined } from '@/utils/optimizedIcons';
+import { message, Popover, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { InlineStack } from '@/components/common/styled';
+import { RediaccStack, RediaccText } from '@/components/ui';
 import {
-  generateSSHKeyPair,
-  generateRepoCredential,
   GenerationOptions,
+  generateRepoCredential,
+  generateSSHKeyPair,
 } from '@/utils/cryptoGenerators';
+import { CheckOutlined, CopyOutlined, KeyOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { RediaccText } from '@/components/ui';
 import {
-  PopoverContainer,
-  OptionLabel,
-  OptionGroup,
-  OptionRadio,
-  GeneratedValueCard,
-  ValueHeader,
-  ValueContent,
-  ActionRow,
   ControlButton,
-  GeneratorButton,
-  TitleStack,
   CopyButton,
-  OptionsStack,
+  GeneratedValueCard,
+  GeneratorButton,
+  OptionGroup,
+  OptionLabel,
+  OptionRadio,
+  PopoverContainer,
+  ValueContent,
+  ValueHeader,
 } from './styles';
 
 interface FieldGeneratorProps {
@@ -130,7 +128,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   const currentKeySize: 2048 | 4096 = keyOptions.keySize ?? 2048;
 
   const renderSSHKeyOptions = () => (
-    <OptionsStack direction="vertical">
+    <RediaccStack direction="vertical" fullWidth>
       {renderRadioGroup(t('fieldGenerator.keyType'), currentKeyType, keyTypeOptions, (val) =>
         setKeyOptions({ ...keyOptions, keyType: val })
       )}
@@ -138,11 +136,11 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
         renderRadioGroup(t('fieldGenerator.keySize'), currentKeySize, keySizeOptions, (val) =>
           setKeyOptions({ ...keyOptions, keySize: val })
         )}
-    </OptionsStack>
+    </RediaccStack>
   );
 
   const renderGeneratedValues = () => (
-    <OptionsStack direction="vertical">
+    <RediaccStack direction="vertical" fullWidth>
       {Object.entries(generatedValues).map(([field, value]) => (
         <GeneratedValueCard key={field}>
           <ValueHeader>
@@ -165,7 +163,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
           <ValueContent>{value}</ValueContent>
         </GeneratedValueCard>
       ))}
-    </OptionsStack>
+    </RediaccStack>
   );
 
   const popoverContent = (
@@ -174,7 +172,12 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
 
       {Object.keys(generatedValues).length > 0 && renderGeneratedValues()}
 
-      <ActionRow>
+      <RediaccStack
+        direction="horizontal"
+        justify="end"
+        fullWidth
+        style={{ marginTop: `${DESIGN_TOKENS.SPACING.MD}px` }}
+      >
         {Object.keys(generatedValues).length === 0 ? (
           <ControlButton
             variant="primary"
@@ -210,7 +213,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
             </ControlButton>
           </>
         )}
-      </ActionRow>
+      </RediaccStack>
     </PopoverContainer>
   );
 
@@ -218,10 +221,10 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     <Popover
       content={popoverContent}
       title={
-        <TitleStack>
+        <InlineStack>
           <KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />
           <span>{t(`fieldGenerator.title.${fieldType}`)}</span>
-        </TitleStack>
+        </InlineStack>
       }
       trigger="click"
       open={visible}

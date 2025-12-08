@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
-import Table from 'cli-table3';
 import chalk from 'chalk';
+import Table from 'cli-table3';
 import { stringify as yamlStringify } from 'yaml';
 import type { OutputFormat } from '../types/index.js';
 

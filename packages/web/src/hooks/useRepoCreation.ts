@@ -1,12 +1,12 @@
-﻿import { useCreateRepo } from '@/api/queries/repos';
+﻿import { useTranslation } from 'react-i18next';
+import { api } from '@/api/client';
+import { useCreateRepo } from '@/api/queries/repos';
 import { useTeams } from '@/api/queries/teams';
+import { useDropdownData } from '@/api/queries/useDropdownData';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { useDropdownData } from '@/api/queries/useDropdownData';
-import { showMessage } from '@/utils/messages';
-import { api } from '@/api/client';
-import { useTranslation } from 'react-i18next';
 import type { Machine } from '@/types';
+import { showMessage } from '@/utils/messages';
 
 interface RepoCreationData {
   repoName: string;
@@ -81,7 +81,7 @@ export function useRepoCreation(machines: Machine[]): UseRepoCreationReturn {
           await new Promise((resolve) => setTimeout(resolve, 500));
 
           // Fetch the created repo to get its vault with credentials
-          const repoList = await api.repos.list(data.teamName);
+          const repoList = await api.repos.list({ teamName: data.teamName });
           const createdRepo = repoList.find((repo) => repo.repoName === data.repoName);
 
           const repoVault = createdRepo?.vaultContent || data.vaultContent || '{}';

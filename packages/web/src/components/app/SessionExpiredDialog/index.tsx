@@ -1,20 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ClockCircleOutlined, LogoutOutlined } from '@/utils/optimizedIcons';
-import { RootState } from '@/store/store';
+import { InlineStack } from '@/components/common/styled';
+import { IconWrapper, RediaccStack, RediaccText } from '@/components/ui';
 import { hideSessionExpiredDialog, setStayLoggedOutMode } from '@/store/auth/authSlice';
+import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
-import {
-  StyledModal,
-  TitleStack,
-  DangerTitle,
-  ContentStack,
-  DescriptionText,
-  CountdownCard,
-  CountdownText,
-  FooterButton,
-} from './styles';
-import { IconWrapper } from '@/components/ui';
+import { ClockCircleOutlined, LogoutOutlined } from '@/utils/optimizedIcons';
+import { CountdownCard, FooterButton, StyledModal } from './styles';
 
 const COUNTDOWN_DURATION = 60; // 60 seconds
 
@@ -74,12 +66,18 @@ export const SessionExpiredDialog: React.FC = () => {
   return (
     <StyledModal
       title={
-        <TitleStack>
+        <InlineStack>
           <IconWrapper $tone="danger">
             <ClockCircleOutlined />
           </IconWrapper>
-          <DangerTitle>Session Expired</DangerTitle>
-        </TitleStack>
+          <RediaccText
+            size="xl"
+            weight="semibold"
+            style={{ margin: 0, color: 'var(--color-error)' }}
+          >
+            Session Expired
+          </RediaccText>
+        </InlineStack>
       }
       open={isVisible}
       onCancel={handleStayLoggedOut}
@@ -101,19 +99,21 @@ export const SessionExpiredDialog: React.FC = () => {
         </FooterButton>,
       ]}
     >
-      <ContentStack>
+      <RediaccStack variant="spaced-column" fullWidth>
         <span>
           Your session has expired for security reasons. You have been automatically logged out.
         </span>
 
-        <DescriptionText>
+        <RediaccText color="secondary">
           You can stay on this page or continue to the login screen to sign in again.
-        </DescriptionText>
+        </RediaccText>
 
         <CountdownCard>
-          <CountdownText>Automatically redirecting in {formatTime(countdown)}</CountdownText>
+          <RediaccText weight="semibold" style={{ color: 'var(--color-error)' }}>
+            Automatically redirecting in {formatTime(countdown)}
+          </RediaccText>
         </CountdownCard>
-      </ContentStack>
+      </RediaccStack>
     </StyledModal>
   );
 };

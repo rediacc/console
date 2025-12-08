@@ -1,31 +1,29 @@
-import styled, { css, keyframes } from 'styled-components';
-import { Table, Typography, Segmented, Row } from 'antd';
-import type { TableProps } from 'antd';
 import type { ComponentType } from 'react';
-import type { StyledTheme } from '@/styles/styledTheme';
-import { RightOutlined } from '@/utils/optimizedIcons';
-// Import Button directly to avoid circular dependency with @/components/ui barrel
-import { RediaccButton } from '@/components/ui/Button';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccTag } from '@/components/ui/Tag';
-// Import Rediacc components
-import { RediaccCard } from '@/components/ui/Card';
+import { Row, Segmented, Table, Typography } from 'antd';
+import styled, { css, keyframes } from 'styled-components';
+// Import Rediacc components directly to avoid circular dependencies
+// (barrel export @/components/ui includes card.tsx which imports from primitives)
 import { RediaccAlert } from '@/components/ui/Alert';
-import { RediaccStack } from '@/components/ui/Stack';
 import { RediaccBadge } from '@/components/ui/Badge';
+import { RediaccButton } from '@/components/ui/Button';
+import { RediaccCard } from '@/components/ui/Card';
 import { RediaccEmpty } from '@/components/ui/Empty';
-import { RediaccModal } from '@/components/ui/Modal';
 // Import unified form components
 import {
-  RediaccInput,
-  RediaccPasswordInput,
-  RediaccTextArea,
-  RediaccInputNumber,
-  RediaccSearchInput,
-  RediaccSelect,
   RediaccCheckbox,
   RediaccDatePicker,
+  RediaccInput,
+  RediaccPasswordInput,
+  RediaccSearchInput,
+  RediaccSelect,
 } from '@/components/ui/Form';
+import { RediaccModal } from '@/components/ui/Modal';
+import { RediaccTag } from '@/components/ui/Tag';
+import { RediaccText } from '@/components/ui/Text';
+import { borderedCard } from '@/styles/mixins';
+import type { StyledTheme } from '@/styles/styledTheme';
+import { RightOutlined } from '@/utils/optimizedIcons';
+import type { TableProps } from 'antd';
 
 // ============================================
 // SHARED ANIMATIONS
@@ -216,10 +214,6 @@ const resolveDimensionValue = (
   return theme.dimensions[token];
 };
 
-const fullWidthControlStyles = css`
-  width: 100%;
-`;
-
 export const PageContainer = styled.div.attrs({ className: 'page-container' })`
   width: 100%;
 `;
@@ -265,8 +259,7 @@ export const ExpandIcon = styled(RightOutlined)<{
 `;
 
 export const TableContainer = styled.div`
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+  ${borderedCard()}
   overflow: hidden;
   background: ${({ theme }) => theme.colors.bgPrimary};
 `;
@@ -289,20 +282,6 @@ export const TableCellText = styled.span<{
 // FILTER COMPONENTS
 // ============================================
 
-export const FiltersCard = styled(RediaccCard)`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-  padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-`;
-
-export const FiltersGrid = styled(RediaccStack).attrs({
-  gap: 'sm',
-  wrap: true,
-  direction: 'horizontal',
-})`
-  width: 100%;
-`;
-
 export const FilterSelect = styled(RediaccSelect)<{ $minWidth?: number }>`
   min-width: ${({ $minWidth }) => ($minWidth ? `${$minWidth}px` : '150px')};
 `;
@@ -323,23 +302,32 @@ export const FilterCheckbox = styled(RediaccCheckbox)`
 // STATS COMPONENTS
 // ============================================
 
-export const StatsBar = styled(RediaccStack).attrs({ gap: 'sm', direction: 'horizontal' })`
-  align-items: center;
-  flex-wrap: wrap;
-`;
-
-export const StatItem = styled(RediaccStack).attrs({ gap: 'xs', direction: 'horizontal' })`
-  align-items: center;
-`;
-
-export const StatLabel = styled(RediaccText).attrs({ variant: 'caption', color: 'secondary' })``;
+// Resolve variant to theme color
+const resolveStatVariantColor = (
+  variant: StatusVariant | undefined,
+  theme: StyledTheme
+): string => {
+  if (!variant) return theme.colors.textPrimary;
+  switch (variant) {
+    case 'success':
+      return theme.colors.success;
+    case 'warning':
+      return theme.colors.warning;
+    case 'error':
+      return theme.colors.error;
+    case 'info':
+      return theme.colors.info;
+    default:
+      return theme.colors.textPrimary;
+  }
+};
 
 export const StatValue = styled(RediaccText).attrs(() => ({
   variant: 'caption',
   weight: 'semibold',
-}))<{ $color?: string }>`
+}))<{ $color?: string; $variant?: StatusVariant }>`
   && {
-    color: ${({ $color, theme }) => $color || theme.colors.textPrimary};
+    color: ${({ $color, $variant, theme }) => $color || resolveStatVariantColor($variant, theme)};
   }
 `;
 
@@ -373,17 +361,13 @@ export const TabCount = styled(RediaccBadge)<{ $color?: string }>`
 // EMPTY STATE COMPONENTS
 // ============================================
 
-export const PaddedEmpty = styled(RediaccEmpty)`
-  padding: ${({ theme }) => theme.spacing.XXL}px 0;
-`;
-
 export const EmptyStateWrapper = styled.div`
   padding: ${({ theme }) => theme.spacing.XXL}px 0;
   text-align: center;
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-export const EmptyStatePanel = styled(PaddedEmpty)<{
+export const EmptyStatePanel = styled(RediaccEmpty)<{
   $align?: 'center' | 'flex-start';
   $gap?: SpacingValue;
   $marginTop?: SpacingValue;
@@ -402,6 +386,10 @@ export const EmptyStatePanel = styled(PaddedEmpty)<{
         ? `margin-bottom: ${resolveSpacingValue(theme, $marginBottom)}px;`
         : ''}
   }
+`;
+
+export const StyledEmpty = styled(RediaccEmpty)`
+  padding: ${({ theme }) => theme.spacing.XXL}px 0;
 `;
 
 export const LoadingState = styled.div<{
@@ -469,21 +457,6 @@ export const ActionBar = styled.div`
   justify-content: flex-end;
 `;
 
-export const CardTitle = styled(RediaccText)`
-  && {
-    margin: 0;
-    font-size: ${({ theme }) => theme.fontSize.H4}px;
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-`;
-
-export const HelperText = styled(RediaccText).attrs({ size: 'sm', color: 'secondary' })`
-  && {
-    margin: 0;
-  }
-`;
-
 export const CaptionText = styled(RediaccText).attrs<{ $muted?: boolean; $size?: number }>(
   ({ $muted }) => ({
     variant: 'caption',
@@ -493,12 +466,6 @@ export const CaptionText = styled(RediaccText).attrs<{ $muted?: boolean; $size?:
   && {
     margin: 0;
     ${({ $size }) => ($size !== undefined ? `font-size: ${$size}px;` : '')}
-  }
-`;
-
-export const FormLabel = styled(RediaccText).attrs({ weight: 'medium', color: 'primary' })`
-  && {
-    margin: 0;
   }
 `;
 
@@ -615,40 +582,6 @@ export const ModalTitleRow = styled.div<{ $gap?: SpacingValue }>`
 `;
 
 // ============================================
-// FORM CONTROL PRIMITIVES
-// ============================================
-
-export const FullWidthInput = styled(RediaccInput)`
-  && {
-    ${fullWidthControlStyles};
-  }
-`;
-
-export const FullWidthPasswordInput = styled(RediaccPasswordInput)`
-  && {
-    ${fullWidthControlStyles};
-  }
-`;
-
-export const FullWidthTextArea = styled(RediaccTextArea)`
-  && {
-    ${fullWidthControlStyles};
-  }
-`;
-
-export const FullWidthInputNumber = styled(RediaccInputNumber)`
-  && {
-    ${fullWidthControlStyles};
-  }
-`;
-
-export const FullWidthSelect = styled(RediaccSelect)`
-  && {
-    ${fullWidthControlStyles};
-  }
-`;
-
-// ============================================
 // ALERT VARIANTS
 // ============================================
 
@@ -705,8 +638,7 @@ export const AlertCard = styled(RediaccAlert)<{ $variant?: AlertVariant }>`
 `;
 
 export const BaseTable = styled(GenericTable)<{ $isInteractive?: boolean }>`
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+  ${borderedCard()}
   overflow: hidden;
 
   .ant-table {
@@ -770,12 +702,6 @@ export const SelectableCard = styled(RediaccCard)<{
   }
 `;
 
-export const SpacedCard = styled(RediaccCard)`
-  && {
-    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-  }
-`;
-
 // ============================================
 // ADDITIONAL TEXT VARIANTS
 // ============================================
@@ -797,14 +723,6 @@ export const TitleText = styled(RediaccText).attrs({ weight: 'semibold', color: 
       return sizes[$level] || theme.fontSize.H4;
     }}px;
     line-height: ${({ theme }) => theme.lineHeight.TIGHT};
-  }
-`;
-
-export const SecondaryText = styled(RediaccText).attrs({ color: 'secondary' })``;
-
-export const ItalicText = styled(RediaccText).attrs({ color: 'secondary' })`
-  && {
-    font-style: italic;
   }
 `;
 
@@ -858,10 +776,6 @@ export const CenteredContent = styled.div`
 
 export const CenteredRow = styled(Row)`
   text-align: center;
-`;
-
-export const FullWidthSpace = styled(RediaccStack).attrs({ direction: 'vertical' })`
-  width: 100%;
 `;
 
 // ============================================
@@ -1011,16 +925,6 @@ export const SearchInput = styled(RediaccSearchInput)`
     min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
   }
 `;
-
-// ============================================
-// ALERT VARIANTS
-// ============================================
-
-export const ErrorAlert = styled(AlertCard).attrs({ $variant: 'error' })``;
-
-export const WarningAlert = styled(AlertCard).attrs({ $variant: 'warning' })``;
-
-export const InfoAlert = styled(AlertCard).attrs({ $variant: 'info' })``;
 
 // ============================================
 // LOADING COMPONENTS

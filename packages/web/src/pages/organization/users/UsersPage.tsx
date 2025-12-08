@@ -1,42 +1,42 @@
 import React, { useState } from 'react';
-import { Button, Tooltip, Space, Tag, Popconfirm, Modal, Form, Select } from 'antd';
-import {
-  UserOutlined,
-  SafetyOutlined,
-  CheckCircleOutlined,
-  CheckOutlined,
-  StopOutlined,
-  HistoryOutlined,
-  PlusOutlined,
-} from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import ResourceListView from '@/components/common/ResourceListView';
-import ResourceForm from '@/pages/organization/users/components/ResourceForm';
-import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createUserSchema, CreateUserForm } from '@/utils/validation';
-import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import { Button, Form, Modal, Popconfirm, Select, Space, Tag, Tooltip } from 'antd';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import {
-  useUsers,
+  PermissionGroup,
+  usePermissionGroups as usePermissionGroupsQuery,
+} from '@/api/queries/permissions';
+import {
+  User,
+  useAssignUserPermissions,
   useCreateUser,
   useDeactivateUser,
   useReactivateUser,
-  useAssignUserPermissions,
-  User,
+  useUsers,
 } from '@/api/queries/users';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import ResourceListView from '@/components/common/ResourceListView';
 import {
-  usePermissionGroups as usePermissionGroupsQuery,
-  PermissionGroup,
-} from '@/api/queries/permissions';
-import {
-  PageWrapper as UsersPageWrapper,
-  SectionStack as UsersSectionStack,
-  SectionHeading as UsersSectionHeading,
   ListTitleRow as UsersListHeader,
-  ListTitle as UsersListTitle,
   ListSubtitle as UsersListSubtitle,
+  ListTitle as UsersListTitle,
+  PageWrapper as UsersPageWrapper,
+  SectionHeading as UsersSectionHeading,
+  SectionStack as UsersSectionStack,
 } from '@/components/ui';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import ResourceForm from '@/pages/organization/users/components/ResourceForm';
+import {
+  CheckCircleOutlined,
+  CheckOutlined,
+  HistoryOutlined,
+  PlusOutlined,
+  SafetyOutlined,
+  StopOutlined,
+  UserOutlined,
+} from '@/utils/optimizedIcons';
+import { CreateUserForm, createUserSchema } from '@/utils/validation';
 
 const UsersPage: React.FC = () => {
   const { t } = useTranslation('organization');
@@ -101,7 +101,7 @@ const UsersPage: React.FC = () => {
 
   const handleDeactivateUser = async (userEmail: string) => {
     try {
-      await deactivateUserMutation.mutateAsync(userEmail);
+      await deactivateUserMutation.mutateAsync({ userEmail });
     } catch {
       // handled by mutation
     }
@@ -109,7 +109,7 @@ const UsersPage: React.FC = () => {
 
   const handleReactivateUser = async (userEmail: string) => {
     try {
-      await reactivateUserMutation.mutateAsync(userEmail);
+      await reactivateUserMutation.mutateAsync({ userEmail });
     } catch {
       // handled by mutation
     }
@@ -195,7 +195,7 @@ const UsersPage: React.FC = () => {
               icon={<SafetyOutlined />}
               onClick={() => {
                 assignPermissionModal.open(record);
-                setSelectedUserGroup(record.permissionGroupName || '');
+                setSelectedUserGroup(record.permissionsName || '');
               }}
               data-testid={`system-user-permissions-button-${record.userEmail}`}
               aria-label={tSystem('actions.permissions')}

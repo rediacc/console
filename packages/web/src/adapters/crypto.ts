@@ -1,4 +1,4 @@
-import type { ICryptoProvider } from '@/core/types';
+import type { ICryptoProvider } from '@/platform/types';
 
 const ENCRYPTION_CONFIG = {
   SALT_LENGTH: 16,

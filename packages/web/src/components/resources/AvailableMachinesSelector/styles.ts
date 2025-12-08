@@ -1,7 +1,6 @@
-import styled from 'styled-components';
 import { Typography } from 'antd';
-import { RediaccTag } from '@/components/ui/Tag';
-import { RediaccSelect } from '@/components/ui/Form/Select';
+import styled from 'styled-components';
+import { RediaccSelect, RediaccTag } from '@/components/ui';
 import { FlexRow } from '@/styles/primitives';
 
 const { Text: AntText } = Typography;
@@ -66,12 +65,6 @@ export const BridgeTag = styled(RediaccTag).attrs({
 
 export const StatusContainer = styled(FlexRow)`
   margin-left: auto;
-`;
-
-export const StatusIcon = styled.span`
-  display: inline-flex;
-  align-items: center;
-  font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
 `;
 
 export const SpinnerWrapper = styled(FlexRow).attrs({ $justify: 'center' })`

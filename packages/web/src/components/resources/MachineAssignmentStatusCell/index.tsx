@@ -1,7 +1,7 @@
 import React from 'react';
-import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import { useMachineAssignmentStatus } from '@/api/queries/ceph';
-import MachineAssignmentStatusBadge from '../MachineAssignmentStatusBadge';
+import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
+import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import type { Machine, MachineAssignmentType } from '@/types';
 import { StatusCellWrapper } from './styles';
 

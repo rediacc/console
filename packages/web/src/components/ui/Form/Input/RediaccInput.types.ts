@@ -1,4 +1,4 @@
-import type { ReactNode, ChangeEvent, CSSProperties } from 'react';
+import type { ChangeEvent, CSSProperties, ReactNode } from 'react';
 
 export type InputVariant = 'default';
 export type InputSize = 'sm' | 'md';

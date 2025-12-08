@@ -1,54 +1,50 @@
-﻿import React, { useState, useCallback, useEffect } from 'react';
+﻿import React, { useCallback, useEffect, useState } from 'react';
 import { Empty, Modal, Tooltip } from 'antd';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PlusOutlined, WifiOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
-import { showMessage } from '@/utils/messages';
-import { SplitResourceView } from '@/pages/machines/components/SplitResourceView';
-import type { ContainerData } from '@/pages/machines/components/SplitResourceView';
-import {
-  useCreateMachine,
-  useUpdateMachineName,
-  useUpdateMachineBridge,
-  useUpdateMachineVault,
-  useDeleteMachine,
-  useMachines,
-} from '@/api/queries/machines';
-import { useRepos, Repo } from '@/api/queries/repos';
-import { useStorage } from '@/api/queries/storage';
-import { useQueueAction } from '@/hooks/useQueueAction';
-import { useUnifiedModal, useTeamSelection, useQueueTraceModal, useDialogState } from '@/hooks';
-import { confirmDelete } from '@/utils/confirmations';
-import TeamSelector from '@/components/common/TeamSelector';
-import { type Machine } from '@/types';
-import { QueueFunction } from '@/api/queries/queue';
-import type { QueueActionParams } from '@/services/queueActionService';
-import { FUNCTION_DEFINITIONS } from '@/services/functionsService';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from 'styled-components';
 import {
-  SectionStack,
-  SectionHeading,
-  PageWrapper,
-  PageCard,
-  SectionStack as HeaderSection,
-  SectionHeaderRow as HeaderRow,
-  ControlStack as TeamControls,
-  InputSlot as TeamSelectorWrapper,
+  useCreateMachine,
+  useDeleteMachine,
+  useMachines,
+  useUpdateMachineBridge,
+  useUpdateMachineName,
+  useUpdateMachineVault,
+} from '@/api/queries/machines';
+import { QueueFunction } from '@/api/queries/queue';
+import { Repo, useRepos } from '@/api/queries/repos';
+import { useStorage } from '@/api/queries/storage';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import TeamSelector from '@/components/common/TeamSelector';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import {
   ActionBar as ButtonGroup,
   ContentSection,
-  RediaccButton as Button,
+  SectionHeaderRow as HeaderRow,
+  SectionStack as HeaderSection,
+  PageCard,
+  PageWrapper,
+  RediaccButton,
+  SectionHeading,
+  SectionStack,
+  ControlStack as TeamControls,
+  InputSlot as TeamSelectorWrapper,
 } from '@/components/ui';
+import { useDialogState, useQueueTraceModal, useTeamSelection, useUnifiedModal } from '@/hooks';
+import { useQueueAction } from '@/hooks/useQueueAction';
+import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
+import type { ContainerData } from '@/pages/machines/components/SplitResourceView';
+import { SplitResourceView } from '@/pages/machines/components/SplitResourceView';
+import { FUNCTION_DEFINITIONS } from '@/services/functionsService';
+import type { QueueActionParams } from '@/services/queueActionService';
+import { type Machine } from '@/types';
+import { confirmDelete } from '@/utils/confirmations';
+import { showMessage } from '@/utils/messages';
+import { PlusOutlined, ReloadOutlined, WifiOutlined } from '@/utils/optimizedIcons';
+import type { MachineFormValues as BaseMachineFormValues } from '@rediacc/shared/types';
 
-interface MachineFormValues extends Record<string, unknown> {
-  teamName: string;
-  machineName: string;
-  bridgeName: string;
-  vaultContent?: string;
-  autoSetup?: boolean;
-}
+// Extend shared type with UI-specific field for auto-setup option
+type MachineFormValues = BaseMachineFormValues & { autoSetup?: boolean };
 
 interface MachineFunctionParams {
   repo?: string;
@@ -482,7 +478,7 @@ const MachinesPage: React.FC = () => {
                 {selectedTeams.length > 0 && (
                   <ButtonGroup>
                     <Tooltip title={t('machines:createMachine')}>
-                      <Button
+                      <RediaccButton
                         iconOnly
                         icon={<PlusOutlined />}
                         data-testid="machines-create-machine-button"
@@ -491,7 +487,7 @@ const MachinesPage: React.FC = () => {
                       />
                     </Tooltip>
                     <Tooltip title={t('machines:connectivityTest')}>
-                      <Button
+                      <RediaccButton
                         iconOnly
                         icon={<WifiOutlined />}
                         data-testid="machines-connectivity-test-button"
@@ -501,7 +497,7 @@ const MachinesPage: React.FC = () => {
                       />
                     </Tooltip>
                     <Tooltip title={t('common:actions.refresh')}>
-                      <Button
+                      <RediaccButton
                         iconOnly
                         icon={<ReloadOutlined />}
                         data-testid="machines-refresh-button"

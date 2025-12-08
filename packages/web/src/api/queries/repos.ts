@@ -1,32 +1,42 @@
-import { createResourceQuery } from '@/hooks/api/queryFactory';
-import { createMutation } from '@/hooks/api/mutationFactory';
-import { minifyJSON } from '@/utils/json';
-import type { Repo } from '@rediacc/shared/types';
 import { api } from '@/api/client';
+import { createMutation } from '@/hooks/api/mutationFactory';
+import { createResourceQuery } from '@/hooks/api/queryFactory';
+import { minifyJSON } from '@/utils/json';
+import type {
+  CreateRepositoryParams,
+  DeleteRepositoryParams,
+  GetTeamRepositories_ResultSet1,
+  PromoteRepositoryToGrandParams,
+  UpdateRepositoryNameParams,
+  UpdateRepositoryTagParams,
+  UpdateRepositoryVaultParams,
+} from '@rediacc/shared/types';
 
 // Get repos for a team or multiple teams
-export const useRepos = createResourceQuery<Repo>({
+export const useRepos = createResourceQuery<GetTeamRepositories_ResultSet1>({
   queryKey: 'repos',
   fetcher: (teamFilter) => {
     if (!teamFilter) {
       throw new Error('Team filter is required to load repositories');
     }
-    return api.repos.list(teamFilter);
+    return api.repos.list(
+      Array.isArray(teamFilter) ? { teamName: teamFilter } : { teamName: teamFilter }
+    );
   },
   enabledCheck: (teamFilter) =>
     !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
   operationName: 'repos.list',
 });
 
-// Create repo
-export const useCreateRepo = createMutation<{
-  teamName: string;
-  repoName: string;
-  repoTag?: string; // Optional repo tag (defaults to 'latest')
+// Create repo - uses custom type until service is refactored
+type CreateRepoHookParams = Pick<CreateRepositoryParams, 'teamName' | 'repoName'> & {
+  repoTag?: string;
   vaultContent?: string;
-  parentRepoName?: string; // Optional parent repo name
-  repoGuid?: string; // Optional repo GUID
-}>({
+  parentRepoName?: string;
+  repoGuid?: string;
+};
+
+export const useCreateRepo = createMutation<CreateRepoHookParams>({
   request: ({ teamName, repoName, repoTag, vaultContent, parentRepoName, repoGuid }) =>
     api.repos.create(teamName, repoName, {
       repoTag,
@@ -47,13 +57,8 @@ export const useCreateRepo = createMutation<{
 });
 
 // Update repo name
-export const useUpdateRepoName = createMutation<{
-  teamName: string;
-  currentRepoName: string;
-  newRepoName: string;
-}>({
-  request: ({ teamName, currentRepoName, newRepoName }) =>
-    api.repos.rename(teamName, currentRepoName, newRepoName),
+export const useUpdateRepoName = createMutation<UpdateRepositoryNameParams>({
+  request: (params) => api.repos.rename(params),
   invalidateKeys: ['repos', 'machines'],
   successMessage: (vars) => `Repo renamed to "${vars.newRepoName}"`,
   errorMessage: 'Failed to update repo name',
@@ -61,14 +66,8 @@ export const useUpdateRepoName = createMutation<{
 });
 
 // Update repo tag
-export const useUpdateRepoTag = createMutation<{
-  teamName: string;
-  repoName: string;
-  currentTag: string;
-  newTag: string;
-}>({
-  request: ({ teamName, repoName, currentTag, newTag }) =>
-    api.repos.renameTag(teamName, repoName, currentTag, newTag),
+export const useUpdateRepoTag = createMutation<UpdateRepositoryTagParams>({
+  request: (params) => api.repos.renameTag(params),
   invalidateKeys: ['repos', 'machines'],
   successMessage: (vars) => `Tag renamed to "${vars.newTag}"`,
   errorMessage: 'Failed to update tag',
@@ -76,14 +75,8 @@ export const useUpdateRepoTag = createMutation<{
 });
 
 // Update repo vault
-export const useUpdateRepoVault = createMutation<{
-  teamName: string;
-  repoName: string;
-  vaultContent: string;
-  vaultVersion: number;
-}>({
-  request: ({ teamName, repoName, vaultContent, vaultVersion }) =>
-    api.repos.updateVault(teamName, repoName, vaultContent, vaultVersion),
+export const useUpdateRepoVault = createMutation<UpdateRepositoryVaultParams>({
+  request: (params) => api.repos.updateVault(params),
   invalidateKeys: ['repos'],
   successMessage: (vars) => `Repo vault updated for "${vars.repoName}"`,
   errorMessage: 'Failed to update repo vault',
@@ -94,13 +87,14 @@ export const useUpdateRepoVault = createMutation<{
   operationName: 'repos.updateVault',
 });
 
-// Delete repo
-export const useDeleteRepo = createMutation<{
-  teamName: string;
-  repoName: string;
-  repoTag?: string; // Optional repo tag (defaults to 'latest')
-}>({
-  request: ({ teamName, repoName, repoTag }) => api.repos.delete(teamName, repoName, repoTag),
+// Delete repo - uses custom type to match service signature with optional repoTag
+type DeleteRepoHookParams = Pick<DeleteRepositoryParams, 'teamName' | 'repoName'> & {
+  repoTag?: string;
+};
+
+export const useDeleteRepo = createMutation<DeleteRepoHookParams>({
+  request: ({ teamName, repoName, repoTag }) =>
+    api.repos.delete({ teamName, repoName, repoTag: repoTag || 'latest' }),
   invalidateKeys: ['repos', 'teams', 'machines'],
   successMessage: (vars) =>
     `Repo "${vars.repoName}:${vars.repoTag || 'latest'}" deleted successfully`,
@@ -113,15 +107,12 @@ export const useDeleteRepo = createMutation<{
 });
 
 // Promote repo to grand (convert clone to original)
-export const usePromoteRepoToGrand = createMutation<{
-  teamName: string;
-  repoName: string;
-}>({
-  request: ({ teamName, repoName }) => api.repos.promoteToGrand(teamName, repoName),
+export const usePromoteRepoToGrand = createMutation<PromoteRepositoryToGrandParams>({
+  request: (params) => api.repos.promoteToGrand(params),
   invalidateKeys: ['repos'],
   successMessage: (vars) => `Repo "${vars.repoName}" promoted to original successfully`,
   errorMessage: 'Failed to promote repo',
   operationName: 'repos.promoteToGrand',
 });
 
-export type { Repo };
+export type { GetTeamRepositories_ResultSet1, GetTeamRepositories_ResultSet1 as Repo };

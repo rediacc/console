@@ -1,11 +1,18 @@
 import { Command } from 'commander';
-import { authService } from '../services/auth.js';
+import type {
+  CreateBridgeParams,
+  DeleteBridgeParams,
+  UpdateBridgeNameParams,
+  UpdateBridgeVaultParams,
+} from '@rediacc/shared/types';
 import { api } from '../services/api.js';
+import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
-import { withSpinner } from '../utils/spinner.js';
-import { handleError } from '../utils/errors.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
+import { handleError } from '../utils/errors.js';
+import { withSpinner } from '../utils/spinner.js';
+
 export function registerBridgeCommands(program: Command): void {
   // Create standard CRUD commands using factory
   const bridge = createResourceCommands(program, {
@@ -14,30 +21,17 @@ export function registerBridgeCommands(program: Command): void {
     nameField: 'bridgeName',
     parentOption: 'region',
     operations: {
-      list: (params) => api.bridges.list(params?.regionName as string),
-      create: (payload) =>
-        api.bridges.create(payload.regionName as string, payload.bridgeName as string),
-      rename: (payload) =>
-        api.bridges.rename(
-          payload.regionName as string,
-          payload.currentBridgeName as string,
-          payload.newBridgeName as string
-        ),
-      delete: (payload) =>
-        api.bridges.delete(payload.regionName as string, payload.bridgeName as string),
+      list: (params) => api.bridges.list({ regionName: params?.regionName as string }),
+      create: (payload) => api.bridges.create(payload as unknown as CreateBridgeParams),
+      rename: (payload) => api.bridges.rename(payload as unknown as UpdateBridgeNameParams),
+      delete: (payload) => api.bridges.delete(payload as unknown as DeleteBridgeParams),
     },
     vaultConfig: {
       fetch: (params) => api.company.getAllVaults(params),
       vaultType: 'Bridge',
     },
     vaultUpdateConfig: {
-      update: (payload) =>
-        api.bridges.updateVault(
-          payload.regionName as string,
-          payload.bridgeName as string,
-          payload.vaultContent as string,
-          payload.vaultVersion as number
-        ),
+      update: (payload) => api.bridges.updateVault(payload as unknown as UpdateBridgeVaultParams),
       vaultFieldName: 'vaultContent',
     },
   });
@@ -59,7 +53,7 @@ export function registerBridgeCommands(program: Command): void {
 
         const authToken = await withSpinner(
           `Resetting authorization for bridge "${name}"...`,
-          () => api.bridges.resetAuthorization(opts.region as string, name),
+          () => api.bridges.resetAuthorization({ bridgeName: name, isCloudManaged: false }),
           'Authorization reset'
         );
 

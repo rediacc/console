@@ -1,16 +1,8 @@
-import styled from 'styled-components';
 import { Statistic } from 'antd';
-import { ReloadOutlined } from '@/utils/optimizedIcons';
-import { FlexRow, StyledIcon } from '@/styles/primitives';
+import styled from 'styled-components';
 import { RediaccCard } from '@/components/ui';
-
-export const SummaryCard = styled(RediaccCard)`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-`;
-
-export const LoadingCard = styled(RediaccCard)`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-`;
+import { FlexRow, StyledIcon } from '@/styles/primitives';
+import { ReloadOutlined } from '@/utils/optimizedIcons';
 
 export const LoadingContent = styled(FlexRow).attrs({ $justify: 'center' })`
   padding: ${({ theme }) => theme.spacing.LG}px 0;
@@ -24,14 +16,14 @@ export const RefreshButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-secondary);
+  color: ${({ theme }) => theme.colors.textSecondary};
   cursor: pointer;
   transition: color ${({ theme }) => theme.transitions.FAST},
     background ${({ theme }) => theme.transitions.FAST};
 
   &:hover {
-    color: var(--color-primary);
-    background: var(--color-fill-tertiary);
+    color: ${({ theme }) => theme.colors.primary};
+    background: ${({ theme }) => theme.colors.bgHover};
   }
 `;
 
@@ -46,7 +38,7 @@ export const StatCard = styled(RediaccCard)`
 
 export const SummaryStatistic = styled(Statistic)<{ $accent?: string }>`
   && .ant-statistic-content-value {
-    color: ${({ $accent }) => $accent || 'var(--color-text-primary)'};
+    color: ${({ $accent, theme }) => $accent || theme.colors.textPrimary};
   }
 `;
 

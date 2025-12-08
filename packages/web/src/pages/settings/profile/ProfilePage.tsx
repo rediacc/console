@@ -1,40 +1,38 @@
 import React from 'react';
-import { Tooltip, Modal, Form } from 'antd';
+import { Form, Modal, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import {
-  UserOutlined,
-  SettingOutlined,
-  KeyOutlined,
-  SafetyCertificateOutlined,
-} from '@/utils/optimizedIcons';
-import { RootState } from '@/store/store';
-import { logout } from '@/store/auth/authSlice';
-import { featureFlags } from '@/config/featureFlags';
-import { useUserVault, useUpdateUserVault, useUpdateUserPassword } from '@/api/queries/users';
+import { useUpdateUserPassword, useUpdateUserVault, useUserVault } from '@/api/queries/users';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
-import TwoFactorSettings from '@/pages/settings/profile/components/TwoFactorSettings';
-import { ModalSize } from '@/types/modal';
-import { useDialogState, useModalForm } from '@/hooks';
-import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields';
+import { PasswordConfirmField, PasswordField } from '@/components/forms/FormFields';
 import {
-  RediaccButton as Button,
-  PageWrapper,
-  SectionStack,
-  SectionHeading,
-} from '@/components/ui';
-import {
+  CardActions,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardActions,
   IconWrapper,
-  RequirementsList,
   ModalActions,
+  PageWrapper,
+  RediaccButton,
+  RequirementsList,
+  SectionHeading,
+  SectionStack,
 } from '@/components/ui';
-import { SettingsCard, ModalAlert, FormItemActions } from '@/pages/system/styles';
+import { featureFlags } from '@/config/featureFlags';
+import { useDialogState, useModalForm } from '@/hooks';
+import TwoFactorSettings from '@/pages/settings/profile/components/TwoFactorSettings';
+import { FormItemActions, ModalAlert, SettingsCard } from '@/pages/system/styles';
+import { logout } from '@/store/auth/authSlice';
+import { RootState } from '@/store/store';
+import { ModalSize } from '@/types/modal';
+import {
+  KeyOutlined,
+  SafetyCertificateOutlined,
+  SettingOutlined,
+  UserOutlined,
+} from '@/utils/optimizedIcons';
 
 const ProfilePage: React.FC = () => {
   const { t } = useTranslation('settings');
@@ -132,7 +130,7 @@ const ProfilePage: React.FC = () => {
             <CardActions>
               {featureFlags.isEnabled('personalVaultConfiguration') && (
                 <Tooltip title={t('personal.configureVault')}>
-                  <Button
+                  <RediaccButton
                     icon={<SettingOutlined />}
                     onClick={() => {
                       refetchUserVault();
@@ -145,7 +143,7 @@ const ProfilePage: React.FC = () => {
                 </Tooltip>
               )}
               <Tooltip title={tSystem('actions.changePassword')}>
-                <Button
+                <RediaccButton
                   icon={<KeyOutlined />}
                   onClick={openChangePassword}
                   size="md"
@@ -154,7 +152,7 @@ const ProfilePage: React.FC = () => {
                 />
               </Tooltip>
               <Tooltip title={tSystem('actions.twoFactorAuth')}>
-                <Button
+                <RediaccButton
                   icon={<SafetyCertificateOutlined />}
                   onClick={() => twoFactorModal.open()}
                   size="md"
@@ -261,10 +259,12 @@ const ProfilePage: React.FC = () => {
 
           <FormItemActions>
             <ModalActions>
-              <Button onClick={closeChangePassword}>{tCommon('actions.cancel')}</Button>
-              <Button htmlType="submit" loading={updateUserPasswordMutation.isPending}>
+              <RediaccButton onClick={closeChangePassword}>
+                {tCommon('actions.cancel')}
+              </RediaccButton>
+              <RediaccButton htmlType="submit" loading={updateUserPasswordMutation.isPending}>
                 {t('personal.changePassword.submit', { defaultValue: 'Change Password' })}
-              </Button>
+              </RediaccButton>
             </ModalActions>
           </FormItemActions>
         </Form>

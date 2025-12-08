@@ -1,36 +1,34 @@
 import React, { useState } from 'react';
-import { Form, Input, Alert } from 'antd';
-import { RediaccCheckbox as Checkbox } from '@/components/ui/Form';
+import { Alert, Form, Input } from 'antd';
+import { useTranslation } from 'react-i18next';
+import apiClient, { api } from '@/api/client';
+import { RediaccButton, RediaccCheckbox, RediaccStack } from '@/components/ui';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { LanguageLink } from '@/pages/login/components/LanguageLink';
+import { Turnstile } from '@/pages/login/components/Turnstile';
+import { apiConnectionService } from '@/services/apiConnectionService';
+import { hashPassword } from '@/utils/auth';
+import { showMessage } from '@/utils/messages';
 import {
-  UserOutlined,
+  BankOutlined,
+  CheckCircleOutlined,
   LockOutlined,
   MailOutlined,
-  BankOutlined,
   SafetyCertificateOutlined,
-  CheckCircleOutlined,
+  UserOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { showMessage } from '@/utils/messages';
-import { hashPassword } from '@/utils/auth';
-import apiClient, { api } from '@/api/client';
-import { apiConnectionService } from '@/services/apiConnectionService';
-import { Turnstile } from '@/pages/login/components/Turnstile';
-import { LanguageLink } from '@/pages/login/components/LanguageLink';
-import { useAsyncAction } from '@/hooks/useAsyncAction';
-import { RediaccButton as Button } from '@/components/ui';
 import {
-  StyledModal,
-  VerticalStack,
-  FormField,
-  TermsRow,
-  TermsField,
   CaptchaWrapper,
   CodeInput,
+  FormField,
+  StepsWrapper,
+  StyledModal,
   SuccessContainer,
+  SuccessDescription,
   SuccessIcon,
   SuccessTitle,
-  SuccessDescription,
-  StepsWrapper,
+  TermsField,
+  TermsRow,
 } from './styles';
 
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
@@ -378,7 +376,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           ]}
           $noMargin
         >
-          <Checkbox>
+          <RediaccCheckbox>
             {
               t(
                 'auth:registration.termsText',
@@ -405,7 +403,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 'I accept the terms and conditions {terms} and {privacy}'
               ).split('{privacy}')[1]
             }
-          </Checkbox>
+          </RediaccCheckbox>
         </TermsField>
 
         {/* Cloudflare Turnstile - only render if enabled and not in CI mode */}
@@ -423,7 +421,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       </TermsRow>
 
       <FormField $noMargin>
-        <Button
+        <RediaccButton
           htmlType="submit"
           fullWidth
           size="md"
@@ -432,7 +430,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           data-testid="registration-submit-button"
         >
           {t('auth:registration.createAccount')}
-        </Button>
+        </RediaccButton>
       </FormField>
     </Form>
   );
@@ -445,7 +443,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       requiredMark={false}
       data-testid="registration-verification-form"
     >
-      <VerticalStack direction="vertical">
+      <RediaccStack direction="vertical" fullWidth>
         <Alert
           message={t('auth:registration.verificationRequired')}
           description={t('auth:registration.verificationDescription')}
@@ -473,7 +471,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         </FormField>
 
         <FormField $noMargin>
-          <Button
+          <RediaccButton
             htmlType="submit"
             fullWidth
             size="md"
@@ -481,9 +479,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             data-testid="registration-verify-button"
           >
             {t('auth:registration.verifyAccount')}
-          </Button>
+          </RediaccButton>
         </FormField>
-      </VerticalStack>
+      </RediaccStack>
     </Form>
   );
 
@@ -523,7 +521,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       destroyOnClose
       data-testid="registration-modal"
     >
-      <VerticalStack direction="vertical">
+      <RediaccStack direction="vertical" fullWidth>
         <StepsWrapper
           current={currentStep}
           size="small"
@@ -550,7 +548,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         )}
 
         {renderContent()}
-      </VerticalStack>
+      </RediaccStack>
     </StyledModal>
   );
 };

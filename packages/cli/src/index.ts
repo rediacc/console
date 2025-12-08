@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import { cli } from './cli.js';
-import { handleError } from './utils/errors.js';
 import { apiClient } from './services/api.js';
 import { authService } from './services/auth.js';
+import { handleError } from './utils/errors.js';
 
 async function main() {
   try {

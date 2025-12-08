@@ -6,14 +6,19 @@
 import React from 'react';
 import { Tag, Tooltip } from 'antd';
 import {
+  formatAge,
+  PRIORITY_CONFIG,
+  QUEUE_STATUS_CONFIG,
+  type QueueHealthStatus,
+} from '@/platform';
+import {
+  CheckCircleOutlined,
   ClockCircleOutlined,
+  CloseCircleOutlined,
+  ExclamationCircleOutlined,
   PlayCircleOutlined,
   WarningOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  CloseCircleOutlined,
 } from '@/utils/optimizedIcons';
-import { QUEUE_STATUS_CONFIG, PRIORITY_CONFIG, formatAge, type QueueHealthStatus } from '@/core';
 
 /**
  * Status configuration with React icon components
@@ -46,7 +51,11 @@ export const PRIORITY_ICONS: Record<number, React.ReactNode | undefined> = {
  */
 export function renderQueueStatus(
   healthStatus: string,
-  record: { status?: string; minutesSinceAssigned?: number; ageInMinutes?: number }
+  record: {
+    status?: string | null;
+    minutesSinceAssigned?: number | null;
+    ageInMinutes?: number | null;
+  }
 ): React.ReactElement {
   const config =
     QUEUE_STATUS_CONFIG[healthStatus as QueueHealthStatus] || QUEUE_STATUS_CONFIG.UNKNOWN;
@@ -80,8 +89,8 @@ export function renderQueueStatus(
  * Render priority tag with icon and tooltip
  */
 export function renderPriority(
-  priorityLabel: string | undefined,
-  priority: number | undefined,
+  priorityLabel: string | undefined | null,
+  priority: number | undefined | null,
   tooltipContent: React.ReactNode
 ): React.ReactElement | null {
   if (!priorityLabel || !priority) {

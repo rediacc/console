@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import type { QueueItemTraceModalProps } from './QueueItemTraceModal';
+import type { QueueItemTraceModalProps } from './types';
 
 const LazyQueueItemTraceModal = lazy(() => import('./QueueItemTraceModal'));
 

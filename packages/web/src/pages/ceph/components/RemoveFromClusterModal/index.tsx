@@ -1,24 +1,22 @@
 import React, { useState } from 'react';
 import { Table } from 'antd';
-import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
-import type { Machine } from '@/types';
 import { useUpdateMachineClusterAssignment } from '@/api/queries/cephMutations';
-import { showMessage } from '@/utils/messages';
-import type { ColumnsType } from 'antd/es/table';
 import { createTruncatedColumn } from '@/components/common/columns';
+import { RediaccText } from '@/components/ui';
+import { AlertCard } from '@/styles/primitives';
+import type { Machine } from '@/types';
+import { showMessage } from '@/utils/messages';
+import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import {
+  ClusterTag,
+  DangerIcon,
+  MachineNameRow,
+  MachinesTable,
   StyledModal,
   TitleStack,
-  DangerIcon,
-  InfoAlert,
-  WarningAlert,
-  MachinesTable,
-  MachineNameRow,
-  MachineNameText,
-  ClusterTag,
-  MutedText,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 interface RemoveFromClusterModalProps {
   open: boolean;
@@ -104,7 +102,9 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     renderWrapper: (content) => (
       <MachineNameRow>
         <CloudServerOutlined />
-        <MachineNameText>{content}</MachineNameText>
+        <RediaccText variant="caption" weight="semibold">
+          {content}
+        </RediaccText>
       </MachineNameRow>
     ),
   });
@@ -116,7 +116,9 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     renderText: (cluster?: string | null) => cluster || noneLabel,
     renderWrapper: (content, fullText) =>
       fullText === noneLabel ? (
-        <MutedText>{fullText}</MutedText>
+        <RediaccText variant="caption" color="muted">
+          {fullText}
+        </RediaccText>
       ) : (
         <ClusterTag>{content}</ClusterTag>
       ),
@@ -149,14 +151,21 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
       data-testid="ds-remove-cluster-modal"
     >
       {machinesWithClusters.length === 0 ? (
-        <InfoAlert message={t('machines:noMachinesWithClusters')} variant="info" showIcon />
+        <AlertCard
+          $variant="info"
+          message={t('machines:noMachinesWithClusters')}
+          variant="info"
+          showIcon
+        />
       ) : (
         <>
-          <WarningAlert
+          <AlertCard
+            $variant="warning"
             message={t('machines:removeFromClusterWarning', { count: machinesWithClusters.length })}
             description={t('machines:removeFromClusterDescription')}
             variant="warning"
             showIcon
+            style={{ marginBottom: '16px' }}
           />
 
           <MachinesTable

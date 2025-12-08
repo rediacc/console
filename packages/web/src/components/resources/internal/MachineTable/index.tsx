@@ -1,62 +1,63 @@
-﻿import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+﻿import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Button, Empty, Space, Table, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { Table, Button, Space, Tooltip } from 'antd';
-import {
-  InboxOutlined,
-  TeamOutlined,
-  GlobalOutlined,
-  CloudServerOutlined,
-  BranchesOutlined,
-  DesktopOutlined,
-  DashboardOutlined,
-  RightOutlined,
-  InfoCircleOutlined,
-} from '@/utils/optimizedIcons';
-import { useMachines } from '@/api/queries/machines';
-import type { Machine } from '@/types';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
-import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
-import { usePingFunction } from '@/services/pingService';
-import { useLocalizedFunctions } from '@/services/functionsService';
+import { useNavigate } from 'react-router-dom';
+import { useMachines } from '@/api/queries/machines';
 import { useRepos } from '@/api/queries/repos';
-import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
-import { MachineVaultStatusPanel } from '../MachineVaultStatusPanel';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
+import { RediaccEmpty } from '@/components/ui';
+import { featureFlags } from '@/config/featureFlags';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 import { AssignToClusterModal } from '@/pages/ceph/components/AssignToClusterModal';
 import { RemoveFromClusterModal } from '@/pages/ceph/components/RemoveFromClusterModal';
 import { ViewAssignmentStatusModal } from '@/pages/ceph/components/ViewAssignmentStatusModal';
-import { featureFlags } from '@/config/featureFlags';
-import { getMachineRepos as coreGetMachineRepos } from '@/core';
-import type { DeployedRepo } from '@/core/services/machine';
-import { buildMachineTableColumns } from './columns';
-import type { MachineFunctionAction } from './columns';
+import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
+import { getMachineRepos as coreGetMachineRepos } from '@/platform';
+import { useLocalizedFunctions } from '@/services/functionsService';
+import { usePingFunction } from '@/services/pingService';
+import { RootState } from '@/store/store';
+import type { Machine } from '@/types';
 import {
-  MachineTableWrapper,
-  TableContainer,
+  BranchesOutlined,
+  CloudServerOutlined,
+  DashboardOutlined,
+  DesktopOutlined,
+  GlobalOutlined,
+  InboxOutlined,
+  InfoCircleOutlined,
+  RightOutlined,
+  TeamOutlined,
+} from '@/utils/optimizedIcons';
+import type { DeployedRepo } from '@rediacc/shared/services/machine';
+import { buildMachineTableColumns } from './columns';
+import {
   BulkActionsBar,
   BulkActionsSummary,
-  ViewToggleContainer,
-  ViewToggleButton,
-  ViewToggleDivider,
-  EmptyState,
-  GroupedCardStack,
   GroupCardContainer,
+  GroupCardCount,
   GroupCardHeader,
   GroupCardIndicator,
-  GroupCardTitle,
-  GroupCardCount,
   GroupCardRow,
+  GroupCardTitle,
+  GroupedCardStack,
+  GroupHeaderTag,
+  GroupRowActionButton,
   GroupRowContent,
   GroupRowIcon,
   GroupRowInfo,
   GroupRowName,
-  GroupRowActionButton,
-  GroupHeaderTag,
+  MachineTableWrapper,
   StyledTag,
+  TableContainer,
+  ViewToggleButton,
+  ViewToggleContainer,
+  ViewToggleDivider,
 } from './styles';
+import type { MachineFunctionAction } from './columns';
+
 // Local type for group variants - maps to preset prop
 type GroupVariant = 'repo' | 'bridge' | 'team' | 'region' | 'status' | 'grand';
 
@@ -504,7 +505,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   // Render grouped table view
   const renderGroupedTableView = () => {
     if (Object.keys(groupedMachinesForTable).length === 0) {
-      return <EmptyState description={t('resources:repos.noRepos')} />;
+      return (
+        <RediaccEmpty
+          variant="minimal"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={t('resources:repos.noRepos')}
+          style={{ marginTop: 64 }}
+        />
+      );
     }
 
     const variantMap: Record<GroupByMode, GroupVariant> = {

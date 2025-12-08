@@ -1,13 +1,8 @@
+import { Input as AntdInput, Form } from 'antd';
 import styled from 'styled-components';
-import { Form, Input as AntdInput } from 'antd';
-import { RediaccInput, RediaccPasswordInput as PasswordInput } from '@/components/ui/Form';
-import { RediaccButton } from '@/components/ui/Button';
-import {
-  fadeInAnimation,
-  ErrorAlert,
-  FullWidthSpace as BaseFullWidthSpace,
-  FlexRow,
-} from '@/styles/primitives';
+import { RediaccButton, RediaccInput, RediaccPasswordInput } from '@/components/ui';
+import { focusRing } from '@/styles/mixins';
+import { AlertCard, FlexRow, fadeInAnimation } from '@/styles/primitives';
 
 export const LoginContainer = styled.div`
   width: 100%;
@@ -31,7 +26,7 @@ export const LogoContainer = styled.div`
   }
 `;
 
-export const StyledAlert = styled(ErrorAlert)`
+export const StyledAlert = styled(AlertCard).attrs({ $variant: 'error' })`
   && {
     border-width: 2px;
     box-shadow: ${({ theme }) => theme.shadows.ERROR_FIELD};
@@ -111,8 +106,7 @@ export const RegisterLink = styled.a`
   }
 
   &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: 2px;
+    ${focusRing('outline')}
     background-color: ${({ theme }) => theme.colors.primaryBg};
   }
 `;
@@ -125,8 +119,6 @@ export const SelectorsContainer = styled.div`
     margin-bottom: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
-
-export const FullWidthStack = BaseFullWidthSpace;
 
 export const LargeGapFormItem = styled(Form.Item)`
   margin-bottom: ${({ theme }) => theme.spacing.LG}px;
@@ -156,4 +148,4 @@ export const TFAButtonContainer = styled(FlexRow).attrs({ $justify: 'flex-end', 
 
 // Use unified Form components with medium size (no wrapper needed)
 export const StyledInput = RediaccInput;
-export const StyledPasswordInput = PasswordInput;
+export const StyledPasswordInput = RediaccPasswordInput;

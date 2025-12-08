@@ -12,10 +12,10 @@
  *   import { PageWrapper, SectionStack, ModalStack, etc. } from '@/components/ui'
  */
 
-import styled from 'styled-components';
 import { Form, Space } from 'antd';
+import styled from 'styled-components';
+import { RediaccAlert, RediaccBadge, RediaccCard } from '@/components/ui';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { RediaccCard, RediaccBadge, RediaccAlert } from '@/components/ui';
 
 const SpaceCompact = Space.Compact;
 
@@ -25,6 +25,9 @@ export const ACTIONS_COLUMN_WIDTH = DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH;
 // ANT DESIGN CARD WRAPPERS
 // ============================================
 
+/**
+ * @deprecated Use <RediaccCard fullHeight /> directly
+ */
 export const SettingsCard = styled(RediaccCard)`
   height: 100%;
 `;
@@ -43,15 +46,14 @@ export const PrimaryBadge = styled(RediaccBadge)`
   }
 `;
 
-export { PaddedEmpty } from '@/styles/primitives';
+/**
+ * Alert with spacious margin-bottom for modal contexts
+ */
+export const ModalAlert = styled(RediaccAlert).attrs({ spacing: 'spacious' })``;
 
 export const TokenCopyRow = styled(SpaceCompact)`
   width: 100%;
   margin-top: ${({ theme }) => theme.spacing.SM}px;
-`;
-
-export const ModalAlert = styled(RediaccAlert)`
-  margin-bottom: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 export const FormItemSpaced = styled(Form.Item)`

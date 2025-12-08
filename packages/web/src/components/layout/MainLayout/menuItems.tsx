@@ -1,18 +1,18 @@
 import {
-  ThunderboltOutlined,
-  SettingOutlined,
-  PartitionOutlined,
-  DesktopOutlined,
-  HistoryOutlined,
-  ShopOutlined,
-  InboxOutlined,
   CloudOutlined,
   CloudServerOutlined,
-  TeamOutlined,
   DashboardOutlined,
+  DesktopOutlined,
+  HistoryOutlined,
+  InboxOutlined,
+  PartitionOutlined,
+  SettingOutlined,
+  ShopOutlined,
+  TeamOutlined,
+  ThunderboltOutlined,
 } from '@/utils/optimizedIcons';
-import type { TFunction } from 'i18next';
 import type { MenuConfig } from './types';
+import type { TFunction } from 'i18next';
 
 export const getMenuItems = (t: TFunction): MenuConfig[] => [
   {

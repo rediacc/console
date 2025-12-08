@@ -1,1 +1,1 @@
-export * from '@/core/utils/validation';
+export * from '@/platform/utils/validation';

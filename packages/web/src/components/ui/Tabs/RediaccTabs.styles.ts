@@ -1,7 +1,7 @@
-import styled, { css } from 'styled-components';
 import { Tabs as AntTabs } from 'antd';
+import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { TabsVariant, TabsSize } from './RediaccTabs.types';
+import type { TabsSize, TabsVariant } from './RediaccTabs.types';
 
 export const resolveTabFontSize = (theme: StyledTheme, size: TabsSize = 'md'): number => {
   switch (size) {

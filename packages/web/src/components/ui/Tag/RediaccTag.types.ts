@@ -1,4 +1,4 @@
-import type { ReactNode, MouseEvent } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 
 export type TagVariant =
   | 'default'
@@ -24,6 +24,10 @@ export interface RediaccTagProps {
   preset?: TagPreset;
   /** Remove border */
   borderless?: boolean;
+  /** Compact mode: smaller size with tighter padding (equivalent to size='sm') */
+  compact?: boolean;
+  /** Emphasized text: medium font weight */
+  emphasized?: boolean;
   /** Icon element to render before children */
   icon?: ReactNode;
   /** Show close button */

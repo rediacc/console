@@ -1,22 +1,10 @@
 import React, { useState } from 'react';
-import { Table, Button, Row, Col, Space, Popconfirm, message, Tooltip } from 'antd';
-import {
-  SearchOutlined,
-  CloseCircleOutlined,
-  ReloadOutlined,
-  LinkOutlined,
-  BranchesOutlined,
-  CheckCircleOutlined,
-  StopOutlined,
-} from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useUserRequests, useDeleteUserRequest, type UserRequest } from '@/api/queries/users';
-import { useSelector } from 'react-redux';
-import { selectUser } from '@/store/auth/authSelectors';
-import type { ColumnsType } from 'antd/es/table';
+import { Button, Col, message, Popconfirm, Row, Space, Table, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { createDateSorter } from '@/core';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import { type UserRequest, useDeleteUserRequest, useUserRequests } from '@/api/queries/users';
 import {
   createActionColumn,
   createDateColumn,
@@ -24,21 +12,33 @@ import {
   createTruncatedColumn,
 } from '@/components/common/columns';
 import { InlineStack } from '@/components/common/styled';
+import { RediaccText } from '@/components/ui';
+import { createDateSorter } from '@/platform';
+import { selectUser } from '@/store/auth/authSelectors';
 import { TableContainer } from '@/styles/primitives';
 import {
-  TabContainer,
-  StatCard,
-  StatTitle,
-  StatMetric,
-  StatSuffix,
-  TableCard,
+  BranchesOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  LinkOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  StopOutlined,
+} from '@/utils/optimizedIcons';
+import {
   CardTitleText,
+  CellText,
   RefreshButton,
   SearchInput,
   SessionTag,
-  CellText,
-  SummaryText,
+  StatCard,
+  StatMetric,
+  StatSuffix,
+  StatTitle,
+  TabContainer,
+  TableCard,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 dayjs.extend(relativeTime);
 
@@ -52,7 +52,7 @@ const UserSessionsTab: React.FC = () => {
 
   const handleTerminateSession = async (session: UserRequest) => {
     try {
-      await deleteUserRequestMutation.mutateAsync({ requestId: session.requestId });
+      await deleteUserRequestMutation.mutateAsync({ targetRequestId: session.requestId });
       if (session.userEmail === user?.email) {
         message.warning(t('userSessions.selfTerminateWarning'));
       }
@@ -333,7 +333,9 @@ const UserSessionsTab: React.FC = () => {
               pageSize: 10,
               showSizeChanger: true,
               showTotal: (total) => (
-                <SummaryText>{t('userSessions.totalCount', { count: total })}</SummaryText>
+                <RediaccText variant="caption">
+                  {t('userSessions.totalCount', { count: total })}
+                </RediaccText>
               ),
             }}
             scroll={{ x: 1500 }}

@@ -1,13 +1,13 @@
-import styled, { css } from 'styled-components';
 import { Typography } from 'antd';
+import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type {
-  TextVariant,
-  TextSize,
-  TextWeight,
-  TextColor,
   TextAlign,
+  TextColor,
   TextElement,
+  TextSize,
+  TextVariant,
+  TextWeight,
 } from './RediaccText.types';
 
 const { Text: AntText } = Typography;
@@ -35,6 +35,41 @@ export const resolveTextVariantTokens = (
     case 'caption':
       return {
         fontSize: theme.fontSize.CAPTION,
+        fontWeight: theme.fontWeight.REGULAR,
+        color: theme.colors.textSecondary,
+        lineHeight: theme.lineHeight.NORMAL,
+      };
+    case 'label':
+      return {
+        fontSize: theme.fontSize.XS,
+        fontWeight: theme.fontWeight.REGULAR,
+        color: theme.colors.textSecondary,
+        lineHeight: theme.lineHeight.NORMAL,
+      };
+    case 'value':
+      return {
+        fontSize: theme.fontSize.SM,
+        fontWeight: theme.fontWeight.REGULAR,
+        color: theme.colors.textPrimary,
+        lineHeight: theme.lineHeight.NORMAL,
+      };
+    case 'title':
+      return {
+        fontSize: theme.fontSize.LG,
+        fontWeight: theme.fontWeight.SEMIBOLD,
+        color: theme.colors.textPrimary,
+        lineHeight: theme.lineHeight.NORMAL,
+      };
+    case 'description':
+      return {
+        fontSize: theme.fontSize.SM,
+        fontWeight: theme.fontWeight.REGULAR,
+        color: theme.colors.textSecondary,
+        lineHeight: theme.lineHeight.NORMAL,
+      };
+    case 'helper':
+      return {
+        fontSize: theme.fontSize.SM,
         fontWeight: theme.fontWeight.REGULAR,
         color: theme.colors.textSecondary,
         lineHeight: theme.lineHeight.NORMAL,

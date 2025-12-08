@@ -1,55 +1,46 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { Modal, Space, Upload, message } from 'antd';
-import { AppstoreOutlined } from '@/utils/optimizedIcons';
-import { useForm, type Resolver } from 'react-hook-form';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Modal, message, Space, Upload } from 'antd';
+import { type Resolver, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
+import type { QueueFunction } from '@/api/queries/queue';
+import { useDropdownData } from '@/api/queries/useDropdownData';
+import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
+import TemplateSelector from '@/components/common/TemplateSelector';
 import ResourceFormWithVault, {
-  type FormFieldConfig,
   type ImportExportHandlers,
   type ResourceFormWithVaultRef,
 } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
-import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
-import TemplateSelector from '@/components/common/TemplateSelector';
-import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
-import { useDropdownData } from '@/api/queries/useDropdownData';
-import type { Machine, Repo } from '@/types';
-import type { Team } from '@rediacc/shared/types';
-import type { QueueFunction } from '@/api/queries/queue';
-import { templateService } from '@/services/templateService';
+import { RediaccButton, RediaccText } from '@/components/ui';
 import { useDialogState } from '@/hooks/useDialogState';
-import {
-  createMachineSchema,
-  createRepoSchema,
-  createStorageSchema,
-  createTeamSchema,
-  createRegionSchema,
-  createBridgeSchema,
-  createClusterSchema,
-  createPoolSchema,
-  createImageSchema,
-  createSnapshotSchema,
-  createCloneSchema,
-} from '@/utils/validation';
-import { z } from 'zod';
+import { templateService } from '@/services/templateService';
+import { RootState } from '@/store/store';
+import type { Machine, Repo } from '@/types';
 import { ModalSize } from '@/types/modal';
-import { featureFlags } from '@/config/featureFlags';
-import { RediaccButton, RediaccText as Text } from '@/components/ui';
+import { AppstoreOutlined } from '@/utils/optimizedIcons';
+import type { GetCompanyTeams_ResultSet1 } from '@rediacc/shared/types';
 import {
-  TitleStack,
-  TitleText,
-  SubtitleText,
-  SecondaryLabel,
-  FooterLeftActions,
+  renderModalTitle,
+  resolveTeamName,
+  resolveBridgeName,
+  createFunctionSubtitle,
+  getFunctionTitle,
+} from './components/ModalHeaderRenderer';
+import { ResourceModalDialogs } from './components/ResourceModalDialogs';
+import { useBridgeSelection } from './hooks/useBridgeSelection';
+import { useResourceSchema } from './hooks/useResourceSchema';
+import { useTemplateSelection } from './hooks/useTemplateSelection';
+import {
   AutoSetupCheckbox,
-  UploadIcon,
   DownloadIcon,
-  TemplateCollapse,
+  FooterLeftActions,
   SelectedTemplateTag,
+  TemplateCollapse,
+  UploadIcon,
 } from './styles';
+import { getFormFields } from './utils/formFieldGenerators';
 
 export type ResourceType =
   | 'machine'
@@ -87,11 +78,16 @@ type ResourceFormValues = Record<string, unknown>;
 
 type ExistingResourceData = Partial<Machine> &
   Partial<Repo> &
-  Partial<Team> & {
+  Partial<GetCompanyTeams_ResultSet1> & {
     prefilledMachine?: boolean;
-    clusters?: ClusterOption[];
-    pools?: PoolOption[];
-    availableMachines?: AvailableMachineOption[];
+    clusters?: Array<{ clusterName: string }>;
+    pools?: Array<{ poolName: string; clusterName: string }>;
+    availableMachines?: Array<{
+      machineName: string;
+      bridgeName: string;
+      regionName: string;
+      status?: string;
+    }>;
     images?: Array<{ imageName: string }>;
     snapshots?: Array<{ snapshotName: string }>;
   } & Record<string, unknown>;
@@ -105,17 +101,6 @@ type FunctionSubmitPayload = {
   description: string;
   selectedMachine?: string;
 };
-
-type ClusterOption = { clusterName: string };
-type PoolOption = { poolName: string; clusterName: string };
-type AvailableMachineOption = {
-  machineName: string;
-  bridgeName: string;
-  regionName: string;
-  status?: string;
-};
-type PoolImageOption = { imageName: string };
-type SnapshotOption = { snapshotName: string };
 
 const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   open,
@@ -157,46 +142,27 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // State for auto-setup after machine creation
   const [autoSetupEnabled, setAutoSetupEnabled] = useState(true);
 
-  const resolvePreselectedTemplate = (): string | null => {
-    if (
-      existingData &&
-      typeof (existingData as Record<string, unknown>).preselectedTemplate === 'string'
-    ) {
-      return (existingData as Record<string, string>).preselectedTemplate || null;
-    }
-    return null;
-  };
-
-  // State for template selection (for repos)
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(
-    resolvePreselectedTemplate()
-  );
-  const [showTemplateDetails, setShowTemplateDetails] = useState(false);
-  const [templateToView, setTemplateToView] = useState<string | null>(null);
+  // Hook: Template selection
+  const {
+    selectedTemplate,
+    setSelectedTemplate,
+    showTemplateDetails,
+    setShowTemplateDetails,
+    templateToView,
+    setTemplateToView,
+  } = useTemplateSelection({ existingData });
 
   // Import/Export handlers ref
   const importExportHandlers = useRef<ImportExportHandlers | null>(null);
 
-  // Resource configuration
-  const RESOURCE_CONFIG = {
-    storage: { key: 'storage', createKey: 'resources:storage.createStorage' },
-    repo: { key: 'repos', createKey: 'resources:repos.createRepo' },
-    machine: { key: 'machines', createKey: 'machines:createMachine' },
-    team: { key: 'teams', createKey: 'resources:teams.createTeam' },
-    region: { key: 'regions', createKey: 'system:regions.createRegion' },
-    bridge: { key: 'bridges', createKey: 'system:bridges.createBridge' },
-    cluster: { key: 'clusters', createKey: 'ceph:clusters.createCluster' },
-    pool: { key: 'pools', createKey: 'ceph:pools.createPool' },
-    image: { key: 'images', createKey: 'ceph:images.createImage' },
-    snapshot: { key: 'snapshots', createKey: 'ceph:snapshots.createSnapshot' },
-    clone: { key: 'clones', createKey: 'ceph:clones.createClone' },
-  } as const;
-
-  // Helper functions
-  const getResourceTranslationKey = () =>
-    RESOURCE_CONFIG[resourceType as keyof typeof RESOURCE_CONFIG]?.key || `${resourceType}s`;
-  const mapToOptions = (items?: Array<{ value: string; label: string }>) =>
-    items?.map((item) => ({ value: item.value, label: item.label })) || [];
+  // Hook: Resource schema and defaults
+  const { getSchema, getDefaultValues } = useResourceSchema({
+    resourceType,
+    mode,
+    uiMode,
+    creationContext,
+    existingData,
+  });
 
   // Log when modal opens
   useEffect(() => {
@@ -204,126 +170,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       // Modal opened with resource configuration
     }
   }, [open, resourceType, mode, uiMode, existingData, teamFilter]);
-
-  // Schema mapping
-  const schemaMap = useMemo(
-    () => ({
-      machine:
-        uiMode === 'simple'
-          ? z.object({
-              machineName: z.string().min(1, 'Machine name is required'),
-              teamName: z.string().optional(),
-              regionName: z.string().optional(),
-              bridgeName: z.string().optional(),
-              vaultContent: z.string().optional().default('{}'),
-            })
-          : createMachineSchema,
-      repo: createRepoSchema,
-      storage: createStorageSchema,
-      team: createTeamSchema,
-      region: createRegionSchema,
-      bridge: createBridgeSchema,
-      cluster: createClusterSchema,
-      pool: createPoolSchema,
-      image: createImageSchema,
-      snapshot: createSnapshotSchema,
-      clone: createCloneSchema,
-    }),
-    [uiMode]
-  );
-
-  const getSchema = useCallback(() => {
-    if (mode === 'edit') {
-      return z.object({
-        [`${resourceType}Name`]: z.string().min(1, `${resourceType} name is required`),
-        ...(resourceType === 'machine' && {
-          regionName: z.string().optional(),
-          bridgeName: z.string().optional(),
-        }),
-      });
-    }
-
-    // For repo creation in credentials-only mode, use simpler validation
-    if (resourceType === 'repo' && creationContext === 'credentials-only') {
-      return z.object({
-        teamName: z.string().min(1, 'Team name is required'),
-        repoName: z.string().min(1, 'Repo name is required'),
-        repoGuid: z.string().min(1, 'Repo GUID is required'),
-        vaultContent: z.string().optional().default('{}'),
-      });
-    }
-
-    return schemaMap[resourceType as keyof typeof schemaMap] || z.object({});
-  }, [creationContext, mode, resourceType, schemaMap]);
-
-  // Default values factory
-  const getDefaultValues = (): ResourceFormValues => {
-    if (mode === 'edit' && existingData) {
-      return {
-        [`${resourceType}Name`]: existingData[`${resourceType}Name`],
-        ...(resourceType === 'machine' && {
-          regionName: existingData.regionName,
-          bridgeName: existingData.bridgeName,
-        }),
-        ...(resourceType === 'bridge' && { regionName: existingData.regionName }),
-        ...(resourceType === 'pool' && { clusterName: existingData.clusterName }),
-        ...(resourceType === 'image' && { poolName: existingData.poolName }),
-        ...(resourceType === 'snapshot' && {
-          poolName: existingData.poolName,
-          imageName: existingData.imageName,
-        }),
-        ...(resourceType === 'clone' && {
-          poolName: existingData.poolName,
-          imageName: existingData.imageName,
-          snapshotName: existingData.snapshotName,
-        }),
-        vaultContent: existingData.vaultContent || '{}',
-      };
-    }
-
-    const baseDefaults: ResourceFormValues = {
-      teamName: uiMode === 'simple' ? 'Private Team' : '',
-      vaultContent: '{}',
-      [`${resourceType}Name`]: '',
-    };
-
-    const resourceDefaults = {
-      machine: {
-        regionName: uiMode === 'simple' ? 'Default Region' : '',
-        bridgeName: uiMode === 'simple' ? 'Global Bridges' : '',
-        vaultContent: '{}',
-      },
-      repo: {
-        machineName: '',
-        size: '',
-        repoGuid: '', // Add default for repoGuid
-        vaultContent: '{}',
-      },
-      team: { teamName: '', vaultContent: '{}' },
-      region: { regionName: '', vaultContent: '{}' },
-      bridge: { regionName: '', bridgeName: '', vaultContent: '{}' },
-      cluster: { clusterName: '', vaultContent: '{}' },
-      pool: { clusterName: '', poolName: '', vaultContent: '{}' },
-      image: { poolName: '', imageName: '', vaultContent: '{}' },
-      snapshot: { poolName: '', imageName: '', snapshotName: '', vaultContent: '{}' },
-      clone: { poolName: '', imageName: '', snapshotName: '', cloneName: '', vaultContent: '{}' },
-    };
-
-    // Merge existingData to override defaults if provided
-    const finalDefaults: ResourceFormValues = {
-      ...baseDefaults,
-      ...resourceDefaults[resourceType as keyof typeof resourceDefaults],
-    };
-    if (existingData) {
-      Object.keys(existingData).forEach((key) => {
-        if (existingData[key] !== undefined) {
-          finalDefaults[key] = existingData[key];
-        }
-      });
-    }
-
-    return finalDefaults;
-  };
 
   const schema = useMemo(() => getSchema(), [getSchema]);
 
@@ -344,50 +190,13 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     [form]
   );
 
-  // Get filtered bridges based on selected region - moved inside getFormFields to avoid unnecessary re-renders
-  const getFilteredBridges = useCallback(
-    (regionName: string | null): Array<{ value: string; label: string }> => {
-      if (!regionName || !dropdownData?.bridgesByRegion) return [];
-
-      const bridgesByRegion = dropdownData.bridgesByRegion ?? [];
-      const regionData = bridgesByRegion.find((region) => region.regionName === regionName);
-      const bridges = regionData?.bridges ?? [];
-      return bridges.map((bridge) => ({
-        value: bridge.value,
-        label: bridge.label,
-      }));
-    },
-    [dropdownData?.bridgesByRegion]
-  );
-
-  // Clear bridge selection when region changes, or auto-select if bridge disabled
-  useEffect(() => {
-    if (resourceType === 'machine') {
-      const subscription = form.watch((value, { name }) => {
-        if (name === 'regionName') {
-          const regionValue = typeof value.regionName === 'string' ? value.regionName : null;
-          if (!regionValue) {
-            return;
-          }
-          const currentBridge = getFormValue('bridgeName');
-          const filteredBridges = getFilteredBridges(regionValue);
-
-          // If bridge feature is disabled, auto-select first available bridge
-          if (featureFlags.isEnabled('disableBridge')) {
-            if (filteredBridges.length > 0) {
-              form.setValue('bridgeName', filteredBridges[0].value);
-            }
-          } else {
-            // Normal behavior: clear bridge if it's not valid for the new region
-            if (currentBridge && !filteredBridges.find((b) => b.value === currentBridge)) {
-              form.setValue('bridgeName', '');
-            }
-          }
-        }
-      });
-      return () => subscription.unsubscribe();
-    }
-  }, [form, resourceType, getFilteredBridges, getFormValue]);
+  // Hook: Bridge selection logic
+  const { getFilteredBridges } = useBridgeSelection({
+    resourceType,
+    dropdownData,
+    form,
+    getFormValue,
+  });
 
   // Set default values when modal opens
   useEffect(() => {
@@ -397,7 +206,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
       // Reset template selection for repos (unless preselected)
       if (resourceType === 'repo') {
-        const preselected = resolvePreselectedTemplate();
+        const preselected =
+          existingData &&
+          typeof (existingData as Record<string, unknown>).preselectedTemplate === 'string'
+            ? (existingData as Record<string, string>).preselectedTemplate || null
+            : null;
         setSelectedTemplate(preselected);
       }
 
@@ -476,551 +289,58 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Determine if team is already selected/known
   const isTeamPreselected =
     uiMode === 'simple' ||
-    (teamFilter && !Array.isArray(teamFilter)) ||
-    (teamFilter && Array.isArray(teamFilter) && teamFilter.length === 1);
-
-  // Field factories
-  const createNameField = (): FormFieldConfig => ({
-    name: `${resourceType}Name`,
-    label: t(`${getResourceTranslationKey()}.${resourceType}Name`),
-    placeholder: t(
-      `${getResourceTranslationKey()}.placeholders.enter${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}Name`
-    ),
-    required: true,
-  });
-
-  const createTeamField = (): FormFieldConfig => ({
-    name: 'teamName',
-    label: t('general.team'),
-    placeholder: t('teams.placeholders.selectTeam'),
-    required: true,
-    type: 'select' as const,
-    options: mapToOptions(dropdownData?.teams),
-  });
-
-  const createRegionField = (): FormFieldConfig => ({
-    name: 'regionName',
-    label: t('general.region'),
-    placeholder: t('regions.placeholders.selectRegion'),
-    required: true,
-    type: 'select' as const,
-    options: mapToOptions(dropdownData?.regions) as Array<{ value: string; label: string }>,
-  });
-
-  const createBridgeField = (): FormFieldConfig => {
-    const currentRegion = getFormValue('regionName') ?? null;
-    const bridgeOptions = getFilteredBridges(currentRegion);
-    return {
-      name: 'bridgeName',
-      label: t('bridges.bridge'),
-      placeholder: currentRegion
-        ? t('bridges.placeholders.selectBridge')
-        : t('bridges.placeholders.selectRegionFirst'),
-      required: true,
-      type: 'select' as const,
-      options: bridgeOptions,
-      disabled: !currentRegion,
-    };
-  };
+    (!!teamFilter && !Array.isArray(teamFilter)) ||
+    (!!teamFilter && Array.isArray(teamFilter) && teamFilter.length === 1);
 
   // Get form fields based on resource type and mode
-  const getFormFields = (): FormFieldConfig[] => {
-    const nameField = createNameField();
-
-    if (mode === 'edit') {
-      if (resourceType === 'machine') {
-        const fields = [nameField, createRegionField()];
-        // Hide bridge field when disableBridge flag is enabled
-        // Note: existing bridgeName value is preserved and sent to backend
-        if (!featureFlags.isEnabled('disableBridge')) {
-          fields.push(createBridgeField());
-        }
-        return fields;
-      }
-      if (resourceType === 'bridge') return [nameField, createRegionField()];
-      // For repos in edit mode, we still need to show the vault fields
-      // so users can update credentials if needed
-      if (resourceType === 'repo') {
-        // Don't include team field in edit mode since team can't be changed
-        return [nameField];
-      }
-      return [nameField];
-    }
-
-    if (uiMode === 'simple') {
-      const simpleFields = [nameField];
-
-      // For repo creation, we need to include size field and potentially machine selection
-      if (resourceType === 'repo') {
-        // Check if machine is prefilled
-        const isPrefilledMachine = existingData?.prefilledMachine;
-
-        // Check if this is credential-only mode (either from Add Credential button or Repo Credentials tab)
-        const isCredentialOnlyMode =
-          (existingData?.repoGuid && existingData?.repoGuid.trim() !== '') ||
-          creationContext === 'credentials-only';
-
-        // Get machines for the team (use existingData teamName if available)
-        const _teamName = existingData?.teamName || 'Private Team';
-        const machinesByTeam = dropdownData?.machinesByTeam ?? [];
-        const teamMachines =
-          machinesByTeam.find((team) => team.teamName === _teamName)?.machines || [];
-
-        // Only show machine selection if not prefilled and not in credential-only mode
-        if (!isPrefilledMachine && !isCredentialOnlyMode) {
-          simpleFields.push({
-            name: 'machineName',
-            label: t('machines:machine'),
-            placeholder: t('machines:placeholders.selectMachine'),
-            required: false,
-            type: 'select' as const,
-            options: teamMachines.map((machine: { value: string; label: string }) => ({
-              value: machine.value,
-              label: machine.label,
-            })),
-            helperText: t('repos.machineHelperText', {
-              defaultValue: 'Optional: Select a machine to provision storage',
-            }),
-          });
-        }
-
-        // Size field for repo provisioning - only show if not in credential-only mode
-        if (!isCredentialOnlyMode) {
-          simpleFields.push({
-            name: 'size',
-            label: t('repos.size'),
-            placeholder: t('repos.placeholders.enterSize'),
-            required: false,
-            type: 'size' as const,
-            sizeUnits: ['G', 'T'],
-            helperText: t('repos.sizeHelperText', {
-              defaultValue: 'Optional: Specify size if provisioning storage (e.g., 10G, 100G, 1T)',
-            }),
-          });
-        }
-
-        // Show repoGuid field in credential-only mode
-        if (isCredentialOnlyMode) {
-          simpleFields.push({
-            name: 'repoGuid',
-            label: t('repos.guid', { defaultValue: 'Repo GUID' }),
-            type: 'text' as const,
-            readOnly: !!(existingData?.repoGuid && existingData.repoGuid.trim() !== ''), // Only read-only if GUID exists
-            required: true, // Make it required in credential-only mode
-            helperText: existingData?.repoGuid
-              ? t('repos.guidHelperText', {
-                  defaultValue: 'This repo already exists on the machine.',
-                })
-              : t('repos.guidHelperTextNew', {
-                  defaultValue: 'Enter the repo GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
-                }),
-          });
-        }
-      }
-
-      return simpleFields;
-    }
-
-    const fields = [];
-    if (!isTeamPreselected) fields.push(createTeamField());
-
-    if (resourceType === 'machine') {
-      fields.push(createRegionField());
-      // Hide bridge field when disableBridge flag is enabled
-      // Note: bridgeName value is still auto-selected and sent to backend
-      if (!featureFlags.isEnabled('disableBridge')) {
-        fields.push(createBridgeField());
-      }
-      fields.push(nameField);
-    } else if (resourceType === 'bridge') {
-      fields.push(createRegionField(), nameField);
-    } else if (resourceType === 'repo') {
-      // Repo creation needs machine selection and size
-      fields.push(nameField);
-
-      // Check if machine is prefilled
-      const isPrefilledMachine = existingData?.prefilledMachine;
-
-      // Check if this is credential-only mode (either from Add Credential button or Repo Credentials tab)
-      const isCredentialOnlyMode =
-        (existingData?.repoGuid && existingData?.repoGuid.trim() !== '') ||
-        creationContext === 'credentials-only';
-
-      // Get machines for the selected team
-      const selectedTeamName =
-        getFormValue('teamName') ||
-        existingData?.teamName ||
-        (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '');
-      const machinesByTeamFull = dropdownData?.machinesByTeam ?? [];
-      const teamMachines =
-        machinesByTeamFull.find((team) => team.teamName === selectedTeamName)?.machines || [];
-
-      // Only show machine selection if not prefilled and not in credential-only mode
-      if (!isPrefilledMachine && !isCredentialOnlyMode) {
-        fields.push({
-          name: 'machineName',
-          label: t('machines:machine'),
-          placeholder: t('machines:placeholders.selectMachine'),
-          required: true,
-          type: 'select' as const,
-          options: teamMachines.map((machine: { value: string; label: string }) => ({
-            value: machine.value,
-            label: machine.label,
-          })),
-          disabled: !selectedTeamName || teamMachines.length === 0,
-          helperText: t('repos.machineHelperText', {
-            defaultValue: 'Select a machine to provision storage',
-          }),
-        });
-      }
-
-      // Only show size field if not in credential-only mode
-      if (!isCredentialOnlyMode) {
-        fields.push({
-          name: 'size',
-          label: t('repos.size'),
-          placeholder: t('repos.placeholders.enterSize'),
-          required: true,
-          type: 'size' as const,
-          sizeUnits: ['G', 'T'],
-          helperText: t('repos.sizeHelperText', {
-            defaultValue: 'Specify size for storage provisioning (e.g., 10G, 100G, 1T)',
-          }),
-        });
-      }
-
-      // Repo GUID field
-      if (isCredentialOnlyMode) {
-        // In credential-only mode, show the GUID field
-        fields.push({
-          name: 'repoGuid',
-          label: t('repos.guid', { defaultValue: 'Repo GUID' }),
-          type: 'text' as const,
-          readOnly: !!(existingData?.repoGuid && existingData.repoGuid.trim() !== ''), // Only read-only if GUID exists
-          required: true, // Make it required in credential-only mode
-          helperText: existingData?.repoGuid
-            ? t('repos.guidHelperText', {
-                defaultValue: 'This repo already exists on the machine.',
-              })
-            : t('repos.guidHelperTextNew', {
-                defaultValue: 'Enter the repo GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
-              }),
-        });
-      } else if (isExpertMode) {
-        // In expert mode (when creating new repo), show as optional editable field
-        fields.push({
-          name: 'repoGuid',
-          label: t('repos.guid', { defaultValue: 'Repo GUID' }),
-          placeholder: t('repos.placeholders.enterGuid', {
-            defaultValue:
-              'Optional: Enter a specific GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
-          }),
-          required: false,
-          type: 'text' as const,
-          helperText: t('repos.guidHelperText', {
-            defaultValue:
-              'Optional: Specify a custom GUID for the repo. Leave empty to auto-generate.',
-          }),
-        });
-      }
-    } else if (resourceType === 'cluster') {
-      fields.push(nameField);
-    } else if (resourceType === 'pool') {
-      // Get clusters for the selected team
-      const teamClusters = (existingData?.clusters as ClusterOption[] | undefined) || [];
-
-      fields.push({
-        name: 'clusterName',
-        label: t('ceph:pools.cluster'),
-        placeholder: t('ceph:pools.selectCluster'),
-        required: true,
-        type: 'select' as const,
-        options: teamClusters.map((cluster: ClusterOption) => ({
-          value: cluster.clusterName,
-          label: cluster.clusterName,
-        })),
-        disabled: teamClusters.length === 0,
-      });
-      fields.push(nameField);
-    } else if (resourceType === 'image') {
-      // Image needs pool selection and machine assignment
-      const teamPools = (existingData?.pools as PoolOption[] | undefined) || [];
-      const availableMachines =
-        (existingData?.availableMachines as AvailableMachineOption[] | undefined) || [];
-
-      fields.push({
-        name: 'poolName',
-        label: t('ceph:images.pool'),
-        placeholder: t('ceph:images.selectPool'),
-        required: true,
-        type: 'select' as const,
-        options: teamPools.map((pool: PoolOption) => ({
-          value: pool.poolName,
-          label: `${pool.poolName} (${pool.clusterName})`,
-        })),
-        disabled: teamPools.length === 0,
-      });
-      fields.push(nameField);
-
-      // Add machine selection for image creation
-      if (mode === 'create') {
-        fields.push({
-          name: 'machineName',
-          label: t('ceph:images.machine'),
-          placeholder: t('ceph:images.selectMachine'),
-          required: true,
-          type: 'select' as const,
-          options: availableMachines.map((machine) => ({
-            value: machine.machineName,
-            label: machine.machineName,
-            disabled: machine.status !== 'AVAILABLE',
-          })),
-          disabled: availableMachines.length === 0,
-          helperText: availableMachines.length === 0 ? t('machines:noMachinesFound') : undefined,
-        });
-      }
-    } else if (resourceType === 'snapshot') {
-      // Snapshot needs pool and image selection
-      const teamPools = (existingData?.pools as PoolOption[] | undefined) || [];
-      const selectedPoolName = getFormValue('poolName') || existingData?.poolName;
-      const poolImages = (existingData?.images as PoolImageOption[] | undefined) || [];
-
-      if (!existingData?.poolName) {
-        fields.push({
-          name: 'poolName',
-          label: t('ceph:snapshots.pool'),
-          placeholder: t('ceph:snapshots.selectPool'),
-          required: true,
-          type: 'select' as const,
-          options: teamPools.map((pool: PoolOption) => ({
-            value: pool.poolName,
-            label: `${pool.poolName} (${pool.clusterName})`,
-          })),
-          disabled: teamPools.length === 0,
-        });
-      }
-
-      fields.push({
-        name: 'imageName',
-        label: t('ceph:snapshots.image'),
-        placeholder: t('ceph:snapshots.selectImage'),
-        required: true,
-        type: 'select' as const,
-        options: poolImages.map((image: { imageName: string }) => ({
-          value: image.imageName,
-          label: image.imageName,
-        })),
-        disabled: !selectedPoolName || poolImages.length === 0,
-      });
-      fields.push(nameField);
-    } else if (resourceType === 'clone') {
-      // Clone needs pool, image, and snapshot selection
-      const teamPools = (existingData?.pools as PoolOption[] | undefined) || [];
-      const selectedPoolName = getFormValue('poolName') || existingData?.poolName;
-      const poolImages = (existingData?.images as PoolImageOption[] | undefined) || [];
-      const selectedImageName = getFormValue('imageName') || existingData?.imageName;
-      const imageSnapshots = (existingData?.snapshots as SnapshotOption[] | undefined) || [];
-
-      if (!existingData?.poolName) {
-        fields.push({
-          name: 'poolName',
-          label: t('ceph:clones.pool'),
-          placeholder: t('ceph:clones.selectPool'),
-          required: true,
-          type: 'select' as const,
-          options: teamPools.map((pool: PoolOption) => ({
-            value: pool.poolName,
-            label: `${pool.poolName} (${pool.clusterName})`,
-          })),
-          disabled: teamPools.length === 0,
-        });
-      }
-
-      if (!existingData?.imageName) {
-        fields.push({
-          name: 'imageName',
-          label: t('ceph:clones.image'),
-          placeholder: t('ceph:clones.selectImage'),
-          required: true,
-          type: 'select' as const,
-          options: poolImages.map((image: { imageName: string }) => ({
-            value: image.imageName,
-            label: image.imageName,
-          })),
-          disabled: !selectedPoolName || poolImages.length === 0,
-        });
-      }
-
-      fields.push({
-        name: 'snapshotName',
-        label: t('ceph:clones.snapshot'),
-        placeholder: t('ceph:clones.selectSnapshot'),
-        required: true,
-        type: 'select' as const,
-        options: imageSnapshots.map((snapshot: { snapshotName: string }) => ({
-          value: snapshot.snapshotName,
-          label: snapshot.snapshotName,
-        })),
-        disabled: !selectedImageName || imageSnapshots.length === 0,
-      });
-      fields.push(nameField);
-    } else if (!['team', 'region'].includes(resourceType)) {
-      fields.push(nameField);
-    } else {
-      return [nameField];
-    }
-
-    return fields.length ? fields : [nameField];
-  };
+  const formFields = useMemo(
+    () =>
+      getFormFields({
+        resourceType,
+        mode,
+        uiMode,
+        isExpertMode,
+        isTeamPreselected,
+        existingData,
+        dropdownData,
+        teamFilter,
+        creationContext,
+        getFormValue,
+        getFilteredBridges,
+        t,
+      }),
+    [
+      resourceType,
+      mode,
+      uiMode,
+      isExpertMode,
+      isTeamPreselected,
+      existingData,
+      dropdownData,
+      teamFilter,
+      creationContext,
+      getFormValue,
+      getFilteredBridges,
+      t,
+    ]
+  );
 
   // Helper functions
   const getEntityType = () => resourceType.toUpperCase();
   const getVaultFieldName = () => 'vaultContent';
 
-  const createFunctionSubtitle = (): React.ReactNode => {
-    if (!existingData) {
-      return null;
-    }
-
-    const teamLabel: string =
-      typeof existingData.teamName === 'string' ? existingData.teamName : t('common:unknown');
-
-    const resourceNameKey = `${resourceType}Name`;
-    const resourceNameValue = (existingData as Record<string, unknown>)[resourceNameKey];
-    const resourceName: string = typeof resourceNameValue === 'string' ? resourceNameValue : '';
-
-    return (
-      <Space size="small">
-        <Text color="secondary">{t('machines:team')}:</Text>
-        <Text weight="bold">{teamLabel}</Text>
-        {['machine', 'repo', 'storage'].includes(resourceType) && resourceName && (
-          <>
-            <SecondaryLabel>
-              {t(
-                resourceType === 'machine'
-                  ? 'machines:machine'
-                  : resourceType === 'storage'
-                    ? 'resources:storage.storage'
-                    : 'repos.repo'
-              )}
-              :
-            </SecondaryLabel>
-            <Text weight="bold">{resourceName}</Text>
-          </>
-        )}
-      </Space>
-    );
-  };
-
-  const getFunctionTitle = () => {
-    if (resourceType === 'machine') return t('machines:systemFunctions');
-    if (resourceType === 'storage') return t('resources:storage.storageFunctions');
-    return t(`${getResourceTranslationKey()}.${resourceType}Functions`);
-  };
-
-  // Get modal title
-  const getModalTitle = () => {
-    if (mode === 'create') {
-      const createKey = RESOURCE_CONFIG[resourceType as keyof typeof RESOURCE_CONFIG]?.createKey;
-      const createText = createKey ? t(createKey) : '';
-
-      // Special case for repo creation
-      if (resourceType === 'repo') {
-        // Check if this is credential-only mode (either from Add Credential button or Repo Credentials tab)
-        const isCredentialOnlyMode =
-          (existingData?.repoGuid && existingData?.repoGuid.trim() !== '') ||
-          creationContext === 'credentials-only';
-
-        if (isCredentialOnlyMode) {
-          // For credential-only mode, show "Create Repo (Credentials) in [team]"
-          const team =
-            existingData?.teamName ||
-            (uiMode === 'simple'
-              ? 'Private Team'
-              : Array.isArray(teamFilter)
-                ? teamFilter[0]
-                : teamFilter);
-          return `Create Repo (Credentials) in ${team}`;
-        } else if (existingData?.machineName) {
-          // For repo creation from machine
-          return `${createText} for ${existingData.machineName}`;
-        }
-      }
-
-      if (resourceType === 'machine') {
-        return createText;
-      }
-
-      if (isTeamPreselected) {
-        const team =
-          uiMode === 'expert' && teamFilter
-            ? Array.isArray(teamFilter)
-              ? teamFilter[0]
-              : teamFilter
-            : 'Private Team';
-        return `${createText} in ${team}`;
-      }
-      return createText;
-    }
-    return `${t('resources:general.edit')} ${t(`resources:${getResourceTranslationKey()}.${resourceType}Name`)}`;
-  };
-
-  const getModalSubtitle = () => {
-    if (!(mode === 'create' && resourceType === 'machine')) return '';
-
-    const formTeam = getFormValue('teamName');
-    if (formTeam) return formTeam;
-
-    if (existingData?.teamName) return existingData.teamName;
-
-    // Simple mode always shows "Private Team"
-    if (!isExpertMode) return 'Private Team';
-
-    // Expert mode: show team filter if available
-    if (teamFilter) {
-      return Array.isArray(teamFilter) ? teamFilter[0] : teamFilter;
-    }
-
-    return isExpertMode ? '' : 'Private Team';
-  };
-
-  const resolveTeamName = () => {
-    const formTeam = getFormValue('teamName');
-    if (formTeam) return formTeam;
-    if (existingData?.teamName) return existingData.teamName;
-    if (teamFilter) {
-      const filterValue = Array.isArray(teamFilter) ? teamFilter[0] : teamFilter;
-      if (typeof filterValue === 'string' && filterValue) {
-        return filterValue;
-      }
-    }
-    return 'Private Team';
-  };
-
-  const resolveBridgeName = () => {
-    const formBridge = getFormValue('bridgeName');
-    if (formBridge) return formBridge;
-    return 'Global Bridges';
-  };
-
-  const renderModalTitle = () => {
-    const baseTitle = getModalTitle();
-
-    if (mode === 'create' && resourceType === 'machine') {
-      const subtitle = getModalSubtitle();
-      return (
-        <TitleStack>
-          <TitleText>{baseTitle}</TitleText>
-          {subtitle && (
-            <SubtitleText>
-              {t('general.team')}: {subtitle}
-            </SubtitleText>
-          )}
-        </TitleStack>
-      );
-    }
-
-    return baseTitle;
+  // Modal header renderer props
+  const modalHeaderProps = {
+    resourceType,
+    mode,
+    uiMode,
+    isExpertMode,
+    isTeamPreselected,
+    existingData,
+    teamFilter,
+    creationContext,
+    getFormValue,
+    t,
   };
 
   // Handle form submission
@@ -1167,16 +487,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             functionModal.close();
             onCancel();
           }}
-          title={getFunctionTitle()}
-          subtitle={createFunctionSubtitle()}
+          title={getFunctionTitle(resourceType, t)}
+          subtitle={createFunctionSubtitle(resourceType, existingData, t)}
           allowedCategories={functionCategories}
           loading={isSubmitting}
           showMachineSelection={resourceType === 'repo' || resourceType === 'storage'}
           teamName={existingData?.teamName}
-          machines={
-            dropdownData?.machinesByTeam?.find((t) => t.teamName === existingData?.teamName)
+          machines={(
+            dropdownData?.machinesByTeam?.find((tm) => tm.teamName === existingData?.teamName)
               ?.machines || []
-          }
+          ).map((m) => ({ ...m, bridgeName: '' }))}
           hiddenParams={hiddenParams}
           defaultParams={defaultParams}
           preselectedFunction={preselectedFunction}
@@ -1189,7 +509,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     <>
       <Modal
         data-testid="resource-modal"
-        title={renderModalTitle()}
+        title={renderModalTitle(modalHeaderProps)}
         open={open}
         onCancel={onCancel}
         destroyOnClose
@@ -1287,7 +607,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         <ResourceFormWithVault
           ref={formRef}
           form={form}
-          fields={getFormFields()}
+          fields={formFields}
           onSubmit={handleSubmit}
           entityType={getEntityType()}
           vaultFieldName={getVaultFieldName()}
@@ -1357,8 +677,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           onImportExportRef={(handlers) => {
             importExportHandlers.current = handlers;
           }}
-          teamName={resolveTeamName()}
-          bridgeName={resolveBridgeName()}
+          teamName={resolveTeamName(getFormValue, existingData, teamFilter)}
+          bridgeName={resolveBridgeName(getFormValue)}
           onTestConnectionStateChange={setTestConnectionSuccess}
           isModalOpen={open}
           beforeVaultContent={undefined}
@@ -1374,7 +694,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     label: (
                       <Space size="small">
                         <AppstoreOutlined />
-                        <Text>{t('resources:templates.selectTemplate')}</Text>
+                        <RediaccText>{t('resources:templates.selectTemplate')}</RediaccText>
                         {selectedTemplate && (
                           <SelectedTemplateTag variant="primary">
                             {selectedTemplate.replace(/^(db_|kick_|route_)/, '')}
@@ -1405,11 +725,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           }
           defaultsContent={
             <Space direction="vertical" size={4}>
-              <Text>{t('general.team')}: Private Team</Text>
+              <RediaccText>{t('general.team')}: Private Team</RediaccText>
               {resourceType === 'machine' && (
                 <>
-                  <Text>{t('machines:region')}: Default Region</Text>
-                  <Text>{t('machines:bridge')}: Global Bridges</Text>
+                  <RediaccText>{t('machines:region')}: Default Region</RediaccText>
+                  <RediaccText>{t('machines:bridge')}: Global Bridges</RediaccText>
                 </>
               )}
             </Space>
@@ -1417,63 +737,60 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         />
       </Modal>
 
-      {/* Vault Editor Modal */}
-      {existingData && onUpdateVault && (
-        <VaultEditorModal
-          open={vaultModal.isOpen}
-          onCancel={vaultModal.close}
-          onSave={async (vault, version) => {
+      {/* Sub-modals */}
+      <ResourceModalDialogs
+        // Vault Editor
+        showVaultEditor={!!(existingData && onUpdateVault)}
+        vaultModal={vaultModal}
+        entityType={getEntityType()}
+        vaultTitle={t('general.configureVault', {
+          name: existingData?.[`${resourceType}Name`] || '',
+        })}
+        initialVault={existingData?.vaultContent || '{}'}
+        initialVersion={existingData?.vaultVersion || 1}
+        isUpdatingVault={isUpdatingVault}
+        onVaultSave={async (vault, version) => {
+          if (onUpdateVault) {
             await onUpdateVault(vault, version);
             vaultModal.close();
-          }}
-          entityType={getEntityType()}
-          title={t('general.configureVault', { name: existingData[`${resourceType}Name`] || '' })}
-          initialVault={existingData.vaultContent || '{}'}
-          initialVersion={existingData.vaultVersion || 1}
-          loading={isUpdatingVault}
-        />
-      )}
-
-      {/* Function Selection Modal */}
-      {showFunctions && existingData && (
-        <FunctionSelectionModal
-          open={functionModal.isOpen}
-          onCancel={functionModal.close}
-          onSubmit={async (functionData) => {
+          }
+        }}
+        onVaultCancel={vaultModal.close}
+        // Function Selection
+        showFunctionModal={!!(showFunctions && existingData)}
+        functionModal={functionModal}
+        functionTitle={getFunctionTitle(resourceType, t)}
+        functionSubtitle={createFunctionSubtitle(resourceType, existingData, t)}
+        functionCategories={functionCategories}
+        isSubmitting={isSubmitting}
+        showMachineSelection={resourceType === 'repo' || resourceType === 'storage'}
+        teamName={existingData?.teamName}
+        machines={(
+          dropdownData?.machinesByTeam?.find((tm) => tm.teamName === existingData?.teamName)
+            ?.machines || []
+        ).map((m) => ({ ...m, bridgeName: '' }))}
+        hiddenParams={hiddenParams}
+        defaultParams={defaultParams}
+        preselectedFunction={preselectedFunction}
+        onFunctionSubmit={async (functionData) => {
+          if (onFunctionSubmit) {
             await onFunctionSubmit(functionData);
             functionModal.close();
-          }}
-          title={getFunctionTitle()}
-          subtitle={createFunctionSubtitle()}
-          allowedCategories={functionCategories}
-          loading={isSubmitting}
-          showMachineSelection={resourceType === 'repo' || resourceType === 'storage'}
-          teamName={existingData?.teamName}
-          machines={
-            dropdownData?.machinesByTeam?.find((t) => t.teamName === existingData?.teamName)
-              ?.machines || []
           }
-          hiddenParams={hiddenParams}
-          defaultParams={defaultParams}
-          preselectedFunction={preselectedFunction}
-        />
-      )}
-
-      {/* Template Preview Modal */}
-      <TemplatePreviewModal
-        open={showTemplateDetails}
-        template={null}
-        templateName={templateToView}
-        onClose={() => {
+        }}
+        onFunctionCancel={functionModal.close}
+        // Template Preview
+        showTemplatePreview={showTemplateDetails}
+        templateToView={templateToView}
+        onTemplateClose={() => {
           setShowTemplateDetails(false);
           setTemplateToView(null);
         }}
-        onUseTemplate={(templateName) => {
+        onTemplateUse={(templateName) => {
           setSelectedTemplate(typeof templateName === 'string' ? templateName : templateName.name);
           setShowTemplateDetails(false);
           setTemplateToView(null);
         }}
-        context="repo-creation"
       />
     </>
   );

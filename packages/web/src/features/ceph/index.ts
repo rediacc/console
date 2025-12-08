@@ -1,14 +1,12 @@
 // Models
-export * from './models';
-
-// Services
-export * from './services';
-
-// Hooks
-export * from './hooks';
 
 // Performance Components
 export * from './components/performance';
+// Hooks
+export * from './hooks';
+export * from './models';
+// Services
+export * from './services';
 
 // Utils
 export * from './utils';

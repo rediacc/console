@@ -33,6 +33,8 @@ export const RediaccButton = forwardRef<HTMLButtonElement, RediaccButtonProps>(
       variant = 'primary',
       size = 'md',
       iconOnly = false,
+      square = false,
+      compact = false,
       icon,
       loading = false,
       disabled = false,
@@ -54,12 +56,18 @@ export const RediaccButton = forwardRef<HTMLButtonElement, RediaccButtonProps>(
     // Handle block prop as fullWidth (backwards compatibility)
     const resolvedFullWidth = fullWidth || block;
 
+    // Handle square as alias for iconOnly
+    const resolvedIconOnly = iconOnly || square;
+
+    // Handle compact as size override
+    const resolvedSize = compact ? 'sm' : size;
+
     return (
       <StyledRediaccButton
         ref={ref}
         $variant={resolvedVariant}
-        $size={size}
-        $iconOnly={iconOnly}
+        $size={resolvedSize}
+        $iconOnly={resolvedIconOnly}
         $minWidth={minWidth}
         $fullWidth={resolvedFullWidth}
         icon={icon}
@@ -70,7 +78,7 @@ export const RediaccButton = forwardRef<HTMLButtonElement, RediaccButtonProps>(
         title={title}
         {...rest}
       >
-        {!iconOnly && children}
+        {!resolvedIconOnly && children}
       </StyledRediaccButton>
     );
   }

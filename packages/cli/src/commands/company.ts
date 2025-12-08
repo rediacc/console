@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import { authService } from '../services/auth.js';
 import { api } from '../services/api.js';
+import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
-import { withSpinner } from '../utils/spinner.js';
 import { handleError } from '../utils/errors.js';
+import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 export function registerCompanyCommands(program: Command): void {
   const company = program.command('company').description('Company management commands');
@@ -156,7 +156,11 @@ export function registerCompanyCommands(program: Command): void {
 
         await withSpinner(
           'Updating company vault...',
-          () => api.company.updateVault(vaultData, options.vaultVersion),
+          () =>
+            api.company.updateVault({
+              vaultContent: vaultData,
+              vaultVersion: options.vaultVersion,
+            }),
           'Company vault updated'
         );
       } catch (error) {
@@ -211,7 +215,7 @@ export function registerCompanyCommands(program: Command): void {
 
         await withSpinner(
           'Importing company data...',
-          () => api.company.importData(content, options.mode),
+          () => api.company.importData({ companyDataJson: content, importMode: options.mode }),
           'Import complete'
         );
       } catch (error) {

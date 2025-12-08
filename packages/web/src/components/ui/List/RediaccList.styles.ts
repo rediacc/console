@@ -1,7 +1,7 @@
-import styled, { css } from 'styled-components';
 import { List as AntList } from 'antd';
+import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { ListVariant, ListSize } from './RediaccList.types';
+import type { ListSize, ListVariant } from './RediaccList.types';
 
 export const resolveListPadding = (theme: StyledTheme, size: ListSize = 'md'): number => {
   switch (size) {

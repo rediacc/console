@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import type { ControllerProps, FieldValues, UseFormReturn } from 'react-hook-form';
 import type { UploadFile } from 'antd/es/upload/interface';
+import type { ControllerProps, FieldValues, UseFormReturn } from 'react-hook-form';
 
 export interface ResourceFormWithVaultRef {
   submit: () => Promise<void>;

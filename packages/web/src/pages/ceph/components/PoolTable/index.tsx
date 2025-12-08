@@ -1,15 +1,15 @@
 import { useCallback, useMemo } from 'react';
 import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { CephPool, CephCluster } from '@/api/queries/ceph';
+import { CephCluster, CephPool } from '@/api/queries/ceph';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { RediaccButton as Button } from '@/components/ui';
-import RbdImageTable from '../RbdImageTable';
+import { RediaccButton } from '@/components/ui';
+import { useExpandableTable, useTraceModal } from '@/hooks';
+import RbdImageTable from '@/pages/ceph/components/RbdImageTable';
+import { EmptyStatePanel } from '@/styles/primitives';
+import { confirmAction } from '@/utils/confirmations';
 import { buildPoolColumns } from './columns';
 import { ClusterPoolsCard } from './components/ClusterPoolsCard';
-import { useTraceModal, useExpandableTable } from '@/hooks';
-import { confirmAction } from '@/utils/confirmations';
-import { EmptyStatePanel } from '@/styles/primitives';
 
 interface PoolTableProps {
   pools: CephPool[];
@@ -132,9 +132,9 @@ export const PoolTable: React.FC<PoolTableProps> = ({
         description={t('pools.noPools')}
         $marginBottom="XL"
         action={
-          <Button onClick={onCreatePool} data-testid="ds-create-pool-empty">
+          <RediaccButton onClick={onCreatePool} data-testid="ds-create-pool-empty">
             {t('pools.create')}
-          </Button>
+          </RediaccButton>
         }
       />
     );
@@ -149,7 +149,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
           <ClusterPoolsCard
             key={clusterName}
             clusterName={clusterName}
-            teamName={cluster?.teamName}
+            teamName={cluster?.teamName ?? undefined}
             pools={clusterPools}
             loading={loading}
             columns={columns}

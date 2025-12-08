@@ -1,7 +1,7 @@
 import styled from 'styled-components';
+import { FlexBetween, InlineStack } from '@/components/common/styled';
+import { RediaccButton, RediaccText } from '@/components/ui';
 import { FlexRow } from '@/styles/primitives';
-import { InlineStack, FlexBetween } from '@/components/common/styled';
-import { RediaccText, RediaccButton } from '@/components/ui';
 
 export const NotificationDropdown = styled.div`
   background-color: var(--color-bg-primary);
@@ -10,17 +10,19 @@ export const NotificationDropdown = styled.div`
   max-height: 500px;
   min-width: 380px;
   border: 1px solid var(--color-border-secondary);
+  
+  @media (max-width: 768px) {
+    min-width: 0;
+    width: calc(100vw - 32px);
+    max-width: 380px;
+    margin: 0 16px;
+  }
 `;
 
 export const NotificationHeader = styled(FlexBetween)`
   padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
   border-bottom: 1px solid var(--color-border-secondary);
   background-color: var(--color-bg-secondary);
-`;
-
-export const NotificationTitle = styled(RediaccText)`
-  font-size: ${({ theme }) => theme.fontSize.LG}px;
-  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
 `;
 
 export const NotificationListWrapper = styled.div`
@@ -112,17 +114,10 @@ export const NotificationCloseButton = styled(RediaccButton)`
   flex-shrink: 0;
 `;
 
-export const NotificationMessage = styled(RediaccText)`
+export const NotificationMessageWrapper = styled.div`
   display: block;
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
   word-break: break-word;
-  font-size: ${({ theme }) => theme.fontSize.SM}px;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-export const NotificationTimestamp = styled(RediaccText)`
-  font-size: ${({ theme }) => theme.fontSize.XS}px;
-  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const EmptyWrapper = styled.div`

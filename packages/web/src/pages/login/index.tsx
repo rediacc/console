@@ -1,73 +1,70 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { Form, Alert, Tooltip, Modal } from 'antd';
-import type { FormInstance } from 'antd/es/form';
-import {
-  UserOutlined,
-  LockOutlined,
-  KeyOutlined,
-  InfoCircleOutlined,
-  SafetyCertificateOutlined,
-} from '@/utils/optimizedIcons';
+import React, { useEffect, useState } from 'react';
+import { Alert, Form, Modal, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccText as Text } from '@/components/ui';
-import { loginSuccess } from '@/store/auth/authSlice';
-import { saveAuthData } from '@/utils/auth';
-import { hashPassword } from '@/utils/auth';
+import { useDispatch } from 'react-redux';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '@/api/client';
-import { showMessage } from '@/utils/messages';
-import { apiConnectionService } from '@/services/apiConnectionService';
-import { useTheme } from '@/context/ThemeContext';
-import VersionSelector from '@/pages/login/components/VersionSelector';
-import EndpointSelector from '@/pages/login/components/EndpointSelector';
+import { useVerifyTFA } from '@/api/queries/twoFactor';
 import logoBlack from '@/assets/logo_black.png';
 import logoWhite from '@/assets/logo_white.png';
-import { ModalSize } from '@/types/modal';
-import { featureFlags } from '@/config/featureFlags';
-import {
-  isEncrypted,
-  validateMasterPassword,
-  VaultProtocolState,
-  analyzeVaultProtocolState,
-  getVaultProtocolMessage,
-} from '@/utils/vaultProtocol';
-import { masterPasswordService } from '@/services/masterPasswordService';
+import InsecureConnectionWarning from '@/components/common/InsecureConnectionWarning';
+import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
-import { useVerifyTFA } from '@/api/queries/twoFactor';
+import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
+import { featureFlags } from '@/config/featureFlags';
+import { useTheme } from '@/context/ThemeContext';
+import EndpointSelector from '@/pages/login/components/EndpointSelector';
 import RegistrationModal from '@/pages/login/components/RegistrationModal';
+import VersionSelector from '@/pages/login/components/VersionSelector';
+import { apiConnectionService } from '@/services/apiConnectionService';
+import { masterPasswordService } from '@/services/masterPasswordService';
+import { loginSuccess } from '@/store/auth/authSlice';
+import { ModalSize } from '@/types/modal';
+import { hashPassword, saveAuthData } from '@/utils/auth';
 import {
-  generateRandomEmail,
   generateRandomCompanyName,
+  generateRandomEmail,
   generateRandomPassword,
 } from '@/utils/cryptoGenerators';
-import SandboxWarning from '@/components/common/SandboxWarning';
-import InsecureConnectionWarning from '@/components/common/InsecureConnectionWarning';
+import { showMessage } from '@/utils/messages';
+import {
+  InfoCircleOutlined,
+  KeyOutlined,
+  LockOutlined,
+  SafetyCertificateOutlined,
+  UserOutlined,
+} from '@/utils/optimizedIcons';
 import { isSecureContext } from '@/utils/secureContext';
+import {
+  analyzeVaultProtocolState,
+  getVaultProtocolMessage,
+  isEncrypted,
+  VaultProtocolState,
+  validateMasterPassword,
+} from '@/utils/vaultProtocol';
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import type { ApiResponse, AuthLoginResult } from '@rediacc/shared/types';
-import { RediaccButton as Button } from '@/components/ui';
 import {
+  AdvancedOptionsButton,
+  AdvancedOptionsContainer,
+  FormLabel,
+  LargeGapFormItem,
   LoginContainer,
   LogoContainer,
-  StyledAlert,
-  FormLabel,
-  MasterPasswordLabel,
   MasterPasswordFormItem,
-  AdvancedOptionsContainer,
-  AdvancedOptionsButton,
+  MasterPasswordLabel,
+  NoMarginFormItem,
   RegisterContainer,
   RegisterLink,
   SelectorsContainer,
-  TFAModalTitle,
-  TFACodeInput,
-  TFAButtonContainer,
+  StyledAlert,
   StyledInput,
   StyledPasswordInput,
-  FullWidthStack,
-  LargeGapFormItem,
-  NoMarginFormItem,
+  TFAButtonContainer,
+  TFACodeInput,
+  TFAModalTitle,
 } from './styles';
+import type { FormInstance } from 'antd/es/form';
 
 interface LoginForm {
   email: string;
@@ -478,7 +475,7 @@ const LoginPage: React.FC = () => {
     <>
       <SandboxWarning />
       <LoginContainer>
-        <FullWidthStack direction="vertical" gap="xl">
+        <RediaccStack direction="vertical" gap="xl" fullWidth>
           <LogoContainer>
             <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Rediacc Logo" />
           </LogoContainer>
@@ -611,7 +608,7 @@ const LoginPage: React.FC = () => {
                     : undefined
                 }
               >
-                <Button
+                <RediaccButton
                   variant="primary"
                   htmlType="submit"
                   size="md"
@@ -621,13 +618,13 @@ const LoginPage: React.FC = () => {
                   data-testid="login-submit-button"
                 >
                   {loading ? t('auth:login.signingIn') : t('auth:login.signIn')}
-                </Button>
+                </RediaccButton>
               </Tooltip>
             </LargeGapFormItem>
           </Form>
 
           <RegisterContainer>
-            <Text color="secondary">
+            <RediaccText color="secondary">
               {t('auth:login.noAccount')}{' '}
               <RegisterLink
                 onClick={() => setShowRegistration(true)}
@@ -638,7 +635,7 @@ const LoginPage: React.FC = () => {
               >
                 {t('auth:login.register')}
               </RegisterLink>
-            </Text>
+            </RediaccText>
           </RegisterContainer>
 
           {/* Endpoint selector and version display */}
@@ -653,7 +650,7 @@ const LoginPage: React.FC = () => {
             {/* Always-visible version display */}
             <VersionSelector />
           </SelectorsContainer>
-        </FullWidthStack>
+        </RediaccStack>
       </LoginContainer>
 
       {/* TFA Verification Modal */}
@@ -673,7 +670,7 @@ const LoginPage: React.FC = () => {
         footer={null}
         className={ModalSize.Medium}
       >
-        <FullWidthStack direction="vertical" gap="md">
+        <RediaccStack direction="vertical" gap="md" fullWidth>
           <Alert
             message={t('login.twoFactorAuth.required')}
             description={t('login.twoFactorAuth.description')}
@@ -705,7 +702,7 @@ const LoginPage: React.FC = () => {
 
             <NoMarginFormItem>
               <TFAButtonContainer>
-                <Button
+                <RediaccButton
                   onClick={() => {
                     setShowTFAModal(false);
                     setTwoFACode('');
@@ -713,8 +710,8 @@ const LoginPage: React.FC = () => {
                   }}
                 >
                   {t('common:general.cancel')}
-                </Button>
-                <Button
+                </RediaccButton>
+                <RediaccButton
                   variant="primary"
                   htmlType="submit"
                   loading={verifyTFAMutation.isPending}
@@ -722,11 +719,11 @@ const LoginPage: React.FC = () => {
                   data-testid="tfa-verify-button"
                 >
                   {t('login.twoFactorAuth.verify')}
-                </Button>
+                </RediaccButton>
               </TFAButtonContainer>
             </NoMarginFormItem>
           </Form>
-        </FullWidthStack>
+        </RediaccStack>
       </Modal>
 
       {/* Registration Modal */}

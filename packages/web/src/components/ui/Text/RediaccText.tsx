@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import { StyledRediaccText } from './RediaccText.styles';
-import type { RediaccTextProps } from './RediaccText.types';
+import type { RediaccTextProps, RediaccTextRef } from './RediaccText.types';
 
 /**
  * Unified Text Component
@@ -29,8 +29,7 @@ import type { RediaccTextProps } from './RediaccText.types';
  *   This text will be truncated after 3 lines
  * </RediaccText>
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const RediaccText = forwardRef<any, RediaccTextProps>(
+export const RediaccText = forwardRef<RediaccTextRef, RediaccTextProps>(
   (
     {
       variant,
@@ -44,9 +43,6 @@ export const RediaccText = forwardRef<any, RediaccTextProps>(
       code = false,
       as = 'span',
       children,
-      className,
-      style,
-      onClick,
       copyable,
       ellipsis,
       ...rest
@@ -68,13 +64,8 @@ export const RediaccText = forwardRef<any, RediaccTextProps>(
         $maxLines={maxLines}
         $code={code}
         $as={as}
-        className={className}
-        style={style}
-        onClick={onClick}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        copyable={copyable as any}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ellipsis={ellipsis as any}
+        copyable={copyable}
+        ellipsis={ellipsis}
         {...rest}
       >
         {children}

@@ -1,52 +1,56 @@
-import { endpoints } from '../../endpoints';
-import type {
-  CompanyProfile,
-  CompanyDashboardData,
-  CompanyVaultDetails,
-  CompanyVaultCollections,
-  CompanyVaultUpdateResult,
-  CompanyExportData,
-  CompanyImportResult,
-  CompanyBlockUserRequestsResult,
-  CompanyDropdownData,
-  CompanyDataGraph,
-  CompanySubscription,
-  CompanyResourceLimit,
-  CompanyAccountHealth,
-  CompanyFeatureAccess,
-  CompanyPlanLimits,
-  CompanyQueueStats,
-  CompanyCephStats,
-  CompanySubscriptionDetail,
-  CephTeamBreakdown,
-  QueueTeamIssue,
-  QueueMachineIssue,
-} from '../../types';
-import type { ApiResponse } from '../../types/api';
 import { normalizeRecord } from '../normalizer';
 import { fixTripleEncodedFields, parseDoubleEncodedJson } from '../responseTransforms';
 import type { ApiClient } from './types';
+import type {
+  CephTeamBreakdown,
+  CompanyAccountHealth,
+  CompanyBlockUserRequestsResult,
+  CompanyCephStats,
+  CompanyDashboardData,
+  CompanyDataGraph,
+  CompanyDropdownData,
+  CompanyExportData,
+  CompanyFeatureAccess,
+  CompanyImportResult,
+  CompanyPlanLimits,
+  CompanyProfile,
+  CompanyQueueStats,
+  CompanyResourceLimit,
+  CompanySubscription,
+  CompanySubscriptionDetail,
+  CompanyVaultCollections,
+  CompanyVaultDetails,
+  CompanyVaultUpdateResult,
+  GetLookupDataParams,
+  ImportCompanyDataParams,
+  QueueMachineIssue,
+  QueueTeamIssue,
+  UpdateCompanyBlockUserRequestsParams,
+  UpdateCompanyVaultParams,
+  UpdateCompanyVaultsParams,
+} from '../../types';
+import type { ApiResponse } from '../../types/api';
 
 export function createCompanyService(client: ApiClient) {
   return {
     getInfo: async (): Promise<CompanyProfile | null> => {
-      const response = await client.get(endpoints.company.getUserCompany);
+      const response = await client.get('/GetUserCompany');
       const row = getRowByIndex<CompanyProfile>(response, 0);
       return row ? (normalizeRecord(row as Record<string, unknown>) as CompanyProfile) : null;
     },
 
     getDashboard: async (): Promise<CompanyDashboardData> => {
-      const response = await client.post(endpoints.company.getCompanyDashboard, {});
+      const response = await client.post('/GetCompanyDashboardJson', {});
       return parseDashboard(response);
     },
 
     getDataGraph: async (): Promise<CompanyDataGraph> => {
-      const response = await client.post(endpoints.company.getCompanyDataGraph, {});
+      const response = await client.post('/GetCompanyDataGraphJson', {});
       return parseCompanyDataGraph(response);
     },
 
     getVault: async (): Promise<CompanyVaultDetails> => {
-      const response = await client.get(endpoints.company.getCompanyVault);
+      const response = await client.get('/GetCompanyVault');
       const row = getRowByIndex<{
         vaultContent?: string;
         vaultVersion?: number;
@@ -60,7 +64,7 @@ export function createCompanyService(client: ApiClient) {
     },
 
     getAllVaults: async (filters?: Record<string, unknown>): Promise<CompanyVaultCollections> => {
-      const response = await client.get(endpoints.company.getCompanyVaults, filters);
+      const response = await client.get('/GetCompanyVaults', filters);
       const vaults = getRowsByIndex<Record<string, unknown>>(response, 1).map((vault) =>
         normalizeRecord(vault)
       );
@@ -73,16 +77,12 @@ export function createCompanyService(client: ApiClient) {
       };
     },
 
-    updateVault: (vault: string, vaultVersion: number) =>
-      client.post(endpoints.company.updateCompanyVault, {
-        vaultContent: vault,
-        vaultVersion,
-      }),
+    updateVault: (params: UpdateCompanyVaultParams) => client.post('/UpdateCompanyVault', params),
 
-    updateAllVaults: async (updatesPayload: unknown): Promise<CompanyVaultUpdateResult> => {
-      const response = await client.post(endpoints.company.updateCompanyVaults, {
-        updates: updatesPayload,
-      });
+    updateAllVaults: async (
+      params: UpdateCompanyVaultsParams
+    ): Promise<CompanyVaultUpdateResult> => {
+      const response = await client.post('/UpdateCompanyVaults', params);
 
       const row = getRowByIndex<{ result?: { totalUpdated?: number; failedCount?: number } }>(
         response,
@@ -95,22 +95,14 @@ export function createCompanyService(client: ApiClient) {
       };
     },
 
-    updateVaultProtocol: async (vaultCompany: string | null): Promise<void> => {
-      await client.post(endpoints.company.updateCompanyVaultProtocol, { vaultCompany });
-    },
-
     exportData: async (): Promise<CompanyExportData> => {
-      const response = await client.get(endpoints.company.exportCompanyData);
+      const response = await client.get('/ExportCompanyData');
       const row = getRowByIndex<Record<string, unknown>>(response, 1);
       return row ? normalizeRecord(row) : {};
     },
 
-    importData: async (data: string, mergeMode?: string): Promise<CompanyImportResult> => {
-      const payload: Record<string, unknown> = { data };
-      if (mergeMode) {
-        payload.mergeMode = mergeMode;
-      }
-      const response = await client.post(endpoints.company.importCompanyData, payload);
+    importData: async (params: ImportCompanyDataParams): Promise<CompanyImportResult> => {
+      const response = await client.post('/ImportCompanyData', params);
       const row = getRowByIndex<CompanyImportResult>(response, 0);
       return {
         importedCount: row?.importedCount ?? 0,
@@ -120,22 +112,17 @@ export function createCompanyService(client: ApiClient) {
     },
 
     updateBlockUserRequests: async (
-      blockRequests: boolean
+      params: UpdateCompanyBlockUserRequestsParams
     ): Promise<CompanyBlockUserRequestsResult> => {
-      const response = await client.post(endpoints.company.updateCompanyBlockUserRequests, {
-        blockRequests,
-      });
+      const response = await client.post('/UpdateCompanyBlockUserRequests', params);
       const row = getRowByIndex<CompanyBlockUserRequestsResult>(response, 0);
       return {
         deactivatedCount: row?.deactivatedCount ?? 0,
       };
     },
 
-    getLookupData: async (context?: string): Promise<CompanyDropdownData> => {
-      const response = await client.get(
-        endpoints.company.getLookupData,
-        context ? { context } : {}
-      );
+    getLookupData: async (params?: GetLookupDataParams): Promise<CompanyDropdownData> => {
+      const response = await client.get('/GetLookupData', params ?? {});
       const row =
         getRowByIndex<Record<string, unknown>>(response, 1) ??
         getRowByIndex<Record<string, unknown>>(response, 0);
@@ -195,7 +182,7 @@ export function createCompanyService(client: ApiClient) {
       if (captchaToken && captchaToken.trim() !== '') {
         payload.captchaToken = captchaToken;
       }
-      return client.post(endpoints.company.createCompany, payload, {
+      return client.post('/CreateNewCompany', payload, {
         headers: {
           'Rediacc-UserEmail': userEmail,
           'Rediacc-UserHash': passwordHash,

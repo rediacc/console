@@ -1,60 +1,49 @@
 import { useCallback, useMemo } from 'react';
 import {
-  Space,
-  DatePicker,
-  Select,
-  Table,
-  Input,
-  Row,
-  Col,
-  Empty,
-  Dropdown,
-  message,
   Alert,
+  Col,
+  DatePicker,
+  Dropdown,
+  Empty,
+  Input,
+  message,
+  Row,
+  Select,
+  Space,
+  Table,
   Tooltip,
 } from 'antd';
-import { RediaccText as Text } from '@/components/ui';
-import {
-  ReloadOutlined,
-  SearchOutlined,
-  DownloadOutlined,
-  FileExcelOutlined,
-  FileTextOutlined,
-} from '@/utils/optimizedIcons';
-import { useAuditLogs } from '@/api/queries/audit';
-import { useTranslation } from 'react-i18next';
 import dayjs, { Dayjs } from 'dayjs';
+import { useTranslation } from 'react-i18next';
+import { useAuditLogs } from '@/api/queries/audit';
+import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
 import { useFilters, usePagination } from '@/hooks';
-
-// Audit page filter state type
-type AuditPageFilters = {
-  dateRange: [Dayjs | null, Dayjs | null];
-  entityFilter: string | undefined;
-  searchText: string;
-};
 import {
-  findActionConfig,
-  getActionTagColor,
-  searchInFields,
-  getUniqueMappedValues,
   buildCSVContent,
   downloadCSV,
   downloadJSON,
+  findActionConfig,
   generateTimestampedFilename,
-} from '@/core';
-import { PageCard } from '@/styles/primitives';
-import { RediaccButton as Button } from '@/components/ui';
+  getActionTagColor,
+  getUniqueMappedValues,
+  searchInFields,
+} from '@/platform';
+import { PageCard, PageContainer } from '@/styles/primitives';
 import {
-  PageWrapper,
-  ContentStack,
-  FilterField,
-  FilterLabel,
-  PlaceholderLabel,
-  ActionButtonFull,
-  LinkButton,
-  ActionIcon,
-} from './styles';
+  DownloadOutlined,
+  FileExcelOutlined,
+  FileTextOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+} from '@/utils/optimizedIcons';
 import { buildAuditColumns } from './columns';
+import { ActionButtonFull, ActionIcon, FilterLabel, LinkButton, PlaceholderLabel } from './styles';
+
+interface AuditPageFilters extends Record<string, unknown> {
+  dateRange: [Dayjs | null, Dayjs | null];
+  entityFilter: string | undefined;
+  searchText: string;
+}
 
 const { RangePicker } = DatePicker;
 
@@ -190,14 +179,14 @@ const AuditPage = () => {
   ];
 
   return (
-    <PageWrapper>
-      <ContentStack>
+    <PageContainer>
+      <RediaccStack variant="spaced-column" fullWidth>
         {/* Filters */}
         <PageCard data-testid="audit-filter-card">
           <Space direction="vertical" size="large">
             <Row gutter={[24, 16]}>
               <Col xs={24} sm={24} md={8}>
-                <FilterField>
+                <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <FilterLabel>{t('system:audit.filters.dateRange')}</FilterLabel>
                   <RangePicker
                     data-testid="audit-filter-date"
@@ -244,10 +233,10 @@ const AuditPage = () => {
                       },
                     ]}
                   />
-                </FilterField>
+                </RediaccStack>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <FilterField>
+                <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <FilterLabel>{t('system:audit.filters.entityType')}</FilterLabel>
                   <Select
                     data-testid="audit-filter-entity"
@@ -260,10 +249,10 @@ const AuditPage = () => {
                       ...entityTypes.map((entity) => ({ label: entity, value: entity })),
                     ]}
                   />
-                </FilterField>
+                </RediaccStack>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <FilterField>
+                <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <FilterLabel>{t('system:audit.filters.search')}</FilterLabel>
                   <Input
                     data-testid="audit-filter-search"
@@ -274,10 +263,10 @@ const AuditPage = () => {
                     allowClear
                     autoComplete="off"
                   />
-                </FilterField>
+                </RediaccStack>
               </Col>
               <Col xs={24} sm={12} md={2}>
-                <FilterField>
+                <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <PlaceholderLabel>{t('system:audit.filters.actions')}</PlaceholderLabel>
                   <ActionButtonFull
                     data-testid="audit-refresh-button"
@@ -287,10 +276,10 @@ const AuditPage = () => {
                   >
                     {t('common:actions.refresh')}
                   </ActionButtonFull>
-                </FilterField>
+                </RediaccStack>
               </Col>
               <Col xs={24} sm={12} md={2}>
-                <FilterField>
+                <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <PlaceholderLabel>{t('system:audit.filters.export')}</PlaceholderLabel>
                   <Tooltip
                     title={
@@ -311,7 +300,7 @@ const AuditPage = () => {
                       </ActionButtonFull>
                     </Dropdown>
                   </Tooltip>
-                </FilterField>
+                </RediaccStack>
               </Col>
             </Row>
           </Space>
@@ -326,9 +315,9 @@ const AuditPage = () => {
             closable
             showIcon
             action={
-              <Button size="sm" onClick={() => refetch()} loading={isLoading}>
+              <RediaccButton size="sm" onClick={() => refetch()} loading={isLoading}>
                 {t('system:audit.errors.tryAgain')}
-              </Button>
+              </RediaccButton>
             }
           />
         )}
@@ -359,13 +348,13 @@ const AuditPage = () => {
                 <Empty
                   description={
                     <Space direction="vertical" align="center">
-                      <Text color="secondary">
+                      <RediaccText color="secondary">
                         {isError
                           ? t('system:audit.errors.unableToLoad')
                           : filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0
                             ? t('system:audit.empty.noMatchingFilters')
                             : t('system:audit.empty.noLogsInRange')}
-                      </Text>
+                      </RediaccText>
                       {!isError && (
                         <LinkButton onClick={clearAllFilters}>
                           {t('system:audit.empty.clearFilters')}
@@ -378,8 +367,8 @@ const AuditPage = () => {
             }}
           />
         </PageCard>
-      </ContentStack>
-    </PageWrapper>
+      </RediaccStack>
+    </PageContainer>
   );
 };
 

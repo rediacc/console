@@ -1,20 +1,18 @@
 import React, { useMemo } from 'react';
-import { Table, Empty } from 'antd';
+import { Empty, Table } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { CephCluster, useCephClusterMachines } from '@/api/queries/ceph';
-import type { Machine } from '@/types';
-import { createSorter } from '@/core';
-import { formatTimestampAsIs } from '@/core';
+import { CephCluster, CephClusterMachine, useCephClusterMachines } from '@/api/queries/ceph';
+import { RediaccTag } from '@/components/ui';
 import {
+  AssignedDateText,
   ExpandedRowContainer,
   ExpandedRowTitle,
-  MachinesTableWrapper,
   MachineNameCell,
   MachineNameIcon,
   MachineNameText,
-  MachineBridgeTag,
-  AssignedDateText,
-} from '../styles';
+  MachinesTableWrapper,
+} from '@/pages/ceph/components/ClusterTable/styles';
+import { createSorter, formatTimestampAsIs } from '@/platform';
 
 interface ClusterMachinesProps {
   cluster: CephCluster;
@@ -30,7 +28,7 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
         title: t('machines.machineName'),
         dataIndex: 'machineName',
         key: 'machineName',
-        sorter: createSorter<Machine>('machineName'),
+        sorter: createSorter<CephClusterMachine>('machineName'),
         render: (name: string) => (
           <MachineNameCell>
             <MachineNameIcon />
@@ -42,14 +40,18 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
         title: t('machines.bridgeName'),
         dataIndex: 'bridgeName',
         key: 'bridgeName',
-        sorter: createSorter<Machine>('bridgeName'),
-        render: (name: string) => <MachineBridgeTag>{name}</MachineBridgeTag>,
+        sorter: createSorter<CephClusterMachine>('bridgeName'),
+        render: (name: string) => (
+          <RediaccTag preset="bridge" compact borderless>
+            {name}
+          </RediaccTag>
+        ),
       },
       {
         title: t('machines.assignedDate'),
         dataIndex: 'assignedDate',
         key: 'assignedDate',
-        render: (date: string) => (
+        render: (date: string | null) => (
           <AssignedDateText>{date ? formatTimestampAsIs(date, 'datetime') : '-'}</AssignedDateText>
         ),
       },

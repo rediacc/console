@@ -1,21 +1,28 @@
 import { useQuery } from '@tanstack/react-query';
+import { api } from '@/api/client';
 import {
+  createMutation,
   createResourceMutation,
   createVaultUpdateMutation,
-  createMutation,
 } from '@/hooks/api/mutationFactory';
-import { api } from '@/api/client';
-import type { Storage } from '@rediacc/shared/types';
+import type {
+  CreateStorageParams,
+  DeleteStorageParams,
+  GetTeamStorages_ResultSet1,
+  UpdateStorageNameParams,
+  UpdateStorageVaultParams,
+  WithOptionalVault,
+} from '@rediacc/shared/types';
 
 // Get storage for a team or multiple teams
 export const useStorage = (teamFilter?: string | string[]) => {
-  return useQuery<Storage[]>({
+  return useQuery<GetTeamStorages_ResultSet1[]>({
     queryKey: ['storage', teamFilter],
     queryFn: async () => {
       if (!teamFilter || (Array.isArray(teamFilter) && teamFilter.length === 0)) return [];
 
       const targetTeam = Array.isArray(teamFilter) ? teamFilter.join(',') : teamFilter;
-      return api.storage.list(targetTeam);
+      return api.storage.list({ teamName: targetTeam });
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
     staleTime: 30 * 1000, // 30 seconds
@@ -23,13 +30,8 @@ export const useStorage = (teamFilter?: string | string[]) => {
 };
 
 // Create storage
-export const useCreateStorage = createMutation<{
-  teamName: string;
-  storageName: string;
-  vaultContent?: string;
-}>({
-  request: ({ teamName, storageName, vaultContent }) =>
-    api.storage.create(teamName, storageName, vaultContent),
+export const useCreateStorage = createMutation<WithOptionalVault<CreateStorageParams>>({
+  request: (params) => api.storage.create(params),
   invalidateKeys: ['storage', 'teams'],
   successMessage: (vars) => `Storage "${vars.storageName}" created successfully`,
   errorMessage: 'Failed to create storage',
@@ -41,13 +43,8 @@ export const useCreateStorage = createMutation<{
 });
 
 // Update storage name
-export const useUpdateStorageName = createMutation<{
-  teamName: string;
-  currentStorageName: string;
-  newStorageName: string;
-}>({
-  request: ({ teamName, currentStorageName, newStorageName }) =>
-    api.storage.rename(teamName, currentStorageName, newStorageName),
+export const useUpdateStorageName = createMutation<UpdateStorageNameParams>({
+  request: (params) => api.storage.rename(params),
   invalidateKeys: ['storage'],
   successMessage: (vars) => `Storage renamed to "${vars.newStorageName}"`,
   errorMessage: 'Failed to update storage name',
@@ -55,29 +52,13 @@ export const useUpdateStorageName = createMutation<{
 });
 
 // Update storage vault
-export const useUpdateStorageVault = createVaultUpdateMutation<{
-  teamName: string;
-  storageName: string;
-  vaultContent: string;
-  vaultVersion: number;
-}>(
-  'Storage',
-  (data) =>
-    api.storage.updateVault(data.teamName, data.storageName, data.vaultContent, data.vaultVersion),
-  'storageName',
-  'vaultContent'
-);
+export const useUpdateStorageVault = createVaultUpdateMutation<
+  UpdateStorageVaultParams & Record<string, unknown>
+>('Storage', (params) => api.storage.updateVault(params), 'storageName', 'vaultContent');
 
 // Delete storage
-export const useDeleteStorage = createResourceMutation<{
-  teamName: string;
-  storageName: string;
-}>(
-  'Storage',
-  'delete',
-  (variables) => api.storage.delete(variables.teamName, variables.storageName),
-  'storageName',
-  ['teams']
-);
+export const useDeleteStorage = createResourceMutation<
+  DeleteStorageParams & Record<string, unknown>
+>('Storage', 'delete', (params) => api.storage.delete(params), 'storageName', ['teams']);
 
-export type { Storage };
+export type { GetTeamStorages_ResultSet1 };

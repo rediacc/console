@@ -1,20 +1,18 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import type { ApiResponse } from '@rediacc/shared/types';
+import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import {
-  normalizeResponse,
   createApiServices,
+  normalizeResponse,
   parseFirst,
   responseExtractors,
 } from '@rediacc/shared/api';
-import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import { createVaultEncryptor } from '@rediacc/shared/encryption';
-import { endpoints } from '@rediacc/shared/endpoints';
-import { nodeStorageAdapter } from '../adapters/storage.js';
+import type { ApiResponse } from '@rediacc/shared/types';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
+import { nodeStorageAdapter } from '../adapters/storage.js';
 import { EXIT_CODES } from '../types/index.js';
-import type { AuthResponse } from '../types/api-responses.js';
 
-const API_PREFIX = endpoints.base.storedProcedure;
+const API_PREFIX = '/StoredProcedure';
 const STORAGE_KEYS = {
   TOKEN: 'token',
   API_URL: 'apiUrl',
@@ -81,7 +79,7 @@ class CliApiClient implements SharedApiClient {
     await this.initialize();
 
     const response = await this.client.post<ApiResponse>(
-      endpoints.auth.createAuthenticationRequest,
+      '/CreateAuthenticationRequest',
       { name: sessionName },
       {
         headers: {
@@ -97,7 +95,7 @@ class CliApiClient implements SharedApiClient {
   }
 
   async logout(): Promise<ApiResponse> {
-    return this.post(endpoints.users.deleteUserRequest, {});
+    return this.post('/DeleteUserRequest', {});
   }
 
   async activateUser(
@@ -108,7 +106,7 @@ class CliApiClient implements SharedApiClient {
     await this.initialize();
 
     const response = await this.client.post<ApiResponse>(
-      endpoints.auth.activateUserAccount,
+      '/ActivateUserAccount',
       { activationCode },
       {
         headers: {
@@ -223,9 +221,12 @@ class CliApiClient implements SharedApiClient {
   }
 
   private async handleTokenRotation(response: ApiResponse): Promise<void> {
-    const row = parseFirst<AuthResponse>(response as ApiResponse<AuthResponse>, {
-      extractor: responseExtractors.primaryOrSecondary,
-    });
+    const row = parseFirst<{ nextRequestToken?: string }>(
+      response as ApiResponse<{ nextRequestToken?: string }>,
+      {
+        extractor: responseExtractors.primaryOrSecondary,
+      }
+    );
     const newToken = row?.nextRequestToken;
     if (newToken) {
       await nodeStorageAdapter.setItem(STORAGE_KEYS.TOKEN, newToken);

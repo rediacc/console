@@ -1,31 +1,31 @@
 import { Space } from 'antd';
-import type { ColumnsType } from 'antd/es/table/interface';
 import { TFunction } from 'i18next';
-import { createSorter, createCustomSorter } from '@/core';
-import type { Machine } from '@/types';
-import MachineAssignmentStatusCell from '../../MachineAssignmentStatusCell';
-import { LocalActionsMenu } from '../LocalActionsMenu';
-import { showMessage } from '@/utils/messages';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
   createActionColumn,
   createStatusColumn,
   createTruncatedColumn,
 } from '@/components/common/columns';
-import {
-  EditOutlined,
-  FunctionOutlined,
-  WifiOutlined,
-  CloudServerOutlined,
-  HistoryOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  CheckCircleOutlined,
-  DisconnectOutlined,
-} from '@/utils/optimizedIcons';
+import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
+import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
+import { createCustomSorter, createSorter } from '@/platform';
 import type { usePingFunction } from '@/services/pingService';
-import { MachineNameIcon, StyledTag, StyledBadge } from './styles';
+import type { Machine } from '@/types';
+import { showMessage } from '@/utils/messages';
+import {
+  CheckCircleOutlined,
+  CloudServerOutlined,
+  DeleteOutlined,
+  DisconnectOutlined,
+  EditOutlined,
+  EyeOutlined,
+  FunctionOutlined,
+  HistoryOutlined,
+  WifiOutlined,
+} from '@/utils/optimizedIcons';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { MachineNameIcon, StyledBadge, StyledTag } from './styles';
+import type { ColumnsType } from 'antd/es/table/interface';
 
 type ExecutePingForMachineAndWait = ReturnType<
   typeof usePingFunction

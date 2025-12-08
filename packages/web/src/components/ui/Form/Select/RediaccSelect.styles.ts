@@ -1,5 +1,6 @@
-import styled, { css } from 'styled-components';
 import { Select as AntSelect } from 'antd';
+import styled, { css } from 'styled-components';
+import { disabledState } from '@/styles/mixins';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { SelectSize } from './RediaccSelect.types';
 
@@ -107,8 +108,7 @@ export const StyledRediaccSelect = styled(AntSelect).withConfig({
     &.ant-select-disabled .ant-select-selector {
       background-color: ${({ theme }) => theme.colors.bgSecondary};
       color: ${({ theme }) => theme.colors.textTertiary};
-      cursor: not-allowed;
-      opacity: 0.6;
+      ${disabledState}
     }
 
     /* Arrow icon */

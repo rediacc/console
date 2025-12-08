@@ -1,15 +1,14 @@
 import styled from 'styled-components';
+import { InlineStack } from '@/components/common/styled';
+import { RediaccTag } from '@/components/ui';
 import {
   BaseModal,
   BaseTable,
   FlexColumn,
   ModalContentStack,
   ModalTitleRow,
-  PaddedEmpty,
-  AlertCard,
+  StyledEmpty,
 } from '@/styles/primitives';
-import { InlineStack } from '@/components/common/styled';
-import { RediaccSelect as UISelect, RediaccTag, RediaccText as Text } from '@/components/ui';
 import { ModalSize } from '@/types/modal';
 
 export const StyledModal = styled(BaseModal).attrs({
@@ -18,12 +17,6 @@ export const StyledModal = styled(BaseModal).attrs({
 
 export const TitleStack = styled(ModalTitleRow)``;
 
-export const CloneTag = styled(RediaccTag).attrs({
-  variant: 'warning',
-  size: 'md',
-  borderless: true,
-})``;
-
 const TabStack = styled(ModalContentStack)`
   width: 100%;
 `;
@@ -31,19 +24,9 @@ const TabStack = styled(ModalContentStack)`
 export const AssignTabContainer = TabStack;
 export const ManageTabContainer = TabStack;
 
-export const InfoAlert = styled(AlertCard).attrs({ $variant: 'info' })``;
-export const WarningAlert = styled(AlertCard).attrs({ $variant: 'warning' })``;
-
 export const FieldGroup = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
-export const FieldLabel = styled(Text).attrs({
-  weight: 'medium',
-  size: 'sm',
-})``;
-
-export const StyledSelect = styled(UISelect).attrs({ size: 'sm' })``;
-
-export const EmptyState = styled(PaddedEmpty)`
+export const EmptyState = styled(StyledEmpty)`
   margin-top: ${({ theme }) => theme.spacing.XL}px;
 `;
 
@@ -55,10 +38,6 @@ export const MachinesTable = styled(BaseTable)`
 
 export const MachineNameRow = styled(InlineStack)``;
 
-export const MachineNameText = styled(Text).attrs({
-  weight: 'medium',
-})``;
-
 export const BridgeTag = styled(RediaccTag).attrs({
   preset: 'bridge',
   size: 'sm',
@@ -68,8 +47,3 @@ export const BridgeTag = styled(RediaccTag).attrs({
     font-size: ${({ theme }) => theme.fontSize.XS}px;
   }
 `;
-
-export const SelectionCount = styled(Text).attrs({
-  variant: 'caption',
-  color: 'muted',
-})``;

@@ -1,14 +1,15 @@
 import React from 'react';
-import { Select, Dropdown } from 'antd';
-import { GlobalOutlined } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
+import { Dropdown, Select } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
 import { useUpdateUserLanguage } from '@/api/queries/users';
-import type { RootState } from '@/store/store';
 import { InlineStack } from '@/components/common/styled';
+import type { RootState } from '@/store/store';
+import { GlobalOutlined } from '@/utils/optimizedIcons';
 import { LanguageButton, LanguageSelect } from './styles';
+
 const { Option } = Select;
 
 interface Language {
@@ -53,7 +54,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
 
     // Save to backend if authenticated
     if (isAuthenticated) {
-      updateLanguageMutation.mutate(value);
+      updateLanguageMutation.mutate({ preferredLanguage: value });
     }
   };
 

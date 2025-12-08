@@ -1,46 +1,43 @@
 import React from 'react';
-import { Table, Tag, Typography, Space, Button, Dropdown, message } from 'antd';
+import { Button, Dropdown, message, Space, Table, Tag, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { AuditTraceRecord, useEntityAuditTrace } from '@/api/queries/audit';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { IconWrapper, RediaccAlert, RediaccText } from '@/components/ui';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
+import { createDateSorter, createSorter, formatTimestampAsIs } from '@/platform';
+import type { BaseModalProps } from '@/types';
 import {
-  PlusCircleOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  LockOutlined,
-  KeyOutlined,
-  UserOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  InfoCircleOutlined,
-  HistoryOutlined,
-  DownloadOutlined,
-  FileTextOutlined,
-  FileExcelOutlined,
-  DatabaseOutlined,
-  HddOutlined,
   CopyOutlined,
+  DatabaseOutlined,
+  DeleteOutlined,
+  DownloadOutlined,
+  EditOutlined,
+  FileExcelOutlined,
+  FileTextOutlined,
+  HddOutlined,
+  HistoryOutlined,
+  InfoCircleOutlined,
+  KeyOutlined,
+  LockOutlined,
+  PlusCircleOutlined,
+  UserOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit';
-import { formatTimestampAsIs } from '@/core';
-import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { RediaccText as Text, RediaccAlert as Alert } from '@/components/ui';
 import {
+  StatItem,
+  StatValue,
   StyledModal,
   SummaryContainer,
   SummaryRow,
   SummaryStats,
-  StatItem,
-  StatValue,
 } from './styles';
-import { createSorter, createDateSorter } from '@/core';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { IconWrapper } from '@/components/ui';
 
 const { Text: AntText } = Typography;
 
-export interface AuditTraceModalProps {
-  open: boolean;
-  onCancel: () => void;
+export interface AuditTraceModalProps extends BaseModalProps {
   entityType: string | null;
   entityIdentifier: string | null;
   entityName?: string;
@@ -269,9 +266,9 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       render: (timestamp: string, record: AuditTraceRecord, index: number) => (
         <Space direction="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
           <AntText>{formatTimestampAsIs(timestamp, 'datetime')}</AntText>
-          <Text variant="caption" muted>
+          <RediaccText variant="caption" muted>
             {record.timeAgo}
-          </Text>
+          </RediaccText>
         </Space>
       ),
     },
@@ -304,7 +301,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           <div />
         </LoadingWrapper>
       ) : error ? (
-        <Alert
+        <RediaccAlert
           message={t('audit.error')}
           description={error instanceof Error ? error.message : t('audit.errorLoading')}
           variant="error"

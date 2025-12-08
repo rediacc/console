@@ -1,41 +1,35 @@
-import { endpoints } from '../../endpoints';
-import type { Storage } from '../../types';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type {
+  CreateStorageParams,
+  DeleteStorageParams,
+  GetTeamStorages_ResultSet1,
+  GetTeamStoragesParams,
+  UpdateStorageNameParams,
+  UpdateStorageVaultParams,
+  WithOptionalVault,
+} from '../../types';
 
 export function createStorageService(client: ApiClient) {
   return {
-    list: async (teamName: string): Promise<Storage[]> => {
-      const response = await client.get<Storage>(endpoints.storage.getTeamStorages, { teamName });
+    list: async (params: GetTeamStoragesParams): Promise<GetTeamStorages_ResultSet1[]> => {
+      const response = await client.get<GetTeamStorages_ResultSet1>('/GetTeamStorages', params);
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<Storage>(1),
+        extractor: responseExtractors.byIndex<GetTeamStorages_ResultSet1>(1),
         filter: (storage) => Boolean(storage.storageName),
       });
     },
 
-    create: (teamName: string, storageName: string, vaultContent?: string) =>
-      client.post(endpoints.storage.createStorage, {
-        teamName,
-        storageName,
-        vaultContent: vaultContent ?? '{}',
+    create: (params: WithOptionalVault<CreateStorageParams>) =>
+      client.post('/CreateStorage', {
+        ...params,
+        vaultContent: params.vaultContent ?? '{}',
       }),
 
-    rename: (teamName: string, currentName: string, newName: string) =>
-      client.post(endpoints.storage.updateStorageName, {
-        teamName,
-        currentStorageName: currentName,
-        newStorageName: newName,
-      }),
+    rename: (params: UpdateStorageNameParams) => client.post('/UpdateStorageName', params),
 
-    delete: (teamName: string, storageName: string) =>
-      client.post(endpoints.storage.deleteStorage, { teamName, storageName }),
+    delete: (params: DeleteStorageParams) => client.post('/DeleteStorage', params),
 
-    updateVault: (teamName: string, storageName: string, vault: string, vaultVersion: number) =>
-      client.post(endpoints.storage.updateStorageVault, {
-        teamName,
-        storageName,
-        vaultContent: vault,
-        vaultVersion,
-      }),
+    updateVault: (params: UpdateStorageVaultParams) => client.post('/UpdateStorageVault', params),
   };
 }

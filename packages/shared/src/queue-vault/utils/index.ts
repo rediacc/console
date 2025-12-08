@@ -1,2 +1,2 @@
 export { minifyJSON } from './json';
-export { isBase64, getParamArray, getParamValue } from './validation';
+export { getParamArray, getParamValue, isBase64 } from './validation';

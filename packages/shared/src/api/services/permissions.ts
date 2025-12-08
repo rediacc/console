@@ -1,17 +1,29 @@
-import { endpoints } from '../../endpoints';
-import type { Permission, PermissionGroup } from '../../types';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type {
+  CreatePermissionGroupParams,
+  CreatePermissionInGroupParams,
+  DeletePermissionFromGroupParams,
+  DeletePermissionGroupParams,
+  GetCompanyPermissionGroups_ResultSet1,
+  GetPermissionGroupDetailsParams,
+  Permission,
+} from '../../types';
+
+export interface PermissionGroupWithParsedPermissions
+  extends Omit<GetCompanyPermissionGroups_ResultSet1, 'permissions'> {
+  permissions: string[];
+}
 
 export function createPermissionsService(client: ApiClient) {
   return {
-    listGroups: async (): Promise<PermissionGroup[]> => {
-      const response = await client.get<PermissionGroup>(
-        endpoints.company.getCompanyPermissionGroups
+    listGroups: async (): Promise<PermissionGroupWithParsedPermissions[]> => {
+      const response = await client.get<GetCompanyPermissionGroups_ResultSet1>(
+        '/GetCompanyPermissionGroups'
       );
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<PermissionGroup>(1),
-        map: (group) => {
+        extractor: responseExtractors.byIndex<GetCompanyPermissionGroups_ResultSet1>(1),
+        map: (group): PermissionGroupWithParsedPermissions => {
           const rawPermissions = group.permissions as unknown;
           const permissions =
             typeof rawPermissions === 'string'
@@ -21,7 +33,7 @@ export function createPermissionsService(client: ApiClient) {
                   .filter(Boolean)
               : Array.isArray(rawPermissions)
                 ? rawPermissions
-                : (group.permissions ?? []);
+                : [];
 
           return {
             ...group,
@@ -31,33 +43,24 @@ export function createPermissionsService(client: ApiClient) {
       });
     },
 
-    getGroupDetails: async (groupName: string): Promise<Permission[]> => {
-      const response = await client.get<Permission>(
-        endpoints.permissions.getPermissionGroupDetails,
-        { groupName }
-      );
+    getGroupDetails: async (params: GetPermissionGroupDetailsParams): Promise<Permission[]> => {
+      const response = await client.get<Permission>('/GetPermissionGroupDetails', params);
       return parseResponse(response, {
         extractor: responseExtractors.byIndex<Permission>(1),
         filter: (permission) => Boolean(permission.permissionName),
       });
     },
 
-    createGroup: (groupName: string) =>
-      client.post(endpoints.permissions.createPermissionGroup, { groupName }),
+    createGroup: (params: CreatePermissionGroupParams) =>
+      client.post('/CreatePermissionGroup', params),
 
-    deleteGroup: (groupName: string) =>
-      client.post(endpoints.permissions.deletePermissionGroup, { groupName }),
+    deleteGroup: (params: DeletePermissionGroupParams) =>
+      client.post('/DeletePermissionGroup', params),
 
-    addPermission: (groupName: string, permissionName: string) =>
-      client.post(endpoints.permissions.createPermissionInGroup, {
-        groupName,
-        permissionName,
-      }),
+    addPermission: (params: CreatePermissionInGroupParams) =>
+      client.post('/CreatePermissionInGroup', params),
 
-    removePermission: (groupName: string, permissionName: string) =>
-      client.post(endpoints.permissions.deletePermissionFromGroup, {
-        groupName,
-        permissionName,
-      }),
+    removePermission: (params: DeletePermissionFromGroupParams) =>
+      client.post('/DeletePermissionFromGroup', params),
   };
 }

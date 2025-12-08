@@ -1,7 +1,7 @@
-import styled from 'styled-components';
 import { Tag as AntTag } from 'antd';
+import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { TagVariant, TagSize } from './RediaccTag.types';
+import type { TagSize, TagVariant } from './RediaccTag.types';
 
 type TagTokenSet = {
   bg: string;
@@ -121,15 +121,21 @@ export const StyledRediaccTag = styled(AntTag)<{
   $variant: TagVariant;
   $size: TagSize;
   $borderless: boolean;
+  $compact?: boolean;
+  $emphasized?: boolean;
 }>`
   && {
     display: inline-flex;
     align-items: center;
     gap: ${({ theme }) => theme.spacing.XS}px;
-    padding: ${({ theme, $size }) => resolveRediaccTagPadding(theme, $size)};
-    border-radius: ${({ theme, $size }) => resolveRediaccTagRadius(theme, $size)}px;
-    font-size: ${({ theme, $size }) => resolveRediaccTagFontSize(theme, $size)}px;
-    font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
+    padding: ${({ theme, $size, $compact }) =>
+      $compact ? `0 ${theme.spacing.XS}px` : resolveRediaccTagPadding(theme, $size)};
+    border-radius: ${({ theme, $size, $compact }) =>
+      $compact ? theme.borderRadius.SM : resolveRediaccTagRadius(theme, $size)}px;
+    font-size: ${({ theme, $size, $compact }) =>
+      $compact ? theme.fontSize.CAPTION : resolveRediaccTagFontSize(theme, $size)}px;
+    font-weight: ${({ theme, $emphasized }) =>
+      $emphasized ? theme.fontWeight.SEMIBOLD : theme.fontWeight.MEDIUM};
     line-height: 1.2;
     transition: ${({ theme }) => theme.transitions.DEFAULT};
 

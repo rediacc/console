@@ -1,7 +1,7 @@
-import { QueueService, type QueueMonitoringEvent } from '@/core/services/queue';
-import type { QueueRequestContext } from '@/core/types';
-import { showMessage } from '@/utils/messages';
+import { type QueueMonitoringEvent, QueueService } from '@/platform/services/queue';
+import type { QueueRequestContext } from '@/platform/types';
 import { queueMonitoringService } from '@/services/queueMonitoringService';
+import { showMessage } from '@/utils/messages';
 
 const coreQueueService = new QueueService({
   emitNotification: ({ level, message }) => {

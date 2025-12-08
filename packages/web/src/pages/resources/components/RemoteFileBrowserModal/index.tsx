@@ -1,52 +1,45 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Modal,
-  Table,
-  Button,
-  Space,
-  Input,
-  Select,
-  Empty,
+  CloseOutlined,
+  CloudDownloadOutlined,
+  FileOutlined,
+  FolderOpenOutlined,
+  FolderOutlined,
+  HomeOutlined,
+  ReloadOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
+import {
   Alert,
   Breadcrumb,
+  Button,
+  Empty,
+  Input,
+  Modal,
+  Select,
+  Space,
+  Table,
   Tooltip,
 } from 'antd';
-import { ModalSize } from '@/types/modal';
-import {
-  ContentSpace,
-  SourceLabel,
-  SourceContainer,
-  SourceSelect,
-  SearchInput,
-  FolderIcon,
-  FileIcon,
-} from './styles';
-import type { ColumnsType } from 'antd/es/table/interface';
-import type { TableProps } from 'antd';
-import {
-  FolderOutlined,
-  FileOutlined,
-  CloudDownloadOutlined,
-  ReloadOutlined,
-  HomeOutlined,
-  FolderOpenOutlined,
-  RightOutlined,
-  CloseOutlined,
-} from '@ant-design/icons';
-import { useDropdownData } from '@/api/queries/useDropdownData';
-import { useStorage } from '@/api/queries/storage';
+import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
-import { useTeams } from '@/api/queries/teams';
 import { useRepos } from '@/api/queries/repos';
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
-import { waitForQueueItemCompletion } from '@/services/helloService';
-import { showMessage } from '@/utils/messages';
-import { createSorter, createCustomSorter } from '@/core';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
+import { useStorage } from '@/api/queries/storage';
+import { useTeams } from '@/api/queries/teams';
+import { useDropdownData } from '@/api/queries/useDropdownData';
 import { createTruncatedColumn } from '@/components/common/columns';
+import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccStack } from '@/components/ui';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import { createCustomSorter, createSorter } from '@/platform';
+import { waitForQueueItemCompletion } from '@/services/helloService';
+import { ModalSize } from '@/types/modal';
+import { showMessage } from '@/utils/messages';
+import { FileIcon, FolderIcon, SearchInput, SourceLabel, SourceSelect } from './styles';
+import type { TableProps } from 'antd';
+import type { ColumnsType } from 'antd/es/table/interface';
 
 interface RemoteFile {
   name: string;
@@ -778,13 +771,13 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         </Tooltip>,
       ]}
     >
-      <ContentSpace direction="vertical" gap="md">
+      <RediaccStack direction="vertical" gap="md" fullWidth>
         {/* Source selector with label */}
         <div data-testid="file-browser-source-container">
           <SourceLabel data-testid="file-browser-source-label">
             {t('resources:remoteFiles.sourceLabel')}
           </SourceLabel>
-          <SourceContainer>
+          <RediaccStack direction="horizontal" justify="between" fullWidth>
             <Space>
               <SourceSelect>
                 <Select
@@ -837,7 +830,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                 data-testid="file-browser-search-input"
               />
             </SearchInput>
-          </SourceContainer>
+          </RediaccStack>
         </div>
 
         {/* Breadcrumb navigation */}
@@ -898,7 +891,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           showIcon
           data-testid="file-browser-info-alert"
         />
-      </ContentSpace>
+      </RediaccStack>
     </Modal>
   );
 };

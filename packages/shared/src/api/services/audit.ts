@@ -1,14 +1,13 @@
-import { endpoints } from '../../endpoints';
-import type {
-  AuditHistoryEntry,
-  AuditLogEntry,
-  AuditTraceResponse,
-  AuditTraceRecord,
-  AuditTraceSummary,
-} from '../../types';
-import type { ApiResponse } from '../../types/api';
 import { parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type {
+  AuditTraceRecord,
+  AuditTraceResponse,
+  AuditTraceSummary,
+  GetAuditLogs_ResultSet1,
+  GetEntityAuditTraceParams,
+} from '../../types';
+import type { ApiResponse } from '../../types/api';
 
 export interface AuditLogOptions {
   offset?: number;
@@ -22,8 +21,8 @@ export function createAuditService(client: ApiClient) {
       endDate?: string,
       maxRecords = 100,
       options: AuditLogOptions = {}
-    ): Promise<AuditLogEntry[]> => {
-      const response = await client.post<AuditLogEntry>(endpoints.audit.getAuditLogs, {
+    ): Promise<GetAuditLogs_ResultSet1[]> => {
+      const response = await client.post<GetAuditLogs_ResultSet1>('/GetAuditLogs', {
         entityFilter: entityType,
         startDate,
         endDate,
@@ -32,15 +31,12 @@ export function createAuditService(client: ApiClient) {
       });
 
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<AuditLogEntry>(1),
+        extractor: responseExtractors.byIndex<GetAuditLogs_ResultSet1>(1),
       });
     },
 
-    getEntityTrace: async (entityType: string, entityName: string): Promise<AuditTraceResponse> => {
-      const response = await client.post(endpoints.audit.getEntityAuditTrace, {
-        entityType,
-        entityIdentifier: entityName,
-      });
+    getEntityTrace: async (params: GetEntityAuditTraceParams): Promise<AuditTraceResponse> => {
+      const response = await client.post('/GetEntityAuditTrace', params);
 
       const records = getRowsByIndex<AuditTraceRecord>(response, 1);
       const summary = getRowByIndex<AuditTraceSummary>(response, 2);
@@ -58,14 +54,14 @@ export function createAuditService(client: ApiClient) {
     getEntityHistory: async (
       entityType: string,
       entityName: string
-    ): Promise<AuditHistoryEntry[]> => {
-      const response = await client.post<AuditHistoryEntry>(endpoints.audit.getEntityHistory, {
+    ): Promise<GetAuditLogs_ResultSet1[]> => {
+      const response = await client.post<GetAuditLogs_ResultSet1>('/GetEntityHistory', {
         entityType,
         entityIdentifier: entityName,
       });
 
       return parseResponse(response, {
-        extractor: responseExtractors.byIndex<AuditHistoryEntry>(1),
+        extractor: responseExtractors.byIndex<GetAuditLogs_ResultSet1>(1),
       });
     },
   };

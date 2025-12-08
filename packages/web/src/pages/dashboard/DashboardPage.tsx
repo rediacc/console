@@ -1,72 +1,66 @@
 import React from 'react';
-import { Col, Row, Alert, Tag, Statistic, Empty, Tooltip, Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Alert, Col, Empty, Row, Statistic, Table, Tag, Tooltip } from 'antd';
 import { useTheme as useStyledTheme } from 'styled-components';
+import { useRecentAuditLogs } from '@/api/queries/audit';
+import { useDashboard } from '@/api/queries/dashboard';
+import { createTruncatedColumn } from '@/components/common/columns';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccCard, RediaccStack, RediaccText } from '@/components/ui';
+import CephDashboardWidget from '@/pages/dashboard/components/CephDashboardWidget';
+import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
+import { createSorter } from '@/platform';
+import { EmptyStateWrapper, PageContainer } from '@/styles/primitives';
 import {
   AlertOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  SafetyCertificateOutlined,
-  ExclamationCircleOutlined,
+  CloseCircleOutlined,
   CrownOutlined,
   DesktopOutlined,
-  InboxOutlined,
-  HistoryOutlined,
-  CloseCircleOutlined,
   EditOutlined,
-  LoginOutlined,
-  SwapOutlined,
+  ExclamationCircleOutlined,
+  FieldTimeOutlined,
+  HistoryOutlined,
+  InboxOutlined,
   InfoCircleOutlined,
+  LoginOutlined,
+  RobotOutlined,
+  SafetyCertificateOutlined,
+  SwapOutlined,
   SyncOutlined,
+  TeamOutlined,
   ThunderboltOutlined,
   WarningOutlined,
-  FieldTimeOutlined,
-  RobotOutlined,
-  TeamOutlined,
 } from '@/utils/optimizedIcons';
-import { useDashboard } from '@/api/queries/dashboard';
-import type { QueueTeamIssue, QueueMachineIssue } from '@rediacc/shared/types';
-import { useRecentAuditLogs } from '@/api/queries/audit';
-import CephDashboardWidget from '@/pages/dashboard/components/CephDashboardWidget';
-import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
-import { EmptyStateWrapper } from '@/styles/primitives';
-import { createSorter } from '@/core';
-import { createTruncatedColumn } from '@/components/common/columns';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccText as Text } from '@/components/ui';
+import type { QueueMachineIssue, QueueTeamIssue } from '@rediacc/shared/types';
 import {
-  PageWrapper,
-  ContentStack,
-  CenteredState,
-  DashboardCard,
-  SectionDescription,
-  ResourceTile,
-  TileHeader,
-  TileMeta,
-  ResourceProgress,
-  SectionLabel,
-  SectionTitle,
-  ScrollContainer,
-  LicenseItem,
-  LicenseHeader,
-  FlexBetween,
-  InlineStack,
-  StatList,
-  StatRow,
-  StatLabel,
-  StatValue,
-  InlineLink,
-  QueueBadgeRow,
-  QueueBadge,
-  TimelineWrapper,
+  AuditMeta,
   BorderlessList,
   BorderlessListItem,
-  AuditMeta,
-  SectionFooter,
+  CenteredState,
+  FlexBetween,
+  HorizontalScroll,
+  InlineLink,
+  InlineStack,
+  LicenseHeader,
+  LicenseItem,
   PlanCountBadge,
   QuantityBadge,
-  HorizontalScroll,
+  QueueBadge,
+  QueueBadgeRow,
+  ResourceProgress,
+  ResourceTile,
+  ScrollContainer,
+  SectionFooter,
+  SectionLabelWrapper,
+  SectionTitleWrapper,
+  StatRow,
+  StatValue,
+  TileHeader,
+  TileMeta,
+  TimelineWrapper,
 } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 const resourceIcons: Record<string, React.ReactNode> = {
   Machine: <DesktopOutlined />,
@@ -165,19 +159,19 @@ const DashboardPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <PageWrapper>
+      <PageContainer>
         <CenteredState>
           <LoadingWrapper loading centered minHeight={200}>
             <div />
           </LoadingWrapper>
         </CenteredState>
-      </PageWrapper>
+      </PageContainer>
     );
   }
 
   if (error) {
     return (
-      <PageWrapper>
+      <PageContainer>
         <Alert
           message="Error"
           description="Failed to load dashboard data. Please try again later."
@@ -186,15 +180,15 @@ const DashboardPage: React.FC = () => {
           icon={<AlertOutlined />}
           data-testid="dashboard-error-alert"
         />
-      </PageWrapper>
+      </PageContainer>
     );
   }
 
   if (!dashboard) {
     return (
-      <PageWrapper>
+      <PageContainer>
         <Empty description="No dashboard data available" />
-      </PageWrapper>
+      </PageContainer>
     );
   }
 
@@ -214,8 +208,8 @@ const DashboardPage: React.FC = () => {
   const featureAccess = dashboard.featureAccess;
 
   return (
-    <PageWrapper>
-      <ContentStack>
+    <PageContainer>
+      <RediaccStack variant="spaced-column" fullWidth>
         {dashboard.activeSubscription?.isExpiringSoon === 1 && (
           <Alert
             message="Subscription Expiring Soon"
@@ -238,7 +232,8 @@ const DashboardPage: React.FC = () => {
           />
         )}
 
-        <DashboardCard
+        <RediaccCard
+          fullWidth
           title={
             <InlineStack>
               <ThunderboltOutlined />
@@ -246,9 +241,9 @@ const DashboardPage: React.FC = () => {
             </InlineStack>
           }
           extra={
-            <SectionDescription>
+            <RediaccText variant="description">
               Monitor your resource consumption against plan limits
-            </SectionDescription>
+            </RediaccText>
           }
           data-testid="dashboard-card-resource-usage"
         >
@@ -264,11 +259,11 @@ const DashboardPage: React.FC = () => {
                 return (
                   <Col key={resource.resourceType} xs={24} sm={12} md={8}>
                     <ResourceTile>
-                      <StatList>
+                      <RediaccStack direction="vertical" gap="md" fullWidth>
                         <TileHeader>
                           <InlineStack>
                             {resourceIcons[resource.resourceType]}
-                            <Text weight="bold">{resource.resourceType}s</Text>
+                            <RediaccText weight="bold">{resource.resourceType}s</RediaccText>
                           </InlineStack>
                           <TileMeta>
                             {resource.currentUsage} /{' '}
@@ -282,19 +277,25 @@ const DashboardPage: React.FC = () => {
                           data-testid={`dashboard-progress-${resource.resourceType.toLowerCase()}`}
                         />
                         {resource.isLimitReached === 1 && (
-                          <StatLabel as="span" style={{ color: theme.colors.error }}>
+                          <RediaccText
+                            variant="caption"
+                            color="secondary"
+                            as="span"
+                            style={{ color: theme.colors.error }}
+                          >
                             Limit reached
-                          </StatLabel>
+                          </RediaccText>
                         )}
-                      </StatList>
+                      </RediaccStack>
                     </ResourceTile>
                   </Col>
                 );
               })}
           </Row>
-        </DashboardCard>
+        </RediaccCard>
 
-        <DashboardCard
+        <RediaccCard
+          fullWidth
           title={
             <InlineStack>
               <CrownOutlined />
@@ -309,10 +310,14 @@ const DashboardPage: React.FC = () => {
           <Row gutter={[24, 24]}>
             <Col xs={24} md={activeSubscriptions.length > 0 ? 12 : 24}>
               {dashboard.activeSubscription ? (
-                <StatList>
+                <RediaccStack direction="vertical" gap="md" fullWidth>
                   <div>
-                    <SectionLabel>CURRENT SUBSCRIPTION</SectionLabel>
-                    <SectionTitle level={4}>{dashboard.activeSubscription.planCode}</SectionTitle>
+                    <SectionLabelWrapper>
+                      <RediaccText variant="label">CURRENT SUBSCRIPTION</RediaccText>
+                    </SectionLabelWrapper>
+                    <SectionTitleWrapper level={4}>
+                      {dashboard.activeSubscription.planCode}
+                    </SectionTitleWrapper>
                     <Row gutter={[16, 16]}>
                       <Col span={12}>
                         <Statistic
@@ -337,7 +342,7 @@ const DashboardPage: React.FC = () => {
                       </Col>
                     </Row>
                   </div>
-                </StatList>
+                </RediaccStack>
               ) : (
                 <Empty description="No active subscription" />
               )}
@@ -345,13 +350,17 @@ const DashboardPage: React.FC = () => {
 
             {activeSubscriptions.length > 0 && (
               <Col xs={24} md={12}>
-                <StatList>
+                <RediaccStack direction="vertical" gap="md" fullWidth>
                   <div>
-                    <SectionLabel>ALL ACTIVE LICENSES</SectionLabel>
-                    <SectionTitle level={4}>{activeSubscriptions.length} Total</SectionTitle>
+                    <SectionLabelWrapper>
+                      <RediaccText variant="label">ALL ACTIVE LICENSES</RediaccText>
+                    </SectionLabelWrapper>
+                    <SectionTitleWrapper level={4}>
+                      {activeSubscriptions.length} Total
+                    </SectionTitleWrapper>
                   </div>
                   <ScrollContainer>
-                    <StatList gap="sm">
+                    <RediaccStack direction="vertical" gap="sm" fullWidth>
                       {activeSubscriptions.map((sub, index) => {
                         const percent = (() => {
                           const startDate = new Date(sub.startDate);
@@ -378,11 +387,13 @@ const DashboardPage: React.FC = () => {
                           >
                             <LicenseHeader>
                               <InlineStack>
-                                <Text weight="bold">{sub.planCode}</Text>
+                                <RediaccText weight="bold">{sub.planCode}</RediaccText>
                                 <QuantityBadge count={sub.quantity} />
                                 {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
                               </InlineStack>
-                              <StatLabel
+                              <RediaccText
+                                variant="caption"
+                                color="secondary"
                                 as="span"
                                 style={{
                                   color:
@@ -393,7 +404,7 @@ const DashboardPage: React.FC = () => {
                               >
                                 {sub.daysRemaining} {sub.daysRemaining === 1 ? 'day' : 'days'}{' '}
                                 remaining
-                              </StatLabel>
+                              </RediaccText>
                             </LicenseHeader>
                             <Tooltip
                               title={`From ${new Date(sub.startDate).toLocaleDateString()} to ${new Date(sub.endDate).toLocaleDateString()}`}
@@ -409,9 +420,9 @@ const DashboardPage: React.FC = () => {
                           </LicenseItem>
                         );
                       })}
-                    </StatList>
+                    </RediaccStack>
                   </ScrollContainer>
-                </StatList>
+                </RediaccStack>
               </Col>
             )}
           </Row>
@@ -452,10 +463,11 @@ const DashboardPage: React.FC = () => {
           ) : (
             <Empty description="No plan limit data available" />
           )}
-        </DashboardCard>
+        </RediaccCard>
 
         {queueStats ? (
-          <DashboardCard
+          <RediaccCard
+            fullWidth
             title={
               <InlineStack>
                 <RobotOutlined />
@@ -469,7 +481,7 @@ const DashboardPage: React.FC = () => {
             }
             data-testid="dashboard-card-queue-overview"
           >
-            <StatList>
+            <RediaccStack direction="vertical" gap="md" fullWidth>
               <Row gutter={[16, 16]}>
                 <Col xs={12} md={6}>
                   <Statistic
@@ -510,7 +522,7 @@ const DashboardPage: React.FC = () => {
               </Row>
 
               {(queueStats.hasStaleItems === 1 || queueStats.hasOldPendingItems === 1) && (
-                <StatList gap="sm">
+                <RediaccStack direction="vertical" gap="sm" fullWidth>
                   {queueStats.hasStaleItems === 1 && (
                     <Alert
                       message={`${queueStats.staleCount || 0} stale items`}
@@ -529,12 +541,13 @@ const DashboardPage: React.FC = () => {
                       data-testid="dashboard-alert-old-pending"
                     />
                   )}
-                </StatList>
+                </RediaccStack>
               )}
-            </StatList>
-          </DashboardCard>
+            </RediaccStack>
+          </RediaccCard>
         ) : (
-          <DashboardCard
+          <RediaccCard
+            fullWidth
             title={
               <InlineStack>
                 <RobotOutlined />
@@ -544,11 +557,12 @@ const DashboardPage: React.FC = () => {
             data-testid="dashboard-card-queue-overview-empty"
           >
             <Empty description="No queue data available" />
-          </DashboardCard>
+          </RediaccCard>
         )}
 
         {hasQueueDetails && queueStats && (
-          <DashboardCard
+          <RediaccCard
+            fullWidth
             title={
               <InlineStack>
                 <RobotOutlined />
@@ -560,43 +574,51 @@ const DashboardPage: React.FC = () => {
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={8}>
                 <ResourceTile>
-                  <Text weight="bold">Today&apos;s Activity</Text>
-                  <StatList>
+                  <RediaccText weight="bold">Today&apos;s Activity</RediaccText>
+                  <RediaccStack direction="vertical" gap="md" fullWidth>
                     <StatRow>
-                      <StatLabel>Created</StatLabel>
+                      <RediaccText variant="caption" color="secondary">
+                        Created
+                      </RediaccText>
                       <StatValue data-testid="dashboard-stat-created-today">
                         {queueStats.createdToday || 0}
                       </StatValue>
                     </StatRow>
                     <StatRow>
-                      <StatLabel>Completed</StatLabel>
+                      <RediaccText variant="caption" color="secondary">
+                        Completed
+                      </RediaccText>
                       <StatValue $variant="success" data-testid="dashboard-stat-completed-today">
                         {queueStats.completedToday || 0}
                       </StatValue>
                     </StatRow>
                     <StatRow>
-                      <StatLabel>Cancelled</StatLabel>
+                      <RediaccText variant="caption" color="secondary">
+                        Cancelled
+                      </RediaccText>
                       <StatValue $variant="error" data-testid="dashboard-stat-cancelled-today">
                         {queueStats.cancelledToday || 0}
                       </StatValue>
                     </StatRow>
                     <StatRow>
-                      <StatLabel>Failed</StatLabel>
+                      <RediaccText variant="caption" color="secondary">
+                        Failed
+                      </RediaccText>
                       <StatValue $variant="error" data-testid="dashboard-stat-failed-today">
                         {queueStats.failedToday || 0}
                       </StatValue>
                     </StatRow>
-                  </StatList>
+                  </RediaccStack>
                 </ResourceTile>
               </Col>
 
               <Col xs={24} lg={16}>
-                <StatList>
+                <RediaccStack direction="vertical" gap="md" fullWidth>
                   {teamIssues.length > 0 && (
                     <div>
-                      <Text weight="bold" style={{ marginBottom: theme.spacing.SM }}>
+                      <RediaccText weight="bold" style={{ marginBottom: theme.spacing.SM }}>
                         <TeamOutlined /> Team Queue Status
-                      </Text>
+                      </RediaccText>
                       <BorderlessList
                         size="sm"
                         dataSource={teamIssues}
@@ -606,7 +628,7 @@ const DashboardPage: React.FC = () => {
                           return (
                             <BorderlessListItem>
                               <FlexBetween>
-                                <Text weight="bold">{teamIssue.teamName}</Text>
+                                <RediaccText weight="bold">{teamIssue.teamName}</RediaccText>
                                 <InlineStack>
                                   {(teamIssue.staleItems || 0) > 0 && (
                                     <Tag color="warning">
@@ -628,9 +650,9 @@ const DashboardPage: React.FC = () => {
 
                   {machineIssues.length > 0 && (
                     <div>
-                      <Text weight="bold" style={{ marginBottom: theme.spacing.SM }}>
+                      <RediaccText weight="bold" style={{ marginBottom: theme.spacing.SM }}>
                         <DesktopOutlined /> Machine Queue Status
-                      </Text>
+                      </RediaccText>
                       <HorizontalScroll>
                         <Table
                           size="small"
@@ -647,12 +669,12 @@ const DashboardPage: React.FC = () => {
                   {featureAccess?.hasAdvancedAnalytics === 1 &&
                     queueStats.highestPriorityPending !== null && (
                       <ResourceTile>
-                        <Text weight="bold">
+                        <RediaccText weight="bold">
                           <ThunderboltOutlined /> Priority Breakdown
-                        </Text>
+                        </RediaccText>
                         <QueueBadgeRow>
                           <FlexBetween>
-                            <Text>Highest Priority</Text>
+                            <RediaccText>Highest Priority</RediaccText>
                             <QueueBadge
                               $variant="error"
                               count={queueStats.highestPriorityPending ?? 0}
@@ -660,7 +682,7 @@ const DashboardPage: React.FC = () => {
                             />
                           </FlexBetween>
                           <FlexBetween>
-                            <Text>High Priority</Text>
+                            <RediaccText>High Priority</RediaccText>
                             <QueueBadge
                               $variant="warning"
                               count={queueStats.highPriorityPending ?? 0}
@@ -668,7 +690,7 @@ const DashboardPage: React.FC = () => {
                             />
                           </FlexBetween>
                           <FlexBetween>
-                            <Text>Normal Priority</Text>
+                            <RediaccText>Normal Priority</RediaccText>
                             <QueueBadge
                               $variant="info"
                               count={queueStats.normalPriorityPending ?? 0}
@@ -676,7 +698,7 @@ const DashboardPage: React.FC = () => {
                             />
                           </FlexBetween>
                           <FlexBetween>
-                            <Text>Low Priority</Text>
+                            <RediaccText>Low Priority</RediaccText>
                             <QueueBadge
                               $variant="muted"
                               count={queueStats.lowPriorityPending ?? 0}
@@ -686,10 +708,10 @@ const DashboardPage: React.FC = () => {
                         </QueueBadgeRow>
                       </ResourceTile>
                     )}
-                </StatList>
+                </RediaccStack>
               </Col>
             </Row>
-          </DashboardCard>
+          </RediaccCard>
         )}
 
         {featureAccess?.hasAdvancedAnalytics === 1 && dashboard.cephStats && (
@@ -697,7 +719,8 @@ const DashboardPage: React.FC = () => {
         )}
 
         {accountHealth ? (
-          <DashboardCard
+          <RediaccCard
+            fullWidth
             data-testid="dashboard-account-health-card"
             title={
               <InlineStack>
@@ -706,37 +729,38 @@ const DashboardPage: React.FC = () => {
               </InlineStack>
             }
           >
-            <StatList>
+            <RediaccStack direction="vertical" gap="md" fullWidth>
               <FlexBetween>
-                <Text>Overall Status</Text>
+                <RediaccText>Overall Status</RediaccText>
                 <Tag color={STATUS_TYPE_MAP[accountHealth.subscriptionStatus] || 'success'}>
                   {accountHealth.subscriptionStatus}
                 </Tag>
               </FlexBetween>
 
-              <StatList gap="sm">
+              <RediaccStack direction="vertical" gap="sm" fullWidth>
                 <InlineStack>
                   {accountHealth.resourcesAtLimit > 0 ? (
                     <ExclamationCircleOutlined style={{ color: theme.colors.warning }} />
                   ) : (
                     <CheckCircleOutlined style={{ color: theme.colors.success }} />
                   )}
-                  <Text>{accountHealth.resourcesAtLimit} resources at limit</Text>
+                  <RediaccText>{accountHealth.resourcesAtLimit} resources at limit</RediaccText>
                 </InlineStack>
 
                 <InlineStack>
                   <ClockCircleOutlined style={{ color: theme.colors.textSecondary }} />
-                  <Text>{accountHealth.resourcesNearLimit} resources near limit</Text>
+                  <RediaccText>{accountHealth.resourcesNearLimit} resources near limit</RediaccText>
                 </InlineStack>
-              </StatList>
+              </RediaccStack>
 
               <SectionFooter>
-                <Text weight="bold">{accountHealth.upgradeRecommendation}</Text>
+                <RediaccText weight="bold">{accountHealth.upgradeRecommendation}</RediaccText>
               </SectionFooter>
-            </StatList>
-          </DashboardCard>
+            </RediaccStack>
+          </RediaccCard>
         ) : (
-          <DashboardCard
+          <RediaccCard
+            fullWidth
             data-testid="dashboard-account-health-card"
             title={
               <InlineStack>
@@ -746,10 +770,11 @@ const DashboardPage: React.FC = () => {
             }
           >
             <Empty description="No account health data available" />
-          </DashboardCard>
+          </RediaccCard>
         )}
 
-        <DashboardCard
+        <RediaccCard
+          fullWidth
           title={
             <InlineStack>
               <HistoryOutlined />
@@ -783,10 +808,10 @@ const DashboardPage: React.FC = () => {
                   key: index,
                   dot: getActionIcon(log.action),
                   children: (
-                    <StatList gap="sm">
+                    <RediaccStack direction="vertical" gap="sm" fullWidth>
                       <FlexBetween>
                         <InlineStack>
-                          <Text weight="bold">{log.action.replace(/_/g, ' ')}</Text>
+                          <RediaccText weight="bold">{log.action.replace(/_/g, ' ')}</RediaccText>
                           <Tag>{log.entity}</Tag>
                         </InlineStack>
                         <AuditMeta>{formatTimestamp(log.timestamp)}</AuditMeta>
@@ -801,7 +826,7 @@ const DashboardPage: React.FC = () => {
                             : log.details}
                         </AuditMeta>
                       )}
-                    </StatList>
+                    </RediaccStack>
                   ),
                 }))}
             />
@@ -810,11 +835,11 @@ const DashboardPage: React.FC = () => {
               <Empty description="No recent activity" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             </EmptyStateWrapper>
           )}
-        </DashboardCard>
+        </RediaccCard>
 
         <SystemVersionFooter />
-      </ContentStack>
-    </PageWrapper>
+      </RediaccStack>
+    </PageContainer>
   );
 };
 

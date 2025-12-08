@@ -1,9 +1,9 @@
 import styled from 'styled-components';
-import { BaseModal, BaseTable, FlexRow, ModalTitleRow } from '@/styles/primitives';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccTag, RediaccText as Text } from '@/components/ui';
-import { InfoCircleOutlined } from '@/utils/optimizedIcons';
+import { RediaccTag } from '@/components/ui';
+import { BaseModal, BaseTable, FlexRow, ModalTitleRow } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
+import { InfoCircleOutlined } from '@/utils/optimizedIcons';
 
 export const StyledModal = styled(BaseModal).attrs({
   className: `${ModalSize.Large} view-assignment-status-modal`,
@@ -23,15 +23,6 @@ export const SummaryItem = styled(InlineStack)`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const SummaryLabel = styled(Text).attrs({
-  variant: 'caption',
-  color: 'muted',
-})``;
-
-export const SummaryValue = styled(Text).attrs({
-  weight: 'semibold',
-})``;
-
 export const MachinesTable = styled(BaseTable)`
   .ant-table-tbody > tr > td {
     font-size: ${({ theme }) => theme.fontSize.SM}px;
@@ -39,10 +30,6 @@ export const MachinesTable = styled(BaseTable)`
 `;
 
 export const MachineNameRow = styled(InlineStack)``;
-
-export const MachineNameText = styled(Text).attrs({
-  weight: 'semibold',
-})``;
 
 export const TeamTag = styled(RediaccTag).attrs({
   preset: 'team',
@@ -64,8 +51,3 @@ export const ClusterTag = styled(RediaccTag).attrs({
     padding: 0 ${({ theme }) => theme.spacing.XS}px;
   }
 `;
-
-export const MutedText = styled(Text).attrs({
-  variant: 'caption',
-  color: 'muted',
-})``;

@@ -1,11 +1,15 @@
 import { useCallback } from 'react';
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { useCreateQueueItem } from '@/api/queries/queue';
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
-import type { Machine } from '@/types';
 import { api } from '@/api/client';
+import { useCreateQueueItem } from '@/api/queries/queue';
 import { useTeams } from '@/api/queries/teams';
-import type { QueueTrace, QueueItem, Team } from '@rediacc/shared/types';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import type { Machine } from '@/types';
+import type {
+  GetCompanyTeams_ResultSet1,
+  GetTeamQueueItems_ResultSet1,
+  QueueTrace,
+} from '@rediacc/shared/types';
 
 export interface HelloFunctionParams {
   teamName: string;
@@ -123,7 +127,7 @@ export async function waitForQueueItemCompletion(
 
 async function pollQueueItemStatus(taskId: string): Promise<QueueItemCompletionResult | null> {
   try {
-    const trace = await api.queue.getTrace(taskId);
+    const trace = await api.queue.getTrace({ taskId });
     const queueDetails = trace.queueDetails;
 
     if (!queueDetails) {
@@ -167,7 +171,10 @@ function handleCompletedStatus(trace: QueueTrace): QueueItemCompletionResult {
       );
 }
 
-function handleFailedStatus(queueDetails: QueueItem, status: string): QueueItemCompletionResult {
+function handleFailedStatus(
+  queueDetails: GetTeamQueueItems_ResultSet1,
+  status: string
+): QueueItemCompletionResult {
   const failureReason = queueDetails.lastFailureReason || 'Operation failed';
 
   return createErrorResult(failureReason, status);
@@ -321,7 +328,10 @@ export function useHelloFunction(options?: { useManaged?: boolean }) {
 }
 
 // Helper functions
-function getTeamVault(params: HelloFunctionParams, teams: Team[] | undefined): string {
+function getTeamVault(
+  params: HelloFunctionParams,
+  teams: GetCompanyTeams_ResultSet1[] | undefined
+): string {
   if (params.teamVault && params.teamVault !== '{}') {
     return params.teamVault;
   }

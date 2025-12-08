@@ -1,936 +1,125 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef, type JSX } from 'react';
-import { useTheme } from 'styled-components';
+import React, { type JSX, useCallback } from 'react';
 import {
-  Form,
-  Space,
   Alert,
   Card,
-  Tooltip,
-  message,
-  Divider,
   Col,
   Descriptions,
+  Divider,
+  Form,
+  message,
   Select,
+  Space,
+  Tooltip,
 } from 'antd';
-import { RediaccSwitch } from '@/components/ui/Form';
-import { RediaccTag as Tag } from '@/components/ui';
-import type { FormInstance } from 'antd';
 import {
-  InfoCircleOutlined,
-  WarningOutlined,
+  RediaccAlert,
+  RediaccStack,
+  RediaccSwitch,
+  RediaccTag,
+  RediaccText,
+} from '@/components/ui';
+import {
+  RediaccInput,
+  RediaccInputNumber,
+  RediaccPasswordInput,
+  RediaccSelect,
+  RediaccTextArea,
+} from '@/components/ui/Form';
+import { featureFlags } from '@/config/featureFlags';
+import {
+  CheckCircleOutlined,
   CodeOutlined,
   ExclamationCircleOutlined,
+  InfoCircleOutlined,
   QuestionCircleOutlined,
-  CheckCircleOutlined,
+  WarningOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
-import { SimpleJsonEditor } from './components/SimpleJsonEditor';
-import { NestedObjectEditor } from './components/NestedObjectEditor';
-import type { UploadFile } from 'antd/es/upload/interface';
-import type { Rule } from 'antd/es/form';
-
-// Type for form validation error entity
-interface ValidateErrorEntity<T = unknown> {
-  values: T;
-  errorFields: { name: (string | number)[]; errors: string[] }[];
-  outOfDate: boolean;
-}
-import { useTranslation } from 'react-i18next';
-import vaultDefinitions from '@/data/vaults.json';
-import storageProviders from '@/data/storageProviders.json';
+import { FieldFormItem } from './components/FieldFormItem';
 import FieldGenerator from './components/FieldGenerator';
-import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue';
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { useTeams } from '@/api/queries/teams';
-import { featureFlags } from '@/config/featureFlags';
-import { RediaccText as Text } from '@/components/ui';
+import { FieldLabel } from './components/FieldLabel';
+import { NestedObjectEditor } from './components/NestedObjectEditor';
+import { SimpleJsonEditor } from './components/SimpleJsonEditor';
+import { MACHINE_BASIC_FIELD_ORDER, vaultDefinitionConfig } from './constants';
+import { useVaultEditorState } from './hooks/useVaultEditorState';
 import {
-  EditorContainer,
-  InfoBanner,
-  EditorForm,
-  FormRow,
-  FieldItem,
-  FieldLabelStack,
-  FieldInfoIcon,
-  FullWidthStack,
-  InlineInfoAlert,
-  TestConnectionButton,
-  StatusHighlightText,
-  ListSection,
-  IssueList,
-  RecommendationList,
-  SectionDivider,
-  SectionAlert,
-  ProviderSectionSpacer,
-  TipsDividerIcon,
-  TipsAlert,
-  ExtraFieldsWarningIcon,
-  ExtraFieldsAlert,
-  RawJsonPreview,
   DangerAlertIcon,
+  EditorContainer,
+  EditorForm,
+  ExtraFieldsWarningIcon,
+  FieldItem,
   FormatActions,
   FormatButton,
-  FullWidthInput,
-  FullWidthInputNumber,
-  FullWidthSelect,
-  FullWidthPasswordInput,
-  FullWidthTextArea,
+  FormRow,
+  InfoBanner,
+  IssueList,
+  ListSection,
+  ProviderSectionSpacer,
+  RawJsonPreview,
+  RecommendationList,
+  TestConnectionButton,
+  TipsAlert,
+  TipsDividerIcon,
 } from './styles';
+import {
+  buildValidationRules,
+  decodeBase64,
+  encodeBase64,
+  getFieldDefinition,
+  getJsonFieldProps,
+} from './utils';
+import type { FieldDefinition, VaultEditorProps, VaultFormValues } from './types';
+import type { UploadFile } from 'antd/es/upload/interface';
 
 type NestedFieldDefinition = React.ComponentProps<typeof NestedObjectEditor>['fieldDefinition'];
 
-// Base64 utility functions for fields with format: "base64"
-const decodeBase64 = (value: string): string => {
-  try {
-    return atob(value).trim();
-  } catch (e) {
-    // If decode fails, return original value
-    console.warn('Failed to decode base64 value:', e);
-    return value;
-  }
-};
+const VaultEditor: React.FC<VaultEditorProps> = (props) => {
+  const {
+    entityType,
+    initialData = {},
+    onChange,
+    onValidate,
+    onImportExport,
+    isEditMode = false,
+    uiMode = 'expert',
+    teamName = 'Default Team',
+    bridgeName = 'Default Bridge',
+  } = props;
 
-const encodeBase64 = (value: string): string => {
-  try {
-    return btoa(value.trim());
-  } catch (e) {
-    // If encode fails, return original value
-    console.warn('Failed to encode base64 value:', e);
-    return value;
-  }
-};
+  // Use the custom hook for state management
+  const {
+    form,
+    formGutter,
+    extraFields,
+    setExtraFields,
+    setImportedData,
+    rawJsonValue,
+    setRawJsonValue,
+    rawJsonError,
+    setRawJsonError,
+    selectedProvider,
+    testConnectionSuccess,
+    osSetupCompleted,
+    formatJsonRef,
+    setTestTaskId,
+    isTestingConnection,
+    setIsTestingConnection,
+    isCreatingQueueItem,
+    entityDef,
+    providerFields,
+    teams,
+    handleFormChange,
+    createQueueItem,
+    buildQueueVault,
+    t,
+  } = useVaultEditorState(props);
 
-interface VaultEditorProps {
-  entityType: string;
-  initialData?: VaultFormValues;
-  onChange?: (data: VaultFormValues, hasChanges: boolean) => void;
-  onValidate?: (isValid: boolean, errors?: string[]) => void;
-  onImportExport?: (handlers: {
-    handleImport: (file: UploadFile) => boolean;
-    handleExport: () => void;
-  }) => void;
-  onFieldMovement?: (movedToExtra: string[], movedFromExtra: string[]) => void;
-  onFormReady?: (form: FormInstance<VaultFormValues>) => void; // Callback when form is ready
-  showValidationErrors?: boolean; // Whether to show validation errors on fields
-  teamName?: string; // For SSH test connection
-  bridgeName?: string; // For SSH test connection
-  onTestConnectionStateChange?: (success: boolean) => void; // Callback for test connection state
-  onOsSetupStatusChange?: (completed: boolean | null) => void; // Callback for OS setup status
-  isModalOpen?: boolean; // Modal open state to handle resets
-  isEditMode?: boolean; // Whether we're in edit mode
-  uiMode?: 'simple' | 'expert'; // UI mode for conditional rendering
-}
-
-type VaultFieldValue = string | number | boolean | Record<string, unknown> | unknown[] | null;
-
-type VaultFormValues = Record<string, unknown>;
-
-interface FieldDefinition {
-  type: string;
-  description?: string;
-  example?: string;
-  default?: VaultFieldValue;
-  enum?: string[];
-  pattern?: string;
-  format?: string;
-  sensitive?: boolean;
-  minLength?: number;
-  maxLength?: number;
-  minimum?: number;
-  maximum?: number;
-  properties?: Record<string, FieldDefinition>;
-  items?: FieldDefinition;
-  additionalProperties?: boolean | FieldDefinition;
-}
-
-interface VaultEntityDefinition {
-  descriptionKey: string;
-  required?: string[];
-  optional?: string[];
-  fields?: Record<string, FieldDefinition>;
-  dynamicFields?: boolean;
-  providerSchema?: string;
-}
-
-interface StorageProviderDefinition {
-  name: string;
-  description?: string;
-  required?: string[];
-  optional?: string[];
-  fields?: Record<string, FieldDefinition>;
-}
-
-type VaultDefinitionsConfig = {
-  entities: Record<string, VaultEntityDefinition>;
-  commonTypes: Record<string, FieldDefinition>;
-};
-
-type StorageProvidersConfig = {
-  providers: Record<string, StorageProviderDefinition>;
-};
-
-const vaultDefinitionConfig = vaultDefinitions as unknown as VaultDefinitionsConfig;
-const storageProviderConfig = storageProviders as unknown as StorageProvidersConfig;
-
-// Helper components for reduced repetition
-const FieldLabel: React.FC<{ label: string; description?: string }> = ({ label, description }) => (
-  <FieldLabelStack>
-    {label}
-    {description && (
-      <Tooltip title={description}>
-        <FieldInfoIcon />
-      </Tooltip>
-    )}
-  </FieldLabelStack>
-);
-
-const FieldFormItem: React.FC<{
-  name: string;
-  label: string;
-  description?: string;
-  rules?: Rule[];
-  initialValue?: VaultFieldValue;
-  valuePropName?: string;
-  children: React.ReactNode;
-}> = ({ name, label, description, rules, initialValue, valuePropName, children }) => (
-  <FieldItem
-    name={name}
-    label={<FieldLabel label={label} description={description} />}
-    rules={rules}
-    initialValue={initialValue}
-    valuePropName={valuePropName}
-  >
-    {children}
-  </FieldItem>
-);
-
-const VaultEditor: React.FC<VaultEditorProps> = ({
-  entityType,
-  initialData = {},
-  onChange,
-  onValidate,
-  onImportExport,
-  onFieldMovement,
-  onFormReady,
-  showValidationErrors = false,
-  teamName = 'Default Team',
-  bridgeName = 'Default Bridge',
-  onTestConnectionStateChange,
-  onOsSetupStatusChange,
-  isModalOpen,
-  isEditMode = false,
-  uiMode = 'expert',
-}) => {
-  const { t } = useTranslation(['common', 'storageProviders']);
-  const theme = useTheme();
-  const [form] = Form.useForm();
-  const [extraFields, setExtraFields] = useState<VaultFormValues>({});
-  const [importedData, setImportedData] = useState<VaultFormValues>(initialData);
-  const [rawJsonValue, setRawJsonValue] = useState<string>(() => {
-    return Object.keys(initialData).length > 0 ? JSON.stringify(initialData, null, 2) : '{}';
-  });
-  const [rawJsonError, setRawJsonError] = useState<string | null>(null);
-  const [_sshKeyConfigured, setSshKeyConfigured] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
-  const [lastInitializedData, setLastInitializedData] = useState<string>('');
-  const [testTaskId, setTestTaskId] = useState<string | null>(null);
-  const [isTestingConnection, setIsTestingConnection] = useState(false);
-  const [testConnectionSuccess, setTestConnectionSuccess] = useState(false);
-  const [osSetupCompleted, setOsSetupCompleted] = useState<boolean | null>(null);
-  const formatJsonRef = useRef<(() => void) | null>(null);
-  const formGutter: [number, number] = [theme.spacing.SM, theme.spacing.SM];
-
-  // Queue vault builder
-  const { buildQueueVault } = useQueueVaultBuilder();
-
-  // Create queue item mutation for SSH test
-  const { mutate: createQueueItem, isPending: isCreatingQueueItem } = useCreateQueueItem();
-
-  // Poll for SSH test results
-  const { data: testTraceData } = useQueueItemTrace(testTaskId, isTestingConnection);
-
-  // Get teams data for SSH keys
-  const { data: teams } = useTeams();
-
-  // Direct onChange callback - no debouncing to avoid race conditions
+  // Direct onChange callback
   const directOnChange = useCallback(
     (data: VaultFormValues, hasChanges: boolean) => {
       onChange?.(data, hasChanges);
     },
     [onChange]
-  );
-
-  // Update raw JSON when form data changes
-  const updateRawJson = useCallback(
-    (data: VaultFormValues) => {
-      try {
-        const jsonString = JSON.stringify(data, null, 2);
-        setRawJsonValue(jsonString);
-        setRawJsonError(null);
-      } catch {
-        setRawJsonError(t('vaultEditor.failedToSerialize'));
-      }
-    },
-    [t]
-  );
-
-  // Helper function to format validation errors
-  const formatValidationErrors = useCallback(
-    (errorInfo?: ValidateErrorEntity<VaultFormValues>) =>
-      errorInfo?.errorFields?.map(
-        (field) => `${field.name.join('.')}: ${field.errors.join(', ')}`
-      ) ?? [],
-    []
-  );
-
-  // Track previous modal open state
-  const prevModalOpenRef = useRef(isModalOpen);
-
-  // Reset when modal opens (transitions from closed to open)
-  useEffect(() => {
-    if (isModalOpen && !prevModalOpenRef.current) {
-      // Modal just opened - reset everything
-      setLastInitializedData('');
-      form.resetFields();
-      form.setFields([]); // Clear all field errors
-      setExtraFields({});
-      setImportedData({});
-      setRawJsonValue('{}');
-      setRawJsonError(null);
-      setSshKeyConfigured(false);
-      setSelectedProvider(null);
-      setTestConnectionSuccess(false);
-    }
-    prevModalOpenRef.current = isModalOpen;
-  }, [isModalOpen, form]);
-
-  // Get entity definition from JSON
-  const entityDef = useMemo(() => {
-    return vaultDefinitionConfig.entities[
-      entityType as keyof typeof vaultDefinitionConfig.entities
-    ];
-  }, [entityType]);
-
-  // Get provider-specific fields for STORAGE entity
-  const providerFields = useMemo(() => {
-    if (
-      entityType === 'STORAGE' &&
-      selectedProvider &&
-      selectedProvider in storageProviderConfig.providers
-    ) {
-      return storageProviderConfig.providers[
-        selectedProvider as keyof typeof storageProviderConfig.providers
-      ];
-    }
-    return null;
-  }, [entityType, selectedProvider]);
-
-  // Helper to merge common types with field definitions
-  const getFieldDefinition = (field: FieldDefinition): FieldDefinition => {
-    // Check if the field format matches a common type
-    if (field.format && field.format in vaultDefinitionConfig.commonTypes) {
-      const commonType =
-        vaultDefinitionConfig.commonTypes[
-          field.format as keyof typeof vaultDefinitionConfig.commonTypes
-        ];
-      // Merge common type with field definition, field definition takes precedence
-      return { ...commonType, ...field };
-    }
-
-    // Check if the field type matches a common type name
-    const commonTypeKey = Object.keys(vaultDefinitionConfig.commonTypes).find(
-      (key) => key === field.type || key === field.format
-    );
-    if (commonTypeKey) {
-      const commonType =
-        vaultDefinitionConfig.commonTypes[
-          commonTypeKey as keyof typeof vaultDefinitionConfig.commonTypes
-        ];
-      return { ...commonType, ...field };
-    }
-
-    return field;
-  };
-
-  // Helper to process extra fields
-  const processExtraFields = useCallback(
-    (data: VaultFormValues, schemaFields: string[], currentExtras: VaultFormValues) => {
-      const extras: VaultFormValues = {};
-      const movedToExtra: string[] = [];
-      const movedFromExtra: string[] = [];
-
-      // Check if data has extraFields structure
-      if (data.extraFields && typeof data.extraFields === 'object') {
-        Object.assign(extras, data.extraFields);
-      }
-
-      // Check for non-schema fields at root level
-      Object.entries(data).forEach(([key, value]) => {
-        if (key !== 'extraFields' && !schemaFields.includes(key)) {
-          extras[key] = value;
-          if (!currentExtras[key] && value !== undefined) {
-            movedToExtra.push(key);
-          }
-        }
-      });
-
-      // Check if any fields were moved from extraFields back to regular fields
-      Object.keys(currentExtras).forEach((key) => {
-        if (!extras[key] && schemaFields.includes(key) && data[key] !== undefined) {
-          movedFromExtra.push(key);
-        }
-      });
-
-      return { extras, movedToExtra, movedFromExtra };
-    },
-    []
-  );
-
-  // Helper to show field movement toast messages
-  const showFieldMovementToasts = useCallback(
-    (movedToExtra: string[], movedFromExtra: string[]) => {
-      if (movedToExtra.length > 0) {
-        message.info(
-          t('vaultEditor.fieldsMovedToExtra', {
-            count: movedToExtra.length,
-            fields: movedToExtra.join(', '),
-          })
-        );
-      }
-      if (movedFromExtra.length > 0) {
-        message.success(
-          t('vaultEditor.fieldsMovedFromExtra', {
-            count: movedFromExtra.length,
-            fields: movedFromExtra.join(', '),
-          })
-        );
-      }
-    },
-    [t]
-  );
-
-  // Helper to build validation rules
-  const buildValidationRules = (field: FieldDefinition, required: boolean, fieldLabel: string) => {
-    const rules: Rule[] = [];
-
-    if (required) {
-      rules.push({ required: true, message: t('vaultEditor.isRequired', { field: fieldLabel }) });
-    }
-
-    const ruleBuilders = {
-      pattern: (value: string) => ({
-        pattern: new RegExp(value),
-        message: t('vaultEditor.invalidFormat', { description: field.description || '' }),
-      }),
-      minLength: (value: number) => ({
-        min: value,
-        message: t('vaultEditor.minLength', { length: value }),
-      }),
-      maxLength: (value: number) => ({
-        max: value,
-        message: t('vaultEditor.maxLength', { length: value }),
-      }),
-      minimum: (value: number) => ({
-        type: 'number' as const,
-        min: value,
-        message: t('vaultEditor.minValue', { value }),
-      }),
-      maximum: (value: number) => ({
-        type: 'number' as const,
-        max: value,
-        message: t('vaultEditor.maxValue', { value }),
-      }),
-    };
-
-    Object.entries(ruleBuilders).forEach(([key, ruleFn]) => {
-      const fieldKey = key as keyof typeof ruleBuilders;
-      if (fieldKey in field && field[fieldKey as keyof FieldDefinition] !== undefined) {
-        rules.push(ruleFn(field[fieldKey as keyof FieldDefinition] as never));
-      }
-    });
-
-    return rules;
-  };
-
-  // Helper for JSON field validation and handling
-  const getJsonFieldProps = (isArray = false) => {
-    const validator = (_rule: unknown, value: unknown) => {
-      if (!value) {
-        return Promise.resolve();
-      }
-      try {
-        const parsed = typeof value === 'string' ? JSON.parse(value) : value;
-        if (isArray && !Array.isArray(parsed)) {
-          return Promise.reject(t('vaultEditor.mustBeArray'));
-        }
-        return Promise.resolve();
-      } catch {
-        return Promise.reject(
-          t(isArray ? 'vaultEditor.mustBeValidJsonArray' : 'vaultEditor.mustBeValidJson')
-        );
-      }
-    };
-
-    const getValueFromEvent = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const { value } = e.target;
-      try {
-        return value ? JSON.parse(value) : undefined;
-      } catch {
-        return value;
-      }
-    };
-
-    const getValueProps = (value: unknown) => ({
-      value: (isArray ? Array.isArray(value) : typeof value === 'object' && value !== null)
-        ? JSON.stringify(value, null, 2)
-        : value,
-    });
-
-    return { validator, getValueFromEvent, getValueProps };
-  };
-
-  // Update importedData when initialData prop changes
-  useEffect(() => {
-    setImportedData(initialData);
-  }, [initialData]);
-
-  // Monitor SSH test results
-  useEffect(() => {
-    if (testTraceData?.queueDetails && testTraceData?.responseVaultContent?.vaultContent) {
-      const status = testTraceData.queueDetails.status || testTraceData.queueDetails.Status;
-
-      if (status === 'COMPLETED') {
-        try {
-          // Parse the response vault content
-          const responseVault =
-            typeof testTraceData.responseVaultContent.vaultContent === 'string'
-              ? JSON.parse(testTraceData.responseVaultContent.vaultContent)
-              : testTraceData.responseVaultContent.vaultContent;
-
-          // Extract the result
-          const result = responseVault.result ? JSON.parse(responseVault.result) : null;
-
-          if (result) {
-            if (result.status === 'success') {
-              message.success(t('vaultEditor.testConnection.success'));
-
-              // Update form fields with test results
-              if (result.ssh_key_configured !== undefined) {
-                form.setFieldValue('ssh_key_configured', result.ssh_key_configured);
-                setSshKeyConfigured(result.ssh_key_configured);
-              }
-
-              if (result.host_entry) {
-                form.setFieldValue('host_entry', result.host_entry);
-              }
-
-              // Store kernel compatibility data if available
-              if (result.kernel_compatibility) {
-                form.setFieldValue('kernel_compatibility', result.kernel_compatibility);
-              }
-
-              // Store OS setup status if available (now part of kernel compatibility data)
-              if (
-                result.kernel_compatibility &&
-                result.kernel_compatibility.os_setup_completed !== undefined
-              ) {
-                setOsSetupCompleted(result.kernel_compatibility.os_setup_completed);
-                if (onOsSetupStatusChange) {
-                  onOsSetupStatusChange(result.kernel_compatibility.os_setup_completed);
-                }
-              }
-
-              // Clear SSH password after successful test
-              form.setFieldValue('ssh_password', '');
-
-              // Mark test connection as successful
-              setTestConnectionSuccess(true);
-
-              // Notify parent component
-              if (onTestConnectionStateChange) {
-                onTestConnectionStateChange(true);
-              }
-
-              // Trigger form change to update the vault data
-              handleFormChange({
-                ssh_key_configured: result.ssh_key_configured,
-                host_entry: result.host_entry,
-                ssh_password: '', // Clear password in vault data too
-              });
-            } else {
-              message.error(result.message || t('vaultEditor.testConnection.failed'));
-              setTestConnectionSuccess(false);
-              if (onTestConnectionStateChange) {
-                onTestConnectionStateChange(false);
-              }
-            }
-          }
-        } catch {
-          message.error(t('vaultEditor.testConnection.failed'));
-          setTestConnectionSuccess(false);
-          if (onTestConnectionStateChange) {
-            onTestConnectionStateChange(false);
-          }
-        } finally {
-          // Reset testing state
-          setIsTestingConnection(false);
-          setTestTaskId(null);
-        }
-      } else if (status === 'FAILED' || status === 'CANCELLED') {
-        message.error(t('vaultEditor.testConnection.failed'));
-        setIsTestingConnection(false);
-        setTestTaskId(null);
-        setTestConnectionSuccess(false);
-        if (onTestConnectionStateChange) {
-          onTestConnectionStateChange(false);
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [testTraceData, form, t, onOsSetupStatusChange, onTestConnectionStateChange]);
-
-  // Stabilize importedData to prevent unnecessary re-renders
-  const importedDataString = useMemo(() => JSON.stringify(importedData), [importedData]);
-
-  // Calculate extra fields not in schema
-  useEffect(() => {
-    if (!entityDef) return;
-
-    let schemaFields = Object.keys(entityDef.fields || {});
-
-    // For STORAGE entities, also include provider-specific fields
-    if (entityType === 'STORAGE' && importedData.provider) {
-      const provider =
-        storageProviderConfig.providers[
-          importedData.provider as keyof typeof storageProviderConfig.providers
-        ];
-      if (provider && provider.fields) {
-        schemaFields = [...schemaFields, ...Object.keys(provider.fields)];
-      }
-    }
-
-    const { extras, movedToExtra, movedFromExtra } = processExtraFields(
-      importedData,
-      schemaFields,
-      extraFields
-    );
-
-    // Only update if extras actually changed
-    const extrasString = JSON.stringify(extras);
-    const currentExtrasString = JSON.stringify(extraFields);
-
-    if (extrasString !== currentExtrasString) {
-      setExtraFields(extras);
-
-      // Notify about field movements
-      if ((movedToExtra.length > 0 || movedFromExtra.length > 0) && onFieldMovement) {
-        onFieldMovement(movedToExtra, movedFromExtra);
-      }
-
-      // Show toast messages for field movements
-      showFieldMovementToasts(movedToExtra, movedFromExtra);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    importedDataString,
-    entityDef,
-    entityType,
-    processExtraFields,
-    onFieldMovement,
-    showFieldMovementToasts,
-  ]);
-
-  // Initialize form with data
-  useEffect(() => {
-    if (entityDef) {
-      // Always re-initialize when initialData changes from non-empty to empty (indicating a reset)
-      const currentDataString = JSON.stringify(initialData);
-      const wasNonEmpty = lastInitializedData && lastInitializedData !== '{}';
-      const isNowEmpty = currentDataString === '{}';
-
-      // Skip re-initialization only if data hasn't changed AND we're not resetting
-      if (currentDataString === lastInitializedData && !(wasNonEmpty && isNowEmpty)) {
-        return;
-      }
-
-      const formData: VaultFormValues = {};
-      Object.entries(entityDef.fields || {}).forEach(([key, field]) => {
-        const typedField = field as FieldDefinition;
-        if (initialData[key] !== undefined) {
-          // Decode base64 fields for display in the form
-          if (typedField.format === 'base64' && typeof initialData[key] === 'string') {
-            formData[key] = decodeBase64(initialData[key]);
-          } else {
-            formData[key] = initialData[key];
-          }
-        } else if (typedField.default !== undefined) {
-          formData[key] = typedField.default;
-        }
-      });
-
-      // For STORAGE entities, also populate provider-specific fields
-      if (entityType === 'STORAGE' && initialData.provider) {
-        const provider =
-          storageProviderConfig.providers[
-            initialData.provider as keyof typeof storageProviderConfig.providers
-          ];
-        if (provider && provider.fields) {
-          Object.entries(provider.fields).forEach(([key, field]) => {
-            const typedField = field as FieldDefinition;
-            if (initialData[key] !== undefined) {
-              // Decode base64 fields for display in the form
-              if (typedField.format === 'base64' && typeof initialData[key] === 'string') {
-                formData[key] = decodeBase64(initialData[key]);
-              } else {
-                formData[key] = initialData[key];
-              }
-            } else if (typedField.default !== undefined) {
-              formData[key] = typedField.default;
-            }
-          });
-        }
-      }
-
-      // Reset form first to clear any previous values
-      form.resetFields();
-      form.setFieldsValue(formData);
-
-      // Reset state variables
-      setSshKeyConfigured(false);
-      setSelectedProvider(null);
-      setRawJsonError(null);
-
-      // Initialize ssh_key_configured state for MACHINE and BRIDGE entities
-      if (
-        (entityType === 'MACHINE' || entityType === 'BRIDGE') &&
-        formData.ssh_key_configured !== undefined
-      ) {
-        setSshKeyConfigured(
-          typeof formData.ssh_key_configured === 'boolean' ? formData.ssh_key_configured : false
-        );
-      }
-
-      // Initialize provider for STORAGE entity
-      if (entityType === 'STORAGE' && formData.provider) {
-        setSelectedProvider(typeof formData.provider === 'string' ? formData.provider : null);
-      }
-
-      // Calculate extra fields for this data
-      let schemaFields = Object.keys(entityDef.fields || {});
-
-      // For STORAGE entities, also include provider-specific fields
-      if (entityType === 'STORAGE' && initialData.provider) {
-        const provider =
-          storageProviderConfig.providers[
-            initialData.provider as keyof typeof storageProviderConfig.providers
-          ];
-        if (provider && provider.fields) {
-          schemaFields = [...schemaFields, ...Object.keys(provider.fields)];
-        }
-      }
-
-      const extras: VaultFormValues = {};
-
-      // Check if initialData has extraFields structure
-      if (initialData.extraFields && typeof initialData.extraFields === 'object') {
-        Object.assign(extras, initialData.extraFields);
-      }
-
-      // Also check for non-schema fields at root level
-      Object.entries(initialData).forEach(([key, value]) => {
-        if (key !== 'extraFields' && !schemaFields.includes(key)) {
-          extras[key] = value;
-        }
-      });
-
-      // Build complete data structure for raw JSON
-      const completeData = { ...formData };
-      if (Object.keys(extras).length > 0) {
-        completeData.extraFields = extras;
-      }
-
-      // Initialize raw JSON with proper structure
-      updateRawJson(completeData);
-
-      // Remember what data we initialized with
-      setLastInitializedData(currentDataString);
-
-      // Validate initial data after form is initialized
-      // Use setTimeout to ensure form fields are registered
-      setTimeout(() => {
-        if (!(isEditMode && entityType === 'REPO')) {
-          // Validate silently without showing errors
-          form
-            .validateFields(undefined, { validateOnly: true })
-            .then(() => {
-              onValidate?.(true);
-              // Clear error states if we shouldn't show them
-              if (!showValidationErrors) {
-                form.getFieldsError().forEach(({ name }) => {
-                  form.setFields([{ name, errors: [] }]);
-                });
-              }
-            })
-            .catch((errorInfo: ValidateErrorEntity<VaultFormValues>) => {
-              const errors = formatValidationErrors(errorInfo);
-              onValidate?.(false, errors);
-              // Clear error states from fields if we shouldn't show them
-              if (!showValidationErrors) {
-                form.getFieldsError().forEach(({ name }) => {
-                  form.setFields([{ name, errors: [] }]);
-                });
-              }
-            });
-        } else {
-          // For repos in edit mode, mark as valid immediately
-          onValidate?.(true);
-        }
-      }, 100);
-    }
-  }, [
-    form,
-    entityDef,
-    entityType,
-    initialData,
-    updateRawJson,
-    isEditMode,
-    onValidate,
-    lastInitializedData,
-    formatValidationErrors,
-    showValidationErrors,
-  ]);
-
-  // Pass import/export handlers to parent
-  useEffect(() => {
-    if (onImportExport) {
-      onImportExport({
-        handleImport,
-        handleExport,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onImportExport]);
-
-  // Pass form instance to parent when ready
-  useEffect(() => {
-    if (onFormReady && form) {
-      onFormReady(form);
-    }
-  }, [onFormReady, form]);
-
-  // When showValidationErrors changes to true, re-validate to show errors
-  useEffect(() => {
-    if (showValidationErrors) {
-      form.validateFields().catch(() => {
-        // Errors will be shown on fields
-      });
-    }
-  }, [showValidationErrors, form]);
-
-  const handleFormChange = useCallback(
-    (changedValues?: Partial<VaultFormValues>) => {
-      const formData = form.getFieldsValue() as VaultFormValues;
-
-      // Handle provider changes for STORAGE entity
-      if (entityType === 'STORAGE' && changedValues?.provider !== undefined) {
-        setSelectedProvider(
-          typeof changedValues.provider === 'string' ? changedValues.provider : null
-        );
-
-        // Clear provider-specific fields when provider changes
-        if (providerFields) {
-          const fieldsToKeep = ['name', 'provider', 'description', 'noVersioning', 'parameters'];
-          const currentValues = form.getFieldsValue();
-          const newValues: Partial<VaultFormValues> = {};
-
-          // Keep only base fields
-          fieldsToKeep.forEach((field) => {
-            if (currentValues[field] !== undefined) {
-              newValues[field] = currentValues[field];
-            }
-          });
-
-          form.setFieldsValue(newValues);
-        }
-      }
-
-      // Encode base64 fields before saving
-      const encodedData: VaultFormValues = { ...formData };
-      Object.entries(entityDef?.fields || {}).forEach(([key, field]) => {
-        const typedField = field as FieldDefinition;
-        if (
-          typedField.format === 'base64' &&
-          encodedData[key] !== undefined &&
-          typeof encodedData[key] === 'string'
-        ) {
-          encodedData[key] = encodeBase64(encodedData[key]);
-        }
-      });
-
-      // Also encode base64 fields for STORAGE provider-specific fields
-      if (entityType === 'STORAGE' && selectedProvider && providerFields?.fields) {
-        Object.entries(providerFields.fields).forEach(([key, field]) => {
-          const typedField = field as FieldDefinition;
-          if (
-            typedField.format === 'base64' &&
-            encodedData[key] !== undefined &&
-            typeof encodedData[key] === 'string'
-          ) {
-            encodedData[key] = encodeBase64(encodedData[key]);
-          }
-        });
-      }
-
-      // Build complete data with extraFields structure
-      const completeData: VaultFormValues = { ...encodedData };
-      if (Object.keys(extraFields).length > 0) {
-        completeData.extraFields = extraFields;
-      }
-
-      // Update raw JSON view
-      updateRawJson(completeData);
-
-      // Check if there are any changes
-      const hasChanges = JSON.stringify(completeData) !== JSON.stringify(initialData);
-
-      // Use direct onChange for immediate updates (no debouncing)
-      directOnChange(completeData, hasChanges);
-
-      // Validate to update parent's isValid state
-      // If showValidationErrors is true, show errors on fields; otherwise validate silently
-      const validateOptions = showValidationErrors ? undefined : { validateOnly: true };
-
-      form
-        .validateFields(undefined, validateOptions)
-        .then(() => {
-          onValidate?.(true);
-        })
-        .catch((errorInfo: ValidateErrorEntity<VaultFormValues>) => {
-          const errors = formatValidationErrors(errorInfo);
-          onValidate?.(false, errors);
-
-          // If we shouldn't show errors, clear them from fields
-          if (!showValidationErrors) {
-            form.getFieldsError().forEach(({ name }) => {
-              form.setFields([{ name, errors: [] }]);
-            });
-          }
-        });
-    },
-    [
-      entityType,
-      providerFields,
-      form,
-      selectedProvider,
-      extraFields,
-      initialData,
-      updateRawJson,
-      directOnChange,
-      onValidate,
-      entityDef,
-      formatValidationErrors,
-      showValidationErrors,
-    ]
   );
 
   const handleRawJsonChange = (value: string | undefined) => {
@@ -1095,7 +284,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       reader.readAsText(fileSource);
       return false;
     },
-    [entityDef, form, handleFormChange]
+    [entityDef, form, handleFormChange, setExtraFields, setImportedData]
   );
 
   const handleExport = useCallback(() => {
@@ -1139,6 +328,16 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     URL.revokeObjectURL(url);
   }, [form, entityDef, extraFields, entityType]);
 
+  // Pass import/export handlers to parent
+  React.useEffect(() => {
+    if (onImportExport) {
+      onImportExport({
+        handleImport,
+        handleExport,
+      });
+    }
+  }, [onImportExport, handleImport, handleExport]);
+
   const renderField = (
     fieldName: string,
     fieldDef: FieldDefinition,
@@ -1149,7 +348,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     // It will be conditionally rendered using Form.Item dependencies
 
     // Merge with common types if applicable
-    const field = getFieldDefinition(fieldDef);
+    const field = getFieldDefinition(fieldDef, vaultDefinitionConfig);
 
     // Get translated field label and description
     let fieldLabel: string;
@@ -1182,7 +381,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     }
 
     // Build validation rules (ssh_password field handles its own dynamic rules)
-    const rules = buildValidationRules(field, required, fieldLabel);
+    const rules = buildValidationRules(field, required, fieldLabel, t);
 
     const commonProps = {
       placeholder: fieldPlaceholder,
@@ -1213,13 +412,13 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           rules={rules}
           initialValue={field.default}
         >
-          <FullWidthSelect {...commonProps} data-testid={`vault-editor-field-${fieldName}`}>
+          <RediaccSelect fullWidth {...commonProps} data-testid={`vault-editor-field-${fieldName}`}>
             {field.enum.map((option) => (
               <Select.Option key={option} value={option}>
                 {option}
               </Select.Option>
             ))}
-          </FullWidthSelect>
+          </RediaccSelect>
         </FieldFormItem>
       );
     }
@@ -1232,7 +431,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           rules={rules}
           initialValue={field.default}
         >
-          <FullWidthInputNumber
+          <RediaccInputNumber
+            fullWidth
             {...commonProps}
             min={field.minimum}
             max={field.maximum}
@@ -1266,7 +466,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         );
       } else {
         // Use JSON editor for generic objects
-        const { validator, getValueFromEvent, getValueProps } = getJsonFieldProps(false);
+        const { validator, getValueFromEvent, getValueProps } = getJsonFieldProps(false, t);
         return (
           <FieldItem
             name={fieldName}
@@ -1275,7 +475,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             getValueFromEvent={getValueFromEvent}
             getValueProps={getValueProps}
           >
-            <FullWidthTextArea
+            <RediaccTextArea
+              fullWidth
               {...commonProps}
               rows={4}
               placeholder={
@@ -1291,7 +492,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     }
 
     if (field.type === 'array') {
-      const { validator, getValueFromEvent, getValueProps } = getJsonFieldProps(true);
+      const { validator, getValueFromEvent, getValueProps } = getJsonFieldProps(true, t);
       return (
         <FieldItem
           name={fieldName}
@@ -1300,7 +501,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           getValueFromEvent={getValueFromEvent}
           getValueProps={getValueProps}
         >
-          <FullWidthTextArea
+          <RediaccTextArea
+            fullWidth
             {...commonProps}
             rows={4}
             placeholder={
@@ -1322,7 +524,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           rules={rules}
           initialValue={field.default}
         >
-          <FullWidthPasswordInput
+          <RediaccPasswordInput
+            fullWidth
             {...commonProps}
             autoComplete="new-password"
             data-testid={`vault-editor-field-${fieldName}`}
@@ -1341,7 +544,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           initialValue={field.default}
           extra={t('vaultEditor.hostEntryHelp')}
         >
-          <FullWidthInput
+          <RediaccInput
+            fullWidth
             {...commonProps}
             data-testid={`vault-editor-field-${fieldName}`}
             placeholder={t('vaultEditor.hostEntryPlaceholder')}
@@ -1360,7 +564,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           rules={rules}
           initialValue={field.default}
         >
-          <FullWidthInputNumber
+          <RediaccInputNumber
+            fullWidth
             {...commonProps}
             min={1}
             max={65535}
@@ -1407,7 +612,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         rules={rules}
         initialValue={field.default}
       >
-        <FullWidthInput
+        <RediaccInput
+          fullWidth
           {...commonProps}
           type={field.sensitive ? 'password' : 'text'}
           autoComplete={field.sensitive ? 'new-password' : 'off'}
@@ -1441,7 +647,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const requiredFields = entityDef.required || [];
   const optionalFields = entityDef.optional || [];
   const fields = entityDef.fields || {};
-  const machineBasicFieldOrder = ['ip', 'user', 'datastore'];
 
   return (
     <EditorContainer>
@@ -1484,7 +689,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           {(requiredFields.length > 0 || optionalFields.length > 0) && (
             <>
               {/* Required Fields */}
-              {(entityType === 'MACHINE' ? machineBasicFieldOrder : requiredFields).map(
+              {(entityType === 'MACHINE' ? MACHINE_BASIC_FIELD_ORDER : requiredFields).map(
                 (fieldName) => {
                   const field = fields[fieldName as keyof typeof fields];
                   if (!field) return null;
@@ -1528,13 +733,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                       />
                     }
                   >
-                    <FullWidthStack direction="vertical" gap="sm">
+                    <RediaccStack direction="vertical" gap="sm" fullWidth>
                       {!testConnectionSuccess && (
-                        <InlineInfoAlert
+                        <RediaccAlert
                           message={t('vaultEditor.testConnection.required')}
                           variant="info"
                           showIcon
                           icon={<InfoCircleOutlined />}
+                          style={{ marginBottom: '4px' }}
                         />
                       )}
                       <TestConnectionButton
@@ -1613,7 +819,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                       >
                         {t('vaultEditor.testConnection.button')}
                       </TestConnectionButton>
-                    </FullWidthStack>
+                    </RediaccStack>
                   </FieldItem>
                 </Col>
               )}
@@ -1621,7 +827,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {entityType === 'MACHINE' && form.getFieldValue('kernel_compatibility') && (
                 <Col xs={24} lg={12}>
                   <FieldItem
-                    label={<Text weight="bold">{t('vaultEditor.systemCompatibility.title')}</Text>}
+                    label={
+                      <RediaccText weight="bold">
+                        {t('vaultEditor.systemCompatibility.title')}
+                      </RediaccText>
+                    }
                     colon={false}
                   >
                     {(() => {
@@ -1682,7 +892,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                       };
 
                       return (
-                        <FullWidthStack direction="vertical">
+                        <RediaccStack direction="vertical" gap="sm" fullWidth>
                           <Descriptions bordered size="small" column={1}>
                             <Descriptions.Item
                               label={t('vaultEditor.systemCompatibility.operatingSystem')}
@@ -1699,19 +909,19 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                               label={t('vaultEditor.systemCompatibility.btrfsAvailable')}
                             >
                               {compatibility.btrfs_available ? (
-                                <Tag variant="success">
+                                <RediaccTag variant="success">
                                   {t('vaultEditor.systemCompatibility.yes')}
-                                </Tag>
+                                </RediaccTag>
                               ) : (
-                                <Tag variant="warning">
+                                <RediaccTag variant="warning">
                                   {t('vaultEditor.systemCompatibility.no')}
-                                </Tag>
+                                </RediaccTag>
                               )}
                             </Descriptions.Item>
                             <Descriptions.Item
                               label={t('vaultEditor.systemCompatibility.sudoAvailable')}
                             >
-                              <Tag
+                              <RediaccTag
                                 variant={
                                   sudoConfigValue.color as
                                     | 'default'
@@ -1722,17 +932,17 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                                 }
                               >
                                 {sudoConfigValue.text}
-                              </Tag>
+                              </RediaccTag>
                             </Descriptions.Item>
                             {osSetupCompleted !== null && (
                               <Descriptions.Item
                                 label={t('vaultEditor.systemCompatibility.osSetup')}
                               >
-                                <Tag variant={osSetupCompleted ? 'success' : 'warning'}>
+                                <RediaccTag variant={osSetupCompleted ? 'success' : 'warning'}>
                                   {osSetupCompleted
                                     ? t('vaultEditor.systemCompatibility.setupCompleted')
                                     : t('vaultEditor.systemCompatibility.setupRequired')}
-                                </Tag>
+                                </RediaccTag>
                               </Descriptions.Item>
                             )}
                           </Descriptions>
@@ -1742,12 +952,17 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                             icon={config.icon}
                             message={
                               <Space>
-                                <Text weight="bold">
+                                <RediaccText weight="bold">
                                   {t('vaultEditor.systemCompatibility.compatibilityStatus')}:
-                                </Text>
-                                <StatusHighlightText $status={config.statusVariant}>
+                                </RediaccText>
+                                <RediaccText
+                                  style={{
+                                    color: `var(--rediacc-color-${config.statusVariant})`,
+                                    textTransform: 'capitalize',
+                                  }}
+                                >
                                   {t(`vaultEditor.systemCompatibility.${status}`)}
-                                </StatusHighlightText>
+                                </RediaccText>
                               </Space>
                             }
                             description={
@@ -1755,9 +970,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                                 {compatibility.compatibility_issues &&
                                   compatibility.compatibility_issues.length > 0 && (
                                     <ListSection>
-                                      <Text weight="bold">
+                                      <RediaccText weight="bold">
                                         {t('vaultEditor.systemCompatibility.knownIssues')}:
-                                      </Text>
+                                      </RediaccText>
                                       <IssueList>
                                         {compatibility.compatibility_issues.map(
                                           (issue: string, index: number) => (
@@ -1770,9 +985,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                                 {compatibility.recommendations &&
                                   compatibility.recommendations.length > 0 && (
                                     <ListSection>
-                                      <Text weight="bold">
+                                      <RediaccText weight="bold">
                                         {t('vaultEditor.systemCompatibility.recommendations')}:
-                                      </Text>
+                                      </RediaccText>
                                       <RecommendationList>
                                         {compatibility.recommendations.map(
                                           (rec: string, index: number) => (
@@ -1786,7 +1001,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                             }
                             showIcon
                           />
-                        </FullWidthStack>
+                        </RediaccStack>
                       );
                     })()}
                   </FieldItem>
@@ -1795,7 +1010,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
               {entityType !== 'MACHINE' && (
                 <>
-                  {requiredFields.length > 0 && optionalFields.length > 0 && <SectionDivider />}
+                  {requiredFields.length > 0 && optionalFields.length > 0 && (
+                    <Divider style={{ margin: '16px 0' }} />
+                  )}
                   {optionalFields.length > 0 &&
                     optionalFields.map((fieldName) => {
                       const field = fields[fieldName as keyof typeof fields];
@@ -1843,7 +1060,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 data-testid="vault-editor-panel-provider"
               >
                 {/* Provider help text */}
-                <SectionAlert
+                <RediaccAlert
+                  spacing="default"
                   message={providerFields.name}
                   description={t(`storageProviders:storageProviders.${selectedProvider}.helpText`, {
                     defaultValue: providerFields.description,
@@ -1896,14 +1114,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 <Divider>
                   <Space>
                     <TipsDividerIcon />
-                    <Text weight="bold">
+                    <RediaccText weight="bold">
                       {t('storageProviders:common.tips', { defaultValue: 'Tips' })}
-                    </Text>
+                    </RediaccText>
                   </Space>
                 </Divider>
                 <TipsAlert
                   message={
-                    <FullWidthStack direction="vertical">
+                    <RediaccStack direction="vertical" gap="sm" fullWidth>
                       {[1, 2, 3, 4]
                         .map((index) => {
                           const tip = t(
@@ -1912,12 +1130,12 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                           );
                           return tip ? (
                             <div key={index}>
-                              <Text>- {tip}</Text>
+                              <RediaccText>- {tip}</RediaccText>
                             </div>
                           ) : null;
                         })
                         .filter(Boolean)}
-                    </FullWidthStack>
+                    </RediaccStack>
                   }
                   variant="info"
                   showIcon
@@ -1943,7 +1161,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 size="default"
                 data-testid="vault-editor-panel-extra"
               >
-                <ExtraFieldsAlert
+                <RediaccAlert
+                  spacing="default"
                   message={t('vaultEditor.extraFieldsWarning')}
                   description={t('vaultEditor.extraFieldsWarningDescription')}
                   variant="warning"
@@ -1973,7 +1192,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 size="default"
                 data-testid="vault-editor-panel-rawjson"
               >
-                <SectionAlert
+                <RediaccAlert
+                  spacing="default"
                   message={t('vaultEditor.expertModeOnly')}
                   description={t('vaultEditor.expertModeDescription')}
                   variant="error"
@@ -1982,7 +1202,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 />
 
                 {rawJsonError && (
-                  <SectionAlert
+                  <RediaccAlert
+                    spacing="default"
                     message={t('vaultEditor.jsonError')}
                     description={rawJsonError}
                     variant="error"

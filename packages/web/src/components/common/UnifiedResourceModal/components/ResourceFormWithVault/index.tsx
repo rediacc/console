@@ -1,19 +1,20 @@
-import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
-import { message, Form, Row, Col } from 'antd';
-import type { FieldValues } from 'react-hook-form';
-import type { UploadFile } from 'antd/es/upload/interface';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { Col, Form, message, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import VaultEditor from '@/components/common/VaultEditor';
-import { FormWrapper, StyledForm, SectionDivider, VaultSection } from './styles';
-import type {
-  ResourceFormWithVaultRef,
-  ResourceFormWithVaultProps,
-  ImportExportHandlers,
-} from './types';
-import { ImportExportControls } from './components/ImportExportControls';
+import { RediaccDivider } from '@/components/ui';
 import { DefaultsBanner } from './components/DefaultsBanner';
 import { FieldRenderer } from './components/FieldRenderer';
+import { ImportExportControls } from './components/ImportExportControls';
+import { FormWrapper, StyledForm, VaultSection } from './styles';
+import type {
+  ImportExportHandlers,
+  ResourceFormWithVaultProps,
+  ResourceFormWithVaultRef,
+} from './types';
+import type { UploadFile } from 'antd/es/upload/interface';
+import type { FieldValues } from 'react-hook-form';
 
 const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormWithVaultProps>(
   function ResourceFormWithVault(
@@ -152,7 +153,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
         {beforeVaultContent}
 
-        <SectionDivider>{t('vaultEditor.vaultConfiguration')}</SectionDivider>
+        <RediaccDivider spacing="sm">{t('vaultEditor.vaultConfiguration')}</RediaccDivider>
 
         <VaultSection data-testid="resource-modal-vault-editor-section">
           <VaultEditor
@@ -196,8 +197,8 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 export default ResourceFormWithVault;
 
 export type {
-  ResourceFormWithVaultRef,
-  ResourceFormWithVaultProps,
   FormFieldConfig,
   ImportExportHandlers,
+  ResourceFormWithVaultProps,
+  ResourceFormWithVaultRef,
 } from './types';

@@ -2,78 +2,65 @@ import React, { useCallback, useMemo } from 'react';
 import { Button, Modal, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components';
-import {
-  PlusOutlined,
-  ReloadOutlined,
-  ImportOutlined,
-  CloudOutlined,
-} from '@/utils/optimizedIcons';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import AuditTraceModal from '@/components/common/AuditTraceModal';
-import RcloneImportWizard from '@/pages/storage/components/RcloneImportWizard';
-import TeamSelector from '@/components/common/TeamSelector';
-import { ActionButtonGroup, ActionButtonConfig } from '@/components/common/ActionButtonGroup';
-import { createActionColumn } from '@/components/common/columns';
-import ResourceListView, {
-  COLUMN_WIDTHS,
-  COLUMN_RESPONSIVE,
-} from '@/components/common/ResourceListView';
-import {
-  FunctionOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  HistoryOutlined,
-} from '@/utils/optimizedIcons';
-import {
-  useStorage,
-  useCreateStorage,
-  useUpdateStorageName,
-  useDeleteStorage,
-  useUpdateStorageVault,
-  Storage,
-} from '@/api/queries/storage';
 import { useMachines } from '@/api/queries/machines';
-import { useDropdownData } from '@/api/queries/useDropdownData';
-import { useQueueAction } from '@/hooks/useQueueAction';
-import {
-  useUnifiedModal,
-  useTeamSelection,
-  usePagination,
-  useTraceModal,
-  useQueueTraceModal,
-  useDialogState,
-  useAsyncAction,
-} from '@/hooks';
-import { confirmDelete } from '@/utils/confirmations';
-import { showMessage } from '@/utils/messages';
 import { QueueFunction } from '@/api/queries/queue';
-import type { QueueActionParams } from '@/services/queueActionService';
 import {
-  PageWrapper,
-  SectionStack,
-  SectionHeading,
-  ListTitleRow,
-  ListTitle,
+  GetTeamStorages_ResultSet1,
+  useCreateStorage,
+  useDeleteStorage,
+  useStorage,
+  useUpdateStorageName,
+  useUpdateStorageVault,
+} from '@/api/queries/storage';
+import { useDropdownData } from '@/api/queries/useDropdownData';
+import { ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { createActionColumn } from '@/components/common/columns';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import ResourceListView, {
+  COLUMN_RESPONSIVE,
+  COLUMN_WIDTHS,
+} from '@/components/common/ResourceListView';
+import TeamSelector from '@/components/common/TeamSelector';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import {
   ListSubtitle,
+  ListTitle,
+  ListTitleRow,
+  PageWrapper,
+  SectionHeading,
+  SectionStack,
 } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
-
-interface StorageFormValues extends Record<string, unknown> {
-  storageName: string;
-  teamName: string;
-  vaultContent?: string;
-}
-
-interface StorageFunctionParams {
-  sourceType?: string;
-  from?: string;
-  [key: string]: string | number | boolean | undefined;
-}
+import {
+  useAsyncAction,
+  useDialogState,
+  usePagination,
+  useQueueTraceModal,
+  useTeamSelection,
+  useTraceModal,
+  useUnifiedModal,
+} from '@/hooks';
+import { useQueueAction } from '@/hooks/useQueueAction';
+import RcloneImportWizard from '@/pages/storage/components/RcloneImportWizard';
+import type { QueueActionParams } from '@/services/queueActionService';
+import { confirmDelete } from '@/utils/confirmations';
+import { showMessage } from '@/utils/messages';
+import {
+  CloudOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  FunctionOutlined,
+  HistoryOutlined,
+  ImportOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from '@/utils/optimizedIcons';
+import type { StorageFormValues } from '@rediacc/shared/types';
 
 interface StorageFunctionData {
   function: QueueFunction;
-  params: StorageFunctionParams;
+  params: Record<string, string | number | string[] | undefined>;
   priority: number;
   description: string;
   selectedMachine?: string;
@@ -101,7 +88,7 @@ const StoragePage: React.FC = () => {
     openModal: openUnifiedModal,
     closeModal: closeUnifiedModal,
     setCurrentResource,
-  } = useUnifiedModal<Storage & Record<string, unknown>>('storage');
+  } = useUnifiedModal<GetTeamStorages_ResultSet1 & Record<string, unknown>>('storage');
   const {
     page: storagePage,
     pageSize: storagePageSize,
@@ -139,7 +126,7 @@ const StoragePage: React.FC = () => {
   const updateStorageVaultMutation = useUpdateStorageVault();
 
   const handleDeleteStorage = useCallback(
-    (storage: Storage) => {
+    (storage: GetTeamStorages_ResultSet1) => {
       confirmDelete({
         modal,
         t,
@@ -158,14 +145,15 @@ const StoragePage: React.FC = () => {
   );
 
   const handleUnifiedModalSubmit = useCallback(
-    async (data: StorageFormValues) => {
+    async (data: Record<string, unknown>) => {
+      const storageData = data as StorageFormValues;
       await execute(
         async () => {
           if (unifiedModalState.mode === 'create') {
-            await createStorageMutation.mutateAsync(data);
+            await createStorageMutation.mutateAsync(storageData);
           } else if (currentResource) {
             const currentName = currentResource.storageName;
-            const newName = data.storageName;
+            const newName = storageData.storageName;
 
             if (newName && newName !== currentName) {
               await updateStorageNameMutation.mutateAsync({
@@ -175,7 +163,7 @@ const StoragePage: React.FC = () => {
               });
             }
 
-            const vaultData = data.vaultContent;
+            const vaultData = storageData.vaultContent;
             if (vaultData && vaultData !== currentResource.vaultContent) {
               await updateStorageVaultMutation.mutateAsync({
                 teamName: currentResource.teamName,
@@ -365,25 +353,28 @@ const StoragePage: React.FC = () => {
             },
           ]
         : []),
-      createActionColumn<Storage>({
+      createActionColumn<GetTeamStorages_ResultSet1>({
         width: COLUMN_WIDTHS.ACTIONS_WIDE,
         renderActions: (record) => {
-          const buttons: ActionButtonConfig<Storage>[] = [
+          const buttons: ActionButtonConfig<GetTeamStorages_ResultSet1>[] = [
             {
               type: 'edit',
               icon: <EditOutlined />,
               tooltip: 'common:actions.edit',
-              onClick: (r: Storage) =>
-                openUnifiedModal('edit', r as Storage & Record<string, unknown>),
+              onClick: (r: GetTeamStorages_ResultSet1) =>
+                openUnifiedModal('edit', r as GetTeamStorages_ResultSet1 & Record<string, unknown>),
               variant: 'primary',
             },
             {
               type: 'run',
               icon: <FunctionOutlined />,
               tooltip: 'common:actions.runFunction',
-              onClick: (r: Storage) => {
-                setCurrentResource(r as Storage & Record<string, unknown>);
-                openUnifiedModal('create', r as Storage & Record<string, unknown>);
+              onClick: (r: GetTeamStorages_ResultSet1) => {
+                setCurrentResource(r as GetTeamStorages_ResultSet1 & Record<string, unknown>);
+                openUnifiedModal(
+                  'create',
+                  r as GetTeamStorages_ResultSet1 & Record<string, unknown>
+                );
               },
               variant: 'primary',
             },
@@ -391,7 +382,7 @@ const StoragePage: React.FC = () => {
               type: 'trace',
               icon: <HistoryOutlined />,
               tooltip: 'machines:trace',
-              onClick: (r: Storage) =>
+              onClick: (r: GetTeamStorages_ResultSet1) =>
                 auditTrace.open({
                   entityType: 'Storage',
                   entityIdentifier: r.storageName,
@@ -410,7 +401,7 @@ const StoragePage: React.FC = () => {
           ];
 
           return (
-            <ActionButtonGroup<Storage>
+            <ActionButtonGroup<GetTeamStorages_ResultSet1>
               buttons={buttons}
               record={record}
               idField="storageName"
@@ -458,7 +449,7 @@ const StoragePage: React.FC = () => {
             />
           </TeamSelectorWrapper>
 
-          <ResourceListView<Storage>
+          <ResourceListView<GetTeamStorages_ResultSet1>
             title={
               <ListTitleRow>
                 <ListTitle>{t('storage.title', { defaultValue: 'Storage Locations' })}</ListTitle>
@@ -544,11 +535,10 @@ const StoragePage: React.FC = () => {
         mode={unifiedModalState.mode}
         existingData={modalExistingData}
         teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
-        onSubmit={handleUnifiedModalSubmit as (data: Record<string, unknown>) => Promise<void>}
+        onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         onFunctionSubmit={
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          unifiedModalState.mode === 'create' ? undefined : (handleStorageFunctionSelected as any)
+          unifiedModalState.mode === 'create' ? undefined : handleStorageFunctionSelected
         }
         isSubmitting={isSubmitting}
         isUpdatingVault={isUpdatingVault}

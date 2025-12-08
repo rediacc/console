@@ -140,7 +140,7 @@
     "totalClusters": "总簇数",
     "utilizationDetails": "正在使用的机器中有 {{used}} 台，共 {{total}} 台"
   },
-  "description": "Manage Ceph distributed storage clusters, pools, and images",
+  "description": "Manage Ceph clusters, pools, and images",
   "errors": {
     "loadClusters": "Failed to load clusters",
     "loadImages": "Failed to load images",
@@ -362,7 +362,7 @@
     "machines": "机器",
     "pools": "Pools"
   },
-  "title": "Distributed Storage",
+  "title": "Ceph",
   "tooltips": {
     "expandRow": "Click to expand and view details",
     "manageCluster": "Manage cluster configuration and nodes",

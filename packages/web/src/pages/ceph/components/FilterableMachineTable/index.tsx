@@ -1,11 +1,11 @@
 ﻿import React from 'react';
 import { Table } from 'antd';
-import type { TableRowSelection } from 'antd/es/table/interface';
 import { useTranslation } from 'react-i18next';
-import type { Machine } from '@/types';
 import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
+import type { Machine } from '@/types';
 import { buildMachineTableColumns } from './columns';
-import { TableContainer, ExpandedRowContent } from './styles';
+import { ExpandedRowContent, TableContainer } from './styles';
+import type { TableRowSelection } from 'antd/es/table/interface';
 
 export interface FilterableMachineTableProps {
   machines: Machine[];
@@ -74,7 +74,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
           expandedRowKeys,
           onExpandedRowsChange: onExpandedRowsChange ? handleExpandedRowsChange : undefined,
           expandedRowRender: renderExpandedRow,
-          rowExpandable: (machine) => machine.queueCount > 0,
+          rowExpandable: (machine) => (machine.queueCount ?? 0) > 0,
         }}
         scroll={{ x: 800 }}
         pagination={{

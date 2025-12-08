@@ -1,38 +1,9 @@
-import styled from 'styled-components';
 import { Collapse } from 'antd';
-import { RediaccCheckbox as Checkbox } from '@/components/ui/Form';
-import { RediaccText as Text } from '@/components/ui/Text';
-import { RediaccTag } from '@/components/ui/Tag';
-import { UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons';
-import { StyledIcon, FlexColumn } from '@/styles/primitives';
-
-export const TitleStack = FlexColumn;
-
-export const TitleText = styled(Text).attrs({
-  size: 'lg',
-  weight: 'semibold',
-})`
-  && {
-    line-height: ${({ theme }) => theme.lineHeight.TIGHT};
-  }
-`;
-
-export const SubtitleText = styled(Text).attrs({
-  size: 'sm',
-  color: 'secondary',
-})`
-  && {
-    margin-top: ${({ theme }) => theme.spacing.XS}px;
-  }
-`;
-
-export const SecondaryLabel = styled(Text).attrs({
-  color: 'secondary',
-})`
-  && {
-    margin-left: ${({ theme }) => theme.spacing.MD}px;
-  }
-`;
+import styled from 'styled-components';
+import { RediaccTag } from '@/components/ui';
+import { RediaccCheckbox } from '@/components/ui/Form';
+import { StyledIcon } from '@/styles/primitives';
+import { DownloadOutlined, UploadOutlined } from '@/utils/optimizedIcons';
 
 export const FooterLeftActions = styled.div`
   margin-right: auto;
@@ -48,7 +19,7 @@ export const DownloadIcon = styled(StyledIcon).attrs({
   $size: 'SM',
 })``;
 
-export const AutoSetupCheckbox = styled(Checkbox)`
+export const AutoSetupCheckbox = styled(RediaccCheckbox)`
   && {
     margin-right: auto;
     font-size: ${({ theme }) => theme.fontSize.SM}px;

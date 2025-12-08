@@ -1,22 +1,8 @@
-import styled from 'styled-components';
 import { Typography } from 'antd';
-import {
-  BaseModal,
-  ContentCard,
-  LoadingContainer as BaseLoadingContainer,
-  LoadingText as BaseLoadingText,
-  FlexColumn,
-  FlexRow,
-} from '@/styles/primitives';
-import {
-  RediaccText as Text,
-  RediaccAlert,
-  RediaccStack,
-  RediaccDivider,
-  RediaccList,
-  RediaccTabs,
-} from '@/components/ui';
-import { RediaccTag } from '@/components/ui/Tag';
+import styled from 'styled-components';
+import { RediaccAlert, RediaccList, RediaccTabs, RediaccTag, RediaccText } from '@/components/ui';
+import { borderedCard } from '@/styles/mixins';
+import { BaseModal, ContentCard, FlexColumn, FlexRow, LoadingContainer } from '@/styles/primitives';
 
 const { Title } = Typography;
 
@@ -30,8 +16,6 @@ export const StyledModal = styled(BaseModal)`
     padding: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
-
-export const TitleStack = styled(FlexRow).attrs({ $gap: 'MD' })``;
 
 export const TemplateAvatar = styled.img`
   width: ${({ theme }) => theme.dimensions.ICON_XXL}px;
@@ -78,10 +62,7 @@ export const DescriptionCard = styled(ContentCard)`
 
 export const FeatureCard = DescriptionCard;
 
-export const CardTitle = styled(Text).attrs({
-  size: 'xl',
-  weight: 'semibold',
-})``;
+// CardTitle removed - use <RediaccText variant="title"> directly
 
 export const MarkdownContent = styled.div`
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -92,34 +73,19 @@ export const MarkdownContent = styled.div`
   }
 `;
 
-export const FeatureList = styled(RediaccStack).attrs({ direction: 'vertical' })`
-  && {
-    width: 100%;
-  }
-`;
-
-export const FeatureItem = styled(RediaccStack).attrs({ direction: 'horizontal' })`
-  && {
-    width: 100%;
-    align-items: center;
-  }
-`;
-
-export const FeatureText = styled(Text)`
+export const FeatureText = styled(RediaccText)`
   && {
     color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
 
-export const LoadingContainer = styled(BaseLoadingContainer)`
+export const CenteredLoadingContainer = styled(LoadingContainer)`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: ${({ theme }) => theme.spacing.SM}px;
 `;
-
-export const LoadingText = BaseLoadingText;
 
 export const FilesLayout = styled(FlexRow).attrs({ $gap: 'MD' })`
   height: calc(90vh - 340px);
@@ -162,7 +128,7 @@ export const FileListItem = styled(RediaccList.Item)<{ $active?: boolean }>`
 
 export const FileMeta = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
-export const FileName = styled(Text).attrs({
+export const FileName = styled(RediaccText).attrs({
   weight: 'medium',
 })`
   && {
@@ -185,14 +151,7 @@ export const FilePreviewCard = styled(ContentCard)`
   }
 `;
 
-export const FilePreviewHeader = styled(RediaccStack).attrs({ direction: 'horizontal' })`
-  && {
-    align-items: center;
-    justify-content: space-between;
-  }
-`;
-
-export const FilePath = styled(Text)`
+export const FilePath = styled(RediaccText)`
   && {
     font-family: monospace;
   }
@@ -201,8 +160,7 @@ export const FilePath = styled(Text)`
 export const FilePreviewBody = styled.div`
   flex: 1 1 auto;
   overflow: auto;
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
+  ${borderedCard('borderSecondary', 'MD')}
 `;
 
 export const SecurityScroll = styled.div`
@@ -236,7 +194,7 @@ export const ChecklistItem = styled.li`
   line-height: ${({ theme }) => theme.lineHeight.RELAXED};
 `;
 
-export const BodyParagraph = styled(Text)`
+export const BodyParagraph = styled(RediaccText)`
   && {
     display: block;
     color: ${({ theme }) => theme.colors.textPrimary};
@@ -244,16 +202,7 @@ export const BodyParagraph = styled(Text)`
   }
 `;
 
-// BodyText accepts weight prop to allow both regular and bold text
-export const BodyText = styled(Text).attrs({
-  color: 'muted',
-})``;
-
-export const SectionDivider = styled(RediaccDivider)`
-  && {
-    margin: ${({ theme }) => `${theme.spacing.LG}px 0`};
-  }
-`;
+// BodyText removed - use <RediaccText variant="description"> directly
 
 export const SecurityTitle = styled(Title).attrs({ level: 5 })`
   && {
@@ -270,6 +219,6 @@ export const SuccessIcon = styled(IconLabel)`
   color: ${({ theme }) => theme.colors.success};
 `;
 
-export const AlertDescription = styled(Text).attrs({
+export const AlertDescription = styled(RediaccText).attrs({
   color: 'secondary',
 })``;

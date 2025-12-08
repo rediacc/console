@@ -1,8 +1,8 @@
-import styled from 'styled-components';
 import { Typography } from 'antd';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import styled from 'styled-components';
+import { RediaccModal, RediaccText } from '@/components/ui';
 import { LoadingState as BaseLoadingState } from '@/styles/primitives';
-import { RediaccText, RediaccAlert, RediaccModal } from '@/components/ui';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const { Title } = Typography;
 
@@ -17,13 +17,13 @@ export const WizardModal = styled(RediaccModal).attrs({
     border-radius: ${({ theme }) => theme.borderRadius.XL}px;
     box-shadow: ${({ theme }) => theme.shadows.MODAL};
     border: none;
-    background-color: var(--color-bg-primary);
+    background-color: ${({ theme }) => theme.colors.bgPrimary};
   }
 
   .ant-modal-header {
-    border-bottom: 1px solid var(--color-border-secondary);
+    border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
     padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
-    background-color: var(--color-bg-primary);
+    background-color: ${({ theme }) => theme.colors.bgPrimary};
   }
 
   .ant-modal-body {
@@ -31,26 +31,14 @@ export const WizardModal = styled(RediaccModal).attrs({
   }
 
   .ant-modal-footer {
-    border-top: 1px solid var(--color-border-secondary);
+    border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
     padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
-    background-color: var(--color-bg-primary);
+    background-color: ${({ theme }) => theme.colors.bgPrimary};
   }
 `;
 
 export const UploadStepWrapper = styled.div`
   padding: ${({ theme }) => `${theme.spacing.LG}px 0`};
-`;
-
-export const InstructionsAlert = styled(RediaccAlert)`
-  margin-bottom: ${({ theme }) => theme.spacing.LG}px;
-`;
-
-export const StandardAlert = styled(RediaccAlert)`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-`;
-
-export const ErrorAlert = styled(RediaccAlert)`
-  margin-top: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const StepsContainer = styled.div`
@@ -70,6 +58,6 @@ export const LoadingTitle = styled(Title)`
 export const StatusMessage = styled(RediaccText)`
   && {
     font-size: ${DESIGN_TOKENS.FONT_SIZE.CAPTION}px;
-    color: var(--color-text-secondary);
+    color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;

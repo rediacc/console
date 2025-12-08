@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
-import { StyledRediaccRadioGroup, StyledRediaccRadioButton } from './RediaccRadio.styles';
-import type { RediaccRadioGroupProps, RediaccRadioButtonProps } from './RediaccRadio.types';
+import { StyledRediaccRadioButton, StyledRediaccRadioGroup } from './RediaccRadio.styles';
+import type { RediaccRadioButtonProps, RediaccRadioGroupProps } from './RediaccRadio.types';
 
 /**
  * Rediacc Radio Button Component

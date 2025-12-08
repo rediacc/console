@@ -2,30 +2,25 @@ import React, { useEffect, useState } from 'react';
 import { Select } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  useAvailableMachinesForClone,
-  type CephRbdImage,
   type AvailableMachine,
+  type CephRbdImage,
+  useAvailableMachinesForClone,
 } from '@/api/queries/ceph';
 import { useUpdateImageMachineAssignment } from '@/api/queries/cephMutations';
-import {
-  StyledModal,
-  TitleStack,
-  TitleIcon,
-  ContentStack,
-  FieldRow,
-  FieldLabel,
-  FieldValue,
-  InfoAlert,
-  WarningAlert,
-  MachineIcon,
-  StyledSelect,
-  SelectLabel,
-  SelectOptionText,
-  DisabledOptionText,
-  HelperText,
-  LoadingContainer,
-} from './styles';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccStack, RediaccText } from '@/components/ui';
+import { AlertCard } from '@/styles/primitives';
+import {
+  DisabledOptionText,
+  FieldRow,
+  LoadingContainer,
+  MachineIcon,
+  SelectOptionText,
+  StyledModal,
+  StyledSelect,
+  TitleIcon,
+  TitleStack,
+} from './styles';
 
 interface ImageMachineReassignmentModalProps {
   open: boolean;
@@ -103,19 +98,24 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       data-testid="image-reassign-modal"
     >
       {image && (
-        <ContentStack>
+        <RediaccStack variant="spaced-column" fullWidth>
           <FieldRow>
-            <FieldLabel>{t('ceph:images.image')}:</FieldLabel>
-            <FieldValue>{image.imageName}</FieldValue>
+            <RediaccText weight="semibold" size="sm">
+              {t('ceph:images.image')}:
+            </RediaccText>
+            <RediaccText color="muted">{image.imageName}</RediaccText>
           </FieldRow>
 
           <FieldRow>
-            <FieldLabel>{t('ceph:pools.pool')}:</FieldLabel>
-            <FieldValue>{poolName}</FieldValue>
+            <RediaccText weight="semibold" size="sm">
+              {t('ceph:pools.pool')}:
+            </RediaccText>
+            <RediaccText color="muted">{poolName}</RediaccText>
           </FieldRow>
 
           {image.machineName && (
-            <InfoAlert
+            <AlertCard
+              $variant="info"
               message={t('machines:currentMachineAssignment', { machine: image.machineName })}
               variant="info"
               icon={<MachineIcon />}
@@ -124,7 +124,9 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
           )}
 
           <div>
-            <SelectLabel>{t('ceph:images.selectNewMachine')}:</SelectLabel>
+            <RediaccText as="label" weight="medium" size="sm">
+              {t('ceph:images.selectNewMachine')}:
+            </RediaccText>
             <LoadingContainer>
               <LoadingWrapper loading={loadingMachines} centered minHeight={120}>
                 <>
@@ -170,20 +172,21 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                     ))}
                   </StyledSelect>
 
-                  <HelperText>{t('ceph:images.reassignmentInfo')}</HelperText>
+                  <RediaccText variant="caption">{t('ceph:images.reassignmentInfo')}</RediaccText>
                 </>
               </LoadingWrapper>
             </LoadingContainer>
           </div>
 
-          <WarningAlert
-            message={<FieldLabel>{t('common:important')}</FieldLabel>}
-            description={<FieldValue>{t('ceph:images.reassignmentWarning')}</FieldValue>}
+          <AlertCard
+            $variant="warning"
+            message={<RediaccText>{t('common:important')}</RediaccText>}
+            description={<RediaccText>{t('ceph:images.reassignmentWarning')}</RediaccText>}
             variant="warning"
             showIcon
             data-testid="image-reassign-warning"
           />
-        </ContentStack>
+        </RediaccStack>
       )}
     </StyledModal>
   );

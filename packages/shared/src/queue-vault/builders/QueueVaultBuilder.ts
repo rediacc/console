@@ -1,12 +1,12 @@
-import { minifyJSON } from '../utils/json';
-import { isBase64, getParamArray, getParamValue } from '../utils/validation';
 import { FUNCTION_REQUIREMENTS } from '../data/functionRequirements';
+import { minifyJSON } from '../utils/json';
+import { getParamArray, getParamValue, isBase64 } from '../utils/validation';
 import type {
-  QueueRequestContext,
   FunctionRequirements,
-  VaultData,
-  VaultContextData,
+  QueueRequestContext,
   StorageSystemContextData,
+  VaultContextData,
+  VaultData,
 } from '../types';
 
 export interface QueueVaultBuilderConfig {

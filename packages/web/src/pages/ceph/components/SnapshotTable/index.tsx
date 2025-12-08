@@ -1,37 +1,38 @@
-import { useCallback, useMemo, useState } from 'react';
 import type { Key } from 'react';
-import { Table, Tooltip, message } from 'antd';
+import { useCallback, useMemo, useState } from 'react';
 import {
-  PlusOutlined,
-  SettingOutlined,
-  DeleteOutlined,
-  RollbackOutlined,
-  InfoCircleOutlined,
-  SecurityScanOutlined,
   CopyOutlined,
+  DeleteOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+  RollbackOutlined,
+  SecurityScanOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
+import { message, Table, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { MenuProps } from 'antd';
 import {
-  useCephRbdSnapshots,
-  type CephRbdSnapshot,
-  type CephRbdImage,
   type CephPool,
+  type CephRbdImage,
+  type CephRbdSnapshot,
+  useCephRbdSnapshots,
 } from '@/api/queries/ceph';
 import {
-  useDeleteCephRbdSnapshot,
   useCreateCephRbdSnapshot,
+  useDeleteCephRbdSnapshot,
   useUpdateCephPoolVault,
 } from '@/api/queries/cephMutations';
-import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { RediaccButton } from '@/components/ui';
+import { useExpandableTable, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { useQueueTraceModal, useExpandableTable } from '@/hooks';
-import { RediaccButton as Button } from '@/components/ui';
-import CloneTable from '../CloneTable';
+import CloneTable from '@/pages/ceph/components/CloneTable';
+import type { SnapshotFormValues as FullSnapshotFormValues } from '@rediacc/shared/types';
 import { buildSnapshotColumns } from './columns';
 import { ActionsRow, Container, ExpandButton, TableWrapper, Title } from './styles';
+import type { MenuProps } from 'antd';
 
 interface SnapshotTableProps {
   image: CephRbdImage;
@@ -45,10 +46,8 @@ interface SnapshotModalState {
   data?: CephRbdSnapshot & { vaultContent?: string | null; vaultVersion?: number };
 }
 
-interface SnapshotFormValues extends Record<string, unknown> {
-  snapshotName: string;
-  vaultContent: string;
-}
+// Form-specific subset of shared SnapshotFormValues (image/pool/team context provided separately)
+type SnapshotFormValues = Pick<FullSnapshotFormValues, 'snapshotName'> & { vaultContent: string };
 
 const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }) => {
   const { t } = useTranslation('ceph');
@@ -58,7 +57,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
   const managedQueueMutation = useManagedQueueItem();
   const { buildQueueVault } = useQueueVaultBuilder();
 
-  const { data: snapshots = [], isLoading } = useCephRbdSnapshots(image.imageGuid);
+  const { data: snapshots = [], isLoading } = useCephRbdSnapshots(String(image.imageGuid));
   const deleteSnapshotMutation = useDeleteCephRbdSnapshot();
   const createSnapshotMutation = useCreateCephRbdSnapshot();
   const updateVaultMutation = useUpdateCephPoolVault();
@@ -250,7 +249,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         <Title>{t('snapshots.title')}</Title>
         <ActionsRow>
           <Tooltip title={t('snapshots.create')}>
-            <Button
+            <RediaccButton
               icon={<PlusOutlined />}
               onClick={handleCreate}
               data-testid="snapshot-list-create-button"

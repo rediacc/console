@@ -1,27 +1,25 @@
 import styled from 'styled-components';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccCard } from '@/components/ui';
 import {
-  PanelWrapper,
-  Header,
-  HeaderRow,
-  TitleGroup,
-  PanelTitle,
   CollapseButton,
-  TagGroup,
   ContentWrapper,
-  SectionHeader,
-  SectionTitle,
-  SectionCard,
+  FieldLabel,
   FieldList,
   FieldRow,
-  FieldLabel,
   FieldValue,
-  FieldValueStrong,
   FieldValueMonospace,
+  FieldValueStrong,
+  Header,
+  HeaderRow,
+  PanelTitle,
+  PanelWrapper,
+  SectionCard,
   SectionDivider,
-  SubduedText,
-} from '../sharedDetailPanelAliases';
+  SectionHeader,
+  SectionTitle,
+  TagGroup,
+  TitleGroup,
+} from '@/components/resources/internal/sharedDetailPanelAliases';
+import { RediaccCard } from '@/components/ui';
 
 export {
   PanelWrapper,
@@ -42,7 +40,6 @@ export {
   FieldValueStrong,
   FieldValueMonospace,
   SectionDivider,
-  SubduedText,
 };
 
 export const DividerLabel = styled.span`
@@ -64,29 +61,8 @@ export const MetricCard = styled(RediaccCard).attrs({ size: 'sm' })`
   }
 `;
 
-export const MetricLabel = styled(RediaccText).attrs({
-  size: 'sm',
-  color: 'secondary',
-})``;
-
-export const MetricValue = styled(RediaccText).attrs<{ $isWarning?: boolean }>(
-  ({ $isWarning }) => ({
-    size: 'lg',
-    weight: 'semibold',
-    color: $isWarning ? 'danger' : 'primary',
-  })
-)<{ $isWarning?: boolean }>``;
-
 export const SectionStack = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.SM}px;
-`;
-
-export const InlineText = styled(RediaccText).attrs({
-  size: 'sm',
-})`
-  && {
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
 `;

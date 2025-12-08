@@ -1,8 +1,8 @@
-import { useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
+import { QueryKey, useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { showMessage } from '@/utils/messages';
-import { minifyJSON } from '@/utils/json';
 import { telemetryService } from '@/services/telemetryService';
+import { minifyJSON } from '@/utils/json';
+import { showMessage } from '@/utils/messages';
 
 export interface MutationConfig<TVariables, TResult = unknown, TTransformed = TVariables> {
   request: (data: TTransformed) => Promise<TResult>;

@@ -1,15 +1,14 @@
 import styled from 'styled-components';
-import { CloudServerOutlined, TeamOutlined, DesktopOutlined } from '@/utils/optimizedIcons';
-import { RediaccBadge } from '@/components/ui';
-import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
-import { RediaccTag, RediaccButton } from '@/components/ui';
+import { RediaccBadge, RediaccButton } from '@/components/ui';
 import {
+  ActionsRow,
+  ExpandIcon,
   NameCell,
   NameText,
-  ExpandIcon,
-  ActionsRow,
   TableWrapper,
-} from '../../styles/tableAliases';
+} from '@/pages/ceph/styles/tableAliases';
+import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
+import { CloudServerOutlined, DesktopOutlined, TeamOutlined } from '@/utils/optimizedIcons';
 
 export const TableContainer = styled(BaseTableContainer)`
   .cluster-row {
@@ -36,11 +35,7 @@ export const ClusterIcon = styled(StyledIcon).attrs(({ theme }) => ({
   $color: theme.colors.primary,
 }))``;
 
-export const TeamTag = styled(RediaccTag).attrs({
-  preset: 'team',
-  size: 'sm',
-  borderless: true,
-})``;
+// TeamTag removed - use <RediaccTag preset="team" compact borderless> directly
 
 export const MachineCountBadgeWrapper = styled(RediaccBadge)<{ $hasMachines: boolean }>`
   .ant-badge-count {
@@ -97,11 +92,7 @@ export const MachineNameIcon = styled(StyledIcon).attrs(({ theme }) => ({
   $color: theme.colors.primary,
 }))``;
 
-export const MachineBridgeTag = styled(RediaccTag).attrs({
-  preset: 'bridge',
-  size: 'sm',
-  borderless: true,
-})``;
+// MachineBridgeTag removed - use <RediaccTag preset="bridge" compact borderless> directly
 
 export const AssignedDateText = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};

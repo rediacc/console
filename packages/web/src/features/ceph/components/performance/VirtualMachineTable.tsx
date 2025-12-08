@@ -1,13 +1,13 @@
-import React, { useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Space } from 'antd';
 import { List as ReactWindowList } from 'react-window';
 import * as InfiniteLoaderModule from 'react-window-infinite-loader';
-import { Space } from 'antd';
-import { RediaccCheckbox } from '@/components/ui/Form';
-import { Machine } from '@/types';
-import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
-import { useMachineSelection } from '@/store/ceph/hooks';
-import { useTableStyles } from '@/hooks/useComponentStyles';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
+import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
+import { RediaccCheckbox } from '@/components/ui';
+import { useTableStyles } from '@/hooks/useComponentStyles';
+import { useMachineSelection } from '@/store/ceph/hooks';
+import { Machine } from '@/types';
 import styles from './VirtualMachineTable.module.css';
 
 type ScrollAlign = 'auto' | 'smart' | 'center' | 'end' | 'start';

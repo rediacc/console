@@ -1,7 +1,7 @@
-import styled, { css } from 'styled-components';
-import { Table as AntTable, Typography } from 'antd';
-import type { TableProps } from 'antd';
 import React from 'react';
+import { Table as AntTable, Typography } from 'antd';
+import styled, { css } from 'styled-components';
+import type { TableProps } from 'antd';
 
 const { Title } = Typography;
 
@@ -19,7 +19,7 @@ export const PluginContainersSection = styled(ContainersSection)`
 `;
 
 export const EmptyState = styled.div`
-  padding: ${({ theme }) => `${theme.spacing.XXL}px 0`};
+  padding: ${({ theme }) => theme.spacing.XXL}px 0;
   text-align: center;
 `;
 

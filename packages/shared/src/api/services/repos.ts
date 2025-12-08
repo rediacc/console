@@ -1,7 +1,14 @@
-import { endpoints } from '../../endpoints';
-import type { Repo } from '../../types';
 import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
 import type { ApiClient } from './types';
+import type {
+  DeleteRepositoryParams,
+  GetTeamRepositories_ResultSet1,
+  GetTeamRepositoriesParams,
+  PromoteRepositoryToGrandParams,
+  UpdateRepositoryNameParams,
+  UpdateRepositoryTagParams,
+  UpdateRepositoryVaultParams,
+} from '../../types';
 
 export interface CreateRepoOptions {
   repoTag?: string;
@@ -11,19 +18,19 @@ export interface CreateRepoOptions {
   repoGuid?: string;
 }
 
-const mapRepo = (repo: Repo): Repo => ({
+const mapRepo = (repo: GetTeamRepositories_ResultSet1): GetTeamRepositories_ResultSet1 => ({
   ...repo,
   repoTag: repo.repoTag || 'latest',
 });
 
-const normalizeTeamParam = (teamName: string | string[]): string =>
-  Array.isArray(teamName) ? teamName.join(',') : teamName;
-
 export function createReposService(client: ApiClient) {
   return {
-    list: async (teamName: string | string[]): Promise<Repo[]> => {
-      const response = await client.get<Repo>(endpoints.repos.getTeamRepos, {
-        teamName: normalizeTeamParam(teamName),
+    list: async (
+      params: GetTeamRepositoriesParams | { teamName: string[] }
+    ): Promise<GetTeamRepositories_ResultSet1[]> => {
+      const teamName = Array.isArray(params.teamName) ? params.teamName.join(',') : params.teamName;
+      const response = await client.get<GetTeamRepositories_ResultSet1>('/GetTeamRepositories', {
+        teamName,
       });
       return parseResponse(response, {
         extractor: responseExtractors.primaryOrSecondary,
@@ -36,7 +43,7 @@ export function createReposService(client: ApiClient) {
       teamName: string,
       repoName: string,
       options: CreateRepoOptions = {}
-    ): Promise<Repo | null> => {
+    ): Promise<GetTeamRepositories_ResultSet1 | null> => {
       const payload: Record<string, unknown> = {
         teamName,
         repoName,
@@ -55,7 +62,10 @@ export function createReposService(client: ApiClient) {
       if (options.repoGuid && options.repoGuid.trim() !== '') {
         payload.repoGuid = options.repoGuid;
       }
-      const response = await client.post<Repo>(endpoints.repos.createRepo, payload);
+      const response = await client.post<GetTeamRepositories_ResultSet1>(
+        '/CreateRepository',
+        payload
+      );
 
       return parseFirst(response, {
         extractor: responseExtractors.primaryOrSecondary,
@@ -63,55 +73,24 @@ export function createReposService(client: ApiClient) {
       });
     },
 
-    rename: async (teamName: string, currentName: string, newName: string): Promise<void> => {
-      await client.post(endpoints.repos.updateRepoName, {
-        teamName,
-        currentRepoName: currentName,
-        newRepoName: newName,
-      });
+    rename: async (params: UpdateRepositoryNameParams): Promise<void> => {
+      await client.post('/UpdateRepositoryName', params);
     },
 
-    renameTag: async (
-      teamName: string,
-      repoName: string,
-      currentTag: string,
-      newTag: string
-    ): Promise<void> => {
-      await client.post(endpoints.repos.updateRepoTag, {
-        teamName,
-        repoName,
-        currentTag,
-        newTag,
-      });
+    renameTag: async (params: UpdateRepositoryTagParams): Promise<void> => {
+      await client.post('/UpdateRepositoryTag', params);
     },
 
-    delete: async (teamName: string, repoName: string, repoTag?: string): Promise<void> => {
-      const payload: Record<string, unknown> = { teamName, repoName };
-      if (repoTag) {
-        payload.repoTag = repoTag;
-      }
-      await client.post(endpoints.repos.deleteRepo, payload);
+    delete: async (params: DeleteRepositoryParams): Promise<void> => {
+      await client.post('/DeleteRepository', params);
     },
 
-    updateVault: async (
-      teamName: string,
-      repoName: string,
-      vault: string,
-      vaultVersion: number
-    ): Promise<void> => {
-      await client.post(endpoints.repos.updateRepoVault, {
-        teamName,
-        repoName,
-        vaultContent: vault,
-        vaultVersion,
-      });
+    updateVault: async (params: UpdateRepositoryVaultParams): Promise<void> => {
+      await client.post('/UpdateRepositoryVault', params);
     },
 
-    promoteToGrand: async (teamName: string, repoName: string): Promise<void> => {
-      await client.post(endpoints.repos.promoteRepoToGrand, {
-        teamName,
-        repoName,
-      });
+    promoteToGrand: async (params: PromoteRepositoryToGrandParams): Promise<void> => {
+      await client.post('/PromoteRepositoryToGrand', params);
     },
   };
 }

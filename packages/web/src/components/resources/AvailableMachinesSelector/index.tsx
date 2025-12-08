@@ -1,24 +1,23 @@
 import React from 'react';
-import { Select, Empty } from 'antd';
-import type { DefaultOptionType } from 'antd/es/select';
-import { CloudServerOutlined, CheckCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
+import { Empty, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { Machine } from '@/types';
 import { useAvailableMachinesForClone } from '@/api/queries/ceph';
-import MachineAssignmentStatusBadge from '../MachineAssignmentStatusBadge';
+import { StatusIcon } from '@/components/common/styled';
+import { RediaccTag, RediaccText } from '@/components/ui';
+import type { Machine } from '@/types';
+import { CheckCircleOutlined, CloudServerOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 import {
-  StyledSelect,
-  OptionContent,
-  MachineMeta,
-  MachineIcon,
-  MachineName,
-  TeamTag,
   BridgeTag,
-  StatusContainer,
-  StatusIcon,
   EmptyDescription,
+  MachineIcon,
+  MachineMeta,
+  MachineName,
+  OptionContent,
+  StatusContainer,
+  StyledSelect,
+  TeamTag,
 } from './styles';
-import { RediaccText as Text, RediaccTag as Tag } from '@/components/ui';
+import type { DefaultOptionType } from 'antd/es/select';
 
 const { Option } = Select;
 
@@ -72,8 +71,8 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
   };
 
   const renderMachineOption = (machine: Machine) => {
-    const isAssigned =
-      machine.cephClusterName || machine.assignmentStatus?.assignmentType !== 'AVAILABLE';
+    // assignmentStatus is now a simple string: 'ASSIGNED' | 'UNASSIGNED'
+    const isAssigned = machine.cephClusterName || machine.assignmentStatus === 'ASSIGNED';
     const isDisabled = !allowSelectAssigned && isAssigned;
 
     return (
@@ -101,30 +100,36 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
             <StatusContainer>
               {isAssigned ? (
                 machine.cephClusterName ? (
-                  <Tag
+                  <RediaccTag
                     variant="primary"
                     data-testid={`available-machines-cluster-tag-${machine.machineName}`}
                   >
                     <StatusIcon as={WarningOutlined} />
-                    <Text variant="caption">
+                    <RediaccText variant="caption">
                       {t('machines:assignmentStatus.cluster')}: {machine.cephClusterName}
-                    </Text>
-                  </Tag>
-                ) : machine.assignmentStatus ? (
-                  <MachineAssignmentStatusBadge
-                    assignmentType={machine.assignmentStatus.assignmentType}
-                    assignmentDetails={machine.assignmentStatus.assignmentDetails}
-                    size="small"
-                  />
-                ) : null
+                    </RediaccText>
+                  </RediaccTag>
+                ) : (
+                  <RediaccTag
+                    variant="warning"
+                    data-testid={`available-machines-assigned-tag-${machine.machineName}`}
+                  >
+                    <StatusIcon as={WarningOutlined} />
+                    <RediaccText variant="caption">
+                      {t('machines:assignmentStatus.assigned', 'Assigned')}
+                    </RediaccText>
+                  </RediaccTag>
+                )
               ) : (
-                <Tag
+                <RediaccTag
                   variant="success"
                   data-testid={`available-machines-available-tag-${machine.machineName}`}
                 >
                   <StatusIcon as={CheckCircleOutlined} />
-                  <Text variant="caption">{t('machines:assignmentStatus.available')}</Text>
-                </Tag>
+                  <RediaccText variant="caption">
+                    {t('machines:assignmentStatus.available')}
+                  </RediaccText>
+                </RediaccTag>
               )}
             </StatusContainer>
           )}

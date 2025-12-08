@@ -1,8 +1,8 @@
-import { showTranslatedMessage } from '@/utils/messages';
-import { api } from '@/api/client';
-import { isPermanentFailure, STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
-import type { QueueItem, QueueTrace } from '@rediacc/shared/types';
 import { isAxiosError } from 'axios';
+import { api } from '@/api/client';
+import { showTranslatedMessage } from '@/utils/messages';
+import { isPermanentFailure, STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
+import type { GetTeamQueueItems_ResultSet1, QueueTrace } from '@rediacc/shared/types';
 
 interface MonitoredTask {
   taskId: string;
@@ -216,7 +216,7 @@ class QueueMonitoringService {
         // In Chrome extension context, wrap API call with additional error handling
         try {
           trace = (await Promise.race([
-            api.queue.getTrace(task.taskId),
+            api.queue.getTrace({ taskId: task.taskId }),
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Chrome extension timeout')), 8000)
             ),
@@ -232,7 +232,7 @@ class QueueMonitoringService {
         }
       } else {
         // Fetch the latest status normally
-        trace = await api.queue.getTrace(task.taskId);
+        trace = await api.queue.getTrace({ taskId: task.taskId });
       }
 
       // Extract queue details from response
@@ -243,6 +243,11 @@ class QueueMonitoringService {
       }
 
       const currentStatus = queueDetails.status;
+
+      // Skip if status is null
+      if (!currentStatus) {
+        return;
+      }
 
       // Check for permanent failure flag
       if (queueDetails.permanentlyFailed) {
@@ -471,16 +476,16 @@ class QueueMonitoringService {
     return Array.from(this.monitoredTasks.values());
   }
 
-  private extractQueueDetails(response: QueueTrace): QueueItem | null {
+  private extractQueueDetails(response: QueueTrace): GetTeamQueueItems_ResultSet1 | null {
     return response.queueDetails;
   }
 
-  private getRetryCount(queueDetails: QueueItem): number {
+  private getRetryCount(queueDetails: GetTeamQueueItems_ResultSet1): number {
     return queueDetails.retryCount ?? 0;
   }
 
-  private getLastFailureReason(queueDetails: QueueItem): string | undefined {
-    return queueDetails.lastFailureReason;
+  private getLastFailureReason(queueDetails: GetTeamQueueItems_ResultSet1): string | undefined {
+    return queueDetails.lastFailureReason ?? undefined;
   }
 
   // Clear old tasks (older than 24 hours)

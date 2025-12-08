@@ -1,10 +1,8 @@
 import styled, { keyframes } from 'styled-components';
-import { BaseModal, BaseTable, ModalBody, FlexColumn } from '@/styles/primitives';
 import { ActionGroup } from '@/components/common/styled';
-import { RediaccTag } from '@/components/ui/Tag';
-import { RediaccText } from '@/components/ui/Text';
-import { RediaccAlert, RediaccStack, RediaccProgress } from '@/components/ui';
+import { RediaccProgress, RediaccTag, RediaccText } from '@/components/ui';
 import type { TagVariant } from '@/components/ui/Tag';
+import { BaseModal, BaseTable, FlexColumn, ModalBody } from '@/styles/primitives';
 
 const pulse = keyframes`
   0% {
@@ -22,24 +20,21 @@ export const StyledModal = styled(BaseModal)`
   .ant-modal-body {
     padding: ${({ theme }) => theme.spacing.XL}px;
   }
+
+  .ant-modal-header {
+    .ant-modal-title {
+      font-size: ${({ theme }) => theme.fontSize.BASE}px;
+      color: ${({ theme }) => theme.colors.textPrimary};
+
+      .anticon {
+        font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
+      }
+    }
+  }
 `;
 
 export const ModalContent = styled(ModalBody)`
   width: 100%;
-`;
-
-export const TitleStack = styled(RediaccStack).attrs({ direction: 'horizontal' })`
-  && {
-    display: inline-flex;
-    align-items: center;
-    gap: ${({ theme }) => theme.spacing.SM}px;
-    font-size: ${({ theme }) => theme.fontSize.BASE}px;
-    color: ${({ theme }) => theme.colors.textPrimary};
-
-    .anticon {
-      font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-    }
-  }
 `;
 
 export const ProgressSection = styled(FlexColumn).attrs({
@@ -60,15 +55,6 @@ export const ProgressBar = styled(RediaccProgress)`
   }
 `;
 
-export const ProgressNote = styled(RediaccText).attrs({ size: 'xs', color: 'secondary' })``;
-
-export const InfoAlert = styled(RediaccAlert)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-  }
-`;
-
 export const SummaryContainer = styled.div`
   padding: ${({ theme }) => theme.spacing.MD}px;
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
@@ -82,8 +68,6 @@ export const SummaryMetrics = styled(ActionGroup)`
 export const SummaryMetric = styled(FlexColumn).attrs({
   $gap: 'XS',
 })``;
-
-export const SummaryLabel = styled(RediaccText).attrs({ color: 'secondary' })``;
 
 export const SummaryValue = styled(RediaccText).attrs({ weight: 'semibold' })<{
   $variant?: TagVariant;
@@ -110,30 +94,6 @@ export const StyledTable = styled(BaseTable)`
 
   .status-failed td {
     background-color: ${({ theme }) => theme.colors.bgError};
-  }
-`;
-
-export const MachineName = styled(RediaccText).attrs({ weight: 'semibold' })``;
-
-export const StatusIcon = styled.span<{ $variant: 'testing' | 'success' | 'failed' | 'pending' }>`
-  display: inline-flex;
-  align-items: center;
-  color: ${({ theme, $variant }) => {
-    switch ($variant) {
-      case 'success':
-        return theme.colors.success;
-      case 'failed':
-        return theme.colors.error;
-      case 'testing':
-        return theme.colors.primary;
-      case 'pending':
-      default:
-        return theme.colors.textSecondary;
-    }
-  }};
-
-  .anticon {
-    font-size: ${({ theme }) => theme.fontSize.LG}px;
   }
 `;
 

@@ -1,9 +1,15 @@
-import type { ReactNode, CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 /**
  * Text variants for different use cases
+ * - caption: Extra small text (xs), secondary color - for timestamps, metadata
+ * - label: Extra small text (xs), secondary color - for form labels, metadata labels
+ * - value: Small text (sm), primary color - for data values, content
+ * - title: Large text (lg), semibold weight - for section/card titles
+ * - description: Small text (sm), secondary color - for descriptions, subtitles
+ * - helper: Small text (sm), secondary color - for helper text, hints
  */
-export type TextVariant = 'caption'; // Small text
+export type TextVariant = 'caption' | 'label' | 'value' | 'title' | 'description' | 'helper';
 
 /**
  * Font size scale
@@ -38,6 +44,11 @@ export type TextAlign = 'left' | 'center' | 'right';
  * HTML element to render as
  */
 export type TextElement = 'span' | 'p' | 'div' | 'label';
+export type RediaccTextRef =
+  | HTMLSpanElement
+  | HTMLDivElement
+  | HTMLParagraphElement
+  | HTMLLabelElement;
 
 export interface RediaccTextProps {
   /** Visual style variant - applies preset styling */
@@ -74,6 +85,6 @@ export interface RediaccTextProps {
   onClick?: () => void;
   /** Enable copy functionality */
   copyable?: boolean | { text?: string; onCopy?: () => void };
-  /** Enable ellipsis with optional configuration */
-  ellipsis?: boolean | { rows?: number; expandable?: boolean; onExpand?: () => void };
+  /** Enable ellipsis with optional configuration (rows, expandable, onExpand are not supported, use truncate instead) */
+  ellipsis?: boolean;
 }

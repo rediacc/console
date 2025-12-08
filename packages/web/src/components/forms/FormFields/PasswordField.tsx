@@ -1,7 +1,7 @@
 import React from 'react';
 import { Form, Input } from 'antd';
-import type { Rule } from 'antd/es/form';
 import { KeyOutlined } from '@/utils/optimizedIcons';
+import type { Rule } from 'antd/es/form';
 
 export interface PasswordFieldProps {
   /** Field name in the form */

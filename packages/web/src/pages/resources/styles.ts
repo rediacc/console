@@ -1,17 +1,10 @@
-import styled from 'styled-components';
 import { Breadcrumb, Typography } from 'antd';
-import { PageContainer, SectionStack, SectionHeaderRow, FlexRow } from '@/styles/primitives';
-import { ActionsRow, CenteredState as BaseCenteredState } from '@/components/common/styled';
-import { RediaccCard } from '@/components/ui';
+import styled from 'styled-components';
+import { ActionsRow } from '@/components/common/styled';
+import { FlexRow, PageContainer, SectionHeaderRow, SectionStack } from '@/styles/primitives';
 
 export const PageWrapper = styled(PageContainer)`
   height: 100%;
-`;
-
-export const FullHeightCard = styled(RediaccCard)`
-  height: 100%;
-  display: flex;
-  flex-direction: column;
 `;
 
 export const BreadcrumbWrapper = styled(Breadcrumb)`
@@ -74,8 +67,6 @@ export const DetailBackdrop = styled.div<{ $right: number; $visible: boolean }>`
   z-index: ${({ theme }) => theme.zIndex.MODAL};
   pointer-events: ${({ $visible }) => ($visible ? 'auto' : 'none')};
 `;
-
-export const CenteredState = BaseCenteredState;
 
 export const ErrorWrapper = styled.div`
   max-width: 480px;

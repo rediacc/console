@@ -1,63 +1,58 @@
 ﻿import React, { useEffect, useMemo } from 'react';
-import { Row, Col, Progress, Space } from 'antd';
-import type { TFunction } from 'i18next';
+import { Col, Progress, Row, Space } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useMachines } from '@/api/queries/machines';
+import { IconWrapper, RediaccAlert, RediaccEmpty, RediaccText } from '@/components/ui';
+import type { Machine } from '@/types';
 import {
-  DoubleRightOutlined,
-  DatabaseOutlined,
-  InfoCircleOutlined,
   AppstoreOutlined,
-  FieldTimeOutlined,
-  CloudServerOutlined,
-  FolderOutlined,
   CheckCircleOutlined,
-  StopOutlined,
+  CloudServerOutlined,
   CodeOutlined,
+  DatabaseOutlined,
+  DoubleRightOutlined,
+  FieldTimeOutlined,
+  FolderOutlined,
+  InfoCircleOutlined,
+  StopOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import { useTranslation } from 'react-i18next';
-import type { Repo } from '@/api/queries/repos';
-import type { Machine } from '@/types';
-import { useMachines } from '@/api/queries/machines';
 import { abbreviatePath } from '@/utils/pathUtils';
+import type { GetTeamRepositories_ResultSet1 as Repo } from '@rediacc/shared/types';
 import {
-  PanelWrapper,
-  Header,
-  HeaderRow,
-  TitleGroup,
-  HeaderIcon,
-  PanelTitle,
+  ActivityCard,
+  ActivityMetrics,
   CollapseButton,
-  TagGroup,
-  StyledTag,
   ContentWrapper,
-  EmptyState,
-  SectionHeader,
-  SectionTitle,
-  SectionCard,
-  FieldRow,
   FieldLabel,
+  FieldRow,
   FieldValue,
   FieldValueMonospace,
-  SectionDivider,
+  Header,
+  HeaderIcon,
+  HeaderRow,
+  PanelTitle,
+  PanelWrapper,
+  PathsCard,
   Section,
-  StatusTag,
-  AlertWrapper,
-  VolumeDescription,
-  VolumeList,
-  Stack,
-  ServicesList,
+  SectionCard,
+  SectionDivider,
+  SectionHeader,
+  SectionTitle,
   ServiceCard,
   ServiceHeader,
   ServiceMetaGrid,
   ServiceMetaItem,
-  ServiceMetaLabel,
-  ServiceMetaValue,
-  DiskUsageMeta,
-  PathsCard,
-  ActivityCard,
-  ActivityMetrics,
+  ServicesList,
+  Stack,
+  StatusTag,
+  StyledTag,
+  TagGroup,
+  TitleGroup,
+  VolumeDescription,
+  VolumeList,
 } from './styles';
-import { IconWrapper } from '@/components/ui';
+import type { TFunction } from 'i18next';
 
 interface RepoDetailPanelProps {
   repo: Repo | null;
@@ -265,9 +260,10 @@ export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
 
       <ContentWrapper data-testid="repo-detail-content">
         {!repoData ? (
-          <EmptyState
+          <RediaccEmpty
             description={t('resources:repos.noRepoData')}
             data-testid="repo-detail-empty-state"
+            style={{ marginTop: 120 }}
           />
         ) : (
           <>
@@ -397,7 +393,8 @@ const ExternalVolumeWarning: React.FC<SectionProps> = ({ repo, panelData }) => {
   }
 
   return (
-    <AlertWrapper
+    <RediaccAlert
+      spacing="default"
       variant="warning"
       showIcon
       icon={<WarningOutlined />}
@@ -473,9 +470,9 @@ const StorageSection: React.FC<SectionProps> = ({ repo, panelData, t }) => {
                   strokeColor={diskPercent > 90 ? 'var(--color-error)' : 'var(--color-success)'}
                   data-testid={`repo-detail-disk-usage-progress-${repo.repoName}`}
                 />
-                <DiskUsageMeta>
+                <RediaccText variant="caption">
                   {t('resources:repos.available')}: {repoData.disk_space.available}
-                </DiskUsageMeta>
+                </RediaccText>
               </Stack>
             </SectionCard>
           </Col>
@@ -609,26 +606,26 @@ const ServicesSection: React.FC<SectionProps> = ({ repo, panelData, t }) => (
                   <ServiceMetaGrid>
                     {service.memory_human && (
                       <ServiceMetaItem>
-                        <ServiceMetaLabel>Memory</ServiceMetaLabel>
-                        <ServiceMetaValue>{service.memory_human}</ServiceMetaValue>
+                        <RediaccText variant="caption">Memory</RediaccText>
+                        <RediaccText variant="caption">{service.memory_human}</RediaccText>
                       </ServiceMetaItem>
                     )}
                     {service.main_pid && (
                       <ServiceMetaItem>
-                        <ServiceMetaLabel>PID</ServiceMetaLabel>
-                        <ServiceMetaValue>{service.main_pid}</ServiceMetaValue>
+                        <RediaccText variant="caption">PID</RediaccText>
+                        <RediaccText variant="caption">{service.main_pid}</RediaccText>
                       </ServiceMetaItem>
                     )}
                     {service.uptime_human && (
                       <ServiceMetaItem>
-                        <ServiceMetaLabel>Uptime</ServiceMetaLabel>
-                        <ServiceMetaValue>{service.uptime_human}</ServiceMetaValue>
+                        <RediaccText variant="caption">Uptime</RediaccText>
+                        <RediaccText variant="caption">{service.uptime_human}</RediaccText>
                       </ServiceMetaItem>
                     )}
                     {service.restarts !== undefined && (
                       <ServiceMetaItem>
-                        <ServiceMetaLabel>Restarts</ServiceMetaLabel>
-                        <ServiceMetaValue>{service.restarts}</ServiceMetaValue>
+                        <RediaccText variant="caption">Restarts</RediaccText>
+                        <RediaccText variant="caption">{service.restarts}</RediaccText>
                       </ServiceMetaItem>
                     )}
                   </ServiceMetaGrid>
