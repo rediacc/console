@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Dropdown, List, Empty, Space, Tag } from 'antd';
+import { Badge, Dropdown, List, Empty, Space, Tag, Grid } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -43,10 +43,15 @@ import {
 
 dayjs.extend(relativeTime);
 
+const { useBreakpoint } = Grid;
+
 const NotificationBell: React.FC = () => {
   const dispatch = useDispatch();
   const { t, i18n } = useTranslation('common');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   const { notifications, unreadCount } = useSelector((state: RootState) => state.notifications);
 
@@ -200,7 +205,7 @@ const NotificationBell: React.FC = () => {
     <Badge count={unreadCount} offset={[-4, 4]}>
       <Dropdown
         trigger={['click']}
-        placement="bottomRight"
+        placement={isMobile ? 'bottom' : 'bottomRight'}
         open={dropdownOpen}
         onOpenChange={setDropdownOpen}
         menu={{ items: [] }}

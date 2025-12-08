@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Table } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { RediaccText } from '@/components/ui';
 import { useUpdateMachineClusterAssignment } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
 import type { Machine } from '@/types';
@@ -14,9 +15,7 @@ import {
   WarningAlert,
   MachinesTable,
   MachineNameRow,
-  MachineNameText,
   ClusterTag,
-  MutedText,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -104,7 +103,9 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     renderWrapper: (content) => (
       <MachineNameRow>
         <CloudServerOutlined />
-        <MachineNameText>{content}</MachineNameText>
+        <RediaccText variant="caption" weight="semibold">
+          {content}
+        </RediaccText>
       </MachineNameRow>
     ),
   });
@@ -116,7 +117,9 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     renderText: (cluster?: string | null) => cluster || noneLabel,
     renderWrapper: (content, fullText) =>
       fullText === noneLabel ? (
-        <MutedText>{fullText}</MutedText>
+        <RediaccText variant="caption" color="muted">
+          {fullText}
+        </RediaccText>
       ) : (
         <ClusterTag>{content}</ClusterTag>
       ),

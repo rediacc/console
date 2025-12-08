@@ -50,7 +50,6 @@ import {
   ListSubtitle,
   CardHeaderRow,
   CardTitle,
-  SecondaryText,
   PaddedEmpty,
   ModalStack,
   ModalStackLarge,
@@ -616,7 +615,9 @@ const InfrastructurePage: React.FC = () => {
                         : t('bridges.title')}
                     </CardTitle>
                     {!effectiveRegion && (
-                      <SecondaryText>{t('regions.selectRegionToView')}</SecondaryText>
+                      <RediaccText size="sm" color="secondary">
+                        {t('regions.selectRegionToView')}
+                      </RediaccText>
                     )}
                   </div>
                   {effectiveRegion && (

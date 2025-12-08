@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { templateService } from '@/services/templateService';
+import { RediaccText } from '@/components/ui';
 import {
   DatabaseOutlined,
   GlobalOutlined,
@@ -17,7 +18,6 @@ import {
   SelectorContainer,
   HeaderStack,
   HelperRow,
-  HelperText,
   ClearButton,
   SearchInput,
   ResultCount,
@@ -156,13 +156,13 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     <SelectorContainer>
       <HeaderStack direction="vertical" gap="md">
         <HelperRow>
-          <HelperText>
+          <RediaccText variant="caption">
             {multiple
               ? t('resources:templates.selectMultiple', {
                   defaultValue: 'Select templates (optional, multiple allowed)',
                 })
               : t('resources:templates.selectOptional')}
-          </HelperText>
+          </RediaccText>
           {((multiple && Array.isArray(value) && value.length > 0) || (!multiple && value)) && (
             <ClearButton
               size="sm"
@@ -250,7 +250,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
                   <TemplateTitle weight="bold">{getTemplateTitle(template.name)}</TemplateTitle>
 
-                  <TemplateDescription ellipsis={{ rows: 2 }} color="secondary">
+                  <TemplateDescription truncate maxLines={2} color="secondary">
                     {getTemplateDescription(template.readme)}
                   </TemplateDescription>
 

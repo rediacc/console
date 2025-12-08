@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccTag, RediaccText } from '@/components/ui';
+import { RediaccTag } from '@/components/ui';
 import { BaseModal, BaseTable, ModalTitleRow, AlertCard } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import { WarningOutlined } from '@/utils/optimizedIcons';
@@ -30,11 +30,6 @@ export const MachinesTable = styled(BaseTable)`
 
 export const MachineNameRow = styled(InlineStack)``;
 
-export const MachineNameText = styled(RediaccText).attrs({
-  variant: 'caption',
-  weight: 'semibold',
-})``;
-
 export const ClusterTag = styled(RediaccTag).attrs({
   variant: 'primary',
   size: 'sm',
@@ -44,8 +39,3 @@ export const ClusterTag = styled(RediaccTag).attrs({
     padding: 0 ${({ theme }) => theme.spacing.XS}px;
   }
 `;
-
-export const MutedText = styled(RediaccText).attrs({
-  variant: 'caption',
-  color: 'muted',
-})``;

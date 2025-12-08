@@ -12,29 +12,20 @@
  */
 
 // Page structure
-export * from './page';
+export * from './Page';
 
-// Card components
-export * from './card';
-
-// List components
-export * from './list';
-
-// Modal components
-export * from './modal';
-
-// Form components
-export * from './form';
+// Form inputs and layout
 export * from './Form';
+export * from './Form/layout';
 
 // Text components
-export * from './text';
+// (legacy lowercase text.tsx now re-exports from Text/index to avoid case issues)
 
 // Danger zone components
-export * from './danger';
+export * from './Danger';
 
 // Utility components
-export * from './utils';
+export * from './Utils';
 
 // Button component
 export * from './Button';

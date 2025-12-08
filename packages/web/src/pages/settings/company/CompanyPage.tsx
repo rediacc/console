@@ -46,11 +46,8 @@ import {
   RightAlign,
   DangerDivider,
   BulletedList,
-  WarningNote,
-  DangerText,
   OrderedList,
   RequirementsList,
-  CaptionText,
   CenteredBlock,
   RediaccText,
 } from '@/components/ui';
@@ -544,9 +541,9 @@ const CompanyPage: React.FC = () => {
                         <li>{tSystem('dangerZone.updateMasterPassword.effect2')}</li>
                         <li>{tSystem('dangerZone.updateMasterPassword.effect3')}</li>
                       </RequirementsList>
-                      <WarningNote color="secondary" weight="bold">
+                      <RediaccText color="secondary" weight="bold">
                         {tSystem('dangerZone.updateMasterPassword.warning')}
-                      </WarningNote>
+                      </RediaccText>
                     </Space>
                   </Col>
                   <Col xs={24} lg={8}>
@@ -652,13 +649,13 @@ const CompanyPage: React.FC = () => {
                 <RediaccText weight="bold">
                   {tSystem('dangerZone.updateMasterPassword.modal.warningPermanent')}
                 </RediaccText>
-                <DangerText weight="bold">
+                <RediaccText color="danger" weight="bold">
                   {tSystem(
                     masterPasswordOperation === 'remove'
                       ? 'dangerZone.updateMasterPassword.modal.warningSecureRemove'
                       : 'dangerZone.updateMasterPassword.modal.warningSecure'
                   )}
-                </DangerText>
+                </RediaccText>
               </Space>
             }
             variant="warning"
@@ -851,23 +848,25 @@ const CompanyPage: React.FC = () => {
 
           <Form.Item label={tSystem('dangerZone.importData.modal.importMode')}>
             <Radio.Group value={importMode} onChange={(e) => setImportMode(e.target.value)}>
-              <Space direction="vertical">
+              <Space orientation='vertical'>
                 <Radio value="skip">
-                  <Space direction="vertical" size={4}>
+                  <Space orientation='vertical' size={4}>
                     <RediaccText weight="bold">
                       {tSystem('dangerZone.importData.modal.modeSkip')}
                     </RediaccText>
-                    <CaptionText>{tSystem('dangerZone.importData.modal.modeSkipDesc')}</CaptionText>
+                    <RediaccText variant="caption" color="secondary">
+                      {tSystem('dangerZone.importData.modal.modeSkipDesc')}
+                    </RediaccText>
                   </Space>
                 </Radio>
                 <Radio value="override">
-                  <Space direction="vertical" size={4}>
+                  <Space orientation='vertical' size={4}>
                     <RediaccText weight="bold">
                       {tSystem('dangerZone.importData.modal.modeOverride')}
                     </RediaccText>
-                    <CaptionText>
+                    <RediaccText variant="caption" color="secondary">
                       {tSystem('dangerZone.importData.modal.modeOverrideDesc')}
-                    </CaptionText>
+                    </RediaccText>
                   </Space>
                 </Radio>
               </Space>

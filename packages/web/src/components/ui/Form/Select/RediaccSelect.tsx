@@ -1,6 +1,19 @@
 import { forwardRef } from 'react';
 import { StyledRediaccSelect } from './RediaccSelect.styles';
 import type { RediaccSelectProps } from './RediaccSelect.types';
+import type { SelectSize } from './RediaccSelect.types';
+
+const mapToAntdSize = (size: SelectSize = 'md'): 'small' | 'middle' | 'large' => {
+  switch (size) {
+    case 'sm':
+      return 'small';
+    case 'lg':
+      return 'large';
+    case 'md':
+    default:
+      return 'middle';
+  }
+};
 
 /**
  * Unified RediaccSelect Component
@@ -69,10 +82,13 @@ export const RediaccSelect = forwardRef<any, RediaccSelectProps>(
     },
     ref
   ) => {
+    const antdSize = mapToAntdSize(size);
+
     return (
       <StyledRediaccSelect
         ref={ref}
         $size={size}
+        size={antdSize}
         $fullWidth={fullWidth}
         $minWidth={minWidth}
         value={value}

@@ -83,7 +83,6 @@ import {
   NoteWrapper,
   KeyInfoCard,
   KeyInfoValue,
-  CaptionText,
   CodeText,
   SmallStatusTag,
   ItalicCaption,
@@ -902,7 +901,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                         data-testid="queue-trace-info-duration"
                         className="queue-trace-key-info"
                       >
-                        <CaptionText>Duration</CaptionText>
+                        <RediaccText variant="caption" color="muted">
+                          Duration
+                        </RediaccText>
                         <div>
                           <KeyInfoValue>{formatDuration(totalDurationSeconds)}</KeyInfoValue>
                         </div>
@@ -913,7 +914,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                         data-testid="queue-trace-info-machine"
                         className="queue-trace-key-info"
                       >
-                        <CaptionText>Machine</CaptionText>
+                        <RediaccText variant="caption" color="muted">
+                          Machine
+                        </RediaccText>
                         <div>
                           <RediaccText weight="bold">
                             {traceData.queueDetails.machineName}
@@ -926,7 +929,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                         data-testid="queue-trace-info-priority"
                         className="queue-trace-key-info"
                       >
-                        <CaptionText>Priority</CaptionText>
+                        <RediaccText variant="caption" color="muted">
+                          Priority
+                        </RediaccText>
                         <div>
                           <RediaccTag
                             variant={
@@ -1299,7 +1304,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <FileTextOutlined />
                               <span>Queue Item Details</span>
-                              <CaptionText>(Result Set 1)</CaptionText>
+                              <RediaccText variant="caption" color="muted">
+                                (Result Set 1)
+                              </RediaccText>
                             </Space>
                           ),
                           children: (
@@ -1463,7 +1470,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <HistoryOutlined />
                               <span>Processing Timeline</span>
-                              <CaptionText>(Result Set 4 - Audit Log)</CaptionText>
+                              <RediaccText variant="caption" color="muted">
+                                (Result Set 4 - Audit Log)
+                              </RediaccText>
                             </Space>
                           ),
                           children: (
@@ -1522,7 +1531,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <FileTextOutlined />
                               <span>Vault Content</span>
-                              <CaptionText>(Result Sets 2 & 3)</CaptionText>
+                              <RediaccText variant="caption" color="muted">
+                                (Result Sets 2 & 3)
+                              </RediaccText>
                             </Space>
                           ),
                           children: (
@@ -1862,7 +1873,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <TeamOutlined />
                               <span>Related Queue Items</span>
-                              <CaptionText>(Result Set 5 - Nearby Tasks)</CaptionText>
+                              <RediaccText variant="caption" color="muted">
+                                (Result Set 5 - Nearby Tasks)
+                              </RediaccText>
                             </Space>
                           ),
                           children: (
@@ -1889,9 +1902,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                               >
                                                 {item.status}
                                               </SmallStatusTag>
-                                              <CaptionText>
+                                              <RediaccText variant="caption" color="muted">
                                                 {dayjs(item.createdTime).fromNow()}
-                                              </CaptionText>
+                                              </RediaccText>
                                             </Space>
                                           </ScrollItem>
                                         ))}
@@ -1928,9 +1941,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                               >
                                                 {item.status}
                                               </SmallStatusTag>
-                                              <CaptionText>
+                                              <RediaccText variant="caption" color="muted">
                                                 {dayjs(item.createdTime).fromNow()}
-                                              </CaptionText>
+                                              </RediaccText>
                                             </Space>
                                           </ScrollItem>
                                         ))}
@@ -1948,7 +1961,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                 </Col>
                               </Row>
                               <CenteredFooter>
-                                <CaptionText>
+                                <RediaccText variant="caption" color="muted">
                                   Total:{' '}
                                   {
                                     traceData.queuePosition.filter(
@@ -1964,7 +1977,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                     ).length
                                   }{' '}
                                   tasks behind
-                                </CaptionText>
+                                </RediaccText>
                               </CenteredFooter>
                             </>
                           ),
@@ -1979,7 +1992,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <DashboardOutlined />
                               <span>Performance Metrics</span>
-                              <CaptionText>(Result Set 6 - Machine Stats)</CaptionText>
+                              <RediaccText variant="caption" color="muted">
+                                (Result Set 6 - Machine Stats)
+                              </RediaccText>
                             </Space>
                           ),
                           children: (

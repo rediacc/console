@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { Row, Col, Progress, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { RediaccText } from '@/components/ui';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { CephSection } from '@/components/resources/internal/CephSection';
 import { featureFlags } from '@/config/featureFlags';
@@ -42,7 +43,6 @@ import {
   SectionDivider,
   SectionHeader,
   SectionTitle,
-  SubduedText,
   IconWrapper,
   SectionBlock,
   InfoCard,
@@ -422,12 +422,12 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               <CardTitle level={5}>{t('resources:repos.memory')}</CardTitle>
             </CardHeader>
             <Progress percent={Math.round(memoryPercent)} strokeColor="var(--color-info)" />
-            <SubduedText>
+            <RediaccText size="xs" color="muted">
               {t('resources:repos.used')}: {system.memory.used} / {system.memory.total}
-            </SubduedText>
-            <SubduedText>
+            </RediaccText>
+            <RediaccText size="xs" color="muted">
               {t('resources:repos.available')}: {system.memory.available}
-            </SubduedText>
+            </RediaccText>
           </MetricCard>
         </Col>
 
@@ -440,12 +440,12 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               <CardTitle level={5}>{t('resources:repos.disk')}</CardTitle>
             </CardHeader>
             <Progress percent={diskPercent} strokeColor={diskStroke} />
-            <SubduedText>
+            <RediaccText size="xs" color="muted">
               {t('resources:repos.used')}: {system.disk.used} / {system.disk.total}
-            </SubduedText>
-            <SubduedText>
+            </RediaccText>
+            <RediaccText size="xs" color="muted">
               {t('resources:repos.available')}: {system.disk.available}
-            </SubduedText>
+            </RediaccText>
           </MetricCard>
         </Col>
 
@@ -466,12 +466,12 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               </FieldRow>
             )}
             <Progress percent={datastorePercent} strokeColor={datastoreStroke} />
-            <SubduedText>
+            <RediaccText size="xs" color="muted">
               {t('resources:repos.used')}: {system.datastore.used} / {system.datastore.total}
-            </SubduedText>
-            <SubduedText>
+            </RediaccText>
+            <RediaccText size="xs" color="muted">
               {t('resources:repos.available')}: {system.datastore.available}
-            </SubduedText>
+            </RediaccText>
           </MetricCard>
         </Col>
       </Row>
@@ -625,11 +625,11 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
                     {device.partitions.map((part: BlockDevicePartition) => (
                       <PartitionRow key={`${device.name}-${part.name}`}>
                         <CodeOutlined />
-                        <SubduedText as="span">
+                        <RediaccText as="span" size="xs" color="muted">
                           {part.name}: {part.size_human}
                           {part.filesystem && ` (${part.filesystem})`}
                           {part.mountpoint && ` • ${part.mountpoint}`}
-                        </SubduedText>
+                        </RediaccText>
                       </PartitionRow>
                     ))}
                   </IndentedBlock>
@@ -680,7 +680,11 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
             </CardHeader>
 
             <CardBodyStack>
-              {container.image && <SubduedText ellipsis>{container.image}</SubduedText>}
+              {container.image && (
+                <RediaccText ellipsis size="xs" color="muted">
+                  {container.image}
+                </RediaccText>
+              )}
               {container.cpu_percent && (
                 <KeyValueRow>
                   <FieldLabel>CPU:</FieldLabel>

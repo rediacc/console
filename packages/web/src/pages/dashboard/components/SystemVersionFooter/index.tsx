@@ -2,16 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Tooltip } from 'antd';
 import { useApiHealth } from '@/api/queries/health';
 import { versionService } from '@/services/versionService';
+import { RediaccText } from '@/components/ui';
 import { CloudServerOutlined, DesktopOutlined, ClockCircleOutlined } from '@/utils/optimizedIcons';
-import {
-  FooterContainer,
-  VersionItem,
-  VersionLabel,
-  VersionValue,
-  Separator,
-  EnvironmentTag,
-  UptimeText,
-} from './styles';
+import { FooterContainer, VersionItem, Separator, EnvironmentTag } from './styles';
 
 const formatUptime = (uptime: { days: number; hours: number; minutes: number }): string => {
   const parts: string[] = [];
@@ -46,16 +39,24 @@ const SystemVersionFooter: React.FC = () => {
     <FooterContainer data-testid="system-version-footer">
       <VersionItem>
         <DesktopOutlined style={{ opacity: 0.5 }} />
-        <VersionLabel>Console</VersionLabel>
-        <VersionValue data-testid="ui-version">{uiVersion}</VersionValue>
+        <RediaccText size="sm" color="muted">
+          Console
+        </RediaccText>
+        <RediaccText size="sm" color="secondary" weight="medium" data-testid="ui-version">
+          {uiVersion}
+        </RediaccText>
       </VersionItem>
 
       <Separator>|</Separator>
 
       <VersionItem>
         <CloudServerOutlined style={{ opacity: 0.5 }} />
-        <VersionLabel>API</VersionLabel>
-        <VersionValue data-testid="api-version">{apiVersion}</VersionValue>
+        <RediaccText size="sm" color="muted">
+          API
+        </RediaccText>
+        <RediaccText size="sm" color="secondary" weight="medium" data-testid="api-version">
+          {apiVersion}
+        </RediaccText>
         <EnvironmentTag
           $isProduction={isProduction}
           variant={isProduction ? 'success' : 'warning'}
@@ -71,7 +72,9 @@ const SystemVersionFooter: React.FC = () => {
           <Tooltip title="API Uptime">
             <VersionItem>
               <ClockCircleOutlined style={{ opacity: 0.5 }} />
-              <UptimeText data-testid="api-uptime">{formatUptime(uptime)}</UptimeText>
+              <RediaccText size="xs" color="muted" data-testid="api-uptime">
+                {formatUptime(uptime)}
+              </RediaccText>
             </VersionItem>
           </Tooltip>
         </>
