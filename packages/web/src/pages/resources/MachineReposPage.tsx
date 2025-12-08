@@ -173,8 +173,8 @@ const MachineReposPage: React.FC = () => {
     fileBrowserModal.open(machine);
   };
 
-  const handleUnifiedModalSubmit = async (data: Parameters<typeof createRepo>[0]) => {
-    const result = await createRepo(data);
+  const handleUnifiedModalSubmit = async (data: Record<string, unknown>) => {
+    const result = await createRepo(data as unknown as Parameters<typeof createRepo>[0]);
 
     if (result.success) {
       unifiedModal.close();
@@ -455,8 +455,7 @@ const MachineReposPage: React.FC = () => {
         existingData={unifiedModal.state.data?.data}
         teamFilter={machine?.teamName ? [machine.teamName] : undefined}
         creationContext={unifiedModal.state.data?.creationContext}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        onSubmit={handleUnifiedModalSubmit as any}
+        onSubmit={handleUnifiedModalSubmit}
       />
     </PageWrapper>
   );

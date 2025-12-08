@@ -1,3 +1,4 @@
+import type { BaseModalProps } from '@/types';
 import type {
   GetTeamQueueItems_ResultSet1,
   QueueTraceLog,
@@ -5,10 +6,8 @@ import type {
 } from '@rediacc/shared/types';
 import type { Dayjs } from 'dayjs';
 
-export interface QueueItemTraceModalProps {
+export interface QueueItemTraceModalProps extends BaseModalProps {
   taskId: string | null;
-  open: boolean;
-  onCancel: () => void;
   onTaskStatusChange?: (status: string, taskId: string) => void;
 }
 

@@ -64,10 +64,8 @@ export const RediaccText = forwardRef<RediaccTextRef, RediaccTextProps>(
         $maxLines={maxLines}
         $code={code}
         $as={as}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        copyable={copyable as any}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ellipsis={ellipsis as any}
+        copyable={copyable}
+        ellipsis={ellipsis}
         {...rest}
       >
         {children}

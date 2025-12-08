@@ -283,8 +283,9 @@ const CredentialsPage: React.FC = () => {
       await execute(
         async () => {
           if (unifiedModalState.mode === 'create') {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const result = await createRepoWithQueue(data as any);
+            const result = await createRepoWithQueue(
+              data as RepoFormValues & { repoName: string; teamName: string }
+            );
 
             if (result.success) {
               closeUnifiedModal();

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ActionGroup } from '@/components/common/styled';
 import VaultEditor from '@/components/common/VaultEditor';
 import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
+import type { BaseModalProps } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons';
 import {
@@ -22,9 +23,7 @@ import {
 } from './styles';
 import type { RcFile } from 'antd/es/upload';
 
-interface VaultEditorModalProps {
-  open: boolean;
-  onCancel: () => void;
+interface VaultEditorModalProps extends BaseModalProps {
   onSave: (vault: string, version: number) => Promise<void>;
   entityType: string;
   title?: string;

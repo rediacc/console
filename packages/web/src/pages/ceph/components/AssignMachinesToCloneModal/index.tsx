@@ -239,10 +239,8 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
         />
 
         <MachinesTable
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          rowSelection={rowSelection as any}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          columns={columns as any}
+          rowSelection={rowSelection as TableRowSelection<unknown>}
+          columns={columns as ColumnsType<unknown>}
           dataSource={assignedMachines}
           rowKey="machineName"
           size="small"

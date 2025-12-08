@@ -1,4 +1,3 @@
-import { forwardRef } from 'react';
 import { StyledRediaccSelect } from './RediaccSelect.styles';
 import type { RediaccSelectProps, SelectSize } from './RediaccSelect.types';
 
@@ -54,65 +53,57 @@ const mapToAntdSize = (size: SelectSize = 'md'): 'small' | 'middle' | 'large' =>
  *   <RediaccSelect.Option value="2">Option 2</RediaccSelect.Option>
  * </RediaccSelect>
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const RediaccSelect = forwardRef<any, RediaccSelectProps>(
-  (
-    {
-      size = 'md',
-      fullWidth = false,
-      minWidth,
-      value,
-      onChange,
-      options,
-      placeholder,
-      disabled = false,
-      loading = false,
-      allowClear = false,
-      showSearch = false,
-      filterOption,
-      searchValue,
-      onSearch,
-      mode,
-      suffixIcon,
-      popupMatchSelectWidth,
-      tagRender,
-      children,
-      ...rest
-    },
-    ref
-  ) => {
-    const antdSize = mapToAntdSize(size);
+export const RediaccSelect: React.FC<RediaccSelectProps> = ({
+  size = 'md',
+  fullWidth = false,
+  minWidth,
+  value,
+  onChange,
+  options,
+  placeholder,
+  disabled = false,
+  loading = false,
+  allowClear = false,
+  showSearch = false,
+  filterOption,
+  searchValue,
+  onSearch,
+  mode,
+  suffixIcon,
+  popupMatchSelectWidth,
+  tagRender,
+  children,
+  ...rest
+}) => {
+  const antdSize = mapToAntdSize(size);
 
-    return (
-      <StyledRediaccSelect
-        ref={ref}
-        $size={size}
-        size={antdSize}
-        $fullWidth={fullWidth}
-        $minWidth={minWidth}
-        value={value}
-        onChange={onChange}
-        options={options}
-        placeholder={placeholder}
-        disabled={disabled}
-        loading={loading}
-        allowClear={allowClear}
-        showSearch={showSearch}
-        filterOption={filterOption}
-        searchValue={searchValue}
-        onSearch={onSearch}
-        mode={mode}
-        suffixIcon={suffixIcon}
-        popupMatchSelectWidth={popupMatchSelectWidth}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        tagRender={tagRender as any}
-        {...rest}
-      >
-        {children}
-      </StyledRediaccSelect>
-    );
-  }
-);
+  return (
+    <StyledRediaccSelect
+      $size={size}
+      size={antdSize}
+      $fullWidth={fullWidth}
+      $minWidth={minWidth}
+      value={value}
+      onChange={onChange}
+      options={options}
+      placeholder={placeholder}
+      disabled={disabled}
+      loading={loading}
+      allowClear={allowClear}
+      showSearch={showSearch}
+      filterOption={filterOption}
+      searchValue={searchValue}
+      onSearch={onSearch}
+      mode={mode}
+      suffixIcon={suffixIcon}
+      popupMatchSelectWidth={popupMatchSelectWidth}
+      tagRender={tagRender}
+      {...rest}
+    >
+      {children}
+    </StyledRediaccSelect>
+  );
+};
 
 RediaccSelect.displayName = 'RediaccSelect';
 

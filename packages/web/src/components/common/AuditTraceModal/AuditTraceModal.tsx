@@ -6,6 +6,7 @@ import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { IconWrapper, RediaccAlert, RediaccText } from '@/components/ui';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { createDateSorter, createSorter, formatTimestampAsIs } from '@/platform';
+import type { BaseModalProps } from '@/types';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -36,9 +37,7 @@ import {
 
 const { Text: AntText } = Typography;
 
-export interface AuditTraceModalProps {
-  open: boolean;
-  onCancel: () => void;
+export interface AuditTraceModalProps extends BaseModalProps {
   entityType: string | null;
   entityIdentifier: string | null;
   entityName?: string;

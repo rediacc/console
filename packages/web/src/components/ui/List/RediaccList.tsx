@@ -21,21 +21,19 @@ function RediaccListInner<T>(
   ref: React.Ref<HTMLDivElement>
 ) {
   return (
-    <StyledRediaccList
+    <StyledRediaccList<T>
       ref={ref}
       $variant={variant}
       $size={size}
       $split={split}
       split={split}
       dataSource={dataSource}
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      renderItem={renderItem as any}
+      renderItem={renderItem}
       header={header}
       footer={footer}
       loading={loading}
       locale={locale}
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      rowKey={rowKey as any}
+      rowKey={rowKey}
       {...rest}
     />
   );

@@ -140,37 +140,38 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
     });
   };
 
-  const handleModalSubmit = async (data: ModalFormValues) => {
+  const handleModalSubmit = async (data: Record<string, unknown>) => {
     try {
       const { type, mode } = modalState;
+      const formValues = data as ModalFormValues;
 
       if (mode === 'create') {
-        if (type === 'cluster' && !isPoolFormValues(data)) {
+        if (type === 'cluster' && !isPoolFormValues(formValues)) {
           await createClusterMutation.mutateAsync({
-            clusterName: data.clusterName,
-            vaultContent: data.vaultContent,
+            clusterName: formValues.clusterName,
+            vaultContent: formValues.vaultContent,
           });
-        } else if (type === 'pool' && isPoolFormValues(data)) {
+        } else if (type === 'pool' && isPoolFormValues(formValues)) {
           await createPoolMutation.mutateAsync({
-            teamName: data.teamName,
-            clusterName: data.clusterName,
-            poolName: data.poolName,
-            vaultContent: data.vaultContent,
+            teamName: formValues.teamName,
+            clusterName: formValues.clusterName,
+            poolName: formValues.poolName,
+            vaultContent: formValues.vaultContent,
           });
         }
       } else if (mode === 'edit' || mode === 'vault') {
-        if (type === 'cluster' && !isPoolFormValues(data)) {
+        if (type === 'cluster' && !isPoolFormValues(formValues)) {
           await updateClusterVaultMutation.mutateAsync({
-            clusterName: data.clusterName,
-            vaultContent: data.vaultContent,
-            vaultVersion: data.vaultVersion ?? 0,
+            clusterName: formValues.clusterName,
+            vaultContent: formValues.vaultContent,
+            vaultVersion: formValues.vaultVersion ?? 0,
           });
-        } else if (type === 'pool' && isPoolFormValues(data)) {
+        } else if (type === 'pool' && isPoolFormValues(formValues)) {
           await updatePoolVaultMutation.mutateAsync({
-            poolName: data.poolName,
-            teamName: data.teamName,
-            vaultContent: data.vaultContent,
-            vaultVersion: data.vaultVersion ?? 0,
+            poolName: formValues.poolName,
+            teamName: formValues.teamName,
+            vaultContent: formValues.vaultContent,
+            vaultVersion: formValues.vaultVersion ?? 0,
           });
         }
       }
@@ -362,8 +363,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
                 undefined) as string | undefined,
             }}
             teamFilter={primaryTeam}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            onSubmit={handleModalSubmit as any}
+            onSubmit={handleModalSubmit}
             onFunctionSubmit={handleFunctionSubmit}
             onUpdateVault={async (vault: string, version: number) => {
               const data = modalState.data || {};

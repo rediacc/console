@@ -85,6 +85,6 @@ export interface RediaccTextProps {
   onClick?: () => void;
   /** Enable copy functionality */
   copyable?: boolean | { text?: string; onCopy?: () => void };
-  /** Enable ellipsis with optional configuration */
-  ellipsis?: boolean | { rows?: number; expandable?: boolean; onExpand?: () => void };
+  /** Enable ellipsis with optional configuration (rows, expandable, onExpand are not supported, use truncate instead) */
+  ellipsis?: boolean;
 }

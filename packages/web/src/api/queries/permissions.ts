@@ -1,8 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/client';
+import { createMutation } from '@/hooks/api/mutationFactory';
 import i18n from '@/i18n/config';
-import { showMessage } from '@/utils/messages';
-import { createErrorHandler } from '@/utils/mutationUtils';
 import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 import type {
   CreatePermissionGroupParams,
@@ -40,114 +39,57 @@ export const usePermissionGroupDetails = (groupName: string) => {
 };
 
 // Create permission group
-export const useCreatePermissionGroup = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: CreatePermissionGroupParams) => {
-      return api.permissions.createGroup(params);
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['permissionGroups'] });
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
-      showMessage(
-        'success',
-        i18n.t('organization:access.success.groupCreated', { group: variables.permissionGroupName })
-      );
-    },
-    onError: createErrorHandler(i18n.t('organization:access.errors.createGroupFailed')),
-  });
-};
+export const useCreatePermissionGroup = createMutation<CreatePermissionGroupParams>({
+  request: (params) => api.permissions.createGroup(params),
+  invalidateKeys: ['permissionGroups', 'dropdown-data'],
+  successMessage: (vars) =>
+    i18n.t('organization:access.success.groupCreated', { group: vars.permissionGroupName }),
+  errorMessage: i18n.t('organization:access.errors.createGroupFailed'),
+  operationName: 'permissions.createGroup',
+});
 
 // Delete permission group
-export const useDeletePermissionGroup = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: DeletePermissionGroupParams) => {
-      return api.permissions.deleteGroup(params);
-    },
-    onSuccess: (_, params) => {
-      queryClient.invalidateQueries({ queryKey: ['permissionGroups'] });
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
-      showMessage(
-        'success',
-        i18n.t('organization:access.success.groupDeleted', { group: params.permissionGroupName })
-      );
-    },
-    onError: createErrorHandler(i18n.t('organization:access.errors.deleteGroupFailed')),
-  });
-};
+export const useDeletePermissionGroup = createMutation<DeletePermissionGroupParams>({
+  request: (params) => api.permissions.deleteGroup(params),
+  invalidateKeys: ['permissionGroups', 'dropdown-data'],
+  successMessage: (vars) =>
+    i18n.t('organization:access.success.groupDeleted', { group: vars.permissionGroupName }),
+  errorMessage: i18n.t('organization:access.errors.deleteGroupFailed'),
+  operationName: 'permissions.deleteGroup',
+});
 
 // Add permission to group
-export const useAddPermissionToGroup = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: CreatePermissionInGroupParams) => {
-      return api.permissions.addPermission(params);
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['permissionGroup', variables.permissionGroupName],
-      });
-      queryClient.invalidateQueries({ queryKey: ['permissionGroups'] }); // Update permission counts
-      showMessage(
-        'success',
-        i18n.t('organization:access.success.permissionAdded', {
-          permission: variables.permissionName,
-        })
-      );
-    },
-    onError: createErrorHandler(i18n.t('organization:access.errors.addPermissionFailed')),
-  });
-};
+export const useAddPermissionToGroup = createMutation<CreatePermissionInGroupParams>({
+  request: (params) => api.permissions.addPermission(params),
+  invalidateKeys: ['permissionGroups'],
+  additionalInvalidateKeys: (vars) => [['permissionGroup', vars.permissionGroupName]],
+  successMessage: (vars) =>
+    i18n.t('organization:access.success.permissionAdded', { permission: vars.permissionName }),
+  errorMessage: i18n.t('organization:access.errors.addPermissionFailed'),
+  operationName: 'permissions.addPermission',
+});
 
 // Remove permission from group
-export const useRemovePermissionFromGroup = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: DeletePermissionFromGroupParams) => {
-      return api.permissions.removePermission(params);
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['permissionGroup', variables.permissionGroupName],
-      });
-      queryClient.invalidateQueries({ queryKey: ['permissionGroups'] }); // Update permission counts
-      showMessage(
-        'success',
-        i18n.t('organization:access.success.permissionRemoved', {
-          permission: variables.permissionName,
-        })
-      );
-    },
-    onError: createErrorHandler(i18n.t('organization:access.errors.removePermissionFailed')),
-  });
-};
+export const useRemovePermissionFromGroup = createMutation<DeletePermissionFromGroupParams>({
+  request: (params) => api.permissions.removePermission(params),
+  invalidateKeys: ['permissionGroups'],
+  additionalInvalidateKeys: (vars) => [['permissionGroup', vars.permissionGroupName]],
+  successMessage: (vars) =>
+    i18n.t('organization:access.success.permissionRemoved', { permission: vars.permissionName }),
+  errorMessage: i18n.t('organization:access.errors.removePermissionFailed'),
+  operationName: 'permissions.removePermission',
+});
 
 // Assign user to permission group
-export const useAssignUserToGroup = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: UpdateUserAssignedPermissionsParams) => {
-      return api.users.assignPermissions(params);
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({
-        queryKey: ['permissionGroup', variables.permissionGroupName],
-      });
-      showMessage(
-        'success',
-        i18n.t('organization:access.success.userAssigned', { group: variables.permissionGroupName })
-      );
-    },
-    onError: createErrorHandler(i18n.t('organization:access.errors.assignUserFailed')),
-  });
-};
+export const useAssignUserToGroup = createMutation<UpdateUserAssignedPermissionsParams>({
+  request: (params) => api.users.assignPermissions(params),
+  invalidateKeys: ['users'],
+  additionalInvalidateKeys: (vars) => [['permissionGroup', vars.permissionGroupName]],
+  successMessage: (vars) =>
+    i18n.t('organization:access.success.userAssigned', { group: vars.permissionGroupName }),
+  errorMessage: i18n.t('organization:access.errors.assignUserFailed'),
+  operationName: 'permissions.assignUser',
+});
 
 export type {
   PermissionGroupWithParsedPermissions,

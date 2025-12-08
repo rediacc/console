@@ -58,15 +58,9 @@ import {
 } from '@/utils/optimizedIcons';
 import type { StorageFormValues } from '@rediacc/shared/types';
 
-interface StorageFunctionParams {
-  sourceType?: string;
-  from?: string;
-  [key: string]: string | number | boolean | undefined;
-}
-
 interface StorageFunctionData {
   function: QueueFunction;
-  params: StorageFunctionParams;
+  params: Record<string, string | number | string[] | undefined>;
   priority: number;
   description: string;
   selectedMachine?: string;
@@ -151,14 +145,15 @@ const StoragePage: React.FC = () => {
   );
 
   const handleUnifiedModalSubmit = useCallback(
-    async (data: StorageFormValues) => {
+    async (data: Record<string, unknown>) => {
+      const storageData = data as StorageFormValues;
       await execute(
         async () => {
           if (unifiedModalState.mode === 'create') {
-            await createStorageMutation.mutateAsync(data);
+            await createStorageMutation.mutateAsync(storageData);
           } else if (currentResource) {
             const currentName = currentResource.storageName;
-            const newName = data.storageName;
+            const newName = storageData.storageName;
 
             if (newName && newName !== currentName) {
               await updateStorageNameMutation.mutateAsync({
@@ -168,7 +163,7 @@ const StoragePage: React.FC = () => {
               });
             }
 
-            const vaultData = data.vaultContent;
+            const vaultData = storageData.vaultContent;
             if (vaultData && vaultData !== currentResource.vaultContent) {
               await updateStorageVaultMutation.mutateAsync({
                 teamName: currentResource.teamName,
@@ -540,11 +535,10 @@ const StoragePage: React.FC = () => {
         mode={unifiedModalState.mode}
         existingData={modalExistingData}
         teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
-        onSubmit={handleUnifiedModalSubmit as (data: Record<string, unknown>) => Promise<void>}
+        onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         onFunctionSubmit={
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          unifiedModalState.mode === 'create' ? undefined : (handleStorageFunctionSelected as any)
+          unifiedModalState.mode === 'create' ? undefined : handleStorageFunctionSelected
         }
         isSubmitting={isSubmitting}
         isUpdatingVault={isUpdatingVault}

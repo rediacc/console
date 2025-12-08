@@ -1,11 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { QUERY_KEYS } from '@/api/queryKeys';
+import { createMutation } from '@/hooks/api/mutationFactory';
 import i18n from '@/i18n/config';
-import { invalidateAllQueueCaches, invalidateQueueCaches } from '@/utils/cacheUtils';
+import { invalidateAllQueueCaches } from '@/utils/cacheUtils';
 import { minifyJSON } from '@/utils/json';
-import { showMessage } from '@/utils/messages';
-import { createErrorHandler } from '@/utils/mutationUtils';
 import type {
   CancelQueueItemParams,
   CreateQueueItemParams,
@@ -77,145 +76,126 @@ export const useQueueItemsByBridge = (bridgeName: string, teamName?: string) => 
 };
 
 // Create queue item (direct API call - use useManagedQueueItem for high-priority items)
-export const useCreateQueueItem = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: {
-      teamName: string;
-      machineName?: string;
-      bridgeName: string;
-      queueVault: string;
-      priority?: number;
-    }) => {
-      // Ensure priority is within valid range
-      const priority =
-        data.priority && data.priority >= 1 && data.priority <= 5 ? data.priority : 3;
-      // Minify the vault JSON before sending
-      const params: CreateQueueItemParams = {
-        teamName: data.teamName,
-        machineName: data.machineName || '',
-        bridgeName: data.bridgeName,
-        vaultContent: minifyJSON(data.queueVault),
-        priority,
-      };
-      const response = await api.queue.create(params);
-      return response;
-    },
-    onSuccess: (response, variables) => {
-      invalidateQueueCaches(queryClient, variables.bridgeName);
-      const message = response.taskId
-        ? i18n.t('queue:success.createdWithId', { taskId: response.taskId })
-        : i18n.t('queue:success.created');
-      showMessage('success', message);
-    },
-    onError: createErrorHandler(i18n.t('queue:errors.createFailed')),
-  });
-};
+export const useCreateQueueItem = createMutation<{
+  teamName: string;
+  machineName?: string;
+  bridgeName: string;
+  queueVault: string;
+  priority?: number;
+}>({
+  request: async (data) => {
+    // Ensure priority is within valid range
+    const priority = data.priority && data.priority >= 1 && data.priority <= 5 ? data.priority : 3;
+    // Minify the vault JSON before sending
+    const params: CreateQueueItemParams = {
+      teamName: data.teamName,
+      machineName: data.machineName || '',
+      bridgeName: data.bridgeName,
+      vaultContent: minifyJSON(data.queueVault),
+      priority,
+    };
+    return api.queue.create(params);
+  },
+  invalidateKeys: [QUERY_KEYS.queue.items()],
+  successMessage: i18n.t('queue:success.created'),
+  errorMessage: i18n.t('queue:errors.createFailed'),
+  operationName: 'queue.create',
+});
 
 // Update queue item response
-export const useUpdateQueueItemResponse = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: { taskId: string; responseVault: string }) => {
-      // Minify the vault JSON before sending
-      const params: UpdateQueueItemResponseParams = {
-        taskId: data.taskId,
-        vaultContent: minifyJSON(data.responseVault),
-      };
-      return api.queue.updateResponse(params);
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
-      showMessage('success', i18n.t('queue:success.responseUpdated', { taskId: variables.taskId }));
-    },
-    onError: createErrorHandler(i18n.t('queue:errors.updateFailed')),
-  });
-};
+export const useUpdateQueueItemResponse = createMutation<{
+  taskId: string;
+  responseVault: string;
+}>({
+  request: async (data) => {
+    // Minify the vault JSON before sending
+    const params: UpdateQueueItemResponseParams = {
+      taskId: data.taskId,
+      vaultContent: minifyJSON(data.responseVault),
+    };
+    return api.queue.updateResponse(params);
+  },
+  invalidateKeys: [QUERY_KEYS.queue.items()],
+  successMessage: (vars) => i18n.t('queue:success.responseUpdated', { taskId: vars.taskId }),
+  errorMessage: i18n.t('queue:errors.updateFailed'),
+  operationName: 'queue.updateResponse',
+});
 
 // Complete or fail queue item
-export const useCompleteQueueItem = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: {
-      taskId: string;
-      finalVault: string;
-      finalStatus?: 'COMPLETED' | 'FAILED';
-    }) => {
-      // Minify the vault JSON before sending
-      const params: UpdateQueueItemToCompletedParams = {
-        taskId: data.taskId,
-        vaultContent: minifyJSON(data.finalVault),
-        finalStatus: data.finalStatus || 'COMPLETED', // Default to COMPLETED for backward compatibility
-      };
-      return api.queue.complete(params);
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
-      const status = variables.finalStatus || 'COMPLETED';
-      const message =
-        status === 'FAILED'
-          ? i18n.t('queue:success.markedFailed', { taskId: variables.taskId })
-          : i18n.t('queue:success.completed', { taskId: variables.taskId });
-      showMessage('success', message);
-    },
-    onError: createErrorHandler(i18n.t('queue:errors.updateFailed')),
-  });
-};
+export const useCompleteQueueItem = createMutation<{
+  taskId: string;
+  finalVault: string;
+  finalStatus?: 'COMPLETED' | 'FAILED';
+}>({
+  request: async (data) => {
+    // Minify the vault JSON before sending
+    const params: UpdateQueueItemToCompletedParams = {
+      taskId: data.taskId,
+      vaultContent: minifyJSON(data.finalVault),
+      finalStatus: data.finalStatus || 'COMPLETED', // Default to COMPLETED for backward compatibility
+    };
+    return api.queue.complete(params);
+  },
+  invalidateKeys: [QUERY_KEYS.queue.items()],
+  successMessage: (vars) => {
+    const status = vars.finalStatus || 'COMPLETED';
+    return status === 'FAILED'
+      ? i18n.t('queue:success.markedFailed', { taskId: vars.taskId })
+      : i18n.t('queue:success.completed', { taskId: vars.taskId });
+  },
+  errorMessage: i18n.t('queue:errors.updateFailed'),
+  operationName: 'queue.complete',
+});
 
 // Cancel queue item
 export const useCancelQueueItem = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (taskId: string) => {
+  return createMutation<string>({
+    request: async (taskId) => {
       const params: CancelQueueItemParams = { taskId };
       return api.queue.cancel(params);
     },
-    onSuccess: (_, taskId) => {
+    invalidateKeys: () => {
       invalidateAllQueueCaches(queryClient);
-      showMessage('success', i18n.t('queue:success.cancellationInitiated', { taskId }));
+      return [];
     },
-    onError: createErrorHandler(i18n.t('queue:errors.cancelFailed')),
-  });
+    successMessage: (taskId) => i18n.t('queue:success.cancellationInitiated', { taskId }),
+    errorMessage: i18n.t('queue:errors.cancelFailed'),
+    operationName: 'queue.cancel',
+  })();
 };
 
 // Delete queue item
 export const useDeleteQueueItem = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (taskId: string) => {
+  return createMutation<string>({
+    request: async (taskId) => {
       const params: DeleteQueueItemParams = { taskId };
       return api.queue.delete(params);
     },
-    onSuccess: (_, taskId) => {
+    invalidateKeys: () => {
       invalidateAllQueueCaches(queryClient);
-      showMessage('success', i18n.t('queue:success.deleted', { taskId }));
+      return [];
     },
-    onError: createErrorHandler(i18n.t('queue:errors.deleteFailed')),
-  });
+    successMessage: (taskId) => i18n.t('queue:success.deleted', { taskId }),
+    errorMessage: i18n.t('queue:errors.deleteFailed'),
+    operationName: 'queue.delete',
+  })();
 };
 
 // Retry failed queue item
-export const useRetryFailedQueueItem = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (taskId: string) => {
-      const params: RetryFailedQueueItemParams = { taskId };
-      return api.queue.retry(params);
-    },
-    onSuccess: (_, taskId) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.itemTrace(taskId) });
-      showMessage('success', i18n.t('queue:success.queuedForRetry', { taskId }));
-    },
-    onError: createErrorHandler(i18n.t('queue:errors.retryFailed')),
-  });
-};
+export const useRetryFailedQueueItem = createMutation<string>({
+  request: async (taskId) => {
+    const params: RetryFailedQueueItemParams = { taskId };
+    return api.queue.retry(params);
+  },
+  invalidateKeys: (taskId) => [QUERY_KEYS.queue.items(), QUERY_KEYS.queue.itemTrace(taskId)],
+  successMessage: (taskId) => i18n.t('queue:success.queuedForRetry', { taskId }),
+  errorMessage: i18n.t('queue:errors.retryFailed'),
+  operationName: 'queue.retry',
+});
 
 // Get queue item trace
 export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true) => {
