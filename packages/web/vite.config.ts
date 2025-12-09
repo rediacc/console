@@ -89,7 +89,7 @@ export default defineConfig(({ mode }) => {
             'vendor-antd': ['antd'],
             'vendor-charts': ['d3'],
             'vendor-state': ['@reduxjs/toolkit', 'react-redux', '@tanstack/react-query'],
-            'vendor-utils': ['axios', 'date-fns', 'zod'],
+            'vendor-utils': ['axios', 'dayjs', 'zod'],
             'vendor-i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
           },
           chunkFileNames: (chunkInfo) => {
