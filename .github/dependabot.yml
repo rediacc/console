@@ -9,8 +9,6 @@ updates:
     open-pull-requests-limit: 10
     reviewers:
       - "rediacc/console-team"
-    assignees:
-      - "rediacc/console-team"
     labels:
       - "dependencies"
       - "automated"
