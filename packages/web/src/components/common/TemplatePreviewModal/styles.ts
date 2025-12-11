@@ -222,3 +222,7 @@ export const SuccessIcon = styled(IconLabel)`
 export const AlertDescription = styled(RediaccText).attrs({
   color: 'secondary',
 })``;
+
+export const FullHeightList = styled.div`
+  height: 100%;
+`;

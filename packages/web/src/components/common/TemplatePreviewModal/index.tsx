@@ -45,6 +45,7 @@ import {
   FilePreviewCard,
   FilePreviewColumn,
   FilesLayout,
+  FullHeightList,
   IconLabel,
   MarkdownContent,
   OverviewScroll,
@@ -361,7 +362,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                 </FileMeta>
               </FileListItem>
             )}
-            style={{ height: '100%' }}
+            as={FullHeightList}
           />
         </FileListCard>
       </FileListColumn>

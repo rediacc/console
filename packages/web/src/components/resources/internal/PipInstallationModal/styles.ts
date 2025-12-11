@@ -23,3 +23,14 @@ export const NotesList = styled.ul`
   margin-bottom: 0;
   padding-left: 20px;
 `;
+
+export const CommandDescription = styled.div`
+  display: block;
+  margin-bottom: ${({ theme }) => theme.spacing.XS}px;
+`;
+
+export const CommandText = styled.span`
+  background: transparent;
+  border: none;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+`;

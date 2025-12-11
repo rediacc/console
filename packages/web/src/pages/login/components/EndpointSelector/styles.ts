@@ -58,16 +58,16 @@ export const LoadingText = styled(AntText)`
 `;
 
 // Use FlexRow from primitives
-export const OptionWrapper = styled(FlexRow).attrs({ $justify: 'space-between', $gap: 8 })`
+export const OptionWrapper = styled(FlexRow).attrs({ $justify: 'space-between', $gap: 'SM' })`
   font-size: ${({ theme }) => theme.fontSize.XS}px;
-  margin-right: 20px;
+  margin-right: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 // Use FlexRow from primitives
-export const OptionLeft = styled(FlexRow).attrs({ $gap: 6 })``;
+export const OptionLeft = styled(FlexRow).attrs({ $gap: 'SM' })``;
 
 // Use FlexRow from primitives
-export const OptionRight = styled(FlexRow).attrs({ $gap: 8 })`
+export const OptionRight = styled(FlexRow).attrs({ $gap: 'SM' })`
   margin-left: auto;
 `;
 
@@ -110,11 +110,11 @@ export const EmojiIcon = styled.span`
   align-items: center;
   justify-content: center;
   font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
-  margin-right: 4px;
+  margin-right: ${({ theme }) => theme.spacing.XS}px;
 `;
 
 // Use FlexRow from primitives
-export const LabelContent = styled(FlexRow).attrs({ $gap: 6 })``;
+export const LabelContent = styled(FlexRow).attrs({ $gap: 'SM' })``;
 
 export const DeleteEndpointIcon = styled(DeleteOutlined)`
   font-size: ${({ theme }) => theme.fontSize.XS}px;

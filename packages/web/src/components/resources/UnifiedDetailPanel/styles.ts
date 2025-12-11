@@ -38,7 +38,7 @@ export const ResizeHandle = styled.div`
   bottom: 0;
   width: 6px;
   cursor: ew-resize;
-  z-index: 10;
+  z-index: ${({ theme }) => theme.zIndex.STICKY};
   background-color: transparent;
 `;
 

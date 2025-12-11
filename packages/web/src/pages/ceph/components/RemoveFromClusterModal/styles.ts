@@ -33,3 +33,7 @@ export const ClusterTag = styled(RediaccTag).attrs({
     padding: 0 ${({ theme }) => theme.spacing.XS}px;
   }
 `;
+
+export const StyledAlertCard = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
+`;

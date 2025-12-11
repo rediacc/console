@@ -24,6 +24,7 @@ import {
   PlusOutlined,
 } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
+import { FullWidthSpace, RemoveButton } from './styles';
 
 interface ManageClusterMachinesModalProps {
   open: boolean;
@@ -216,7 +217,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     }
 
     return (
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <FullWidthSpace direction="vertical" size="large">
         <div>
           <p>{t('machines:selectMachines')}</p>
           <AvailableMachinesSelector
@@ -233,7 +234,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
             </Tag>
           </div>
         )}
-      </Space>
+      </FullWidthSpace>
     );
   };
 
@@ -258,23 +259,22 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     };
 
     return (
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <FullWidthSpace direction="vertical" size="large">
         {selectedRemoveMachines.length > 0 && (
           <div>
             <Tag color="warning">
               {t('machines:bulkOperations.selectedCount', { count: selectedRemoveMachines.length })}
             </Tag>
-            <Button
+            <RemoveButton
               type="primary"
               danger
               icon={<DeleteOutlined />}
               onClick={handleRemoveMachines}
               loading={removingMachines}
-              style={{ marginLeft: 8 }}
               data-testid="ds-manage-machines-remove-button"
             >
               {t('machines:removeFromCluster')}
-            </Button>
+            </RemoveButton>
           </div>
         )}
 
@@ -287,7 +287,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
           pagination={false}
           data-testid="ds-manage-machines-assigned-table"
         />
-      </Space>
+      </FullWidthSpace>
     );
   };
 

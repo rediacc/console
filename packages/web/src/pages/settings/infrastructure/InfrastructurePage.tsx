@@ -76,6 +76,7 @@ import {
   SyncOutlined,
 } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
+import { StyledRediaccEmpty } from './styles';
 
 const InfrastructurePage: React.FC = () => {
   const { t } = useTranslation('resources');
@@ -638,7 +639,7 @@ const InfrastructurePage: React.FC = () => {
                   <RediaccEmpty
                     variant="minimal"
                     description={t('regions.selectRegionPrompt')}
-                    style={{ paddingTop: 80, paddingBottom: 80 }}
+                    as={StyledRediaccEmpty}
                   />
                 ) : (
                   <LoadingWrapper

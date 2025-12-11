@@ -20,6 +20,7 @@ import {
   AlertLink,
   AlertLinkWrapper,
   CategorySection,
+  CategoryTitleBlock,
   ConfigCard,
   FunctionItemHeader,
   FunctionList,
@@ -296,7 +297,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       key={category}
                       data-testid={`function-modal-category-${category}`}
                     >
-                      <RediaccText variant="title" style={{ display: 'block', marginBottom: 8 }}>
+                      <RediaccText variant="title" as={CategoryTitleBlock}>
                         {categories[category]?.name || category}
                       </RediaccText>
                       {funcs.map((func) => {

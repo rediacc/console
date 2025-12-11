@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 export const SourceLabel = styled.div`
-  margin-bottom: 8px;
+  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
   font-weight: 500;
 `;
 
@@ -19,4 +19,17 @@ export const FolderIcon = styled.span`
 
 export const FileIcon = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const TooltipGuidText = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.XS}px;
+  opacity: 0.85;
+`;
+
+export const FullWidthSelect = styled.div`
+  width: 100%;
+`;
+
+export const LoadingPadding = styled.div`
+  padding: ${({ theme }) => theme.spacing.SM}px;
 `;

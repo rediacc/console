@@ -50,6 +50,7 @@ import {
   GroupRowInfo,
   GroupRowName,
   MachineTableWrapper,
+  StyledRediaccEmpty,
   StyledTag,
   TableContainer,
   ViewToggleButton,
@@ -510,7 +511,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           variant="minimal"
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           description={t('resources:repos.noRepos')}
-          style={{ marginTop: 64 }}
+          as={StyledRediaccEmpty}
         />
       );
     }

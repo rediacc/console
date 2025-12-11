@@ -11,6 +11,7 @@ import {
   PriorityLegendRow,
   PriorityLegendTag,
   PriorityPopoverContent,
+  PriorityLabelBlock,
   PriorityStatusTag,
   PriorityTagWrapper,
 } from '../styles';
@@ -42,7 +43,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
           <Popover
             content={
               <PriorityPopoverContent>
-                <RediaccText variant="title" style={{ display: 'block', marginBottom: 8 }}>
+                <RediaccText variant="title" as={PriorityLabelBlock}>
                   {t('functions:priorityPopoverLevels')}
                 </RediaccText>
                 {priorityLegendItems.map((item) => (

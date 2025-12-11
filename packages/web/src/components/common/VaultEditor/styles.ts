@@ -108,3 +108,22 @@ export const FormatButton = styled(RediaccButton).attrs({
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   }
 `;
+
+export const TestConnectionAlert = styled(RediaccAlert)`
+  && {
+    margin-bottom: ${({ theme }) => theme.spacing.XS}px;
+  }
+`;
+
+export const CompatibilityStatusText = styled(RediaccText)<{ $variant: string }>`
+  color: var(--rediacc-color-${({ $variant }) => $variant});
+  text-transform: capitalize;
+`;
+
+export const FieldDivider = styled.div`
+  margin: ${({ theme }) => theme.spacing.MD}px 0;
+
+  .ant-divider {
+    margin: 0;
+  }
+`;

@@ -17,6 +17,7 @@ import {
   isValidGuid,
 } from '@/platform';
 import { TabCount, TabLabel } from '@/styles/primitives';
+import { StyledRediaccCard } from './styles';
 import { ExportOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
 import { QueueFilterPanel } from './components/QueueFilterPanel';
@@ -258,7 +259,7 @@ const QueuePage: React.FC = () => {
       <RediaccCard
         size="sm"
         spacing="default"
-        style={{ padding: '8px 16px', marginBottom: '16px' }}
+        as={StyledRediaccCard}
         data-testid="queue-filters-card"
       >
         <RediaccStack variant="column" fullWidth gap="sm">

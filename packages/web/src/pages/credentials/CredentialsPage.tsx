@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Alert, Button, Modal, Space, Tag, Tooltip } from 'antd';
+import { Button, Modal, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import styled, { useTheme } from 'styled-components';
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
 import {
@@ -52,17 +51,18 @@ import {
   DeleteOutlined,
   EditOutlined,
   HistoryOutlined,
-  InboxOutlined,
   PlusOutlined,
   ReloadOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-
-const InlineList = styled.ul`
-  margin-top: ${({ theme }) => theme.spacing.SM}px;
-  margin-bottom: 0;
-  padding-left: 20px;
-`;
+import {
+  AffectedSection,
+  InlineList,
+  RepoIcon,
+  SecondaryTag,
+  SpacedAlert,
+  TeamSelectorWrapper,
+} from './CredentialsPage.styles';
 
 interface CredentialsLocationState {
   createRepo?: boolean;
@@ -82,7 +82,6 @@ type RepoModalData = Partial<Repo> & Record<string, unknown>;
 
 const CredentialsPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common']);
-  const theme = useTheme();
   const [modal, contextHolder] = Modal.useModal();
   const location = useLocation();
   const navigate = useNavigate();
@@ -168,7 +167,7 @@ const CredentialsPage: React.FC = () => {
               </RediaccText>
 
               {forks.length > 0 && (
-                <div style={{ marginTop: 16 }}>
+                <AffectedSection>
                   <RediaccText weight="bold">{t('repos.affectedForks')}</RediaccText>
                   <InlineList>
                     {forks.map((fork) => (
@@ -178,10 +177,10 @@ const CredentialsPage: React.FC = () => {
                       </li>
                     ))}
                   </InlineList>
-                </div>
+                </AffectedSection>
               )}
 
-              <div style={{ marginTop: 16 }}>
+              <AffectedSection>
                 <RediaccText weight="bold">{t('repos.affectedMachines')}</RediaccText>
                 <InlineList>
                   {affectedMachines.map((machine) => (
@@ -191,14 +190,13 @@ const CredentialsPage: React.FC = () => {
                     </li>
                   ))}
                 </InlineList>
-              </div>
+              </AffectedSection>
 
-              <Alert
+              <SpacedAlert
                 type="warning"
                 message={t('repos.removeDeploymentsFirst')}
                 showIcon
                 icon={<WarningOutlined />}
-                style={{ marginTop: 16 }}
               />
             </div>
           ),
@@ -215,7 +213,7 @@ const CredentialsPage: React.FC = () => {
             <div>
               <RediaccText>{t('repos.confirmDelete', { repoName: repo.repoName })}</RediaccText>
 
-              <Alert
+              <SpacedAlert
                 type="warning"
                 message={t('repos.machinesWillLoseAccess')}
                 description={
@@ -229,7 +227,6 @@ const CredentialsPage: React.FC = () => {
                 }
                 showIcon
                 icon={<WarningOutlined />}
-                style={{ marginTop: 16 }}
               />
             </div>
           ),
@@ -503,7 +500,7 @@ const CredentialsPage: React.FC = () => {
         ellipsis: true,
         render: (text: string) => (
           <Space>
-            <InboxOutlined style={{ color: theme.colors.primary }} />
+            <RepoIcon />
             <strong>{text}</strong>
           </Space>
         ),
@@ -514,7 +511,7 @@ const CredentialsPage: React.FC = () => {
         key: 'teamName',
         width: COLUMN_WIDTHS.TAG,
         ellipsis: true,
-        render: (teamName: string) => <Tag color={theme.colors.secondary}>{teamName}</Tag>,
+        render: (teamName: string) => <SecondaryTag>{teamName}</SecondaryTag>,
       },
       ...(featureFlags.isEnabled('vaultVersionColumns')
         ? [
@@ -576,14 +573,7 @@ const CredentialsPage: React.FC = () => {
         },
       }),
     ],
-    [
-      auditTrace,
-      handleDeleteRepo,
-      openUnifiedModal,
-      t,
-      theme.colors.primary,
-      theme.colors.secondary,
-    ]
+    [auditTrace, handleDeleteRepo, openUnifiedModal, t]
   );
 
   const hasTeamSelection = selectedTeams.length > 0;
@@ -600,7 +590,7 @@ const CredentialsPage: React.FC = () => {
             {t('credentials.heading', { defaultValue: 'Repo Credentials' })}
           </SectionHeading>
 
-          <div style={{ width: '100%', maxWidth: 420 }}>
+          <TeamSelectorWrapper>
             <TeamSelector
               data-testid="resources-team-selector"
               teams={teams}
@@ -610,9 +600,8 @@ const CredentialsPage: React.FC = () => {
               placeholder={t('teams.selectTeamToView', {
                 defaultValue: 'Select a team to view its resources',
               })}
-              style={{ width: '100%' }}
             />
-          </div>
+          </TeamSelectorWrapper>
 
           <ResourceListView<Repo>
             title={

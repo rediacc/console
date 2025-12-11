@@ -43,10 +43,12 @@ import { SimpleJsonEditor } from './components/SimpleJsonEditor';
 import { MACHINE_BASIC_FIELD_ORDER, vaultDefinitionConfig } from './constants';
 import { useVaultEditorState } from './hooks/useVaultEditorState';
 import {
+  CompatibilityStatusText,
   DangerAlertIcon,
   EditorContainer,
   EditorForm,
   ExtraFieldsWarningIcon,
+  FieldDivider,
   FieldItem,
   FormatActions,
   FormatButton,
@@ -57,6 +59,7 @@ import {
   ProviderSectionSpacer,
   RawJsonPreview,
   RecommendationList,
+  TestConnectionAlert,
   TestConnectionButton,
   TipsAlert,
   TipsDividerIcon,
@@ -735,12 +738,11 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                   >
                     <RediaccStack direction="vertical" gap="sm" fullWidth>
                       {!testConnectionSuccess && (
-                        <RediaccAlert
+                        <TestConnectionAlert
                           message={t('vaultEditor.testConnection.required')}
                           variant="info"
                           showIcon
                           icon={<InfoCircleOutlined />}
-                          style={{ marginBottom: '4px' }}
                         />
                       )}
                       <TestConnectionButton
@@ -955,14 +957,9 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                                 <RediaccText weight="bold">
                                   {t('vaultEditor.systemCompatibility.compatibilityStatus')}:
                                 </RediaccText>
-                                <RediaccText
-                                  style={{
-                                    color: `var(--rediacc-color-${config.statusVariant})`,
-                                    textTransform: 'capitalize',
-                                  }}
-                                >
+                                <CompatibilityStatusText $variant={config.statusVariant}>
                                   {t(`vaultEditor.systemCompatibility.${status}`)}
-                                </RediaccText>
+                                </CompatibilityStatusText>
                               </Space>
                             }
                             description={
@@ -1011,7 +1008,9 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
               {entityType !== 'MACHINE' && (
                 <>
                   {requiredFields.length > 0 && optionalFields.length > 0 && (
-                    <Divider style={{ margin: '16px 0' }} />
+                    <FieldDivider>
+                      <Divider />
+                    </FieldDivider>
                   )}
                   {optionalFields.length > 0 &&
                     optionalFields.map((fieldName) => {

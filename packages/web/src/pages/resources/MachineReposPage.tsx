@@ -29,6 +29,7 @@ import {
   BreadcrumbWrapper,
   DetailBackdrop,
   ErrorWrapper,
+  FlexColumnCard,
   HeaderRow,
   HeaderSection,
   HeaderTitleText,
@@ -262,13 +263,15 @@ const MachineReposPage: React.FC = () => {
   if (machinesLoading && !machine) {
     return (
       <PageWrapper>
-        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
-          <CenteredState>
-            <LoadingWrapper loading centered minHeight={160}>
-              <div />
-            </LoadingWrapper>
-            <RediaccText color="secondary">{t('common:general.loading')}</RediaccText>
-          </CenteredState>
+        <RediaccCard fullHeight>
+          <FlexColumnCard>
+            <CenteredState>
+              <LoadingWrapper loading centered minHeight={160}>
+                <div />
+              </LoadingWrapper>
+              <RediaccText color="secondary">{t('common:general.loading')}</RediaccText>
+            </CenteredState>
+          </FlexColumnCard>
         </RediaccCard>
       </PageWrapper>
     );
@@ -278,20 +281,22 @@ const MachineReposPage: React.FC = () => {
   if (machinesError || (!machinesLoading && !machine)) {
     return (
       <PageWrapper>
-        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
-          <Alert
-            message={t('machines:machineNotFound')}
-            description={
-              <ErrorWrapper>
-                <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
-                <AntButton type="primary" onClick={handleBackToMachines}>
-                  {t('machines:backToMachines')}
-                </AntButton>
-              </ErrorWrapper>
-            }
-            type="error"
-            showIcon
-          />
+        <RediaccCard fullHeight>
+          <FlexColumnCard>
+            <Alert
+              message={t('machines:machineNotFound')}
+              description={
+                <ErrorWrapper>
+                  <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
+                  <AntButton type="primary" onClick={handleBackToMachines}>
+                    {t('machines:backToMachines')}
+                  </AntButton>
+                </ErrorWrapper>
+              }
+              type="error"
+              showIcon
+            />
+          </FlexColumnCard>
         </RediaccCard>
       </PageWrapper>
     );
@@ -299,8 +304,9 @@ const MachineReposPage: React.FC = () => {
 
   return (
     <PageWrapper>
-      <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
-        <HeaderSection>
+      <RediaccCard fullHeight>
+        <FlexColumnCard>
+          <HeaderSection>
           <BreadcrumbWrapper
             items={[
               {
@@ -422,6 +428,7 @@ const MachineReposPage: React.FC = () => {
             />
           )}
         </SplitLayout>
+        </FlexColumnCard>
       </RediaccCard>
 
       <QueueItemTraceModal

@@ -18,6 +18,7 @@ import {
   ActionsRow,
   AlertWrapper,
   DividerContent,
+  LabelBlock,
   LoadingState,
   SectionCard,
   SectionTitle,
@@ -94,7 +95,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
           <div>
             <RediaccText
               variant="label"
-              style={{ display: 'block', marginBottom: 4 }}
+              as={LabelBlock}
               data-testid="ds-section-assignment-label"
             >
               {t('assignment.currentAssignment')}

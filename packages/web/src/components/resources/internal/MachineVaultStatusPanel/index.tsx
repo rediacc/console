@@ -53,6 +53,7 @@ import {
   PanelTitle,
   PanelWrapper,
   PartitionRow,
+  LoadingState,
   QueueBadge,
   SectionBlock,
   SectionDivider,
@@ -60,6 +61,7 @@ import {
   SectionTitle,
   StatusTag,
   StyledList,
+  StyledRediaccEmpty,
   StyledTag,
   TagRow,
   TimestampWrapper,
@@ -291,7 +293,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
             <RediaccEmpty
               description={t('machines:noVaultData')}
               data-testid="vault-status-empty"
-              style={{ marginTop: 120 }}
+              as={StyledRediaccEmpty}
             />
           ) : (
             <>

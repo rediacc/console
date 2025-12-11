@@ -111,14 +111,33 @@ export const GlobalStyles = createGlobalStyle`
 
   :root {
     ${toCssVars(colorTokens as unknown as Record<string, string>)}
+    --z-index-sticky: 10;
+    --z-index-overlay: 100;
+    /* Spacing CSS variables */
+    --spacing-xxs: ${({ theme }) => theme.spacing.XXS}px;
+    --spacing-xs: ${({ theme }) => theme.spacing.XS}px;
+    --spacing-sm: ${({ theme }) => theme.spacing.SM}px;
+    --spacing-sm-lg: ${({ theme }) => theme.spacing.SM_LG}px;
+    --spacing-md: ${({ theme }) => theme.spacing.MD}px;
+    --spacing-lg: ${({ theme }) => theme.spacing.LG}px;
+    --spacing-xl: ${({ theme }) => theme.spacing.XL}px;
+    --spacing-xxl: ${({ theme }) => theme.spacing.XXL}px;
+    --spacing-xxxl: ${({ theme }) => theme.spacing.XXXL}px;
+    /* Dimension CSS variables */
+    --dimension-input-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
+    --dimension-control-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+    /* Overlay CSS variables */
+    --overlay-nav-active: ${({ theme }) => theme.overlays.navActive};
   }
 
   [data-theme='light'] {
     ${toCssVars(colorTokens.light)}
+    --overlay-nav-active: ${({ theme }) => theme.overlays.navActive};
   }
 
   [data-theme='dark'] {
     ${toCssVars(colorTokens.dark)}
+    --overlay-nav-active: ${({ theme }) => theme.overlays.navActive};
   }
 
   /* ============================================
@@ -187,8 +206,8 @@ export const GlobalStyles = createGlobalStyle`
   [tabindex]:focus-visible {
     outline: 3px solid var(--color-primary);
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px ${({ theme }) => theme.colors.shadow};
-    border-radius: 4px;
+    box-shadow: 0 0 0 ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.colors.shadow};
+    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
 
   /* ============================================

@@ -18,13 +18,16 @@ import {
   ClearButton,
   DefaultTag,
   DetailsButton,
+  EmptyResultsContainer,
   ErrorState,
   HelperRow,
   ResultCount,
+  SearchContainer,
   SearchInput,
   SelectionIndicator,
   SelectorContainer,
   TemplateCard,
+  TemplateDescription,
   TemplateGrid,
   TemplateIconWrapper,
 } from './styles';
@@ -149,13 +152,9 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   return (
     <SelectorContainer>
-      <RediaccStack
-        direction="vertical"
-        gap="md"
-        fullWidth
-        style={{ marginBottom: `${DESIGN_TOKENS.SPACING.MD}px` }}
-      >
-        <HelperRow>
+      <SearchContainer>
+        <RediaccStack direction="vertical" gap="md" fullWidth>
+          <HelperRow>
           <RediaccText variant="caption">
             {multiple
               ? t('resources:templates.selectMultiple', {
@@ -183,7 +182,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           allowClear
           data-testid="resource-modal-template-search-input"
         />
-      </RediaccStack>
+        </RediaccStack>
+      </SearchContainer>
 
       {searchQuery.trim() && (
         <ResultCount>
@@ -196,14 +196,15 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       )}
 
       {searchQuery.trim() && filteredTemplates.length === 0 && (
-        <RediaccEmpty
-          variant="minimal"
-          description={t('resources:templates.noResults', {
-            defaultValue: `No templates found matching "${searchQuery}"`,
-            query: searchQuery,
-          })}
-          style={{ margin: '16px 0' }}
-        />
+        <EmptyResultsContainer>
+          <RediaccEmpty
+            variant="minimal"
+            description={t('resources:templates.noResults', {
+              defaultValue: `No templates found matching "${searchQuery}"`,
+              query: searchQuery,
+            })}
+          />
+        </EmptyResultsContainer>
       )}
 
       <TemplateGrid gutter={GRID_GUTTER}>
@@ -254,14 +255,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                     {getTemplateTitle(template.name)}
                   </RediaccText>
 
-                  <RediaccText
-                    variant="description"
-                    truncate
-                    maxLines={2}
-                    style={{ display: 'block', marginBottom: 8 }}
-                  >
-                    {getTemplateDescription(template.readme)}
-                  </RediaccText>
+                  <TemplateDescription>
+                    <RediaccText variant="description" truncate maxLines={2}>
+                      {getTemplateDescription(template.readme)}
+                    </RediaccText>
+                  </TemplateDescription>
 
                   <DetailsButton
                     variant="link"

@@ -68,8 +68,8 @@ export const StyledRediaccBadge = styled(AntBadge)<{
 
   .ant-badge-dot {
     background-color: ${({ theme, $variant }) => resolveBadgeColor($variant, theme)};
-    width: 8px;
-    height: 8px;
+    width: ${({ theme }) => theme.spacing.SM}px;
+    height: ${({ theme }) => theme.spacing.SM}px;
     box-shadow: none;
   }
 `;

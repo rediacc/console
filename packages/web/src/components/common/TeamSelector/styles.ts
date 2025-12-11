@@ -17,7 +17,7 @@ export const TeamTag = styled(RediaccTag).attrs({
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     display: inline-flex;
     align-items: center;
-    padding: 2px 4px;
+    padding: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 

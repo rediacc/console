@@ -18,3 +18,9 @@ export const ResolutionText = styled.p`
     font-size: ${({ theme }) => theme.fontSize.XS}px;
   }
 `;
+
+export const StyledAlert = styled.div`
+  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+  border: 2px solid var(--rediacc-color-error);
+  background-color: var(--rediacc-color-bg-error);
+`;

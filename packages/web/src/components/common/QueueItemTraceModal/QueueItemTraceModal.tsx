@@ -26,7 +26,7 @@ import {
 } from '@/api/queries/queue';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
-import { RediaccAlert, RediaccCard, RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
+import { RediaccAlert, RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
 import { useTheme } from '@/context/ThemeContext';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import {
@@ -67,6 +67,8 @@ import {
   CenteredFooter,
   CenteredMessage,
   CenteredRow,
+  CompatibilityStatusText,
+  IssuesList,
   ItalicCaption,
   KeyInfoCard,
   KeyInfoValue,
@@ -75,11 +77,14 @@ import {
   ModalTitleLeft,
   ModalTitleRight,
   ModeSegmented,
+  MonospaceText,
   NoMarginTitle,
   NoteWrapper,
+  RecommendationsList,
   ScrollContainer,
   ScrollItem,
   SectionMargin,
+  SpacedCardBottom,
 } from './styles';
 import {
   getCurrentStep,
@@ -396,11 +401,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
 
           {/* Simple Progress Overview */}
           {simpleMode && traceData.queueDetails && (
-            <RediaccCard
-              spacing="default"
-              style={{ marginBottom: '16px' }}
-              data-testid="queue-trace-simple-overview"
-            >
+            <SpacedCardBottom data-testid="queue-trace-simple-overview">
               <RediaccStack variant="spaced-column" fullWidth>
                 {/* Status Summary */}
                 <CenteredMessage>
@@ -574,7 +575,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                   </CenteredRow>
                 )}
               </RediaccStack>
-            </RediaccCard>
+            </SpacedCardBottom>
           )}
 
           {/* Console Output for Simple Mode */}
@@ -1169,10 +1170,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                   return (
                                                     <RediaccStack variant="column" fullWidth>
                                                       {/* SSH Test Result Summary */}
-                                                      <RediaccCard
+                                                      <SpacedCardBottom
                                                         size="sm"
-                                                        spacing="default"
-                                                        style={{ marginBottom: '16px' }}
                                                         title="SSH Test Result"
                                                       >
                                                         <Descriptions column={2} size="small">
@@ -1207,13 +1206,11 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                             )}
                                                           </Descriptions.Item>
                                                         </Descriptions>
-                                                      </RediaccCard>
+                                                      </SpacedCardBottom>
 
                                                       {/* System Information */}
-                                                      <RediaccCard
+                                                      <SpacedCardBottom
                                                         size="sm"
-                                                        spacing="default"
-                                                        style={{ marginBottom: '16px' }}
                                                         title="System Information"
                                                       >
                                                         <Descriptions column={1} size="small">
@@ -1280,7 +1277,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                             })()}
                                                           </Descriptions.Item>
                                                         </Descriptions>
-                                                      </RediaccCard>
+                                                      </SpacedCardBottom>
 
                                                       {/* Compatibility Status */}
                                                       <RediaccAlert
@@ -1292,14 +1289,17 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                             <RediaccText weight="bold">
                                                               Compatibility Status:
                                                             </RediaccText>
-                                                            <RediaccText
-                                                              style={{
-                                                                color: config.color,
-                                                                textTransform: 'capitalize',
-                                                              }}
+                                                            <CompatibilityStatusText
+                                                              $status={
+                                                                status as
+                                                                  | 'compatible'
+                                                                  | 'warning'
+                                                                  | 'incompatible'
+                                                                  | 'unknown'
+                                                              }
                                                             >
                                                               {status}
-                                                            </RediaccText>
+                                                            </CompatibilityStatusText>
                                                           </Space>
                                                         }
                                                         description={
@@ -1311,12 +1311,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                                   <RediaccText weight="bold">
                                                                     Known Issues:
                                                                   </RediaccText>
-                                                                  <ul
-                                                                    style={{
-                                                                      marginTop: spacing('XS'),
-                                                                      marginBottom: spacing('SM'),
-                                                                    }}
-                                                                  >
+                                                                  <IssuesList>
                                                                     {compatibility.compatibility_issues.map(
                                                                       (
                                                                         issue: string,
@@ -1325,7 +1320,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                                         <li key={index}>{issue}</li>
                                                                       )
                                                                     )}
-                                                                  </ul>
+                                                                  </IssuesList>
                                                                 </SectionMargin>
                                                               )}
                                                             {compatibility.recommendations &&
@@ -1335,11 +1330,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                                   <RediaccText weight="bold">
                                                                     Recommendations:
                                                                   </RediaccText>
-                                                                  <ul
-                                                                    style={{
-                                                                      marginTop: spacing('XS'),
-                                                                    }}
-                                                                  >
+                                                                  <RecommendationsList>
                                                                     {compatibility.recommendations.map(
                                                                       (
                                                                         rec: string,
@@ -1348,7 +1339,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                                         <li key={index}>{rec}</li>
                                                                       )
                                                                     )}
-                                                                  </ul>
+                                                                  </RecommendationsList>
                                                                 </SectionMargin>
                                                               )}
                                                           </>
@@ -1436,13 +1427,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                         .map((item, index) => (
                                           <ScrollItem key={index}>
                                             <Space>
-                                              <RediaccText
-                                                size="xs"
-                                                code
-                                                style={{ fontFamily: 'monospace' }}
-                                              >
+                                              <MonospaceText size="xs" code>
                                                 {item.taskId}
-                                              </RediaccText>
+                                              </MonospaceText>
                                               <RediaccTag
                                                 compact
                                                 variant={
@@ -1482,13 +1469,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                         .map((item, index) => (
                                           <ScrollItem key={index}>
                                             <Space>
-                                              <RediaccText
-                                                size="xs"
-                                                code
-                                                style={{ fontFamily: 'monospace' }}
-                                              >
+                                              <MonospaceText size="xs" code>
                                                 {item.taskId}
-                                              </RediaccText>
+                                              </MonospaceText>
                                               <RediaccTag
                                                 compact
                                                 variant={

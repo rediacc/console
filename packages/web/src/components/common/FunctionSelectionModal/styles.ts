@@ -7,7 +7,7 @@ import {
   RediaccSearchInput,
   RediaccSelect,
 } from '@/components/ui/Form';
-import { borderedCard, focusRing } from '@/styles/mixins';
+import { borderedCard, focusRing, media } from '@/styles/mixins';
 import { BaseModal, ContentCard, FlexColumn, FlexRow, scrollbarStyles } from '@/styles/primitives';
 import type { StyledTheme } from '@/styles/styledTheme';
 import { InfoCircleOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons';
@@ -61,7 +61,7 @@ export const SearchInput = styled(RediaccSearchInput)`
 `;
 
 export const FunctionList = styled.div`
-  max-height: 400px;
+  max-height: ${({ theme }) => theme.dimensions.LIST_MAX_HEIGHT}px;
   overflow: auto;
   padding: ${({ theme }) => theme.spacing.XS}px;
   background-color: ${({ theme }) => theme.colors.bgSecondary};
@@ -127,9 +127,9 @@ export const PushAlertsRow = styled.div<{ $hasWarning: boolean }>`
   gap: ${({ theme }) => theme.spacing.MD}px;
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 
-  @media (max-width: 992px) {
+  ${media.desktop`
     grid-template-columns: 1fr;
-  }
+  `}
 `;
 
 export const PushAlertCard = styled(RediaccAlert)<{ $variant?: string }>`
@@ -220,7 +220,7 @@ export const AdditionalOptionsInput = styled(RediaccInput)`
 `;
 
 export const PriorityPopoverContent = styled.div`
-  max-width: 400px;
+  max-width: ${({ theme }) => theme.dimensions.POPOVER_WIDTH}px;
 `;
 
 // PriorityPopoverHeader removed - use <RediaccText variant="title"> directly
@@ -287,4 +287,14 @@ export const PriorityAlertDetail = styled.div`
   margin-top: ${({ theme }) => theme.spacing.XS}px;
   font-style: italic;
   color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const CategoryTitleBlock = styled.div`
+  display: block;
+  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
+`;
+
+export const PriorityLabelBlock = styled.div`
+  display: block;
+  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
 `;

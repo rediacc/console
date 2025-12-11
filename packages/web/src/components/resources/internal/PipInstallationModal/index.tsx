@@ -25,7 +25,14 @@ import {
   RocketOutlined,
   WindowsOutlined,
 } from '@/utils/optimizedIcons';
-import { CommandBox, CommandContainer, CopyButton, NotesList } from './styles';
+import {
+  CommandBox,
+  CommandContainer,
+  CommandDescription,
+  CommandText,
+  CopyButton,
+  NotesList,
+} from './styles';
 
 const { Text, Title } = Typography;
 
@@ -72,20 +79,12 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
   return (
     <CommandContainer data-testid="pip-install-command-display">
       {description && (
-        <RediaccText variant="description" style={{ display: 'block', marginBottom: 4 }}>
-          {description}
-        </RediaccText>
+        <CommandDescription>
+          <RediaccText variant="description">{description}</RediaccText>
+        </CommandDescription>
       )}
       <CommandBox data-testid="pip-install-command-text">
-        <RediaccText
-          size="sm"
-          color={getCodeColor(isComment, isCommand)}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            fontFamily: "'Monaco', 'Menlo', 'Consolas', monospace",
-          }}
-        >
+        <RediaccText size="sm" color={getCodeColor(isComment, isCommand)} as={CommandText}>
           {command}
         </RediaccText>
         {showCopy && (

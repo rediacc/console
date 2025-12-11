@@ -1,8 +1,14 @@
 import styled from 'styled-components';
-import { RediaccButton, RediaccRadioButton, RediaccRadioGroup } from '@/components/ui';
+import { RediaccButton, RediaccRadioButton, RediaccRadioGroup, RediaccStack } from '@/components/ui';
+import { media } from '@/styles/mixins';
 
 export const PopoverContainer = styled.div`
-  width: 400px;
+  width: ${({ theme }) => theme.dimensions.POPOVER_WIDTH}px;
+  max-width: 100%;
+
+  ${media.mobile`
+    width: calc(100vw - 32px);
+  `}
 `;
 
 export const OptionLabel = styled.label`
@@ -45,7 +51,7 @@ export const ValueHeader = styled.div`
 
 export const ValueContent = styled.div`
   word-break: break-all;
-  max-height: 100px;
+  max-height: ${({ theme }) => theme.dimensions.COMPACT_MAX_HEIGHT}px;
   overflow: auto;
   padding: ${({ theme }) => theme.spacing.SM}px;
   background: ${({ theme }) => theme.colors.bgPrimary};
@@ -83,4 +89,16 @@ export const CopyButton = styled(RediaccButton).attrs({
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     font-size: ${({ theme }) => theme.fontSize.XS}px;
   }
+`;
+
+// Wrapper for icons with small dimensions
+export const SmallIcon = styled.span`
+  font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
+  display: inline-flex;
+  align-items: center;
+`;
+
+// Action stack with top margin
+export const ActionStack = styled(RediaccStack)`
+  margin-top: ${({ theme }) => theme.spacing.MD}px;
 `;

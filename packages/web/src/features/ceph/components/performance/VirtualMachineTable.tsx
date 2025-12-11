@@ -9,6 +9,7 @@ import { useTableStyles } from '@/hooks/useComponentStyles';
 import { useMachineSelection } from '@/store/ceph/hooks';
 import { Machine } from '@/types';
 import styles from './VirtualMachineTable.module.css';
+import { HeaderWrapper, LoadingContainer, RowWrapper, TableWrapper } from './styles';
 
 type ScrollAlign = 'auto' | 'smart' | 'center' | 'end' | 'start';
 
@@ -124,14 +125,12 @@ const MachineRow: React.FC<
   }, [machine, onRowClick]);
 
   return (
-    <div
+    <RowWrapper
       style={{
         ...style,
         ...tableStyles.tableCell,
-        cursor: onRowClick ? 'pointer' : 'default',
-        borderBottom: '1px solid var(--color-border-secondary)',
-        transition: 'background-color 0.2s ease',
       }}
+      $hasOnClick={!!onRowClick}
       className={styles.row}
       onClick={handleRowClick}
       data-testid={`virtual-machine-row-${machine.machineName}`}
@@ -163,7 +162,7 @@ const MachineRow: React.FC<
           </div>
         )}
       </Space>
-    </div>
+    </RowWrapper>
   );
 };
 
@@ -360,7 +359,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   ]);
 
   return (
-    <div
+    <TableWrapper
       style={{
         ...tableStyles.tableContainer,
       }}
@@ -369,13 +368,9 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
       tabIndex={0}
       data-testid="virtual-machine-table"
     >
-      <div
+      <HeaderWrapper
         style={{
           ...tableStyles.tableHeader,
-          position: 'sticky',
-          top: 0,
-          zIndex: 1,
-          borderBottom: '1px solid var(--color-border-secondary)',
         }}
         className={styles.header}
         data-testid="virtual-machine-header"
@@ -387,8 +382,8 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
           <div className={styles.status}>Assignment Status</div>
           {renderActions && <div className={styles.actions}>Actions</div>}
         </Space>
-      </div>
+      </HeaderWrapper>
       <div data-testid="virtual-machine-keyboard-navigation">{content}</div>
-    </div>
+    </TableWrapper>
   );
 };

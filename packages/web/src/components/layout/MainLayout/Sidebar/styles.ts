@@ -19,7 +19,7 @@ export const StyledSider = styled(Sider)<{ $sidebarWidth: number; $isDrawer?: bo
   transition: left ${DESIGN_TOKENS.TRANSITIONS.SLOW}, width ${DESIGN_TOKENS.TRANSITIONS.DEFAULT};
 
   /* Hide sidebar on mobile - use drawer only */
-  @media (max-width: 768px) {
+  @media (max-width: ${({ theme }) => theme.breakpoints.TABLET}px) {
     display: ${({ $isDrawer }) => ($isDrawer ? 'block' : 'none')};
   }
 `;
@@ -44,10 +44,13 @@ export const MenuItem = styled.div<{ $isActive: boolean; $padding: string; $coll
   display: flex;
   align-items: center;
   padding: ${({ $padding }) => $padding};
-  margin: ${({ $collapsed }) => ($collapsed ? '4px' : '4px 12px')};
+  margin: ${({ theme, $collapsed }) =>
+    $collapsed
+      ? `${theme.spacing.XS}px`
+      : `${theme.spacing.XS}px ${theme.spacing.SM_LG}px`};
   border-radius: ${({ theme }) => theme.borderRadius.XL}px;
   cursor: pointer;
-  min-height: 44px;
+  min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
   justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
   background-color: ${({ $isActive }) => ($isActive ? 'var(--color-bg-selected)' : 'transparent')};
   color: ${({ $isActive }) =>
@@ -63,7 +66,7 @@ export const MenuItem = styled.div<{ $isActive: boolean; $padding: string; $coll
 
 export const MenuIcon = styled.span<{ $isActive: boolean; $collapsed?: boolean }>`
   font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-  margin-right: ${({ $collapsed }) => ($collapsed ? '0' : '12px')};
+  margin-right: ${({ theme, $collapsed }) => ($collapsed ? '0' : `${theme.spacing.SM_LG}px`)};
   color: ${({ $isActive }) => ($isActive ? 'var(--color-text-selected)' : 'inherit')};
   display: inline-flex;
   align-items: center;
@@ -74,7 +77,7 @@ export const MenuIcon = styled.span<{ $isActive: boolean; $collapsed?: boolean }
 `;
 
 export const MenuLabel = styled.span<{ $isActive: boolean; $collapsed: boolean }>`
-  margin-left: 8px;
+  margin-left: ${({ theme }) => theme.spacing.SM}px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -89,7 +92,7 @@ export const TooltipContent = styled(FlexColumn).attrs({ $gap: 'XS' })`
   background-color: var(--color-bg-primary);
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   padding: ${({ theme }) => theme.spacing.SM}px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: ${({ theme }) => theme.shadows.MD};
   border: 1px solid var(--color-border-secondary);
 `;
 
@@ -102,7 +105,7 @@ export const TooltipItem = styled.div<{ $isActive: boolean }>`
   font-weight: ${({ $isActive }) => ($isActive ? 600 : 500)};
   cursor: pointer;
   font-size: ${({ theme }) => theme.fontSize.SM}px;
-  min-width: 160px;
+  min-width: ${({ theme }) => theme.dimensions.TOOLTIP_MIN_WIDTH}px;
   transition: all 0.2s ease;
 
   &:hover {
@@ -117,14 +120,14 @@ export const TooltipLabel = styled.div<{ $isActive: boolean }>`
     $isActive ? 'var(--color-text-selected)' : 'var(--color-text-primary)'};
   font-weight: ${({ $isActive }) => ($isActive ? 600 : 500)};
   font-size: ${({ theme }) => theme.fontSize.SM}px;
-  min-width: 160px;
+  min-width: ${({ theme }) => theme.dimensions.TOOLTIP_MIN_WIDTH}px;
 `;
 
 export const SubMenuContainer = styled.div<{ $isExpanded: boolean }>`
-  margin: 2px 12px 0 40px;
+  margin: ${({ theme }) => `${theme.spacing.XXS}px ${theme.spacing.SM_LG}px 0 ${theme.spacing.XXL}px`};
   padding: ${({ theme }) => `${theme.spacing.XS}px 0`};
   overflow: hidden;
-  max-height: ${({ $isExpanded }) => ($isExpanded ? '400px' : '0')};
+  max-height: ${({ theme, $isExpanded }) => ($isExpanded ? `${theme.dimensions.LIST_MAX_HEIGHT}px` : '0')};
   transition: max-height ${DESIGN_TOKENS.TRANSITIONS.DEFAULT},
     opacity ${DESIGN_TOKENS.TRANSITIONS.DEFAULT};
   opacity: ${({ $isExpanded }) => ($isExpanded ? 1 : 0)};
@@ -134,7 +137,7 @@ export const SubMenuItem = styled.div<{ $isActive: boolean }>`
   display: flex;
   align-items: center;
   padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.LG}px`};
-  margin: 2px 0;
+  margin: ${({ theme }) => `${theme.spacing.XS}px 0`};
   border-radius: ${({ theme }) => theme.borderRadius.XL}px;
   font-size: ${({ theme }) => theme.fontSize.SM}px;
   color: ${({ $isActive }) =>

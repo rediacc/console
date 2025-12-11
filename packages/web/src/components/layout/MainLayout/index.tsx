@@ -44,6 +44,7 @@ import {
   TransitionIcon,
   TransitionOverlay,
   TransitionText,
+  UserMenuButton,
 } from './styles';
 import { SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_EXPANDED_WIDTH } from './types';
 import { UserMenu } from './UserMenu';
@@ -241,7 +242,6 @@ const MainLayout: React.FC = () => {
                     : t('navigation.collapseSidebar', { defaultValue: 'Collapse sidebar' })
                 }
                 aria-pressed={collapsed}
-                style={{ borderRadius: '50%', width: '40px', height: '40px' }}
               />
               <LogoWrapper
                 onClick={() => {
@@ -273,13 +273,12 @@ const MainLayout: React.FC = () => {
                 )}
                 overlayStyle={{ minWidth: 300 }}
               >
-                <RediaccButton
+                <UserMenuButton
                   variant="primary"
                   iconOnly
                   icon={<UserOutlined />}
                   aria-label={t('navigation.userMenu', { defaultValue: 'Open user menu' })}
                   data-testid="user-menu-button"
-                  style={{ borderRadius: '50%', width: '40px', height: '40px' }}
                 />
               </Dropdown>
             </HeaderRight>

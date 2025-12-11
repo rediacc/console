@@ -87,3 +87,51 @@ export const FullWidthSpace = styled(RediaccStack).attrs({
   variant: 'column',
   fullWidth: true,
 })``;
+
+// Card with bottom margin for spacing between sections
+export const SpacedCardBottom = styled(RediaccCard).attrs({ spacing: 'default' })`
+  && {
+    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
+  }
+`;
+
+// Compatibility status text with dynamic color based on status
+type CompatibilityStatus = 'compatible' | 'warning' | 'incompatible' | 'unknown';
+
+export const CompatibilityStatusText = styled(RediaccText)<{
+  $status: CompatibilityStatus;
+}>`
+  && {
+    color: ${({ $status }) => {
+      switch ($status) {
+        case 'compatible':
+          return 'var(--color-success)';
+        case 'warning':
+          return 'var(--color-warning)';
+        case 'incompatible':
+          return 'var(--color-error)';
+        default:
+          return 'var(--color-info)';
+      }
+    }};
+    text-transform: capitalize;
+  }
+`;
+
+// Issues list with consistent margins
+export const IssuesList = styled.ul`
+  margin-top: ${({ theme }) => theme.spacing.XS}px;
+  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
+`;
+
+// Recommendations list with top margin
+export const RecommendationsList = styled.ul`
+  margin-top: ${({ theme }) => theme.spacing.XS}px;
+`;
+
+// Monospace text for code/task IDs
+export const MonospaceText = styled(RediaccText)`
+  && {
+    font-family: monospace;
+  }
+`;
