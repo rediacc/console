@@ -23,8 +23,8 @@ import {
   DesktopOutlined,
   PlusOutlined,
 } from '@/utils/optimizedIcons';
-import type { ColumnsType } from 'antd/es/table';
 import { FullWidthSpace, RemoveButton } from './styles';
+import type { ColumnsType } from 'antd/es/table';
 
 interface ManageClusterMachinesModalProps {
   open: boolean;

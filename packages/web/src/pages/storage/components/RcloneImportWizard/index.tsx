@@ -106,9 +106,7 @@ const UploadStep: React.FC<UploadStepProps> = ({
       <p className="ant-upload-hint">{t('resources:storage.import.supportedFormats')}</p>
     </Upload.Dragger>
 
-    {parsingError && (
-      <ParsingErrorAlert message={parsingError} variant="error" showIcon />
-    )}
+    {parsingError && <ParsingErrorAlert message={parsingError} variant="error" showIcon />}
   </UploadStepWrapper>
 );
 

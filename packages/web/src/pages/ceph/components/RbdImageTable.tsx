@@ -11,13 +11,12 @@ import {
   DesktopOutlined,
   EllipsisOutlined,
   ExpandOutlined,
-  FileImageOutlined,
   InfoCircleOutlined,
   PlusOutlined,
   SettingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { Button, message, Space, Table, Tag, Tooltip } from 'antd';
+import { message, Space, Table, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -41,7 +40,6 @@ import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMach
 import { createSorter } from '@/platform';
 import type { ImageFormValues as FullImageFormValues } from '@rediacc/shared/types';
 import SnapshotTable from './SnapshotTable';
-import type { MenuProps } from 'antd';
 import {
   CreateImageButton,
   ExpandButton,
@@ -50,6 +48,7 @@ import {
   ImageName,
   TableContainer,
 } from './styles';
+import type { MenuProps } from 'antd';
 
 interface RbdImageTableProps {
   pool: CephPool;

@@ -1,9 +1,5 @@
+import { ClockCircleOutlined, CloudServerOutlined, DesktopOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
-import {
-  ClockCircleOutlined,
-  CloudServerOutlined,
-  DesktopOutlined,
-} from '@ant-design/icons';
 import { InlineStack } from '@/components/common/styled';
 import { RediaccTag } from '@/components/ui';
 import { FlexRow } from '@/styles/primitives';

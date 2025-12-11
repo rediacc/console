@@ -14,7 +14,6 @@ import { QueueFunction } from '@/api/queries/queue';
 import { Repo, useRepos } from '@/api/queries/repos';
 import { useStorage } from '@/api/queries/storage';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import {
   ActionBar as ButtonGroup,

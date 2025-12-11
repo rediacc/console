@@ -109,7 +109,10 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
           title={
             <TooltipContent>
               {allErrors.map((error: ParsedError, index: number) => (
-                <ErrorMessageText key={`${error.message}-${index}`} $isLast={index === allErrors.length - 1}>
+                <ErrorMessageText
+                  key={`${error.message}-${index}`}
+                  $isLast={index === allErrors.length - 1}
+                >
                   {error.severity && <strong>[{error.severity}]</strong>} {error.message}
                 </ErrorMessageText>
               ))}

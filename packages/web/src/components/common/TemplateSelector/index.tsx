@@ -155,33 +155,33 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       <SearchContainer>
         <RediaccStack direction="vertical" gap="md" fullWidth>
           <HelperRow>
-          <RediaccText variant="caption">
-            {multiple
-              ? t('resources:templates.selectMultiple', {
-                  defaultValue: 'Select templates (optional, multiple allowed)',
-                })
-              : t('resources:templates.selectOptional')}
-          </RediaccText>
-          {((multiple && Array.isArray(value) && value.length > 0) || (!multiple && value)) && (
-            <ClearButton
-              size="sm"
-              data-testid="resource-modal-template-clear-button"
-              onClick={() => onChange?.(multiple ? [] : null)}
-            >
-              {t('resources:templates.clearSelection')}
-            </ClearButton>
-          )}
-        </HelperRow>
+            <RediaccText variant="caption">
+              {multiple
+                ? t('resources:templates.selectMultiple', {
+                    defaultValue: 'Select templates (optional, multiple allowed)',
+                  })
+                : t('resources:templates.selectOptional')}
+            </RediaccText>
+            {((multiple && Array.isArray(value) && value.length > 0) || (!multiple && value)) && (
+              <ClearButton
+                size="sm"
+                data-testid="resource-modal-template-clear-button"
+                onClick={() => onChange?.(multiple ? [] : null)}
+              >
+                {t('resources:templates.clearSelection')}
+              </ClearButton>
+            )}
+          </HelperRow>
 
-        <SearchInput
-          placeholder={t('resources:templates.searchPlaceholder', {
-            defaultValue: 'Search templates by name or description...',
-          })}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          allowClear
-          data-testid="resource-modal-template-search-input"
-        />
+          <SearchInput
+            placeholder={t('resources:templates.searchPlaceholder', {
+              defaultValue: 'Search templates by name or description...',
+            })}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            allowClear
+            data-testid="resource-modal-template-search-input"
+          />
         </RediaccStack>
       </SearchContainer>
 

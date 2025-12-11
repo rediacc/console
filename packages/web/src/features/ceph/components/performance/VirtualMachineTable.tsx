@@ -8,8 +8,8 @@ import { RediaccCheckbox } from '@/components/ui';
 import { useTableStyles } from '@/hooks/useComponentStyles';
 import { useMachineSelection } from '@/store/ceph/hooks';
 import { Machine } from '@/types';
+import { HeaderWrapper, RowWrapper, TableWrapper } from './styles';
 import styles from './VirtualMachineTable.module.css';
-import { HeaderWrapper, LoadingContainer, RowWrapper, TableWrapper } from './styles';
 
 type ScrollAlign = 'auto' | 'smart' | 'center' | 'end' | 'start';
 

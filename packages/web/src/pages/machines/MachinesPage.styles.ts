@@ -1,5 +1,5 @@
-import styled from 'styled-components';
 import { Empty } from 'antd';
+import styled from 'styled-components';
 import TeamSelector from '@/components/common/TeamSelector';
 
 export const EmptyState = styled(Empty)`

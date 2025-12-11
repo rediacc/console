@@ -43,9 +43,9 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
           <Popover
             content={
               <PriorityPopoverContent>
-                <RediaccText variant="title" as={PriorityLabelBlock}>
-                  {t('functions:priorityPopoverLevels')}
-                </RediaccText>
+                <PriorityLabelBlock>
+                  <RediaccText variant="title">{t('functions:priorityPopoverLevels')}</RediaccText>
+                </PriorityLabelBlock>
                 {priorityLegendItems.map((item) => (
                   <PriorityLegendRow key={item.level}>
                     <PriorityLegendTag $level={item.level}>

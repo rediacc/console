@@ -169,7 +169,9 @@ const createTheme = (mode: ThemeMode): StyledTheme => {
       borderSecondary: palette.borderSecondary,
       borderHover: palette.borderHover,
       shadow: palette.shadow,
-      shadowStrong: isLight ? DESIGN_TOKENS.SHADOWS.SHADOW_STRONG_LIGHT : DESIGN_TOKENS.SHADOWS.SHADOW_STRONG_DARK,
+      shadowStrong: isLight
+        ? DESIGN_TOKENS.SHADOWS.SHADOW_STRONG_LIGHT
+        : DESIGN_TOKENS.SHADOWS.SHADOW_STRONG_DARK,
       inputBg: isLight ? palette.bgPrimary : palette.bgSecondary,
       inputBorder: palette.borderSecondary,
       iconGrand: colorTokens.primary,
@@ -181,9 +183,7 @@ const createTheme = (mode: ThemeMode): StyledTheme => {
     },
     shadows: {
       ...DESIGN_TOKENS.SHADOWS,
-      panel: isLight
-        ? DESIGN_TOKENS.SHADOWS.PANEL_LEFT
-        : DESIGN_TOKENS.SHADOWS.PANEL_LEFT_DARK,
+      panel: isLight ? DESIGN_TOKENS.SHADOWS.PANEL_LEFT : DESIGN_TOKENS.SHADOWS.PANEL_LEFT_DARK,
       controlHandle: isLight
         ? DESIGN_TOKENS.SHADOWS.CONTROL_HANDLE
         : DESIGN_TOKENS.SHADOWS.CONTROL_HANDLE_DARK,
@@ -192,9 +192,7 @@ const createTheme = (mode: ThemeMode): StyledTheme => {
       backdrop: isLight
         ? DESIGN_TOKENS.OVERLAYS.BACKDROP_LIGHT
         : DESIGN_TOKENS.OVERLAYS.BACKDROP_DARK,
-      content: isLight
-        ? DESIGN_TOKENS.OVERLAYS.CONTENT_LIGHT
-        : DESIGN_TOKENS.OVERLAYS.CONTENT_DARK,
+      content: isLight ? DESIGN_TOKENS.OVERLAYS.CONTENT_LIGHT : DESIGN_TOKENS.OVERLAYS.CONTENT_DARK,
       navActive: isLight
         ? DESIGN_TOKENS.OVERLAYS.NAV_ACTIVE_LIGHT
         : DESIGN_TOKENS.OVERLAYS.NAV_ACTIVE_DARK,

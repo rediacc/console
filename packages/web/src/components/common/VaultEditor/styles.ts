@@ -1,6 +1,6 @@
 import { Form, Row } from 'antd';
 import styled from 'styled-components';
-import { RediaccAlert, RediaccButton } from '@/components/ui';
+import { RediaccAlert, RediaccButton, RediaccText } from '@/components/ui';
 import { FlexColumn, FlexRow } from '@/styles/primitives';
 import {
   BulbOutlined,

@@ -6,7 +6,7 @@ import { QueueFilters, type QueueStatistics, useQueueItems } from '@/api/queries
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import ResourceListView from '@/components/common/ResourceListView';
-import { PageWrapper, RediaccButton, RediaccCard, RediaccStack } from '@/components/ui';
+import { PageWrapper, RediaccButton, RediaccStack } from '@/components/ui';
 import { useFilters, useMultiPagination, useQueueTraceModal } from '@/hooks';
 import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay';
 import {
@@ -17,7 +17,6 @@ import {
   isValidGuid,
 } from '@/platform';
 import { TabCount, TabLabel } from '@/styles/primitives';
-import { StyledRediaccCard } from './styles';
 import { ExportOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
 import { QueueFilterPanel } from './components/QueueFilterPanel';
@@ -25,6 +24,7 @@ import { QueueStatisticsBar } from './components/QueueStatisticsBar';
 import { useQueueActions } from './hooks/useQueueActions';
 import { useQueueExport } from './hooks/useQueueExport';
 import { getQueueColumns } from './queueTableColumns';
+import { StyledRediaccCard } from './styles';
 import type { Dayjs } from 'dayjs';
 
 // Page-level filter state type
@@ -256,12 +256,7 @@ const QueuePage: React.FC = () => {
   return (
     <PageWrapper data-testid="queue-page-container">
       {contextHolder}
-      <RediaccCard
-        size="sm"
-        spacing="default"
-        as={StyledRediaccCard}
-        data-testid="queue-filters-card"
-      >
+      <StyledRediaccCard data-testid="queue-filters-card">
         <RediaccStack variant="column" fullWidth gap="sm">
           <QueueFilterPanel
             filters={filters}
@@ -320,7 +315,7 @@ const QueuePage: React.FC = () => {
             </Dropdown>
           </Space>
         </RediaccStack>
-      </RediaccCard>
+      </StyledRediaccCard>
 
       <Tabs
         activeKey={activeTab}

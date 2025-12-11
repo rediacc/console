@@ -11,7 +11,6 @@ import logoWhite from '@/assets/logo_white.png';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
 import NotificationBell from '@/components/layout/MainLayout/components/NotificationBell';
-import { RediaccButton } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTheme } from '@/context/ThemeContext';
 import { masterPasswordService } from '@/services/masterPasswordService';

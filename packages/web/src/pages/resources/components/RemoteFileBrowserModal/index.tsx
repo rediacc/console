@@ -791,29 +791,29 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                   <Select
                     placeholder={t('resources:remoteFiles.selectSource')}
                     value={selectedSource}
-                  onChange={(value) => {
-                    setSelectedSource(value);
-                    setCurrentPath('');
-                    setSelectedFile('');
-                    setFiles([]); // Clear files when changing source
-                  }}
-                  loading={isLoadingStorage || isLoadingMachines}
-                  notFoundContent={
-                    isLoadingStorage || isLoadingMachines ? (
-                      <LoadingPadding>
-                        <InlineLoadingIndicator
-                          width="100%"
-                          height={18}
-                          data-testid="file-browser-source-loading"
+                    onChange={(value) => {
+                      setSelectedSource(value);
+                      setCurrentPath('');
+                      setSelectedFile('');
+                      setFiles([]); // Clear files when changing source
+                    }}
+                    loading={isLoadingStorage || isLoadingMachines}
+                    notFoundContent={
+                      isLoadingStorage || isLoadingMachines ? (
+                        <LoadingPadding>
+                          <InlineLoadingIndicator
+                            width="100%"
+                            height={18}
+                            data-testid="file-browser-source-loading"
+                          />
+                        </LoadingPadding>
+                      ) : storageSources.length === 0 ? (
+                        <Empty
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          description={t('resources:remoteFiles.noSources')}
                         />
-                      </LoadingPadding>
-                    ) : storageSources.length === 0 ? (
-                      <Empty
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description={t('resources:remoteFiles.noSources')}
-                      />
-                    ) : null
-                  }
+                      ) : null
+                    }
                     options={storageSources}
                     data-testid="file-browser-source-select"
                   />

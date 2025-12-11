@@ -84,9 +84,11 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
         </CommandDescription>
       )}
       <CommandBox data-testid="pip-install-command-text">
-        <RediaccText size="sm" color={getCodeColor(isComment, isCommand)} as={CommandText}>
-          {command}
-        </RediaccText>
+        <CommandText>
+          <RediaccText size="sm" color={getCodeColor(isComment, isCommand)}>
+            {command}
+          </RediaccText>
+        </CommandText>
         {showCopy && (
           <CopyButton
             icon={copied ? <CheckOutlined /> : <CopyOutlined />}

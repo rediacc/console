@@ -53,7 +53,6 @@ import {
   PanelTitle,
   PanelWrapper,
   PartitionRow,
-  LoadingState,
   QueueBadge,
   SectionBlock,
   SectionDivider,
@@ -290,11 +289,12 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
         <ContentWrapper data-testid="vault-status-content">
           {!vaultData ? (
-            <RediaccEmpty
-              description={t('machines:noVaultData')}
-              data-testid="vault-status-empty"
-              as={StyledRediaccEmpty}
-            />
+            <StyledRediaccEmpty>
+              <RediaccEmpty
+                description={t('machines:noVaultData')}
+                data-testid="vault-status-empty"
+              />
+            </StyledRediaccEmpty>
           ) : (
             <>
               {vaultData.system && (

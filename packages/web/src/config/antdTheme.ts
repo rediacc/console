@@ -1,5 +1,5 @@
-import type { ThemeConfig } from 'antd';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import type { ThemeConfig } from 'antd';
 
 /**
  * Brand Colors (theme-independent)

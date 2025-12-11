@@ -1,5 +1,10 @@
 import styled from 'styled-components';
-import { RediaccButton, RediaccRadioButton, RediaccRadioGroup, RediaccStack } from '@/components/ui';
+import {
+  RediaccButton,
+  RediaccRadioButton,
+  RediaccRadioGroup,
+  RediaccStack,
+} from '@/components/ui';
 import { media } from '@/styles/mixins';
 
 export const PopoverContainer = styled.div`

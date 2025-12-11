@@ -5,7 +5,7 @@ import 'dayjs/locale/es';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { RediaccButton, RediaccText } from '@/components/ui';
+import { RediaccText } from '@/components/ui';
 import {
   clearAllNotifications,
   clearNotification,

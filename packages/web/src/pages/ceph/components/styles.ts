@@ -1,6 +1,6 @@
+import { FileImageOutlined } from '@ant-design/icons';
 import { Space, Button, Card, Select } from 'antd';
 import styled from 'styled-components';
-import { FileImageOutlined } from '@ant-design/icons';
 
 export const FullWidthSpace = styled(Space)`
   width: 100%;

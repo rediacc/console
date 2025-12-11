@@ -45,9 +45,7 @@ export const MenuItem = styled.div<{ $isActive: boolean; $padding: string; $coll
   align-items: center;
   padding: ${({ $padding }) => $padding};
   margin: ${({ theme, $collapsed }) =>
-    $collapsed
-      ? `${theme.spacing.XS}px`
-      : `${theme.spacing.XS}px ${theme.spacing.SM_LG}px`};
+    $collapsed ? `${theme.spacing.XS}px` : `${theme.spacing.XS}px ${theme.spacing.SM_LG}px`};
   border-radius: ${({ theme }) => theme.borderRadius.XL}px;
   cursor: pointer;
   min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;

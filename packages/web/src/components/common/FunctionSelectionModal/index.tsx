@@ -297,9 +297,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       key={category}
                       data-testid={`function-modal-category-${category}`}
                     >
-                      <RediaccText variant="title" as={CategoryTitleBlock}>
-                        {categories[category]?.name || category}
-                      </RediaccText>
+                      <CategoryTitleBlock>
+                        <RediaccText variant="title">
+                          {categories[category]?.name || category}
+                        </RediaccText>
+                      </CategoryTitleBlock>
                       {funcs.map((func) => {
                         const isQuickTask =
                           QUICK_TASK_NAMES.includes(func.name) ||

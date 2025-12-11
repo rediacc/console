@@ -1,7 +1,7 @@
 import { Collapse, Form } from 'antd';
 import styled from 'styled-components';
 import { ActionGroup, InlineStack } from '@/components/common/styled';
-import { RediaccButton, RediaccCard, RediaccInput, RediaccTag } from '@/components/ui';
+import { RediaccButton, RediaccCard, RediaccInput, RediaccTag, RediaccText } from '@/components/ui';
 import { borderedCard, media } from '@/styles/mixins';
 import { FlexColumn } from '@/styles/primitives';
 

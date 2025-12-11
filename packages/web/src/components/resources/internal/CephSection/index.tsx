@@ -93,13 +93,9 @@ export const CephSection: React.FC<CephSectionProps> = ({
       <SectionCard size="sm" data-testid="ds-section-card">
         <RediaccStack variant="spaced-column" fullWidth>
           <div>
-            <RediaccText
-              variant="label"
-              as={LabelBlock}
-              data-testid="ds-section-assignment-label"
-            >
-              {t('assignment.currentAssignment')}
-            </RediaccText>
+            <LabelBlock data-testid="ds-section-assignment-label">
+              <RediaccText variant="label">{t('assignment.currentAssignment')}</RediaccText>
+            </LabelBlock>
             <MachineAssignmentStatusBadge
               assignmentType={assignmentType}
               assignmentDetails={assignmentDetails}
