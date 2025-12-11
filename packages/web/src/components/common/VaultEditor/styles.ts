@@ -51,7 +51,7 @@ export const TestConnectionButton = styled(RediaccButton).attrs({
 `;
 
 // Removed: Use <RediaccText> with inline styles for conditional color
-// Example: style={{ color: `var(--rediacc-color-${status})`, textTransform: 'capitalize' }}
+// Example: style={{ color: `var(--color-${status})`, textTransform: 'capitalize' }}
 
 export const ListSection = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
@@ -116,7 +116,7 @@ export const TestConnectionAlert = styled(RediaccAlert)`
 `;
 
 export const CompatibilityStatusText = styled(RediaccText)<{ $variant: string }>`
-  color: var(--rediacc-color-${({ $variant }) => $variant});
+  color: var(--color-${({ $variant }) => $variant});
   text-transform: capitalize;
 `;
 

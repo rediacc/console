@@ -21,6 +21,6 @@ export const ResolutionText = styled.p`
 
 export const StyledAlert = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  border: 2px solid var(--rediacc-color-error);
-  background-color: var(--rediacc-color-bg-error);
+  border: 2px solid var(--color-error);
+  background-color: var(--color-bg-error);
 `;

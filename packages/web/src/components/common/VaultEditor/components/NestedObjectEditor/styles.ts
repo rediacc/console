@@ -186,7 +186,7 @@ export const FieldsText = styled(RediaccText).attrs({
 })`
   && {
     font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
-    background-color: var(--rediacc-color-bg-secondary);
+    background-color: var(--color-bg-secondary);
     padding: ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.spacing.SM}px;
     border-radius: ${({ theme }) => theme.spacing.XS}px;
   }

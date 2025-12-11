@@ -128,6 +128,9 @@ export const GlobalStyles = createGlobalStyle`
     --dimension-control-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
     /* Overlay CSS variables */
     --overlay-nav-active: ${({ theme }) => theme.overlays.navActive};
+    /* Transition CSS variables */
+    --transition-default: ${({ theme }) => theme.transitions.DEFAULT};
+    --transition-fast: ${({ theme }) => theme.transitions.FAST};
   }
 
   [data-theme='light'] {

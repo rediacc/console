@@ -7,8 +7,8 @@ interface RowWrapperProps {
 
 export const RowWrapper = styled.div<RowWrapperProps>`
   cursor: ${({ $hasOnClick }) => ($hasOnClick ? 'pointer' : 'default')};
-  border-bottom: 1px solid var(--color-border-secondary);
-  transition: background-color 0.2s ease;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  transition: background-color ${({ theme }) => theme.transitions.DEFAULT};
 `;
 
 export const TableWrapper = styled.div``;
