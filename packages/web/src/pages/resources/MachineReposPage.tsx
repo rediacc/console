@@ -29,6 +29,7 @@ import {
   BreadcrumbWrapper,
   DetailBackdrop,
   ErrorWrapper,
+  FlexColumnCard,
   HeaderRow,
   HeaderSection,
   HeaderTitleText,
@@ -262,13 +263,15 @@ const MachineReposPage: React.FC = () => {
   if (machinesLoading && !machine) {
     return (
       <PageWrapper>
-        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
-          <CenteredState>
-            <LoadingWrapper loading centered minHeight={160}>
-              <div />
-            </LoadingWrapper>
-            <RediaccText color="secondary">{t('common:general.loading')}</RediaccText>
-          </CenteredState>
+        <RediaccCard fullHeight>
+          <FlexColumnCard>
+            <CenteredState>
+              <LoadingWrapper loading centered minHeight={160}>
+                <div />
+              </LoadingWrapper>
+              <RediaccText color="secondary">{t('common:general.loading')}</RediaccText>
+            </CenteredState>
+          </FlexColumnCard>
         </RediaccCard>
       </PageWrapper>
     );
@@ -278,20 +281,22 @@ const MachineReposPage: React.FC = () => {
   if (machinesError || (!machinesLoading && !machine)) {
     return (
       <PageWrapper>
-        <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
-          <Alert
-            message={t('machines:machineNotFound')}
-            description={
-              <ErrorWrapper>
-                <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
-                <AntButton type="primary" onClick={handleBackToMachines}>
-                  {t('machines:backToMachines')}
-                </AntButton>
-              </ErrorWrapper>
-            }
-            type="error"
-            showIcon
-          />
+        <RediaccCard fullHeight>
+          <FlexColumnCard>
+            <Alert
+              message={t('machines:machineNotFound')}
+              description={
+                <ErrorWrapper>
+                  <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
+                  <AntButton type="primary" onClick={handleBackToMachines}>
+                    {t('machines:backToMachines')}
+                  </AntButton>
+                </ErrorWrapper>
+              }
+              type="error"
+              showIcon
+            />
+          </FlexColumnCard>
         </RediaccCard>
       </PageWrapper>
     );
@@ -299,129 +304,131 @@ const MachineReposPage: React.FC = () => {
 
   return (
     <PageWrapper>
-      <RediaccCard fullHeight style={{ display: 'flex', flexDirection: 'column' }}>
-        <HeaderSection>
-          <BreadcrumbWrapper
-            items={[
-              {
-                title: <span>{t('machines:machines')}</span>,
-                onClick: () => navigate('/machines'),
-              },
-              {
-                title: machine?.machineName || machineName,
-              },
-              {
-                title: t('resources:repos.repos'),
-              },
-            ]}
-            data-testid="machine-repos-breadcrumb"
-          />
+      <RediaccCard fullHeight>
+        <FlexColumnCard>
+          <HeaderSection>
+            <BreadcrumbWrapper
+              items={[
+                {
+                  title: <span>{t('machines:machines')}</span>,
+                  onClick: () => navigate('/machines'),
+                },
+                {
+                  title: machine?.machineName || machineName,
+                },
+                {
+                  title: t('resources:repos.repos'),
+                },
+              ]}
+              data-testid="machine-repos-breadcrumb"
+            />
 
-          <HeaderRow>
-            <TitleColumn>
-              <TitleRow>
-                <Tooltip title={t('machines:backToMachines')}>
+            <HeaderRow>
+              <TitleColumn>
+                <TitleRow>
+                  <Tooltip title={t('machines:backToMachines')}>
+                    <RediaccButton
+                      iconOnly
+                      icon={<DoubleLeftOutlined />}
+                      onClick={handleBackToMachines}
+                      aria-label={t('machines:backToMachines')}
+                      data-testid="machine-repos-back-button"
+                    />
+                  </Tooltip>
+                  <HeaderTitleText level={4}>
+                    <Space>
+                      <DesktopOutlined />
+                      <span>
+                        {t('machines:machine')}: {machine?.machineName}
+                      </span>
+                    </Space>
+                  </HeaderTitleText>
+                </TitleRow>
+                <ActionGroup>
+                  <Tag color="success">
+                    {t('machines:team')}: {machine?.teamName}
+                  </Tag>
+                  <Tag color="blue">
+                    {t('machines:bridge')}: {machine?.bridgeName}
+                  </Tag>
+                  {machine?.regionName && (
+                    <Tag color="default">
+                      {t('machines:region')}: {machine.regionName}
+                    </Tag>
+                  )}
+                </ActionGroup>
+              </TitleColumn>
+
+              <ActionsRow>
+                <Tooltip title={t('machines:createRepo')}>
                   <RediaccButton
                     iconOnly
-                    icon={<DoubleLeftOutlined />}
-                    onClick={handleBackToMachines}
-                    aria-label={t('machines:backToMachines')}
-                    data-testid="machine-repos-back-button"
+                    icon={<PlusOutlined />}
+                    onClick={handleCreateRepo}
+                    data-testid="machine-repos-create-repo-button"
                   />
                 </Tooltip>
-                <HeaderTitleText level={4}>
-                  <Space>
-                    <DesktopOutlined />
-                    <span>
-                      {t('machines:machine')}: {machine?.machineName}
-                    </span>
-                  </Space>
-                </HeaderTitleText>
-              </TitleRow>
-              <ActionGroup>
-                <Tag color="success">
-                  {t('machines:team')}: {machine?.teamName}
-                </Tag>
-                <Tag color="blue">
-                  {t('machines:bridge')}: {machine?.bridgeName}
-                </Tag>
-                {machine?.regionName && (
-                  <Tag color="default">
-                    {t('machines:region')}: {machine.regionName}
-                  </Tag>
-                )}
-              </ActionGroup>
-            </TitleColumn>
+                <Tooltip title={t('functions:functions.pull.name')}>
+                  <RediaccButton
+                    iconOnly
+                    icon={<CloudDownloadOutlined />}
+                    onClick={handlePull}
+                    data-testid="machine-repos-pull-button"
+                  />
+                </Tooltip>
+                <Tooltip title={t('common:actions.refresh')}>
+                  <RediaccButton
+                    iconOnly
+                    icon={<ReloadOutlined />}
+                    onClick={handleRefresh}
+                    data-testid="machine-repos-refresh-button"
+                  />
+                </Tooltip>
+              </ActionsRow>
+            </HeaderRow>
+          </HeaderSection>
 
-            <ActionsRow>
-              <Tooltip title={t('machines:createRepo')}>
-                <RediaccButton
-                  iconOnly
-                  icon={<PlusOutlined />}
-                  onClick={handleCreateRepo}
-                  data-testid="machine-repos-create-repo-button"
+          <SplitLayout>
+            <ListPanel $showDetail={Boolean(selectedResource)} $detailWidth={actualPanelWidth}>
+              {machine && (
+                <MachineRepoTable
+                  machine={machine}
+                  key={`${machine.machineName}-${refreshKey}`}
+                  refreshKey={refreshKey}
+                  onActionComplete={handleRefresh}
+                  onRepoClick={handleRepoClick}
+                  onContainerClick={handleContainerClick}
+                  onQueueItemCreated={(taskId, machineName) => {
+                    queueTrace.open(taskId, machineName || undefined);
+                  }}
                 />
-              </Tooltip>
-              <Tooltip title={t('functions:functions.pull.name')}>
-                <RediaccButton
-                  iconOnly
-                  icon={<CloudDownloadOutlined />}
-                  onClick={handlePull}
-                  data-testid="machine-repos-pull-button"
-                />
-              </Tooltip>
-              <Tooltip title={t('common:actions.refresh')}>
-                <RediaccButton
-                  iconOnly
-                  icon={<ReloadOutlined />}
-                  onClick={handleRefresh}
-                  data-testid="machine-repos-refresh-button"
-                />
-              </Tooltip>
-            </ActionsRow>
-          </HeaderRow>
-        </HeaderSection>
+              )}
+            </ListPanel>
 
-        <SplitLayout>
-          <ListPanel $showDetail={Boolean(selectedResource)} $detailWidth={actualPanelWidth}>
-            {machine && (
-              <MachineRepoTable
-                machine={machine}
-                key={`${machine.machineName}-${refreshKey}`}
-                refreshKey={refreshKey}
-                onActionComplete={handleRefresh}
-                onRepoClick={handleRepoClick}
-                onContainerClick={handleContainerClick}
-                onQueueItemCreated={(taskId, machineName) => {
-                  queueTrace.open(taskId, machineName || undefined);
-                }}
+            {shouldRenderBackdrop && (
+              <DetailBackdrop
+                $right={actualPanelWidth}
+                $visible={backdropVisible}
+                onClick={handlePanelClose}
+                data-testid="machine-repos-backdrop"
               />
             )}
-          </ListPanel>
 
-          {shouldRenderBackdrop && (
-            <DetailBackdrop
-              $right={actualPanelWidth}
-              $visible={backdropVisible}
-              onClick={handlePanelClose}
-              data-testid="machine-repos-backdrop"
-            />
-          )}
-
-          {selectedResource && (
-            <UnifiedDetailPanel
-              type={'repoName' in selectedResource ? 'repo' : 'container'}
-              data={selectedResource}
-              visible={true}
-              onClose={handlePanelClose}
-              splitWidth={splitWidth}
-              onSplitWidthChange={setSplitWidth}
-              isCollapsed={isPanelCollapsed}
-              onToggleCollapse={handleTogglePanelCollapse}
-              collapsedWidth={DETAIL_PANEL.COLLAPSED_WIDTH}
-            />
-          )}
-        </SplitLayout>
+            {selectedResource && (
+              <UnifiedDetailPanel
+                type={'repoName' in selectedResource ? 'repo' : 'container'}
+                data={selectedResource}
+                visible={true}
+                onClose={handlePanelClose}
+                splitWidth={splitWidth}
+                onSplitWidthChange={setSplitWidth}
+                isCollapsed={isPanelCollapsed}
+                onToggleCollapse={handleTogglePanelCollapse}
+                collapsedWidth={DETAIL_PANEL.COLLAPSED_WIDTH}
+              />
+            )}
+          </SplitLayout>
+        </FlexColumnCard>
       </RediaccCard>
 
       <QueueItemTraceModal

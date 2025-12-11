@@ -37,6 +37,7 @@ import {
   StatTitle,
   TabContainer,
   TableCard,
+  TableCardTitle,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -291,14 +292,7 @@ const UserSessionsTab: React.FC = () => {
 
       <TableCard
         title={
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: '16px',
-            }}
-          >
+          <TableCardTitle>
             <InlineStack>
               <CardTitleText>{t('userSessions.title')}</CardTitleText>
               <Tooltip title={t('common:actions.refresh')}>
@@ -319,7 +313,7 @@ const UserSessionsTab: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               autoComplete="off"
             />
-          </div>
+          </TableCardTitle>
         }
       >
         <TableContainer>

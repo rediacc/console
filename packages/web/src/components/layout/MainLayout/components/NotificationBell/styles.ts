@@ -1,22 +1,23 @@
 import styled from 'styled-components';
 import { FlexBetween, InlineStack } from '@/components/common/styled';
 import { RediaccButton, RediaccText } from '@/components/ui';
+import { media } from '@/styles/mixins';
 import { FlexRow } from '@/styles/primitives';
 
 export const NotificationDropdown = styled.div`
   background-color: var(--color-bg-primary);
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  max-height: 500px;
-  min-width: 380px;
+  box-shadow: ${({ theme }) => theme.shadows.MD};
+  max-height: ${({ theme }) => theme.dimensions.DROPDOWN_MAX_HEIGHT}px;
+  min-width: ${({ theme }) => theme.dimensions.DROPDOWN_WIDTH_LG}px;
   border: 1px solid var(--color-border-secondary);
-  
-  @media (max-width: 768px) {
+
+  ${media.tablet`
     min-width: 0;
-    width: calc(100vw - 32px);
-    max-width: 380px;
-    margin: 0 16px;
-  }
+    width: calc(100vw - ${({ theme }) => theme.spacing.XL}px);
+    max-width: ${({ theme }) => theme.dimensions.DROPDOWN_WIDTH_LG}px;
+    margin: 0 ${({ theme }) => theme.spacing.MD}px;
+  `}
 `;
 
 export const NotificationHeader = styled(FlexBetween)`
@@ -26,22 +27,22 @@ export const NotificationHeader = styled(FlexBetween)`
 `;
 
 export const NotificationListWrapper = styled.div`
-  max-height: 400px;
+  max-height: ${({ theme }) => theme.dimensions.LIST_MAX_HEIGHT}px;
   overflow-y: auto;
-  
+
   &::-webkit-scrollbar {
-    width: 6px;
+    width: ${({ theme }) => theme.borderRadius.MD}px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background: ${({ theme }) => theme.colors.borderSecondary};
     border-radius: 3px;
   }
-  
+
   &::-webkit-scrollbar-thumb:hover {
     background: ${({ theme }) => theme.colors.textSecondary};
   }
@@ -125,6 +126,10 @@ export const EmptyWrapper = styled.div`
 `;
 
 export const BellButton = styled(RediaccButton)`
+  border-radius: 50%;
+  width: ${({ theme }) => theme.spacing.XXL}px;
+  height: ${({ theme }) => theme.spacing.XXL}px;
+
   &:hover {
     background-color: var(--color-bg-tertiary);
     color: var(--color-primary);
@@ -137,6 +142,13 @@ export const BellButton = styled(RediaccButton)`
   }
 
   .anticon {
-    font-size: 24px;
+    font-size: ${({ theme }) => theme.spacing.LG}px;
+  }
+`;
+
+export const NotificationActionButton = styled(RediaccButton)`
+  && {
+    padding: 0 ${({ theme }) => theme.spacing.SM}px;
+    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
   }
 `;

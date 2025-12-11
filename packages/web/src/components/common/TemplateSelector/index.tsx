@@ -18,13 +18,16 @@ import {
   ClearButton,
   DefaultTag,
   DetailsButton,
+  EmptyResultsContainer,
   ErrorState,
   HelperRow,
   ResultCount,
+  SearchContainer,
   SearchInput,
   SelectionIndicator,
   SelectorContainer,
   TemplateCard,
+  TemplateDescription,
   TemplateGrid,
   TemplateIconWrapper,
 } from './styles';
@@ -149,41 +152,38 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   return (
     <SelectorContainer>
-      <RediaccStack
-        direction="vertical"
-        gap="md"
-        fullWidth
-        style={{ marginBottom: `${DESIGN_TOKENS.SPACING.MD}px` }}
-      >
-        <HelperRow>
-          <RediaccText variant="caption">
-            {multiple
-              ? t('resources:templates.selectMultiple', {
-                  defaultValue: 'Select templates (optional, multiple allowed)',
-                })
-              : t('resources:templates.selectOptional')}
-          </RediaccText>
-          {((multiple && Array.isArray(value) && value.length > 0) || (!multiple && value)) && (
-            <ClearButton
-              size="sm"
-              data-testid="resource-modal-template-clear-button"
-              onClick={() => onChange?.(multiple ? [] : null)}
-            >
-              {t('resources:templates.clearSelection')}
-            </ClearButton>
-          )}
-        </HelperRow>
+      <SearchContainer>
+        <RediaccStack direction="vertical" gap="md" fullWidth>
+          <HelperRow>
+            <RediaccText variant="caption">
+              {multiple
+                ? t('resources:templates.selectMultiple', {
+                    defaultValue: 'Select templates (optional, multiple allowed)',
+                  })
+                : t('resources:templates.selectOptional')}
+            </RediaccText>
+            {((multiple && Array.isArray(value) && value.length > 0) || (!multiple && value)) && (
+              <ClearButton
+                size="sm"
+                data-testid="resource-modal-template-clear-button"
+                onClick={() => onChange?.(multiple ? [] : null)}
+              >
+                {t('resources:templates.clearSelection')}
+              </ClearButton>
+            )}
+          </HelperRow>
 
-        <SearchInput
-          placeholder={t('resources:templates.searchPlaceholder', {
-            defaultValue: 'Search templates by name or description...',
-          })}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          allowClear
-          data-testid="resource-modal-template-search-input"
-        />
-      </RediaccStack>
+          <SearchInput
+            placeholder={t('resources:templates.searchPlaceholder', {
+              defaultValue: 'Search templates by name or description...',
+            })}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            allowClear
+            data-testid="resource-modal-template-search-input"
+          />
+        </RediaccStack>
+      </SearchContainer>
 
       {searchQuery.trim() && (
         <ResultCount>
@@ -196,14 +196,15 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       )}
 
       {searchQuery.trim() && filteredTemplates.length === 0 && (
-        <RediaccEmpty
-          variant="minimal"
-          description={t('resources:templates.noResults', {
-            defaultValue: `No templates found matching "${searchQuery}"`,
-            query: searchQuery,
-          })}
-          style={{ margin: '16px 0' }}
-        />
+        <EmptyResultsContainer>
+          <RediaccEmpty
+            variant="minimal"
+            description={t('resources:templates.noResults', {
+              defaultValue: `No templates found matching "${searchQuery}"`,
+              query: searchQuery,
+            })}
+          />
+        </EmptyResultsContainer>
       )}
 
       <TemplateGrid gutter={GRID_GUTTER}>
@@ -254,14 +255,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                     {getTemplateTitle(template.name)}
                   </RediaccText>
 
-                  <RediaccText
-                    variant="description"
-                    truncate
-                    maxLines={2}
-                    style={{ display: 'block', marginBottom: 8 }}
-                  >
-                    {getTemplateDescription(template.readme)}
-                  </RediaccText>
+                  <TemplateDescription>
+                    <RediaccText variant="description" truncate maxLines={2}>
+                      {getTemplateDescription(template.readme)}
+                    </RediaccText>
+                  </TemplateDescription>
 
                   <DetailsButton
                     variant="link"

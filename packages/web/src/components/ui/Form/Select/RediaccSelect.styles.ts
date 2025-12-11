@@ -65,7 +65,7 @@ export const StyledRediaccSelect = styled(AntSelect).withConfig({
           return height - 8;
         }}px;
         line-height: 1.2;
-        margin: 2px 4px 2px 0;
+        margin: ${({ theme }) => `${theme.spacing.XS}px ${theme.spacing.XS}px ${theme.spacing.XS}px 0`};
         padding: 0 ${({ theme }) => theme.spacing.XS}px;
         border-radius: ${({ theme }) => theme.borderRadius.SM}px;
         background-color: ${({ theme }) => theme.colors.bgSecondary};

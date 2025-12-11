@@ -6,7 +6,7 @@ export const FallbackContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 400px;
+  min-height: ${({ theme }) => theme.dimensions.CONTENT_MIN_HEIGHT}px;
   background-color: ${({ theme }) => theme.colors.bgPrimary};
 `;
 

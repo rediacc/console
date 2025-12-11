@@ -1,6 +1,6 @@
 import { Form, Row } from 'antd';
 import styled from 'styled-components';
-import { RediaccAlert, RediaccButton } from '@/components/ui';
+import { RediaccAlert, RediaccButton, RediaccText } from '@/components/ui';
 import { FlexColumn, FlexRow } from '@/styles/primitives';
 import {
   BulbOutlined,
@@ -51,7 +51,7 @@ export const TestConnectionButton = styled(RediaccButton).attrs({
 `;
 
 // Removed: Use <RediaccText> with inline styles for conditional color
-// Example: style={{ color: `var(--rediacc-color-${status})`, textTransform: 'capitalize' }}
+// Example: style={{ color: `var(--color-${status})`, textTransform: 'capitalize' }}
 
 export const ListSection = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
@@ -106,5 +106,24 @@ export const FormatButton = styled(RediaccButton).attrs({
 })`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
+  }
+`;
+
+export const TestConnectionAlert = styled(RediaccAlert)`
+  && {
+    margin-bottom: ${({ theme }) => theme.spacing.XS}px;
+  }
+`;
+
+export const CompatibilityStatusText = styled(RediaccText)<{ $variant: string }>`
+  color: var(--color-${({ $variant }) => $variant});
+  text-transform: capitalize;
+`;
+
+export const FieldDivider = styled.div`
+  margin: ${({ theme }) => theme.spacing.MD}px 0;
+
+  .ant-divider {
+    margin: 0;
   }
 `;

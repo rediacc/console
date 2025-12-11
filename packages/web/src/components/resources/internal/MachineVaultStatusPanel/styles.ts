@@ -176,3 +176,11 @@ export const PartitionRow = styled.div`
   font-size: ${DESIGN_TOKENS.FONT_SIZE.CAPTION}px;
   color: var(--color-text-secondary);
 `;
+
+export const LoadingState = styled.div`
+  /* No inline styles needed - LoadingWrapper handles all styling */
+`;
+
+export const StyledRediaccEmpty = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.XXL * 3.75}px;
+`;

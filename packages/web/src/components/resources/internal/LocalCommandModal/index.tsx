@@ -21,8 +21,11 @@ import {
 } from '@/utils/optimizedIcons';
 import {
   ActionsRow,
+  BlockText,
   CommandParagraph,
   CommandPreview,
+  HelperTextWithMargin,
+  LoadingIndicatorWithMargin,
   PreviewError,
   PreviewHeader,
   PreviewMetaRow,
@@ -217,9 +220,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       onCancel={onClose}
       footer={null}
     >
-      <RediaccText variant="description" style={{ display: 'block' }}>
+      <BlockText variant="description">
         {t('resources:localCommandBuilder.description', { machine, repo })}
-      </RediaccText>
+      </BlockText>
 
       <SettingsForm layout="vertical">
         <Form.Item label={t('resources:localCommandBuilder.operatingSystem')}>
@@ -236,9 +239,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         <Form.Item>
           <RediaccCheckbox checked={useDocker} onChange={handleDockerChange}>
             {t('resources:localCommandBuilder.useDocker')}
-            <RediaccText variant="helper" style={{ marginLeft: 8 }}>
+            <HelperTextWithMargin variant="helper">
               {t('resources:localCommandBuilder.useDockerHelp')}
-            </RediaccText>
+            </HelperTextWithMargin>
           </RediaccCheckbox>
         </Form.Item>
 
@@ -246,9 +249,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
           <Form.Item>
             <RediaccCheckbox checked={useNetworkHost} onChange={handleNetworkHostChange}>
               {t('resources:localCommandBuilder.useNetworkHost')}
-              <RediaccText variant="helper" style={{ marginLeft: 8 }}>
+              <HelperTextWithMargin variant="helper">
                 {t('resources:localCommandBuilder.useNetworkHostHelp')}
-              </RediaccText>
+              </HelperTextWithMargin>
             </RediaccCheckbox>
           </Form.Item>
         )}
@@ -315,12 +318,13 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             {t('resources:localCommandBuilder.generatedCommand')}:
           </RediaccText>
           {isGeneratingToken && (
-            <InlineLoadingIndicator
-              width={64}
-              height={12}
-              style={{ marginLeft: 8 }}
-              data-testid="local-command-token-loading"
-            />
+            <LoadingIndicatorWithMargin>
+              <InlineLoadingIndicator
+                width={64}
+                height={12}
+                data-testid="local-command-token-loading"
+              />
+            </LoadingIndicatorWithMargin>
           )}
         </PreviewHeader>
 

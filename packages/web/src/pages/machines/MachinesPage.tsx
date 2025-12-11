@@ -1,8 +1,7 @@
 ﻿import React, { useCallback, useEffect, useState } from 'react';
-import { Empty, Modal, Tooltip } from 'antd';
+import { Modal, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useTheme } from 'styled-components';
 import {
   useCreateMachine,
   useDeleteMachine,
@@ -15,7 +14,6 @@ import { QueueFunction } from '@/api/queries/queue';
 import { Repo, useRepos } from '@/api/queries/repos';
 import { useStorage } from '@/api/queries/storage';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import {
   ActionBar as ButtonGroup,
@@ -42,6 +40,7 @@ import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined, WifiOutlined } from '@/utils/optimizedIcons';
 import type { MachineFormValues as BaseMachineFormValues } from '@rediacc/shared/types';
+import { EmptyState, StyledTeamSelector } from './MachinesPage.styles';
 
 // Extend shared type with UI-specific field for auto-setup option
 type MachineFormValues = BaseMachineFormValues & { autoSetup?: boolean };
@@ -65,7 +64,6 @@ const MachinesPage: React.FC = () => {
   const [modal, contextHolder] = Modal.useModal();
   const location = useLocation();
   const navigate = useNavigate();
-  const theme = useTheme();
 
   // Use custom hooks for common patterns
   const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection();
@@ -464,14 +462,13 @@ const MachinesPage: React.FC = () => {
               <HeaderRow>
                 <TeamControls>
                   <TeamSelectorWrapper>
-                    <TeamSelector
+                    <StyledTeamSelector
                       data-testid="machines-team-selector"
                       teams={teams}
                       selectedTeams={selectedTeams}
                       onChange={setSelectedTeams}
                       loading={teamsLoading}
                       placeholder={t('teams.selectTeamToView')}
-                      style={{ width: '100%' }}
                     />
                   </TeamSelectorWrapper>
                 </TeamControls>
@@ -512,10 +509,9 @@ const MachinesPage: React.FC = () => {
 
             <ContentSection>
               {selectedTeams.length === 0 ? (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                <EmptyState
+                  image={EmptyState.PRESENTED_IMAGE_SIMPLE}
                   description={t('teams.selectTeamPrompt')}
-                  style={{ padding: `${theme.spacing.LG}px 0` }}
                 />
               ) : (
                 <SplitResourceView

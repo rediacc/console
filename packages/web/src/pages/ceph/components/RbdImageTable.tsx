@@ -11,13 +11,12 @@ import {
   DesktopOutlined,
   EllipsisOutlined,
   ExpandOutlined,
-  FileImageOutlined,
   InfoCircleOutlined,
   PlusOutlined,
   SettingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { Button, message, Space, Table, Tag, Tooltip } from 'antd';
+import { message, Space, Table, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -35,13 +34,20 @@ import { createActionColumn, createTruncatedColumn } from '@/components/common/c
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { useDialogState, useExpandableTable, useQueueTraceModal } from '@/hooks';
-import { useComponentStyles, useTableStyles } from '@/hooks/useComponentStyles';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMachineReassignmentModal';
 import { createSorter } from '@/platform';
 import type { ImageFormValues as FullImageFormValues } from '@rediacc/shared/types';
 import SnapshotTable from './SnapshotTable';
+import {
+  CreateImageButton,
+  ExpandButton,
+  ImageIcon,
+  ImageListContainer,
+  ImageName,
+  TableContainer,
+} from './styles';
 import type { MenuProps } from 'antd';
 
 interface RbdImageTableProps {
@@ -62,8 +68,6 @@ type ImageFormValues = Pick<FullImageFormValues, 'imageName' | 'machineName'> & 
 
 const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   const { t } = useTranslation('ceph');
-  const tableStyles = useTableStyles();
-  const componentStyles = useComponentStyles();
   const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable();
   const [modalState, setModalState] = useState<RbdImageModalState>({ open: false, mode: 'create' });
   const queueTrace = useQueueTraceModal();
@@ -266,10 +270,8 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       sorter: createSorter<CephRbdImage>('imageName'),
       render: (text: string, record: CephRbdImage) => (
         <Space data-testid={`rbd-image-name-${record.imageName}`}>
-          <FileImageOutlined
-            style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }}
-          />
-          <span style={{ color: 'var(--color-text-primary)' }}>{text}</span>
+          <ImageIcon />
+          <ImageName>{text}</ImageName>
           {record.vaultContent && (
             <Tooltip title={t('common.hasVault')}>
               <Tag color="blue" data-testid={`rbd-vault-tag-${record.imageName}`}>
@@ -348,19 +350,18 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
 
   return (
     <>
-      <div style={componentStyles.marginBottom.md} data-testid="rbd-image-list-container">
-        <Button
+      <ImageListContainer data-testid="rbd-image-list-container">
+        <CreateImageButton
           type="primary"
           icon={<PlusOutlined />}
           onClick={handleCreate}
           data-testid="rbd-create-image-button"
-          style={componentStyles.controlSurface}
         >
           {t('images.create')}
-        </Button>
-      </div>
+        </CreateImageButton>
+      </ImageListContainer>
 
-      <div style={tableStyles.tableContainer}>
+      <TableContainer>
         <Table
           columns={columns}
           dataSource={images}
@@ -375,17 +376,16 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
             expandedRowKeys,
             onExpandedRowsChange: (keys: readonly Key[]) => setExpandedRowKeys(keys.map(String)),
             expandIcon: ({ expanded, onExpand, record }) => (
-              <Button
+              <ExpandButton
                 size="small"
                 icon={expanded ? <CameraOutlined /> : <CameraOutlined />}
                 onClick={(e) => onExpand(record, e)}
-                style={{ ...tableStyles.tableActionButton, marginRight: 8 }}
                 data-testid={`rbd-expand-snapshots-${record.imageName}`}
               />
             ),
           }}
         />
-      </div>
+      </TableContainer>
 
       <UnifiedResourceModal
         open={modalState.open}

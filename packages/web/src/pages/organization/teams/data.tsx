@@ -16,6 +16,7 @@ import {
   TeamOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
+import { StatsColumn } from './styles';
 import type { TableProps } from 'antd';
 import type { TFunction } from 'i18next';
 
@@ -101,33 +102,35 @@ export const getTeamColumns = ({
       width: 140,
       responsive: ['xs'],
       render: (_, record: Team) => (
-        <Space direction="vertical" size={4} style={{ width: '100%' }}>
-          <Tooltip title={`${record.memberCount} ${tSystem('tables.teams.members')}`}>
-            <Space size="small">
-              <Badge count={record.memberCount} showZero size="small">
-                <UserOutlined />
-              </Badge>
-            </Space>
-          </Tooltip>
-          <Tooltip title={`${record.machineCount} ${tSystem('tables.teams.machines')}`}>
-            <Space size="small">
-              <DesktopOutlined />
-              <span>{record.machineCount}</span>
-            </Space>
-          </Tooltip>
-          <Tooltip title={`${record.repoCount || 0} ${tSystem('tables.teams.repos')}`}>
-            <Space size="small">
-              <DatabaseOutlined />
-              <span>{record.repoCount || 0}</span>
-            </Space>
-          </Tooltip>
-          <Tooltip title={`${record.storageCount || 0} ${tSystem('tables.teams.storage')}`}>
-            <Space size="small">
-              <CloudServerOutlined />
-              <span>{record.storageCount || 0}</span>
-            </Space>
-          </Tooltip>
-        </Space>
+        <StatsColumn>
+          <Space direction="vertical" size={4}>
+            <Tooltip title={`${record.memberCount} ${tSystem('tables.teams.members')}`}>
+              <Space size="small">
+                <Badge count={record.memberCount} showZero size="small">
+                  <UserOutlined />
+                </Badge>
+              </Space>
+            </Tooltip>
+            <Tooltip title={`${record.machineCount} ${tSystem('tables.teams.machines')}`}>
+              <Space size="small">
+                <DesktopOutlined />
+                <span>{record.machineCount}</span>
+              </Space>
+            </Tooltip>
+            <Tooltip title={`${record.repoCount || 0} ${tSystem('tables.teams.repos')}`}>
+              <Space size="small">
+                <DatabaseOutlined />
+                <span>{record.repoCount || 0}</span>
+              </Space>
+            </Tooltip>
+            <Tooltip title={`${record.storageCount || 0} ${tSystem('tables.teams.storage')}`}>
+              <Space size="small">
+                <CloudServerOutlined />
+                <span>{record.storageCount || 0}</span>
+              </Space>
+            </Tooltip>
+          </Space>
+        </StatsColumn>
       ),
     },
     // Separate columns for desktop (show on sm and above)

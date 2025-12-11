@@ -28,7 +28,7 @@ export const inputFocusStyles = css`
  */
 export const inputPrefixStyles = css`
   .ant-input-prefix {
-    margin-left: 14px;
+    margin-left: ${({ theme }) => theme.spacing.SM_LG}px;
     margin-right: ${({ theme }) => theme.spacing.SM}px;
     color: ${({ theme }) => theme.colors.textTertiary};
     font-size: ${({ theme }) => theme.fontSize.LG}px;
@@ -42,7 +42,7 @@ export const inputPrefixStyles = css`
   }
 
   .ant-input-suffix {
-    margin-right: 14px;
+    margin-right: ${({ theme }) => theme.spacing.SM_LG}px;
   }
 
   &:hover .ant-input-prefix,
@@ -115,7 +115,7 @@ const baseInputStyles = css<{
 
     /* Actual input element styles */
     input.ant-input {
-      padding: 0 14px;
+      padding: 0 ${({ theme }) => theme.spacing.SM_LG}px;
       height: 100%;
     }
 
@@ -175,7 +175,7 @@ export const StyledRediaccPasswordInput = styled(AntPassword)<{
 
     /* Actual input element styles */
     input.ant-input {
-      padding: 0 14px;
+      padding: 0 ${({ theme }) => theme.spacing.SM_LG}px;
       height: 100%;
     }
 
@@ -191,8 +191,8 @@ export const StyledRediaccPasswordInput = styled(AntPassword)<{
         font-size: ${({ theme }) => theme.fontSize.LG}px;
         transition: ${({ theme }) => theme.transitions.FAST};
         cursor: pointer;
-        padding: 4px;
-        border-radius: 4px;
+        padding: ${({ theme }) => theme.spacing.XS}px;
+        border-radius: ${({ theme }) => theme.borderRadius.SM}px;
 
         &:hover {
           color: ${({ theme }) => theme.colors.textSecondary};
@@ -258,7 +258,7 @@ export const StyledRediaccInputNumber = styled(AntInputNumber)<{
 
     /* Actual input element styles */
     .ant-input-number-input {
-      padding: 0 14px;
+      padding: 0 ${({ theme }) => theme.spacing.SM_LG}px;
       height: 100%;
     }
 

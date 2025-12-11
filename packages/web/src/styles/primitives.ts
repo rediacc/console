@@ -46,7 +46,7 @@ export const fadeInAnimation = keyframes`
 
 export const scrollbarStyles = css`
   &::-webkit-scrollbar {
-    width: 8px;
+    width: ${({ theme }) => theme.spacing.SM}px;
   }
 
   &::-webkit-scrollbar-track {
@@ -55,7 +55,7 @@ export const scrollbarStyles = css`
 
   &::-webkit-scrollbar-thumb {
     background: ${({ theme }) => theme.colors.borderSecondary};
-    border-radius: 4px;
+    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
 
   &::-webkit-scrollbar-thumb:hover {
@@ -80,7 +80,7 @@ export const inputFocusStyles = css`
 
 export const inputPrefixStyles = css`
   .ant-input-prefix {
-    margin-left: 14px;
+    margin-left: ${({ theme }) => theme.spacing.SM_LG}px;
     margin-right: ${({ theme }) => theme.spacing.SM}px;
     color: ${({ theme }) => theme.colors.textTertiary};
     font-size: ${({ theme }) => theme.fontSize.LG}px;
@@ -94,7 +94,7 @@ export const inputPrefixStyles = css`
   }
 
   .ant-input-suffix {
-    margin-right: 14px;
+    margin-right: ${({ theme }) => theme.spacing.SM_LG}px;
   }
 
   &:hover .ant-input-prefix,
@@ -291,7 +291,7 @@ export const FilterRangePicker = styled(RediaccDatePicker.RangePicker)`
 `;
 
 export const FilterInput = styled(RediaccInput)`
-  min-width: 200px;
+  min-width: ${({ theme }) => theme.dimensions.FILTER_INPUT_WIDTH}px;
 `;
 
 export const FilterCheckbox = styled(RediaccCheckbox)`
@@ -334,7 +334,7 @@ export const StatValue = styled(RediaccText).attrs(() => ({
 export const StatDivider = styled.span`
   display: inline-block;
   width: 1px;
-  height: 16px;
+  height: ${({ theme }) => theme.spacing.MD}px;
   background-color: ${({ theme }) => theme.colors.borderSecondary};
 `;
 
@@ -470,7 +470,7 @@ export const CaptionText = styled(RediaccText).attrs<{ $muted?: boolean; $size?:
 `;
 
 export const ContentSection = styled.div`
-  min-height: 400px;
+  min-height: ${({ theme }) => theme.dimensions.CONTENT_MIN_HEIGHT}px;
 `;
 
 export const StatusTag = styled(RediaccTag)<{ $variant?: StatusVariant }>`
@@ -783,7 +783,8 @@ export const CenteredRow = styled(Row)`
 // ============================================
 
 export const ScrollContainer = styled.div<{ $maxHeight?: number }>`
-  max-height: ${({ $maxHeight }) => ($maxHeight ? `${$maxHeight}px` : '400px')};
+  max-height: ${({ theme, $maxHeight }) =>
+    $maxHeight ? `${$maxHeight}px` : `${theme.dimensions.LIST_MAX_HEIGHT}px`};
   overflow-y: auto;
   ${scrollbarStyles}
 `;
@@ -798,7 +799,8 @@ export const ConsoleOutput = styled.div<{ $height?: number }>`
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
-  height: ${({ $height }) => ($height ? `${$height}px` : '400px')};
+  height: ${({ theme, $height }) =>
+    $height ? `${$height}px` : `${theme.dimensions.LIST_MAX_HEIGHT}px`};
   overflow-y: auto;
   ${scrollbarStyles}
 `;
@@ -815,8 +817,8 @@ export const FadeInModal = styled(BaseModal)`
 
 export const LargeModal = styled(FadeInModal)`
   &.ant-modal {
-    max-width: 1200px;
-    width: 1200px;
+    max-width: ${({ theme }) => theme.dimensions.MAX_CONTENT_WIDTH}px;
+    width: ${({ theme }) => theme.dimensions.MAX_CONTENT_WIDTH}px;
   }
 
   .ant-modal-body {
@@ -866,7 +868,7 @@ export const LargeInput = styled(RediaccInput)`
     }
 
     input.ant-input {
-      padding: 0 14px;
+      padding: 0 ${({ theme }) => theme.spacing.SM_LG}px;
       height: 100%;
     }
 
@@ -888,7 +890,7 @@ export const LargePasswordInput = styled(RediaccPasswordInput)`
     }
 
     input.ant-input {
-      padding: 0 14px;
+      padding: 0 ${({ theme }) => theme.spacing.SM_LG}px;
       height: 100%;
     }
 
@@ -902,8 +904,8 @@ export const LargePasswordInput = styled(RediaccPasswordInput)`
         font-size: ${({ theme }) => theme.fontSize.LG}px;
         transition: ${({ theme }) => theme.transitions.DEFAULT};
         cursor: pointer;
-        padding: 4px;
-        border-radius: 4px;
+        padding: ${({ theme }) => theme.spacing.XS}px;
+        border-radius: ${({ theme }) => theme.borderRadius.SM}px;
 
         &:hover {
           color: ${({ theme }) => theme.colors.textSecondary};

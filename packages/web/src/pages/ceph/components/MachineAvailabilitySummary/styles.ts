@@ -47,3 +47,9 @@ export const PercentageSuffix = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-left: ${({ theme }) => theme.spacing.XS}px;
 `;
+
+export const StyledRediaccCard = styled(RediaccCard)`
+  && {
+    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
+  }
+`;

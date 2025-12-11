@@ -45,6 +45,7 @@ import {
   ServiceMetaItem,
   ServicesList,
   Stack,
+  StyledRediaccEmpty,
   StatusTag,
   StyledTag,
   TagGroup,
@@ -260,11 +261,12 @@ export const RepoDetailPanel: React.FC<RepoDetailPanelProps> = ({
 
       <ContentWrapper data-testid="repo-detail-content">
         {!repoData ? (
-          <RediaccEmpty
-            description={t('resources:repos.noRepoData')}
-            data-testid="repo-detail-empty-state"
-            style={{ marginTop: 120 }}
-          />
+          <StyledRediaccEmpty>
+            <RediaccEmpty
+              description={t('resources:repos.noRepoData')}
+              data-testid="repo-detail-empty-state"
+            />
+          </StyledRediaccEmpty>
         ) : (
           <>
             <RepoInfoSection repo={repo} panelData={repoData} t={t} />

@@ -76,11 +76,24 @@ export interface StyledTheme {
   // Dimensions
   dimensions: typeof DESIGN_TOKENS.DIMENSIONS;
 
-  // Shadows
-  shadows: typeof DESIGN_TOKENS.SHADOWS;
+  // Shadows (includes theme-aware computed values)
+  shadows: typeof DESIGN_TOKENS.SHADOWS & {
+    panel: string;
+    controlHandle: string;
+  };
+
+  // Overlays (theme-aware backdrop and content overlays)
+  overlays: {
+    backdrop: string;
+    content: string;
+    navActive: string;
+  };
 
   // Z-index
   zIndex: typeof DESIGN_TOKENS.Z_INDEX;
+
+  // Breakpoints
+  breakpoints: typeof DESIGN_TOKENS.BREAKPOINTS;
 
   // Transitions
   transitions: typeof DESIGN_TOKENS.TRANSITIONS;
@@ -114,8 +127,8 @@ const sharedThemeValues = {
   lineHeight: DESIGN_TOKENS.LINE_HEIGHT,
   letterSpacing: DESIGN_TOKENS.LETTER_SPACING,
   dimensions: DESIGN_TOKENS.DIMENSIONS,
-  shadows: DESIGN_TOKENS.SHADOWS,
   zIndex: DESIGN_TOKENS.Z_INDEX,
+  breakpoints: DESIGN_TOKENS.BREAKPOINTS,
   transitions: DESIGN_TOKENS.TRANSITIONS,
 } as const;
 
@@ -156,7 +169,9 @@ const createTheme = (mode: ThemeMode): StyledTheme => {
       borderSecondary: palette.borderSecondary,
       borderHover: palette.borderHover,
       shadow: palette.shadow,
-      shadowStrong: isLight ? 'rgba(0, 0, 0, 0.15)' : 'rgba(0, 0, 0, 0.5)',
+      shadowStrong: isLight
+        ? DESIGN_TOKENS.SHADOWS.SHADOW_STRONG_LIGHT
+        : DESIGN_TOKENS.SHADOWS.SHADOW_STRONG_DARK,
       inputBg: isLight ? palette.bgPrimary : palette.bgSecondary,
       inputBorder: palette.borderSecondary,
       iconGrand: colorTokens.primary,
@@ -165,6 +180,22 @@ const createTheme = (mode: ThemeMode): StyledTheme => {
       buttonPrimary: palette.buttonPrimary,
       buttonPrimaryHover: palette.buttonPrimaryHover,
       buttonPrimaryText: palette.buttonPrimaryText,
+    },
+    shadows: {
+      ...DESIGN_TOKENS.SHADOWS,
+      panel: isLight ? DESIGN_TOKENS.SHADOWS.PANEL_LEFT : DESIGN_TOKENS.SHADOWS.PANEL_LEFT_DARK,
+      controlHandle: isLight
+        ? DESIGN_TOKENS.SHADOWS.CONTROL_HANDLE
+        : DESIGN_TOKENS.SHADOWS.CONTROL_HANDLE_DARK,
+    },
+    overlays: {
+      backdrop: isLight
+        ? DESIGN_TOKENS.OVERLAYS.BACKDROP_LIGHT
+        : DESIGN_TOKENS.OVERLAYS.BACKDROP_DARK,
+      content: isLight ? DESIGN_TOKENS.OVERLAYS.CONTENT_LIGHT : DESIGN_TOKENS.OVERLAYS.CONTENT_DARK,
+      navActive: isLight
+        ? DESIGN_TOKENS.OVERLAYS.NAV_ACTIVE_LIGHT
+        : DESIGN_TOKENS.OVERLAYS.NAV_ACTIVE_DARK,
     },
     ...sharedThemeValues,
   };

@@ -13,6 +13,7 @@ import {
   DangerIcon,
   MachineNameRow,
   MachinesTable,
+  StyledAlertCard,
   StyledModal,
   TitleStack,
 } from './styles';
@@ -165,7 +166,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
             description={t('machines:removeFromClusterDescription')}
             variant="warning"
             showIcon
-            style={{ marginBottom: '16px' }}
+            as={StyledAlertCard}
           />
 
           <MachinesTable

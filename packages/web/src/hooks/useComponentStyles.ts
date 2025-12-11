@@ -301,7 +301,7 @@ export const useNavigationStyles = () => {
       },
 
       navItemActive: {
-        background: 'rgba(85, 107, 47, 0.1)',
+        background: 'var(--overlay-nav-active)',
         color: 'var(--color-primary)',
         fontWeight: fontWeight('MEDIUM'),
       },

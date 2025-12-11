@@ -1,4 +1,4 @@
-import { Timeline, Typography } from 'antd';
+import { Statistic, Timeline, Typography } from 'antd';
 import { Link as RouterLink } from 'react-router-dom';
 import styled from 'styled-components';
 import {
@@ -17,6 +17,7 @@ import {
   FlexRow,
   scrollbarStyles,
 } from '@/styles/primitives';
+import type { StyledTheme } from '@/styles/styledTheme';
 
 // Re-export from common/styled
 export { ContentStack, CenteredState, FlexBetween, InlineStack, StatRow, Divider };
@@ -59,7 +60,7 @@ export const SectionTitleWrapper = styled(Typography.Title)`
 `;
 
 export const ScrollContainer = styled.div`
-  max-height: 200px;
+  max-height: ${({ theme }) => theme.dimensions.DASHBOARD_SECTION_HEIGHT}px;
   overflow-y: auto;
   padding-right: ${({ theme }) => theme.spacing.XS}px;
   ${scrollbarStyles}
@@ -161,4 +162,58 @@ export const QuantityBadge = styled(RediaccBadge)`
     background-color: ${({ theme }) => theme.colors.success};
     color: ${({ theme }) => theme.colors.bgPrimary};
   }
+`;
+
+// Icon color variant types for themed icons
+type IconColorVariant = keyof Pick<
+  StyledTheme['colors'],
+  'success' | 'error' | 'warning' | 'info' | 'primary' | 'textSecondary'
+>;
+
+export const ActionIcon = styled.span<{ $color: IconColorVariant }>`
+  color: ${({ theme, $color }) => theme.colors[$color]};
+`;
+
+export const ErrorText = styled(RediaccText)`
+  && {
+    color: ${({ theme }) => theme.colors.error};
+  }
+`;
+
+type StatisticVariant = 'primary' | 'warning' | 'error' | 'success' | 'info' | 'textPrimary';
+
+export const StyledStatistic = styled(Statistic)<{
+  $variant?: StatisticVariant;
+  $critical?: boolean;
+}>`
+  .ant-statistic-content-value {
+    color: ${({ theme, $variant, $critical }) =>
+      $critical
+        ? theme.colors.error
+        : $variant
+          ? theme.colors[$variant]
+          : theme.colors.textPrimary};
+  }
+`;
+
+export const DaysRemainingText = styled(RediaccText)<{ $critical?: boolean }>`
+  && {
+    color: ${({ theme, $critical }) =>
+      $critical ? theme.colors.error : theme.colors.textSecondary};
+  }
+`;
+
+export const SectionTitle = styled(RediaccText)`
+  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
+`;
+
+type StatusIconVariant = 'warning' | 'success' | 'secondary';
+
+export const StatusIcon = styled.span<{ $variant?: StatusIconVariant }>`
+  color: ${({ theme, $variant }) =>
+    $variant === 'warning'
+      ? theme.colors.warning
+      : $variant === 'success'
+        ? theme.colors.success
+        : theme.colors.textSecondary};
 `;

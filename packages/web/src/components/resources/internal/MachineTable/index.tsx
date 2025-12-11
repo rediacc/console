@@ -50,6 +50,7 @@ import {
   GroupRowInfo,
   GroupRowName,
   MachineTableWrapper,
+  StyledRediaccEmpty,
   StyledTag,
   TableContainer,
   ViewToggleButton,
@@ -506,12 +507,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const renderGroupedTableView = () => {
     if (Object.keys(groupedMachinesForTable).length === 0) {
       return (
-        <RediaccEmpty
-          variant="minimal"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={t('resources:repos.noRepos')}
-          style={{ marginTop: 64 }}
-        />
+        <StyledRediaccEmpty>
+          <RediaccEmpty
+            variant="minimal"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={t('resources:repos.noRepos')}
+          />
+        </StyledRediaccEmpty>
       );
     }
 

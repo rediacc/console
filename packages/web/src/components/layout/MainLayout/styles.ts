@@ -2,6 +2,7 @@ import { Avatar, Layout } from 'antd';
 import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
 import { RediaccButton, RediaccText } from '@/components/ui';
+import { media } from '@/styles/mixins';
 import { FlexRow } from '@/styles/primitives';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
@@ -18,7 +19,7 @@ export const StyledHeader = styled(Header)<{ $isDark: boolean }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.08);
+  box-shadow: ${({ theme }) => theme.shadows.SM};
   border-bottom: 1px solid var(--color-border-secondary);
   background-color: var(--color-bg-primary);
   position: fixed;
@@ -37,14 +38,26 @@ export const HeaderLeft = styled(FlexRow).attrs({ $gap: 'MD' })``;
 export const HeaderRight = styled(InlineStack)``;
 
 export const MenuToggleButton = styled(RediaccButton)`
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  font-size: ${({ theme }) => theme.fontSize.LG}px;
-  color: var(--color-text-primary);
-  transition: all 0.2s ease;
+  && {
+    border-radius: 50%;
+    width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_LG}px;
+    height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_LG}px;
+    font-size: ${({ theme }) => theme.fontSize.LG}px;
+    color: var(--color-text-primary);
+    transition: all 0.2s ease;
 
-  &:hover {
-    background-color: var(--color-bg-tertiary);
-    color: var(--color-primary);
+    &:hover {
+      background-color: var(--color-bg-tertiary);
+      color: var(--color-primary);
+    }
+  }
+`;
+
+export const UserMenuButton = styled(RediaccButton)`
+  && {
+    border-radius: 50%;
+    width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_LG}px;
+    height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_LG}px;
   }
 `;
 
@@ -70,13 +83,13 @@ export const StyledContent = styled(Content)<{ $marginLeft: number; $paddingTop:
   margin-bottom: 0;
   margin-left: ${({ $marginLeft }) => $marginLeft}px;
   transition: margin-left 0.2s ease;
-  min-height: 280px;
+  min-height: ${({ theme }) => theme.dimensions.SIDEBAR_WIDTH}px;
   position: relative;
 
   /* Remove sidebar margin on mobile */
-  @media (max-width: 768px) {
+  ${media.tablet`
     margin-left: 0 !important;
-  }
+  `}
 `;
 
 export const TransitionOverlay = styled.div`

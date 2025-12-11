@@ -6,7 +6,13 @@ import { hideSessionExpiredDialog, setStayLoggedOutMode } from '@/store/auth/aut
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import { ClockCircleOutlined, LogoutOutlined } from '@/utils/optimizedIcons';
-import { CountdownCard, FooterButton, StyledModal } from './styles';
+import {
+  CountdownCard,
+  CountdownText,
+  FooterButton,
+  SessionExpiredTitle,
+  StyledModal,
+} from './styles';
 
 const COUNTDOWN_DURATION = 60; // 60 seconds
 
@@ -70,13 +76,9 @@ export const SessionExpiredDialog: React.FC = () => {
           <IconWrapper $tone="danger">
             <ClockCircleOutlined />
           </IconWrapper>
-          <RediaccText
-            size="xl"
-            weight="semibold"
-            style={{ margin: 0, color: 'var(--color-error)' }}
-          >
+          <SessionExpiredTitle size="xl" weight="semibold">
             Session Expired
-          </RediaccText>
+          </SessionExpiredTitle>
         </InlineStack>
       }
       open={isVisible}
@@ -109,9 +111,9 @@ export const SessionExpiredDialog: React.FC = () => {
         </RediaccText>
 
         <CountdownCard>
-          <RediaccText weight="semibold" style={{ color: 'var(--color-error)' }}>
+          <CountdownText weight="semibold">
             Automatically redirecting in {formatTime(countdown)}
-          </RediaccText>
+          </CountdownText>
         </CountdownCard>
       </RediaccStack>
     </StyledModal>

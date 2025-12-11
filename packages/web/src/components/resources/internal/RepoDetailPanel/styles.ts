@@ -123,7 +123,7 @@ export const ServicesList = styled.div`
 
 export const ServiceCard = styled(RediaccCard)<{ $state: 'active' | 'failed' | 'other' }>`
   && {
-    border-left: 4px solid
+    border-left: ${({ theme }) => theme.spacing.XS}px solid
       ${({ $state }) => {
         switch ($state) {
           case 'active':
@@ -164,4 +164,8 @@ export const ActivityMetrics = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.SM}px;
+`;
+
+export const StyledRediaccEmpty = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.XXL * 3.75}px;
 `;

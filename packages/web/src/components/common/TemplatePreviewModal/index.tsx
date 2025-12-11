@@ -45,6 +45,7 @@ import {
   FilePreviewCard,
   FilePreviewColumn,
   FilesLayout,
+  FullHeightList,
   IconLabel,
   MarkdownContent,
   OverviewScroll,
@@ -341,28 +342,29 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           }
           data-testid={context === 'marketplace' ? undefined : 'template-details-files-content'}
         >
-          <List
-            dataSource={templateDetails.files}
-            renderItem={(file, index) => (
-              <FileListItem
-                $active={selectedFileIndex === index}
-                onClick={() => setSelectedFileIndex(index)}
-                data-testid={
-                  context === 'marketplace'
-                    ? `marketplace-preview-file-item-${index}`
-                    : `template-details-file-header-${index}`
-                }
-              >
-                <FileMeta>
-                  <IconLabel>
-                    <CodeOutlined />
-                    <FileName code>{file.path || file.name}</FileName>
-                  </IconLabel>
-                </FileMeta>
-              </FileListItem>
-            )}
-            style={{ height: '100%' }}
-          />
+          <FullHeightList>
+            <List
+              dataSource={templateDetails.files}
+              renderItem={(file, index) => (
+                <FileListItem
+                  $active={selectedFileIndex === index}
+                  onClick={() => setSelectedFileIndex(index)}
+                  data-testid={
+                    context === 'marketplace'
+                      ? `marketplace-preview-file-item-${index}`
+                      : `template-details-file-header-${index}`
+                  }
+                >
+                  <FileMeta>
+                    <IconLabel>
+                      <CodeOutlined />
+                      <FileName code>{file.path || file.name}</FileName>
+                    </IconLabel>
+                  </FileMeta>
+                </FileListItem>
+              )}
+            />
+          </FullHeightList>
         </FileListCard>
       </FileListColumn>
       <FilePreviewColumn>
