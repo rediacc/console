@@ -230,7 +230,7 @@ export const StyledRediaccText = styled(AntText).withConfig({
         font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
         font-size: ${theme.fontSize.SM}px;
         background-color: ${theme.colors.bgSecondary};
-        padding: 2px 6px;
+        padding: ${theme.spacing.XS}px ${theme.spacing.SM}px;
         border-radius: ${theme.borderRadius.SM}px;
         border: 1px solid ${theme.colors.borderSecondary};
       `}

@@ -1,10 +1,8 @@
 import React from 'react';
 import { Col, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useTheme as useStyledTheme } from 'styled-components';
 import { useMachines } from '@/api/queries/machines';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccCard } from '@/components/ui';
 import {
   CheckCircleOutlined,
   CloudServerOutlined,
@@ -18,6 +16,7 @@ import {
   RefreshButton,
   RefreshIcon,
   StatCard,
+  StyledRediaccCard,
   SummaryStatistic,
 } from './styles';
 import { MachineAvailabilitySummaryProps, MachineStats } from './types';
@@ -27,8 +26,16 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
   onRefresh,
 }) => {
   const { t } = useTranslation(['ceph', 'machines']);
-  const styledTheme = useStyledTheme();
   const { data: machines = [], isLoading, refetch } = useMachines(teamFilter);
+
+  // Get accent colors from CSS variables
+  const accentColors = {
+    primary: 'var(--color-primary)',
+    success: 'var(--color-success)',
+    info: 'var(--color-info)',
+    warning: 'var(--color-warning)',
+    accent: 'var(--color-accent)',
+  };
 
   const stats = React.useMemo<MachineStats>(() => {
     const result: MachineStats = {
@@ -60,11 +67,11 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
 
   if (isLoading) {
     return (
-      <RediaccCard style={{ marginBottom: `${styledTheme.spacing.MD}px` }}>
+      <StyledRediaccCard>
         <LoadingWrapper loading centered minHeight={160}>
           <LoadingContent />
         </LoadingWrapper>
-      </RediaccCard>
+      </StyledRediaccCard>
     );
   }
 
@@ -74,7 +81,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       label: t('machines.summary.total'),
       value: stats.total,
       icon: <DesktopOutlined />,
-      accent: styledTheme.colors.primary,
+      accent: accentColors.primary,
       testId: 'ds-machines-summary-total',
       col: { xs: 24, sm: 12, md: 8, lg: 4 },
       suffix: null,
@@ -84,7 +91,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       label: t('machines.summary.available'),
       value: stats.available,
       icon: <CheckCircleOutlined />,
-      accent: styledTheme.colors.success,
+      accent: accentColors.success,
       testId: 'ds-machines-summary-available',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
       suffix: <PercentageSuffix>({getPercentage(stats.available)}%)</PercentageSuffix>,
@@ -94,7 +101,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       label: t('machines.summary.assignedToClusters'),
       value: stats.cluster,
       icon: <CloudServerOutlined />,
-      accent: styledTheme.colors.info,
+      accent: accentColors.info,
       testId: 'ds-machines-summary-clusters',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
       suffix: <PercentageSuffix>({getPercentage(stats.cluster)}%)</PercentageSuffix>,
@@ -104,7 +111,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       label: t('machines.summary.assignedToImages'),
       value: stats.image,
       icon: <HddOutlined />,
-      accent: styledTheme.colors.warning,
+      accent: accentColors.warning,
       testId: 'ds-machines-summary-images',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
       suffix: <PercentageSuffix>({getPercentage(stats.image)}%)</PercentageSuffix>,
@@ -114,7 +121,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       label: t('machines.summary.assignedToClones'),
       value: stats.clone,
       icon: <CopyOutlined />,
-      accent: styledTheme.colors.accent,
+      accent: accentColors.accent,
       testId: 'ds-machines-summary-clones',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
       suffix: <PercentageSuffix>({getPercentage(stats.clone)}%)</PercentageSuffix>,
@@ -122,7 +129,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
   ];
 
   return (
-    <RediaccCard
+    <StyledRediaccCard
       title={t('machines.summary.title')}
       extra={
         <RefreshButton
@@ -134,7 +141,6 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
           <RefreshIcon spin={isLoading} />
         </RefreshButton>
       }
-      style={{ marginBottom: `${styledTheme.spacing.MD}px` }}
       data-testid="ds-machines-summary-card"
     >
       <Row gutter={16}>
@@ -152,7 +158,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
           </Col>
         ))}
       </Row>
-    </RediaccCard>
+    </StyledRediaccCard>
   );
 };
 

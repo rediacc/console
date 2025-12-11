@@ -225,8 +225,8 @@ export const Divider = styled.hr`
 `;
 
 export const StatusDot = styled.span<{ $variant?: StatusVariant }>`
-  width: 8px;
-  height: 8px;
+  width: ${({ theme }) => theme.spacing.SM}px;
+  height: ${({ theme }) => theme.spacing.SM}px;
   border-radius: ${({ theme }) => theme.borderRadius.FULL}px;
   background-color: ${({ theme, $variant = 'info' }) => {
     const colorKey = $variant in theme.colors ? ($variant as keyof typeof theme.colors) : 'info';

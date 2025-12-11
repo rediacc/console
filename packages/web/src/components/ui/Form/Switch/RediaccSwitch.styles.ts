@@ -30,7 +30,7 @@ export const StyledRediaccSwitch = styled(AntSwitch)`
     .ant-switch-handle {
       &::before {
         background-color: ${({ theme }) => theme.colors.bgPrimary};
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        box-shadow: ${({ theme }) => theme.shadows.controlHandle};
       }
     }
 

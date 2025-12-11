@@ -17,6 +17,7 @@ import {
   UploadIcon,
   ValidationAlert,
   ValidationList,
+  ValidationTitle,
   VersionBanner,
   VersionTag,
   WarningIcon,
@@ -130,13 +131,11 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
 
         {showValidationErrors && validationErrors.length > 0 && (
           <ValidationAlert ref={validationErrorsRef}>
-            <RediaccText
-              variant="title"
-              weight="bold"
-              style={{ display: 'block', marginBottom: 4 }}
-            >
-              {t('vaultEditor.validationErrors')}
-            </RediaccText>
+            <ValidationTitle>
+              <RediaccText variant="title" weight="bold">
+                {t('vaultEditor.validationErrors')}
+              </RediaccText>
+            </ValidationTitle>
             <ValidationList>
               {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>

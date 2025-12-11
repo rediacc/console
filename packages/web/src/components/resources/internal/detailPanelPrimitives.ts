@@ -24,7 +24,7 @@ const BasePanelWrapper = styled.div<{ $splitView?: boolean; $visible?: boolean }
           bottom: 0;
           width: ${PANEL_WIDTH}px;
           max-width: 100vw;
-          box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+          box-shadow: ${theme.shadows.panel};
           transition: right ${theme.transitions.DEFAULT};
           z-index: ${theme.zIndex.MODAL};
         `}
@@ -33,7 +33,7 @@ const BasePanelWrapper = styled.div<{ $splitView?: boolean; $visible?: boolean }
 const BaseStickyHeader = styled.div`
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: ${({ theme }) => theme.zIndex.STICKY};
   background-color: ${({ theme }) => theme.colors.bgPrimary};
   border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   padding: ${({ theme }) => `${theme.spacing.SM_LG}px ${theme.spacing.PAGE_CARD_PADDING}px`};

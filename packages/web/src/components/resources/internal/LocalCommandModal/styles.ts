@@ -64,3 +64,15 @@ export const PreviewMetaRow = styled.div`
 `;
 
 export const ActionsRow = CommonActionsRow;
+
+export const BlockText = styled(RediaccText)`
+  display: block;
+`;
+
+export const HelperTextWithMargin = styled(RediaccText)`
+  margin-left: ${({ theme }) => theme.spacing.SM}px;
+`;
+
+export const LoadingIndicatorWithMargin = styled.span`
+  margin-left: ${({ theme }) => theme.spacing.SM}px;
+`;

@@ -63,7 +63,7 @@ export const ViewToggleButton = styled(RediaccButton).attrs({
 
 export const ViewToggleDivider = styled.span`
   width: 1px;
-  height: 24px;
+  height: ${({ theme }) => theme.spacing.LG}px;
   background-color: var(--color-border-secondary);
   margin: 0 ${({ theme }) => theme.spacing.SM}px;
 `;
@@ -98,7 +98,7 @@ export const GroupCardHeader = styled(InlineStack)`
 `;
 
 export const GroupCardIndicator = styled.div<{ $color?: string }>`
-  width: 4px;
+  width: ${({ theme }) => theme.spacing.XS}px;
   height: ${DESIGN_TOKENS.DIMENSIONS.ICON_XL}px;
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   background-color: ${({ $color }) => $color || 'var(--color-text-secondary)'};
@@ -186,7 +186,7 @@ export const GroupHeaderTag = styled(RediaccTag).attrs<{ $preset?: string; $vari
 )<{ $preset?: string; $variant?: string }>`
   && {
     font-size: ${({ theme }) => theme.fontSize.BASE}px;
-    padding: 4px ${({ theme }) => theme.spacing.MD}px;
+    padding: ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.spacing.MD}px;
   }
 `;
 
@@ -195,4 +195,8 @@ export const StyledBadge = styled(RediaccBadge)<{ $isPositive: boolean }>`
     background-color: ${({ $isPositive }) => ($isPositive ? 'var(--color-success)' : 'var(--color-border-secondary)')};
     color: ${({ $isPositive }) => ($isPositive ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)')};
   }
+`;
+
+export const StyledRediaccEmpty = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.XXL * 2}px;
 `;

@@ -1,6 +1,6 @@
 import { Typography } from 'antd';
 import styled from 'styled-components';
-import { RediaccModal, RediaccText } from '@/components/ui';
+import { RediaccAlert, RediaccModal, RediaccText } from '@/components/ui';
 import { LoadingState as BaseLoadingState } from '@/styles/primitives';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
@@ -60,4 +60,14 @@ export const StatusMessage = styled(RediaccText)`
     font-size: ${DESIGN_TOKENS.FONT_SIZE.CAPTION}px;
     color: ${({ theme }) => theme.colors.textSecondary};
   }
+`;
+
+export const ParsingErrorAlert = styled(RediaccAlert)`
+  && {
+    margin-top: ${({ theme }) => theme.spacing.MD}px;
+  }
+`;
+
+export const NameText = styled.span`
+  font-weight: 600;
 `;

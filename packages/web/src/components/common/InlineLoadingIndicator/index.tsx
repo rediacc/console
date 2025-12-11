@@ -1,4 +1,5 @@
 import React from 'react';
+import { LoadingContainer } from './styles';
 
 export interface InlineLoadingIndicatorProps {
   width?: number | string;
@@ -26,15 +27,12 @@ const InlineLoadingIndicator: React.FC<InlineLoadingIndicatorProps> = ({
   const classes = ['skeleton-shimmer', className].filter(Boolean).join(' ');
 
   return (
-    <div
+    <LoadingContainer
       className={classes}
-      style={{
-        width,
-        height,
-        borderRadius,
-        backgroundColor: 'var(--color-fill-tertiary)',
-        ...style,
-      }}
+      $width={width}
+      $height={height}
+      $borderRadius={borderRadius}
+      style={style}
       data-testid={dataTestId}
       aria-label={ariaLabel}
     />

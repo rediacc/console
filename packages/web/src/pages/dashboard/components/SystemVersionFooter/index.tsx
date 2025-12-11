@@ -3,8 +3,15 @@ import { Tooltip } from 'antd';
 import { useApiHealth } from '@/api/queries/health';
 import { RediaccText } from '@/components/ui';
 import { versionService } from '@/services/versionService';
-import { ClockCircleOutlined, CloudServerOutlined, DesktopOutlined } from '@/utils/optimizedIcons';
-import { EnvironmentTag, FooterContainer, Separator, VersionItem } from './styles';
+import {
+  ApiIcon,
+  ConsoleIcon,
+  EnvironmentTag,
+  FooterContainer,
+  Separator,
+  UptimeIcon,
+  VersionItem,
+} from './styles';
 
 const formatUptime = (uptime: { days: number; hours: number; minutes: number }): string => {
   const parts: string[] = [];
@@ -38,7 +45,7 @@ const SystemVersionFooter: React.FC = () => {
   return (
     <FooterContainer data-testid="system-version-footer">
       <VersionItem>
-        <DesktopOutlined style={{ opacity: 0.5 }} />
+        <ConsoleIcon />
         <RediaccText size="sm" color="muted">
           Console
         </RediaccText>
@@ -50,7 +57,7 @@ const SystemVersionFooter: React.FC = () => {
       <Separator>|</Separator>
 
       <VersionItem>
-        <CloudServerOutlined style={{ opacity: 0.5 }} />
+        <ApiIcon />
         <RediaccText size="sm" color="muted">
           API
         </RediaccText>
@@ -71,7 +78,7 @@ const SystemVersionFooter: React.FC = () => {
           <Separator>|</Separator>
           <Tooltip title="API Uptime">
             <VersionItem>
-              <ClockCircleOutlined style={{ opacity: 0.5 }} />
+              <UptimeIcon />
               <RediaccText size="xs" color="muted" data-testid="api-uptime">
                 {formatUptime(uptime)}
               </RediaccText>

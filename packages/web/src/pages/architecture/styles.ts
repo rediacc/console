@@ -21,7 +21,7 @@ export const FilterLabel = styled.div`
 
 export const FilterSelectWrapper = styled.div`
   width: 100%;
-  min-width: 400px;
+  min-width: ${({ theme }) => theme.dimensions.POPOVER_WIDTH}px;
 `;
 
 export const FilterActions = styled.div`
@@ -32,7 +32,7 @@ export const FilterActions = styled.div`
 
 export const VisualizationContainer = styled.div`
   width: 100%;
-  height: 600px;
+  height: ${({ theme }) => theme.dimensions.VISUALIZATION_HEIGHT}px;
   overflow: hidden;
   position: relative;
 `;
@@ -40,7 +40,7 @@ export const VisualizationContainer = styled.div`
 export const LoadingOverlay = styled.div`
   position: absolute;
   inset: 0;
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: ${({ theme }) => theme.overlays.content};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -71,8 +71,8 @@ export const LegendItem = styled.div`
 `;
 
 export const LegendIcon = styled.div<{ $color: string }>`
-  width: 24px;
-  height: 24px;
+  width: ${({ theme }) => theme.spacing.LG}px;
+  height: ${({ theme }) => theme.spacing.LG}px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -86,4 +86,8 @@ export { CenteredState };
 export const CenteredMessage = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
   color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const PageTitle = styled.div`
+  margin: 0;
 `;

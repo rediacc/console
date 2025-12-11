@@ -91,3 +91,8 @@ export const UploadIcon = styled(UploadOutlined)`
 export const DownloadIcon = styled(DownloadOutlined)`
   font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
 `;
+
+export const ValidationTitle = styled.div`
+  display: block;
+  margin-bottom: ${({ theme }) => theme.spacing.XS}px;
+`;

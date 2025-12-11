@@ -1,6 +1,7 @@
 export const DESIGN_TOKENS = {
   SPACING: {
     // Core scale (4px base)
+    XXS: 2, // Extra extra small (micro adjustments)
     XS: 4, // Extra small
     SM: 8, // Small
     SM_LG: 12, // Small-Large (between SM and MD)
@@ -55,19 +56,50 @@ export const DESIGN_TOKENS = {
   },
 
   DIMENSIONS: {
+    // Control sizes
     CONTROL_HEIGHT: 32,
     CONTROL_HEIGHT_SM: 28,
     CONTROL_HEIGHT_LG: 40,
     INPUT_HEIGHT: 44,
     INPUT_HEIGHT_SM: 36,
     INPUT_HEIGHT_LG: 52,
+
+    // Modal/Card widths
     MODAL_WIDTH: 560,
     MODAL_WIDTH_LG: 768,
     MODAL_WIDTH_XL: 1024,
     CARD_WIDTH: 320,
     CARD_WIDTH_LG: 400,
+
+    // Layout
     SIDEBAR_WIDTH: 280,
     HEADER_HEIGHT: 64,
+    MAX_CONTENT_WIDTH: 1200,
+    SPLIT_PANEL_MIN_WIDTH: 300,
+
+    // Container heights
+    LIST_MAX_HEIGHT: 400,
+    CONTENT_MIN_HEIGHT: 400,
+    DROPDOWN_MAX_HEIGHT: 500,
+    COMPACT_MAX_HEIGHT: 100,
+    DASHBOARD_SECTION_HEIGHT: 200,
+    VISUALIZATION_HEIGHT: 600,
+
+    // Dropdown/Popover widths
+    DROPDOWN_WIDTH_SM: 140,
+    DROPDOWN_WIDTH_MD: 320,
+    DROPDOWN_WIDTH_LG: 380,
+    POPOVER_WIDTH: 400,
+    TOOLTIP_MIN_WIDTH: 160,
+
+    // Input/Filter widths
+    SEARCH_INPUT_WIDTH: 300,
+    FILTER_INPUT_WIDTH: 200,
+    SELECTOR_MAX_WIDTH: 420,
+    ERROR_WRAPPER_WIDTH: 480,
+    LOGO_MAX_WIDTH: 150,
+
+    // Icons
     ICON_SM: 16,
     ICON_MD: 20,
     ICON_LG: 24,
@@ -87,12 +119,52 @@ export const DESIGN_TOKENS = {
     ERROR_FIELD: '0 4px 16px rgba(220, 53, 69, 0.25)',
     HEADER: '0 2px 8px rgba(0,0,0,0.06)',
     HEADER_DARK: '0 2px 8px rgba(0,0,0,0.3)',
+    // Panel shadows (left-facing, for slide-in panels)
+    PANEL_LEFT: '-2px 0 8px rgba(0, 0, 0, 0.15)',
+    PANEL_LEFT_DARK: '-2px 0 8px rgba(0, 0, 0, 0.4)',
+    // Switch/control handle shadow
+    CONTROL_HANDLE: '0 2px 4px rgba(0, 0, 0, 0.2)',
+    CONTROL_HANDLE_DARK: '0 2px 4px rgba(0, 0, 0, 0.4)',
+    // Label text shadows (for contrast on busy backgrounds)
+    LABEL_TEXT_LIGHT: '1px 1px 2px rgba(255, 255, 255, 0.8)',
+    LABEL_TEXT_DARK: '1px 1px 2px rgba(0, 0, 0, 0.8)',
+    // Ant Design compatible shadows (different blur/spread for component library)
+    ANT_SM_LIGHT: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    ANT_SM_DARK: '0 1px 3px rgba(0, 0, 0, 0.3)',
+    ANT_MD_LIGHT: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    ANT_MD_DARK: '0 4px 12px rgba(0, 0, 0, 0.4)',
+    ANT_LG_LIGHT: '0 6px 16px rgba(0, 0, 0, 0.12)',
+    ANT_LG_DARK: '0 6px 16px rgba(0, 0, 0, 0.4)',
+    // Strong shadow for elevated elements (used by theme.colors.shadowStrong)
+    SHADOW_STRONG_LIGHT: 'rgba(0, 0, 0, 0.15)',
+    SHADOW_STRONG_DARK: 'rgba(0, 0, 0, 0.5)',
+  },
+
+  OVERLAYS: {
+    // Modal/drawer backdrops
+    BACKDROP_LIGHT: 'rgba(0, 0, 0, 0.4)',
+    BACKDROP_DARK: 'rgba(0, 0, 0, 0.6)',
+    // Loading/content overlays
+    CONTENT_LIGHT: 'rgba(255, 255, 255, 0.85)',
+    CONTENT_DARK: 'rgba(0, 0, 0, 0.75)',
+    // Navigation active state
+    NAV_ACTIVE_LIGHT: 'rgba(85, 107, 47, 0.1)',
+    NAV_ACTIVE_DARK: 'rgba(106, 106, 106, 0.15)',
   },
 
   Z_INDEX: {
+    STICKY: 10,
+    OVERLAY: 100,
     DROPDOWN: 1000,
     MODAL: 1050,
     NOTIFICATION: 1080,
+  },
+
+  BREAKPOINTS: {
+    MOBILE: 480,
+    TABLET: 768,
+    DESKTOP: 1024,
+    WIDE: 1280,
   },
 
   TRANSITIONS: {

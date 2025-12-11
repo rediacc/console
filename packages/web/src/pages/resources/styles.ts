@@ -1,6 +1,7 @@
 import { Breadcrumb, Typography } from 'antd';
 import styled from 'styled-components';
 import { ActionsRow } from '@/components/common/styled';
+import { RediaccCard } from '@/components/ui';
 import { FlexRow, PageContainer, SectionHeaderRow, SectionStack } from '@/styles/primitives';
 
 export const PageWrapper = styled(PageContainer)`
@@ -51,7 +52,7 @@ export const ListPanel = styled.div<{ $detailWidth: number; $showDetail: boolean
   width: ${({ $showDetail, $detailWidth }) => ($showDetail ? `calc(100% - ${$detailWidth}px)` : '100%')};
   height: 100%;
   overflow: auto;
-  min-width: 300px;
+  min-width: ${({ theme }) => theme.dimensions.SPLIT_PANEL_MIN_WIDTH}px;
   transition: width 0.3s ease-in-out;
 `;
 
@@ -61,7 +62,7 @@ export const DetailBackdrop = styled.div<{ $right: number; $visible: boolean }>`
   left: 0;
   right: ${({ $right }) => `${$right}px`};
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: ${({ theme }) => theme.overlays.backdrop};
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
   transition: opacity 250ms ease-in-out, right 0.3s ease-in-out;
   z-index: ${({ theme }) => theme.zIndex.MODAL};
@@ -69,6 +70,11 @@ export const DetailBackdrop = styled.div<{ $right: number; $visible: boolean }>`
 `;
 
 export const ErrorWrapper = styled.div`
-  max-width: 480px;
+  max-width: ${({ theme }) => theme.dimensions.ERROR_WRAPPER_WIDTH}px;
   margin: 0 auto;
+`;
+
+export const FlexColumnCard = styled(RediaccCard)`
+  display: flex;
+  flex-direction: column;
 `;

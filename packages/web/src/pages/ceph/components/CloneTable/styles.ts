@@ -41,7 +41,7 @@ export const MachineCountBadgeWrapper = styled(RediaccBadge)<{ $active?: boolean
   .ant-badge-count {
     background-color: ${({ $active, theme }) =>
       $active ? theme.colors.primary : theme.colors.bgHover};
-    color: ${({ $active, theme }) => ($active ? '#ffffff' : theme.colors.textSecondary)};
+    color: ${({ $active, theme }) => ($active ? theme.colors.textInverse : theme.colors.textSecondary)};
     box-shadow: none;
     min-width: ${({ theme }) => theme.spacing.MD}px;
   }

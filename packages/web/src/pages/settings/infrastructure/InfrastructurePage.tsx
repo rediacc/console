@@ -75,6 +75,7 @@ import {
   PlusOutlined,
   SyncOutlined,
 } from '@/utils/optimizedIcons';
+import { StyledRediaccEmpty } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
 const InfrastructurePage: React.FC = () => {
@@ -635,11 +636,9 @@ const InfrastructurePage: React.FC = () => {
                 </CardHeaderRow>
 
                 {!effectiveRegion ? (
-                  <RediaccEmpty
-                    variant="minimal"
-                    description={t('regions.selectRegionPrompt')}
-                    style={{ paddingTop: 80, paddingBottom: 80 }}
-                  />
+                  <StyledRediaccEmpty>
+                    <RediaccEmpty variant="minimal" description={t('regions.selectRegionPrompt')} />
+                  </StyledRediaccEmpty>
                 ) : (
                   <LoadingWrapper
                     loading={bridgesLoading}

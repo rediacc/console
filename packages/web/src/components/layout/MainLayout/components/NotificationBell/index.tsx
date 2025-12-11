@@ -5,7 +5,7 @@ import 'dayjs/locale/es';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { RediaccButton, RediaccText } from '@/components/ui';
+import { RediaccText } from '@/components/ui';
 import {
   clearAllNotifications,
   clearNotification,
@@ -26,6 +26,7 @@ import {
 import {
   BellButton,
   EmptyWrapper,
+  NotificationActionButton,
   NotificationCloseButton,
   NotificationDropdown,
   NotificationHeader,
@@ -119,24 +120,22 @@ const NotificationBell: React.FC = () => {
         <RediaccText variant="title">{t('notifications.title', 'Notifications')}</RediaccText>
         {notifications.length > 0 && (
           <Space>
-            <RediaccButton
+            <NotificationActionButton
               size="sm"
               onClick={handleMarkAllAsRead}
               disabled={unreadCount === 0}
               data-testid="notification-mark-all-read"
-              style={{ padding: '0 8px', fontSize: '13px' }}
             >
               {t('notifications.markAllRead', 'Mark all as read')}
-            </RediaccButton>
-            <RediaccButton
+            </NotificationActionButton>
+            <NotificationActionButton
               size="sm"
               variant="danger"
               onClick={handleClearAll}
               data-testid="notification-clear-all"
-              style={{ padding: '0 8px', fontSize: '13px' }}
             >
               {t('notifications.clearAll', 'Clear all')}
-            </RediaccButton>
+            </NotificationActionButton>
           </Space>
         )}
       </NotificationHeader>
@@ -214,7 +213,6 @@ const NotificationBell: React.FC = () => {
           icon={<BellOutlined />}
           aria-label="Notifications"
           data-testid="notification-bell"
-          style={{ borderRadius: '50%', width: '40px', height: '40px' }}
         />
       </Dropdown>
     </Badge>

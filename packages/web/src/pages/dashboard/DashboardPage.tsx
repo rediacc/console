@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Col, Empty, Row, Statistic, Table, Tag, Tooltip } from 'antd';
+import { Alert, Col, Empty, Row, Table, Tag, Tooltip } from 'antd';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { useRecentAuditLogs } from '@/api/queries/audit';
 import { useDashboard } from '@/api/queries/dashboard';
@@ -34,10 +34,13 @@ import {
 } from '@/utils/optimizedIcons';
 import type { QueueMachineIssue, QueueTeamIssue } from '@rediacc/shared/types';
 import {
+  ActionIcon,
   AuditMeta,
   BorderlessList,
   BorderlessListItem,
   CenteredState,
+  DaysRemainingText,
+  ErrorText,
   FlexBetween,
   HorizontalScroll,
   InlineLink,
@@ -53,9 +56,12 @@ import {
   ScrollContainer,
   SectionFooter,
   SectionLabelWrapper,
+  SectionTitle,
   SectionTitleWrapper,
   StatRow,
+  StatusIcon,
   StatValue,
+  StyledStatistic,
   TileHeader,
   TileMeta,
   TimelineWrapper,
@@ -96,16 +102,40 @@ const DashboardPage: React.FC = () => {
   const getActionIcon = (action: string) => {
     const actionLower = action.toLowerCase();
     if (actionLower.includes('create'))
-      return <CheckCircleOutlined style={{ color: theme.colors.success }} />;
+      return (
+        <ActionIcon $color="success">
+          <CheckCircleOutlined />
+        </ActionIcon>
+      );
     if (actionLower.includes('delete'))
-      return <CloseCircleOutlined style={{ color: theme.colors.error }} />;
+      return (
+        <ActionIcon $color="error">
+          <CloseCircleOutlined />
+        </ActionIcon>
+      );
     if (actionLower.includes('update') || actionLower.includes('modify'))
-      return <EditOutlined style={{ color: theme.colors.warning }} />;
+      return (
+        <ActionIcon $color="warning">
+          <EditOutlined />
+        </ActionIcon>
+      );
     if (actionLower.includes('login') || actionLower.includes('auth'))
-      return <LoginOutlined style={{ color: theme.colors.info }} />;
+      return (
+        <ActionIcon $color="info">
+          <LoginOutlined />
+        </ActionIcon>
+      );
     if (actionLower.includes('export') || actionLower.includes('import'))
-      return <SwapOutlined style={{ color: theme.colors.primary }} />;
-    return <InfoCircleOutlined style={{ color: theme.colors.textSecondary }} />;
+      return (
+        <ActionIcon $color="primary">
+          <SwapOutlined />
+        </ActionIcon>
+      );
+    return (
+      <ActionIcon $color="textSecondary">
+        <InfoCircleOutlined />
+      </ActionIcon>
+    );
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -277,14 +307,9 @@ const DashboardPage: React.FC = () => {
                           data-testid={`dashboard-progress-${resource.resourceType.toLowerCase()}`}
                         />
                         {resource.isLimitReached === 1 && (
-                          <RediaccText
-                            variant="caption"
-                            color="secondary"
-                            as="span"
-                            style={{ color: theme.colors.error }}
-                          >
+                          <ErrorText variant="caption" as="span">
                             Limit reached
-                          </RediaccText>
+                          </ErrorText>
                         )}
                       </RediaccStack>
                     </ResourceTile>
@@ -320,23 +345,20 @@ const DashboardPage: React.FC = () => {
                     </SectionTitleWrapper>
                     <Row gutter={[16, 16]}>
                       <Col span={12}>
-                        <Statistic
+                        <StyledStatistic
                           title="Active Licenses"
                           value={dashboard.activeSubscription.totalActivePurchases}
-                          valueStyle={{ color: theme.colors.textPrimary }}
+                          $variant="textPrimary"
                           data-testid="dashboard-stat-active-licenses"
                         />
                       </Col>
                       <Col span={12}>
-                        <Statistic
+                        <StyledStatistic
                           title="Days Remaining"
                           value={dashboard.activeSubscription.daysRemaining}
-                          valueStyle={{
-                            color:
-                              dashboard.activeSubscription.daysRemaining <= CRITICAL_DAYS_THRESHOLD
-                                ? theme.colors.error
-                                : theme.colors.textPrimary,
-                          }}
+                          $critical={
+                            dashboard.activeSubscription.daysRemaining <= CRITICAL_DAYS_THRESHOLD
+                          }
                           data-testid="dashboard-stat-days-remaining"
                         />
                       </Col>
@@ -391,20 +413,14 @@ const DashboardPage: React.FC = () => {
                                 <QuantityBadge count={sub.quantity} />
                                 {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
                               </InlineStack>
-                              <RediaccText
+                              <DaysRemainingText
                                 variant="caption"
-                                color="secondary"
                                 as="span"
-                                style={{
-                                  color:
-                                    sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD
-                                      ? theme.colors.error
-                                      : theme.colors.textSecondary,
-                                }}
+                                $critical={sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD}
                               >
                                 {sub.daysRemaining} {sub.daysRemaining === 1 ? 'day' : 'days'}{' '}
                                 remaining
-                              </RediaccText>
+                              </DaysRemainingText>
                             </LicenseHeader>
                             <Tooltip
                               title={`From ${new Date(sub.startDate).toLocaleDateString()} to ${new Date(sub.endDate).toLocaleDateString()}`}
@@ -430,33 +446,33 @@ const DashboardPage: React.FC = () => {
           {planLimits ? (
             <Row gutter={[24, 24]}>
               <Col xs={24} md={6}>
-                <Statistic
+                <StyledStatistic
                   title="Max Active Jobs"
                   value={planLimits.maxActiveJobs}
-                  valueStyle={{ color: theme.colors.primary }}
+                  $variant="primary"
                 />
               </Col>
               <Col xs={24} md={6}>
-                <Statistic
+                <StyledStatistic
                   title="Max Reserved Jobs"
                   value={planLimits.maxReservedJobs}
-                  valueStyle={{ color: theme.colors.primary }}
+                  $variant="primary"
                 />
               </Col>
               <Col xs={24} md={6}>
-                <Statistic
+                <StyledStatistic
                   title="Job Timeout"
                   value={planLimits.jobTimeoutHours}
                   suffix="hours"
-                  valueStyle={{ color: theme.colors.primary }}
+                  $variant="primary"
                 />
               </Col>
               <Col xs={24} md={6}>
-                <Statistic
+                <StyledStatistic
                   title="Max Repo Size"
                   value={planLimits.maxRepoSize}
                   suffix="GB"
-                  valueStyle={{ color: theme.colors.primary }}
+                  $variant="primary"
                 />
               </Col>
             </Row>
@@ -484,37 +500,37 @@ const DashboardPage: React.FC = () => {
             <RediaccStack direction="vertical" gap="md" fullWidth>
               <Row gutter={[16, 16]}>
                 <Col xs={12} md={6}>
-                  <Statistic
+                  <StyledStatistic
                     title="Pending"
                     value={queueStats.pendingCount || 0}
-                    valueStyle={{ color: theme.colors.warning }}
+                    $variant="warning"
                     prefix={<ClockCircleOutlined />}
                     data-testid="dashboard-stat-pending"
                   />
                 </Col>
                 <Col xs={12} md={6}>
-                  <Statistic
+                  <StyledStatistic
                     title="Processing"
                     value={queueStats.activeCount || 0}
-                    valueStyle={{ color: theme.colors.info }}
+                    $variant="info"
                     prefix={<SyncOutlined spin />}
                     data-testid="dashboard-stat-processing"
                   />
                 </Col>
                 <Col xs={12} md={6}>
-                  <Statistic
+                  <StyledStatistic
                     title="Completed"
                     value={queueStats.completedCount || 0}
-                    valueStyle={{ color: theme.colors.success }}
+                    $variant="success"
                     prefix={<CheckCircleOutlined />}
                     data-testid="dashboard-stat-completed"
                   />
                 </Col>
                 <Col xs={12} md={6}>
-                  <Statistic
+                  <StyledStatistic
                     title="Failed"
                     value={queueStats.failedCount || 0}
-                    valueStyle={{ color: theme.colors.error }}
+                    $variant="error"
                     prefix={<ExclamationCircleOutlined />}
                     data-testid="dashboard-stat-failed"
                   />
@@ -616,9 +632,9 @@ const DashboardPage: React.FC = () => {
                 <RediaccStack direction="vertical" gap="md" fullWidth>
                   {teamIssues.length > 0 && (
                     <div>
-                      <RediaccText weight="bold" style={{ marginBottom: theme.spacing.SM }}>
+                      <SectionTitle weight="bold">
                         <TeamOutlined /> Team Queue Status
-                      </RediaccText>
+                      </SectionTitle>
                       <BorderlessList
                         size="sm"
                         dataSource={teamIssues}
@@ -650,9 +666,9 @@ const DashboardPage: React.FC = () => {
 
                   {machineIssues.length > 0 && (
                     <div>
-                      <RediaccText weight="bold" style={{ marginBottom: theme.spacing.SM }}>
+                      <SectionTitle weight="bold">
                         <DesktopOutlined /> Machine Queue Status
-                      </RediaccText>
+                      </SectionTitle>
                       <HorizontalScroll>
                         <Table
                           size="small"
@@ -740,15 +756,21 @@ const DashboardPage: React.FC = () => {
               <RediaccStack direction="vertical" gap="sm" fullWidth>
                 <InlineStack>
                   {accountHealth.resourcesAtLimit > 0 ? (
-                    <ExclamationCircleOutlined style={{ color: theme.colors.warning }} />
+                    <StatusIcon $variant="warning">
+                      <ExclamationCircleOutlined />
+                    </StatusIcon>
                   ) : (
-                    <CheckCircleOutlined style={{ color: theme.colors.success }} />
+                    <StatusIcon $variant="success">
+                      <CheckCircleOutlined />
+                    </StatusIcon>
                   )}
                   <RediaccText>{accountHealth.resourcesAtLimit} resources at limit</RediaccText>
                 </InlineStack>
 
                 <InlineStack>
-                  <ClockCircleOutlined style={{ color: theme.colors.textSecondary }} />
+                  <StatusIcon $variant="secondary">
+                    <ClockCircleOutlined />
+                  </StatusIcon>
                   <RediaccText>{accountHealth.resourcesNearLimit} resources near limit</RediaccText>
                 </InlineStack>
               </RediaccStack>

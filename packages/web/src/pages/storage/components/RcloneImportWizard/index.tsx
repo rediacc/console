@@ -17,6 +17,8 @@ import {
 } from '@/utils/optimizedIcons';
 import {
   LoadingState,
+  NameText,
+  ParsingErrorAlert,
   StatusMessage,
   StepsContainer,
   UploadStepWrapper,
@@ -104,9 +106,7 @@ const UploadStep: React.FC<UploadStepProps> = ({
       <p className="ant-upload-hint">{t('resources:storage.import.supportedFormats')}</p>
     </Upload.Dragger>
 
-    {parsingError && (
-      <RediaccAlert message={parsingError} variant="error" showIcon style={{ marginTop: '16px' }} />
-    )}
+    {parsingError && <ParsingErrorAlert message={parsingError} variant="error" showIcon />}
   </UploadStepWrapper>
 );
 
@@ -512,7 +512,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
         return (
           <Space>
             <CloudOutlined />
-            <span style={{ fontWeight: 600 }}>{truncated}</span>
+            <NameText>{truncated}</NameText>
             {record.exists && (
               <Tooltip title={t('resources:storage.import.alreadyExists')}>
                 <Tag color="warning">

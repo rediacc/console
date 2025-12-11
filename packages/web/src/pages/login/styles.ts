@@ -21,7 +21,7 @@ export const LogoContainer = styled.div`
   img {
     height: ${({ theme }) => theme.spacing.XL}px;
     width: auto;
-    max-width: 150px;
+    max-width: ${({ theme }) => theme.dimensions.LOGO_MAX_WIDTH}px;
     object-fit: contain;
   }
 `;
@@ -94,8 +94,8 @@ export const RegisterLink = styled.a`
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   text-decoration: none;
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-  padding: 4px 8px;
-  margin-left: 4px;
+  padding: ${({ theme }) => `${theme.spacing.XS}px ${theme.spacing.SM}px`};
+  margin-left: ${({ theme }) => theme.spacing.XS}px;
   transition: ${({ theme }) => theme.transitions.DEFAULT};
   cursor: pointer;
   display: inline-block;

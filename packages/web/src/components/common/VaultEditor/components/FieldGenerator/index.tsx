@@ -9,8 +9,8 @@ import {
   generateSSHKeyPair,
 } from '@/utils/cryptoGenerators';
 import { CheckOutlined, CopyOutlined, KeyOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import {
+  ActionStack,
   ControlButton,
   CopyButton,
   GeneratedValueCard,
@@ -19,6 +19,7 @@ import {
   OptionLabel,
   OptionRadio,
   PopoverContainer,
+  SmallIcon,
   ValueContent,
   ValueHeader,
 } from './styles';
@@ -149,9 +150,13 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
               size="sm"
               icon={
                 copiedField === field ? (
-                  <CheckOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />
+                  <SmallIcon>
+                    <CheckOutlined />
+                  </SmallIcon>
                 ) : (
-                  <CopyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />
+                  <SmallIcon>
+                    <CopyOutlined />
+                  </SmallIcon>
                 )
               }
               onClick={() => handleCopy(field, value)}
@@ -172,16 +177,15 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
 
       {Object.keys(generatedValues).length > 0 && renderGeneratedValues()}
 
-      <RediaccStack
-        direction="horizontal"
-        justify="end"
-        fullWidth
-        style={{ marginTop: `${DESIGN_TOKENS.SPACING.MD}px` }}
-      >
+      <ActionStack direction="horizontal" justify="end" fullWidth>
         {Object.keys(generatedValues).length === 0 ? (
           <ControlButton
             variant="primary"
-            icon={<KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
+            icon={
+              <SmallIcon>
+                <KeyOutlined />
+              </SmallIcon>
+            }
             onClick={handleGenerate}
             loading={generating}
             data-testid="vault-editor-generate-button"
@@ -197,7 +201,11 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
               {t('fieldGenerator.cancel')}
             </ControlButton>
             <ControlButton
-              icon={<ReloadOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
+              icon={
+                <SmallIcon>
+                  <ReloadOutlined />
+                </SmallIcon>
+              }
               onClick={handleGenerate}
               loading={generating}
               data-testid="vault-editor-regenerate-button"
@@ -213,7 +221,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
             </ControlButton>
           </>
         )}
-      </RediaccStack>
+      </ActionStack>
     </PopoverContainer>
   );
 
@@ -222,7 +230,9 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
       content={popoverContent}
       title={
         <InlineStack>
-          <KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />
+          <SmallIcon>
+            <KeyOutlined />
+          </SmallIcon>
           <span>{t(`fieldGenerator.title.${fieldType}`)}</span>
         </InlineStack>
       }
@@ -234,7 +244,11 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
       <Tooltip title={t('fieldGenerator.tooltip')}>
         <GeneratorButton
           variant="text"
-          icon={<KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
+          icon={
+            <SmallIcon>
+              <KeyOutlined />
+            </SmallIcon>
+          }
           size="sm"
           data-testid={props['data-testid'] || 'vault-editor-field-generator'}
         />

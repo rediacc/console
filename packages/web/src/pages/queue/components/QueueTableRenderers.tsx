@@ -1,7 +1,6 @@
 import React from 'react';
 import { Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useTheme as useStyledTheme } from 'styled-components';
 import { RediaccStack, RediaccText } from '@/components/ui';
 import {
   formatTimestampAsIs,
@@ -14,12 +13,17 @@ import { renderPriority } from '@/utils/queueRenderers';
 import type { ParsedError } from '@rediacc/shared/error-parser';
 import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
 import {
+  AdditionalMessagesText,
+  AgeText,
+  ErrorMessageText,
+  LastRetryText,
+  PriorityTooltipTitle,
+  RetrySummaryTag,
+  SeverityPill,
   TooltipContent,
   TooltipContentSection,
   TooltipPrimaryRow,
-  SeverityPill,
   TruncatedErrorText,
-  RetrySummaryTag,
 } from '../styles';
 
 interface PriorityWithTooltipProps {
@@ -32,16 +36,10 @@ export const PriorityWithTooltip: React.FC<PriorityWithTooltipProps> = ({
   record,
 }) => {
   const { t } = useTranslation(['queue']);
-  const theme = useStyledTheme();
 
   const tooltipContent = (
     <TooltipContent>
-      <RediaccText
-        weight="bold"
-        style={{ margin: 0, display: 'block', marginBottom: theme.spacing.XS / 2 }}
-      >
-        {priorityLabel}
-      </RediaccText>
+      <PriorityTooltipTitle>{priorityLabel}</PriorityTooltipTitle>
       <RediaccText variant="caption" as="div">
         {record.priority === 1 ? t('queue:priorityTooltipP1') : t('queue:priorityTooltipTier')}
       </RediaccText>
@@ -61,7 +59,6 @@ interface AgeRendererProps {
 }
 
 export const AgeRenderer: React.FC<AgeRendererProps> = ({ ageInMinutes, record }) => {
-  const theme = useStyledTheme();
   const hours = Math.floor(ageInMinutes / 60);
   const minutes = ageInMinutes % 60;
 
@@ -80,7 +77,7 @@ export const AgeRenderer: React.FC<AgeRendererProps> = ({ ageInMinutes, record }
     color = 'orange';
   }
 
-  return <RediaccText style={{ color: color || theme.colors.textPrimary }}>{ageText}</RediaccText>;
+  return <AgeText $color={color}>{ageText}</AgeText>;
 };
 
 interface ErrorRetriesRendererProps {
@@ -92,8 +89,6 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
   retryCount,
   record,
 }) => {
-  const theme = useStyledTheme();
-
   if (!retryCount && retryCount !== 0) return <RediaccText color="secondary">-</RediaccText>;
 
   const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT;
@@ -114,29 +109,17 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
           title={
             <TooltipContent>
               {allErrors.map((error: ParsedError, index: number) => (
-                <RediaccText
+                <ErrorMessageText
                   key={`${error.message}-${index}`}
-                  size="sm"
-                  style={{
-                    display: 'block',
-                    marginBottom: index === allErrors.length - 1 ? 0 : theme.spacing.XS / 2,
-                  }}
+                  $isLast={index === allErrors.length - 1}
                 >
                   {error.severity && <strong>[{error.severity}]</strong>} {error.message}
-                </RediaccText>
+                </ErrorMessageText>
               ))}
               {record.lastRetryAt && (
-                <RediaccText
-                  size="sm"
-                  style={{
-                    display: 'block',
-                    marginTop: theme.spacing.XS,
-                    paddingTop: theme.spacing.XS / 2,
-                    borderTop: `1px solid ${theme.colors.borderSecondary}`,
-                  }}
-                >
+                <LastRetryText>
                   Last retry: {formatTimestampAsIs(record.lastRetryAt, 'datetime')}
-                </RediaccText>
+                </LastRetryText>
               )}
             </TooltipContent>
           }
@@ -153,9 +136,9 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
             </TooltipPrimaryRow>
             {/* Show count of additional errors if any */}
             {allErrors.length > 1 && (
-              <RediaccText size="xs" color="muted" style={{ fontStyle: 'italic' }}>
+              <AdditionalMessagesText>
                 +{allErrors.length - 1} more {allErrors.length - 1 === 1 ? 'message' : 'messages'}
-              </RediaccText>
+              </AdditionalMessagesText>
             )}
           </TooltipContentSection>
         </Tooltip>

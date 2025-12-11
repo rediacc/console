@@ -22,6 +22,8 @@ import {
   UserAvatar,
   UserDetails,
   UserInfo,
+  BlockText,
+  LanguageLabel,
 } from './styles';
 
 type UserMenuProps = {
@@ -48,14 +50,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       <UserInfo>
         <UserAvatar icon={<UserOutlined />} size={DESIGN_TOKENS.DIMENSIONS.ICON_XXL} />
         <UserDetails>
-          <RediaccText variant="value" weight="semibold" style={{ display: 'block' }}>
+          <BlockText variant="value" weight="semibold">
             {user?.email}
-          </RediaccText>
-          {company && (
-            <RediaccText variant="caption" style={{ display: 'block' }}>
-              {company}
-            </RediaccText>
-          )}
+          </BlockText>
+          {company && <BlockText variant="caption">{company}</BlockText>}
           {companyData?.activeSubscription && (
             <PlanBadge>{companyData.activeSubscription.planCode ?? 'UNKNOWN'}</PlanBadge>
           )}
@@ -104,9 +102,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
       <AppearanceRow>
         <div>
-          <RediaccText variant="value" weight="semibold" style={{ display: 'block' }}>
+          <BlockText variant="value" weight="semibold">
             {t('appearance.label', { defaultValue: 'Appearance' })}
-          </RediaccText>
+          </BlockText>
           <RediaccText variant="caption">
             {t('appearance.description', { defaultValue: 'Device theme' })}
           </RediaccText>
@@ -117,13 +115,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       <RediaccDivider spacing="none" />
 
       <LanguageSection>
-        <RediaccText
-          variant="value"
-          weight="semibold"
-          style={{ display: 'block', marginBottom: '8px' }}
-        >
+        <LanguageLabel variant="value" weight="semibold">
           {t('language.label', { defaultValue: 'Language' })}
-        </RediaccText>
+        </LanguageLabel>
         <LanguageSelector iconOnly={false} />
       </LanguageSection>
 

@@ -20,8 +20,8 @@ export const LoadingOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
-  border-radius: 4px;
+  z-index: ${({ theme }) => theme.zIndex.OVERLAY};
+  border-radius: ${({ theme }) => theme.borderRadius.SM}px;
 `;
 
 export const MachineHeader = styled.div`
@@ -53,8 +53,8 @@ export const ExpandedRowLoadingOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
-  border-radius: 4px;
+  z-index: ${({ theme }) => theme.zIndex.OVERLAY};
+  border-radius: ${({ theme }) => theme.borderRadius.SM}px;
 `;
 
 export const ContainersSection = styled.div`
@@ -126,7 +126,7 @@ export const ExpandIcon = styled(BaseExpandIcon).attrs<{
   $expanded: $isExpanded,
   $visible,
 }))<{ $isExpanded: boolean; $visible: boolean }>`
-  width: 12px;
+  width: ${({ theme }) => theme.spacing.SM_LG}px;
 `;
 
 // PortText removed - use <RediaccText size="xs"> directly if needed

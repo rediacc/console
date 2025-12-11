@@ -114,3 +114,8 @@ export const MessageText = styled(RediaccText)<{ $isError?: boolean }>`
     color: ${({ theme, $isError }) => ($isError ? theme.colors.error : theme.colors.textPrimary)};
   }
 `;
+
+export const StyledInfoAlert = styled.div`
+  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+  font-size: ${({ theme }) => theme.fontSize.SM}px;
+`;

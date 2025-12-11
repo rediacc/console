@@ -71,3 +71,10 @@ export const CellText = styled.span<{ $muted?: boolean }>`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
   color: ${({ $muted, theme }) => ($muted ? theme.colors.textTertiary : theme.colors.textPrimary)};
 `;
+
+export const TableCardTitle = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.MD}px;
+`;

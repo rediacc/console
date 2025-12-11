@@ -36,6 +36,7 @@ import {
   LegendItem,
   LoadingMessage,
   LoadingOverlay,
+  PageTitle,
   VisualizationCanvas,
   VisualizationContainer,
 } from './styles';
@@ -721,9 +722,11 @@ const ArchitecturePage: React.FC = () => {
         <PageCard>
           <RediaccStack direction="vertical" gap="md" fullWidth>
             <SectionHeaderRow>
-              <RediaccText size="xl" weight="semibold" style={{ margin: 0 }}>
-                {t('architecture.title')}
-              </RediaccText>
+              <PageTitle>
+                <RediaccText size="xl" weight="semibold">
+                  {t('architecture.title')}
+                </RediaccText>
+              </PageTitle>
               <ActionGroup>
                 <RediaccRadio.Group
                   value={viewMode}

@@ -1,12 +1,12 @@
 import { Avatar, Segmented } from 'antd';
 import styled from 'styled-components';
 import { FlexBetween, InlineStack } from '@/components/common/styled';
-import { RediaccButton, RediaccTag } from '@/components/ui';
+import { RediaccButton, RediaccTag, RediaccText } from '@/components/ui';
 import { FlexColumn } from '@/styles/primitives';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 export const MenuContainer = styled(FlexColumn).attrs({ $gap: 'MD' })`
-  width: 320px;
+  width: ${({ theme }) => theme.dimensions.DROPDOWN_WIDTH_MD}px;
   background-color: var(--color-bg-primary);
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   box-shadow: ${DESIGN_TOKENS.SHADOWS.XL};
@@ -47,4 +47,13 @@ export const LogoutButton = styled(RediaccButton)`
 
 export const UserAvatar = styled(Avatar)`
   background-color: var(--color-text-tertiary);
+`;
+
+export const BlockText = styled(RediaccText)`
+  display: block;
+`;
+
+export const LanguageLabel = styled(RediaccText)`
+  display: block;
+  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
 `;

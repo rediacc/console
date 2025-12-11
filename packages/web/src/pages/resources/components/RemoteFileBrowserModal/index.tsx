@@ -37,7 +37,16 @@ import { createCustomSorter, createSorter } from '@/platform';
 import { waitForQueueItemCompletion } from '@/services/helloService';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
-import { FileIcon, FolderIcon, SearchInput, SourceLabel, SourceSelect } from './styles';
+import {
+  FileIcon,
+  FolderIcon,
+  FullWidthSelect,
+  LoadingPadding,
+  SearchInput,
+  SourceLabel,
+  SourceSelect,
+  TooltipGuidText,
+} from './styles';
 import type { TableProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table/interface';
 
@@ -669,9 +678,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           const tooltipContent = (
             <div>
               <div>{name}</div>
-              <div style={{ marginTop: '4px', opacity: 0.85 }}>
-                Original file: {record.originalGuid}
-              </div>
+              <TooltipGuidText>Original file: {record.originalGuid}</TooltipGuidText>
             </div>
           );
           return <Tooltip title={tooltipContent}>{content}</Tooltip>;
@@ -780,36 +787,37 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           <RediaccStack direction="horizontal" justify="between" fullWidth>
             <Space>
               <SourceSelect>
-                <Select
-                  style={{ width: '100%' }}
-                  placeholder={t('resources:remoteFiles.selectSource')}
-                  value={selectedSource}
-                  onChange={(value) => {
-                    setSelectedSource(value);
-                    setCurrentPath('');
-                    setSelectedFile('');
-                    setFiles([]); // Clear files when changing source
-                  }}
-                  loading={isLoadingStorage || isLoadingMachines}
-                  notFoundContent={
-                    isLoadingStorage || isLoadingMachines ? (
-                      <div style={{ padding: 8 }}>
-                        <InlineLoadingIndicator
-                          width="100%"
-                          height={18}
-                          data-testid="file-browser-source-loading"
+                <FullWidthSelect>
+                  <Select
+                    placeholder={t('resources:remoteFiles.selectSource')}
+                    value={selectedSource}
+                    onChange={(value) => {
+                      setSelectedSource(value);
+                      setCurrentPath('');
+                      setSelectedFile('');
+                      setFiles([]); // Clear files when changing source
+                    }}
+                    loading={isLoadingStorage || isLoadingMachines}
+                    notFoundContent={
+                      isLoadingStorage || isLoadingMachines ? (
+                        <LoadingPadding>
+                          <InlineLoadingIndicator
+                            width="100%"
+                            height={18}
+                            data-testid="file-browser-source-loading"
+                          />
+                        </LoadingPadding>
+                      ) : storageSources.length === 0 ? (
+                        <Empty
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          description={t('resources:remoteFiles.noSources')}
                         />
-                      </div>
-                    ) : storageSources.length === 0 ? (
-                      <Empty
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description={t('resources:remoteFiles.noSources')}
-                      />
-                    ) : null
-                  }
-                  options={storageSources}
-                  data-testid="file-browser-source-select"
-                />
+                      ) : null
+                    }
+                    options={storageSources}
+                    data-testid="file-browser-source-select"
+                  />
+                </FullWidthSelect>
               </SourceSelect>
               <Tooltip title={t('resources:remoteFiles.loadFiles')}>
                 <Button

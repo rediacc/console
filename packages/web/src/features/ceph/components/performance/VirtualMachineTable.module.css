@@ -12,13 +12,13 @@
 }
 
 .header {
-  padding: 16px;
+  padding: var(--spacing-md);
   background: var(--color-fill-quaternary);
   border-bottom: 1px solid var(--color-border-secondary);
   font-weight: 500;
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: var(--z-index-sticky);
 }
 
 .headerContent {
@@ -28,13 +28,13 @@
 }
 
 .row {
-  padding: 0 16px;
+  padding: 0 var(--spacing-md);
   border-bottom: 1px solid var(--color-border-secondary);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--transition-default);
   display: flex;
   align-items: center;
-  min-height: 44px; /* Maintain a consistent desktop row height */
+  min-height: var(--dimension-input-height); /* Maintain a consistent desktop row height */
 }
 
 .row:hover {
@@ -83,5 +83,5 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: var(--spacing-md);
 }

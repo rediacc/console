@@ -5,5 +5,5 @@ export const StatusCellWrapper = styled(FlexRow)<{ $align?: 'flex-start' | 'cent
   align-items: ${({ $align = 'flex-start' }) => $align};
   justify-content: ${({ $align = 'flex-start' }) =>
     $align === 'center' ? 'center' : 'flex-start'};
-  min-height: 24px;
+  min-height: ${({ theme }) => theme.spacing.LG}px;
 `;

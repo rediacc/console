@@ -20,6 +20,13 @@ import {
 } from '@/utils/optimizedIcons';
 import { FilterableMachineTable } from './FilterableMachineTable';
 import { MachineAvailabilitySummary } from './MachineAvailabilitySummary';
+import {
+  BulkActionsToolbar,
+  BulkActionsLabel,
+  RightAlignedCol,
+  FiltersCard,
+  FullWidthSelect,
+} from './styles';
 
 const { Search } = Input;
 
@@ -134,21 +141,11 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
     if (!isExpertMode || selectedMachines.length === 0) return null;
 
     return (
-      <div
-        style={{
-          ...componentStyles.marginBottom.md,
-          ...componentStyles.padding.md,
-          background: 'var(--color-fill-quaternary)',
-          borderRadius: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
+      <BulkActionsToolbar>
         <Space>
-          <span style={{ ...componentStyles.label, fontWeight: 500 }}>
+          <BulkActionsLabel>
             {t('machines:bulkActions.selected', { count: selectedMachines.length })}
-          </span>
+          </BulkActionsLabel>
           <Button
             size="small"
             onClick={() => setSelectedMachines([])}
@@ -185,7 +182,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
             {t('machines:bulkActions.viewAssignmentStatus')}
           </Button>
         </Space>
-      </div>
+      </BulkActionsToolbar>
     );
   };
 
@@ -195,7 +192,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
       <MachineAvailabilitySummary teamFilter={teamFilter} onRefresh={handleRefresh} />
 
       {/* Filters and Actions */}
-      <Card style={{ ...componentStyles.card, ...componentStyles.marginBottom.md }}>
+      <FiltersCard style={componentStyles.card}>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} lg={8}>
             <Search
@@ -210,11 +207,11 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
           </Col>
 
           <Col xs={24} sm={12} lg={8}>
-            <Select
-              style={{ width: '100%', ...componentStyles.input }}
+            <FullWidthSelect
+              style={componentStyles.input}
               placeholder={t('machines.filters.assignmentStatus')}
               value={assignmentFilter}
-              onChange={setAssignmentFilter}
+              onChange={(value) => setAssignmentFilter(value as AssignmentFilter)}
               suffixIcon={<FilterOutlined />}
               data-testid="ds-machines-filter-assignment"
             >
@@ -223,23 +220,25 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
               <Select.Option value="cluster">{t('assignment.assignedToCluster')}</Select.Option>
               <Select.Option value="image">{t('assignment.assignedToImage')}</Select.Option>
               <Select.Option value="clone">{t('assignment.assignedToClone')}</Select.Option>
-            </Select>
+            </FullWidthSelect>
           </Col>
 
-          <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-            <Space>
-              <Button
-                icon={<ExportOutlined />}
-                onClick={handleExport}
-                data-testid="ds-machines-export-button"
-                style={componentStyles.controlSurface}
-              >
-                {t('machines.actions.exportReport')}
-              </Button>
-            </Space>
+          <Col xs={24} lg={8}>
+            <RightAlignedCol>
+              <Space>
+                <Button
+                  icon={<ExportOutlined />}
+                  onClick={handleExport}
+                  data-testid="ds-machines-export-button"
+                  style={componentStyles.controlSurface}
+                >
+                  {t('machines.actions.exportReport')}
+                </Button>
+              </Space>
+            </RightAlignedCol>
           </Col>
         </Row>
-      </Card>
+      </FiltersCard>
 
       {/* Bulk Actions Toolbar */}
       {renderBulkActionsToolbar()}

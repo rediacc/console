@@ -120,4 +120,17 @@ export const ErrorState = styled.div`
   padding: ${({ theme }) => `${theme.spacing.MD}px 0`};
 `;
 
+export const SearchContainer = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
+`;
+
+export const EmptyResultsContainer = styled.div`
+  margin: ${({ theme }) => theme.spacing.MD}px 0;
+`;
+
+export const TemplateDescription = styled.span`
+  display: block;
+  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
+`;
+
 export { LoadingState } from '@/styles/primitives';

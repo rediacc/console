@@ -40,3 +40,8 @@ export const ActionButton = styled(RediaccButton).attrs({
 `;
 
 export { LoadingState } from '@/styles/primitives';
+
+export const LabelBlock = styled.div`
+  display: block;
+  margin-bottom: ${({ theme }) => theme.spacing.XS}px;
+`;

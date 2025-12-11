@@ -26,6 +26,14 @@ const TruncatedMonoText = styled.span`
 `;
 
 /**
+ * Styled status icon wrapper
+ */
+const StatusIconWrapper = styled.span`
+  font-size: ${({ theme }) => theme.spacing.MD}px;
+  cursor: pointer;
+`;
+
+/**
  * Render a timestamp in a consistent format
  * @param timestamp - ISO timestamp string or Date object
  * @param format - Optional format string (defaults to 'YYYY-MM-DD HH:mm:ss')
@@ -145,7 +153,7 @@ export const createStatusRenderer = <T extends string>(
     const config = statusMap[status] || defaultConfig;
     return (
       <Tooltip title={config.label || status}>
-        <span style={{ fontSize: '16px', cursor: 'pointer' }}>{config.icon}</span>
+        <StatusIconWrapper>{config.icon}</StatusIconWrapper>
       </Tooltip>
     );
   }

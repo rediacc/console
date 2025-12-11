@@ -60,6 +60,7 @@ import {
   SectionTitle,
   StatusTag,
   StyledList,
+  StyledRediaccEmpty,
   StyledTag,
   TagRow,
   TimestampWrapper,
@@ -288,11 +289,12 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
         <ContentWrapper data-testid="vault-status-content">
           {!vaultData ? (
-            <RediaccEmpty
-              description={t('machines:noVaultData')}
-              data-testid="vault-status-empty"
-              style={{ marginTop: 120 }}
-            />
+            <StyledRediaccEmpty>
+              <RediaccEmpty
+                description={t('machines:noVaultData')}
+                data-testid="vault-status-empty"
+              />
+            </StyledRediaccEmpty>
           ) : (
             <>
               {vaultData.system && (

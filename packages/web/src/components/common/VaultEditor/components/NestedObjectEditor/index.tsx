@@ -12,12 +12,16 @@ import {
 import {
   AddEntryCard,
   CollapseWrapper,
+  DescriptionWrapper,
   EditorContainer,
   EditorStack,
   EntryActionsRow,
   EntryHeader,
+  FieldsText,
   ImagePatternCard,
   InlineFormItem,
+  JsonEditorTitleWrapper,
+  JsonErrorText,
   KeyInput,
   KeyInputWrapper,
   KeyTag,
@@ -29,6 +33,7 @@ import {
   SecondaryActionButton,
   SummaryBadgeRow,
   SummaryCard,
+  TitleText,
   TypeTag,
   UniformTag,
 } from './styles';
@@ -371,36 +376,19 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
     <EditorContainer>
       {(title || description || structureInfo.isUniform) && (
         <SummaryCard>
-          {title && (
-            <RediaccText size="lg" weight="semibold" style={{ marginBottom: 4 }}>
-              {title}
-            </RediaccText>
-          )}
+          {title && <TitleText>{title}</TitleText>}
           {description && (
-            <RediaccText
-              variant="description"
-              style={{ display: 'flex', alignItems: 'center', gap: 4 }}
-            >
+            <DescriptionWrapper>
               <InfoCircleOutlined /> {description}
-            </RediaccText>
+            </DescriptionWrapper>
           )}
           {structureInfo.isUniform && (
             <SummaryBadgeRow>
               <UniformTag variant="success">{t('nestedObjectEditor.Uniform Structure')}</UniformTag>
               {structureInfo.keys && (
-                <RediaccText
-                  variant="caption"
-                  color="secondary"
-                  style={{
-                    fontFamily:
-                      "'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace",
-                    backgroundColor: 'var(--rediacc-color-bg-secondary)',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                  }}
-                >
+                <FieldsText>
                   {t('nestedObjectEditor.Fields')}: {structureInfo.keys.join(', ')}
-                </RediaccText>
+                </FieldsText>
               )}
               {structureInfo.hasImagePattern && (
                 <UniformTag variant="info">
@@ -514,20 +502,16 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
           <RawJsonCard
             size="sm"
             title={
-              <RediaccText
-                size="sm"
-                weight="semibold"
-                style={{ display: 'flex', alignItems: 'center', gap: 4 }}
-              >
+              <JsonEditorTitleWrapper>
                 <CodeOutlined />
                 {t('nestedObjectEditor.Raw JSON Editor')}
-              </RediaccText>
+              </JsonEditorTitleWrapper>
             }
           >
             {rawJsonError && (
-              <RediaccText color="danger" style={{ display: 'block', marginBottom: 8 }}>
+              <JsonErrorText>
                 {t('nestedObjectEditor.JSON Error')}: {rawJsonError}
-              </RediaccText>
+              </JsonErrorText>
             )}
             <SimpleJsonEditor
               value={rawJsonValue}

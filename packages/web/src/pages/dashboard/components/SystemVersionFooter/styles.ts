@@ -1,3 +1,4 @@
+import { ClockCircleOutlined, CloudServerOutlined, DesktopOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
 import { RediaccTag } from '@/components/ui';
@@ -30,4 +31,22 @@ export const EnvironmentTag = styled(RediaccTag)<{ $isProduction: boolean }>`
     margin: 0;
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
+`;
+
+export const MutedIcon = styled.span`
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+`;
+
+export const ConsoleIcon = styled(DesktopOutlined)`
+  opacity: 0.5;
+`;
+
+export const ApiIcon = styled(CloudServerOutlined)`
+  opacity: 0.5;
+`;
+
+export const UptimeIcon = styled(ClockCircleOutlined)`
+  opacity: 0.5;
 `;

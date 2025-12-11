@@ -23,6 +23,7 @@ import {
   ProgressBar,
   ProgressSection,
   ResourceTag,
+  StyledInfoAlert,
   StyledModal,
   StyledTable,
   SummaryContainer,
@@ -339,14 +340,15 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             </ProgressSection>
           )}
 
-          <RediaccAlert
-            message={t('machines:connectivityTestDescription')}
-            variant="info"
-            showIcon
-            icon={<WifiOutlined />}
-            data-testid="connectivity-info-alert"
-            style={{ borderRadius: '12px', fontSize: '14px' }}
-          />
+          <StyledInfoAlert>
+            <RediaccAlert
+              message={t('machines:connectivityTestDescription')}
+              variant="info"
+              showIcon
+              icon={<WifiOutlined />}
+              data-testid="connectivity-info-alert"
+            />
+          </StyledInfoAlert>
 
           <StyledTable
             columns={columns as ColumnsType<unknown>}

@@ -1,8 +1,8 @@
 import { Collapse, Form } from 'antd';
 import styled from 'styled-components';
 import { ActionGroup, InlineStack } from '@/components/common/styled';
-import { RediaccButton, RediaccCard, RediaccInput, RediaccTag } from '@/components/ui';
-import { borderedCard } from '@/styles/mixins';
+import { RediaccButton, RediaccCard, RediaccInput, RediaccTag, RediaccText } from '@/components/ui';
+import { borderedCard, media } from '@/styles/mixins';
 import { FlexColumn } from '@/styles/primitives';
 
 export const EditorContainer = styled.div`
@@ -58,6 +58,12 @@ export const EntryActionsRow = ActionGroup;
 export const KeyInputWrapper = styled.div`
   flex: 1 1 60%;
   min-width: 220px;
+  max-width: 100%;
+
+  ${media.mobile`
+    min-width: 0;
+    flex: 1 1 100%;
+  `}
 `;
 
 export const KeyInput = styled(RediaccInput).attrs({
@@ -152,5 +158,56 @@ export const ImagePatternCard = styled(RediaccCard)`
 export const NumericInput = styled(RediaccInput).attrs({ fullWidth: true })`
   && {
     max-width: 200px;
+  }
+`;
+
+export const TitleText = styled(RediaccText).attrs({
+  size: 'lg',
+  weight: 'semibold',
+})`
+  && {
+    margin-bottom: ${({ theme }) => theme.spacing.XS / 2}px;
+  }
+`;
+
+export const DescriptionWrapper = styled(RediaccText).attrs({
+  variant: 'description',
+})`
+  && {
+    display: flex;
+    align-items: center;
+    gap: ${({ theme }) => theme.spacing.XS}px;
+  }
+`;
+
+export const FieldsText = styled(RediaccText).attrs({
+  variant: 'caption',
+  color: 'secondary',
+})`
+  && {
+    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+    background-color: var(--color-bg-secondary);
+    padding: ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.spacing.SM}px;
+    border-radius: ${({ theme }) => theme.spacing.XS}px;
+  }
+`;
+
+export const JsonEditorTitleWrapper = styled(RediaccText).attrs({
+  size: 'sm',
+  weight: 'semibold',
+})`
+  && {
+    display: flex;
+    align-items: center;
+    gap: ${({ theme }) => theme.spacing.XS}px;
+  }
+`;
+
+export const JsonErrorText = styled(RediaccText).attrs({
+  color: 'danger',
+})`
+  && {
+    display: block;
+    margin-bottom: ${({ theme }) => theme.spacing.SM}px;
   }
 `;
