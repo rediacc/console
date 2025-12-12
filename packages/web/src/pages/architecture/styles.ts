@@ -77,7 +77,7 @@ export const LegendIcon = styled.div<{ $color: string }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   background-color: ${({ $color }) => $color};
 `;
 

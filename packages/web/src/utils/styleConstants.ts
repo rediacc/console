@@ -24,23 +24,26 @@ export const DESIGN_TOKENS = {
     FULL: 9999,
   },
 
+  FONT_FAMILY: {
+    SYSTEM:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+    MONO: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace",
+  },
+
   FONT_SIZE: {
-    XS: 12,
-    CAPTION: 12,
-    SM: 14,
-    BASE: 16,
-    LG: 18,
-    H5: 18,
-    H4: 20,
-    XL: 20,
-    XXXXXXL: 64,
+    XS: 12, // captions, labels
+    SM: 14, // body text (default)
+    MD: 16, // base/emphasized
+    LG: 18, // h5, titles
+    XL: 20, // h4
+    DISPLAY: 64, // hero text
   },
 
   FONT_WEIGHT: {
     REGULAR: 400,
     MEDIUM: 500,
     SEMIBOLD: 600,
-    NORMAL: 400,
+    BOLD: 700,
   },
 
   LINE_HEIGHT: {
@@ -50,7 +53,6 @@ export const DESIGN_TOKENS = {
   },
 
   LETTER_SPACING: {
-    TIGHT: '-0.5px',
     NORMAL: '0',
     WIDE: '0.5px',
   },

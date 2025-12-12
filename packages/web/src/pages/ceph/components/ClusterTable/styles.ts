@@ -76,7 +76,7 @@ export const ExpandedRowContainer = styled.div`
 
 export const ExpandedRowTitle = styled.h4`
   margin: 0 0 ${({ theme }) => theme.spacing.SM}px;
-  font-size: ${({ theme }) => theme.fontSize.H5}px;
+  font-size: ${({ theme }) => theme.fontSize.LG}px;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 

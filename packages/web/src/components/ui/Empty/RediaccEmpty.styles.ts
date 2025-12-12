@@ -67,7 +67,7 @@ export const StyledRediaccEmpty = styled(AntEmpty).withConfig({
 
 export const EmptyTitle = styled.div`
   color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: ${({ theme }) => theme.fontSize.BASE}px;
+  font-size: ${({ theme }) => theme.fontSize.MD}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   margin-bottom: ${({ theme }) => theme.spacing.XS}px;
 `;

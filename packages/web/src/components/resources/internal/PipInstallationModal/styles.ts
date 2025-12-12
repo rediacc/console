@@ -32,5 +32,5 @@ export const CommandDescription = styled.div`
 export const CommandText = styled.span`
   background: transparent;
   border: none;
-  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-family: ${({ theme }) => theme.fontFamily.MONO};
 `;

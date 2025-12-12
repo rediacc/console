@@ -11,7 +11,7 @@ export const Container = styled(FlexColumn).attrs({ $gap: 'MD' })`
 
 export const Title = styled.h4`
   margin: 0;
-  font-size: ${({ theme }) => theme.fontSize.H4}px;
+  font-size: ${({ theme }) => theme.fontSize.XL}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
@@ -27,14 +27,14 @@ export const NameIcon = styled(StyledIcon).attrs(({ theme }) => ({
 }))``;
 
 export const NameText = styled(BaseNameText)`
-  font-size: ${({ theme }) => theme.fontSize.BASE}px;
+  font-size: ${({ theme }) => theme.fontSize.MD}px;
 `;
 
 // VaultTag removed - use <RediaccTag variant="neutral" compact> directly
 
 export const GuidText = styled.span`
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  font-family: ${({ theme }) => theme.fontFamily.MONO};
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 

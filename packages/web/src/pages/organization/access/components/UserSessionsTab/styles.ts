@@ -23,7 +23,7 @@ export const StatTitle = styled.span`
 `;
 
 export const StatSuffix = styled.span`
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-left: ${({ theme }) => theme.spacing.XS}px;
 `;
@@ -39,7 +39,7 @@ export const RefreshButton = styled(RediaccButton)`
     justify-content: center;
     min-width: ${({ theme }) => theme.spacing.XXL}px;
     min-height: ${({ theme }) => theme.spacing.XXL}px;
-    font-size: ${({ theme }) => theme.fontSize.BASE}px;
+    font-size: ${({ theme }) => theme.fontSize.MD}px;
   }
 `;
 
@@ -54,7 +54,7 @@ export const SessionTag = styled(RediaccTag).attrs({
   size: 'sm',
 })`
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   padding: 0 ${({ theme }) => theme.spacing.XS}px;
 `;

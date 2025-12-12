@@ -28,7 +28,7 @@ const FilterTagBar = styled.div`
 `;
 
 const ClearButton = styled(Button)`
-  font-size: 12px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   padding: 0 4px;
   height: auto;
 `;

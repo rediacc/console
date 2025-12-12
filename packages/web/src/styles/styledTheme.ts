@@ -68,6 +68,7 @@ export interface StyledTheme {
   borderRadius: typeof DESIGN_TOKENS.BORDER_RADIUS;
 
   // Typography
+  fontFamily: typeof DESIGN_TOKENS.FONT_FAMILY;
   fontSize: typeof DESIGN_TOKENS.FONT_SIZE;
   fontWeight: typeof DESIGN_TOKENS.FONT_WEIGHT;
   lineHeight: typeof DESIGN_TOKENS.LINE_HEIGHT;
@@ -122,6 +123,7 @@ const feedbackSurfaces: Record<
 const sharedThemeValues = {
   spacing: DESIGN_TOKENS.SPACING,
   borderRadius: DESIGN_TOKENS.BORDER_RADIUS,
+  fontFamily: DESIGN_TOKENS.FONT_FAMILY,
   fontSize: DESIGN_TOKENS.FONT_SIZE,
   fontWeight: DESIGN_TOKENS.FONT_WEIGHT,
   lineHeight: DESIGN_TOKENS.LINE_HEIGHT,

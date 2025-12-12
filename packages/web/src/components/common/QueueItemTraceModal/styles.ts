@@ -55,7 +55,7 @@ export const ItalicCaption = styled(RediaccText).attrs({ color: 'secondary' })`
     font-style: italic;
     display: block;
     text-align: center;
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+    font-size: ${({ theme }) => theme.fontSize.XS}px;
   }
 `;
 
@@ -72,7 +72,7 @@ export const ScrollItem = styled.div`
 export const ActionButton = styled(RediaccButton)<{ $bold?: boolean; $large?: boolean }>`
   && {
     font-weight: ${({ theme, $bold }) => ($bold ? theme.fontWeight.SEMIBOLD : theme.fontWeight.MEDIUM)};
-    font-size: ${({ theme, $large }) => ($large ? theme.fontSize.SM : theme.fontSize.CAPTION)}px;
+    font-size: ${({ theme, $large }) => ($large ? theme.fontSize.SM : theme.fontSize.XS)}px;
   }
 `;
 
@@ -132,6 +132,6 @@ export const RecommendationsList = styled.ul`
 // Monospace text for code/task IDs
 export const MonospaceText = styled(RediaccText)`
   && {
-    font-family: monospace;
+    font-family: ${({ theme }) => theme.fontFamily.MONO};
   }
 `;

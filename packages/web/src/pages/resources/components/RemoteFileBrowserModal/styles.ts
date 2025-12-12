@@ -2,7 +2,7 @@ import styled from 'styled-components';
 
 export const SourceLabel = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-  font-weight: 500;
+  font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
 `;
 
 export const SourceSelect = styled.div`

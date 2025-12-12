@@ -12,7 +12,7 @@ export const ListTitleRow = styled.div`
 `;
 
 export const ListTitle = styled.span`
-  font-size: ${({ theme }) => theme.fontSize.BASE}px;
+  font-size: ${({ theme }) => theme.fontSize.MD}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
