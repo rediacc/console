@@ -3,21 +3,19 @@ import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { DividerOrientation, DividerSpacing } from './RediaccDivider.types';
 
+const DIVIDER_SPACING_MAP: Record<DividerSpacing, number | keyof StyledTheme['spacing']> = {
+  none: 0,
+  sm: 'SM', // 8px
+  md: 'MD', // 16px
+  lg: 'LG', // 24px
+};
+
 export const resolveDividerSpacing = (
   theme: StyledTheme,
   spacing: DividerSpacing = 'md'
 ): number => {
-  switch (spacing) {
-    case 'none':
-      return 0;
-    case 'sm':
-      return theme.spacing.SM; // 8px
-    case 'lg':
-      return theme.spacing.LG; // 24px
-    case 'md':
-    default:
-      return theme.spacing.MD; // 16px
-  }
+  const spacingValue = DIVIDER_SPACING_MAP[spacing] ?? 'MD';
+  return typeof spacingValue === 'number' ? spacingValue : theme.spacing[spacingValue];
 };
 
 export const StyledRediaccDivider = styled(AntDivider).withConfig({

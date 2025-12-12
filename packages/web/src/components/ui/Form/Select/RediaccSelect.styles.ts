@@ -4,19 +4,18 @@ import { disabledState } from '@/styles/mixins';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { SelectSize } from './RediaccSelect.types';
 
+const SELECT_HEIGHT_MAP: Record<SelectSize, keyof StyledTheme['dimensions']> = {
+  sm: 'CONTROL_HEIGHT_SM', // 28px
+  md: 'CONTROL_HEIGHT', // 32px
+  lg: 'CONTROL_HEIGHT_LG', // 40px
+};
+
 /**
  * Resolves height for each select size
  */
 export const resolveSelectHeight = (theme: StyledTheme, size: SelectSize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return theme.dimensions.CONTROL_HEIGHT_SM; // 28px
-    case 'lg':
-      return theme.dimensions.CONTROL_HEIGHT_LG; // 40px
-    case 'md':
-    default:
-      return theme.dimensions.CONTROL_HEIGHT; // 32px
-  }
+  const heightKey = SELECT_HEIGHT_MAP[size] ?? 'CONTROL_HEIGHT';
+  return theme.dimensions[heightKey];
 };
 
 /**

@@ -3,44 +3,38 @@ import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { ProgressSize, ProgressStatus, ProgressVariant } from './RediaccProgress.types';
 
+const PROGRESS_HEIGHT_MAP: Record<ProgressSize, number> = {
+  sm: 6,
+  md: 8,
+  lg: 12,
+};
+
 export const resolveProgressHeight = (size: ProgressSize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return 6;
-    case 'lg':
-      return 12;
-    case 'md':
-    default:
-      return 8;
-  }
+  return PROGRESS_HEIGHT_MAP[size] || PROGRESS_HEIGHT_MAP.md;
+};
+
+const CIRCLE_WIDTH_MAP: Record<ProgressSize, number> = {
+  sm: 60,
+  md: 80,
+  lg: 120,
 };
 
 export const resolveCircleWidth = (size: ProgressSize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return 60;
-    case 'lg':
-      return 120;
-    case 'md':
-    default:
-      return 80;
-  }
+  return CIRCLE_WIDTH_MAP[size] || CIRCLE_WIDTH_MAP.md;
+};
+
+const PROGRESS_COLOR_MAP: Record<ProgressStatus, keyof StyledTheme['colors']> = {
+  success: 'success',
+  exception: 'error',
+  active: 'primary',
+  normal: 'primary',
 };
 
 export const resolveProgressColor = (
   status: ProgressStatus = 'normal',
   theme: StyledTheme
 ): string => {
-  switch (status) {
-    case 'success':
-      return theme.colors.success;
-    case 'exception':
-      return theme.colors.error;
-    case 'active':
-    case 'normal':
-    default:
-      return theme.colors.primary;
-  }
+  return theme.colors[PROGRESS_COLOR_MAP[status] || PROGRESS_COLOR_MAP.normal];
 };
 
 export const StyledRediaccProgress = styled(AntProgress)<{

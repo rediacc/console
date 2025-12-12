@@ -13,20 +13,16 @@ export const fadeInAnimation = keyframes`
   }
 `;
 
+const MODAL_WIDTH_MAP: Record<ModalSize, string | number> = {
+  sm: 400,
+  md: 520,
+  lg: 800,
+  xl: 1200,
+  fullscreen: '100vw',
+};
+
 export const resolveModalWidth = (size: ModalSize = 'md'): string | number => {
-  switch (size) {
-    case 'sm':
-      return 400;
-    case 'lg':
-      return 800;
-    case 'xl':
-      return 1200;
-    case 'fullscreen':
-      return '100vw';
-    case 'md':
-    default:
-      return 520;
-  }
+  return MODAL_WIDTH_MAP[size] ?? 520;
 };
 
 export const StyledRediaccModal = styled(AntModal).withConfig({
