@@ -417,7 +417,7 @@
           "label": "Region Name"
         }
       },
-      "REPO": {
+      "REPOSITORY": {
         "credential": {
           "description": "Repository access password (32 characters, alphanumeric + special chars)",
           "label": "Credential"

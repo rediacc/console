@@ -101,7 +101,7 @@ export const CardHeader = styled.div`
 export const CardTitle = styled(Title)`
   && {
     margin: 0;
-    font-size: ${DESIGN_TOKENS.FONT_SIZE.BASE}px;
+    font-size: ${DESIGN_TOKENS.FONT_SIZE.MD}px;
   }
 `;
 
@@ -173,7 +173,7 @@ export const PartitionRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.XS}px;
-  font-size: ${DESIGN_TOKENS.FONT_SIZE.CAPTION}px;
+  font-size: ${DESIGN_TOKENS.FONT_SIZE.XS}px;
   color: var(--color-text-secondary);
 `;
 

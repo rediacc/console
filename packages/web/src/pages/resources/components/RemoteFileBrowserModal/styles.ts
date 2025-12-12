@@ -2,15 +2,15 @@ import styled from 'styled-components';
 
 export const SourceLabel = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.SM}px;
-  font-weight: 500;
+  font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
 `;
 
 export const SourceSelect = styled.div`
-  width: 300px;
+  width: ${({ theme }) => theme.dimensions.SOURCE_SELECT_WIDTH}px;
 `;
 
 export const SearchInput = styled.div`
-  width: 250px;
+  width: ${({ theme }) => theme.dimensions.SEARCH_INPUT_WIDTH_SM}px;
 `;
 
 export const FolderIcon = styled.span`

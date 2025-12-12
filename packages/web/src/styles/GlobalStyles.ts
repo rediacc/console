@@ -46,7 +46,7 @@ export const GlobalStyles = createGlobalStyle`
   body {
     margin: 0;
     padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    font-family: ${({ theme }) => theme.fontFamily.SYSTEM};
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     line-height: 1.6;
@@ -136,11 +136,17 @@ export const GlobalStyles = createGlobalStyle`
   [data-theme='light'] {
     ${toCssVars(colorTokens.light)}
     --overlay-nav-active: ${({ theme }) => theme.overlays.navActive};
+    --color-bg-container: ${({ theme }) => theme.colors.bgContainer};
+    --color-fill-tertiary: ${({ theme }) => theme.colors.bgFillTertiary};
+    --color-fill-quaternary: ${({ theme }) => theme.colors.bgFillQuaternary};
   }
 
   [data-theme='dark'] {
     ${toCssVars(colorTokens.dark)}
     --overlay-nav-active: ${({ theme }) => theme.overlays.navActive};
+    --color-bg-container: ${({ theme }) => theme.colors.bgContainer};
+    --color-fill-tertiary: ${({ theme }) => theme.colors.bgFillTertiary};
+    --color-fill-quaternary: ${({ theme }) => theme.colors.bgFillQuaternary};
   }
 
   /* ============================================
@@ -200,7 +206,7 @@ export const GlobalStyles = createGlobalStyle`
   :focus-visible {
     outline: 3px solid var(--color-primary);
     outline-offset: 2px;
-    border-radius: 6px;
+    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   }
 
   a:focus-visible,

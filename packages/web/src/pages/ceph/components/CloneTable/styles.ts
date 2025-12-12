@@ -13,7 +13,7 @@ export const Container = styled(FlexColumn).attrs({ $gap: 'MD' })`
 
 export const Title = styled.h5`
   margin: 0;
-  font-size: ${({ theme }) => theme.fontSize.H5}px;
+  font-size: ${({ theme }) => theme.fontSize.LG}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
@@ -31,7 +31,7 @@ export const CloneIcon = styled(StyledIcon).attrs(({ theme }) => ({
 }))``;
 
 export const CloneName = styled(TableCellText)`
-  font-size: ${({ theme }) => theme.fontSize.BASE}px;
+  font-size: ${({ theme }) => theme.fontSize.MD}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
 `;
 
@@ -88,5 +88,5 @@ export const AssignButton = styled(RediaccButton)`
 
 export const RemoteIcon = styled(StyledIcon).attrs(({ theme }) => ({
   as: CloudUploadOutlined,
-  $size: theme.fontSize.BASE,
+  $size: theme.fontSize.MD,
 }))``;

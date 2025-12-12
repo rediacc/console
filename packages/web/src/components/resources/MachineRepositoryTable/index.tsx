@@ -5,12 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
 import { type QueueFunction } from '@/api/queries/queue';
 import {
-  useCreateRepo,
-  usePromoteRepoToGrand,
-  useRepos,
-  useUpdateRepoName,
-  useUpdateRepoTag,
-} from '@/api/queries/repos';
+  useCreateRepository,
+  usePromoteRepositoryToGrand,
+  useRepositories,
+  useUpdateRepositoryName,
+  useUpdateRepositoryTag,
+} from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import { useTeams } from '@/api/queries/teams';
 import { createActionColumn } from '@/components/common/columns';
@@ -32,9 +32,9 @@ import { useAppSelector } from '@/store/store';
 import { showMessage } from '@/utils/messages';
 import { DesktopOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { useRepoColumns, useSystemContainerColumns } from './columns';
-import { RepoActionsMenu } from './components/RepoActionsMenu';
-import { useRepoTableState } from './hooks/useRepoTableState';
+import { useRepositoryColumns, useSystemContainerColumns } from './columns';
+import { RepositoryActionsMenu } from './components/RepositoryActionsMenu';
+import { useRepositoryTableState } from './hooks/useRepositoryTableState';
 import {
   ConfirmationInput,
   InfoTag,
@@ -46,20 +46,25 @@ import {
 } from './styledComponents';
 import * as S from './styles';
 import { getAxiosErrorMessage } from './utils';
-import type { Container, MachineRepoTableProps, Repo, RepoTableRow } from './types';
+import type {
+  Container,
+  MachineRepositoryTableProps,
+  Repository,
+  RepositoryTableRow,
+} from './types';
 import type { TableProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
-const RepoTableComponent = S.StyledTable as React.ComponentType<TableProps<RepoTableRow>>;
+const RepoTableComponent = S.StyledTable as React.ComponentType<TableProps<RepositoryTableRow>>;
 const SystemTableComponent = S.StyledTable as React.ComponentType<TableProps<Container>>;
 
-export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
+export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   machine,
   onActionComplete,
   hideSystemInfo = false,
-  onCreateRepo,
-  onRepoClick,
-  highlightedRepo,
+  onCreateRepository,
+  onRepositoryClick,
+  highlightedRepository,
   onContainerClick: _onContainerClick,
   highlightedContainer: _highlightedContainer,
   isLoading,
@@ -72,43 +77,43 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
   const { confirm, modal, contextHolder } = useConfirmDialog();
   const userEmail = useAppSelector((state) => state.auth.user?.email || '');
   const [systemContainers] = useState<Container[]>([]);
-  const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
+  const [selectedRepository, setSelectedRepo] = useState<Repository | null>(null);
   const functionModal = useDialogState<void>();
   const [selectedFunction, setSelectedFunction] = useState<string | null>(null);
 
   const { executeAction, isExecuting } = useQueueAction();
   const { data: teams } = useTeams();
   const {
-    data: teamRepos = [],
-    isLoading: reposLoading,
+    data: teamRepositories = [],
+    isLoading: repositoriesLoading,
     refetch: refetchRepos,
-  } = useRepos(machine.teamName);
+  } = useRepositories(machine.teamName);
   const { data: teamMachines = [] } = useMachines(machine.teamName);
   const { data: teamStorages = [] } = useStorage(machine.teamName);
-  const createRepoMutation = useCreateRepo();
-  const promoteRepoMutation = usePromoteRepoToGrand();
-  const updateRepoNameMutation = useUpdateRepoName();
-  const updateRepoTagMutation = useUpdateRepoTag();
+  const createRepositoryMutation = useCreateRepository();
+  const promoteRepoMutation = usePromoteRepositoryToGrand();
+  const updateRepoNameMutation = useUpdateRepositoryName();
+  const updateRepoTagMutation = useUpdateRepositoryTag();
 
   const {
-    repos: _repos,
+    repositories: _repos,
     systemInfo: _systemInfo,
     loading,
     error,
     servicesData: _servicesData,
     containersData,
-    groupedRepos,
+    groupedRepositories,
     setRepos: _setRepos,
     setServicesData: _setServicesData,
     setContainersData: _setContainersData,
-  } = useRepoTableState({
+  } = useRepositoryTableState({
     machine,
-    teamRepos,
-    reposLoading,
+    teamRepositories,
+    repositoriesLoading,
     refreshKey,
   });
 
-  const { repoStatusColumn, repoNameColumn } = useRepoColumns(teamRepos);
+  const { repositoryStatusColumn, repositoryNameColumn } = useRepositoryColumns(teamRepositories);
   const { systemContainerColumns } = useSystemContainerColumns();
 
   const handleRefresh = () => {
@@ -117,8 +122,8 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
     }
   };
 
-  const handleRunFunction = (Repo: Repo, functionName?: string) => {
-    setSelectedRepo(Repo);
+  const handleRunFunction = (Repository: Repository, functionName?: string) => {
+    setSelectedRepo(Repository);
     setSelectedFunction(functionName || null);
     functionModal.open();
   };
@@ -128,16 +133,18 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
     setSelectedRepo(null);
   };
 
-  const createRepoCredential = async (repoName: string, tag: string) => {
-    await createRepoMutation.mutateAsync({
+  const createRepositoryCredential = async (repositoryName: string, tag: string) => {
+    await createRepositoryMutation.mutateAsync({
       teamName: machine.teamName,
-      repoName,
-      repoTag: tag,
-      parentRepoName: repoName,
+      repositoryName,
+      repositoryTag: tag,
+      parentRepositoryName: repositoryName,
     });
     const { data: updatedRepos } = await refetchRepos();
-    const newRepo = updatedRepos?.find((r) => r.repoName === repoName && r.repoTag === tag);
-    if (!newRepo?.repoGuid) throw new Error('Could not find newly created Repo');
+    const newRepo = updatedRepos?.find(
+      (r) => r.repositoryName === repositoryName && r.repositoryTag === tag
+    );
+    if (!newRepo?.repositoryGuid) throw new Error('Could not find newly created Repository');
     return newRepo;
   };
 
@@ -169,24 +176,29 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
   };
 
   const handleQuickAction = async (
-    Repo: Repo,
+    Repository: Repository,
     functionName: string,
     priority: number = 4,
     option?: string
   ) => {
-    const RepoData = teamRepos.find((r) => r.repoName === Repo.name && r.repoTag === Repo.repoTag);
+    const RepoData = teamRepositories.find(
+      (r) => r.repositoryName === Repository.name && r.repositoryTag === Repository.repositoryTag
+    );
 
     if (!RepoData || !RepoData.vaultContent) {
-      showMessage('error', t('resources:repos.noCredentialsFound', { name: Repo.name }));
+      showMessage(
+        'error',
+        t('resources:repositories.noCredentialsFound', { name: Repository.name })
+      );
       return;
     }
 
     const grandRepoVault =
-      getGrandVaultForOperation(RepoData.repoGuid, RepoData.grandGuid, teamRepos) ||
+      getGrandVaultForOperation(RepoData.repositoryGuid, RepoData.grandGuid, teamRepositories) ||
       RepoData.vaultContent;
 
     const params: Record<string, unknown> = {
-      repo: RepoData.repoGuid,
+      repository: RepoData.repositoryGuid,
       grand: RepoData.grandGuid || '',
     };
 
@@ -201,48 +213,52 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
       functionName,
       params,
       priority,
-      addedVia: 'machine-Repo-list-quick',
+      addedVia: 'machine-Repository-list-quick',
       machineVault: machine.vaultContent || '{}',
-      repoGuid: RepoData.repoGuid,
+      repositoryGuid: RepoData.repositoryGuid,
       vaultContent: grandRepoVault,
-      repoNetworkId: RepoData.repoNetworkId,
-      repoNetworkMode: RepoData.repoNetworkMode,
-      repoTag: RepoData.repoTag,
+      repositoryNetworkId: RepoData.repositoryNetworkId,
+      repositoryNetworkMode: RepoData.repositoryNetworkMode,
+      repositoryTag: RepoData.repositoryTag,
     });
 
     if (result.success) {
       if (result.taskId) {
-        showMessage('success', t('resources:repos.queueItemCreated'));
+        showMessage('success', t('resources:repositories.queueItemCreated'));
         if (onQueueItemCreated) {
           onQueueItemCreated(result.taskId, machine.machineName);
         }
       } else if (result.isQueued) {
-        showMessage('info', t('resources:repos.highestPriorityQueued'));
+        showMessage('info', t('resources:repositories.highestPriorityQueued'));
       }
     } else {
-      showMessage('error', result.error || t('resources:repos.failedToCreateQueueItem'));
+      showMessage('error', result.error || t('resources:repositories.failedToCreateQueueItem'));
     }
   };
 
-  const handleDeleteFork = async (Repo: Repo) => {
-    const context = prepareForkDeletion(Repo.name, Repo.repoTag, teamRepos);
+  const handleDeleteFork = async (Repository: Repository) => {
+    const context = prepareForkDeletion(
+      Repository.name,
+      Repository.repositoryTag,
+      teamRepositories
+    );
 
     if (context.status === 'error') {
       const errorKey =
         context.errorCode === 'NOT_FOUND'
-          ? 'resources:repos.RepoNotFound'
-          : 'resources:repos.cannotDeleteGrandRepo';
+          ? 'resources:repositories.RepoNotFound'
+          : 'resources:repositories.cannotDeleteGrandRepo';
       showMessage('error', t(errorKey));
       return;
     }
 
-    const parentName = context.parentName || Repo.name;
+    const parentName = context.parentName || Repository.name;
 
     confirm({
-      title: t('resources:repos.deleteCloneConfirmTitle'),
-      content: t('resources:repos.deleteCloneConfirmMessage', {
-        name: Repo.name,
-        tag: Repo.repoTag || 'latest',
+      title: t('resources:repositories.deleteCloneConfirmTitle'),
+      content: t('resources:repositories.deleteCloneConfirmMessage', {
+        name: Repository.name,
+        tag: Repository.repositoryTag || 'latest',
         parentName,
       }),
       okText: t('common:delete'),
@@ -251,10 +267,14 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
       onOk: async () => {
         try {
           const grandRepoVault =
-            getGrandVaultForOperation(context.repoGuid!, context.grandGuid, teamRepos) || '{}';
+            getGrandVaultForOperation(
+              context.repositoryGuid!,
+              context.grandGuid,
+              teamRepositories
+            ) || '{}';
 
           const params: Record<string, unknown> = {
-            repo: context.repoGuid,
+            repository: context.repositoryGuid,
             grand: context.grandGuid,
           };
 
@@ -265,47 +285,47 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             functionName: 'rm',
             params,
             priority: 4,
-            addedVia: 'machine-Repo-list-delete-clone',
+            addedVia: 'machine-Repository-list-delete-clone',
             machineVault: machine.vaultContent || '{}',
-            repoGuid: context.repoGuid,
+            repositoryGuid: context.repositoryGuid,
             vaultContent: grandRepoVault,
-            repoNetworkId: context.repoNetworkId,
+            repositoryNetworkId: context.repositoryNetworkId,
           });
 
           if (result.success) {
             if (result.taskId) {
               showMessage(
                 'success',
-                t('resources:repos.deleteCloneQueued', {
-                  name: Repo.name,
-                  tag: Repo.repoTag || 'latest',
+                t('resources:repositories.deleteCloneQueued', {
+                  name: Repository.name,
+                  tag: Repository.repositoryTag || 'latest',
                 })
               );
               if (onQueueItemCreated) {
                 onQueueItemCreated(result.taskId, machine.machineName);
               }
-              showMessage('success', t('resources:repos.deleteForkSuccess'));
+              showMessage('success', t('resources:repositories.deleteForkSuccess'));
             } else if (result.isQueued) {
-              showMessage('info', t('resources:repos.highestPriorityQueued'));
+              showMessage('info', t('resources:repositories.highestPriorityQueued'));
             }
           } else {
-            showMessage('error', result.error || t('resources:repos.deleteCloneFailed'));
+            showMessage('error', result.error || t('resources:repositories.deleteCloneFailed'));
           }
         } catch {
-          showMessage('error', t('resources:repos.deleteCloneFailed'));
+          showMessage('error', t('resources:repositories.deleteCloneFailed'));
         }
       },
     });
   };
 
-  const handlePromoteToGrand = async (Repo: Repo) => {
-    const context = preparePromotion(Repo.name, Repo.repoTag, teamRepos);
+  const handlePromoteToGrand = async (Repository: Repository) => {
+    const context = preparePromotion(Repository.name, Repository.repositoryTag, teamRepositories);
 
     if (context.status === 'error') {
       const errorKey =
         context.errorCode === 'NOT_FOUND'
-          ? 'resources:repos.RepoNotFound'
-          : 'resources:repos.alreadyOriginalRepo';
+          ? 'resources:repositories.RepoNotFound'
+          : 'resources:repositories.alreadyOriginalRepo';
       showMessage('error', t(errorKey));
       return;
     }
@@ -313,61 +333,69 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
     const { siblingClones, currentGrandName } = context;
 
     confirm({
-      title: t('resources:repos.promoteToGrandTitle'),
+      title: t('resources:repositories.promoteToGrandTitle'),
       content: (
         <ModalContent>
           <Typography.Paragraph>
-            {t('resources:repos.promoteToGrandMessage', {
-              name: Repo.name,
+            {t('resources:repositories.promoteToGrandMessage', {
+              name: Repository.name,
               grand: currentGrandName,
             })}
           </Typography.Paragraph>
           {siblingClones.length > 0 && (
             <>
               <Typography.Paragraph>
-                {t('resources:repos.promoteWillUpdateSiblings', { count: siblingClones.length })}
+                {t('resources:repositories.promoteWillUpdateSiblings', {
+                  count: siblingClones.length,
+                })}
               </Typography.Paragraph>
               <ul>
                 {siblingClones.map((clone) => (
-                  <li key={clone.repoGuid}>{clone.repoName}</li>
+                  <li key={clone.repositoryGuid}>{clone.repositoryName}</li>
                 ))}
               </ul>
             </>
           )}
-          <Alert message={t('resources:repos.promoteWarning')} type="warning" showIcon />
+          <Alert message={t('resources:repositories.promoteWarning')} type="warning" showIcon />
         </ModalContent>
       ),
-      okText: t('resources:repos.promoteButton'),
+      okText: t('resources:repositories.promoteButton'),
       okType: 'primary',
       cancelText: t('common:cancel'),
       onOk: async () => {
         try {
           await promoteRepoMutation.mutateAsync({
             teamName: machine.teamName,
-            repoName: Repo.name,
+            repositoryName: Repository.name,
           });
-          showMessage('success', t('resources:repos.promoteSuccess', { name: Repo.name }));
+          showMessage(
+            'success',
+            t('resources:repositories.promoteSuccess', { name: Repository.name })
+          );
         } catch (error: unknown) {
-          const errorMessage = getAxiosErrorMessage(error, t('resources:repos.promoteFailed'));
+          const errorMessage = getAxiosErrorMessage(
+            error,
+            t('resources:repositories.promoteFailed')
+          );
           showMessage('error', errorMessage);
         }
       },
     });
   };
 
-  const handleRenameRepo = async (Repo: Repo) => {
-    let newName = Repo.name;
+  const handleRenameRepo = async (Repository: Repository) => {
+    let newName = Repository.name;
 
     modal.confirm({
-      title: t('resources:repos.renameTitle'),
+      title: t('resources:repositories.renameTitle'),
       content: (
         <div>
           <Typography.Paragraph>
-            {t('resources:repos.renameMessage', { name: Repo.name })}
+            {t('resources:repositories.renameMessage', { name: Repository.name })}
           </Typography.Paragraph>
           <Input
-            defaultValue={Repo.name}
-            placeholder={t('resources:repos.newRepoName')}
+            defaultValue={Repository.name}
+            placeholder={t('resources:repositories.newRepoName')}
             onChange={(e) => {
               newName = e.target.value;
             }}
@@ -384,37 +412,46 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         const trimmedName = newName.trim();
 
         if (!trimmedName) {
-          showMessage('error', t('resources:repos.emptyNameError'));
+          showMessage('error', t('resources:repositories.emptyNameError'));
           return Promise.reject();
         }
 
-        if (trimmedName === Repo.name) {
-          showMessage('info', t('resources:repos.nameUnchanged'));
+        if (trimmedName === Repository.name) {
+          showMessage('info', t('resources:repositories.nameUnchanged'));
           return Promise.reject();
         }
 
-        const existingRepo = teamRepos.find((r) => r.repoName === trimmedName);
+        const existingRepo = teamRepositories.find((r) => r.repositoryName === trimmedName);
         if (existingRepo) {
-          showMessage('error', t('resources:repos.nameAlreadyExists', { name: trimmedName }));
+          showMessage(
+            'error',
+            t('resources:repositories.nameAlreadyExists', { name: trimmedName })
+          );
           return Promise.reject();
         }
 
         try {
           await updateRepoNameMutation.mutateAsync({
             teamName: machine.teamName,
-            currentRepoName: Repo.name,
-            newRepoName: trimmedName,
+            currentRepositoryName: Repository.name,
+            newRepositoryName: trimmedName,
           });
           showMessage(
             'success',
-            t('resources:repos.renameSuccess', { oldName: Repo.name, newName: trimmedName })
+            t('resources:repositories.renameSuccess', {
+              oldName: Repository.name,
+              newName: trimmedName,
+            })
           );
 
           if (onActionComplete) {
             onActionComplete();
           }
         } catch (error: unknown) {
-          const errorMessage = getAxiosErrorMessage(error, t('resources:repos.renameFailed'));
+          const errorMessage = getAxiosErrorMessage(
+            error,
+            t('resources:repositories.renameFailed')
+          );
           showMessage('error', errorMessage);
           return Promise.reject();
         }
@@ -422,19 +459,22 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
     });
   };
 
-  const handleRenameTag = async (Repo: Repo) => {
-    let newTag = Repo.repoTag || 'latest';
+  const handleRenameTag = async (Repository: Repository) => {
+    let newTag = Repository.repositoryTag || 'latest';
 
     modal.confirm({
-      title: t('resources:repos.renameTagTitle'),
+      title: t('resources:repositories.renameTagTitle'),
       content: (
         <div>
           <Typography.Paragraph>
-            {t('resources:repos.renameTagMessage', { name: Repo.name, tag: Repo.repoTag })}
+            {t('resources:repositories.renameTagMessage', {
+              name: Repository.name,
+              tag: Repository.repositoryTag,
+            })}
           </Typography.Paragraph>
           <Input
-            defaultValue={Repo.repoTag}
-            placeholder={t('resources:repos.newTagName')}
+            defaultValue={Repository.repositoryTag}
+            placeholder={t('resources:repositories.newTagName')}
             onChange={(e) => {
               newTag = e.target.value;
             }}
@@ -451,35 +491,35 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         const trimmedTag = newTag.trim();
 
         if (!trimmedTag) {
-          showMessage('error', t('resources:repos.emptyTagError'));
+          showMessage('error', t('resources:repositories.emptyTagError'));
           return Promise.reject();
         }
 
-        if (trimmedTag === Repo.repoTag) {
-          showMessage('info', t('resources:repos.tagUnchanged'));
+        if (trimmedTag === Repository.repositoryTag) {
+          showMessage('info', t('resources:repositories.tagUnchanged'));
           return Promise.reject();
         }
 
-        const existingTag = teamRepos.find(
-          (r) => r.repoName === Repo.name && r.repoTag === trimmedTag
+        const existingTag = teamRepositories.find(
+          (r) => r.repositoryName === Repository.name && r.repositoryTag === trimmedTag
         );
         if (existingTag) {
-          showMessage('error', t('resources:repos.tagAlreadyExists', { tag: trimmedTag }));
+          showMessage('error', t('resources:repositories.tagAlreadyExists', { tag: trimmedTag }));
           return Promise.reject();
         }
 
         try {
           await updateRepoTagMutation.mutateAsync({
             teamName: machine.teamName,
-            repoName: Repo.name,
-            currentTag: Repo.repoTag || 'latest',
+            repositoryName: Repository.name,
+            currentTag: Repository.repositoryTag || 'latest',
             newTag: trimmedTag,
           });
           showMessage(
             'success',
-            t('resources:repos.renameTagSuccess', {
-              name: Repo.name,
-              oldTag: Repo.repoTag,
+            t('resources:repositories.renameTagSuccess', {
+              name: Repository.name,
+              oldTag: Repository.repositoryTag,
               newTag: trimmedTag,
             })
           );
@@ -488,7 +528,10 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             onActionComplete();
           }
         } catch (error: unknown) {
-          const errorMessage = getAxiosErrorMessage(error, t('resources:repos.renameTagFailed'));
+          const errorMessage = getAxiosErrorMessage(
+            error,
+            t('resources:repositories.renameTagFailed')
+          );
           showMessage('error', errorMessage);
           return Promise.reject();
         }
@@ -496,38 +539,44 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
     });
   };
 
-  const handleDeleteGrandRepo = async (Repo: Repo) => {
-    const context = prepareGrandDeletion(Repo.name, Repo.repoTag, teamRepos);
+  const handleDeleteGrandRepo = async (Repository: Repository) => {
+    const context = prepareGrandDeletion(
+      Repository.name,
+      Repository.repositoryTag,
+      teamRepositories
+    );
 
     if (context.status === 'error') {
       const errorKey =
         context.errorCode === 'NOT_FOUND'
-          ? 'resources:repos.RepoNotFound'
-          : 'resources:repos.notAGrandRepo';
+          ? 'resources:repositories.RepoNotFound'
+          : 'resources:repositories.notAGrandRepo';
       showMessage('error', t(errorKey));
       return;
     }
 
     if (context.status === 'blocked') {
       modal.error({
-        title: t('resources:repos.cannotDeleteHasClones'),
+        title: t('resources:repositories.cannotDeleteHasClones'),
         content: (
           <div>
             <Typography.Paragraph>
-              {t('resources:repos.hasActiveClonesMessage', {
-                name: Repo.name,
+              {t('resources:repositories.hasActiveClonesMessage', {
+                name: Repository.name,
                 count: context.childClones.length,
               })}
             </Typography.Paragraph>
             <RediaccText as="p" weight="bold">
-              {t('resources:repos.clonesList')}
+              {t('resources:repositories.clonesList')}
             </RediaccText>
             <ul>
               {context.childClones.map((clone) => (
-                <li key={clone.repoGuid}>{clone.repoName}</li>
+                <li key={clone.repositoryGuid}>{clone.repositoryName}</li>
               ))}
             </ul>
-            <Typography.Paragraph>{t('resources:repos.deleteOptionsMessage')}</Typography.Paragraph>
+            <Typography.Paragraph>
+              {t('resources:repositories.deleteOptionsMessage')}
+            </Typography.Paragraph>
           </div>
         ),
         okText: t('common:close'),
@@ -538,21 +587,23 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
     let confirmationInput = '';
 
     modal.confirm({
-      title: t('resources:repos.deleteGrandConfirmTitle'),
+      title: t('resources:repositories.deleteGrandConfirmTitle'),
       content: (
         <ModalContent>
           <Alert
-            message={t('resources:repos.deleteGrandWarning')}
-            description={t('resources:repos.deleteGrandWarningDesc', { name: Repo.name })}
+            message={t('resources:repositories.deleteGrandWarning')}
+            description={t('resources:repositories.deleteGrandWarningDesc', {
+              name: Repository.name,
+            })}
             type="warning"
             showIcon
           />
           <RediaccText weight="bold">
-            {t('resources:repos.deleteGrandConfirmPrompt', { name: Repo.name })}
+            {t('resources:repositories.deleteGrandConfirmPrompt', { name: Repository.name })}
           </RediaccText>
           <ConfirmationInput
             type="text"
-            placeholder={Repo.name}
+            placeholder={Repository.name}
             onChange={(e) => {
               confirmationInput = e.target.value;
             }}
@@ -563,18 +614,22 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
       okType: 'danger',
       cancelText: t('common:cancel'),
       onOk: async () => {
-        if (confirmationInput !== Repo.name) {
-          showMessage('error', t('resources:repos.deleteGrandConfirmationMismatch'));
+        if (confirmationInput !== Repository.name) {
+          showMessage('error', t('resources:repositories.deleteGrandConfirmationMismatch'));
           return Promise.reject();
         }
 
         try {
           const grandRepoVault =
-            getGrandVaultForOperation(context.repoGuid!, context.repoGuid, teamRepos) || '{}';
+            getGrandVaultForOperation(
+              context.repositoryGuid!,
+              context.repositoryGuid,
+              teamRepositories
+            ) || '{}';
 
           const params: Record<string, unknown> = {
-            repo: context.repoGuid,
-            grand: context.repoGuid,
+            repository: context.repositoryGuid,
+            grand: context.repositoryGuid,
           };
 
           const result = await executeAction({
@@ -584,29 +639,32 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             functionName: 'rm',
             params,
             priority: 4,
-            addedVia: 'machine-Repo-list-delete-grand',
+            addedVia: 'machine-Repository-list-delete-grand',
             machineVault: machine.vaultContent || '{}',
-            repoGuid: context.repoGuid,
+            repositoryGuid: context.repositoryGuid,
             vaultContent: grandRepoVault,
-            repoNetworkId: context.repoNetworkId,
+            repositoryNetworkId: context.repositoryNetworkId,
           });
 
           if (result.success) {
             if (result.taskId) {
-              showMessage('success', t('resources:repos.deleteGrandQueued', { name: Repo.name }));
+              showMessage(
+                'success',
+                t('resources:repositories.deleteGrandQueued', { name: Repository.name })
+              );
               if (onQueueItemCreated) {
                 onQueueItemCreated(result.taskId, machine.machineName);
               }
-              showMessage('success', t('resources:repos.deleteGrandSuccess'));
+              showMessage('success', t('resources:repositories.deleteGrandSuccess'));
             } else if (result.isQueued) {
-              showMessage('info', t('resources:repos.highestPriorityQueued'));
+              showMessage('info', t('resources:repositories.highestPriorityQueued'));
             }
           } else {
-            showMessage('error', result.error || t('resources:repos.deleteGrandFailed'));
+            showMessage('error', result.error || t('resources:repositories.deleteGrandFailed'));
             return Promise.reject();
           }
         } catch {
-          showMessage('error', t('resources:repos.deleteGrandFailed'));
+          showMessage('error', t('resources:repositories.deleteGrandFailed'));
           return Promise.reject();
         }
       },
@@ -619,15 +677,20 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
     priority: number;
     description: string;
   }) => {
-    if (!selectedRepo) return;
+    if (!selectedRepository) return;
 
     try {
-      const RepoData = teamRepos.find(
-        (r) => r.repoName === selectedRepo.name && r.repoTag === selectedRepo.repoTag
+      const RepoData = teamRepositories.find(
+        (r) =>
+          r.repositoryName === selectedRepository.name &&
+          r.repositoryTag === selectedRepository.repositoryTag
       );
 
       if (!RepoData || !RepoData.vaultContent) {
-        showMessage('error', t('resources:repos.noCredentialsFound', { name: selectedRepo.name }));
+        showMessage(
+          'error',
+          t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
+        );
         functionModal.close();
         setSelectedRepo(null);
         return;
@@ -635,14 +698,14 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
 
       let grandRepoVault = RepoData.vaultContent;
       if (RepoData.grandGuid) {
-        const grandRepo = teamRepos.find((r) => r.repoGuid === RepoData.grandGuid);
+        const grandRepo = teamRepositories.find((r) => r.repositoryGuid === RepoData.grandGuid);
         if (grandRepo && grandRepo.vaultContent) {
           grandRepoVault = grandRepo.vaultContent;
         }
       }
 
       const finalParams = { ...functionData.params };
-      const repoGuid = RepoData.repoGuid;
+      const repositoryGuid = RepoData.repositoryGuid;
       const vaultContent = grandRepoVault;
 
       if (functionData.function.name === 'fork') {
@@ -651,9 +714,9 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
 
         let newRepo;
         try {
-          newRepo = await createRepoCredential(selectedRepo.name, forkTag);
+          newRepo = await createRepositoryCredential(selectedRepository.name, forkTag);
         } catch {
-          showMessage('error', t('resources:repos.failedToCreateRepo'));
+          showMessage('error', t('resources:repositories.failedToCreateRepository'));
           closeModalAndReset();
           return;
         }
@@ -665,21 +728,21 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             bridgeName: machine.bridgeName,
             functionName: 'push',
             params: {
-              repo: RepoData.repoGuid,
-              dest: newRepo.repoGuid,
+              repository: RepoData.repositoryGuid,
+              dest: newRepo.repositoryGuid,
               destinationType: 'machine',
               to: machine.machineName,
-              state: selectedRepo.mounted ? 'online' : 'offline',
-              grand: RepoData.grandGuid || RepoData.repoGuid || '',
+              state: selectedRepository.mounted ? 'online' : 'offline',
+              grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
             },
             priority: functionData.priority,
-            addedVia: 'machine-Repo-list-fork',
+            addedVia: 'machine-Repository-list-fork',
             machineVault: machine.vaultContent || '{}',
-            repoGuid: RepoData.repoGuid,
+            repositoryGuid: RepoData.repositoryGuid,
             vaultContent: grandRepoVault,
-            repoNetworkId: newRepo.repoNetworkId,
-            repoNetworkMode: newRepo.repoNetworkMode,
-            repoTag: newRepo.repoTag,
+            repositoryNetworkId: newRepo.repositoryNetworkId,
+            repositoryNetworkMode: newRepo.repositoryNetworkMode,
+            repositoryTag: newRepo.repositoryTag,
           });
 
           closeModalAndReset();
@@ -688,17 +751,19 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             if (result.taskId) {
               showMessage(
                 'success',
-                t('resources:repos.forkStarted', { dest: `${selectedRepo.name}:${forkTag}` })
+                t('resources:repositories.forkStarted', {
+                  dest: `${selectedRepository.name}:${forkTag}`,
+                })
               );
               if (onQueueItemCreated) onQueueItemCreated(result.taskId, machine.machineName);
             } else if (result.isQueued) {
-              showMessage('info', t('resources:repos.highestPriorityQueued'));
+              showMessage('info', t('resources:repositories.highestPriorityQueued'));
             }
           } else {
-            throw new Error(result.error || 'Failed to fork Repo');
+            throw new Error(result.error || 'Failed to fork Repository');
           }
         } catch {
-          showMessage('error', t('resources:repos.failedToForkRepo'));
+          showMessage('error', t('resources:repositories.failedToForkRepository'));
         }
         return;
       }
@@ -712,9 +777,9 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
 
         let newRepo;
         try {
-          newRepo = await createRepoCredential(selectedRepo.name, deployTag);
+          newRepo = await createRepositoryCredential(selectedRepository.name, deployTag);
         } catch {
-          showMessage('error', t('resources:repos.failedToCreateRepo'));
+          showMessage('error', t('resources:repositories.failedToCreateRepository'));
           closeModalAndReset();
           return;
         }
@@ -725,7 +790,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           if (!destinationMachine) {
             showMessage(
               'error',
-              t('resources:repos.destinationMachineNotFound', { machine: targetMachine })
+              t('resources:repositories.destinationMachineNotFound', { machine: targetMachine })
             );
             continue;
           }
@@ -739,39 +804,42 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
                 ...functionData.params,
                 machines: machinesArray.join(','),
                 to: targetMachine,
-                dest: newRepo.repoGuid,
-                repo: RepoData.repoGuid,
-                grand: RepoData.grandGuid || RepoData.repoGuid || '',
-                state: selectedRepo.mounted ? 'online' : 'offline',
+                dest: newRepo.repositoryGuid,
+                repository: RepoData.repositoryGuid,
+                grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
+                state: selectedRepository.mounted ? 'online' : 'offline',
               },
               priority: functionData.priority,
-              addedVia: 'machine-Repo-list',
+              addedVia: 'machine-Repository-list',
               machineVault: machine.vaultContent || '{}',
               destinationMachineVault: destinationMachine.vaultContent || '{}',
-              repoGuid,
+              repositoryGuid,
               vaultContent,
-              repoNetworkId: newRepo.repoNetworkId,
-              repoNetworkMode: newRepo.repoNetworkMode,
-              repoTag: newRepo.repoTag,
+              repositoryNetworkId: newRepo.repositoryNetworkId,
+              repositoryNetworkMode: newRepo.repositoryNetworkMode,
+              repositoryTag: newRepo.repositoryTag,
             });
             if (result.success && result.taskId) createdTaskIds.push(result.taskId);
           } catch {
-            showMessage('error', t('resources:repos.failedToDeployTo', { machine: targetMachine }));
+            showMessage(
+              'error',
+              t('resources:repositories.failedToDeployTo', { machine: targetMachine })
+            );
           }
         }
 
         closeModalAndReset();
         showMultiTargetSummary(createdTaskIds, machinesArray.length, {
-          success: 'resources:repos.deploymentQueued',
-          partial: 'resources:repos.deploymentPartialSuccess',
-          allFailed: 'resources:repos.allDeploymentsFailed',
+          success: 'resources:repositories.deploymentQueued',
+          partial: 'resources:repositories.deploymentPartialSuccess',
+          allFailed: 'resources:repositories.allDeploymentsFailed',
         });
         return;
       }
 
       if (functionData.function.name === 'backup' && functionData.params.storages) {
         if (!canBackupToStorage(RepoData).canBackup) {
-          showMessage('error', t('resources:repos.cannotBackupForkToStorage'));
+          showMessage('error', t('resources:repositories.cannotBackupForkToStorage'));
           closeModalAndReset();
           return;
         }
@@ -786,7 +854,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           if (!destinationStorage) {
             showMessage(
               'error',
-              t('resources:repos.destinationStorageNotFound', { storage: targetStorage })
+              t('resources:repositories.destinationStorageNotFound', { storage: targetStorage })
             );
             continue;
           }
@@ -800,39 +868,42 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
                 ...functionData.params,
                 storages: storagesArray.join(','),
                 to: targetStorage,
-                dest: RepoData.repoGuid,
-                repo: RepoData.repoGuid,
-                grand: RepoData.grandGuid || RepoData.repoGuid || '',
-                state: selectedRepo.mounted ? 'online' : 'offline',
+                dest: RepoData.repositoryGuid,
+                repository: RepoData.repositoryGuid,
+                grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
+                state: selectedRepository.mounted ? 'online' : 'offline',
               },
               priority: functionData.priority,
-              addedVia: 'machine-Repo-list',
+              addedVia: 'machine-Repository-list',
               machineVault: machine.vaultContent || '{}',
               destinationStorageVault: destinationStorage.vaultContent || '{}',
-              repoGuid,
+              repositoryGuid,
               vaultContent,
-              repoNetworkId: RepoData.repoNetworkId,
-              repoNetworkMode: RepoData.repoNetworkMode,
-              repoTag: RepoData.repoTag,
+              repositoryNetworkId: RepoData.repositoryNetworkId,
+              repositoryNetworkMode: RepoData.repositoryNetworkMode,
+              repositoryTag: RepoData.repositoryTag,
             });
             if (result.success && result.taskId) createdTaskIds.push(result.taskId);
           } catch {
-            showMessage('error', t('resources:repos.failedToBackupTo', { storage: targetStorage }));
+            showMessage(
+              'error',
+              t('resources:repositories.failedToBackupTo', { storage: targetStorage })
+            );
           }
         }
 
         closeModalAndReset();
         showMultiTargetSummary(createdTaskIds, storagesArray.length, {
-          success: 'resources:repos.backupQueued',
-          partial: 'resources:repos.backupPartialSuccess',
-          allFailed: 'resources:repos.allBackupsFailed',
+          success: 'resources:repositories.backupQueued',
+          partial: 'resources:repositories.backupPartialSuccess',
+          allFailed: 'resources:repositories.allBackupsFailed',
         });
         return;
       }
 
       if (functionData.function.name === 'pull') {
-        finalParams.repo = RepoData.repoGuid;
-        finalParams.grand = RepoData.grandGuid || RepoData.repoGuid || '';
+        finalParams.repository = RepoData.repositoryGuid;
+        finalParams.grand = RepoData.grandGuid || RepoData.repositoryGuid || '';
       }
 
       const result = await executeAction({
@@ -842,13 +913,13 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         functionName: functionData.function.name,
         params: finalParams,
         priority: functionData.priority,
-        addedVia: 'machine-Repo-list',
+        addedVia: 'machine-Repository-list',
         machineVault: machine.vaultContent || '{}',
-        repoGuid,
+        repositoryGuid,
         vaultContent,
-        repoNetworkId: RepoData.repoNetworkId,
-        repoNetworkMode: RepoData.repoNetworkMode,
-        repoTag: RepoData.repoTag,
+        repositoryNetworkId: RepoData.repositoryNetworkId,
+        repositoryNetworkMode: RepoData.repositoryNetworkMode,
+        repositoryTag: RepoData.repositoryTag,
       });
 
       functionModal.close();
@@ -856,56 +927,58 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
 
       if (result.success) {
         if (result.taskId) {
-          showMessage('success', t('resources:repos.queueItemCreated'));
+          showMessage('success', t('resources:repositories.queueItemCreated'));
           if (onQueueItemCreated) {
             onQueueItemCreated(result.taskId, machine.machineName);
           }
         } else if (result.isQueued) {
-          showMessage('info', t('resources:repos.highestPriorityQueued'));
+          showMessage('info', t('resources:repositories.highestPriorityQueued'));
         }
       } else {
-        throw new Error(result.error || t('resources:repos.failedToCreateQueueItem'));
+        throw new Error(result.error || t('resources:repositories.failedToCreateQueueItem'));
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : t('resources:repos.failedToCreateQueueItem');
+        error instanceof Error
+          ? error.message
+          : t('resources:repositories.failedToCreateQueueItem');
       showMessage('error', errorMessage);
     }
   };
 
-  const getTableDataSource = (): RepoTableRow[] => {
-    const tableData: RepoTableRow[] = [];
+  const getTableDataSource = (): RepositoryTableRow[] => {
+    const tableData: RepositoryTableRow[] = [];
 
-    groupedRepos.forEach((group) => {
+    groupedRepositories.forEach((group) => {
       if (group.grandTag) {
         tableData.push({
           ...group.grandTag,
-          key: `repo-${group.name}-${group.grandTag.repoTag || 'latest'}`,
-        } as RepoTableRow);
+          key: `repo-${group.name}-${group.grandTag.repositoryTag || 'latest'}`,
+        } as RepositoryTableRow);
       }
 
       group.forkTags.forEach((fork) => {
         tableData.push({
           ...fork,
-          key: `repo-${fork.name}-${fork.repoTag || 'latest'}`,
-        } as RepoTableRow);
+          key: `repo-${fork.name}-${fork.repositoryTag || 'latest'}`,
+        } as RepositoryTableRow);
       });
     });
 
     return tableData;
   };
 
-  const columns: ColumnsType<RepoTableRow> = [
-    repoStatusColumn,
-    repoNameColumn,
-    createActionColumn<RepoTableRow>({
+  const columns: ColumnsType<RepositoryTableRow> = [
+    repositoryStatusColumn,
+    repositoryNameColumn,
+    createActionColumn<RepositoryTableRow>({
       title: t('common:table.actions'),
       width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
       fixed: 'end',
       renderActions: (record) => (
-        <RepoActionsMenu
+        <RepositoryActionsMenu
           record={record}
-          teamRepos={teamRepos}
+          teamRepositories={teamRepositories}
           machine={machine}
           userEmail={userEmail}
           containersData={containersData}
@@ -915,10 +988,10 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           onPromoteToGrand={handlePromoteToGrand}
           onDeleteFork={handleDeleteFork}
           onRenameTag={handleRenameTag}
-          onRenameRepo={handleRenameRepo}
-          onDeleteGrandRepo={handleDeleteGrandRepo}
-          onRepoClick={onRepoClick}
-          onCreateRepo={onCreateRepo}
+          onRenameRepository={handleRenameRepo}
+          onDeleteGrandRepository={handleDeleteGrandRepo}
+          onRepositoryClick={onRepositoryClick}
+          onCreateRepository={onCreateRepository}
           t={t}
         />
       ),
@@ -932,7 +1005,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
           loading
           centered
           minHeight={200}
-          tip={t('resources:repos.fetchingRepos') as string}
+          tip={t('resources:repositories.fetchingRepos') as string}
         >
           <div />
         </LoadingWrapper>
@@ -1031,38 +1104,38 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
       <RepoTableComponent
         columns={columns}
         dataSource={getTableDataSource()}
-        rowKey={(record: RepoTableRow) =>
-          record.key || `${record.name}-${record.repoTag || 'latest'}`
+        rowKey={(record: RepositoryTableRow) =>
+          record.key || `${record.name}-${record.repositoryTag || 'latest'}`
         }
         size="small"
         pagination={false}
         scroll={{ x: 'max-content' }}
         data-testid="machine-repo-list-table"
-        rowClassName={(record: RepoTableRow) => {
-          const repoData = teamRepos.find(
-            (r) => r.repoName === record.name && r.repoTag === record.repoTag
+        rowClassName={(record: RepositoryTableRow) => {
+          const repositoryData = teamRepositories.find(
+            (r) => r.repositoryName === record.name && r.repositoryTag === record.repositoryTag
           );
-          const classes = ['Repo-row'];
-          if (repoData && coreIsFork(repoData)) {
-            classes.push('Repo-fork-row');
+          const classes = ['Repository-row'];
+          if (repositoryData && coreIsFork(repositoryData)) {
+            classes.push('Repository-fork-row');
           }
-          if (highlightedRepo?.name === record.name) {
-            classes.push('Repo-row--highlighted');
+          if (highlightedRepository?.name === record.name) {
+            classes.push('Repository-row--highlighted');
           }
           return classes.join(' ');
         }}
         locale={{
-          emptyText: t('resources:repos.noRepos'),
+          emptyText: t('resources:repositories.noRepositories'),
         }}
-        onRow={(record: RepoTableRow) => ({
+        onRow={(record: RepositoryTableRow) => ({
           onClick: (e: React.MouseEvent<HTMLElement>) => {
             const target = e.target as HTMLElement;
             if (target.closest('button') || target.closest('.ant-dropdown')) {
               return;
             }
 
-            navigate(`/machines/${machine.machineName}/repos/${record.name}/containers`, {
-              state: { machine, Repo: record },
+            navigate(`/machines/${machine.machineName}/repositories/${record.name}/containers`, {
+              state: { machine, Repository: record },
             });
           },
         })}
@@ -1075,7 +1148,7 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             level={5}
             data-testid="machine-repo-list-system-containers-title"
           >
-            {t('resources:repos.systemContainers')}
+            {t('resources:repositories.systemContainers')}
           </S.SystemContainersTitle>
           <SystemTableComponent
             columns={systemContainerColumns}
@@ -1100,34 +1173,39 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         title={t('machines:runFunction')}
         data-testid="machine-repo-list-function-modal"
         subtitle={
-          selectedRepo && (
+          selectedRepository && (
             <RediaccStack direction="vertical" gap="sm" fullWidth>
               <Space>
-                <RediaccText>{t('resources:repos.Repo')}:</RediaccText>
-                <InlineTag>{selectedRepo.name}</InlineTag>
+                <RediaccText>{t('resources:repositories.Repository')}:</RediaccText>
+                <InlineTag>{selectedRepository.name}</InlineTag>
                 <RediaccText>•</RediaccText>
                 <RediaccText>{t('machines:machine')}:</RediaccText>
                 <MachineTag>{machine.machineName}</MachineTag>
               </Space>
               {selectedFunction === 'push' &&
                 (() => {
-                  const currentRepoData = teamRepos.find(
-                    (r) => r.repoName === selectedRepo.name && r.repoTag === selectedRepo.repoTag
+                  const currentRepoData = teamRepositories.find(
+                    (r) =>
+                      r.repositoryName === selectedRepository.name &&
+                      r.repositoryTag === selectedRepository.repositoryTag
                   );
                   if (currentRepoData?.parentGuid) {
-                    const parentRepo = teamRepos.find(
-                      (r) => r.repoGuid === currentRepoData.parentGuid
+                    const parentRepo = teamRepositories.find(
+                      (r) => r.repositoryGuid === currentRepoData.parentGuid
                     );
                     if (parentRepo) {
                       return (
                         <Space>
                           <SmallText color="secondary">
-                            {t('resources:repos.parentRepo', { defaultValue: 'Parent Repo' })}:
+                            {t('resources:repositories.parentRepo', {
+                              defaultValue: 'Parent Repository',
+                            })}
+                            :
                           </SmallText>
-                          <InlineTag>{parentRepo.repoName}</InlineTag>
+                          <InlineTag>{parentRepo.repositoryName}</InlineTag>
                           <SmallText color="secondary">→</SmallText>
                           <SmallText color="secondary">{t('common:current')}:</SmallText>
-                          <InlineTag>{selectedRepo.name}</InlineTag>
+                          <InlineTag>{selectedRepository.name}</InlineTag>
                         </Space>
                       );
                     }
@@ -1137,34 +1215,38 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
             </RediaccStack>
           )
         }
-        allowedCategories={['Repo', 'backup', 'network']}
+        allowedCategories={['Repository', 'backup', 'network']}
         loading={isExecuting}
         showMachineSelection={false}
         teamName={machine.teamName}
-        hiddenParams={['repo', 'grand', 'state']}
+        hiddenParams={['repository', 'grand', 'state']}
         defaultParams={{
-          repo: (() => {
-            const repo = teamRepos.find(
-              (r) => r.repoName === selectedRepo?.name && r.repoTag === selectedRepo?.repoTag
+          repository: (() => {
+            const repository = teamRepositories.find(
+              (r) =>
+                r.repositoryName === selectedRepository?.name &&
+                r.repositoryTag === selectedRepository?.repositoryTag
             );
-            return repo?.repoGuid || '';
+            return repository?.repositoryGuid || '';
           })(),
           grand:
-            teamRepos.find(
-              (r) => r.repoName === selectedRepo?.name && r.repoTag === selectedRepo?.repoTag
+            teamRepositories.find(
+              (r) =>
+                r.repositoryName === selectedRepository?.name &&
+                r.repositoryTag === selectedRepository?.repositoryTag
             )?.grandGuid || '',
           ...((selectedFunction === 'backup' ||
             selectedFunction === 'push' ||
             selectedFunction === 'deploy' ||
             selectedFunction === 'fork') &&
-          selectedRepo
+          selectedRepository
             ? {
-                state: selectedRepo.mounted ? 'online' : 'offline',
+                state: selectedRepository.mounted ? 'online' : 'offline',
               }
             : {}),
         }}
         initialParams={{
-          ...((selectedFunction === 'fork' || selectedFunction === 'deploy') && selectedRepo
+          ...((selectedFunction === 'fork' || selectedFunction === 'deploy') && selectedRepository
             ? {
                 tag: new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-'),
               }
@@ -1173,18 +1255,20 @@ export const MachineRepoTable: React.FC<MachineRepoTableProps> = ({
         preselectedFunction={selectedFunction || undefined}
         currentMachineName={machine.machineName}
         additionalContext={
-          selectedFunction === 'push' && selectedRepo
+          selectedFunction === 'push' && selectedRepository
             ? {
-                sourceRepo: selectedRepo.name,
+                sourceRepo: selectedRepository.name,
                 parentRepo: (() => {
-                  const currentRepoData = teamRepos.find(
-                    (r) => r.repoName === selectedRepo.name && r.repoTag === selectedRepo.repoTag
+                  const currentRepoData = teamRepositories.find(
+                    (r) =>
+                      r.repositoryName === selectedRepository.name &&
+                      r.repositoryTag === selectedRepository.repositoryTag
                   );
                   if (currentRepoData?.parentGuid) {
-                    const parentRepo = teamRepos.find(
-                      (r) => r.repoGuid === currentRepoData.parentGuid
+                    const parentRepo = teamRepositories.find(
+                      (r) => r.repositoryGuid === currentRepoData.parentGuid
                     );
-                    return parentRepo?.repoName || null;
+                    return parentRepo?.repositoryName || null;
                   }
                   return null;
                 })(),

@@ -5,11 +5,11 @@ import type { TabsSize, TabsVariant } from './RediaccTabs.types';
 
 const TAB_FONT_SIZE_MAP: Record<TabsSize, keyof StyledTheme['fontSize']> = {
   sm: 'SM',
-  md: 'BASE',
+  md: 'MD',
 };
 
 export const resolveTabFontSize = (theme: StyledTheme, size: TabsSize = 'md'): number => {
-  const fontSizeKey = TAB_FONT_SIZE_MAP[size] ?? 'BASE';
+  const fontSizeKey = TAB_FONT_SIZE_MAP[size] ?? 'MD';
   return theme.fontSize[fontSizeKey];
 };
 

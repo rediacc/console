@@ -39,7 +39,7 @@ export const LinkButton = styled(RediaccButton).attrs({ variant: 'link' })`
 `;
 
 export const FilterHintIcon = styled(FilterOutlined)`
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: ${({ theme }) => theme.colors.textSecondary};
   opacity: 0.7;
 `;

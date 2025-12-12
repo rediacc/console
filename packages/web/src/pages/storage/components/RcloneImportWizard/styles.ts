@@ -57,7 +57,7 @@ export const LoadingTitle = styled(Title)`
 
 export const StatusMessage = styled(RediaccText)`
   && {
-    font-size: ${DESIGN_TOKENS.FONT_SIZE.CAPTION}px;
+    font-size: ${DESIGN_TOKENS.FONT_SIZE.XS}px;
     color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
@@ -69,5 +69,5 @@ export const ParsingErrorAlert = styled(RediaccAlert)`
 `;
 
 export const NameText = styled.span`
-  font-weight: 600;
+  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
 `;

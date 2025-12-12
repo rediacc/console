@@ -37,7 +37,7 @@ export interface QueueFunctionRequirements {
   machine?: boolean;
   team?: boolean;
   company?: boolean;
-  repo?: boolean;
+  repository?: boolean;
   storage?: boolean;
   plugin?: boolean;
   bridge?: boolean;

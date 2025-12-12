@@ -21,7 +21,7 @@ interface ModalHeaderRendererProps {
 
 const RESOURCE_CONFIG = {
   storage: { key: 'storage', createKey: 'resources:storage.createStorage' },
-  repo: { key: 'repos', createKey: 'resources:repos.createRepo' },
+  repository: { key: 'repositories', createKey: 'resources:repositories.createRepository' },
   machine: { key: 'machines', createKey: 'machines:createMachine' },
   team: { key: 'teams', createKey: 'resources:teams.createTeam' },
   region: { key: 'regions', createKey: 'system:regions.createRegion' },
@@ -81,7 +81,7 @@ export const createFunctionSubtitle = (
     <Space size="small">
       <RediaccText color="secondary">{t('machines:team')}:</RediaccText>
       <RediaccText weight="bold">{teamLabel}</RediaccText>
-      {['machine', 'repo', 'storage'].includes(resourceType) && resourceName && (
+      {['machine', 'repository', 'storage'].includes(resourceType) && resourceName && (
         <>
           <RediaccText color="secondary">
             {t(
@@ -89,7 +89,7 @@ export const createFunctionSubtitle = (
                 ? 'machines:machine'
                 : resourceType === 'storage'
                   ? 'resources:storage.storage'
-                  : 'repos.repo'
+                  : 'repositories.repository'
             )}
             :
           </RediaccText>
@@ -114,17 +114,17 @@ const getModalTitle = ({
     const createKey = RESOURCE_CONFIG[resourceType as keyof typeof RESOURCE_CONFIG]?.createKey;
     const createText = createKey ? t(createKey) : '';
 
-    // Special case for repo creation
-    if (resourceType === 'repo') {
-      // Check if this is credential-only mode (either from Add Credential button or Repo Credentials tab)
+    // Special case for repository creation
+    if (resourceType === 'repository') {
+      // Check if this is credential-only mode (either from Add Credential button or Repository Credentials tab)
       const isCredentialOnlyMode =
-        (existingData?.repoGuid &&
-          typeof existingData.repoGuid === 'string' &&
-          existingData.repoGuid.trim() !== '') ||
+        (existingData?.repositoryGuid &&
+          typeof existingData.repositoryGuid === 'string' &&
+          existingData.repositoryGuid.trim() !== '') ||
         creationContext === 'credentials-only';
 
       if (isCredentialOnlyMode) {
-        // For credential-only mode, show "Create Repo (Credentials) in [team]"
+        // For credential-only mode, show "Create Repository (Credentials) in [team]"
         const teamNameValue = existingData?.teamName;
         const team =
           (typeof teamNameValue === 'string' ? teamNameValue : null) ||
@@ -133,9 +133,9 @@ const getModalTitle = ({
             : Array.isArray(teamFilter)
               ? teamFilter[0]
               : teamFilter);
-        return `Create Repo (Credentials) in ${team}`;
+        return `Create Repository (Credentials) in ${team}`;
       } else if (existingData?.machineName) {
-        // For repo creation from machine
+        // For repository creation from machine
         const machineNameValue = existingData.machineName;
         return `${createText} for ${typeof machineNameValue === 'string' ? machineNameValue : ''}`;
       }

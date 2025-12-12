@@ -1,8 +1,8 @@
 import type { Machine, PluginContainer } from '@/types';
 
-export interface Repo {
+export interface Repository {
   name: string;
-  repoTag?: string;
+  repositoryTag?: string;
   size: number;
   size_human: string;
   modified: number;
@@ -28,15 +28,15 @@ export interface Repo {
   };
 }
 
-export interface GroupedRepo {
+export interface GroupedRepository {
   name: string;
-  tags: Repo[];
-  grandTag: Repo | null;
-  forkTags: Repo[];
+  tags: Repository[];
+  grandTag: Repository | null;
+  forkTags: Repository[];
   isExpanded: boolean;
 }
 
-export interface RepoTableRow extends Repo {
+export interface RepositoryTableRow extends Repository {
   key?: string;
   actionId?: string;
 }
@@ -57,23 +57,23 @@ export interface Container {
   ports?: string;
   created?: string;
   port_mappings?: PortMapping[];
-  Repo?: string;
+  Repository?: string;
   [key: string]: unknown;
 }
 
-export interface RepoService {
-  Repo?: string;
+export interface RepositoryService {
+  Repository?: string;
   service_name?: string;
   unit_file?: string;
   [key: string]: unknown;
 }
 
-export interface RepoServicesState {
-  services: RepoService[];
+export interface RepositoryServicesState {
+  services: RepositoryService[];
   error: string | null;
 }
 
-export interface RepoContainersState {
+export interface RepositoryContainersState {
   containers: Container[];
   error: string | null;
 }
@@ -108,13 +108,13 @@ export interface SystemInfo {
   };
 }
 
-export interface MachineRepoTableProps {
+export interface MachineRepositoryTableProps {
   machine: Machine;
   onActionComplete?: () => void;
   hideSystemInfo?: boolean;
-  onCreateRepo?: (machine: Machine, repoGuid: string) => void;
-  onRepoClick?: (Repo: Repo) => void;
-  highlightedRepo?: Repo | null;
+  onCreateRepository?: (machine: Machine, repositoryGuid: string) => void;
+  onRepositoryClick?: (Repository: Repository) => void;
+  highlightedRepository?: Repository | null;
   onContainerClick?: (container: Container | PluginContainer) => void;
   highlightedContainer?: Container | PluginContainer | null;
   isLoading?: boolean;

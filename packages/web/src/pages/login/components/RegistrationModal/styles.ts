@@ -34,7 +34,7 @@ export const CaptchaWrapper = styled.div`
 
 export const CodeInput = styled(RediaccInput).attrs({ centered: true })`
   && {
-    font-size: ${({ theme }) => theme.fontSize.H4}px;
+    font-size: ${({ theme }) => theme.fontSize.XL}px;
     letter-spacing: ${({ theme }) => theme.spacing.SM}px;
   }
 `;

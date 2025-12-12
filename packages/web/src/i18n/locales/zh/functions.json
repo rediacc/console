@@ -18,7 +18,7 @@
       "description": "网络和套接字映射操作",
       "name": "网络功能"
     },
-    "repo": {
+    "repository": {
       "description": "仓库管理和操作",
       "name": "仓库功能"
     }
@@ -42,7 +42,7 @@
           "help": "大存储库 GUID",
           "label": "大存储库"
         },
-        "repo": {
+        "repository": {
           "help": "存储库名称",
           "label": "存储库"
         },
@@ -68,7 +68,7 @@
           "help": "选项（例如覆盖）",
           "label": "选项"
         },
-        "repo": {
+        "repository": {
           "help": "存储库名称，以逗号分隔",
           "label": "存储库"
         },
@@ -208,7 +208,7 @@
           "help": "选项（例如覆盖）",
           "label": "选项"
         },
-        "repo": {
+        "repository": {
           "help": "存储库名称，以逗号分隔",
           "label": "存储库"
         },
@@ -226,7 +226,7 @@
           "help": "附加选项",
           "label": "选项"
         },
-        "repo": {
+        "repository": {
           "help": "仓库名称（多个用逗号分隔）",
           "label": "仓库"
         }
@@ -240,7 +240,7 @@
           "help": "大存储库 GUID",
           "label": "大存储库"
         },
-        "repo": {
+        "repository": {
           "help": "存储库名称",
           "label": "存储库"
         },
@@ -288,7 +288,7 @@
           "help": "要挂载的远程机器",
           "label": "从机器"
         },
-        "repo": {
+        "repository": {
           "help": "仓库名称（多个用逗号分隔）",
           "label": "仓库"
         }
@@ -298,7 +298,7 @@
       "description": "创建新仓库",
       "name": "新建",
       "params": {
-        "repo": {
+        "repository": {
           "help": "仓库名称",
           "label": "仓库"
         },
@@ -316,7 +316,7 @@
           "help": "当前所有者",
           "label": "当前所有者"
         },
-        "repo": {
+        "repository": {
           "help": "仓库名称",
           "label": "仓库"
         },
@@ -338,7 +338,7 @@
           "help": "插件名称（多个用逗号分隔）",
           "label": "插件"
         },
-        "repo": {
+        "repository": {
           "help": "仓库名称（多个用逗号分隔）",
           "label": "仓库"
         }
@@ -352,7 +352,7 @@
           "help": "插件名称（多个用逗号分隔）",
           "label": "插件"
         },
-        "repo": {
+        "repository": {
           "help": "仓库名称（多个用逗号分隔）",
           "label": "仓库"
         }
@@ -366,7 +366,7 @@
           "help": "选择源机器或存储",
           "label": "源"
         },
-        "repo": {
+        "repository": {
           "help": "仓库名称（多个用逗号分隔）",
           "label": "仓库"
         },
@@ -396,7 +396,7 @@
           "help": "选项（例如：override）",
           "label": "选项"
         },
-        "repo": {
+        "repository": {
           "help": "仓库名称（多个用逗号分隔）",
           "label": "仓库"
         },
@@ -414,7 +414,7 @@
       "description": "调整仓库存储大小",
       "name": "调整大小",
       "params": {
-        "repo": {
+        "repository": {
           "help": "仓库名称",
           "label": "仓库"
         },
@@ -428,7 +428,7 @@
       "description": "删除仓库",
       "name": "删除",
       "params": {
-        "repo": {
+        "repository": {
           "help": "仓库名称",
           "label": "仓库"
         }
@@ -484,7 +484,7 @@
           "help": "要卸载的远程机器",
           "label": "从机器"
         },
-        "repo": {
+        "repository": {
           "help": "仓库名称（多个用逗号分隔）",
           "label": "仓库"
         }
@@ -498,7 +498,7 @@
           "help": "选项（例如：prep-only）",
           "label": "选项"
         },
-        "repo": {
+        "repository": {
           "help": "仓库名称（多个用逗号分隔）",
           "label": "仓库"
         }
@@ -516,7 +516,7 @@
           "help": "父存储库名称",
           "label": "大存储库"
         },
-        "repo": {
+        "repository": {
           "help": "要验证的存储库名称",
           "label": "存储库"
         },

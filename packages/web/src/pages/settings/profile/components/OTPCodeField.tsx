@@ -7,7 +7,7 @@ import type { Rule } from 'antd/es/form';
 const CenteredInput = styled(RediaccInput)`
   text-align: center;
   letter-spacing: 0.5em;
-  font-family: monospace;
+  font-family: ${({ theme }) => theme.fontFamily.MONO};
 `;
 
 export interface OTPCodeFieldProps {

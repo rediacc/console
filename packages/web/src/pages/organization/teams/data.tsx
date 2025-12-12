@@ -75,10 +75,10 @@ export const getTeamColumns = ({
     sorter: true,
   });
 
-  const repoCountColumn = createCountColumn<Team>({
-    title: tSystem('tables.teams.repos'),
-    dataIndex: 'repoCount',
-    key: 'repoCount',
+  const repositoryCountColumn = createCountColumn<Team>({
+    title: tSystem('tables.teams.repositories'),
+    dataIndex: 'repositoryCount',
+    key: 'repositoryCount',
     width: 120,
     icon: <DatabaseOutlined />,
     sorter: true,
@@ -117,10 +117,12 @@ export const getTeamColumns = ({
                 <span>{record.machineCount}</span>
               </Space>
             </Tooltip>
-            <Tooltip title={`${record.repoCount || 0} ${tSystem('tables.teams.repos')}`}>
+            <Tooltip
+              title={`${record.repositoryCount || 0} ${tSystem('tables.teams.repositories')}`}
+            >
               <Space size="small">
                 <DatabaseOutlined />
-                <span>{record.repoCount || 0}</span>
+                <span>{record.repositoryCount || 0}</span>
               </Space>
             </Tooltip>
             <Tooltip title={`${record.storageCount || 0} ${tSystem('tables.teams.storage')}`}>
@@ -136,7 +138,7 @@ export const getTeamColumns = ({
     // Separate columns for desktop (show on sm and above)
     { ...memberCountColumn, responsive: ['sm'] },
     { ...machineCountColumn, responsive: ['sm'] },
-    { ...repoCountColumn, responsive: ['sm'] },
+    { ...repositoryCountColumn, responsive: ['sm'] },
     { ...storageCountColumn, responsive: ['sm'] },
   ];
 

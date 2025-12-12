@@ -38,7 +38,7 @@ export const FieldLabelStack = styled(FlexRow).attrs({
 })``;
 
 export const FieldInfoIcon = styled(InfoCircleOutlined)`
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
@@ -82,7 +82,7 @@ export const TipsAlert = styled(RediaccAlert)`
 
 export const ExtraFieldsWarningIcon = styled(WarningOutlined)`
   color: ${({ theme }) => theme.colors.warning};
-  font-size: ${({ theme }) => theme.fontSize.BASE}px;
+  font-size: ${({ theme }) => theme.fontSize.MD}px;
 `;
 
 export const RawJsonPreview = styled.pre`
@@ -92,7 +92,7 @@ export const RawJsonPreview = styled.pre`
 
 export const DangerAlertIcon = styled(ExclamationCircleOutlined)`
   color: ${({ theme }) => theme.colors.error};
-  font-size: ${({ theme }) => theme.fontSize.BASE}px;
+  font-size: ${({ theme }) => theme.fontSize.MD}px;
 `;
 
 export const FormatActions = styled(FlexRow).attrs({

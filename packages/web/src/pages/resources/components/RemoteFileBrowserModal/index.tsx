@@ -23,7 +23,7 @@ import {
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
-import { useRepos } from '@/api/queries/repos';
+import { useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import { useTeams } from '@/api/queries/teams';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -53,8 +53,8 @@ import type { ColumnsType } from 'antd/es/table/interface';
 interface RemoteFile {
   name: string;
   originalGuid?: string;
-  repoName?: string;
-  repoTag?: string;
+  repositoryName?: string;
+  repositoryTag?: string;
   isUnmapped?: boolean;
   size: number;
   isDirectory: boolean;
@@ -122,7 +122,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   const { data: storageData, isLoading: isLoadingStorage } = useStorage(teamName);
   const { data: machinesData, isLoading: isLoadingMachines } = useMachines(teamName);
   const { data: teamsData } = useTeams();
-  const { data: teamRepos = [] } = useRepos(teamName);
+  const { data: teamRepositories = [] } = useRepositories(teamName);
   const { buildQueueVault } = useQueueVaultBuilder();
   const { mutateAsync: createQueueItem } = useManagedQueueItem();
 
@@ -171,20 +171,20 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
     }
   }, [machineName, selectedSource]);
 
-  // Helper function to map GUID to repo display name
-  const mapGuidToRepo = (guid: string) => {
-    const repo = teamRepos.find((r) => r.repoGuid === guid);
-    if (!repo) {
+  // Helper function to map GUID to repository display name
+  const mapGuidToRepository = (guid: string) => {
+    const repositoryInfo = teamRepositories.find((r) => r.repositoryGuid === guid);
+    if (!repositoryInfo) {
       return {
         displayName: guid,
         isUnmapped: true,
       };
     }
-    const tag = repo.repoTag || 'latest';
+    const tag = repositoryInfo.repositoryTag || 'latest';
     return {
-      displayName: `${repo.repoName}:${tag}`,
-      repoName: repo.repoName,
-      repoTag: tag,
+      displayName: `${repositoryInfo.repositoryName}:${tag}`,
+      repositoryName: repositoryInfo.repositoryName,
+      repositoryTag: tag,
       isUnmapped: false,
     };
   };
@@ -353,15 +353,15 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                   Boolean(getStringValue(file.permissions)?.startsWith('d'));
 
                 if (isGuid && !isDirectoryFlag) {
-                  repoInfo = mapGuidToRepo(fileName);
+                  repoInfo = mapGuidToRepository(fileName);
                   displayName = repoInfo.displayName;
                 }
 
                 return {
                   name: displayName,
                   originalGuid: isGuid && !isDirectoryFlag ? fileName : undefined,
-                  repoName: repoInfo?.repoName,
-                  repoTag: repoInfo?.repoTag,
+                  repositoryName: repoInfo?.repositoryName,
+                  repositoryTag: repoInfo?.repositoryTag,
                   isUnmapped: repoInfo?.isUnmapped || false,
                   size: getNumberValue(file.size ?? file.Size ?? 0),
                   isDirectory: isDirectoryFlag,
@@ -390,15 +390,15 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
 
                 const isDirectoryFlag = getBooleanValue(file.IsDir);
                 if (isGuid && !isDirectoryFlag) {
-                  repoInfo = mapGuidToRepo(fileName);
+                  repoInfo = mapGuidToRepository(fileName);
                   displayName = repoInfo.displayName;
                 }
 
                 return {
                   name: displayName,
                   originalGuid: isGuid && !isDirectoryFlag ? fileName : undefined,
-                  repoName: repoInfo?.repoName,
-                  repoTag: repoInfo?.repoTag,
+                  repositoryName: repoInfo?.repositoryName,
+                  repositoryTag: repoInfo?.repositoryTag,
                   isUnmapped: repoInfo?.isUnmapped || false,
                   size: getNumberValue(file.Size),
                   isDirectory: isDirectoryFlag,
@@ -584,8 +584,8 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         functionName: 'pull',
         params: {
           from: selectedSource,
-          repo: file.originalGuid || file.name, // Use GUID if available, otherwise use name
-          grand: file.originalGuid || file.name, // Default to repo name (assume pulling a grand, not a fork)
+          repository: file.originalGuid || file.name, // Use GUID if available, otherwise use name
+          grand: file.originalGuid || file.name, // Default to repository name (assume pulling a grand, not a fork)
           path: currentPath || '',
           sourceType: isStorageSource ? 'storage' : 'machine',
         },

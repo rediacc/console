@@ -5,7 +5,7 @@
 
 // Assignment services (type detection, conflict checking)
 export * from './assignment';
-// Parsing services (vault status, repo deployment)
+// Parsing services (vault status, repository deployment)
 export * from './parsing';
 // Type definitions
 export * from './types';

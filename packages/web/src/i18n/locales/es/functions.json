@@ -18,7 +18,7 @@
       "description": "Operaciones de mapeo de redes y sockets",
       "name": "Funciones de red"
     },
-    "repo": {
+    "repository": {
       "description": "Gestión y operaciones del repositorio.",
       "name": "Funciones del repositorio"
     }
@@ -42,7 +42,7 @@
           "help": "GUID del gran repositorio",
           "label": "Gran repositorio"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre del repositorio",
           "label": "Repositorio"
         },
@@ -68,7 +68,7 @@
           "help": "Opciones (por ejemplo, anular)",
           "label": "Opciones"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre(s) del repositorio, separados por comas",
           "label": "Repositorio"
         },
@@ -208,7 +208,7 @@
           "help": "Opciones (por ejemplo, anular)",
           "label": "Opciones"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre(s) del repositorio, separados por comas",
           "label": "Repositorio"
         },
@@ -226,7 +226,7 @@
           "help": "Opciones adicionales",
           "label": "Opciones"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre(s) del repositorio, separados por comas",
           "label": "Repositorio"
         }
@@ -240,7 +240,7 @@
           "help": "GUID del gran repositorio",
           "label": "Gran repositorio"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre del repositorio",
           "label": "Repositorio"
         },
@@ -288,7 +288,7 @@
           "help": "Máquina remota para montar desde",
           "label": "De la máquina"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre(s) del repositorio, separados por comas",
           "label": "Repositorio"
         }
@@ -298,7 +298,7 @@
       "description": "Crear un nuevo repositorio",
       "name": "nueva",
       "params": {
-        "repo": {
+        "repository": {
           "help": "Nombre del repositorio",
           "label": "Repositorio"
         },
@@ -316,7 +316,7 @@
           "help": "Propietario actual",
           "label": "Propietario actual"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre del repositorio",
           "label": "Repositorio"
         },
@@ -338,7 +338,7 @@
           "help": "Nombre(s) del complemento, separados por comas",
           "label": "Complemento"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre(s) del repositorio, separados por comas",
           "label": "Repositorio"
         }
@@ -352,7 +352,7 @@
           "help": "Nombre(s) del complemento, separados por comas",
           "label": "Complemento"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre(s) del repositorio, separados por comas",
           "label": "Repositorio"
         }
@@ -366,7 +366,7 @@
           "help": "Seleccione la máquina o el almacenamiento de origen",
           "label": "Fuente"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre(s) del repositorio, separados por comas",
           "label": "Repositorio"
         },
@@ -396,7 +396,7 @@
           "help": "Opciones (por ejemplo, anular)",
           "label": "Opciones"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre(s) del repositorio, separados por comas",
           "label": "Repositorio"
         },
@@ -414,7 +414,7 @@
       "description": "Cambiar el tamaño del almacenamiento del repositorio (operación sin conexión: el repositorio debe estar desmontado)",
       "name": "cambiar el tamaño",
       "params": {
-        "repo": {
+        "repository": {
           "help": "Nombre del repositorio",
           "label": "Repositorio"
         },
@@ -428,7 +428,7 @@
       "description": "Eliminar repositorio",
       "name": "habitación",
       "params": {
-        "repo": {
+        "repository": {
           "help": "Nombre del repositorio",
           "label": "Repositorio"
         }
@@ -484,7 +484,7 @@
           "help": "Máquina remota para desmontar",
           "label": "De la máquina"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre(s) del repositorio, separados por comas",
           "label": "Repositorio"
         }
@@ -498,7 +498,7 @@
           "help": "Opciones (por ejemplo, solo preparación)",
           "label": "Opciones"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre(s) del repositorio, separados por comas",
           "label": "Repositorio"
         }
@@ -516,7 +516,7 @@
           "help": "Nombre del repositorio principal",
           "label": "Gran repositorio"
         },
-        "repo": {
+        "repository": {
           "help": "Nombre del repositorio a validar",
           "label": "Repositorio"
         },

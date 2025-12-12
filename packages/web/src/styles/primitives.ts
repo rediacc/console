@@ -333,7 +333,7 @@ export const StatDivider = styled.span`
 export const StatIcon = styled.span<{ $color?: string }>`
   display: inline-flex;
   align-items: center;
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
 `;
 
@@ -693,13 +693,13 @@ export const TitleText = styled(RediaccText).attrs({ weight: 'semibold', color: 
     font-size: ${({ theme, $level = 4 }) => {
       // Map level to available font sizes
       const sizes: Record<number, number> = {
-        1: theme.fontSize.XXXXXXL, // Largest available
+        1: theme.fontSize.DISPLAY, // Largest available
         2: theme.fontSize.XL,
         3: theme.fontSize.LG,
-        4: theme.fontSize.H4,
-        5: theme.fontSize.H5,
+        4: theme.fontSize.XL,
+        5: theme.fontSize.LG,
       };
-      return sizes[$level] || theme.fontSize.H4;
+      return sizes[$level] || theme.fontSize.XL;
     }}px;
     line-height: ${({ theme }) => theme.lineHeight.TIGHT};
   }
@@ -773,7 +773,7 @@ export const ConsoleOutput = styled.div<{ $height?: number }>`
   border: 1px solid ${({ theme }) => theme.colors.borderPrimary};
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   padding: ${({ theme }) => theme.spacing.SM}px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+  font-family: ${({ theme }) => theme.fontFamily.MONO};
   font-size: ${({ theme }) => theme.fontSize.XS}px;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -839,7 +839,7 @@ export const LargeInput = styled(RediaccInput)`
   && {
     height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_LG}px;
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    font-size: ${({ theme }) => theme.fontSize.BASE}px;
+    font-size: ${({ theme }) => theme.fontSize.MD}px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
     &.ant-input-affix-wrapper {
@@ -860,7 +860,7 @@ export const LargePasswordInput = styled(RediaccPasswordInput)`
   && {
     height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_LG}px;
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    font-size: ${({ theme }) => theme.fontSize.BASE}px;
+    font-size: ${({ theme }) => theme.fontSize.MD}px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
 

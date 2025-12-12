@@ -57,8 +57,9 @@ export class CliQueueService {
       companyVault: vaults.companyVault,
       storageVault: vaults.storageVault,
       bridgeVault: vaults.bridgeVault,
-      repositoryGuid: context.params.repo as string | undefined,
-      repositoryNetworkId: (vaults.vaultContent as { repoNetworkId?: number })?.repoNetworkId,
+      repositoryGuid: context.params.repository as string | undefined,
+      repositoryNetworkId: (vaults.vaultContent as { repositoryNetworkId?: number })
+        ?.repositoryNetworkId,
       repositoryNetworkMode: (vaults.vaultContent as { networkMode?: string })?.networkMode,
       storageName: (context.params.to || context.params.from) as string | undefined,
     };
@@ -124,18 +125,22 @@ export class CliQueueService {
       }
     }
 
-    if (requirements.repository && context.params.repo) {
+    if (requirements.repository && context.params.repository) {
       try {
-        const repoGuid = context.params.repo as string;
-        const repos = await api.repos.list({ teamName: context.teamName });
-        const repo = repos.find((r: GetTeamRepositories_ResultSet1) => r.repoGuid === repoGuid);
-        const vaultContent = this.parseVaultContent(repo?.vaultContent);
+        const repositoryGuid = context.params.repository as string;
+        const repositories = await api.repositories.list({ teamName: context.teamName });
+        const repository = repositories.find(
+          (r: GetTeamRepositories_ResultSet1) => r.repositoryGuid === repositoryGuid
+        );
+        const vaultContent = this.parseVaultContent(repository?.vaultContent);
         if (vaultContent) {
-          if (repo?.repoNetworkId !== undefined) {
-            (vaultContent as Record<string, unknown>).repoNetworkId = repo.repoNetworkId;
+          if (repository?.repositoryNetworkId !== undefined) {
+            (vaultContent as Record<string, unknown>).repositoryNetworkId =
+              repository.repositoryNetworkId;
           }
-          if (repo?.repoNetworkMode) {
-            (vaultContent as Record<string, unknown>).networkMode = repo.repoNetworkMode;
+          if (repository?.repositoryNetworkMode) {
+            (vaultContent as Record<string, unknown>).networkMode =
+              repository.repositoryNetworkMode;
           }
           vaults.vaultContent = vaultContent;
         }

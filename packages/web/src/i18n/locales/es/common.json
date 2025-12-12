@@ -392,7 +392,7 @@
           "label": "Nombre de la región"
         }
       },
-      "REPO": {
+      "REPOSITORY": {
         "credential": {
           "description": "Contraseña de acceso al repositorio (32 caracteres, alfanuméricos + caracteres especiales)",
           "label": "Contraseña de acceso"

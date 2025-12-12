@@ -143,7 +143,7 @@ export const actionsColumn = <T,>(
 });
 
 /**
- * Numeric count column (e.g., repo count, machine count)
+ * Numeric count column (e.g., repository count, machine count)
  */
 export const countColumn = <T extends { count?: number }>(
   options: Parameters<ColumnFactory<T>>[0] = {}

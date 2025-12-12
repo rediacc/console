@@ -129,7 +129,7 @@ export const ResourceModalDialogs: React.FC<ResourceModalDialogsProps> = ({
         templateName={templateToView}
         onClose={onTemplateClose}
         onUseTemplate={onTemplateUse}
-        context="repo-creation"
+        context="repository-creation"
       />
     </>
   );

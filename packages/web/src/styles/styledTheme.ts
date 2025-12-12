@@ -21,6 +21,7 @@ export interface StyledTheme {
     bgPrimary: string;
     bgSecondary: string;
     bgTertiary: string;
+    bgContainer: string; // Theme-aware container bg (light=bgPrimary, dark=bgSecondary)
     bgHover: string;
     bgActive: string;
     bgSelected: string; // High-contrast selection background
@@ -28,6 +29,10 @@ export interface StyledTheme {
     bgWarning: string;
     bgError: string;
     bgInfo: string;
+
+    // Fill colors for interactive states
+    bgFillTertiary: string;
+    bgFillQuaternary: string;
 
     // Text colors
     textPrimary: string;
@@ -68,6 +73,7 @@ export interface StyledTheme {
   borderRadius: typeof DESIGN_TOKENS.BORDER_RADIUS;
 
   // Typography
+  fontFamily: typeof DESIGN_TOKENS.FONT_FAMILY;
   fontSize: typeof DESIGN_TOKENS.FONT_SIZE;
   fontWeight: typeof DESIGN_TOKENS.FONT_WEIGHT;
   lineHeight: typeof DESIGN_TOKENS.LINE_HEIGHT;
@@ -122,6 +128,7 @@ const feedbackSurfaces: Record<
 const sharedThemeValues = {
   spacing: DESIGN_TOKENS.SPACING,
   borderRadius: DESIGN_TOKENS.BORDER_RADIUS,
+  fontFamily: DESIGN_TOKENS.FONT_FAMILY,
   fontSize: DESIGN_TOKENS.FONT_SIZE,
   fontWeight: DESIGN_TOKENS.FONT_WEIGHT,
   lineHeight: DESIGN_TOKENS.LINE_HEIGHT,
@@ -152,6 +159,7 @@ const createTheme = (mode: ThemeMode): StyledTheme => {
       bgPrimary: palette.bgPrimary,
       bgSecondary: palette.bgSecondary,
       bgTertiary: palette.bgTertiary,
+      bgContainer: isLight ? palette.bgPrimary : palette.bgSecondary,
       bgHover: palette.bgHover,
       bgActive: palette.bgActive,
       bgSelected: palette.bgSelected,
@@ -159,6 +167,8 @@ const createTheme = (mode: ThemeMode): StyledTheme => {
       bgWarning: feedback.warning,
       bgError: feedback.error,
       bgInfo: feedback.info,
+      bgFillTertiary: isLight ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.04)',
+      bgFillQuaternary: isLight ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.02)',
       textPrimary: palette.textPrimary,
       textSecondary: palette.textSecondary,
       textTertiary: palette.textTertiary,

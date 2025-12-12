@@ -42,9 +42,9 @@ export const resolveRediaccTagVariantTokens = (
 };
 
 const TAG_FONT_SIZE_MAP: Record<TagSize, keyof StyledTheme['fontSize']> = {
-  sm: 'CAPTION',
+  sm: 'XS',
   md: 'SM',
-  lg: 'BASE',
+  lg: 'MD',
 };
 
 /**
@@ -99,7 +99,7 @@ export const StyledRediaccTag = styled(AntTag)<{
     border-radius: ${({ theme, $size, $compact }) =>
       $compact ? theme.borderRadius.SM : resolveRediaccTagRadius(theme, $size)}px;
     font-size: ${({ theme, $size, $compact }) =>
-      $compact ? theme.fontSize.CAPTION : resolveRediaccTagFontSize(theme, $size)}px;
+      $compact ? theme.fontSize.XS : resolveRediaccTagFontSize(theme, $size)}px;
     font-weight: ${({ theme, $emphasized }) =>
       $emphasized ? theme.fontWeight.SEMIBOLD : theme.fontWeight.MEDIUM};
     line-height: 1.2;
@@ -119,7 +119,7 @@ export const StyledRediaccTag = styled(AntTag)<{
     /* Close icon styling */
     .ant-tag-close-icon {
       margin-left: ${({ theme }) => theme.spacing.XS}px;
-      font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+      font-size: ${({ theme }) => theme.fontSize.XS}px;
       color: inherit;
       opacity: 0.7;
       transition: opacity 0.2s ease;

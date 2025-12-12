@@ -27,7 +27,7 @@ export const StatusIcon = styled(StyledIcon).attrs<{
   $size?: number;
 }>(({ $tone = 'primary', $size }) => ({
   as: SafetyCertificateOutlined,
-  $size: $size ?? DESIGN_TOKENS.FONT_SIZE.XXXXXXL,
+  $size: $size ?? DESIGN_TOKENS.FONT_SIZE.DISPLAY,
   $color: ICON_TONES[$tone],
 }))``;
 
@@ -56,7 +56,7 @@ export const SecretInputRow = styled(Space.Compact)`
 
 export const SecretInput = styled(RediaccInput)`
   && {
-    font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+    font-family: ${({ theme }) => theme.fontFamily.MONO};
   }
 `;
 

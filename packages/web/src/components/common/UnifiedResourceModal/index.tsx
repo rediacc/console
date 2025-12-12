@@ -17,7 +17,7 @@ import { RediaccButton, RediaccText } from '@/components/ui';
 import { useDialogState } from '@/hooks/useDialogState';
 import { templateService } from '@/services/templateService';
 import { RootState } from '@/store/store';
-import type { Machine, Repo } from '@/types';
+import type { Machine, Repository } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { AppstoreOutlined } from '@/utils/optimizedIcons';
 import type { GetCompanyTeams_ResultSet1 } from '@rediacc/shared/types';
@@ -44,7 +44,7 @@ import { getFormFields } from './utils/formFieldGenerators';
 
 export type ResourceType =
   | 'machine'
-  | 'repo'
+  | 'repository'
   | 'storage'
   | 'team'
   | 'region'
@@ -77,7 +77,7 @@ export interface UnifiedResourceModalProps {
 type ResourceFormValues = Record<string, unknown>;
 
 type ExistingResourceData = Partial<Machine> &
-  Partial<Repo> &
+  Partial<Repository> &
   Partial<GetCompanyTeams_ResultSet1> & {
     prefilledMachine?: boolean;
     clusters?: Array<{ clusterName: string }>;
@@ -204,8 +204,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       // Reset form to default values first
       form.reset(getDefaultValues());
 
-      // Reset template selection for repos (unless preselected)
-      if (resourceType === 'repo') {
+      // Reset template selection for repositories (unless preselected)
+      if (resourceType === 'repository') {
         const preselected =
           existingData &&
           typeof (existingData as Record<string, unknown>).preselectedTemplate === 'string'
@@ -228,8 +228,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         }
       }
 
-      // For repos, set prefilled machine
-      if (resourceType === 'repo' && existingData?.machineName) {
+      // For repositories, set prefilled machine
+      if (resourceType === 'repository' && existingData?.machineName) {
         form.setValue('machineName', existingData.machineName);
       }
 
@@ -371,7 +371,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       // Only set defaults if not already provided
       const defaults: ResourceFormValues = {};
 
-      // Preserve teamName from existingData if available (e.g., when creating repo from machine)
+      // Preserve teamName from existingData if available (e.g., when creating repository from machine)
       if (!data.teamName) {
         if (existingData?.teamName) {
           defaults.teamName = existingData.teamName;
@@ -389,8 +389,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       Object.assign(data, defaults);
     }
 
-    // For repo creation from machine, ensure machine name is included
-    if (resourceType === 'repo' && existingData?.machineName && existingData?.prefilledMachine) {
+    // For repository creation from machine, ensure machine name is included
+    if (
+      resourceType === 'repository' &&
+      existingData?.machineName &&
+      existingData?.prefilledMachine
+    ) {
       data.machineName = existingData.machineName;
       // Also ensure teamName is preserved
       if (existingData?.teamName && !data.teamName) {
@@ -398,8 +402,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       }
     }
 
-    // Add template parameter for repo creation
-    if (resourceType === 'repo' && mode === 'create' && selectedTemplate) {
+    // Add template parameter for repository creation
+    if (resourceType === 'repository' && mode === 'create' && selectedTemplate) {
       try {
         // Fetch the template details by ID using templateService
         data.tmpl = await templateService.getEncodedTemplateDataById(selectedTemplate);
@@ -409,8 +413,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       }
     }
 
-    // Always keep repo open after creation
-    if (resourceType === 'repo' && mode === 'create') {
+    // Always keep repository open after creation
+    if (resourceType === 'repository' && mode === 'create') {
       data.keep_open = true;
     }
 
@@ -419,24 +423,24 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       data.autoSetup = autoSetupEnabled;
     }
 
-    // For credential-only repo creation, ensure repoGuid is included
-    if (mode === 'create' && resourceType === 'repo' && existingData?.repoGuid) {
-      data.repoGuid = existingData.repoGuid;
+    // For credential-only repository creation, ensure repositoryGuid is included
+    if (mode === 'create' && resourceType === 'repository' && existingData?.repositoryGuid) {
+      data.repositoryGuid = existingData.repositoryGuid;
     }
 
     await onSubmit(data);
   };
 
-  // Show functions button only for machines, repos, and storage
+  // Show functions button only for machines, repositories, and storage
   const showFunctions =
-    (resourceType === 'machine' || resourceType === 'repo' || resourceType === 'storage') &&
+    (resourceType === 'machine' || resourceType === 'repository' || resourceType === 'storage') &&
     mode === 'create' &&
     existingData &&
-    !existingData.prefilledMachine && // Don't show functions when creating repo from machine
+    !existingData.prefilledMachine && // Don't show functions when creating repository from machine
     onFunctionSubmit &&
     functionCategories.length > 0;
 
-  // Auto-open function modal if we're in create mode with existing data (for repo functions)
+  // Auto-open function modal if we're in create mode with existing data (for repository functions)
   // WARNING: The !functionModal.isOpen check is critical to prevent infinite render loops!
   // Without it, each call to functionModal.open() triggers a state change, causing re-render,
   // which triggers this effect again, leading to "Maximum update depth exceeded" error.
@@ -491,7 +495,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           subtitle={createFunctionSubtitle(resourceType, existingData, t)}
           allowedCategories={functionCategories}
           loading={isSubmitting}
-          showMachineSelection={resourceType === 'repo' || resourceType === 'storage'}
+          showMachineSelection={resourceType === 'repository' || resourceType === 'storage'}
           teamName={existingData?.teamName}
           machines={(
             dropdownData?.machinesByTeam?.find((tm) => tm.teamName === existingData?.teamName)
@@ -618,35 +622,35 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             if (existingData?.vaultContent) {
               try {
                 let parsed = JSON.parse(existingData.vaultContent);
-                // Special handling for repos - map the vault data correctly
-                if (resourceType === 'repo') {
+                // Special handling for repositories - map the vault data correctly
+                if (resourceType === 'repository') {
                   // The vault data might have the credential at root level or nested
                   // We need to ensure it's in the format VaultEditor expects
-                  if (!parsed.credential && parsed.repoVault) {
-                    // If repoVault exists, it might contain the credential
+                  if (!parsed.credential && parsed.repositoryVault) {
+                    // If repositoryVault exists, it might contain the credential
                     try {
                       const innerVault =
-                        typeof parsed.repoVault === 'string'
-                          ? JSON.parse(parsed.repoVault)
-                          : parsed.repoVault;
+                        typeof parsed.repositoryVault === 'string'
+                          ? JSON.parse(parsed.repositoryVault)
+                          : parsed.repositoryVault;
                       if (innerVault.credential) {
                         parsed = { credential: innerVault.credential };
                       }
                     } catch (e) {
                       console.error('[UnifiedResourceModal] Failed to parse inner vault:', e);
                     }
-                  } else if (parsed.repoVault) {
-                    // Or it might be in repoVault
+                  } else if (parsed.repositoryVault) {
+                    // Or it might be in repositoryVault
                     try {
                       const innerVault =
-                        typeof parsed.repoVault === 'string'
-                          ? JSON.parse(parsed.repoVault)
-                          : parsed.repoVault;
+                        typeof parsed.repositoryVault === 'string'
+                          ? JSON.parse(parsed.repositoryVault)
+                          : parsed.repositoryVault;
                       if (innerVault.credential) {
                         parsed = { credential: innerVault.credential };
                       }
                     } catch (e) {
-                      console.error('[UnifiedResourceModal] Failed to parse repo vault:', e);
+                      console.error('[UnifiedResourceModal] Failed to parse repository vault:', e);
                     }
                   }
                   // If still no credential field but we have other fields, check if any could be the credential
@@ -683,7 +687,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           isModalOpen={open}
           beforeVaultContent={undefined}
           afterVaultContent={
-            resourceType === 'repo' &&
+            resourceType === 'repository' &&
             mode === 'create' &&
             creationContext !== 'credentials-only' ? (
               <TemplateCollapse
@@ -763,7 +767,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         functionSubtitle={createFunctionSubtitle(resourceType, existingData, t)}
         functionCategories={functionCategories}
         isSubmitting={isSubmitting}
-        showMachineSelection={resourceType === 'repo' || resourceType === 'storage'}
+        showMachineSelection={resourceType === 'repository' || resourceType === 'storage'}
         teamName={existingData?.teamName}
         machines={(
           dropdownData?.machinesByTeam?.find((tm) => tm.teamName === existingData?.teamName)

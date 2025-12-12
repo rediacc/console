@@ -18,11 +18,11 @@ export interface QueueActionParams {
   description?: string;
   addedVia: string;
   machineVault: string;
-  repoGuid?: string;
+  repositoryGuid?: string;
   vaultContent?: string;
-  repoNetworkId?: number;
-  repoNetworkMode?: string;
-  repoTag?: string;
+  repositoryNetworkId?: number;
+  repositoryNetworkMode?: string;
+  repositoryTag?: string;
   storageName?: string;
   storageVault?: string;
   sourceMachineVault?: string;
@@ -85,11 +85,11 @@ export class QueueActionService {
       addedVia: params.addedVia,
       teamVault,
       machineVault: params.machineVault,
-      repositoryGuid: params.repoGuid,
+      repositoryGuid: params.repositoryGuid,
       repositoryVault: params.vaultContent,
-      repositoryNetworkId: params.repoNetworkId,
-      repositoryNetworkMode: params.repoNetworkMode,
-      repositoryTag: params.repoTag,
+      repositoryNetworkId: params.repositoryNetworkId,
+      repositoryNetworkMode: params.repositoryNetworkMode,
+      repositoryTag: params.repositoryTag,
       storageName: params.storageName,
       storageVault: params.storageVault,
       sourceMachineVault: params.sourceMachineVault,

@@ -74,25 +74,25 @@ const StyledTableBase = styled(AntTable)<{ $removeMargins?: boolean }>`
     border-radius: inherit;
   }
 
-  .Repo-row {
+  .Repository-row {
     cursor: pointer;
     transition: background-color ${({ theme }) => theme.transitions.HOVER};
   }
 
-  .Repo-row:hover {
+  .Repository-row:hover {
     background-color: ${({ theme }) => theme.colors.bgHover};
   }
 
-  .Repo-row--highlighted,
-  .Repo-row--highlighted:hover {
+  .Repository-row--highlighted,
+  .Repository-row--highlighted:hover {
     background-color: ${({ theme }) => theme.colors.primaryBg};
   }
 
-  .Repo-fork-row {
+  .Repository-fork-row {
     background-color: ${({ theme }) => theme.colors.bgSecondary};
   }
 
-  .Repo-fork-row:hover {
+  .Repository-fork-row:hover {
     background-color: ${({ theme }) => theme.colors.bgSecondary};
   }
 

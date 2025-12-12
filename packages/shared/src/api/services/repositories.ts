@@ -10,20 +10,22 @@ import type {
   UpdateRepositoryVaultParams,
 } from '../../types';
 
-export interface CreateRepoOptions {
-  repoTag?: string;
+export interface CreateRepositoryOptions {
+  repositoryTag?: string;
   vaultContent?: string;
-  parentRepoName?: string;
-  parentRepoTag?: string;
-  repoGuid?: string;
+  parentRepositoryName?: string;
+  parentRepositoryTag?: string;
+  repositoryGuid?: string;
 }
 
-const mapRepo = (repo: GetTeamRepositories_ResultSet1): GetTeamRepositories_ResultSet1 => ({
-  ...repo,
-  repoTag: repo.repoTag || 'latest',
+const mapRepository = (
+  repository: GetTeamRepositories_ResultSet1
+): GetTeamRepositories_ResultSet1 => ({
+  ...repository,
+  repositoryTag: repository.repositoryTag || 'latest',
 });
 
-export function createReposService(client: ApiClient) {
+export function createRepositorysitoriesService(client: ApiClient) {
   return {
     list: async (
       params: GetTeamRepositoriesParams | { teamName: string[] }
@@ -34,33 +36,33 @@ export function createReposService(client: ApiClient) {
       });
       return parseResponse(response, {
         extractor: responseExtractors.primaryOrSecondary,
-        filter: (repo) => Boolean(repo.repoName),
-        map: mapRepo,
+        filter: (repository) => Boolean(repository.repositoryName),
+        map: mapRepository,
       });
     },
 
     create: async (
       teamName: string,
-      repoName: string,
-      options: CreateRepoOptions = {}
+      repositoryName: string,
+      options: CreateRepositoryOptions = {}
     ): Promise<GetTeamRepositories_ResultSet1 | null> => {
       const payload: Record<string, unknown> = {
         teamName,
-        repoName,
+        repositoryName,
         vaultContent: options.vaultContent ?? '{}',
       };
       // Only include optional params if they have non-empty values
-      if (options.repoTag) {
-        payload.repoTag = options.repoTag;
+      if (options.repositoryTag) {
+        payload.repositoryTag = options.repositoryTag;
       }
-      if (options.parentRepoName && options.parentRepoName.trim() !== '') {
-        payload.parentRepoName = options.parentRepoName;
+      if (options.parentRepositoryName && options.parentRepositoryName.trim() !== '') {
+        payload.parentRepositoryName = options.parentRepositoryName;
       }
-      if (options.parentRepoTag && options.parentRepoTag.trim() !== '') {
-        payload.parentRepoTag = options.parentRepoTag;
+      if (options.parentRepositoryTag && options.parentRepositoryTag.trim() !== '') {
+        payload.parentRepositoryTag = options.parentRepositoryTag;
       }
-      if (options.repoGuid && options.repoGuid.trim() !== '') {
-        payload.repoGuid = options.repoGuid;
+      if (options.repositoryGuid && options.repositoryGuid.trim() !== '') {
+        payload.repositoryGuid = options.repositoryGuid;
       }
       const response = await client.post<GetTeamRepositories_ResultSet1>(
         '/CreateRepository',
@@ -69,7 +71,7 @@ export function createReposService(client: ApiClient) {
 
       return parseFirst(response, {
         extractor: responseExtractors.primaryOrSecondary,
-        map: mapRepo,
+        map: mapRepository,
       });
     },
 

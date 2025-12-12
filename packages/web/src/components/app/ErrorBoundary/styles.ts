@@ -16,8 +16,8 @@ export const ErrorDetails = styled.details`
   background-color: ${({ theme }) => theme.colors.bgSecondary};
   border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   text-align: left;
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-  font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
+  font-family: ${({ theme }) => theme.fontFamily.MONO};
   white-space: pre-wrap;
   border: 1px dashed ${({ theme }) => theme.colors.borderSecondary};
 `;

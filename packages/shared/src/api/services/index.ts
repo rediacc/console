@@ -7,7 +7,7 @@ import { createMachinesService } from './machines';
 import { createPermissionsService } from './permissions';
 import { createQueueService } from './queue';
 import { createRegionsService } from './regions';
-import { createReposService } from './repos';
+import { createRepositorysitoriesService } from './repositories';
 import { createStorageService } from './storage';
 import { createTeamsService } from './teams';
 import { createUsersService } from './users';
@@ -23,7 +23,7 @@ export function createApiServices(client: ApiClient) {
     regions: createRegionsService(client),
     bridges: createBridgesService(client),
     machines: createMachinesService(client),
-    repos: createReposService(client),
+    repositories: createRepositorysitoriesService(client),
     storage: createStorageService(client),
     queue: createQueueService(client),
     ceph: createCephService(client),

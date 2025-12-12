@@ -369,7 +369,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
       setLastInitializedData(currentDataString);
 
       setTimeout(() => {
-        if (!(isEditMode && entityType === 'REPO')) {
+        if (!(isEditMode && entityType === 'REPOSITORY')) {
           form
             .validateFields(undefined, { validateOnly: true })
             .then(() => {

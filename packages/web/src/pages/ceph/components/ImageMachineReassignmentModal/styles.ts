@@ -39,7 +39,7 @@ export const FieldRow = styled.div`
 
 export const MachineIcon = styled(StyledIcon).attrs(({ theme }) => ({
   as: CloudServerOutlined,
-  $size: theme.fontSize.BASE,
+  $size: theme.fontSize.MD,
   $color: theme.colors.primary,
 }))``;
 

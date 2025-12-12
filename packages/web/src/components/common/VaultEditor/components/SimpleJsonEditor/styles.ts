@@ -8,7 +8,7 @@ export const EditorContainer = styled.div<{ $height: number | string }>`
   overflow: hidden;
   background-color: ${({ theme }) => theme.colors.bgPrimary};
   box-shadow: ${({ theme }) => theme.shadows.SM};
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: ${({ theme }) => theme.fontFamily.MONO};
   font-size: ${({ theme }) => theme.fontSize.SM}px;
   line-height: ${({ theme }) => theme.lineHeight.RELAXED};
 `;
@@ -36,7 +36,7 @@ export const ErrorBanner = styled.div`
   padding: ${({ theme }) => `${theme.spacing.XS}px ${theme.spacing.SM}px`};
   background-color: ${({ theme }) => theme.colors.bgError};
   color: ${({ theme }) => theme.colors.error};
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   border-top: 1px solid ${({ theme }) => theme.colors.error};
 `;

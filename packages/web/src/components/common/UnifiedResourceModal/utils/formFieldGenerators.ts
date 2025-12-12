@@ -41,7 +41,7 @@ interface FormFieldGeneratorProps {
 const getResourceTranslationKey = (resourceType: ResourceType) => {
   const RESOURCE_CONFIG = {
     storage: { key: 'storage' },
-    repo: { key: 'repos' },
+    repository: { key: 'repositories' },
     machine: { key: 'machines' },
     team: { key: 'teams' },
     region: { key: 'regions' },
@@ -139,9 +139,9 @@ export const getFormFields = ({
       return fields;
     }
     if (resourceType === 'bridge') return [nameField, createRegionField(dropdownData, t)];
-    // For repos in edit mode, we still need to show the vault fields
+    // For repositories in edit mode, we still need to show the vault fields
     // so users can update credentials if needed
-    if (resourceType === 'repo') {
+    if (resourceType === 'repository') {
       // Don't include team field in edit mode since team can't be changed
       return [nameField];
     }
@@ -151,16 +151,16 @@ export const getFormFields = ({
   if (uiMode === 'simple') {
     const simpleFields = [nameField];
 
-    // For repo creation, we need to include size field and potentially machine selection
-    if (resourceType === 'repo') {
+    // For repository creation, we need to include size field and potentially machine selection
+    if (resourceType === 'repository') {
       // Check if machine is prefilled
       const isPrefilledMachine = existingData?.prefilledMachine;
 
-      // Check if this is credential-only mode (either from Add Credential button or Repo Credentials tab)
+      // Check if this is credential-only mode (either from Add Credential button or Repository Credentials tab)
       const isCredentialOnlyMode =
-        (existingData?.repoGuid &&
-          typeof existingData.repoGuid === 'string' &&
-          existingData.repoGuid.trim() !== '') ||
+        (existingData?.repositoryGuid &&
+          typeof existingData.repositoryGuid === 'string' &&
+          existingData.repositoryGuid.trim() !== '') ||
         creationContext === 'credentials-only';
 
       // Get machines for the team (use existingData teamName if available)
@@ -181,45 +181,46 @@ export const getFormFields = ({
             value: machine.value,
             label: machine.label,
           })),
-          helperText: t('repos.machineHelperText', {
+          helperText: t('repositories.machineHelperText', {
             defaultValue: 'Optional: Select a machine to provision storage',
           }),
         });
       }
 
-      // Size field for repo provisioning - only show if not in credential-only mode
+      // Size field for repository provisioning - only show if not in credential-only mode
       if (!isCredentialOnlyMode) {
         simpleFields.push({
           name: 'size',
-          label: t('repos.size'),
-          placeholder: t('repos.placeholders.enterSize'),
+          label: t('repositories.size'),
+          placeholder: t('repositories.placeholders.enterSize'),
           required: false,
           type: 'size' as const,
           sizeUnits: ['G', 'T'],
-          helperText: t('repos.sizeHelperText', {
+          helperText: t('repositories.sizeHelperText', {
             defaultValue: 'Optional: Specify size if provisioning storage (e.g., 10G, 100G, 1T)',
           }),
         });
       }
 
-      // Show repoGuid field in credential-only mode
+      // Show repositoryGuid field in credential-only mode
       if (isCredentialOnlyMode) {
         simpleFields.push({
-          name: 'repoGuid',
-          label: t('repos.guid', { defaultValue: 'Repo GUID' }),
+          name: 'repositoryGuid',
+          label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
           type: 'text' as const,
           readOnly: !!(
-            existingData?.repoGuid &&
-            typeof existingData.repoGuid === 'string' &&
-            existingData.repoGuid.trim() !== ''
+            existingData?.repositoryGuid &&
+            typeof existingData.repositoryGuid === 'string' &&
+            existingData.repositoryGuid.trim() !== ''
           ), // Only read-only if GUID exists
           required: true, // Make it required in credential-only mode
-          helperText: existingData?.repoGuid
-            ? t('repos.guidHelperText', {
-                defaultValue: 'This repo already exists on the machine.',
+          helperText: existingData?.repositoryGuid
+            ? t('repositories.guidHelperText', {
+                defaultValue: 'This repository already exists on the machine.',
               })
-            : t('repos.guidHelperTextNew', {
-                defaultValue: 'Enter the repo GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
+            : t('repositories.guidHelperTextNew', {
+                defaultValue:
+                  'Enter the repository GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
               }),
         });
       }
@@ -241,18 +242,18 @@ export const getFormFields = ({
     fields.push(nameField);
   } else if (resourceType === 'bridge') {
     fields.push(createRegionField(dropdownData, t), nameField);
-  } else if (resourceType === 'repo') {
-    // Repo creation needs machine selection and size
+  } else if (resourceType === 'repository') {
+    // Repository creation needs machine selection and size
     fields.push(nameField);
 
     // Check if machine is prefilled
     const isPrefilledMachine = existingData?.prefilledMachine;
 
-    // Check if this is credential-only mode (either from Add Credential button or Repo Credentials tab)
+    // Check if this is credential-only mode (either from Add Credential button or Repository Credentials tab)
     const isCredentialOnlyMode =
-      (existingData?.repoGuid &&
-        typeof existingData.repoGuid === 'string' &&
-        existingData.repoGuid.trim() !== '') ||
+      (existingData?.repositoryGuid &&
+        typeof existingData.repositoryGuid === 'string' &&
+        existingData.repositoryGuid.trim() !== '') ||
       creationContext === 'credentials-only';
 
     // Get machines for the selected team
@@ -277,7 +278,7 @@ export const getFormFields = ({
           label: machine.label,
         })),
         disabled: !selectedTeamName || teamMachines.length === 0,
-        helperText: t('repos.machineHelperText', {
+        helperText: t('repositories.machineHelperText', {
           defaultValue: 'Select a machine to provision storage',
         }),
       });
@@ -287,52 +288,53 @@ export const getFormFields = ({
     if (!isCredentialOnlyMode) {
       fields.push({
         name: 'size',
-        label: t('repos.size'),
-        placeholder: t('repos.placeholders.enterSize'),
+        label: t('repositories.size'),
+        placeholder: t('repositories.placeholders.enterSize'),
         required: true,
         type: 'size' as const,
         sizeUnits: ['G', 'T'],
-        helperText: t('repos.sizeHelperText', {
+        helperText: t('repositories.sizeHelperText', {
           defaultValue: 'Specify size for storage provisioning (e.g., 10G, 100G, 1T)',
         }),
       });
     }
 
-    // Repo GUID field
+    // Repository GUID field
     if (isCredentialOnlyMode) {
       // In credential-only mode, show the GUID field
       fields.push({
-        name: 'repoGuid',
-        label: t('repos.guid', { defaultValue: 'Repo GUID' }),
+        name: 'repositoryGuid',
+        label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
         type: 'text' as const,
         readOnly: !!(
-          existingData?.repoGuid &&
-          typeof existingData.repoGuid === 'string' &&
-          existingData.repoGuid.trim() !== ''
+          existingData?.repositoryGuid &&
+          typeof existingData.repositoryGuid === 'string' &&
+          existingData.repositoryGuid.trim() !== ''
         ), // Only read-only if GUID exists
         required: true, // Make it required in credential-only mode
-        helperText: existingData?.repoGuid
-          ? t('repos.guidHelperText', {
-              defaultValue: 'This repo already exists on the machine.',
+        helperText: existingData?.repositoryGuid
+          ? t('repositories.guidHelperText', {
+              defaultValue: 'This repository already exists on the machine.',
             })
-          : t('repos.guidHelperTextNew', {
-              defaultValue: 'Enter the repo GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
+          : t('repositories.guidHelperTextNew', {
+              defaultValue:
+                'Enter the repository GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
             }),
       });
     } else if (isExpertMode) {
       // In expert mode (when creating new repo), show as optional editable field
       fields.push({
-        name: 'repoGuid',
-        label: t('repos.guid', { defaultValue: 'Repo GUID' }),
-        placeholder: t('repos.placeholders.enterGuid', {
+        name: 'repositoryGuid',
+        label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
+        placeholder: t('repositories.placeholders.enterGuid', {
           defaultValue:
             'Optional: Enter a specific GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
         }),
         required: false,
         type: 'text' as const,
-        helperText: t('repos.guidHelperText', {
+        helperText: t('repositories.guidHelperText', {
           defaultValue:
-            'Optional: Specify a custom GUID for the repo. Leave empty to auto-generate.',
+            'Optional: Specify a custom GUID for the repository. Leave empty to auto-generate.',
         }),
       });
     }

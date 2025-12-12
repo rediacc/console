@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import { RediaccTag, RediaccText } from '@/components/ui';
 
 export const SmallText = styled(RediaccText)`
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
 `;
 
 export const GrandTag = styled(RediaccTag)`

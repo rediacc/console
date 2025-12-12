@@ -3,20 +3,20 @@ import { Alert, Button as AntButton, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
-import { useRepos } from '@/api/queries/repos';
+import { useRepositories } from '@/api/queries/repositories';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ActionGroup, CenteredState } from '@/components/common/styled';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { MachineRepoTable } from '@/components/resources/MachineRepoTable';
+import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
 import { RediaccButton, RediaccCard, RediaccText } from '@/components/ui';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
-import { useRepoCreation } from '@/hooks/useRepoCreation';
+import { useRepositoryCreation } from '@/hooks/useRepositoryCreation';
 import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
-import { Machine, PluginContainer, Repo } from '@/types';
+import { Machine, PluginContainer, Repository } from '@/types';
 import {
   CloudDownloadOutlined,
   DesktopOutlined,
@@ -59,7 +59,7 @@ interface ContainerData {
   mounts: string;
   networks: string;
   size: string;
-  repo: string;
+  repository: string;
   cpu_percent: string;
   memory_usage: string;
   memory_percent: string;
@@ -72,9 +72,9 @@ type MachineReposLocationState = {
   machine?: Machine;
 } | null;
 
-type RepoRowData = {
+type RepositoryRowData = {
   name: string;
-  repoTag?: string;
+  repositoryTag?: string;
   originalGuid?: string;
 };
 
@@ -91,16 +91,16 @@ const MachineReposPage: React.FC = () => {
   // Use shared panel width hook (33% of window, min 300px, max 700px)
   const panelWidth = usePanelWidth();
 
-  // State for selected resource (Repo or container) and panel
+  // State for selected resource (Repository or container) and panel
   const [selectedResource, setSelectedResource] = useState<
-    Repo | ContainerData | PluginContainer | null
+    Repository | ContainerData | PluginContainer | null
   >(null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
   const [splitWidth, setSplitWidth] = useState(panelWidth);
   const [backdropVisible, setBackdropVisible] = useState(false);
   const [shouldRenderBackdrop, setShouldRenderBackdrop] = useState(false);
 
-  // Refresh key for forcing MachineRepoTable updates
+  // Refresh key for forcing MachineRepositoryTable updates
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Queue trace modal state
@@ -124,11 +124,11 @@ const MachineReposPage: React.FC = () => {
     refetch: refetchMachines,
   } = useMachines(machine?.teamName ? [machine.teamName] : undefined, true);
 
-  // Repo creation hook (handles credentials + queue item)
-  const { createRepo } = useRepoCreation(machines);
+  // Repository creation hook (handles credentials + queue item)
+  const { createRepository } = useRepositoryCreation(machines);
 
-  // Fetch repos (needed for MachineRepoTable)
-  const { data: repos = [], refetch: refetchRepos } = useRepos(
+  // Fetch repositories (needed for MachineRepositoryTable)
+  const { data: repositories = [], refetch: refetchRepos } = useRepositories(
     machine?.teamName ? [machine.teamName] : undefined
   );
 
@@ -149,14 +149,14 @@ const MachineReposPage: React.FC = () => {
 
   const handleRefresh = async () => {
     setRefreshKey((prev) => prev + 1);
-    // Refetch both repos AND machines to get updated vaultStatus
+    // Refetch both repositories AND machines to get updated vaultStatus
     await Promise.all([refetchRepos(), refetchMachines()]);
   };
 
   const handleCreateRepo = () => {
     if (!machine) return;
 
-    // Open the Repo creation modal with prefilled machine
+    // Open the Repository creation modal with prefilled machine
     unifiedModal.open({
       mode: 'create',
       data: {
@@ -175,7 +175,9 @@ const MachineReposPage: React.FC = () => {
   };
 
   const handleUnifiedModalSubmit = async (data: Record<string, unknown>) => {
-    const result = await createRepo(data as unknown as Parameters<typeof createRepo>[0]);
+    const result = await createRepository(
+      data as unknown as Parameters<typeof createRepository>[0]
+    );
 
     if (result.success) {
       unifiedModal.close();
@@ -190,27 +192,27 @@ const MachineReposPage: React.FC = () => {
     }
   };
 
-  const handleRepoClick = (repoRow: RepoRowData) => {
-    // Map Repo data to Repo type
-    const mappedRepo: Repo = {
-      repoName: repoRow.name,
-      repoGuid: repoRow.originalGuid || repoRow.name,
+  const handleRepositoryClick = (repoRow: RepositoryRowData) => {
+    // Map Repository data to Repository type
+    const mappedRepo: Repository = {
+      repositoryName: repoRow.name,
+      repositoryGuid: repoRow.originalGuid || repoRow.name,
       teamName: machine!.teamName,
       vaultVersion: 0,
       vaultContent: null,
       grandGuid: '',
       parentGuid: null,
-      repoNetworkMode: '',
-      repoNetworkId: 0,
-      repoTag: repoRow.repoTag || '',
+      repositoryNetworkMode: '',
+      repositoryNetworkId: 0,
+      repositoryTag: repoRow.repositoryTag || '',
     };
 
-    // Find the actual Repo from the API data - must match both name AND tag to distinguish forks
-    const actualRepo = repos.find(
-      (r) => r.repoName === repoRow.name && r.repoTag === repoRow.repoTag
+    // Find the actual Repository from the API data - must match both name AND tag to distinguish forks
+    const actualRepository = repositories.find(
+      (r) => r.repositoryName === repoRow.name && r.repositoryTag === repoRow.repositoryTag
     );
 
-    setSelectedResource(actualRepo || mappedRepo);
+    setSelectedResource(actualRepository || mappedRepo);
     setIsPanelCollapsed(false);
   };
 
@@ -317,10 +319,10 @@ const MachineReposPage: React.FC = () => {
                   title: machine?.machineName || machineName,
                 },
                 {
-                  title: t('resources:repos.repos'),
+                  title: t('resources:repositories.repositories'),
                 },
               ]}
-              data-testid="machine-repos-breadcrumb"
+              data-testid="machine-repositories-breadcrumb"
             />
 
             <HeaderRow>
@@ -332,7 +334,7 @@ const MachineReposPage: React.FC = () => {
                       icon={<DoubleLeftOutlined />}
                       onClick={handleBackToMachines}
                       aria-label={t('machines:backToMachines')}
-                      data-testid="machine-repos-back-button"
+                      data-testid="machine-repositories-back-button"
                     />
                   </Tooltip>
                   <HeaderTitleText level={4}>
@@ -360,12 +362,12 @@ const MachineReposPage: React.FC = () => {
               </TitleColumn>
 
               <ActionsRow>
-                <Tooltip title={t('machines:createRepo')}>
+                <Tooltip title={t('machines:createRepository')}>
                   <RediaccButton
                     iconOnly
                     icon={<PlusOutlined />}
                     onClick={handleCreateRepo}
-                    data-testid="machine-repos-create-repo-button"
+                    data-testid="machine-repositories-create-repo-button"
                   />
                 </Tooltip>
                 <Tooltip title={t('functions:functions.pull.name')}>
@@ -373,7 +375,7 @@ const MachineReposPage: React.FC = () => {
                     iconOnly
                     icon={<CloudDownloadOutlined />}
                     onClick={handlePull}
-                    data-testid="machine-repos-pull-button"
+                    data-testid="machine-repositories-pull-button"
                   />
                 </Tooltip>
                 <Tooltip title={t('common:actions.refresh')}>
@@ -381,7 +383,7 @@ const MachineReposPage: React.FC = () => {
                     iconOnly
                     icon={<ReloadOutlined />}
                     onClick={handleRefresh}
-                    data-testid="machine-repos-refresh-button"
+                    data-testid="machine-repositories-refresh-button"
                   />
                 </Tooltip>
               </ActionsRow>
@@ -391,12 +393,12 @@ const MachineReposPage: React.FC = () => {
           <SplitLayout>
             <ListPanel $showDetail={Boolean(selectedResource)} $detailWidth={actualPanelWidth}>
               {machine && (
-                <MachineRepoTable
+                <MachineRepositoryTable
                   machine={machine}
                   key={`${machine.machineName}-${refreshKey}`}
                   refreshKey={refreshKey}
                   onActionComplete={handleRefresh}
-                  onRepoClick={handleRepoClick}
+                  onRepositoryClick={handleRepositoryClick}
                   onContainerClick={handleContainerClick}
                   onQueueItemCreated={(taskId, machineName) => {
                     queueTrace.open(taskId, machineName || undefined);
@@ -410,13 +412,13 @@ const MachineReposPage: React.FC = () => {
                 $right={actualPanelWidth}
                 $visible={backdropVisible}
                 onClick={handlePanelClose}
-                data-testid="machine-repos-backdrop"
+                data-testid="machine-repositories-backdrop"
               />
             )}
 
             {selectedResource && (
               <UnifiedDetailPanel
-                type={'repoName' in selectedResource ? 'repo' : 'container'}
+                type={'repositoryName' in selectedResource ? 'repository' : 'container'}
                 data={selectedResource}
                 visible={true}
                 onClose={handlePanelClose}
@@ -457,7 +459,7 @@ const MachineReposPage: React.FC = () => {
       <UnifiedResourceModal
         open={unifiedModal.isOpen}
         onCancel={() => unifiedModal.close()}
-        resourceType="repo"
+        resourceType="repository"
         mode={unifiedModal.state.data?.mode || 'create'}
         existingData={unifiedModal.state.data?.data}
         teamFilter={machine?.teamName ? [machine.teamName] : undefined}

@@ -33,19 +33,19 @@ const StyledTableBase = styled(AntTable)<{ $removeMargins?: boolean }>`
       }
     `}
 
-  .repo-container-row td {
+  .repository-container-row td {
     transition: background-color ${({ theme }) => theme.transitions.DEFAULT};
   }
 
-  .repo-container-row--clickable {
+  .repository-container-row--clickable {
     cursor: pointer;
   }
 
-  .repo-container-row--clickable:hover td {
+  .repository-container-row--clickable:hover td {
     background-color: ${({ theme }) => theme.colors.bgHover};
   }
 
-  .repo-container-row--selected td {
+  .repository-container-row--selected td {
     background-color: ${({ theme }) => theme.colors.primaryBg};
   }
 `;
