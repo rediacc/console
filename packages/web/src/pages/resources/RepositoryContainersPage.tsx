@@ -3,7 +3,7 @@ import { Alert, Button as AntButton, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
-import { useRepos } from '@/api/queries/repos';
+import { useRepositories } from '@/api/queries/repositories';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ActionGroup, CenteredState } from '@/components/common/styled';
@@ -12,7 +12,7 @@ import { RediaccButton, RediaccText } from '@/components/ui';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { useQueueTraceModal } from '@/hooks/useDialogState';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
-import { RepoContainerTable } from '@/pages/resources/components/RepoContainerTable';
+import { RepositoryContainerTable } from '@/pages/resources/components/RepositoryContainerTable';
 import { Machine, PluginContainer } from '@/types';
 import { DoubleLeftOutlined, InboxOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import {
@@ -31,10 +31,10 @@ import {
   TitleRow,
 } from './styles';
 
-// Repo interface from vaultStatus (runtime data)
-interface Repo {
+// Repository interface from vaultStatus (runtime data)
+interface Repository {
   name: string;
-  repoTag?: string;
+  repositoryTag?: string;
   size: number;
   size_human: string;
   modified: number;
@@ -56,22 +56,22 @@ interface Repo {
 
 type RepoContainersLocationState = {
   machine?: Machine;
-  repo?: Repo;
+  repository?: Repository;
 } | null;
 
-const isRepoData = (value: unknown): value is Repo => {
+const isRepositoryData = (value: unknown): value is Repository => {
   return typeof value === 'object' && value !== null && 'name' in value;
 };
 
 const RepoContainersPage: React.FC = () => {
-  const { machineName, repoName } = useParams<{ machineName: string; repoName: string }>();
+  const { machineName, repositoryName } = useParams<{ machineName: string; repositoryName: string }>();
   const navigate = useNavigate();
   const location = useLocation() as { state?: RepoContainersLocationState };
   const { t } = useTranslation(['resources', 'machines', 'common']);
 
-  // Extract machine and repo from navigation state
+  // Extract machine and repository from navigation state
   const machine = location.state?.machine;
-  const repo = location.state?.repo;
+  const repository = location.state?.repository;
 
   const [selectedContainer, setSelectedContainer] = useState<PluginContainer | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -81,20 +81,20 @@ const RepoContainersPage: React.FC = () => {
   const { data: machines, isLoading: machinesLoading, refetch: refetchMachines } = useMachines();
   const actualMachine = machine || machines?.find((m) => m.machineName === machineName);
 
-  // Fetch repos to get the repoGuid from friendly name
-  const { data: teamRepos = [], isLoading: reposLoading } = useRepos(
+  // Fetch repositories to get the repositoryGuid from friendly name
+  const { data: teamRepositories = [], isLoading: repositoriesLoading } = useRepositories(
     actualMachine?.teamName ? [actualMachine.teamName] : undefined
   );
 
-  // Reconstruct repo from vaultStatus if not provided via state
-  const actualRepo = useMemo(() => {
-    if (repo) return repo;
+  // Reconstruct repository from vaultStatus if not provided via state
+  const actualRepository = useMemo(() => {
+    if (repository) return repository;
 
-    if (!actualMachine?.vaultStatus || !repoName) return null;
+    if (!actualMachine?.vaultStatus || !repositoryName) return null;
 
-    // First, find the repoGuid from the API data using the friendly name
-    const repoCredential = teamRepos.find((r) => r.repoName === repoName);
-    const repoGuidToFind = repoCredential?.repoGuid;
+    // First, find the repositoryGuid from the API data using the friendly name
+    const repoCredential = teamRepositories.find((r) => r.repositoryName === repositoryName);
+    const repoGuidToFind = repoCredential?.repositoryGuid;
 
     try {
       const vaultStatusData = JSON.parse(actualMachine.vaultStatus);
@@ -110,19 +110,19 @@ const RepoContainersPage: React.FC = () => {
           // Search by GUID if we have it, otherwise try by name as fallback
           return (
             result.repositories.find(
-              (candidate: unknown): candidate is Repo =>
-                isRepoData(candidate) &&
-                (repoGuidToFind ? candidate.name === repoGuidToFind : candidate.name === repoName)
+              (candidate: unknown): candidate is Repository =>
+                isRepositoryData(candidate) &&
+                (repoGuidToFind ? candidate.name === repoGuidToFind : candidate.name === repositoryName)
             ) || null
           );
         }
       }
     } catch (err) {
-      console.error('Failed to parse repo from vaultStatus:', err);
+      console.error('Failed to parse repository from vaultStatus:', err);
     }
 
     return null;
-  }, [repo, actualMachine?.vaultStatus, repoName, teamRepos]);
+  }, [repository, actualMachine?.vaultStatus, repositoryName, teamRepositories]);
 
   // Panel width management
   const panelWidth = usePanelWidth();
@@ -143,7 +143,7 @@ const RepoContainersPage: React.FC = () => {
 
   // Navigation handlers
   const handleBackToRepos = () => {
-    navigate(`/machines/${machineName}/repos`, {
+    navigate(`/machines/${machineName}/repositories`, {
       state: { machine: actualMachine },
     });
   };
@@ -166,7 +166,7 @@ const RepoContainersPage: React.FC = () => {
   };
 
   // Loading state
-  if (machinesLoading || reposLoading) {
+  if (machinesLoading || repositoriesLoading) {
     return (
       <PageWrapper>
         <FlexColumnCard fullHeight>
@@ -204,8 +204,8 @@ const RepoContainersPage: React.FC = () => {
     );
   }
 
-  // Error state - repo not found
-  if (!actualRepo) {
+  // Error state - repository not found
+  if (!actualRepository) {
     return (
       <PageWrapper>
         <FlexColumnCard fullHeight>
@@ -213,7 +213,7 @@ const RepoContainersPage: React.FC = () => {
             message={t('machines:repoNotFound')}
             description={
               <ErrorWrapper>
-                <p>{t('machines:repoNotFoundDescription', { repoName: repoName, machineName })}</p>
+                <p>{t('machines:repoNotFoundDescription', { repositoryName: repositoryName, machineName })}</p>
                 <AntButton type="primary" onClick={handleBackToRepos}>
                   {t('machines:backToRepos')}
                 </AntButton>
@@ -227,7 +227,7 @@ const RepoContainersPage: React.FC = () => {
     );
   }
 
-  const actualRepoName = actualRepo.name;
+  const actualRepositoryName = actualRepository.name;
 
   return (
     <PageWrapper>
@@ -242,21 +242,21 @@ const RepoContainersPage: React.FC = () => {
               {
                 title: <span>{actualMachine.machineName}</span>,
                 onClick: () =>
-                  navigate(`/machines/${machineName}/repos`, { state: { machine: actualMachine } }),
+                  navigate(`/machines/${machineName}/repositories`, { state: { machine: actualMachine } }),
               },
               {
-                title: <span>{t('resources:repos.repos')}</span>,
+                title: <span>{t('resources:repositories.repositories')}</span>,
                 onClick: () =>
-                  navigate(`/machines/${machineName}/repos`, { state: { machine: actualMachine } }),
+                  navigate(`/machines/${machineName}/repositories`, { state: { machine: actualMachine } }),
               },
               {
-                title: actualRepoName,
+                title: actualRepositoryName,
               },
               {
                 title: t('resources:containers.containers'),
               },
             ]}
-            data-testid="repo-containers-breadcrumb"
+            data-testid="repository-containers-breadcrumb"
           />
 
           <HeaderRow>
@@ -268,14 +268,14 @@ const RepoContainersPage: React.FC = () => {
                     icon={<DoubleLeftOutlined />}
                     onClick={handleBackToRepos}
                     aria-label={t('machines:backToRepos')}
-                    data-testid="repo-containers-back-button"
+                    data-testid="repository-containers-back-button"
                   />
                 </Tooltip>
                 <HeaderTitleText level={4}>
                   <Space>
                     <InboxOutlined />
                     <span>
-                      {t('machines:repoContainers')}: {actualRepoName}
+                      {t('machines:repoContainers')}: {actualRepositoryName}
                     </span>
                   </Space>
                 </HeaderTitleText>
@@ -304,7 +304,7 @@ const RepoContainersPage: React.FC = () => {
                   iconOnly
                   icon={<ReloadOutlined />}
                   onClick={handleRefresh}
-                  data-testid="repo-containers-refresh-button"
+                  data-testid="repository-containers-refresh-button"
                 />
               </Tooltip>
             </ActionsRow>
@@ -313,10 +313,10 @@ const RepoContainersPage: React.FC = () => {
 
         <SplitLayout>
           <ListPanel $showDetail={Boolean(selectedResource)} $detailWidth={actualPanelWidth}>
-            <RepoContainerTable
+            <RepositoryContainerTable
               machine={actualMachine}
-              repo={actualRepo}
-              key={`${actualMachine.machineName}-${actualRepoName}-${refreshKey}`}
+              repository={actualRepository}
+              key={`${actualMachine.machineName}-${actualRepositoryName}-${refreshKey}`}
               refreshKey={refreshKey}
               onContainerClick={handleContainerClick}
               highlightedContainer={selectedContainer}
@@ -335,7 +335,7 @@ const RepoContainersPage: React.FC = () => {
                 setSelectedContainer(null);
                 setIsPanelCollapsed(true);
               }}
-              data-testid="repo-containers-backdrop"
+              data-testid="repository-containers-backdrop"
             />
           )}
 

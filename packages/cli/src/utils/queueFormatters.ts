@@ -137,11 +137,11 @@ export function getSeverityColor(severity: ErrorSeverity): (text: string) => str
  * formatError("ERROR: Repository not found")
  * // Returns: [ERROR] Repository not found (in red)
  *
- * formatError("ERROR: Repo not found\nWARNING: Disk space low")
- * // Returns: [ERROR] Repo not found (+1 more)
+ * formatError("ERROR: Repository not found\nWARNING: Disk space low")
+ * // Returns: [ERROR] Repository not found (+1 more)
  *
- * formatError("ERROR: Repo not found\nWARNING: Disk space low", true)
- * // Returns: [ERROR] Repo not found\n[WARNING] Disk space low
+ * formatError("ERROR: Repository not found\nWARNING: Disk space low", true)
+ * // Returns: [ERROR] Repository not found\n[WARNING] Disk space low
  */
 export function formatError(failureReason: string | undefined, showAll: boolean = false): string {
   if (!failureReason) return chalk.gray('No errors');

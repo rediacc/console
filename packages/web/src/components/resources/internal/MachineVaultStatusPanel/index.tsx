@@ -361,36 +361,36 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
         <DesktopOutlined />
       </IconWrapper>
       <SectionTitle level={5} data-testid="vault-status-system-info-title">
-        {t('resources:repos.systemInfo')}
+        {t('resources:repositories.systemInfo')}
       </SectionTitle>
     </SectionHeader>
 
     <InfoCard size="sm" data-testid="vault-status-system-info-card">
       <RediaccStack direction="vertical" gap="sm" fullWidth>
         <FieldRow>
-          <FieldLabel>{t('resources:repos.hostname')}:</FieldLabel>
+          <FieldLabel>{t('resources:repositories.hostname')}:</FieldLabel>
           <FieldValue data-testid="vault-status-hostname">{system.hostname}</FieldValue>
         </FieldRow>
         <FieldRow>
-          <FieldLabel>{t('resources:repos.uptime')}:</FieldLabel>
+          <FieldLabel>{t('resources:repositories.uptime')}:</FieldLabel>
           <FieldValue data-testid="vault-status-uptime">{system.uptime}</FieldValue>
         </FieldRow>
         <FieldRow>
-          <FieldLabel>{t('resources:repos.osName')}:</FieldLabel>
+          <FieldLabel>{t('resources:repositories.osName')}:</FieldLabel>
           <FieldValue data-testid="vault-status-os-name">{system.os_name}</FieldValue>
         </FieldRow>
         <FieldRow>
-          <FieldLabel>{t('resources:repos.kernel')}:</FieldLabel>
+          <FieldLabel>{t('resources:repositories.kernel')}:</FieldLabel>
           <FieldValue data-testid="vault-status-kernel">{system.kernel}</FieldValue>
         </FieldRow>
         <FieldRow>
-          <FieldLabel>{t('resources:repos.cpu')}:</FieldLabel>
+          <FieldLabel>{t('resources:repositories.cpu')}:</FieldLabel>
           <FieldValue data-testid="vault-status-cpu">
             {system.cpu_count} × {system.cpu_model}
           </FieldValue>
         </FieldRow>
         <FieldRow>
-          <FieldLabel>{t('resources:repos.systemTime')}:</FieldLabel>
+          <FieldLabel>{t('resources:repositories.systemTime')}:</FieldLabel>
           <FieldValue data-testid="vault-status-system-time">
             {system.system_time_human} ({system.timezone})
           </FieldValue>
@@ -418,7 +418,7 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
         <IconWrapper $color="var(--color-info)">
           <InfoCircleOutlined />
         </IconWrapper>
-        {t('resources:repos.resourceUsage')}
+        {t('resources:repositories.resourceUsage')}
       </SectionDivider>
 
       <Row gutter={[16, 16]}>
@@ -428,14 +428,14 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               <IconWrapper $color="var(--color-info)">
                 <DatabaseOutlined />
               </IconWrapper>
-              <CardTitle level={5}>{t('resources:repos.memory')}</CardTitle>
+              <CardTitle level={5}>{t('resources:repositories.memory')}</CardTitle>
             </CardHeader>
             <Progress percent={Math.round(memoryPercent)} strokeColor="var(--color-info)" />
             <RediaccText size="xs" color="muted">
-              {t('resources:repos.used')}: {system.memory.used} / {system.memory.total}
+              {t('resources:repositories.used')}: {system.memory.used} / {system.memory.total}
             </RediaccText>
             <RediaccText size="xs" color="muted">
-              {t('resources:repos.available')}: {system.memory.available}
+              {t('resources:repositories.available')}: {system.memory.available}
             </RediaccText>
           </MetricCard>
         </Col>
@@ -446,14 +446,14 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               <IconWrapper $color="var(--color-warning)">
                 <HddOutlined />
               </IconWrapper>
-              <CardTitle level={5}>{t('resources:repos.disk')}</CardTitle>
+              <CardTitle level={5}>{t('resources:repositories.disk')}</CardTitle>
             </CardHeader>
             <Progress percent={diskPercent} strokeColor={diskStroke} />
             <RediaccText size="xs" color="muted">
-              {t('resources:repos.used')}: {system.disk.used} / {system.disk.total}
+              {t('resources:repositories.used')}: {system.disk.used} / {system.disk.total}
             </RediaccText>
             <RediaccText size="xs" color="muted">
-              {t('resources:repos.available')}: {system.disk.available}
+              {t('resources:repositories.available')}: {system.disk.available}
             </RediaccText>
           </MetricCard>
         </Col>
@@ -464,7 +464,7 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               <IconWrapper $color="var(--color-success)">
                 <DatabaseOutlined />
               </IconWrapper>
-              <CardTitle level={5}>{t('resources:repos.datastore')}</CardTitle>
+              <CardTitle level={5}>{t('resources:repositories.datastore')}</CardTitle>
             </CardHeader>
             {system.datastore.path && (
               <FieldRow>
@@ -476,10 +476,10 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
             )}
             <Progress percent={datastorePercent} strokeColor={datastoreStroke} />
             <RediaccText size="xs" color="muted">
-              {t('resources:repos.used')}: {system.datastore.used} / {system.datastore.total}
+              {t('resources:repositories.used')}: {system.datastore.used} / {system.datastore.total}
             </RediaccText>
             <RediaccText size="xs" color="muted">
-              {t('resources:repos.available')}: {system.datastore.available}
+              {t('resources:repositories.available')}: {system.datastore.available}
             </RediaccText>
           </MetricCard>
         </Col>
@@ -503,19 +503,19 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
         <IconWrapper $color="var(--color-info)">
           <WifiOutlined />
         </IconWrapper>
-        {t('resources:repos.networkInfo')}
+        {t('resources:repositories.networkInfo')}
       </SectionDivider>
 
       {network.default_gateway && (
         <InfoCard size="sm" data-testid="vault-status-gateway-card">
           <RediaccStack direction="vertical" gap="sm" fullWidth>
             <FieldRow>
-              <FieldLabel>{t('resources:repos.defaultGateway')}:</FieldLabel>
+              <FieldLabel>{t('resources:repositories.defaultGateway')}:</FieldLabel>
               <FieldValue data-testid="vault-status-gateway">{network.default_gateway}</FieldValue>
             </FieldRow>
             {network.default_interface && (
               <FieldRow>
-                <FieldLabel>{t('resources:repos.defaultInterface')}:</FieldLabel>
+                <FieldLabel>{t('resources:repositories.defaultInterface')}:</FieldLabel>
                 <FieldValue data-testid="vault-status-interface">
                   {network.default_interface}
                 </FieldValue>
@@ -550,7 +550,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
               <CardBodyStack>
                 {iface.ipv4_addresses.length > 0 && (
                   <div>
-                    <FieldLabel>{t('resources:repos.ipAddresses')}:</FieldLabel>
+                    <FieldLabel>{t('resources:repositories.ipAddresses')}:</FieldLabel>
                     <CardTagGroup>
                       {iface.ipv4_addresses.map((ip: string) => (
                         <AddressTag key={ip} data-testid={`vault-status-ip-${ip}`}>
@@ -562,7 +562,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
                 )}
                 {iface.mac_address && iface.mac_address !== 'unknown' && (
                   <KeyValueRow>
-                    <FieldLabel>{t('resources:repos.macAddress')}:</FieldLabel>
+                    <FieldLabel>{t('resources:repositories.macAddress')}:</FieldLabel>
                     <FieldValue>{iface.mac_address}</FieldValue>
                   </KeyValueRow>
                 )}
@@ -591,7 +591,7 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
       <IconWrapper $color="var(--color-warning)">
         <HddOutlined />
       </IconWrapper>
-      {t('resources:repos.blockDevices')}
+      {t('resources:repositories.blockDevices')}
     </SectionDivider>
 
     <StyledList
@@ -622,14 +622,14 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
             <CardBodyStack>
               {device.model && device.model !== 'Unknown' && (
                 <KeyValueRow>
-                  <FieldLabel>{t('resources:repos.model')}:</FieldLabel>
+                  <FieldLabel>{t('resources:repositories.model')}:</FieldLabel>
                   <FieldValue>{device.model}</FieldValue>
                 </KeyValueRow>
               )}
 
               {device.partitions.length > 0 && (
                 <div>
-                  <FieldLabel>{t('resources:repos.partitions')}:</FieldLabel>
+                  <FieldLabel>{t('resources:repositories.partitions')}:</FieldLabel>
                   <IndentedBlock>
                     {device.partitions.map((part: BlockDevicePartition) => (
                       <PartitionRow key={`${device.name}-${part.name}`}>
@@ -662,7 +662,7 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
       <IconWrapper $color="var(--color-secondary)">
         <ContainerOutlined />
       </IconWrapper>
-      {t('resources:repos.systemContainers')}
+      {t('resources:repositories.systemContainers')}
     </SectionDivider>
 
     <StyledList
@@ -702,7 +702,7 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
               )}
               {container.memory_usage && (
                 <KeyValueRow>
-                  <FieldLabel>{t('resources:repos.memory')}:</FieldLabel>
+                  <FieldLabel>{t('resources:repositories.memory')}:</FieldLabel>
                   <FieldValue>{container.memory_usage}</FieldValue>
                 </KeyValueRow>
               )}

@@ -29,7 +29,7 @@ type MenuItemWithTestId = ItemType & { ['data-testid']?: string };
 
 interface LocalActionsMenuProps {
   machine: string;
-  repo?: string;
+  repository?: string;
   teamName?: string;
   disabled?: boolean;
   userEmail?: string;
@@ -49,7 +49,7 @@ const createMenuIcon = (IconComponent: React.ElementType) => (
 
 export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   machine,
-  repo,
+  repository,
   teamName = 'Default',
   disabled = false,
   userEmail,
@@ -74,7 +74,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       const baseParams = {
         team: teamName,
         machine,
-        repo: isMachineOnlyMenu ? '' : (repo ?? ''),
+        repository: isMachineOnlyMenu ? '' : (repository ?? ''),
       };
 
       let url: string;
@@ -163,7 +163,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
     [
       teamName,
       machine,
-      repo,
+      repository,
       isContainerMenu,
       containerId,
       containerName,
@@ -217,21 +217,21 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       icon: createMenuIcon(DesktopOutlined),
       label: <MenuLabel>{t('resources:localActions.openInDesktop')}</MenuLabel>,
       onClick: () => handleOpenInDesktop(),
-      'data-testid': `local-actions-open-${repo}`,
+      'data-testid': `local-actions-open-${repository}`,
     },
     {
       key: 'vscode',
       icon: createMenuIcon(FileTextOutlined),
       label: <MenuLabel>{t('resources:localActions.openInVSCode')}</MenuLabel>,
       onClick: () => handleOpenInDesktop('vscode'),
-      'data-testid': `local-actions-vscode-${repo}`,
+      'data-testid': `local-actions-vscode-${repository}`,
     },
     {
       key: 'terminal',
       icon: createMenuIcon(CodeOutlined),
       label: <MenuLabel>{t('resources:localActions.openTerminal')}</MenuLabel>,
       onClick: () => handleOpenInDesktop('terminal'),
-      'data-testid': `local-actions-terminal-${repo}`,
+      'data-testid': `local-actions-terminal-${repository}`,
     },
     { type: 'divider' },
     {
@@ -239,7 +239,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       icon: createMenuIcon(BuildOutlined),
       label: <MenuLabel>{t('resources:localActions.showCLICommands')}</MenuLabel>,
       onClick: () => commandModal.open(),
-      'data-testid': `local-actions-cli-commands-${repo}`,
+      'data-testid': `local-actions-cli-commands-${repository}`,
     },
   ];
 
@@ -252,7 +252,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
 
   const triggerTestId = isContainerMenu
     ? `local-actions-dropdown-${containerId}`
-    : `local-actions-dropdown-${repo}`;
+    : `local-actions-dropdown-${repository}`;
 
   return (
     <>
@@ -260,7 +260,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         menu={menuConfig}
         trigger={['click']}
         disabled={disabled || isCheckingProtocol}
-        data-testid={`local-actions-dropdown-container-${repo}`}
+        data-testid={`local-actions-dropdown-container-${repository}`}
       >
         <Tooltip title={tooltipLabel}>
           <TriggerButton
@@ -284,7 +284,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
           open={commandModal.isOpen}
           onClose={commandModal.close}
           machine={machine}
-          repo={repo}
+          repository={repository}
           userEmail={userEmail ?? currentUserEmail ?? ''}
           pluginContainers={pluginContainers}
         />

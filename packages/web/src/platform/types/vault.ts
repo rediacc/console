@@ -29,7 +29,7 @@ export interface VaultContextData extends VaultData {
   STORAGE_SYSTEMS?: Record<string, StorageSystemContextData>;
   PLUGINS?: VaultData;
   company?: VaultData;
-  repo?: VaultData;
+  repository?: VaultData;
   storage?: VaultData;
   bridge?: VaultData;
   plugins?: VaultData;

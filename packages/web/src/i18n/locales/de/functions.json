@@ -18,7 +18,7 @@
       "description": "Netzwerk- und Socket-Zuordnungsvorgänge",
       "name": "Netzwerkfunktionen"
     },
-    "repo": {
+    "repository": {
       "description": "Repository-Management und -Betrieb",
       "name": "Repository-Funktionen"
     }
@@ -42,7 +42,7 @@
           "help": "GUID des großen Repositorys",
           "label": "Großes Repository"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name",
           "label": "Repository"
         },
@@ -68,7 +68,7 @@
           "help": "Optionen (z. B. Überschreiben)",
           "label": "Optionen"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
           "label": "Repository"
         },
@@ -208,7 +208,7 @@
           "help": "Optionen (z. B. Überschreiben)",
           "label": "Optionen"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
           "label": "Repository"
         },
@@ -226,7 +226,7 @@
           "help": "Zusätzliche Optionen",
           "label": "Optionen"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
           "label": "Repository"
         }
@@ -240,7 +240,7 @@
           "help": "GUID des großen Repositorys",
           "label": "Großes Repository"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name",
           "label": "Repository"
         },
@@ -288,7 +288,7 @@
           "help": "Remote-Computer, von dem aus gemountet werden soll",
           "label": "Von der Maschine"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
           "label": "Repository"
         }
@@ -298,7 +298,7 @@
       "description": "Erstellen Sie ein neues Repository",
       "name": "neu",
       "params": {
-        "repo": {
+        "repository": {
           "help": "Repository-Name",
           "label": "Repository"
         },
@@ -316,7 +316,7 @@
           "help": "Aktueller Besitzer",
           "label": "Aktueller Besitzer"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name",
           "label": "Repository"
         },
@@ -338,7 +338,7 @@
           "help": "Plugin-Name(n), durch Kommas getrennt",
           "label": "Plugin"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
           "label": "Repository"
         }
@@ -352,7 +352,7 @@
           "help": "Plugin-Name(n), durch Kommas getrennt",
           "label": "Plugin"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
           "label": "Repository"
         }
@@ -366,7 +366,7 @@
           "help": "Wählen Sie die Quellmaschine oder den Quellspeicher aus",
           "label": "Quelle"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
           "label": "Repository"
         },
@@ -396,7 +396,7 @@
           "help": "Optionen (z. B. Überschreiben)",
           "label": "Optionen"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
           "label": "Repository"
         },
@@ -414,7 +414,7 @@
       "description": "Größe des Repository-Speichers ändern (Offline-Betrieb – Repository muss ausgehängt werden)",
       "name": "Größe ändern",
       "params": {
-        "repo": {
+        "repository": {
           "help": "Repository-Name",
           "label": "Repository"
         },
@@ -428,7 +428,7 @@
       "description": "Repository löschen",
       "name": "rm",
       "params": {
-        "repo": {
+        "repository": {
           "help": "Repository-Name",
           "label": "Repository"
         }
@@ -484,7 +484,7 @@
           "help": "Remote-Computer, von dem die Bereitstellung aufgehoben werden soll",
           "label": "Von der Maschine"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
           "label": "Repository"
         }
@@ -498,7 +498,7 @@
           "help": "Optionen (z. B. nur Vorbereitung)",
           "label": "Optionen"
         },
-        "repo": {
+        "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
           "label": "Repository"
         }
@@ -516,7 +516,7 @@
           "help": "Name des übergeordneten Repositorys",
           "label": "Großes Repository"
         },
-        "repo": {
+        "repository": {
           "help": "Zu validierender Repository-Name",
           "label": "Repository"
         },

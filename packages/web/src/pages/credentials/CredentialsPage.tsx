@@ -5,13 +5,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
 import {
-  Repo,
-  useCreateRepo,
-  useDeleteRepo,
-  useRepos,
-  useUpdateRepoName,
-  useUpdateRepoVault,
-} from '@/api/queries/repos';
+  Repository,
+  useCreateRepository,
+  useDeleteRepository,
+  useRepositories,
+  useUpdateRepositoryName,
+  useUpdateRepositoryVault,
+} from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import { ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
@@ -43,7 +43,7 @@ import {
   useUnifiedModal,
 } from '@/hooks';
 import { useQueueAction } from '@/hooks/useQueueAction';
-import { useRepoCreation } from '@/hooks/useRepoCreation';
+import { useRepositoryCreation } from '@/hooks/useRepositoryCreation';
 import { getAffectedResources as coreGetAffectedResources } from '@/platform';
 import type { QueueActionParams } from '@/services/queueActionService';
 import { showMessage } from '@/utils/messages';
@@ -65,20 +65,20 @@ import {
 } from './CredentialsPage.styles';
 
 interface CredentialsLocationState {
-  createRepo?: boolean;
+  createRepository?: boolean;
   selectedTeam?: string;
   selectedMachine?: string;
   selectedTemplate?: string;
 }
 
-type RepoFormValues = {
-  repoName?: string;
+type RepositoryFormValues = {
+  repositoryName?: string;
   vaultContent?: string;
   teamName?: string;
   [key: string]: unknown;
 };
 
-type RepoModalData = Partial<Repo> & Record<string, unknown>;
+type RepoModalData = Partial<Repository> & Record<string, unknown>;
 
 const CredentialsPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common']);
@@ -93,12 +93,12 @@ const CredentialsPage: React.FC = () => {
     currentResource,
     openModal: openUnifiedModal,
     closeModal: closeUnifiedModal,
-  } = useUnifiedModal<Repo & Record<string, unknown>>('repo');
+  } = useUnifiedModal<Repository & Record<string, unknown>>('repository');
   const {
-    page: repoPage,
-    pageSize: repoPageSize,
-    setPage: setRepoPage,
-    setPageSize: setRepoPageSize,
+    page: repositoryPage,
+    pageSize: repositoryPageSize,
+    setPage: setRepositoryPage,
+    setPageSize: setRepositoryPageSize,
   } = usePagination({ defaultPageSize: 15 });
 
   // Modal state management with new hooks
@@ -111,10 +111,10 @@ const CredentialsPage: React.FC = () => {
   const { data: dropdownData } = useDropdownData();
 
   const {
-    data: repos = [],
-    isLoading: reposLoading,
+    data: repositories = [],
+    isLoading: repositoriesLoading,
     refetch: refetchRepos,
-  } = useRepos(selectedTeams.length > 0 ? selectedTeams : undefined);
+  } = useRepositories(selectedTeams.length > 0 ? selectedTeams : undefined);
 
   const { data: machines = [] } = useMachines(
     selectedTeams.length > 0 ? selectedTeams : undefined,
@@ -123,57 +123,57 @@ const CredentialsPage: React.FC = () => {
 
   const { data: storages = [] } = useStorage(selectedTeams.length > 0 ? selectedTeams : undefined);
 
-  const createRepoMutation = useCreateRepo();
-  const updateRepoNameMutation = useUpdateRepoName();
-  const deleteRepoMutation = useDeleteRepo();
-  const updateRepoVaultMutation = useUpdateRepoVault();
+  const createRepositoryMutation = useCreateRepository();
+  const updateRepoNameMutation = useUpdateRepositoryName();
+  const deleteRepoMutation = useDeleteRepository();
+  const updateRepoVaultMutation = useUpdateRepositoryVault();
 
-  const { createRepo: createRepoWithQueue, isCreating } = useRepoCreation(machines);
+  const { createRepository: createRepositoryWithQueue, isCreating } = useRepositoryCreation(machines);
   const { executeAction, isExecuting } = useQueueAction();
 
-  const originalRepos = useMemo(
-    () => repos.filter((repo) => !repo.grandGuid || repo.grandGuid === repo.repoGuid),
-    [repos]
+  const originalRepositories = useMemo(
+    () => repositories.filter((repository) => !repository.grandGuid || repository.grandGuid === repository.repositoryGuid),
+    [repositories]
   );
 
-  // Helper function to find affected resources when deleting a repo
-  // Uses core repo relationship service
+  // Helper function to find affected resources when deleting a repository
+  // Uses core repository relationship service
   const getAffectedResources = useCallback(
-    (repo: Repo) => {
-      return coreGetAffectedResources(repo, repos, machines);
+    (repository: Repository) => {
+      return coreGetAffectedResources(repository, repositories, machines);
     },
-    [repos, machines]
+    [repositories, machines]
   );
 
-  const handleDeleteRepo = useCallback(
-    (repo: Repo) => {
-      const { isCredential, forks, affectedMachines } = getAffectedResources(repo);
+  const handleDeleteRepository = useCallback(
+    (repository: Repository) => {
+      const { isCredential, forks, affectedMachines } = getAffectedResources(repository);
 
       // For credential deletion with machine deployments - BLOCK
       if (isCredential && affectedMachines.length > 0) {
         modal.error({
-          title: t('repos.cannotDeleteCredential'),
+          title: t('repositories.cannotDeleteCredential'),
           content: (
             <div>
               <RediaccText>
                 {forks.length > 0
-                  ? t('repos.credentialHasDeploymentsWithForks', {
+                  ? t('repositories.credentialHasDeploymentsWithForks', {
                       count: affectedMachines.length,
                       forkCount: forks.length,
                     })
-                  : t('repos.credentialHasDeployments', {
+                  : t('repositories.credentialHasDeployments', {
                       count: affectedMachines.length,
                     })}
               </RediaccText>
 
               {forks.length > 0 && (
                 <AffectedSection>
-                  <RediaccText weight="bold">{t('repos.affectedForks')}</RediaccText>
+                  <RediaccText weight="bold">{t('repositories.affectedForks')}</RediaccText>
                   <InlineList>
                     {forks.map((fork) => (
-                      <li key={fork.repoGuid}>
-                        {fork.repoName}
-                        {fork.repoTag ? `:${fork.repoTag}` : ''}
+                      <li key={fork.repositoryGuid}>
+                        {fork.repositoryName}
+                        {fork.repositoryTag ? `:${fork.repositoryTag}` : ''}
                       </li>
                     ))}
                   </InlineList>
@@ -181,12 +181,12 @@ const CredentialsPage: React.FC = () => {
               )}
 
               <AffectedSection>
-                <RediaccText weight="bold">{t('repos.affectedMachines')}</RediaccText>
+                <RediaccText weight="bold">{t('repositories.affectedMachines')}</RediaccText>
                 <InlineList>
                   {affectedMachines.map((machine) => (
                     <li key={machine.machineName}>
                       <RediaccText weight="bold">{machine.machineName}</RediaccText>
-                      <RediaccText color="secondary"> ({machine.repoNames.join(', ')})</RediaccText>
+                      <RediaccText color="secondary"> ({machine.repositoryNames.join(', ')})</RediaccText>
                     </li>
                   ))}
                 </InlineList>
@@ -194,7 +194,7 @@ const CredentialsPage: React.FC = () => {
 
               <SpacedAlert
                 type="warning"
-                message={t('repos.removeDeploymentsFirst')}
+                message={t('repositories.removeDeploymentsFirst')}
                 showIcon
                 icon={<WarningOutlined />}
               />
@@ -208,14 +208,14 @@ const CredentialsPage: React.FC = () => {
       // For fork deletion with machine deployments - WARNING but allow
       if (!isCredential && affectedMachines.length > 0) {
         modal.confirm({
-          title: t('repos.deleteRepo'),
+          title: t('repositories.deleteRepository'),
           content: (
             <div>
-              <RediaccText>{t('repos.confirmDelete', { repoName: repo.repoName })}</RediaccText>
+              <RediaccText>{t('repositories.confirmDelete', { repositoryName: repository.repositoryName })}</RediaccText>
 
               <SpacedAlert
                 type="warning"
-                message={t('repos.machinesWillLoseAccess')}
+                message={t('repositories.machinesWillLoseAccess')}
                 description={
                   <InlineList>
                     {affectedMachines.map((machine) => (
@@ -236,13 +236,13 @@ const CredentialsPage: React.FC = () => {
           onOk: async () => {
             try {
               await deleteRepoMutation.mutateAsync({
-                teamName: repo.teamName,
-                repoName: repo.repoName,
+                teamName: repository.teamName,
+                repositoryName: repository.repositoryName,
               });
-              showMessage('success', t('repos.deleteSuccess'));
+              showMessage('success', t('repositories.deleteSuccess'));
               refetchRepos();
             } catch {
-              showMessage('error', t('repos.deleteError'));
+              showMessage('error', t('repositories.deleteError'));
             }
           },
         });
@@ -251,23 +251,23 @@ const CredentialsPage: React.FC = () => {
 
       // For credential deletion without deployments or fork deletion without deployments - simple confirm
       modal.confirm({
-        title: isCredential ? t('repos.deleteCredential') : t('repos.deleteRepo'),
+        title: isCredential ? t('repositories.deleteCredential') : t('repositories.deleteRepository'),
         content: isCredential
-          ? t('repos.confirmDeleteCredential', { repoName: repo.repoName })
-          : t('repos.confirmDelete', { repoName: repo.repoName }),
+          ? t('repositories.confirmDeleteCredential', { repositoryName: repository.repositoryName })
+          : t('repositories.confirmDelete', { repositoryName: repository.repositoryName }),
         okText: t('common:actions.delete'),
         okType: 'danger',
         cancelText: t('common:actions.cancel'),
         onOk: async () => {
           try {
             await deleteRepoMutation.mutateAsync({
-              teamName: repo.teamName,
-              repoName: repo.repoName,
+              teamName: repository.teamName,
+              repositoryName: repository.repositoryName,
             });
-            showMessage('success', t('repos.deleteSuccess'));
+            showMessage('success', t('repositories.deleteSuccess'));
             refetchRepos();
           } catch {
-            showMessage('error', t('repos.deleteError'));
+            showMessage('error', t('repositories.deleteError'));
           }
         },
       });
@@ -276,12 +276,12 @@ const CredentialsPage: React.FC = () => {
   );
 
   const handleUnifiedModalSubmit = useCallback(
-    async (data: RepoFormValues) => {
+    async (data: RepositoryFormValues) => {
       await execute(
         async () => {
           if (unifiedModalState.mode === 'create') {
-            const result = await createRepoWithQueue(
-              data as RepoFormValues & { repoName: string; teamName: string }
+            const result = await createRepositoryWithQueue(
+              data as RepositoryFormValues & { repositoryName: string; teamName: string }
             );
 
             if (result.success) {
@@ -293,17 +293,17 @@ const CredentialsPage: React.FC = () => {
                 refetchRepos();
               }
             } else {
-              showMessage('error', result.error || t('repos.failedToCreateRepo'));
+              showMessage('error', result.error || t('repositories.failedToCreateRepository'));
             }
           } else if (currentResource) {
-            const currentName = currentResource.repoName;
-            const newName = data.repoName;
+            const currentName = currentResource.repositoryName;
+            const newName = data.repositoryName;
 
             if (newName && newName !== currentName) {
               await updateRepoNameMutation.mutateAsync({
                 teamName: currentResource.teamName,
-                currentRepoName: currentName,
-                newRepoName: newName,
+                currentRepositoryName: currentName,
+                newRepositoryName: newName,
               });
             }
 
@@ -311,8 +311,8 @@ const CredentialsPage: React.FC = () => {
             if (vaultData && vaultData !== currentResource.vaultContent) {
               await updateRepoVaultMutation.mutateAsync({
                 teamName: currentResource.teamName,
-                repoName: newName || currentName,
-                repoTag: currentResource.repoTag || 'latest',
+                repositoryName: newName || currentName,
+                repositoryTag: currentResource.repositoryTag || 'latest',
                 vaultContent: vaultData,
                 vaultVersion: currentResource.vaultVersion + 1,
               });
@@ -327,7 +327,7 @@ const CredentialsPage: React.FC = () => {
     },
     [
       closeUnifiedModal,
-      createRepoWithQueue,
+      createRepositoryWithQueue,
       currentResource,
       execute,
       queueTrace,
@@ -346,8 +346,8 @@ const CredentialsPage: React.FC = () => {
         async () => {
           await updateRepoVaultMutation.mutateAsync({
             teamName: currentResource.teamName,
-            repoName: currentResource.repoName,
-            repoTag: currentResource.repoTag || 'latest',
+            repositoryName: currentResource.repositoryName,
+            repositoryTag: currentResource.repositoryTag || 'latest',
             vaultContent: vault,
             vaultVersion: version,
           });
@@ -401,14 +401,14 @@ const CredentialsPage: React.FC = () => {
           params: functionData.params,
           priority: functionData.priority,
           description: functionData.description,
-          addedVia: 'repo-table',
+          addedVia: 'repository-table',
           teamVault:
             teams.find((team) => team.teamName === currentResource.teamName)?.vaultContent || '{}',
-          repoGuid: currentResource.repoGuid,
+          repositoryGuid: currentResource.repositoryGuid,
           vaultContent: currentResource.vaultContent || '{}',
-          repoNetworkId: currentResource.repoNetworkId,
-          repoNetworkMode: currentResource.repoNetworkMode,
-          repoTag: currentResource.repoTag,
+          repositoryNetworkId: currentResource.repositoryNetworkId,
+          repositoryNetworkMode: currentResource.repositoryNetworkMode,
+          repositoryTag: currentResource.repositoryTag,
           machineVault: selectedMachine?.vaultContent || '{}',
         };
 
@@ -437,12 +437,12 @@ const CredentialsPage: React.FC = () => {
 
         if (result.success) {
           if (result.taskId) {
-            showMessage('success', t('repos.queueItemCreated'));
+            showMessage('success', t('repositories.queueItemCreated'));
             queueTrace.open(result.taskId, machineEntry.value);
           } else if (result.isQueued) {
             showMessage(
               'info',
-              t('resources:messages.highestPriorityQueued', { resourceType: 'repo' })
+              t('resources:messages.highestPriorityQueued', { resourceType: 'repository' })
             );
           }
         } else {
@@ -466,13 +466,13 @@ const CredentialsPage: React.FC = () => {
   );
 
   const isSubmitting =
-    createRepoMutation.isPending || updateRepoNameMutation.isPending || isCreating || isExecuting;
+    createRepositoryMutation.isPending || updateRepoNameMutation.isPending || isCreating || isExecuting;
 
   const isUpdatingVault = updateRepoVaultMutation.isPending;
 
   useEffect(() => {
     const state = location.state as CredentialsLocationState | null;
-    if (state?.createRepo) {
+    if (state?.createRepository) {
       if (state.selectedTeam) {
         setSelectedTeams([state.selectedTeam]);
       }
@@ -490,12 +490,12 @@ const CredentialsPage: React.FC = () => {
     }
   }, [location, navigate, openUnifiedModal, setSelectedTeams]);
 
-  const repoColumns = useMemo(
+  const repositoryColumns = useMemo(
     () => [
       {
-        title: t('repos.repoName'),
-        dataIndex: 'repoName',
-        key: 'repoName',
+        title: t('repositories.repositoryName'),
+        dataIndex: 'repositoryName',
+        key: 'repositoryName',
         width: COLUMN_WIDTHS.NAME,
         ellipsis: true,
         render: (text: string) => (
@@ -528,26 +528,26 @@ const CredentialsPage: React.FC = () => {
             },
           ]
         : []),
-      createActionColumn<Repo>({
+      createActionColumn<Repository>({
         width: COLUMN_WIDTHS.ACTIONS_WIDE,
         renderActions: (record) => {
-          const buttons: ActionButtonConfig<Repo>[] = [
+          const buttons: ActionButtonConfig<Repository>[] = [
             {
               type: 'edit',
               icon: <EditOutlined />,
               tooltip: 'common:actions.edit',
-              onClick: (r: Repo) => openUnifiedModal('edit', r as Repo & Record<string, unknown>),
+              onClick: (r: Repository) => openUnifiedModal('edit', r as Repository & Record<string, unknown>),
               variant: 'primary',
             },
             {
               type: 'trace',
               icon: <HistoryOutlined />,
               tooltip: 'machines:trace',
-              onClick: (r: Repo) =>
+              onClick: (r: Repository) =>
                 auditTrace.open({
-                  entityType: 'Repo',
-                  entityIdentifier: r.repoName,
-                  entityName: r.repoName,
+                  entityType: 'Repository',
+                  entityIdentifier: r.repositoryName,
+                  entityName: r.repositoryName,
                 }),
               variant: 'default',
             },
@@ -555,31 +555,31 @@ const CredentialsPage: React.FC = () => {
               type: 'delete',
               icon: <DeleteOutlined />,
               tooltip: 'common:actions.delete',
-              onClick: handleDeleteRepo,
+              onClick: handleDeleteRepository,
               variant: 'primary',
               danger: true,
             },
           ];
 
           return (
-            <ActionButtonGroup<Repo>
+            <ActionButtonGroup<Repository>
               buttons={buttons}
               record={record}
-              idField="repoGuid"
-              testIdPrefix="resources-repo"
+              idField="repositoryGuid"
+              testIdPrefix="resources-repository"
               t={t}
             />
           );
         },
       }),
     ],
-    [auditTrace, handleDeleteRepo, openUnifiedModal, t]
+    [auditTrace, handleDeleteRepository, openUnifiedModal, t]
   );
 
   const hasTeamSelection = selectedTeams.length > 0;
-  const displayedRepos = hasTeamSelection ? originalRepos : [];
+  const displayedRepositories = hasTeamSelection ? originalRepositories : [];
   const emptyDescription = hasTeamSelection
-    ? t('repos.noRepos', { defaultValue: 'No repos found in this team' })
+    ? t('repositories.noRepositories', { defaultValue: 'No repositories found in this team' })
     : t('teams.selectTeamPrompt', { defaultValue: 'Select a team to view its resources' });
 
   return (
@@ -587,7 +587,7 @@ const CredentialsPage: React.FC = () => {
       <PageWrapper>
         <SectionStack>
           <SectionHeading level={3}>
-            {t('credentials.heading', { defaultValue: 'Repo Credentials' })}
+            {t('credentials.heading', { defaultValue: 'Repository Credentials' })}
           </SectionHeading>
 
           <TeamSelectorWrapper>
@@ -603,30 +603,30 @@ const CredentialsPage: React.FC = () => {
             />
           </TeamSelectorWrapper>
 
-          <ResourceListView<Repo>
+          <ResourceListView<Repository>
             title={
               <ListTitleRow>
                 <ListTitle>{t('credentials.title', { defaultValue: 'Credentials' })}</ListTitle>
                 <ListSubtitle>
                   {t('credentials.subtitle', {
-                    defaultValue: 'Manage repo credentials and deployments',
+                    defaultValue: 'Manage repository credentials and deployments',
                   })}
                 </ListSubtitle>
               </ListTitleRow>
             }
-            loading={reposLoading}
-            data={displayedRepos}
-            columns={repoColumns}
-            rowKey="repoGuid"
-            data-testid="resources-repo-table"
-            resourceType="repos"
+            loading={repositoriesLoading}
+            data={displayedRepositories}
+            columns={repositoryColumns}
+            rowKey="repositoryGuid"
+            data-testid="resources-repository-table"
+            resourceType="repositories"
             emptyDescription={emptyDescription}
             pagination={
               hasTeamSelection
                 ? {
-                    current: repoPage,
-                    pageSize: repoPageSize,
-                    total: displayedRepos.length,
+                    current: repositoryPage,
+                    pageSize: repositoryPageSize,
+                    total: displayedRepositories.length,
                     showSizeChanger: true,
                     pageSizeOptions: ['10', '20', '50', '100'],
                     showTotal: (total: number, range: [number, number]) =>
@@ -636,10 +636,10 @@ const CredentialsPage: React.FC = () => {
                         total,
                       })}`,
                     onChange: (page: number, size: number) => {
-                      setRepoPage(page);
-                      if (size && size !== repoPageSize) {
-                        setRepoPageSize(size);
-                        setRepoPage(1);
+                      setRepositoryPage(page);
+                      if (size && size !== repositoryPageSize) {
+                        setRepositoryPageSize(size);
+                        setRepositoryPage(1);
                       }
                     },
                     position: ['bottomRight'],
@@ -649,13 +649,13 @@ const CredentialsPage: React.FC = () => {
             actions={
               hasTeamSelection ? (
                 <>
-                  <Tooltip title={t('repos.createRepo')}>
+                  <Tooltip title={t('repositories.createRepository')}>
                     <Button
                       type="primary"
                       icon={<PlusOutlined />}
                       data-testid="resources-create-repositorie-button"
                       onClick={() => openUnifiedModal('create', undefined, 'credentials-only')}
-                      aria-label={t('repos.createRepo')}
+                      aria-label={t('repositories.createRepository')}
                     />
                   </Tooltip>
                   <Tooltip title={t('common:actions.refresh')}>
@@ -674,10 +674,10 @@ const CredentialsPage: React.FC = () => {
       </PageWrapper>
 
       <UnifiedResourceModal
-        data-testid="resources-repo-modal"
+        data-testid="resources-repository-modal"
         open={unifiedModalState.open}
         onCancel={closeUnifiedModal}
-        resourceType="repo"
+        resourceType="repository"
         mode={unifiedModalState.mode}
         existingData={(unifiedModalState.data || currentResource) as RepoModalData | undefined}
         teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
@@ -689,11 +689,11 @@ const CredentialsPage: React.FC = () => {
         }
         isSubmitting={isSubmitting}
         isUpdatingVault={isUpdatingVault}
-        functionCategories={['repo', 'backup', 'network']}
-        hiddenParams={['repo', 'grand']}
+        functionCategories={['repository', 'backup', 'network']}
+        hiddenParams={['repository', 'grand']}
         defaultParams={
           currentResource
-            ? { repo: currentResource.repoGuid, grand: currentResource.grandGuid || '' }
+            ? { repository: currentResource.repositoryGuid, grand: currentResource.grandGuid || '' }
             : {}
         }
       />

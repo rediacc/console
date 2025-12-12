@@ -147,17 +147,17 @@ export class QueueVaultBuilder {
         }
       }
 
-      // Add REPO_CREDENTIALS after MACHINES if repository is required
+      // Add REPOSITORY_CREDENTIALS after MACHINES if repository is required
       if (requirements.repository && context.repositoryGuid && context.repositoryVault) {
         try {
-          const repoVault =
+          const repositoryVault =
             typeof context.repositoryVault === 'string'
               ? JSON.parse(context.repositoryVault)
               : context.repositoryVault;
 
-          if (repoVault.credential) {
-            queueVaultData.contextData.REPO_CREDENTIALS = {
-              [context.repositoryGuid]: repoVault.credential,
+          if (repositoryVault.credential) {
+            queueVaultData.contextData.REPOSITORY_CREDENTIALS = {
+              [context.repositoryGuid]: repositoryVault.credential,
             };
           }
         } catch {
@@ -165,25 +165,25 @@ export class QueueVaultBuilder {
         }
       }
 
-      // Add REPO_NETWORK_ID if repository network ID is provided
+      // Add REPOSITORY_NETWORK_ID if repository network ID is provided
       if (requirements.repository && context.repositoryNetworkId !== undefined) {
-        queueVaultData.contextData.REPO_NETWORK_ID = context.repositoryNetworkId;
+        queueVaultData.contextData.REPOSITORY_NETWORK_ID = context.repositoryNetworkId;
       }
 
-      // Add REPO_NETWORK_MODE if repository network mode is provided
+      // Add REPOSITORY_NETWORK_MODE if repository network mode is provided
       if (requirements.repository && context.repositoryNetworkMode) {
-        queueVaultData.contextData.REPO_NETWORK_MODE = context.repositoryNetworkMode;
+        queueVaultData.contextData.REPOSITORY_NETWORK_MODE = context.repositoryNetworkMode;
       }
 
-      // Add REPO_TAG if repository tag is provided
+      // Add REPOSITORY_TAG if repository tag is provided
       if (requirements.repository && context.repositoryTag !== undefined) {
-        queueVaultData.contextData.REPO_TAG = context.repositoryTag;
+        queueVaultData.contextData.REPOSITORY_TAG = context.repositoryTag;
       }
 
-      // For functions like 'list' that need all REPO_CREDENTIALS
+      // For functions like 'list' that need all REPOSITORY_CREDENTIALS
       // Repository credentials are passed separately, not from company vault
       if (context.functionName === 'list' && context.allRepositoryCredentials) {
-        queueVaultData.contextData.REPO_CREDENTIALS = context.allRepositoryCredentials;
+        queueVaultData.contextData.REPOSITORY_CREDENTIALS = context.allRepositoryCredentials;
       }
 
       // For 'mount', 'unmount', 'new', and 'up' functions that need PLUGINS

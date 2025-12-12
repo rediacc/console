@@ -25,36 +25,36 @@ import {
   ShrinkOutlined,
 } from '@/utils/optimizedIcons';
 import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
-import type { MenuClickEvent, RepoContainersState, RepoTableRow } from '../types';
+import type { MenuClickEvent, RepositoryContainersState, RepositoryTableRow } from '../types';
 import type { MenuProps } from 'antd';
 
-interface RepoActionsMenuProps {
-  record: RepoTableRow;
-  teamRepos: TeamRepo[];
+interface RepositoryActionsMenuProps {
+  record: RepositoryTableRow;
+  teamRepositories: TeamRepo[];
   machine: Machine;
   userEmail: string;
-  containersData: Record<string, RepoContainersState>;
+  containersData: Record<string, RepositoryContainersState>;
   isExecuting: boolean;
   onQuickAction: (
-    repo: RepoTableRow,
+    repository: RepositoryTableRow,
     functionName: string,
     priority: number,
     option?: string
   ) => void;
-  onRunFunction: (repo: RepoTableRow, functionName?: string) => void;
-  onPromoteToGrand: (repo: RepoTableRow) => void;
-  onDeleteFork: (repo: RepoTableRow) => void;
-  onRenameTag: (repo: RepoTableRow) => void;
-  onRenameRepo: (repo: RepoTableRow) => void;
-  onDeleteGrandRepo: (repo: RepoTableRow) => void;
-  onRepoClick?: (repo: RepoTableRow) => void;
-  onCreateRepo?: (machine: Machine, repoGuid: string) => void;
+  onRunFunction: (repository: RepositoryTableRow, functionName?: string) => void;
+  onPromoteToGrand: (repository: RepositoryTableRow) => void;
+  onDeleteFork: (repository: RepositoryTableRow) => void;
+  onRenameTag: (repository: RepositoryTableRow) => void;
+  onRenameRepository: (repository: RepositoryTableRow) => void;
+  onDeleteGrandRepository: (repository: RepositoryTableRow) => void;
+  onRepositoryClick?: (repository: RepositoryTableRow) => void;
+  onCreateRepository?: (machine: Machine, repositoryGuid: string) => void;
   t: ReturnType<typeof useTranslation>['t'];
 }
 
-export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
+export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   record,
-  teamRepos,
+  teamRepositories,
   machine,
   userEmail,
   containersData,
@@ -64,14 +64,14 @@ export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
   onPromoteToGrand,
   onDeleteFork,
   onRenameTag,
-  onRenameRepo,
-  onDeleteGrandRepo,
-  onRepoClick,
-  onCreateRepo,
+  onRenameRepository,
+  onDeleteGrandRepository,
+  onRepositoryClick,
+  onCreateRepository,
   t,
 }) => {
-  const RepoData = teamRepos.find(
-    (r) => r.repoName === record.name && r.repoTag === record.repoTag
+  const RepoData = teamRepositories.find(
+    (r) => r.repositoryName === record.name && r.repositoryTag === record.repositoryTag
   );
 
   const menuItems: MenuProps['items'] = [];
@@ -140,7 +140,7 @@ export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
       onRunFunction(record, 'backup');
     },
     disabled: repoIsFork,
-    title: repoIsFork ? t('resources:repos.backupForkDisabledTooltip') : undefined,
+    title: repoIsFork ? t('resources:repositories.backupForkDisabledTooltip') : undefined,
   });
 
   menuItems.push({
@@ -158,7 +158,7 @@ export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
   if (!record.mounted) {
     advancedSubmenuItems.push({
       key: 'mount',
-      label: t('resources:repos.mount'),
+      label: t('resources:repositories.mount'),
       icon: <DatabaseOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -168,7 +168,7 @@ export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
   } else {
     advancedSubmenuItems.push({
       key: 'unmount',
-      label: t('resources:repos.unmount'),
+      label: t('resources:repositories.unmount'),
       icon: <DisconnectOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -218,7 +218,7 @@ export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
   if (advancedSubmenuItems.length > 0) {
     menuItems.push({
       key: 'advanced',
-      label: t('resources:repos.advanced'),
+      label: t('resources:repositories.advanced'),
       icon: <ControlOutlined />,
       children: advancedSubmenuItems,
     });
@@ -227,7 +227,7 @@ export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
   if (RepoData && coreIsFork(RepoData)) {
     menuItems.push({
       key: 'promote-to-grand',
-      label: t('resources:repos.promoteToGrand'),
+      label: t('resources:repositories.promoteToGrand'),
       icon: <RiseOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -236,7 +236,7 @@ export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
     });
     menuItems.push({
       key: 'delete-fork',
-      label: t('resources:repos.deleteFork'),
+      label: t('resources:repositories.deleteFork'),
       icon: <DeleteOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -252,30 +252,30 @@ export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
 
   menuItems.push({
     key: 'rename',
-    label: t('resources:repos.rename'),
+    label: t('resources:repositories.rename'),
     icon: <EditOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();
-      onRenameRepo(record);
+      onRenameRepository(record);
     },
   });
 
   if (RepoData && coreIsCredential(RepoData)) {
     menuItems.push({
       key: 'delete-grand',
-      label: t('resources:repos.deleteGrand'),
+      label: t('resources:repositories.deleteGrand'),
       icon: <DeleteOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
-        onDeleteGrandRepo(record);
+        onDeleteGrandRepository(record);
       },
       danger: true,
     });
   }
 
-  const actionRecord: RepoTableRow = {
+  const actionRecord: RepositoryTableRow = {
     ...record,
-    actionId: `${record.name}-${record.repoTag || 'latest'}`,
+    actionId: `${record.name}-${record.repositoryTag || 'latest'}`,
   };
 
   return (
@@ -286,17 +286,17 @@ export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
           icon: <EyeOutlined />,
           tooltip: 'common:viewDetails',
           variant: 'default',
-          onClick: (row) => onRepoClick?.(row),
-          testId: (row) => `machine-repo-view-details-${row.name}-${row.repoTag || 'latest'}`,
+          onClick: (row) => onRepositoryClick?.(row),
+          testId: (row) => `machine-repo-view-details-${row.name}-${row.repositoryTag || 'latest'}`,
         },
         {
           type: 'editTag',
           icon: <EditOutlined />,
-          tooltip: 'resources:repos.renameTag',
+          tooltip: 'resources:repositories.renameTag',
           variant: 'default',
           onClick: (row) => onRenameTag(row),
-          visible: (row) => Boolean(row.repoTag && row.repoTag !== 'latest'),
-          testId: (row) => `machine-repo-rename-tag-${row.name}-${row.repoTag || 'latest'}`,
+          visible: (row) => Boolean(row.repositoryTag && row.repositoryTag !== 'latest'),
+          testId: (row) => `machine-repo-rename-tag-${row.name}-${row.repositoryTag || 'latest'}`,
         },
         {
           type: 'remote',
@@ -313,7 +313,7 @@ export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
           render: (row) => (
             <LocalActionsMenu
               machine={machine.machineName}
-              repo={row.name}
+              repository={row.name}
               teamName={machine.teamName}
               userEmail={userEmail}
               pluginContainers={(containersData[row.name]?.containers || []).map((container) => ({
@@ -328,10 +328,10 @@ export const RepoActionsMenu: React.FC<RepoActionsMenuProps> = ({
         {
           type: 'vault',
           icon: <KeyOutlined />,
-          tooltip: 'resources:repos.addCredential',
-          onClick: (row) => onCreateRepo?.(machine, row.originalGuid || row.name),
+          tooltip: 'resources:repositories.addCredential',
+          onClick: (row) => onCreateRepository?.(machine, row.originalGuid || row.name),
           variant: 'default',
-          visible: (row) => Boolean(row.isUnmapped && onCreateRepo),
+          visible: (row) => Boolean(row.isUnmapped && onCreateRepository),
           testId: (row) => `machine-repo-list-add-credential-${row.name}`,
         },
       ]}

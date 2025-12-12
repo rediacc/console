@@ -86,13 +86,13 @@
       "types": "./dist/services/*.d.ts",
       "default": "./dist/services/*.js"
     },
-    "./services/repo": {
-      "types": "./dist/services/repo/index.d.ts",
-      "default": "./dist/services/repo/index.js"
+    "./services/repository": {
+      "types": "./dist/services/repository/index.d.ts",
+      "default": "./dist/services/repository/index.js"
     },
-    "./services/repo/*": {
-      "types": "./dist/services/repo/*.d.ts",
-      "default": "./dist/services/repo/*.js"
+    "./services/repository/*": {
+      "types": "./dist/services/repository/*.d.ts",
+      "default": "./dist/services/repository/*.js"
     },
     "./services/queue": {
       "types": "./dist/services/queue/index.d.ts",

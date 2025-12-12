@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useRepos } from '@/api/queries/repos';
+import { useRepositories } from '@/api/queries/repositories';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
   createActionColumn,
@@ -65,7 +65,7 @@ interface Container {
 
   created?: string;
 
-  repo?: string;
+  repository?: string;
 
   port_mappings?: PortMapping[];
 
@@ -84,12 +84,12 @@ interface Container {
   [key: string]: unknown;
 }
 
-// Repo interface from vaultStatus (runtime data)
+// Repository interface from vaultStatus (runtime data)
 
-interface Repo {
+interface Repository {
   name: string;
 
-  repoTag?: string;
+  repositoryTag?: string;
 
   size: number;
 
@@ -126,10 +126,10 @@ interface Repo {
   originalGuid?: string;
 }
 
-interface RepoContainerTableProps {
+interface RepositoryContainerTableProps {
   machine: Machine;
 
-  repo: Repo;
+  repository: Repository;
 
   onContainerClick?: (container: Container | PluginContainer) => void;
 
@@ -149,15 +149,21 @@ interface VaultStatusRepo {
 }
 
 interface VaultStatusResult {
-  repos?: VaultStatusRepo[];
+  repositories?: VaultStatusRepo[];
 
-  containers?: Container[];
+  containers?: {
+    containers: Container[];
+    total_count?: number;
+    running_count?: number;
+    stopped_count?: number;
+    docker_version?: string;
+  };
 }
 
-export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
+export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> = ({
   machine,
 
-  repo,
+  repository,
 
   onContainerClick,
 
@@ -183,17 +189,17 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
 
   const { executeAction, isExecuting } = useQueueAction();
 
-  const { data: teamRepos = [] } = useRepos(machine.teamName);
+  const { data: teamRepositories = [] } = useRepositories(machine.teamName);
 
   const getRowClassName = (container: Container) => {
-    const classNames = ['repo-container-row'];
+    const classNames = ['repository-container-row'];
 
     if (onContainerClick) {
-      classNames.push('repo-container-row--clickable');
+      classNames.push('repository-container-row--clickable');
     }
 
     if (highlightedContainer?.id === container.id) {
-      classNames.push('repo-container-row--selected');
+      classNames.push('repository-container-row--selected');
     }
 
     return classNames.join(' ');
@@ -217,24 +223,24 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
     },
   });
 
-  // Find repo data for credentials - must match both name AND tag to distinguish forks
+  // Find repository data for credentials - must match both name AND tag to distinguish forks
 
-  const repoData = teamRepos.find(
+  const repositoryData = teamRepositories.find(
     (r) =>
-      (r.repoName === repo.name && r.repoTag === repo.repoTag) ||
-      r.repoGuid === repo.originalGuid ||
-      r.repoGuid === repo.name
+      (r.repositoryName === repository.name && r.repositoryTag === repository.repositoryTag) ||
+      r.repositoryGuid === repository.originalGuid ||
+      r.repositoryGuid === repository.name
   );
 
-  // Get grand repo vault (for credentials) using core orchestration
+  // Get grand repository vault (for credentials) using core orchestration
 
-  const grandRepoVault = repoData
+  const grandRepoVault = repositoryData
     ? getGrandVaultForOperation(
-        repoData.repoGuid,
+        repositoryData.repositoryGuid,
 
-        repoData.grandGuid,
+        repositoryData.grandGuid,
 
-        teamRepos
+        teamRepositories
       ) || '{}'
     : '{}';
 
@@ -266,7 +272,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         if (parsed.error) {
           // Invalid vaultStatus data format (e.g., jq errors)
 
-          setError('Invalid repo data');
+          setError('Invalid repository data');
 
           setLoading(false);
 
@@ -276,25 +282,25 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         if (parsed.status === 'completed' && parsed.rawResult) {
           const result = JSON.parse(parsed.rawResult) as VaultStatusResult;
 
-          if (result && result.containers && Array.isArray(result.containers)) {
+          if (result && result.containers?.containers && Array.isArray(result.containers.containers)) {
             // Filter containers that belong to this repo
 
-            // We need to match containers by finding the corresponding repo in vaultStatus
+            // We need to match containers by finding the corresponding repository in vaultStatus
 
             // and comparing mount_path or image_path
 
-            const repoContainers = result.containers.filter((container: Container) => {
-              // Get the repo GUID from container
+            const repoContainers = result.containers.containers.filter((container: Container) => {
+              // Get the repository GUID from container
 
-              const containerRepoGuid = container.repo;
+              const containerRepoGuid = container.repository;
 
               if (!containerRepoGuid) {
                 return false;
               }
 
-              // Find the repo in vaultStatus with this GUID
+              // Find the repository in vaultStatus with this GUID
 
-              const vaultRepo = result.repos?.find(
+              const vaultRepo = result.repositories?.find(
                 (r: VaultStatusRepo) => r.name === containerRepoGuid
               );
 
@@ -305,7 +311,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
               // Match by mount_path or image_path
 
               return (
-                repo.mount_path === vaultRepo.mount_path || repo.image_path === vaultRepo.image_path
+                repository.mount_path === vaultRepo.mount_path || repository.image_path === vaultRepo.image_path
               );
             });
 
@@ -336,7 +342,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
         setLoading(false);
       } catch (err: unknown) {
         const errorMessage =
-          err instanceof Error ? err.message : t('resources:repos.errorLoadingContainers');
+          err instanceof Error ? err.message : t('resources:repositories.errorLoadingContainers');
 
         setError(errorMessage);
 
@@ -345,7 +351,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
     };
 
     parseContainers();
-  }, [machine.vaultStatus, repo.image_path, repo.mount_path, repo.name, refreshKey, t]);
+  }, [machine.vaultStatus, repository.image_path, repository.mount_path, repository.name, refreshKey, t]);
 
   // Handle container actions
 
@@ -360,7 +366,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
       functionName,
 
       params: {
-        repo: repoData?.repoGuid || repo.name,
+        repository: repositoryData?.repositoryGuid || repository.name,
 
         container: container.id,
       },
@@ -371,15 +377,15 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
 
       machineVault: machine.vaultContent || '{}',
 
-      repoGuid: repoData?.repoGuid,
+      repositoryGuid: repositoryData?.repositoryGuid,
 
       vaultContent: grandRepoVault,
 
-      repoNetworkId: repoData?.repoNetworkId,
+      repositoryNetworkId: repositoryData?.repositoryNetworkId,
 
-      repoNetworkMode: repoData?.repoNetworkMode,
+      repositoryNetworkMode: repositoryData?.repositoryNetworkMode,
 
-      repoTag: repoData?.repoTag,
+      repositoryTag: repositoryData?.repositoryTag,
     });
 
     if (result.success) {
@@ -390,7 +396,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
           onQueueItemCreated(result.taskId, machine.machineName);
         }
       } else if (result.isQueued) {
-        showMessage('info', t('resources:repos.highestPriorityQueued'));
+        showMessage('info', t('resources:repositories.highestPriorityQueued'));
       }
     } else {
       showMessage('error', result.error || t('common:errors.somethingWentWrong'));
@@ -682,7 +688,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
                 render: (row) => (
                   <LocalActionsMenu
                     machine={machine.machineName}
-                    repo={repo.name}
+                    repository={repository.name}
                     teamName={machine.teamName}
                     userEmail={userEmail}
                     containerId={row.id}
@@ -720,7 +726,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
   if (error) {
     return (
       <Alert
-        message={t('resources:repos.errorLoadingContainers')}
+        message={t('resources:repositories.errorLoadingContainers')}
         description={error}
         type="error"
         showIcon
@@ -730,7 +736,7 @@ export const RepoContainerTable: React.FC<RepoContainerTableProps> = ({
   }
 
   return (
-    <div data-testid="repo-container-list">
+    <div data-testid="repository-container-list">
       {/* Regular Containers */}
 
       {containers.length > 0 ? (

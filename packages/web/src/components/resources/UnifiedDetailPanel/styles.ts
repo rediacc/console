@@ -2,13 +2,13 @@ import styled from 'styled-components';
 import { RediaccButton } from '@/components/ui';
 import type { StyledTheme } from '@/styles/styledTheme';
 
-type ResourceType = 'machine' | 'repo' | 'container';
+type ResourceType = 'machine' | 'repository' | 'container';
 
 const resourceColor = (type: ResourceType, theme: StyledTheme) => {
   switch (type) {
     case 'machine':
       return theme.colors.secondary;
-    case 'repo':
+    case 'repository':
       return theme.colors.success;
     case 'container':
     default:

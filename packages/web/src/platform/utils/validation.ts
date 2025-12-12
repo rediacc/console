@@ -16,7 +16,7 @@ const resourceTypes = [
   'Region',
   'Bridge',
   'Machine',
-  'Repo',
+  'Repository',
   'Storage',
   'Cluster',
   'Pool',
@@ -74,7 +74,7 @@ const resourceSchemas = {
     bridgeName: bridgeNameSchema,
     machineName: machineNameSchema,
   },
-  repo: { teamName: teamNameSchema, repoName: repoNameSchema },
+  repository: { teamName: teamNameSchema, repositoryName: repoNameSchema },
   storage: { teamName: teamNameSchema, storageName: storageNameSchema },
   cluster: { clusterName: clusterNameSchema },
   pool: { teamName: teamNameSchema, clusterName: clusterNameSchema, poolName: poolNameSchema },
@@ -98,10 +98,10 @@ export const createTeamSchema = withVault(resourceSchemas.team);
 export const createRegionSchema = withVault(resourceSchemas.region);
 export const createBridgeSchema = withVault(resourceSchemas.bridge);
 export const createMachineSchema = withVault(resourceSchemas.machine);
-// Special schema for repo creation with conditional machine selection and size
-export const createRepoSchema = z
+// Special schema for repository creation with conditional machine selection and size
+export const createRepositorySchema = z
   .object({
-    ...resourceSchemas.repo,
+    ...resourceSchemas.repository,
     machineName: z.string().optional(), // Optional - required only when creating physical storage
     size: z
       .string()
@@ -117,7 +117,7 @@ export const createRepoSchema = z
         const num = parseInt(match[1]);
         return num > 0;
       }, 'Invalid size format (e.g., 10G, 100G, 1T)'), // Optional - required only when creating physical storage
-    repoGuid: z
+    repositoryGuid: z
       .union([
         z
           .string()
@@ -126,15 +126,15 @@ export const createRepoSchema = z
           .string()
           .uuid('Invalid GUID format'), // Or valid UUID
       ])
-      .optional(), // Optional repo GUID
+      .optional(), // Optional repository GUID
     vaultContent: vaultSchema.optional().default('{}'),
   })
   .refine(
     (data) => {
       if (!data) return true;
-      // If repoGuid is provided (credential-only mode), machine and size are not required
+      // If repositoryGuid is provided (credential-only mode), machine and size are not required
       // Otherwise, both machine and size must be provided for physical storage creation
-      const isCredentialOnlyMode = typeof data.repoGuid === 'string' && data.repoGuid.trim() !== '';
+      const isCredentialOnlyMode = typeof data.repositoryGuid === 'string' && data.repositoryGuid.trim() !== '';
       if (isCredentialOnlyMode) {
         return true; // No additional requirements in credential-only mode
       }
@@ -147,7 +147,7 @@ export const createRepoSchema = z
       );
     },
     {
-      message: 'Machine and size are required when creating new repo storage',
+      message: 'Machine and size are required when creating new repository storage',
       path: ['machineName'], // Show error on machine field
     }
   );
@@ -185,7 +185,7 @@ export const editTeamSchema = createEditSchema(teamNameSchema, 'teamName');
 export const editRegionSchema = createEditSchema(regionNameSchema, 'regionName');
 export const editBridgeSchema = createEditSchema(bridgeNameSchema, 'bridgeName');
 export const editMachineSchema = z.object(resourceSchemas.machine);
-export const editRepoSchema = createEditSchema(repoNameSchema, 'repoName');
+export const editRepoSchema = createEditSchema(repoNameSchema, 'repositoryName');
 export const editStorageSchema = createEditSchema(storageNameSchema, 'storageName');
 
 // Type exports
@@ -193,7 +193,7 @@ export type CreateTeamForm = z.infer<typeof createTeamSchema>;
 export type CreateRegionForm = z.infer<typeof createRegionSchema>;
 export type CreateBridgeForm = z.infer<typeof createBridgeSchema>;
 export type CreateMachineForm = z.infer<typeof createMachineSchema>;
-export type CreateRepoForm = z.infer<typeof createRepoSchema>;
+export type CreateRepoForm = z.infer<typeof createRepositorySchema>;
 export type CreateStorageForm = z.infer<typeof createStorageSchema>;
 export type CreateClusterForm = z.infer<typeof createClusterSchema>;
 export type CreatePoolForm = z.infer<typeof createPoolSchema>;
@@ -227,9 +227,9 @@ export function isValidSSHPublicKey(key: string): boolean {
 }
 
 /**
- * Validate repo credential format
- * Repo credentials must be exactly 32 characters with alphanumeric and special characters
- * @param credential - Repo credential string to validate
+ * Validate repository credential format
+ * Repository credentials must be exactly 32 characters with alphanumeric and special characters
+ * @param credential - Repository credential string to validate
  * @returns True if the credential is in valid format
  */
 export function isValidRepoCredential(credential: string): boolean {

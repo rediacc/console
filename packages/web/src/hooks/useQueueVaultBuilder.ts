@@ -8,10 +8,10 @@ import { minifyJSON } from '@/utils/json';
  * This combines vault data from various entities based on function requirements
  */
 type QueueVaultBuilderParams = Omit<QueueRequestContext, 'companyVault' | 'companyCredential'> & {
-  repoVault?: QueueRequestContext['repositoryVault'];
-  destinationRepoVault?: QueueRequestContext['destinationRepositoryVault'];
-  sourceRepoVault?: QueueRequestContext['sourceRepositoryVault'];
-  allRepoCredentials?: Record<string, string>;
+  repositoryVault?: QueueRequestContext['repositoryVault'];
+  destinationRepositoryVault?: QueueRequestContext['destinationRepositoryVault'];
+  sourceRepositoryVault?: QueueRequestContext['sourceRepositoryVault'];
+  allRepositoryCredentials?: Record<string, string>;
 };
 
 const parseVaultContent = (vault?: QueueRequestContext['teamVault']): Record<string, unknown> => {
@@ -42,21 +42,12 @@ export function useQueueVaultBuilder() {
     }
 
     const {
-      repoVault,
-      destinationRepoVault,
-      sourceRepoVault,
-      allRepoCredentials,
       repositoryVault,
       destinationRepositoryVault,
       sourceRepositoryVault,
       allRepositoryCredentials,
       ...baseContext
     } = context;
-
-    const effectiveRepositoryVault = repoVault ?? repositoryVault;
-    const effectiveDestinationRepoVault = destinationRepoVault ?? destinationRepositoryVault;
-    const effectiveSourceRepoVault = sourceRepoVault ?? sourceRepositoryVault;
-    const repositoryCredentials = allRepoCredentials ?? allRepositoryCredentials;
 
     const parsedVaults: Partial<
       Pick<
@@ -79,8 +70,8 @@ export function useQueueVaultBuilder() {
       machineVault: baseContext.machineVault
         ? parseVaultContent(baseContext.machineVault)
         : undefined,
-      repositoryVault: effectiveRepositoryVault
-        ? parseVaultContent(effectiveRepositoryVault)
+      repositoryVault: repositoryVault
+        ? parseVaultContent(repositoryVault)
         : undefined,
       bridgeVault: baseContext.bridgeVault ? parseVaultContent(baseContext.bridgeVault) : undefined,
       storageVault: baseContext.storageVault
@@ -93,8 +84,8 @@ export function useQueueVaultBuilder() {
       destinationStorageVault: baseContext.destinationStorageVault
         ? parseVaultContent(baseContext.destinationStorageVault)
         : undefined,
-      destinationRepositoryVault: effectiveDestinationRepoVault
-        ? parseVaultContent(effectiveDestinationRepoVault)
+      destinationRepositoryVault: destinationRepositoryVault
+        ? parseVaultContent(destinationRepositoryVault)
         : undefined,
       sourceMachineVault: baseContext.sourceMachineVault
         ? parseVaultContent(baseContext.sourceMachineVault)
@@ -102,8 +93,8 @@ export function useQueueVaultBuilder() {
       sourceStorageVault: baseContext.sourceStorageVault
         ? parseVaultContent(baseContext.sourceStorageVault)
         : undefined,
-      sourceRepositoryVault: effectiveSourceRepoVault
-        ? parseVaultContent(effectiveSourceRepoVault)
+      sourceRepositoryVault: sourceRepositoryVault
+        ? parseVaultContent(sourceRepositoryVault)
         : undefined,
     };
 
@@ -112,7 +103,7 @@ export function useQueueVaultBuilder() {
       ...baseContext,
       ...parsedVaults,
       companyCredential: companyVaultData.companyCredential ?? undefined,
-      allRepositoryCredentials: repositoryCredentials,
+      allRepositoryCredentials: allRepositoryCredentials,
     };
 
     // Use the service to build the vault

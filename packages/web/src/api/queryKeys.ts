@@ -109,8 +109,8 @@ export const QUERY_KEYS = {
   },
 
   // Repos
-  repos: {
-    all: 'repos' as const,
+  repositories: {
+    all: 'repositories' as const,
   },
 
   // Architecture

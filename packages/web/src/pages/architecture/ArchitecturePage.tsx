@@ -81,7 +81,7 @@ const ArchitecturePage: React.FC = () => {
     'region',
     'bridge',
     'machine',
-    'repo',
+    'repository',
     'storage',
   ]);
   const [isVisualizationLoading, setIsVisualizationLoading] = useState(false);
@@ -98,7 +98,7 @@ const ArchitecturePage: React.FC = () => {
     { value: 'region', label: t('architecture.nodeRegion'), icon: '🌍' },
     { value: 'bridge', label: t('architecture.nodeBridge'), icon: '🌉' },
     { value: 'machine', label: t('architecture.nodeMachine'), icon: '💻' },
-    { value: 'repo', label: t('architecture.nodeRepo'), icon: '📦' },
+    { value: 'repository', label: t('architecture.nodeRepository'), icon: '📦' },
     { value: 'storage', label: t('architecture.nodeStorage'), icon: '💾' },
   ];
 
@@ -170,7 +170,7 @@ const ArchitecturePage: React.FC = () => {
       region: '📍',
       bridge: '🔌',
       machine: '💻',
-      repo: '📁',
+      repository: '📁',
       storage: '☁️',
     };
     return icons[nodeType] || '📌';
@@ -382,7 +382,7 @@ const ArchitecturePage: React.FC = () => {
       const users = nodes.filter((n) => n.nodeType === 'user');
       const bridges = nodes.filter((n) => n.nodeType === 'bridge');
       const machines = nodes.filter((n) => n.nodeType === 'machine');
-      const repos = nodes.filter((n) => n.nodeType === 'repo');
+      const repositories = nodes.filter((n) => n.nodeType === 'repository');
       const storages = nodes.filter((n) => n.nodeType === 'storage');
 
       // Build teams branch with their related nodes
@@ -406,9 +406,9 @@ const ArchitecturePage: React.FC = () => {
           .map(toHierarchyNode);
         teamChildren.push(...teamMachines);
 
-        // Add repos for this team (if any)
-        const teamRepos = repos.filter((r) => r.parentTeam === team.nodeId).map(toHierarchyNode);
-        teamChildren.push(...teamRepos);
+        // Add repositories for this team (if any)
+        const teamRepositories = repositories.filter((r) => r.parentTeam === team.nodeId).map(toHierarchyNode);
+        teamChildren.push(...teamRepositories);
 
         // Add storages for this team (if any)
         const teamStorages = storages
@@ -718,7 +718,7 @@ const ArchitecturePage: React.FC = () => {
     machines: selectedEntityTypes.includes('machine') ? data.nodes.machines?.length || 0 : 0,
     regions: selectedEntityTypes.includes('region') ? data.nodes.regions?.length || 0 : 0,
     bridges: selectedEntityTypes.includes('bridge') ? data.nodes.bridges?.length || 0 : 0,
-    repos: selectedEntityTypes.includes('repo') ? data.nodes.repos?.length || 0 : 0,
+    repositories: selectedEntityTypes.includes('repository') ? data.nodes.repos?.length || 0 : 0,
     storages: selectedEntityTypes.includes('storage') ? data.nodes.storages?.length || 0 : 0,
   };
 
@@ -870,8 +870,8 @@ const ArchitecturePage: React.FC = () => {
               </Col>
               <Col span={3}>
                 <RediaccStatistic
-                  title={t('architecture.repos')}
-                  value={nodeCounts.repos}
+                  title={t('architecture.repositories')}
+                  value={nodeCounts.repositories}
                   prefix={<InboxOutlined />}
                 />
               </Col>
@@ -914,7 +914,7 @@ const ArchitecturePage: React.FC = () => {
               region: t('architecture.nodeRegion'),
               bridge: t('architecture.nodeBridge'),
               machine: t('architecture.nodeMachine'),
-              repo: t('architecture.nodeRepo'),
+              repository: t('architecture.nodeRepository'),
               storage: t('architecture.nodeStorage'),
             }).map(([type, label]) => (
               <LegendItem key={type} data-testid={`architecture-legend-${type}`}>

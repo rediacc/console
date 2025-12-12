@@ -583,7 +583,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
     const isGeneratable =
       fieldName === 'SSH_PRIVATE_KEY' ||
       fieldName === 'SSH_PUBLIC_KEY' ||
-      (fieldName === 'credential' && entityType === 'REPO');
+      (fieldName === 'credential' && entityType === 'REPOSITORY');
 
     const handleFieldGeneration = (values: Record<string, string>) => {
       // For SSH keys, we need to update both private and public keys
@@ -698,11 +698,11 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                   if (!field) return null;
                   const isRequired = !(
                     isEditMode &&
-                    entityType === 'REPO' &&
+                    entityType === 'REPOSITORY' &&
                     fieldName === 'credential'
                   );
-                  // credential field should be full width for REPO
-                  const colSpan = entityType === 'REPO' && fieldName === 'credential' ? 24 : 12;
+                  // credential field should be full width for REPOSITORY
+                  const colSpan = entityType === 'REPOSITORY' && fieldName === 'credential' ? 24 : 12;
                   return (
                     <Col key={fieldName} xs={24} md={colSpan}>
                       {renderField(fieldName, field as FieldDefinition, isRequired)}

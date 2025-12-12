@@ -36,9 +36,9 @@ export {
   TERMINAL_STATUSES,
 } from '@rediacc/shared/queue';
 // API utilities
-// Services - re-exported from shared (machine and repo are fully platform-agnostic)
+// Services - re-exported from shared (machine and repository are fully platform-agnostic)
 export * from '@rediacc/shared/services/machine';
-export * from '@rediacc/shared/services/repo';
+export * from '@rediacc/shared/services/repository';
 // Queue service - uses local wrapper with browser timer provider
 export * from './services/queue';
 export * from './types';

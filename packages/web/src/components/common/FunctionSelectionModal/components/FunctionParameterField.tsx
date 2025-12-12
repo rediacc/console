@@ -3,7 +3,7 @@ import { Checkbox, Input, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { QueueFunction, QueueFunctionParameter } from '@/api/queries/queue';
 import TemplateSelector from '@/components/common/TemplateSelector';
-import type { Machine, Repo } from '@/types';
+import type { Machine, Repository } from '@/types';
 import type { GetTeamStorages_ResultSet1 as Storage } from '@rediacc/shared/types';
 import {
   AdditionalOptionsInput,
@@ -25,7 +25,7 @@ interface FunctionParameterFieldProps {
   onTemplatesChange: (templates: string[]) => void;
   onTemplateView: (templateName: string) => void;
   selectedTemplates: string[];
-  repos?: Repo[];
+  repositories?: Repository[];
   machinesData?: Machine[];
   storageData?: Storage[];
   currentMachineName?: string;
@@ -40,7 +40,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
   onTemplatesChange,
   onTemplateView,
   selectedTemplates,
-  repos = [],
+  repositories = [],
   machinesData = [],
   storageData = [],
   currentMachineName,
@@ -140,20 +140,20 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
     );
   }
 
-  // Repo dropdown
+  // Repository dropdown
   if (paramInfo.ui === 'repo-dropdown') {
     return (
       <Select
         value={getStringParam(paramName)}
         onChange={(value) => onParamChange(paramName, value)}
-        placeholder={t('resources:repos.selectRepo')}
+        placeholder={t('resources:repositories.selectRepository')}
         options={
-          repos?.map((repo) => ({
-            value: repo.repoGuid,
-            label: repo.repoName,
+          repositories?.map((repository) => ({
+            value: repository.repositoryGuid,
+            label: repository.repositoryName,
           })) || []
         }
-        notFoundContent={t('resources:repos.noReposFound')}
+        notFoundContent={t('resources:repositories.noRepositoriesFound')}
         showSearch
         filterOption={(input, option) =>
           (option?.label ?? '').toLowerCase().includes(input.toLowerCase())

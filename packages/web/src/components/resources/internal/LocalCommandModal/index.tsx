@@ -41,7 +41,7 @@ interface LocalCommandModalProps {
   open: boolean;
   onClose: () => void;
   machine: string;
-  repo?: string;
+  repository?: string;
   userEmail: string;
   pluginContainers?: PluginContainer[];
 }
@@ -50,7 +50,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   open,
   onClose,
   machine,
-  repo,
+  repository,
   pluginContainers: _pluginContainers = [],
 }) => {
   const { t } = useTranslation();
@@ -81,7 +81,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
     const encodedToken = encodeURIComponent(token);
     const encodedTeam = encodeURIComponent(team);
     const encodedMachine = encodeURIComponent(machine);
-    const encodedRepo = repo ? encodeURIComponent(repo) : '';
+    const encodedRepo = repository ? encodeURIComponent(repository) : '';
 
     let path = `rediacc://${encodedToken}/${encodedTeam}/${encodedMachine}`;
     if (encodedRepo) {
@@ -221,7 +221,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       footer={null}
     >
       <BlockText variant="description">
-        {t('resources:localCommandBuilder.description', { machine, repo })}
+        {t('resources:localCommandBuilder.description', { machine, repository })}
       </BlockText>
 
       <SettingsForm layout="vertical">

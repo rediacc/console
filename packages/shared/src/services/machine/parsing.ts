@@ -15,28 +15,28 @@ export type VaultStatusState = 'completed' | 'pending' | 'failed' | 'unknown';
  */
 export interface ParsedVaultStatus {
   status: VaultStatusState;
-  repos: DeployedRepo[];
+  repositories: DeployedRepo[];
   rawResult?: string;
   error?: string;
 }
 
 /**
- * Information about a deployed repo on a machine
+ * Information about a deployed repository on a machine
  */
 export interface DeployedRepo {
-  /** Repo name or GUID */
+  /** Repository name or GUID */
   name: string;
-  /** Repo GUID (if resolved) */
-  repoGuid?: string;
+  /** Repository GUID (if resolved) */
+  repositoryGuid?: string;
   /** Grand GUID (if resolved) */
   grandGuid?: string | null;
   /** Size in bytes */
   size?: number;
   /** Human-readable size */
   size_human?: string;
-  /** Whether the repo is mounted */
+  /** Whether the repository is mounted */
   mounted?: boolean;
-  /** Whether the repo is accessible */
+  /** Whether the repository is accessible */
   accessible?: boolean;
   /** Whether Docker is running */
   docker_running?: boolean;
@@ -47,11 +47,11 @@ export interface DeployedRepo {
 }
 
 /**
- * Repo information for resolution
+ * Repository information for resolution
  */
 export interface RepoInfo {
-  repoGuid: string;
-  repoName: string;
+  repositoryGuid: string;
+  repositoryName: string;
   grandGuid?: string | null;
 }
 
@@ -87,11 +87,11 @@ export function cleanResultString(result: string): string {
 /**
  * Parse vault status JSON string into structured data
  * @param vaultStatusJson - The vault status JSON string from the machine
- * @returns Parsed vault status with repos
+ * @returns Parsed vault status with repositories
  */
 export function parseVaultStatus(vaultStatusJson: string | undefined | null): ParsedVaultStatus {
   if (!vaultStatusJson) {
-    return { status: 'unknown', repos: [] };
+    return { status: 'unknown', repositories: [] };
   }
 
   // Check for error prefixes
@@ -100,7 +100,7 @@ export function parseVaultStatus(vaultStatusJson: string | undefined | null): Pa
     vaultStatusJson.trim().startsWith('error:') ||
     !vaultStatusJson.trim().startsWith('{')
   ) {
-    return { status: 'unknown', repos: [], error: 'Invalid vault status format' };
+    return { status: 'unknown', repositories: [], error: 'Invalid vault status format' };
   }
 
   try {
@@ -109,7 +109,7 @@ export function parseVaultStatus(vaultStatusJson: string | undefined | null): Pa
     if (data.status !== 'completed' || !data.result) {
       return {
         status: (data.status as VaultStatusState) || 'unknown',
-        repos: [],
+        repositories: [],
       };
     }
 
@@ -117,46 +117,46 @@ export function parseVaultStatus(vaultStatusJson: string | undefined | null): Pa
     const cleanedResult = cleanResultString(data.result);
     const result = JSON.parse(cleanedResult);
 
-    const repos: DeployedRepo[] = [];
+    const repositories: DeployedRepo[] = [];
     if (result?.repositories && Array.isArray(result.repositories)) {
-      repos.push(...result.repositories);
+      repositories.push(...result.repositories);
     }
 
     return {
       status: 'completed',
-      repos,
+      repositories,
       rawResult: cleanedResult,
     };
   } catch (error) {
     return {
       status: 'unknown',
-      repos: [],
+      repositories: [],
       error: error instanceof Error ? error.message : String(error),
     };
   }
 }
 
 /**
- * Resolve repo names from GUIDs using a repo list
- * @param repos - Array of deployed repos
- * @param repoList - Array of repo information for resolution
- * @returns Repos with resolved names
+ * Resolve repository names from GUIDs using a repository list
+ * @param repositories - Array of deployed repositories
+ * @param repositoryList - Array of repository information for resolution
+ * @returns Repositories with resolved names
  */
-export function resolveRepoNames(repos: DeployedRepo[], repoList: RepoInfo[]): DeployedRepo[] {
-  return repos.map((repo) => {
+export function resolveRepositoryNames(repositories: DeployedRepo[], repositoryList: RepoInfo[]): DeployedRepo[] {
+  return repositories.map((repository) => {
     // Check if name is a GUID
-    if (isValidGuid(repo.name)) {
-      const matchingRepo = repoList.find((r) => r.repoGuid === repo.name);
-      if (matchingRepo) {
+    if (isValidGuid(repository.name)) {
+      const matchingRepository = repositoryList.find((r) => r.repositoryGuid === repository.name);
+      if (matchingRepository) {
         return {
-          ...repo,
-          name: matchingRepo.repoName,
-          repoGuid: matchingRepo.repoGuid,
-          grandGuid: matchingRepo.grandGuid,
+          ...repository,
+          name: matchingRepository.repositoryName,
+          repositoryGuid: matchingRepository.repositoryGuid,
+          grandGuid: matchingRepository.grandGuid,
         };
       }
     }
-    return repo;
+    return repository;
   });
 }
 
@@ -170,30 +170,30 @@ export type MachineWithVaultStatus = {
 };
 
 /**
- * Find deployed repos across multiple machines
+ * Find deployed repositories across multiple machines
  * @param machines - Array of machines with vault status
- * @param repoGuids - Array of repo GUIDs to find
- * @returns Map of machine name to deployed repos matching the GUIDs
+ * @param repoGuids - Array of repository GUIDs to find
+ * @returns Map of machine name to deployed repositories matching the GUIDs
  */
-export function findDeployedRepos(
+export function findDeployedRepositories(
   machines: MachineWithVaultStatus[],
-  repoGuids: string[]
+  repositoryGuids: string[]
 ): Map<string, DeployedRepo[]> {
   const result = new Map<string, DeployedRepo[]>();
 
   for (const machine of machines) {
     const parsed = parseVaultStatus(machine.vaultStatus);
 
-    if (parsed.status === 'completed' && parsed.repos.length > 0) {
-      const matchingRepos = parsed.repos.filter((repo) => {
-        // Check if repo name (which might be GUID) matches
+    if (parsed.status === 'completed' && parsed.repositories.length > 0) {
+      const matchingRepositories = parsed.repositories.filter((repository) => {
+        // Check if repository name (which might be GUID) matches
         return (
-          repoGuids.includes(repo.name) || (repo.repoGuid && repoGuids.includes(repo.repoGuid))
+          repositoryGuids.includes(repository.name) || (repository.repositoryGuid && repositoryGuids.includes(repository.repositoryGuid))
         );
       });
 
-      if (matchingRepos.length > 0) {
-        result.set(machine.machineName, matchingRepos);
+      if (matchingRepositories.length > 0) {
+        result.set(machine.machineName, matchingRepositories);
       }
     }
   }
@@ -202,14 +202,14 @@ export function findDeployedRepos(
 }
 
 /**
- * Get all deployed repos from a machine
+ * Get all deployed repositories from a machine
  * @param machine - Machine with vault status
- * @param repoList - Optional repo list for name resolution
- * @returns Array of deployed repos
+ * @param repositoryList - Optional repository list for name resolution
+ * @returns Array of deployed repositories
  */
-export function getMachineRepos(
+export function getMachineRepositories(
   machine: MachineWithVaultStatus,
-  repoList?: RepoInfo[]
+  repositoryList?: RepoInfo[]
 ): DeployedRepo[] {
   const parsed = parseVaultStatus(machine.vaultStatus);
 
@@ -217,33 +217,33 @@ export function getMachineRepos(
     return [];
   }
 
-  if (repoList && repoList.length > 0) {
-    return resolveRepoNames(parsed.repos, repoList);
+  if (repositoryList && repositoryList.length > 0) {
+    return resolveRepositoryNames(parsed.repositories, repositoryList);
   }
 
-  return parsed.repos;
+  return parsed.repositories;
 }
 
 /**
- * Check if a specific repo is deployed on a machine
+ * Check if a specific repository is deployed on a machine
  * @param machine - Machine with vault status
- * @param repoGuid - Repo GUID to check
- * @returns True if the repo is deployed
+ * @param repositoryGuid - Repository GUID to check
+ * @returns True if the repository is deployed
  */
-export function isRepoDeployed(machine: MachineWithVaultStatus, repoGuid: string): boolean {
-  const repos = getMachineRepos(machine);
+export function isRepositoryDeployed(machine: MachineWithVaultStatus, repositoryGuid: string): boolean {
+  const repositories = getMachineRepositories(machine);
 
-  return repos.some((repo) => repo.name === repoGuid || repo.repoGuid === repoGuid);
+  return repositories.some((repository) => repository.name === repositoryGuid || repository.repositoryGuid === repositoryGuid);
 }
 
 /**
- * Get summary of deployed repos on a machine
+ * Get summary of deployed repositories on a machine
  * @param machine - Machine with vault status
  * @returns Summary object with counts and status
  */
 export function getDeploymentSummary(machine: MachineWithVaultStatus): {
   status: VaultStatusState;
-  totalRepos: number;
+  totalRepositories: number;
   mountedCount: number;
   dockerRunningCount: number;
 } {
@@ -252,7 +252,7 @@ export function getDeploymentSummary(machine: MachineWithVaultStatus): {
   if (parsed.status !== 'completed') {
     return {
       status: parsed.status,
-      totalRepos: 0,
+      totalRepositories: 0,
       mountedCount: 0,
       dockerRunningCount: 0,
     };
@@ -260,8 +260,8 @@ export function getDeploymentSummary(machine: MachineWithVaultStatus): {
 
   return {
     status: 'completed',
-    totalRepos: parsed.repos.length,
-    mountedCount: parsed.repos.filter((r) => r.mounted).length,
-    dockerRunningCount: parsed.repos.filter((r) => r.docker_running).length,
+    totalRepositories: parsed.repositories.length,
+    mountedCount: parsed.repositories.filter((r) => r.mounted).length,
+    dockerRunningCount: parsed.repositories.filter((r) => r.docker_running).length,
   };
 }

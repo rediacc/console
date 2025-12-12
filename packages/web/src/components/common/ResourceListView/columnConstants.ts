@@ -3,7 +3,7 @@
  * Use these constants to keep all tables visually consistent.
  */
 export const COLUMN_WIDTHS = {
-  NAME: 150, // Primary identifiers (team, repo, storage names)
+  NAME: 150, // Primary identifiers (team, repository, storage names)
   NAME_WIDE: 200, // For identifiers that need extra space
   COUNT: 100, // Compact count/badge columns
   COUNT_WIDE: 120, // Counts that need slightly more room

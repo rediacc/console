@@ -11,7 +11,7 @@ import {
   useUpdateMachineVault,
 } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
-import { Repo, useRepos } from '@/api/queries/repos';
+import { Repository, useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
@@ -46,7 +46,7 @@ import { EmptyState, StyledTeamSelector } from './MachinesPage.styles';
 type MachineFormValues = BaseMachineFormValues & { autoSetup?: boolean };
 
 interface MachineFunctionParams {
-  repo?: string;
+  repository?: string;
   sourceType?: string;
   from?: string;
   [key: string]: string | number | boolean | undefined;
@@ -75,7 +75,7 @@ const MachinesPage: React.FC = () => {
   } = useUnifiedModal<Machine & Record<string, unknown>>('machine');
 
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
-  const [selectedRepoFromMachine, setSelectedRepoFromMachine] = useState<Repo | null>(null);
+  const [selectedRepositoryFromMachine, setSelectedRepositoryFromMachine] = useState<Repository | null>(null);
   const [selectedContainerFromMachine, setSelectedContainerFromMachine] =
     useState<ContainerData | null>(null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
@@ -93,7 +93,7 @@ const MachinesPage: React.FC = () => {
     selectedTeams.length > 0 ? selectedTeams : undefined,
     selectedTeams.length > 0
   );
-  const { data: repos = [] } = useRepos(selectedTeams.length > 0 ? selectedTeams : undefined);
+  const { data: repositories = [] } = useRepositories(selectedTeams.length > 0 ? selectedTeams : undefined);
   const { data: storages = [] } = useStorage(selectedTeams.length > 0 ? selectedTeams : undefined);
 
   const createMachineMutation = useCreateMachine();
@@ -105,7 +105,7 @@ const MachinesPage: React.FC = () => {
 
   useEffect(() => {
     const state = location.state;
-    if (state?.createRepo) {
+    if (state?.createRepository) {
       navigate('/credentials', { state, replace: true });
     }
   }, [location, navigate]);
@@ -113,7 +113,7 @@ const MachinesPage: React.FC = () => {
   const handleMachineSelect = (machine: Machine | null) => {
     setSelectedMachine(machine);
     if (machine) {
-      setSelectedRepoFromMachine(null);
+      setSelectedRepositoryFromMachine(null);
       setSelectedContainerFromMachine(null);
       setIsPanelCollapsed(false);
     }
@@ -265,8 +265,8 @@ const MachinesPage: React.FC = () => {
         const machineName = currentResource.machineName;
         const bridgeName = currentResource.bridgeName;
         const teamData = teams.find((team) => team.teamName === currentResource.teamName);
-        const repoParam =
-          typeof functionData.params.repo === 'string' ? functionData.params.repo : undefined;
+        const repositoryParam =
+          typeof functionData.params.repository === 'string' ? functionData.params.repository : undefined;
 
         const queuePayload: QueueActionParams = {
           teamName: currentResource.teamName,
@@ -281,10 +281,10 @@ const MachinesPage: React.FC = () => {
           vaultContent: '{}',
         };
 
-        if (repoParam) {
-          const repo = repos.find((item) => item.repoGuid === repoParam);
-          queuePayload.repoGuid = repo?.repoGuid || repoParam;
-          queuePayload.vaultContent = repo?.vaultContent || '{}';
+        if (repositoryParam) {
+          const repository = repositories.find((item) => item.repositoryGuid === repositoryParam);
+          queuePayload.repositoryGuid = repository?.repositoryGuid || repositoryParam;
+          queuePayload.vaultContent = repository?.vaultContent || '{}';
         }
 
         if (functionData.function.name === 'pull') {
@@ -340,29 +340,29 @@ const MachinesPage: React.FC = () => {
       executeAction,
       machines,
       openQueueTrace,
-      repos,
+      repositories,
       storages,
       t,
       teams,
     ]
   );
 
-  const handleResourceSelection = (resource: Machine | Repo | ContainerData | null) => {
+  const handleResourceSelection = (resource: Machine | Repository | ContainerData | null) => {
     if (resource && 'machineName' in resource) {
       handleMachineSelect(resource);
-    } else if (resource && 'repoName' in resource) {
+    } else if (resource && 'repositoryName' in resource) {
       handleMachineSelect(null);
-      setSelectedRepoFromMachine(resource);
+      setSelectedRepositoryFromMachine(resource);
       setSelectedContainerFromMachine(null);
       setIsPanelCollapsed(false);
     } else if (resource && 'id' in resource && 'state' in resource) {
       handleMachineSelect(null);
-      setSelectedRepoFromMachine(null);
+      setSelectedRepositoryFromMachine(null);
       setSelectedContainerFromMachine(resource);
       setIsPanelCollapsed(false);
     } else {
       handleMachineSelect(null);
-      setSelectedRepoFromMachine(null);
+      setSelectedRepositoryFromMachine(null);
       setSelectedContainerFromMachine(null);
     }
   };
@@ -545,7 +545,7 @@ const MachinesPage: React.FC = () => {
                     openQueueTrace(taskId, machineName);
                   }}
                   selectedResource={
-                    selectedMachine || selectedRepoFromMachine || selectedContainerFromMachine
+                    selectedMachine || selectedRepositoryFromMachine || selectedContainerFromMachine
                   }
                   onResourceSelect={handleResourceSelection}
                   isPanelCollapsed={isPanelCollapsed}

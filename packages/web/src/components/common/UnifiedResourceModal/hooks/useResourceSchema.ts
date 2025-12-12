@@ -8,7 +8,7 @@ import {
   createMachineSchema,
   createPoolSchema,
   createRegionSchema,
-  createRepoSchema,
+  createRepositorySchema,
   createSnapshotSchema,
   createStorageSchema,
   createTeamSchema,
@@ -45,7 +45,7 @@ export const useResourceSchema = ({
               vaultContent: z.string().optional().default('{}'),
             })
           : createMachineSchema,
-      repo: createRepoSchema,
+      repository: createRepositorySchema,
       storage: createStorageSchema,
       team: createTeamSchema,
       region: createRegionSchema,
@@ -70,12 +70,12 @@ export const useResourceSchema = ({
       });
     }
 
-    // For repo creation in credentials-only mode, use simpler validation
-    if (resourceType === 'repo' && creationContext === 'credentials-only') {
+    // For repository creation in credentials-only mode, use simpler validation
+    if (resourceType === 'repository' && creationContext === 'credentials-only') {
       return z.object({
         teamName: z.string().min(1, 'Team name is required'),
-        repoName: z.string().min(1, 'Repo name is required'),
-        repoGuid: z.string().min(1, 'Repo GUID is required'),
+        repositoryName: z.string().min(1, 'Repository name is required'),
+        repositoryGuid: z.string().min(1, 'Repository GUID is required'),
         vaultContent: z.string().optional().default('{}'),
       });
     }
@@ -120,10 +120,10 @@ export const useResourceSchema = ({
         bridgeName: uiMode === 'simple' ? 'Global Bridges' : '',
         vaultContent: '{}',
       },
-      repo: {
+      repository: {
         machineName: '',
         size: '',
-        repoGuid: '', // Add default for repoGuid
+        repositoryGuid: '', // Add default for repositoryGuid
         vaultContent: '{}',
       },
       team: { teamName: '', vaultContent: '{}' },

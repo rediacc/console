@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
-import { useRepos } from '@/api/queries/repos';
+import { useRepositories } from '@/api/queries/repositories';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
 import { RediaccEmpty } from '@/components/ui';
@@ -15,7 +15,7 @@ import { AssignToClusterModal } from '@/pages/ceph/components/AssignToClusterMod
 import { RemoveFromClusterModal } from '@/pages/ceph/components/RemoveFromClusterModal';
 import { ViewAssignmentStatusModal } from '@/pages/ceph/components/ViewAssignmentStatusModal';
 import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
-import { getMachineRepos as coreGetMachineRepos } from '@/platform';
+import { getMachineRepositories as coreGetMachineRepositories } from '@/platform';
 import { useLocalizedFunctions } from '@/services/functionsService';
 import { usePingFunction } from '@/services/pingService';
 import { RootState } from '@/store/store';
@@ -60,9 +60,9 @@ import {
 import type { MachineFunctionAction } from './columns';
 
 // Local type for group variants - maps to preset prop
-type GroupVariant = 'repo' | 'bridge' | 'team' | 'region' | 'status' | 'grand';
+type GroupVariant = 'repository' | 'bridge' | 'team' | 'region' | 'status' | 'grand';
 
-type GroupByMode = 'machine' | 'bridge' | 'team' | 'region' | 'repo' | 'status' | 'grand';
+type GroupByMode = 'machine' | 'bridge' | 'team' | 'region' | 'repository' | 'status' | 'grand';
 
 interface MachineTableProps {
   teamFilter?: string | string[];
@@ -124,7 +124,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Queries only - mutations are handled by parent
   const { data: machines = [], isLoading, refetch } = useMachines(teamFilter, enabled);
-  const { data: repos = [] } = useRepos(teamFilter);
+  const { data: repositories = [] } = useRepositories(teamFilter);
 
   // Dynamic page size
   const dynamicPageSize = useDynamicPageSize(tableContainerRef, {
@@ -136,20 +136,20 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   // Use machines directly without filtering
   const filteredMachines = machines;
 
-  // Parse machine vault status to get repo information
-  // Uses core vault-status parser with repo name resolution
-  const getMachineRepos = useCallback(
+  // Parse machine vault status to get repository information
+  // Uses core vault-status parser with repository name resolution
+  const getMachineRepositories = useCallback(
     (machine: Machine): DeployedRepo[] => {
-      return coreGetMachineRepos(
+      return coreGetMachineRepositories(
         machine,
-        repos.map((r) => ({
-          repoGuid: r.repoGuid,
-          repoName: r.repoName,
+        repositories.map((r) => ({
+          repositoryGuid: r.repositoryGuid,
+          repositoryName: r.repositoryName,
           grandGuid: r.grandGuid,
         }))
       );
     },
-    [repos]
+    [repositories]
   );
 
   const handleDelete = useCallback(
@@ -382,9 +382,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
           <Tooltip title={t('machines:groupByRepo')}>
             <ViewToggleButton
-              variant={groupBy === 'repo' ? 'primary' : 'default'}
+              variant={groupBy === 'repository' ? 'primary' : 'default'}
               icon={<InboxOutlined />}
-              onClick={() => setGroupBy('repo')}
+              onClick={() => setGroupBy('repository')}
               data-testid="machine-view-toggle-repo"
               aria-label={t('machines:groupByRepo')}
             />
@@ -433,32 +433,32 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         key = machine.teamName;
       } else if (groupBy === 'region') {
         key = machine.regionName || 'Unknown';
-      } else if (groupBy === 'repo') {
-        // For repo grouping, we'll handle this differently
-        const machineRepos = getMachineRepos(machine);
-        if (machineRepos.length === 0) {
-          // Skip machines without repos
+      } else if (groupBy === 'repository') {
+        // For repository grouping, we'll handle this differently
+        const machineRepositories = getMachineRepositories(machine);
+        if (machineRepositories.length === 0) {
+          // Skip machines without repositories
           return;
         }
-        // Add machine to each repo it has
-        machineRepos.forEach((repo) => {
-          const repoKey = repo.name;
-          if (!result[repoKey]) result[repoKey] = [];
-          if (!result[repoKey].find((m) => m.machineName === machine.machineName)) {
-            result[repoKey].push(machine);
+        // Add machine to each repository it has
+        machineRepositories.forEach((repository) => {
+          const repositoryKey = repository.name;
+          if (!result[repositoryKey]) result[repositoryKey] = [];
+          if (!result[repositoryKey].find((m) => m.machineName === machine.machineName)) {
+            result[repositoryKey].push(machine);
           }
         });
         return;
       } else if (groupBy === 'status') {
-        const machineRepos = getMachineRepos(machine);
-        if (machineRepos.length === 0) {
-          key = 'No Repos';
+        const machineRepositories = getMachineRepositories(machine);
+        if (machineRepositories.length === 0) {
+          key = 'No Repositories';
         } else {
           // Priority-based status assignment
-          const hasInaccessible = machineRepos.some((r) => !r.accessible);
-          const hasRunning = machineRepos.some((r) => r.mounted && r.docker_running);
-          const hasStopped = machineRepos.some((r) => r.mounted && !r.docker_running);
-          const hasUnmounted = machineRepos.some((r) => !r.mounted);
+          const hasInaccessible = machineRepositories.some((r) => !r.accessible);
+          const hasRunning = machineRepositories.some((r) => r.mounted && r.docker_running);
+          const hasStopped = machineRepositories.some((r) => r.mounted && !r.docker_running);
+          const hasUnmounted = machineRepositories.some((r) => !r.mounted);
 
           if (hasInaccessible) {
             key = 'Inaccessible';
@@ -473,16 +473,16 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           }
         }
       } else if (groupBy === 'grand') {
-        // Group by grand repo
-        const machineRepos = getMachineRepos(machine);
-        if (machineRepos.length === 0) return;
+        // Group by grand repository
+        const machineRepositories = getMachineRepositories(machine);
+        if (machineRepositories.length === 0) return;
 
-        machineRepos.forEach((repo) => {
-          let grandKey = 'No Grand Repo';
-          if (repo.grandGuid) {
-            const grandRepo = repos.find((r) => r.repoGuid === repo.grandGuid);
-            if (grandRepo) {
-              grandKey = grandRepo.repoName;
+        machineRepositories.forEach((repository) => {
+          let grandKey = 'No Grand Repository';
+          if (repository.grandGuid) {
+            const grandRepository = repositories.find((r) => r.repositoryGuid === repository.grandGuid);
+            if (grandRepository) {
+              grandKey = grandRepository.repositoryName;
             }
           }
           if (!result[grandKey]) result[grandKey] = [];
@@ -501,7 +501,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     });
 
     return result;
-  }, [filteredMachines, groupBy, repos, getMachineRepos]);
+  }, [filteredMachines, groupBy, repositories, getMachineRepositories]);
 
   // Render grouped table view
   const renderGroupedTableView = () => {
@@ -511,18 +511,18 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           <RediaccEmpty
             variant="minimal"
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={t('resources:repos.noRepos')}
+            description={t('resources:repositories.noRepositories')}
           />
         </StyledRediaccEmpty>
       );
     }
 
     const variantMap: Record<GroupByMode, GroupVariant> = {
-      machine: 'repo',
+      machine: 'repository',
       bridge: 'bridge',
       team: 'team',
       region: 'region',
-      repo: 'repo',
+      repository: 'repository',
       status: 'status',
       grand: 'grand',
     };
@@ -531,7 +531,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       team: 'var(--color-success)',
       bridge: 'var(--color-primary)',
       region: 'var(--color-info)',
-      repo: 'var(--color-secondary)',
+      repository: 'var(--color-secondary)',
       status: 'var(--color-warning)',
       grand: 'var(--color-secondary)',
     };
@@ -540,7 +540,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       bridge: <CloudServerOutlined />,
       team: <TeamOutlined />,
       region: <GlobalOutlined />,
-      repo: <InboxOutlined />,
+      repository: <InboxOutlined />,
       status: <DashboardOutlined />,
       grand: <BranchesOutlined />,
     };
@@ -572,7 +572,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   key={machine.machineName}
                   $isStriped={index % 2 !== 0}
                   onClick={() =>
-                    navigate(`/machines/${machine.machineName}/repos`, { state: { machine } })
+                    navigate(`/machines/${machine.machineName}/repositories`, { state: { machine } })
                   }
                   data-testid={`grouped-machine-row-${machine.machineName}`}
                 >
@@ -598,7 +598,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       icon={<RightOutlined />}
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/machines/${machine.machineName}/repos`, { state: { machine } });
+                        navigate(`/machines/${machine.machineName}/repositories`, { state: { machine } });
                       }}
                     >
                       {t('machines:viewRepos')}
@@ -651,7 +651,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   return;
                 }
 
-                navigate(`/machines/${record.machineName}/repos`, {
+                navigate(`/machines/${record.machineName}/repositories`, {
                   state: { machine: record },
                 });
               },

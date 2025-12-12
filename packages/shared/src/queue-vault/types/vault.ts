@@ -27,10 +27,10 @@ export interface VaultContextData extends VaultData {
   GENERAL_SETTINGS: GeneralSettings;
   MACHINES?: Record<string, MachineContextData>;
   STORAGE_SYSTEMS?: Record<string, StorageSystemContextData>;
-  REPO_CREDENTIALS?: Record<string, string>;
-  REPO_NETWORK_ID?: number;
-  REPO_NETWORK_MODE?: string;
-  REPO_TAG?: string;
+  REPOSITORY_CREDENTIALS?: Record<string, string>;
+  REPOSITORY_NETWORK_ID?: number;
+  REPOSITORY_NETWORK_MODE?: string;
+  REPOSITORY_TAG?: string;
   PLUGINS?: VaultData;
   company?: VaultData;
   repository?: VaultData;
