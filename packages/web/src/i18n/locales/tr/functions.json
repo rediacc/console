@@ -24,10 +24,10 @@
     }
   },
   "checkboxOptions": {
-    "mountRepoFirst": "Önce depoyu monte edin",
+    "mountRepoFirst": "Önce depoyu bağla",
     "overrideExistingFile": "Mevcut dosyayı geçersiz kıl",
     "preparationOnly": "Sadece hazırlık",
-    "unmountAfterStopping": "Durdurduktan sonra bağlantıyı kaldırın"
+    "unmountAfterStopping": "Durdurduktan sonra bağlantıyı kaldır"
   },
   "configure": "Yapılandırma",
   "currentPriority": "Güncel",
@@ -273,8 +273,8 @@
       }
     },
     "mount": {
-      "description": "Depo dosya sistemlerini bağlama",
-      "name": "montaj",
+      "description": "Depo dosya sistemlerini bağla",
+      "name": "bağla",
       "params": {
         "checkpoint": {
           "help": "Varsa konteynerleri kontrol noktasından geri yükleme (CRIU gerektirir)",
@@ -373,8 +373,8 @@
       }
     },
     "push": {
-      "description": "Depoyu uzak depolamaya itin",
-      "name": "itmek",
+      "description": "Depoyu uzak depolamaya gönder",
+      "name": "gönder",
       "params": {
         "checkpoint": {
           "help": "Kontrol noktası ile sıcak yedekleme modunu etkinleştirin (CRIU gerektirir, çevrimiçi depolar için sıfır kesinti süresi)",
@@ -469,8 +469,8 @@
       "name": "Kaldır"
     },
     "unmount": {
-      "description": "Depo dosya sistemlerinin bağlantısını kaldırın",
-      "name": "unmount",
+      "description": "Depo dosya sistemlerinin bağlantısını kaldır",
+      "name": "bağlantıyı kaldır",
       "params": {
         "checkpoint": {
           "help": "Bağlantıyı kaldırmadan önce kontrol noktası oluşturun (CRIU gerektirir)",

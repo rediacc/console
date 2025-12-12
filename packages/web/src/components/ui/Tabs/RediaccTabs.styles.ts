@@ -3,27 +3,25 @@ import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { TabsSize, TabsVariant } from './RediaccTabs.types';
 
+const TAB_FONT_SIZE_MAP: Record<TabsSize, keyof StyledTheme['fontSize']> = {
+  sm: 'SM',
+  md: 'BASE',
+};
+
 export const resolveTabFontSize = (theme: StyledTheme, size: TabsSize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return theme.fontSize.SM;
-    case 'md':
-    default:
-      return theme.fontSize.BASE;
-  }
+  const fontSizeKey = TAB_FONT_SIZE_MAP[size] ?? 'BASE';
+  return theme.fontSize[fontSizeKey];
+};
+
+const VARIANT_TO_ANT_TYPE_MAP: Record<TabsVariant, 'line' | 'card' | 'editable-card'> = {
+  default: 'line',
+  card: 'card',
+  pills: 'line', // We style pills differently via CSS
 };
 
 // Map variant to antd type
 export const mapVariantToAntType = (variant: TabsVariant): 'line' | 'card' | 'editable-card' => {
-  switch (variant) {
-    case 'card':
-      return 'card';
-    case 'pills':
-      return 'line'; // We style pills differently via CSS
-    case 'default':
-    default:
-      return 'line';
-  }
+  return VARIANT_TO_ANT_TYPE_MAP[variant] ?? 'line';
 };
 
 export const StyledRediaccTabs = styled(AntTabs).withConfig({

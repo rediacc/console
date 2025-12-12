@@ -3,50 +3,42 @@ import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { BadgeSize, BadgeVariant } from './RediaccBadge.types';
 
+const BADGE_COLOR_MAP: Record<BadgeVariant, keyof StyledTheme['colors']> = {
+  primary: 'primary',
+  success: 'success',
+  warning: 'warning',
+  error: 'error',
+  info: 'info',
+  muted: 'textTertiary',
+  default: 'primary',
+};
+
 // Get badge color based on variant
 export const resolveBadgeColor = (
   variant: BadgeVariant = 'default',
   theme: StyledTheme
 ): string => {
-  switch (variant) {
-    case 'primary':
-      return theme.colors.primary;
-    case 'success':
-      return theme.colors.success;
-    case 'warning':
-      return theme.colors.warning;
-    case 'error':
-      return theme.colors.error;
-    case 'info':
-      return theme.colors.info;
-    case 'muted':
-      return theme.colors.textTertiary;
-    case 'default':
-    default:
-      return theme.colors.primary;
-  }
+  return theme.colors[BADGE_COLOR_MAP[variant] || BADGE_COLOR_MAP.default];
+};
+
+const BADGE_SIZE_MAP: Record<BadgeSize, number> = {
+  sm: 16,
+  md: 20,
 };
 
 // Get badge size in pixels
 export const resolveBadgeSize = (size: BadgeSize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return 16;
-    case 'md':
-    default:
-      return 20;
-  }
+  return BADGE_SIZE_MAP[size] || BADGE_SIZE_MAP.md;
+};
+
+const BADGE_FONT_SIZE_MAP: Record<BadgeSize, (theme: StyledTheme) => number> = {
+  sm: (theme) => theme.fontSize.XS - 2,
+  md: (theme) => theme.fontSize.XS,
 };
 
 // Get badge font size
 export const resolveBadgeFontSize = (theme: StyledTheme, size: BadgeSize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return theme.fontSize.XS - 2; // 10px
-    case 'md':
-    default:
-      return theme.fontSize.XS; // 12px
-  }
+  return (BADGE_FONT_SIZE_MAP[size] || BADGE_FONT_SIZE_MAP.md)(theme);
 };
 
 export const StyledRediaccBadge = styled(AntBadge)<{

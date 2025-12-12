@@ -25,7 +25,7 @@
   "bulkAssignDescription": "سيتم تعيين كافة الأجهزة المحددة لنفس المجموعة",
   "bulkOperations": {
     "assignToClone": "تعيين لاستنساخ",
-    "assignmentPartial": "تم تعيين {{نجاح}} من {{total}} من الأجهزة",
+    "assignmentPartial": "تم تعيين {{success}} من {{total}} من الأجهزة",
     "assignmentSuccess": "تم تعيين {{count}} من الأجهزة بنجاح",
     "removalSuccess": "تمت إزالة {{count}} من الأجهزة بنجاح",
     "removeFromClone": "إزالة من استنساخ",

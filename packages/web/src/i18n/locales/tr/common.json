@@ -7,24 +7,24 @@
     "clearSelection": "Seçimi Temizle",
     "close": "Kapat",
     "create": "Oluştur",
-    "createResource": "{{resource}} oluşturun",
-    "delete": "Silme",
+    "createResource": "{{resource}} oluştur",
+    "delete": "Sil",
     "edit": "Düzenle",
-    "editResource": "Düzenle {{resource}}",
+    "editResource": "{{resource}} düzenle",
     "editVault": "Kasayı Düzenle",
     "exitFullscreen": "Tam Ekrandan Çık",
-    "export": "İhracat",
-    "exportSuccess": "İhracat başarılı",
+    "export": "Dışa Aktar",
+    "exportSuccess": "Dışa aktarma başarılı",
     "fullscreen": "Tam Ekran",
-    "manage": "Yönetmek",
+    "manage": "Yönet",
     "refresh": "Yenile",
-    "remote": "Uzaktan Kumanda",
-    "remove": "Kaldırmak",
+    "remote": "Uzak",
+    "remove": "Kaldır",
     "reset": "Sıfırla",
     "retry": "Yeniden Dene",
-    "runFunction": "Çalıştırma Fonksiyonu",
+    "runFunction": "Fonksiyonu Çalıştır",
     "save": "Kaydet",
-    "search": "Arama",
+    "search": "Ara",
     "trace": "İz",
     "viewTrace": "İzi Görüntüle"
   },
@@ -75,7 +75,7 @@
     "loading": "Yükleniyor...",
     "showingRecords": "{{total}}'nin {{start}}-{{end}} kayıtları gösteriliyor",
     "unknown": "Bilinmiyor",
-    "vaultVersion": "Kasa versiyonu",
+    "vaultVersion": "Kasa Sürümü",
     "versionFormat": "v{{version}}"
   },
   "language": {
@@ -167,9 +167,9 @@
   "status": {
     "initializing": "Başlatılıyor...",
     "label": "Durum",
-    "processing": "İşleme",
-    "running": "Koşmak",
-    "waitingForExecution": "İnfaz için bekleniyor"
+    "processing": "İşleniyor",
+    "running": "Çalışıyor",
+    "waitingForExecution": "Yürütme için bekleniyor"
   },
   "statusColumn": "Durum",
   "table": {
@@ -177,10 +177,10 @@
     "showingRecords": "{{total}}'nin {{start}}-{{end}} kayıtları gösteriliyor"
   },
   "theme": {
-    "dark": "Karanlık",
-    "light": "Işık",
-    "switchToDark": "Karanlık moda geç",
-    "switchToLight": "Işık moduna geçin"
+    "dark": "Koyu",
+    "light": "Açık",
+    "switchToDark": "Koyu moda geç",
+    "switchToLight": "Açık moda geç"
   },
   "thisMonth": "Bu Ay",
   "today": "Bugün",
@@ -558,7 +558,7 @@
     "unsavedChanges": "Kaydedilmemiş değişiklikler",
     "validationErrors": "Doğrulama Hataları:",
     "vaultConfiguration": "Kasa Yapılandırması",
-    "vaultVersion": "Kasa versiyonu:",
+    "vaultVersion": "Kasa Sürümü:",
     "versionAutoIncrement": "Sürüm kaydetme sırasında otomatik olarak artacaktır",
     "versionWillIncrement": "Sürüm {{version}} olarak artacaktır"
   },

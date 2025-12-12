@@ -1,11 +1,12 @@
 import React from 'react';
 import { Alert, Col, Empty, Row, Table, Tag, Tooltip } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { useRecentAuditLogs } from '@/api/queries/audit';
 import { useDashboard } from '@/api/queries/dashboard';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccCard, RediaccStack, RediaccText } from '@/components/ui';
+import { RediaccCard, RediaccStack, RediaccStatistic, RediaccText } from '@/components/ui';
 import CephDashboardWidget from '@/pages/dashboard/components/CephDashboardWidget';
 import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
 import { createSorter } from '@/platform';
@@ -61,7 +62,6 @@ import {
   StatRow,
   StatusIcon,
   StatValue,
-  StyledStatistic,
   TileHeader,
   TileMeta,
   TimelineWrapper,
@@ -95,6 +95,7 @@ const getProgressStatus = (percentage: number): 'exception' | 'normal' | 'succes
 };
 
 const DashboardPage: React.FC = () => {
+  const { t } = useTranslation('system');
   const { data: dashboard, isLoading, error } = useDashboard();
   const { data: auditLogs, isLoading: auditLoading } = useRecentAuditLogs(RECENT_AUDIT_LOGS_COUNT);
   const theme = useStyledTheme();
@@ -345,18 +346,18 @@ const DashboardPage: React.FC = () => {
                     </SectionTitleWrapper>
                     <Row gutter={[16, 16]}>
                       <Col span={12}>
-                        <StyledStatistic
-                          title="Active Licenses"
+                        <RediaccStatistic
+                          title={t('dashboard.activeLicenses')}
                           value={dashboard.activeSubscription.totalActivePurchases}
-                          $variant="textPrimary"
+                          variant="textPrimary"
                           data-testid="dashboard-stat-active-licenses"
                         />
                       </Col>
                       <Col span={12}>
-                        <StyledStatistic
-                          title="Days Remaining"
+                        <RediaccStatistic
+                          title={t('dashboard.daysRemaining')}
                           value={dashboard.activeSubscription.daysRemaining}
-                          $critical={
+                          critical={
                             dashboard.activeSubscription.daysRemaining <= CRITICAL_DAYS_THRESHOLD
                           }
                           data-testid="dashboard-stat-days-remaining"
@@ -366,7 +367,7 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </RediaccStack>
               ) : (
-                <Empty description="No active subscription" />
+                <Empty description={t('dashboard.noSubscription')} />
               )}
             </Col>
 
@@ -446,38 +447,38 @@ const DashboardPage: React.FC = () => {
           {planLimits ? (
             <Row gutter={[24, 24]}>
               <Col xs={24} md={6}>
-                <StyledStatistic
-                  title="Max Active Jobs"
+                <RediaccStatistic
+                  title={t('dashboard.maxActiveJobs')}
                   value={planLimits.maxActiveJobs}
-                  $variant="primary"
+                  variant="primary"
                 />
               </Col>
               <Col xs={24} md={6}>
-                <StyledStatistic
-                  title="Max Reserved Jobs"
+                <RediaccStatistic
+                  title={t('dashboard.maxReservedJobs')}
                   value={planLimits.maxReservedJobs}
-                  $variant="primary"
+                  variant="primary"
                 />
               </Col>
               <Col xs={24} md={6}>
-                <StyledStatistic
-                  title="Job Timeout"
+                <RediaccStatistic
+                  title={t('dashboard.jobTimeout')}
                   value={planLimits.jobTimeoutHours}
                   suffix="hours"
-                  $variant="primary"
+                  variant="primary"
                 />
               </Col>
               <Col xs={24} md={6}>
-                <StyledStatistic
-                  title="Max Repo Size"
+                <RediaccStatistic
+                  title={t('dashboard.maxRepoSize')}
                   value={planLimits.maxRepoSize}
                   suffix="GB"
-                  $variant="primary"
+                  variant="primary"
                 />
               </Col>
             </Row>
           ) : (
-            <Empty description="No plan limit data available" />
+            <Empty description={t('dashboard.noPlanData')} />
           )}
         </RediaccCard>
 
@@ -500,37 +501,37 @@ const DashboardPage: React.FC = () => {
             <RediaccStack direction="vertical" gap="md" fullWidth>
               <Row gutter={[16, 16]}>
                 <Col xs={12} md={6}>
-                  <StyledStatistic
-                    title="Pending"
+                  <RediaccStatistic
+                    title={t('dashboard.pending')}
                     value={queueStats.pendingCount || 0}
-                    $variant="warning"
+                    variant="warning"
                     prefix={<ClockCircleOutlined />}
                     data-testid="dashboard-stat-pending"
                   />
                 </Col>
                 <Col xs={12} md={6}>
-                  <StyledStatistic
-                    title="Processing"
+                  <RediaccStatistic
+                    title={t('dashboard.processing')}
                     value={queueStats.activeCount || 0}
-                    $variant="info"
+                    variant="info"
                     prefix={<SyncOutlined spin />}
                     data-testid="dashboard-stat-processing"
                   />
                 </Col>
                 <Col xs={12} md={6}>
-                  <StyledStatistic
-                    title="Completed"
+                  <RediaccStatistic
+                    title={t('dashboard.completed')}
                     value={queueStats.completedCount || 0}
-                    $variant="success"
+                    variant="success"
                     prefix={<CheckCircleOutlined />}
                     data-testid="dashboard-stat-completed"
                   />
                 </Col>
                 <Col xs={12} md={6}>
-                  <StyledStatistic
-                    title="Failed"
+                  <RediaccStatistic
+                    title={t('dashboard.failed')}
                     value={queueStats.failedCount || 0}
-                    $variant="error"
+                    variant="error"
                     prefix={<ExclamationCircleOutlined />}
                     data-testid="dashboard-stat-failed"
                   />

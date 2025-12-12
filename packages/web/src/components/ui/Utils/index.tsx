@@ -14,35 +14,32 @@ import { LoadingState as PrimitiveLoadingState } from '@/styles/primitives';
 type IconSize = 'sm' | 'md' | 'lg';
 type IconTone = 'primary' | 'inherit' | 'success' | 'warning' | 'danger' | 'info' | 'muted';
 
+const ICON_SIZE_MAP: Record<IconSize, keyof DefaultTheme['dimensions']> = {
+  sm: 'ICON_SM',
+  md: 'ICON_MD',
+  lg: 'ICON_LG',
+};
+
 const getIconSize = (size: IconSize, theme: DefaultTheme) => {
-  switch (size) {
-    case 'sm':
-      return `${theme.dimensions.ICON_SM}px`;
-    case 'lg':
-      return `${theme.dimensions.ICON_LG}px`;
-    default:
-      return `${theme.dimensions.ICON_MD}px`;
-  }
+  const sizeKey = ICON_SIZE_MAP[size] ?? 'ICON_MD';
+  return `${theme.dimensions[sizeKey]}px`;
+};
+
+const ICON_COLOR_MAP: Record<IconTone, string | keyof DefaultTheme['colors']> = {
+  primary: 'primary',
+  inherit: 'currentColor',
+  success: 'success',
+  warning: 'warning',
+  danger: 'error',
+  info: 'info',
+  muted: 'textSecondary',
 };
 
 const getIconColor = (tone: IconTone, theme: DefaultTheme) => {
-  switch (tone) {
-    case 'success':
-      return theme.colors.success;
-    case 'warning':
-      return theme.colors.warning;
-    case 'danger':
-      return theme.colors.error;
-    case 'info':
-      return theme.colors.info;
-    case 'muted':
-      return theme.colors.textSecondary;
-    case 'inherit':
-      return 'currentColor';
-    case 'primary':
-    default:
-      return theme.colors.primary;
-  }
+  const colorValue = ICON_COLOR_MAP[tone] ?? 'primary';
+  return colorValue === 'currentColor'
+    ? colorValue
+    : theme.colors[colorValue as keyof DefaultTheme['colors']];
 };
 
 /**

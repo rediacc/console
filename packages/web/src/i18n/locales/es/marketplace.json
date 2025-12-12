@@ -28,7 +28,7 @@
     "search.description": "Motores de búsqueda y soluciones de indexación."
   },
   "clearAll": "Borrar todo",
-  "close": "Cerca",
+  "close": "Cerrar",
   "containerSecurity": "Seguridad de contenedores",
   "containerSecurityDesc": "Todos los contenedores de esta plantilla utilizan imágenes oficiales de fuentes confiables. Revise el archivo docker-compose.yaml para conocer versiones de imagen y configuraciones de seguridad específicas.",
   "deploy": "Desplegar",
@@ -79,7 +79,7 @@
   "selectTeamAndMachine": "Selecciona equipo para continuar",
   "selectTeamAndMachineDesc": "Para implementar esta plantilla, seleccione un equipo del menú desplegable de arriba. Elegirás la máquina en el siguiente paso.",
   "showingTemplates": "Mostrando {{count}} plantillas",
-  "sortAlphabetical": "ARIZONA",
+  "sortAlphabetical": "A-Z",
   "sortNewest": "Lo más nuevo primero",
   "sortPopular": "Más Popular",
   "subtitle": "Descubra e implemente plantillas preconfiguradas para sus repositorios",

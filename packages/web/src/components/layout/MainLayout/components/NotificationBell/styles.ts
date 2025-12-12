@@ -64,28 +64,28 @@ export const NotificationItem = styled.div<{ $isRead: boolean }>`
   }
 `;
 
+const NOTIFICATION_TYPE_COLOR_MAP: Record<
+  'success' | 'error' | 'warning' | 'info',
+  keyof import('@/styles/styledTheme').StyledTheme['colors']
+> = {
+  success: 'success',
+  error: 'error',
+  warning: 'warning',
+  info: 'info',
+};
+
 export const NotificationIconWrapper = styled.div<{
   $type: 'success' | 'error' | 'warning' | 'info';
 }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  
+
   .anticon {
     font-size: ${({ theme }) => theme.fontSize.LG}px;
     color: ${({ theme, $type }) => {
-      switch ($type) {
-        case 'success':
-          return theme.colors.success;
-        case 'error':
-          return theme.colors.error;
-        case 'warning':
-          return theme.colors.warning;
-        case 'info':
-          return theme.colors.info;
-        default:
-          return theme.colors.textPrimary;
-      }
+      const colorKey = NOTIFICATION_TYPE_COLOR_MAP[$type] ?? 'textPrimary';
+      return theme.colors[colorKey];
     }};
   }
 `;

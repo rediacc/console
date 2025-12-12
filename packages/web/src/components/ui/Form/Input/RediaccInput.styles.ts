@@ -52,17 +52,17 @@ export const inputPrefixStyles = css`
   }
 `;
 
+const INPUT_HEIGHT_MAP: Record<InputSize, keyof StyledTheme['dimensions']> = {
+  sm: 'INPUT_HEIGHT_SM', // 36px
+  md: 'INPUT_HEIGHT', // 44px
+};
+
 /**
  * Resolves height for each input size
  */
 export const resolveInputHeight = (theme: StyledTheme, size: InputSize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return theme.dimensions.INPUT_HEIGHT_SM; // 36px
-    case 'md':
-    default:
-      return theme.dimensions.INPUT_HEIGHT; // 44px
-  }
+  const heightKey = INPUT_HEIGHT_MAP[size] ?? 'INPUT_HEIGHT';
+  return theme.dimensions[heightKey];
 };
 
 /**

@@ -33,10 +33,10 @@
     "selectedCount": "{{count}} Maschine ausgewählt",
     "selectedCount_plural": "{{count}} Maschinen ausgewählt",
     "validating": "Validierung der Maschinenverfügbarkeit...",
-    "nothingToRollback": "No completed bulk operation is available to roll back.",
-    "rollbackFailure": "Unable to roll back the last operation.",
-    "rollbackSuccess": "Rolled back the last operation for {{count}} machines.",
-    "rollbackUnavailable": "Rollback is only available for the most recent assignment operation."
+    "nothingToRollback": "Keine abgeschlossene Massenoperation zum Rückgängigmachen verfügbar.",
+    "rollbackFailure": "Letzte Operation konnte nicht rückgängig gemacht werden.",
+    "rollbackSuccess": "Letzte Operation für {{count}} Maschinen rückgängig gemacht.",
+    "rollbackUnavailable": "Rückgängigmachen ist nur für die letzte Zuweisungsoperation verfügbar."
   },
   "changeClusterAssignment": "Clusterzuordnung ändern",
   "clearFilters": "Filter löschen",
@@ -135,7 +135,7 @@
   "readOnlyDescription": "Dies ist eine schreibgeschützte Ansicht. Um Maschinen zu bearbeiten oder Aktionen auszuführen, besuchen Sie bitte die",
   "readOnlyNote": "Nur anzeigen",
   "region": "Region",
-  "remote": "Fernbedienung",
+  "remote": "Remote",
   "remoteOperations": "Fernoperationen",
   "removeFromClusterDescription": "Dadurch wird die Zuordnung der Maschinen zu ihren aktuellen Clustern aufgehoben",
   "removeFromClusterWarning": "Sind Sie sicher, dass Sie {{count}} Maschinen aus ihren Clustern entfernen möchten?",
@@ -175,7 +175,7 @@
     "noMachinesSelected": "Bitte wählen Sie mindestens eine Maschine aus",
     "sshPasswordNotAllowed": "Das SSH-Passwort kann nicht ohne konfigurierte SSH-Schlüssel verwendet werden. Bitte richten Sie zuerst SSH-Schlüssel ein oder entfernen Sie das Passwort."
   },
-  "vault": "Gewölbe",
+  "vault": "Konfiguration",
   "vaultUpdateSuccess": "Die Konfiguration des Maschinentresors wurde erfolgreich aktualisiert",
   "vaultVersion": "Vault-Version",
   "viewBy": "Anzeigen nach",

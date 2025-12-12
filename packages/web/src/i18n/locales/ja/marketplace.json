@@ -28,7 +28,7 @@
     "search.description": "検索エンジンとインデックス作成ソリューション"
   },
   "clearAll": "すべてクリア",
-  "close": "近い",
+  "close": "閉じる",
   "containerSecurity": "コンテナのセキュリティ",
   "containerSecurityDesc": "このテンプレートのすべてのコンテナーは、信頼できるソースからの公式イメージを使用します。 特定のイメージ バージョンとセキュリティ構成については、docker-compose.yaml ファイルを確認してください。",
   "deploy": "展開する",

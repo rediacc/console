@@ -1,8 +1,8 @@
 {
   "company": {
-    "configureVault": "Vault konfigurieren",
-    "description": "Konfigurieren Sie die Tresoreinstellungen Ihres Unternehmens, um unternehmensweite Konfigurationen zu verwalten.",
-    "modalTitle": "Unternehmenstresor konfigurieren",
+    "configureVault": "Konfiguration bearbeiten",
+    "description": "Konfigurieren Sie die Einstellungen Ihres Unternehmens, um unternehmensweite Konfigurationen zu verwalten.",
+    "modalTitle": "Unternehmenskonfiguration bearbeiten",
     "title": "Firmeneinstellungen"
   },
   "personal": {
@@ -26,9 +26,9 @@
       "successTitle": "Passwort erfolgreich geändert",
       "title": "Kennwort ändern"
     },
-    "configureVault": "Vault konfigurieren",
-    "description": "Konfigurieren Sie Ihre persönlichen Tresoreinstellungen, um Ihr Erlebnis individuell zu gestalten.",
-    "modalTitle": "Konfigurieren Sie den Benutzertresor",
+    "configureVault": "Konfiguration bearbeiten",
+    "description": "Konfigurieren Sie Ihre persönlichen Einstellungen, um Ihr Erlebnis individuell zu gestalten.",
+    "modalTitle": "Benutzerkonfiguration bearbeiten",
     "title": "Persönliche Einstellungen"
   },
   "title": "Einstellungen",

@@ -46,7 +46,7 @@
     "containerName": "Имя контейнера",
     "containerStatusPaused": "Приостановлено",
     "containerStatusRestarting": "Перезапуск",
-    "containerStatusRunning": "Бег",
+    "containerStatusRunning": "Выполняется",
     "containerStatusStopped": "Остановлено",
     "containers": "Контейнеры",
     "cpuUsage": "Использование ЦП",
@@ -256,7 +256,7 @@
     "title": "Регионы"
   },
   "remoteFiles": {
-    "info": "Выберите файл для загрузки на этот компьютер. Одновременно можно выбрать только один файл. Directories cannot be selected.",
+    "info": "Выберите файл для загрузки на этот компьютер. Одновременно можно выбрать только один файл. Каталоги выбрать нельзя.",
     "loadError": "Не удалось загрузить файлы",
     "loadFiles": "Загрузить файлы",
     "modified": "Модифицированный",

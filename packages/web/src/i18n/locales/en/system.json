@@ -1,4 +1,18 @@
 {
+  "dashboard": {
+    "activeLicenses": "Active Licenses",
+    "daysRemaining": "Days Remaining",
+    "noSubscription": "No active subscription",
+    "maxActiveJobs": "Max Active Jobs",
+    "maxReservedJobs": "Max Reserved Jobs",
+    "jobTimeout": "Job Timeout",
+    "maxRepoSize": "Max Repo Size",
+    "noPlanData": "No plan limit data available",
+    "pending": "Pending",
+    "processing": "Processing",
+    "completed": "Completed",
+    "failed": "Failed"
+  },
   "actions": {
     "activate": "Activate",
     "addMember": "Add Member",

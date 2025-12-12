@@ -3,28 +3,25 @@ import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { EmptySize, EmptyVariant } from './RediaccEmpty.types';
 
+const EMPTY_PADDING_MAP: Record<EmptySize, keyof StyledTheme['spacing']> = {
+  sm: 'LG', // 24px
+  md: 'XXL', // 40px
+  lg: 'XXXL', // 48px
+};
+
 export const resolveEmptyPadding = (theme: StyledTheme, size: EmptySize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return theme.spacing.LG; // 24px
-    case 'lg':
-      return theme.spacing.XXXL; // 48px
-    case 'md':
-    default:
-      return theme.spacing.XXL; // 40px
-  }
+  const paddingKey = EMPTY_PADDING_MAP[size] ?? 'XXL';
+  return theme.spacing[paddingKey];
+};
+
+const EMPTY_IMAGE_SIZE_MAP: Record<EmptySize, number> = {
+  sm: 40,
+  md: 60,
+  lg: 80,
 };
 
 export const resolveEmptyImageSize = (size: EmptySize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return 40;
-    case 'lg':
-      return 80;
-    case 'md':
-    default:
-      return 60;
-  }
+  return EMPTY_IMAGE_SIZE_MAP[size] ?? 60;
 };
 
 export const StyledRediaccEmpty = styled(AntEmpty).withConfig({

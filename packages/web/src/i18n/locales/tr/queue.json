@@ -70,8 +70,8 @@
   "statusCompleted": "Tamamlandı",
   "statusFailed": "Başarısız",
   "statusPending": "Beklemede",
-  "statusProcessing": "İşleme",
-  "statusRunning": "Koşmak",
+  "statusProcessing": "İşleniyor",
+  "statusRunning": "Çalışıyor",
   "statusStale": "Bayat",
   "success": {
     "cancellationInitiated": "{{taskId}} kuyruk öğesinin iptali başlatıldı",
@@ -117,5 +117,19 @@
     "failedTitle": "Görev Kalıcı Olarak Başarısız Oldu"
   },
   "team": "Takım",
-  "title": "Kuyruk Yönetimi"
+  "title": "Kuyruk Yönetimi",
+  "columns": {
+    "taskId": "Görev Kimliği",
+    "status": "Durum",
+    "priority": "Öncelik",
+    "age": "Yaş",
+    "team": "Takım",
+    "machine": "Makine",
+    "region": "Bölge",
+    "bridge": "Köprü",
+    "response": "Yanıt",
+    "errorRetries": "Hata / Yeniden Denemeler",
+    "createdBy": "Oluşturan",
+    "created": "Oluşturuldu"
+  }
 }

@@ -38,7 +38,7 @@
     "nodeRepo": "Dépôt",
     "nodeStorage": "Stockage",
     "nodeTeam": "Équipe",
-    "nodeUser": "Utilisatrice",
+    "nodeUser": "Utilisateur",
     "regions": "Régions",
     "repos": "Dépôts",
     "schedules": "Horaires",
@@ -47,7 +47,7 @@
     "storages": "Stockages",
     "teams": "Équipes",
     "title": "Architecture d'entreprise",
-    "users": "Utilisatrices",
+    "users": "Utilisateurs",
     "viewForce": "Forcer",
     "viewHierarchy": "Hiérarchie",
     "viewRadial": "Radiale"
@@ -59,7 +59,7 @@
       "entityName": "Nom de l'entité",
       "entityType": "Type d'entité",
       "timestamp": "Horodatage",
-      "user": "Utilisatrice"
+      "user": "Utilisateur"
     },
     "empty": {
       "clearFilters": "Supprimer les filtres et élargir la plage de dates",
@@ -252,7 +252,7 @@
       "actions": "Actes",
       "groupName": "Nom du groupe",
       "permissions": "Autorisations",
-      "users": "Utilisatrices"
+      "users": "Utilisateurs"
     },
     "teams": {
       "actions": "Actes",
@@ -283,7 +283,7 @@
       "lastActivity": "Dernière activité",
       "sessionName": "Session",
       "status": "Statut",
-      "user": "Utilisatrice",
+      "user": "Utilisateur",
       "userAgent": "Agent utilisateur"
     },
     "confirmTerminate": "Terminer la session",

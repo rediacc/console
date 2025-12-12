@@ -3,14 +3,14 @@ import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { ListSize, ListVariant } from './RediaccList.types';
 
+const LIST_PADDING_MAP: Record<ListSize, keyof StyledTheme['spacing']> = {
+  sm: 'SM',
+  md: 'MD',
+};
+
 export const resolveListPadding = (theme: StyledTheme, size: ListSize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return theme.spacing.SM;
-    case 'md':
-    default:
-      return theme.spacing.MD;
-  }
+  const paddingKey = LIST_PADDING_MAP[size] ?? 'MD';
+  return theme.spacing[paddingKey];
 };
 
 export const StyledRediaccList = styled(AntList).withConfig({

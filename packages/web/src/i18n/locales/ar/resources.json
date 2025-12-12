@@ -240,7 +240,7 @@
   },
   "regions": {
     "bridges": "الجسور",
-    "bridgesInRegion": "جسور في {{منطقة}}",
+    "bridgesInRegion": "جسور في {{region}}",
     "confirmDelete": "هل أنت متأكد من أنك تريد حذف المنطقة \"{{regionName}}\"؟ سيؤدي هذا إلى إزالة جميع الجسور في المنطقة.",
     "createRegion": "إنشاء المنطقة",
     "deleteRegion": "حذف المنطقة",

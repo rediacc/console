@@ -1,10 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Col, Row, Select, Space, Statistic, Tooltip } from 'antd';
+import { Alert, Col, Row, Select, Space, Tooltip } from 'antd';
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { useCompanyArchitecture } from '@/api/queries/architecture';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { PageCard, RediaccButton, RediaccRadio, RediaccStack, RediaccText } from '@/components/ui';
+import {
+  PageCard,
+  RediaccButton,
+  RediaccRadio,
+  RediaccStack,
+  RediaccStatistic,
+  RediaccText,
+} from '@/components/ui';
 import { useTheme } from '@/context/ThemeContext';
 import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
 import {
@@ -827,49 +834,49 @@ const ArchitecturePage: React.FC = () => {
             {/* Summary Stats */}
             <Row gutter={16}>
               <Col span={3}>
-                <Statistic
+                <RediaccStatistic
                   title={t('architecture.users')}
                   value={nodeCounts.users}
                   prefix={<UserOutlined />}
                 />
               </Col>
               <Col span={3}>
-                <Statistic
+                <RediaccStatistic
                   title={t('architecture.teams')}
                   value={nodeCounts.teams}
                   prefix={<TeamOutlined />}
                 />
               </Col>
               <Col span={3}>
-                <Statistic
+                <RediaccStatistic
                   title={t('architecture.machines')}
                   value={nodeCounts.machines}
                   prefix={<CloudOutlined />}
                 />
               </Col>
               <Col span={3}>
-                <Statistic
+                <RediaccStatistic
                   title={t('architecture.regions')}
                   value={nodeCounts.regions}
                   prefix={<GlobalOutlined />}
                 />
               </Col>
               <Col span={3}>
-                <Statistic
+                <RediaccStatistic
                   title={t('architecture.bridges')}
                   value={nodeCounts.bridges}
                   prefix={<ApiOutlined />}
                 />
               </Col>
               <Col span={3}>
-                <Statistic
+                <RediaccStatistic
                   title={t('architecture.repos')}
                   value={nodeCounts.repos}
                   prefix={<InboxOutlined />}
                 />
               </Col>
               <Col span={3}>
-                <Statistic
+                <RediaccStatistic
                   title={t('architecture.storages')}
                   value={nodeCounts.storages}
                   prefix={<CloudOutlined />}

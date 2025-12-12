@@ -1,7 +1,6 @@
 import { Space, Tooltip } from 'antd';
 import { renderBoolean, renderTimestamp } from '@/components/common/columns';
 import { RediaccButton, RediaccText } from '@/components/ui';
-import { formatAge } from '@/platform';
 import {
   ApiOutlined,
   CloseCircleOutlined,
@@ -22,15 +21,17 @@ interface QueueColumnsConfig {
   handleViewTrace: (taskId: string) => void;
   handleCancelQueueItem: (taskId: string) => void;
   cancelLoading: boolean;
+  t: (key: string) => string;
 }
 
 export const getQueueColumns = ({
   handleViewTrace,
   handleCancelQueueItem,
   cancelLoading,
+  t,
 }: QueueColumnsConfig): ColumnsType<QueueItem> => [
   {
-    title: 'Task ID',
+    title: t('queue:columns.taskId'),
     dataIndex: 'taskId',
     key: 'taskId',
     width: 200,
@@ -41,14 +42,14 @@ export const getQueueColumns = ({
     ),
   },
   {
-    title: 'Status',
+    title: t('queue:columns.status'),
     dataIndex: 'healthStatus',
     key: 'healthStatus',
     width: 120,
     render: (healthStatus: string, record: QueueItem) => renderQueueStatus(healthStatus, record),
   },
   {
-    title: 'Priority',
+    title: t('queue:columns.priority'),
     dataIndex: 'priorityLabel',
     key: 'priority',
     width: 140,
@@ -58,20 +59,22 @@ export const getQueueColumns = ({
     sorter: (a, b) => (a.priority ?? 3) - (b.priority ?? 3),
   },
   {
-    title: 'Age',
+    title: t('queue:columns.age'),
     dataIndex: 'ageInMinutes',
     key: 'ageInMinutes',
     width: 100,
-    render: (minutes: number) => formatAge(minutes),
+    render: (ageInMinutes: number, record: QueueItem) => (
+      <AgeRenderer ageInMinutes={ageInMinutes} record={record} />
+    ),
     sorter: (a, b) => (a.ageInMinutes ?? 0) - (b.ageInMinutes ?? 0),
   },
   {
-    title: 'Team',
+    title: t('queue:columns.team'),
     dataIndex: 'teamName',
     key: 'teamName',
   },
   {
-    title: 'Machine',
+    title: t('queue:columns.machine'),
     dataIndex: 'machineName',
     key: 'machineName',
     render: (name: string) => (
@@ -82,7 +85,7 @@ export const getQueueColumns = ({
     ),
   },
   {
-    title: 'Region',
+    title: t('queue:columns.region'),
     dataIndex: 'regionName',
     key: 'regionName',
     render: (name: string) => (
@@ -93,7 +96,7 @@ export const getQueueColumns = ({
     ),
   },
   {
-    title: 'Bridge',
+    title: t('queue:columns.bridge'),
     dataIndex: 'bridgeName',
     key: 'bridgeName',
     render: (name: string) => (
@@ -104,14 +107,14 @@ export const getQueueColumns = ({
     ),
   },
   {
-    title: 'Response',
+    title: t('queue:columns.response'),
     dataIndex: 'hasResponse',
     key: 'hasResponse',
     width: 80,
     render: (hasResponse: boolean) => renderBoolean(hasResponse),
   },
   {
-    title: 'Error / Retries',
+    title: t('queue:columns.errorRetries'),
     dataIndex: 'retryCount',
     key: 'retryCount',
     width: 280,
@@ -121,7 +124,7 @@ export const getQueueColumns = ({
     sorter: (a, b) => (a.retryCount ?? 0) - (b.retryCount ?? 0),
   },
   {
-    title: 'Created By',
+    title: t('queue:columns.createdBy'),
     dataIndex: 'createdBy',
     key: 'createdBy',
     width: 150,
@@ -129,17 +132,7 @@ export const getQueueColumns = ({
       createdBy || <RediaccText color="secondary">-</RediaccText>,
   },
   {
-    title: 'Age',
-    dataIndex: 'ageInMinutes',
-    key: 'age',
-    width: 100,
-    render: (ageInMinutes: number, record: QueueItem) => (
-      <AgeRenderer ageInMinutes={ageInMinutes} record={record} />
-    ),
-    sorter: (a, b) => (a.ageInMinutes ?? 0) - (b.ageInMinutes ?? 0),
-  },
-  {
-    title: 'Created',
+    title: t('queue:columns.created'),
     dataIndex: 'createdTime',
     key: 'createdTime',
     width: 180,
@@ -148,25 +141,25 @@ export const getQueueColumns = ({
       new Date(a.createdTime ?? 0).getTime() - new Date(b.createdTime ?? 0).getTime(),
   },
   {
-    title: 'Actions',
+    title: t('common:actionsColumn'),
     key: 'actions',
     width: 180,
     render: (_: unknown, record: QueueItem) => (
       <Space size="small">
-        <Tooltip title="Trace">
+        <Tooltip title={t('common:tooltips.trace')}>
           <RediaccButton
             size="sm"
             iconOnly
             icon={<HistoryOutlined />}
             onClick={() => record.taskId && handleViewTrace(record.taskId)}
             data-testid={`queue-trace-button-${record.taskId}`}
-            aria-label="Trace"
+            aria-label={t('common:aria.trace')}
           />
         </Tooltip>
         {record.canBeCancelled &&
           record.healthStatus !== 'CANCELLED' &&
           record.healthStatus !== 'CANCELLING' && (
-            <Tooltip title="Cancel">
+            <Tooltip title={t('common:tooltips.cancel')}>
               <RediaccButton
                 size="sm"
                 danger
@@ -175,7 +168,7 @@ export const getQueueColumns = ({
                 onClick={() => record.taskId && handleCancelQueueItem(record.taskId)}
                 loading={cancelLoading}
                 data-testid={`queue-cancel-button-${record.taskId}`}
-                aria-label="Cancel"
+                aria-label={t('common:aria.cancel')}
               />
             </Tooltip>
           )}
