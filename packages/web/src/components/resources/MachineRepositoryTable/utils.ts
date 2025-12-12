@@ -14,7 +14,10 @@ export const getAxiosErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
-export const groupRepositoriesByName = (repositories: Repository[], teamRepositories: TeamRepo[]): GroupedRepository[] => {
+export const groupRepositoriesByName = (
+  repositories: Repository[],
+  teamRepositories: TeamRepo[]
+): GroupedRepository[] => {
   const grouped = repositories.reduce(
     (acc, repository) => {
       if (!acc[repository.name]) {

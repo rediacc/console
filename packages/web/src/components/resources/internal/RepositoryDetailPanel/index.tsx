@@ -163,7 +163,10 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
 
               if (Array.isArray(result.services)) {
                 result.services.forEach((service: ServiceData) => {
-                  if (service.repository === repositoryData.name || service.repository === repository.repositoryGuid) {
+                  if (
+                    service.repository === repositoryData.name ||
+                    service.repository === repository.repositoryGuid
+                  ) {
                     servicesForRepo.push(service);
                     return;
                   }
@@ -172,7 +175,8 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                   const guidMatch = serviceName.match(/rediacc_([0-9a-f-]{36})_/);
                   if (
                     guidMatch &&
-                    (guidMatch[1] === repository.repositoryGuid || guidMatch[1] === repositoryData.name)
+                    (guidMatch[1] === repository.repositoryGuid ||
+                      guidMatch[1] === repositoryData.name)
                   ) {
                     servicesForRepo.push(service);
                   }
@@ -308,7 +312,10 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
         <Stack>
           <FieldRow>
             <FieldLabel>{t('resources:repositories.repositoryGuid')}:</FieldLabel>
-            <FieldValueMonospace copyable data-testid={`repo-detail-guid-${repository.repositoryName}`}>
+            <FieldValueMonospace
+              copyable
+              data-testid={`repo-detail-guid-${repository.repositoryName}`}
+            >
               {repository.repositoryGuid}
             </FieldValueMonospace>
           </FieldRow>
@@ -346,7 +353,10 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
           {repositoryData.has_rediaccfile && (
             <FieldRow>
               <FieldLabel>{t('resources:repositories.rediaccfile')}:</FieldLabel>
-              <StatusTag $tone="info" data-testid={`repo-detail-rediaccfile-${repository.repositoryName}`}>
+              <StatusTag
+                $tone="info"
+                data-testid={`repo-detail-rediaccfile-${repository.repositoryName}`}
+              >
                 {t('resources:repositories.hasRediaccfile')}
               </StatusTag>
             </FieldRow>
@@ -372,7 +382,8 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                     icon={<WarningOutlined />}
                     data-testid={`repo-detail-volume-warning-${repository.repositoryName}`}
                   >
-                    {repositoryData.external_volumes} External, {repositoryData.internal_volumes} Internal
+                    {repositoryData.external_volumes} External, {repositoryData.internal_volumes}{' '}
+                    Internal
                   </StatusTag>
                 )}
               </FieldRow>
@@ -412,8 +423,8 @@ const ExternalVolumeWarning: React.FC<SectionProps> = ({ repository, panelData }
             ))}
           </VolumeList>
           <FieldValue color="secondary">
-            <strong>Warning:</strong> If this repository is cloned, these volumes will be orphaned. Use
-            bind mounts to <FieldValue code>$REPO_PATH</FieldValue> instead.
+            <strong>Warning:</strong> If this repository is cloned, these volumes will be orphaned.
+            Use bind mounts to <FieldValue code>$REPO_PATH</FieldValue> instead.
           </FieldValue>
         </VolumeDescription>
       }
@@ -424,7 +435,9 @@ const ExternalVolumeWarning: React.FC<SectionProps> = ({ repository, panelData }
 
 const StorageSection: React.FC<SectionProps> = ({ repository, panelData, t }) => {
   const { repositoryData } = panelData;
-  const diskPercent = repositoryData.disk_space ? parseInt(repositoryData.disk_space.use_percent, 10) : 0;
+  const diskPercent = repositoryData.disk_space
+    ? parseInt(repositoryData.disk_space.use_percent, 10)
+    : 0;
 
   return (
     <Section>
@@ -437,7 +450,10 @@ const StorageSection: React.FC<SectionProps> = ({ repository, panelData, t }) =>
 
       <Row gutter={[16, 16]}>
         <Col span={24}>
-          <SectionCard size="sm" data-testid={`repo-detail-storage-info-card-${repository.repositoryName}`}>
+          <SectionCard
+            size="sm"
+            data-testid={`repo-detail-storage-info-card-${repository.repositoryName}`}
+          >
             <Stack>
               <FieldRow>
                 <FieldLabel>{t('resources:repositories.imageSize')}:</FieldLabel>
@@ -453,14 +469,19 @@ const StorageSection: React.FC<SectionProps> = ({ repository, panelData, t }) =>
 
         {repositoryData.mounted && repositoryData.disk_space && (
           <Col span={24}>
-            <SectionCard size="sm" data-testid={`repo-detail-disk-usage-card-${repository.repositoryName}`}>
+            <SectionCard
+              size="sm"
+              data-testid={`repo-detail-disk-usage-card-${repository.repositoryName}`}
+            >
               <Stack>
                 <FieldRow>
                   <Space>
                     <IconWrapper $color="var(--color-success)">
                       <DatabaseOutlined />
                     </IconWrapper>
-                    <FieldValue weight="semibold">{t('resources:repositories.diskUsage')}</FieldValue>
+                    <FieldValue weight="semibold">
+                      {t('resources:repositories.diskUsage')}
+                    </FieldValue>
                   </Space>
                 </FieldRow>
                 <FieldValue>
@@ -536,7 +557,10 @@ const ActivitySection: React.FC<SectionProps> = ({ repository, panelData, t }) =
         {t('resources:repositories.activity')}
       </SectionDivider>
 
-      <ActivityCard size="sm" data-testid={`repo-detail-activity-card-${repository.repositoryName}`}>
+      <ActivityCard
+        size="sm"
+        data-testid={`repo-detail-activity-card-${repository.repositoryName}`}
+      >
         <ActivityMetrics>
           {repositoryData.docker_running && (
             <FieldRow>

@@ -128,11 +128,15 @@ const CredentialsPage: React.FC = () => {
   const deleteRepoMutation = useDeleteRepository();
   const updateRepoVaultMutation = useUpdateRepositoryVault();
 
-  const { createRepository: createRepositoryWithQueue, isCreating } = useRepositoryCreation(machines);
+  const { createRepository: createRepositoryWithQueue, isCreating } =
+    useRepositoryCreation(machines);
   const { executeAction, isExecuting } = useQueueAction();
 
   const originalRepositories = useMemo(
-    () => repositories.filter((repository) => !repository.grandGuid || repository.grandGuid === repository.repositoryGuid),
+    () =>
+      repositories.filter(
+        (repository) => !repository.grandGuid || repository.grandGuid === repository.repositoryGuid
+      ),
     [repositories]
   );
 
@@ -186,7 +190,10 @@ const CredentialsPage: React.FC = () => {
                   {affectedMachines.map((machine) => (
                     <li key={machine.machineName}>
                       <RediaccText weight="bold">{machine.machineName}</RediaccText>
-                      <RediaccText color="secondary"> ({machine.repositoryNames.join(', ')})</RediaccText>
+                      <RediaccText color="secondary">
+                        {' '}
+                        ({machine.repositoryNames.join(', ')})
+                      </RediaccText>
                     </li>
                   ))}
                 </InlineList>
@@ -211,7 +218,9 @@ const CredentialsPage: React.FC = () => {
           title: t('repositories.deleteRepository'),
           content: (
             <div>
-              <RediaccText>{t('repositories.confirmDelete', { repositoryName: repository.repositoryName })}</RediaccText>
+              <RediaccText>
+                {t('repositories.confirmDelete', { repositoryName: repository.repositoryName })}
+              </RediaccText>
 
               <SpacedAlert
                 type="warning"
@@ -251,7 +260,9 @@ const CredentialsPage: React.FC = () => {
 
       // For credential deletion without deployments or fork deletion without deployments - simple confirm
       modal.confirm({
-        title: isCredential ? t('repositories.deleteCredential') : t('repositories.deleteRepository'),
+        title: isCredential
+          ? t('repositories.deleteCredential')
+          : t('repositories.deleteRepository'),
         content: isCredential
           ? t('repositories.confirmDeleteCredential', { repositoryName: repository.repositoryName })
           : t('repositories.confirmDelete', { repositoryName: repository.repositoryName }),
@@ -466,7 +477,10 @@ const CredentialsPage: React.FC = () => {
   );
 
   const isSubmitting =
-    createRepositoryMutation.isPending || updateRepoNameMutation.isPending || isCreating || isExecuting;
+    createRepositoryMutation.isPending ||
+    updateRepoNameMutation.isPending ||
+    isCreating ||
+    isExecuting;
 
   const isUpdatingVault = updateRepoVaultMutation.isPending;
 
@@ -536,7 +550,8 @@ const CredentialsPage: React.FC = () => {
               type: 'edit',
               icon: <EditOutlined />,
               tooltip: 'common:actions.edit',
-              onClick: (r: Repository) => openUnifiedModal('edit', r as Repository & Record<string, unknown>),
+              onClick: (r: Repository) =>
+                openUnifiedModal('edit', r as Repository & Record<string, unknown>),
               variant: 'primary',
             },
             {

@@ -127,7 +127,11 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
 
   const actualType: ResourceType =
     type ||
-    ('machineName' in currentData ? 'machine' : 'repositoryName' in currentData ? 'repository' : 'container');
+    ('machineName' in currentData
+      ? 'machine'
+      : 'repositoryName' in currentData
+        ? 'repository'
+        : 'container');
 
   const getResourceIcon = () => {
     switch (actualType) {

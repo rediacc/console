@@ -82,7 +82,9 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
 
           // Fetch the created repository to get its vault with credentials
           const repositoryList = await api.repositories.list({ teamName: data.teamName });
-          const createdRepository = repositoryList.find((repository) => repository.repositoryName === data.repositoryName);
+          const createdRepository = repositoryList.find(
+            (repository) => repository.repositoryName === data.repositoryName
+          );
 
           const repositoryVault = createdRepository?.vaultContent || data.vaultContent || '{}';
           const repositoryGuid = createdRepository?.repositoryGuid || '';

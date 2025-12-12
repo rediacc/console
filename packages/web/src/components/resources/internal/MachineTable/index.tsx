@@ -480,7 +480,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         machineRepositories.forEach((repository) => {
           let grandKey = 'No Grand Repository';
           if (repository.grandGuid) {
-            const grandRepository = repositories.find((r) => r.repositoryGuid === repository.grandGuid);
+            const grandRepository = repositories.find(
+              (r) => r.repositoryGuid === repository.grandGuid
+            );
             if (grandRepository) {
               grandKey = grandRepository.repositoryName;
             }
@@ -572,7 +574,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   key={machine.machineName}
                   $isStriped={index % 2 !== 0}
                   onClick={() =>
-                    navigate(`/machines/${machine.machineName}/repositories`, { state: { machine } })
+                    navigate(`/machines/${machine.machineName}/repositories`, {
+                      state: { machine },
+                    })
                   }
                   data-testid={`grouped-machine-row-${machine.machineName}`}
                 >
@@ -598,7 +602,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       icon={<RightOutlined />}
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/machines/${machine.machineName}/repositories`, { state: { machine } });
+                        navigate(`/machines/${machine.machineName}/repositories`, {
+                          state: { machine },
+                        });
                       }}
                     >
                       {t('machines:viewRepos')}

@@ -91,7 +91,10 @@ export function findChildClones(
  * @param allRepositories - Array of all repositories
  * @returns True if the repository is a grand with no children
  */
-export function isOrphanGrand(repository: RepositoryWithRelations, allRepositories: RepositoryWithRelations[]): boolean {
+export function isOrphanGrand(
+  repository: RepositoryWithRelations,
+  allRepositories: RepositoryWithRelations[]
+): boolean {
   if (!isCredential(repository)) {
     return false;
   }

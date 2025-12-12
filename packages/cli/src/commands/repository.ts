@@ -178,7 +178,9 @@ export function registerRepositoryCommands(program: Command): void {
 
           // Show warning for grand repos
           if (isCredential(targetRepository)) {
-            outputService.warn('This is a grand repository (credential). Deleting it is irreversible.');
+            outputService.warn(
+              'This is a grand repository (credential). Deleting it is irreversible.'
+            );
           }
 
           const confirm = await askConfirm(
@@ -249,7 +251,10 @@ export function registerRepositoryCommands(program: Command): void {
         }
 
         // Find and display affected siblings
-        const { siblingClones, currentGrandName } = findSiblingClones(targetRepository, allRepositories);
+        const { siblingClones, currentGrandName } = findSiblingClones(
+          targetRepository,
+          allRepositories
+        );
 
         if (!options.force && siblingClones.length > 0) {
           outputService.info(
@@ -274,7 +279,11 @@ export function registerRepositoryCommands(program: Command): void {
 
         await withSpinner(
           `Promoting repository "${name}:${options.tag}"...`,
-          () => api.repositories.promoteToGrand({ teamName: opts.team as string, repositoryName: name }),
+          () =>
+            api.repositories.promoteToGrand({
+              teamName: opts.team as string,
+              repositoryName: name,
+            }),
           `Repository "${name}:${options.tag}" promoted to grand status`
         );
       } catch (error) {

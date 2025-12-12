@@ -117,7 +117,9 @@ export const getTeamColumns = ({
                 <span>{record.machineCount}</span>
               </Space>
             </Tooltip>
-            <Tooltip title={`${record.repositoryCount || 0} ${tSystem('tables.teams.repositories')}`}>
+            <Tooltip
+              title={`${record.repositoryCount || 0} ${tSystem('tables.teams.repositories')}`}
+            >
               <Space size="small">
                 <DatabaseOutlined />
                 <span>{record.repositoryCount || 0}</span>

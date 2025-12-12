@@ -282,7 +282,11 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         if (parsed.status === 'completed' && parsed.rawResult) {
           const result = JSON.parse(parsed.rawResult) as VaultStatusResult;
 
-          if (result && result.containers?.containers && Array.isArray(result.containers.containers)) {
+          if (
+            result &&
+            result.containers?.containers &&
+            Array.isArray(result.containers.containers)
+          ) {
             // Filter containers that belong to this repo
 
             // We need to match containers by finding the corresponding repository in vaultStatus
@@ -311,7 +315,8 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
               // Match by mount_path or image_path
 
               return (
-                repository.mount_path === vaultRepo.mount_path || repository.image_path === vaultRepo.image_path
+                repository.mount_path === vaultRepo.mount_path ||
+                repository.image_path === vaultRepo.image_path
               );
             });
 
@@ -351,7 +356,14 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     };
 
     parseContainers();
-  }, [machine.vaultStatus, repository.image_path, repository.mount_path, repository.name, refreshKey, t]);
+  }, [
+    machine.vaultStatus,
+    repository.image_path,
+    repository.mount_path,
+    repository.name,
+    refreshKey,
+    t,
+  ]);
 
   // Handle container actions
 

@@ -78,7 +78,10 @@ export function findSiblingClones(
   // Find sibling clones (exclude the repository being promoted and the original)
   const siblingClones = allRepositories
     .filter(
-      (r) => r.grandGuid === grandGuid && r.repositoryGuid !== repository.repositoryGuid && r.grandGuid !== r.repositoryGuid // Exclude original repositories
+      (r) =>
+        r.grandGuid === grandGuid &&
+        r.repositoryGuid !== repository.repositoryGuid &&
+        r.grandGuid !== r.repositoryGuid // Exclude original repositories
     )
     .map((r) => ({
       repositoryGuid: r.repositoryGuid,

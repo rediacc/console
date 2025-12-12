@@ -70,9 +70,7 @@ export function useQueueVaultBuilder() {
       machineVault: baseContext.machineVault
         ? parseVaultContent(baseContext.machineVault)
         : undefined,
-      repositoryVault: repositoryVault
-        ? parseVaultContent(repositoryVault)
-        : undefined,
+      repositoryVault: repositoryVault ? parseVaultContent(repositoryVault) : undefined,
       bridgeVault: baseContext.bridgeVault ? parseVaultContent(baseContext.bridgeVault) : undefined,
       storageVault: baseContext.storageVault
         ? parseVaultContent(baseContext.storageVault)

@@ -37,7 +37,14 @@ type CreateRepositoryHookParams = Pick<CreateRepositoryParams, 'teamName' | 'rep
 };
 
 export const useCreateRepository = createMutation<CreateRepositoryHookParams>({
-  request: ({ teamName, repositoryName, repositoryTag, vaultContent, parentRepositoryName, repositoryGuid }) =>
+  request: ({
+    teamName,
+    repositoryName,
+    repositoryTag,
+    vaultContent,
+    parentRepositoryName,
+    repositoryGuid,
+  }) =>
     api.repositories.create(teamName, repositoryName, {
       repositoryTag,
       vaultContent,

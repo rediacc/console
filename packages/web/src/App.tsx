@@ -263,7 +263,9 @@ const AppContent: React.FC = () => {
                   />
                   <Route
                     path="/machines/:machineName/repos/:repositoryName/containers"
-                    element={<Navigate to="../../repositories/:repositoryName/containers" replace />}
+                    element={
+                      <Navigate to="../../repositories/:repositoryName/containers" replace />
+                    }
                   />
 
                   {/* Ceph */}

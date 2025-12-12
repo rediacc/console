@@ -79,7 +79,8 @@ export function findForksOfCredential(
   repositories: RepositoryWithRelations[]
 ): RepositoryWithRelations[] {
   return repositories.filter(
-    (repository) => repository.grandGuid === credentialGuid && repository.repositoryGuid !== credentialGuid
+    (repository) =>
+      repository.grandGuid === credentialGuid && repository.repositoryGuid !== credentialGuid
   );
 }
 
@@ -97,7 +98,9 @@ export function findCredential(
     return repository;
   }
 
-  return repositories.find((repository) => repository.repositoryGuid === repository.grandGuid) || null;
+  return (
+    repositories.find((repository) => repository.repositoryGuid === repository.grandGuid) || null
+  );
 }
 
 /**
@@ -118,7 +121,8 @@ export function getAffectedResources(
   // Find all repositories that use this credential
   const affectedRepos = repoIsCredential
     ? allRepositories.filter(
-        (repository) => repository.grandGuid === credentialGuid || repository.repositoryGuid === credentialGuid
+        (repository) =>
+          repository.grandGuid === credentialGuid || repository.repositoryGuid === credentialGuid
       )
     : [repository]; // For forks, only the fork itself is affected
 
@@ -142,9 +146,12 @@ export function getAffectedResources(
         // Map GUIDs back to repository names for display
         const repositoryNames = deployedAffected.map((deployed) => {
           const repository = affectedRepos.find(
-            (r) => r.repositoryGuid === deployed.name || r.repositoryGuid === deployed.repositoryGuid
+            (r) =>
+              r.repositoryGuid === deployed.name || r.repositoryGuid === deployed.repositoryGuid
           );
-          return repository ? `${repository.repositoryName}${repository.repositoryTag ? `:${repository.repositoryTag}` : ''}` : deployed.name;
+          return repository
+            ? `${repository.repositoryName}${repository.repositoryTag ? `:${repository.repositoryTag}` : ''}`
+            : deployed.name;
         });
 
         affectedMachines.push({
@@ -159,7 +166,8 @@ export function getAffectedResources(
   const forks =
     repoIsCredential && credentialGuid
       ? allRepositories.filter(
-          (repository) => repository.grandGuid === credentialGuid && repository.repositoryGuid !== credentialGuid
+          (repository) =>
+            repository.grandGuid === credentialGuid && repository.repositoryGuid !== credentialGuid
         )
       : [];
 
@@ -175,7 +183,9 @@ export function getAffectedResources(
  * @param repositories - Array of all repositories
  * @returns Map of repository name to grouped repository
  */
-export function groupRepositoriesByName(repositories: RepositoryWithRelations[]): Map<string, GroupedRepository> {
+export function groupRepositoriesByName(
+  repositories: RepositoryWithRelations[]
+): Map<string, GroupedRepository> {
   const grouped = new Map<string, GroupedRepository>();
 
   for (const repository of repositories) {
@@ -341,5 +351,7 @@ export function validateRepoDeletion(
  * @returns Display name with optional tag
  */
 export function getRepositoryDisplayName(repository: RepositoryWithRelations): string {
-  return repository.repositoryTag ? `${repository.repositoryName}:${repository.repositoryTag}` : repository.repositoryName;
+  return repository.repositoryTag
+    ? `${repository.repositoryName}:${repository.repositoryTag}`
+    : repository.repositoryName;
 }

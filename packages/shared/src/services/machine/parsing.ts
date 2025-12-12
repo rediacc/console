@@ -142,7 +142,10 @@ export function parseVaultStatus(vaultStatusJson: string | undefined | null): Pa
  * @param repositoryList - Array of repository information for resolution
  * @returns Repositories with resolved names
  */
-export function resolveRepositoryNames(repositories: DeployedRepo[], repositoryList: RepoInfo[]): DeployedRepo[] {
+export function resolveRepositoryNames(
+  repositories: DeployedRepo[],
+  repositoryList: RepoInfo[]
+): DeployedRepo[] {
   return repositories.map((repository) => {
     // Check if name is a GUID
     if (isValidGuid(repository.name)) {
@@ -188,7 +191,8 @@ export function findDeployedRepositories(
       const matchingRepositories = parsed.repositories.filter((repository) => {
         // Check if repository name (which might be GUID) matches
         return (
-          repositoryGuids.includes(repository.name) || (repository.repositoryGuid && repositoryGuids.includes(repository.repositoryGuid))
+          repositoryGuids.includes(repository.name) ||
+          (repository.repositoryGuid && repositoryGuids.includes(repository.repositoryGuid))
         );
       });
 
@@ -230,10 +234,16 @@ export function getMachineRepositories(
  * @param repositoryGuid - Repository GUID to check
  * @returns True if the repository is deployed
  */
-export function isRepositoryDeployed(machine: MachineWithVaultStatus, repositoryGuid: string): boolean {
+export function isRepositoryDeployed(
+  machine: MachineWithVaultStatus,
+  repositoryGuid: string
+): boolean {
   const repositories = getMachineRepositories(machine);
 
-  return repositories.some((repository) => repository.name === repositoryGuid || repository.repositoryGuid === repositoryGuid);
+  return repositories.some(
+    (repository) =>
+      repository.name === repositoryGuid || repository.repositoryGuid === repositoryGuid
+  );
 }
 
 /**

@@ -125,7 +125,9 @@ export function registerMachineCommands(program: Command): void {
                 outputService.info(`    Mounted: ${repository.mounted ? 'Yes' : 'No'}`);
               }
               if (repository.docker_running !== undefined) {
-                outputService.info(`    Docker: ${repository.docker_running ? 'Running' : 'Stopped'}`);
+                outputService.info(
+                  `    Docker: ${repository.docker_running ? 'Running' : 'Stopped'}`
+                );
               }
             });
           }

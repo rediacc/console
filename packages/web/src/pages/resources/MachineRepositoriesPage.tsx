@@ -175,7 +175,9 @@ const MachineReposPage: React.FC = () => {
   };
 
   const handleUnifiedModalSubmit = async (data: Record<string, unknown>) => {
-    const result = await createRepository(data as unknown as Parameters<typeof createRepository>[0]);
+    const result = await createRepository(
+      data as unknown as Parameters<typeof createRepository>[0]
+    );
 
     if (result.success) {
       unifiedModal.close();

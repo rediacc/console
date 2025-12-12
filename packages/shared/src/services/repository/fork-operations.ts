@@ -102,7 +102,9 @@ export function getForkRelationship(
   // Count siblings (other forks with same grandGuid, excluding self)
   const siblingCount = allRepositories.filter(
     (r) =>
-      r.grandGuid === repository.grandGuid && r.repositoryGuid !== repository.repositoryGuid && r.grandGuid !== r.repositoryGuid // Exclude the grand itself
+      r.grandGuid === repository.grandGuid &&
+      r.repositoryGuid !== repository.repositoryGuid &&
+      r.grandGuid !== r.repositoryGuid // Exclude the grand itself
   ).length;
 
   return {

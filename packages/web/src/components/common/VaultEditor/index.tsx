@@ -702,7 +702,8 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                     fieldName === 'credential'
                   );
                   // credential field should be full width for REPOSITORY
-                  const colSpan = entityType === 'REPOSITORY' && fieldName === 'credential' ? 24 : 12;
+                  const colSpan =
+                    entityType === 'REPOSITORY' && fieldName === 'credential' ? 24 : 12;
                   return (
                     <Col key={fieldName} xs={24} md={colSpan}>
                       {renderField(fieldName, field as FieldDefinition, isRequired)}

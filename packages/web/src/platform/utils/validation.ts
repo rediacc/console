@@ -134,7 +134,8 @@ export const createRepositorySchema = z
       if (!data) return true;
       // If repositoryGuid is provided (credential-only mode), machine and size are not required
       // Otherwise, both machine and size must be provided for physical storage creation
-      const isCredentialOnlyMode = typeof data.repositoryGuid === 'string' && data.repositoryGuid.trim() !== '';
+      const isCredentialOnlyMode =
+        typeof data.repositoryGuid === 'string' && data.repositoryGuid.trim() !== '';
       if (isCredentialOnlyMode) {
         return true; // No additional requirements in credential-only mode
       }

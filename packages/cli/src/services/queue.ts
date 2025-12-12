@@ -58,7 +58,8 @@ export class CliQueueService {
       storageVault: vaults.storageVault,
       bridgeVault: vaults.bridgeVault,
       repositoryGuid: context.params.repository as string | undefined,
-      repositoryNetworkId: (vaults.vaultContent as { repositoryNetworkId?: number })?.repositoryNetworkId,
+      repositoryNetworkId: (vaults.vaultContent as { repositoryNetworkId?: number })
+        ?.repositoryNetworkId,
       repositoryNetworkMode: (vaults.vaultContent as { networkMode?: string })?.networkMode,
       storageName: (context.params.to || context.params.from) as string | undefined,
     };
@@ -128,14 +129,18 @@ export class CliQueueService {
       try {
         const repositoryGuid = context.params.repository as string;
         const repositories = await api.repositories.list({ teamName: context.teamName });
-        const repository = repositories.find((r: GetTeamRepositories_ResultSet1) => r.repositoryGuid === repositoryGuid);
+        const repository = repositories.find(
+          (r: GetTeamRepositories_ResultSet1) => r.repositoryGuid === repositoryGuid
+        );
         const vaultContent = this.parseVaultContent(repository?.vaultContent);
         if (vaultContent) {
           if (repository?.repositoryNetworkId !== undefined) {
-            (vaultContent as Record<string, unknown>).repositoryNetworkId = repository.repositoryNetworkId;
+            (vaultContent as Record<string, unknown>).repositoryNetworkId =
+              repository.repositoryNetworkId;
           }
           if (repository?.repositoryNetworkMode) {
-            (vaultContent as Record<string, unknown>).networkMode = repository.repositoryNetworkMode;
+            (vaultContent as Record<string, unknown>).networkMode =
+              repository.repositoryNetworkMode;
           }
           vaults.vaultContent = vaultContent;
         }

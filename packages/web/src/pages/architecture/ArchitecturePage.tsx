@@ -407,7 +407,9 @@ const ArchitecturePage: React.FC = () => {
         teamChildren.push(...teamMachines);
 
         // Add repositories for this team (if any)
-        const teamRepositories = repositories.filter((r) => r.parentTeam === team.nodeId).map(toHierarchyNode);
+        const teamRepositories = repositories
+          .filter((r) => r.parentTeam === team.nodeId)
+          .map(toHierarchyNode);
         teamChildren.push(...teamRepositories);
 
         // Add storages for this team (if any)

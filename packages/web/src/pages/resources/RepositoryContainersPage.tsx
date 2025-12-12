@@ -64,7 +64,10 @@ const isRepositoryData = (value: unknown): value is Repository => {
 };
 
 const RepoContainersPage: React.FC = () => {
-  const { machineName, repositoryName } = useParams<{ machineName: string; repositoryName: string }>();
+  const { machineName, repositoryName } = useParams<{
+    machineName: string;
+    repositoryName: string;
+  }>();
   const navigate = useNavigate();
   const location = useLocation() as { state?: RepoContainersLocationState };
   const { t } = useTranslation(['resources', 'machines', 'common']);
@@ -112,7 +115,9 @@ const RepoContainersPage: React.FC = () => {
             result.repositories.find(
               (candidate: unknown): candidate is Repository =>
                 isRepositoryData(candidate) &&
-                (repoGuidToFind ? candidate.name === repoGuidToFind : candidate.name === repositoryName)
+                (repoGuidToFind
+                  ? candidate.name === repoGuidToFind
+                  : candidate.name === repositoryName)
             ) || null
           );
         }
@@ -213,7 +218,12 @@ const RepoContainersPage: React.FC = () => {
             message={t('machines:repoNotFound')}
             description={
               <ErrorWrapper>
-                <p>{t('machines:repoNotFoundDescription', { repositoryName: repositoryName, machineName })}</p>
+                <p>
+                  {t('machines:repoNotFoundDescription', {
+                    repositoryName: repositoryName,
+                    machineName,
+                  })}
+                </p>
                 <AntButton type="primary" onClick={handleBackToRepos}>
                   {t('machines:backToRepos')}
                 </AntButton>
@@ -242,12 +252,16 @@ const RepoContainersPage: React.FC = () => {
               {
                 title: <span>{actualMachine.machineName}</span>,
                 onClick: () =>
-                  navigate(`/machines/${machineName}/repositories`, { state: { machine: actualMachine } }),
+                  navigate(`/machines/${machineName}/repositories`, {
+                    state: { machine: actualMachine },
+                  }),
               },
               {
                 title: <span>{t('resources:repositories.repositories')}</span>,
                 onClick: () =>
-                  navigate(`/machines/${machineName}/repositories`, { state: { machine: actualMachine } }),
+                  navigate(`/machines/${machineName}/repositories`, {
+                    state: { machine: actualMachine },
+                  }),
               },
               {
                 title: actualRepositoryName,

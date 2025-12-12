@@ -46,7 +46,12 @@ import {
 } from './styledComponents';
 import * as S from './styles';
 import { getAxiosErrorMessage } from './utils';
-import type { Container, MachineRepositoryTableProps, Repository, RepositoryTableRow } from './types';
+import type {
+  Container,
+  MachineRepositoryTableProps,
+  Repository,
+  RepositoryTableRow,
+} from './types';
 import type { TableProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -136,7 +141,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       parentRepositoryName: repositoryName,
     });
     const { data: updatedRepos } = await refetchRepos();
-    const newRepo = updatedRepos?.find((r) => r.repositoryName === repositoryName && r.repositoryTag === tag);
+    const newRepo = updatedRepos?.find(
+      (r) => r.repositoryName === repositoryName && r.repositoryTag === tag
+    );
     if (!newRepo?.repositoryGuid) throw new Error('Could not find newly created Repository');
     return newRepo;
   };
@@ -174,10 +181,15 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     priority: number = 4,
     option?: string
   ) => {
-    const RepoData = teamRepositories.find((r) => r.repositoryName === Repository.name && r.repositoryTag === Repository.repositoryTag);
+    const RepoData = teamRepositories.find(
+      (r) => r.repositoryName === Repository.name && r.repositoryTag === Repository.repositoryTag
+    );
 
     if (!RepoData || !RepoData.vaultContent) {
-      showMessage('error', t('resources:repositories.noCredentialsFound', { name: Repository.name }));
+      showMessage(
+        'error',
+        t('resources:repositories.noCredentialsFound', { name: Repository.name })
+      );
       return;
     }
 
@@ -225,7 +237,11 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   };
 
   const handleDeleteFork = async (Repository: Repository) => {
-    const context = prepareForkDeletion(Repository.name, Repository.repositoryTag, teamRepositories);
+    const context = prepareForkDeletion(
+      Repository.name,
+      Repository.repositoryTag,
+      teamRepositories
+    );
 
     if (context.status === 'error') {
       const errorKey =
@@ -251,7 +267,11 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       onOk: async () => {
         try {
           const grandRepoVault =
-            getGrandVaultForOperation(context.repositoryGuid!, context.grandGuid, teamRepositories) || '{}';
+            getGrandVaultForOperation(
+              context.repositoryGuid!,
+              context.grandGuid,
+              teamRepositories
+            ) || '{}';
 
           const params: Record<string, unknown> = {
             repository: context.repositoryGuid,
@@ -325,7 +345,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           {siblingClones.length > 0 && (
             <>
               <Typography.Paragraph>
-                {t('resources:repositories.promoteWillUpdateSiblings', { count: siblingClones.length })}
+                {t('resources:repositories.promoteWillUpdateSiblings', {
+                  count: siblingClones.length,
+                })}
               </Typography.Paragraph>
               <ul>
                 {siblingClones.map((clone) => (
@@ -346,9 +368,15 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             teamName: machine.teamName,
             repositoryName: Repository.name,
           });
-          showMessage('success', t('resources:repositories.promoteSuccess', { name: Repository.name }));
+          showMessage(
+            'success',
+            t('resources:repositories.promoteSuccess', { name: Repository.name })
+          );
         } catch (error: unknown) {
-          const errorMessage = getAxiosErrorMessage(error, t('resources:repositories.promoteFailed'));
+          const errorMessage = getAxiosErrorMessage(
+            error,
+            t('resources:repositories.promoteFailed')
+          );
           showMessage('error', errorMessage);
         }
       },
@@ -395,7 +423,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
         const existingRepo = teamRepositories.find((r) => r.repositoryName === trimmedName);
         if (existingRepo) {
-          showMessage('error', t('resources:repositories.nameAlreadyExists', { name: trimmedName }));
+          showMessage(
+            'error',
+            t('resources:repositories.nameAlreadyExists', { name: trimmedName })
+          );
           return Promise.reject();
         }
 
@@ -407,14 +438,20 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           });
           showMessage(
             'success',
-            t('resources:repositories.renameSuccess', { oldName: Repository.name, newName: trimmedName })
+            t('resources:repositories.renameSuccess', {
+              oldName: Repository.name,
+              newName: trimmedName,
+            })
           );
 
           if (onActionComplete) {
             onActionComplete();
           }
         } catch (error: unknown) {
-          const errorMessage = getAxiosErrorMessage(error, t('resources:repositories.renameFailed'));
+          const errorMessage = getAxiosErrorMessage(
+            error,
+            t('resources:repositories.renameFailed')
+          );
           showMessage('error', errorMessage);
           return Promise.reject();
         }
@@ -430,7 +467,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       content: (
         <div>
           <Typography.Paragraph>
-            {t('resources:repositories.renameTagMessage', { name: Repository.name, tag: Repository.repositoryTag })}
+            {t('resources:repositories.renameTagMessage', {
+              name: Repository.name,
+              tag: Repository.repositoryTag,
+            })}
           </Typography.Paragraph>
           <Input
             defaultValue={Repository.repositoryTag}
@@ -488,7 +528,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             onActionComplete();
           }
         } catch (error: unknown) {
-          const errorMessage = getAxiosErrorMessage(error, t('resources:repositories.renameTagFailed'));
+          const errorMessage = getAxiosErrorMessage(
+            error,
+            t('resources:repositories.renameTagFailed')
+          );
           showMessage('error', errorMessage);
           return Promise.reject();
         }
@@ -497,7 +540,11 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   };
 
   const handleDeleteGrandRepo = async (Repository: Repository) => {
-    const context = prepareGrandDeletion(Repository.name, Repository.repositoryTag, teamRepositories);
+    const context = prepareGrandDeletion(
+      Repository.name,
+      Repository.repositoryTag,
+      teamRepositories
+    );
 
     if (context.status === 'error') {
       const errorKey =
@@ -527,7 +574,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
                 <li key={clone.repositoryGuid}>{clone.repositoryName}</li>
               ))}
             </ul>
-            <Typography.Paragraph>{t('resources:repositories.deleteOptionsMessage')}</Typography.Paragraph>
+            <Typography.Paragraph>
+              {t('resources:repositories.deleteOptionsMessage')}
+            </Typography.Paragraph>
           </div>
         ),
         okText: t('common:close'),
@@ -543,7 +592,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         <ModalContent>
           <Alert
             message={t('resources:repositories.deleteGrandWarning')}
-            description={t('resources:repositories.deleteGrandWarningDesc', { name: Repository.name })}
+            description={t('resources:repositories.deleteGrandWarningDesc', {
+              name: Repository.name,
+            })}
             type="warning"
             showIcon
           />
@@ -570,7 +621,11 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
         try {
           const grandRepoVault =
-            getGrandVaultForOperation(context.repositoryGuid!, context.repositoryGuid, teamRepositories) || '{}';
+            getGrandVaultForOperation(
+              context.repositoryGuid!,
+              context.repositoryGuid,
+              teamRepositories
+            ) || '{}';
 
           const params: Record<string, unknown> = {
             repository: context.repositoryGuid,
@@ -593,7 +648,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
           if (result.success) {
             if (result.taskId) {
-              showMessage('success', t('resources:repositories.deleteGrandQueued', { name: Repository.name }));
+              showMessage(
+                'success',
+                t('resources:repositories.deleteGrandQueued', { name: Repository.name })
+              );
               if (onQueueItemCreated) {
                 onQueueItemCreated(result.taskId, machine.machineName);
               }
@@ -623,11 +681,16 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
     try {
       const RepoData = teamRepositories.find(
-        (r) => r.repositoryName === selectedRepository.name && r.repositoryTag === selectedRepository.repositoryTag
+        (r) =>
+          r.repositoryName === selectedRepository.name &&
+          r.repositoryTag === selectedRepository.repositoryTag
       );
 
       if (!RepoData || !RepoData.vaultContent) {
-        showMessage('error', t('resources:repositories.noCredentialsFound', { name: selectedRepository.name }));
+        showMessage(
+          'error',
+          t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
+        );
         functionModal.close();
         setSelectedRepo(null);
         return;
@@ -688,7 +751,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             if (result.taskId) {
               showMessage(
                 'success',
-                t('resources:repositories.forkStarted', { dest: `${selectedRepository.name}:${forkTag}` })
+                t('resources:repositories.forkStarted', {
+                  dest: `${selectedRepository.name}:${forkTag}`,
+                })
               );
               if (onQueueItemCreated) onQueueItemCreated(result.taskId, machine.machineName);
             } else if (result.isQueued) {
@@ -756,7 +821,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             });
             if (result.success && result.taskId) createdTaskIds.push(result.taskId);
           } catch {
-            showMessage('error', t('resources:repositories.failedToDeployTo', { machine: targetMachine }));
+            showMessage(
+              'error',
+              t('resources:repositories.failedToDeployTo', { machine: targetMachine })
+            );
           }
         }
 
@@ -817,7 +885,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             });
             if (result.success && result.taskId) createdTaskIds.push(result.taskId);
           } catch {
-            showMessage('error', t('resources:repositories.failedToBackupTo', { storage: targetStorage }));
+            showMessage(
+              'error',
+              t('resources:repositories.failedToBackupTo', { storage: targetStorage })
+            );
           }
         }
 
@@ -868,7 +939,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : t('resources:repositories.failedToCreateQueueItem');
+        error instanceof Error
+          ? error.message
+          : t('resources:repositories.failedToCreateQueueItem');
       showMessage('error', errorMessage);
     }
   };
@@ -1112,7 +1185,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
               {selectedFunction === 'push' &&
                 (() => {
                   const currentRepoData = teamRepositories.find(
-                    (r) => r.repositoryName === selectedRepository.name && r.repositoryTag === selectedRepository.repositoryTag
+                    (r) =>
+                      r.repositoryName === selectedRepository.name &&
+                      r.repositoryTag === selectedRepository.repositoryTag
                   );
                   if (currentRepoData?.parentGuid) {
                     const parentRepo = teamRepositories.find(
@@ -1122,7 +1197,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
                       return (
                         <Space>
                           <SmallText color="secondary">
-                            {t('resources:repositories.parentRepo', { defaultValue: 'Parent Repository' })}:
+                            {t('resources:repositories.parentRepo', {
+                              defaultValue: 'Parent Repository',
+                            })}
+                            :
                           </SmallText>
                           <InlineTag>{parentRepo.repositoryName}</InlineTag>
                           <SmallText color="secondary">→</SmallText>
@@ -1145,13 +1223,17 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         defaultParams={{
           repository: (() => {
             const repository = teamRepositories.find(
-              (r) => r.repositoryName === selectedRepository?.name && r.repositoryTag === selectedRepository?.repositoryTag
+              (r) =>
+                r.repositoryName === selectedRepository?.name &&
+                r.repositoryTag === selectedRepository?.repositoryTag
             );
             return repository?.repositoryGuid || '';
           })(),
           grand:
             teamRepositories.find(
-              (r) => r.repositoryName === selectedRepository?.name && r.repositoryTag === selectedRepository?.repositoryTag
+              (r) =>
+                r.repositoryName === selectedRepository?.name &&
+                r.repositoryTag === selectedRepository?.repositoryTag
             )?.grandGuid || '',
           ...((selectedFunction === 'backup' ||
             selectedFunction === 'push' ||
@@ -1178,7 +1260,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
                 sourceRepo: selectedRepository.name,
                 parentRepo: (() => {
                   const currentRepoData = teamRepositories.find(
-                    (r) => r.repositoryName === selectedRepository.name && r.repositoryTag === selectedRepository.repositoryTag
+                    (r) =>
+                      r.repositoryName === selectedRepository.name &&
+                      r.repositoryTag === selectedRepository.repositoryTag
                   );
                   if (currentRepoData?.parentGuid) {
                     const parentRepo = teamRepositories.find(

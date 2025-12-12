@@ -219,7 +219,8 @@ export const getFormFields = ({
                 defaultValue: 'This repository already exists on the machine.',
               })
             : t('repositories.guidHelperTextNew', {
-                defaultValue: 'Enter the repository GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
+                defaultValue:
+                  'Enter the repository GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
               }),
         });
       }
@@ -316,7 +317,8 @@ export const getFormFields = ({
               defaultValue: 'This repository already exists on the machine.',
             })
           : t('repositories.guidHelperTextNew', {
-              defaultValue: 'Enter the repository GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
+              defaultValue:
+                'Enter the repository GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
             }),
       });
     } else if (isExpertMode) {

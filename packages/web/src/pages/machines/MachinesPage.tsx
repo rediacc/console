@@ -75,7 +75,8 @@ const MachinesPage: React.FC = () => {
   } = useUnifiedModal<Machine & Record<string, unknown>>('machine');
 
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
-  const [selectedRepositoryFromMachine, setSelectedRepositoryFromMachine] = useState<Repository | null>(null);
+  const [selectedRepositoryFromMachine, setSelectedRepositoryFromMachine] =
+    useState<Repository | null>(null);
   const [selectedContainerFromMachine, setSelectedContainerFromMachine] =
     useState<ContainerData | null>(null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
@@ -93,7 +94,9 @@ const MachinesPage: React.FC = () => {
     selectedTeams.length > 0 ? selectedTeams : undefined,
     selectedTeams.length > 0
   );
-  const { data: repositories = [] } = useRepositories(selectedTeams.length > 0 ? selectedTeams : undefined);
+  const { data: repositories = [] } = useRepositories(
+    selectedTeams.length > 0 ? selectedTeams : undefined
+  );
   const { data: storages = [] } = useStorage(selectedTeams.length > 0 ? selectedTeams : undefined);
 
   const createMachineMutation = useCreateMachine();
@@ -266,7 +269,9 @@ const MachinesPage: React.FC = () => {
         const bridgeName = currentResource.bridgeName;
         const teamData = teams.find((team) => team.teamName === currentResource.teamName);
         const repositoryParam =
-          typeof functionData.params.repository === 'string' ? functionData.params.repository : undefined;
+          typeof functionData.params.repository === 'string'
+            ? functionData.params.repository
+            : undefined;
 
         const queuePayload: QueueActionParams = {
           teamName: currentResource.teamName,

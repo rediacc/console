@@ -390,7 +390,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     }
 
     // For repository creation from machine, ensure machine name is included
-    if (resourceType === 'repository' && existingData?.machineName && existingData?.prefilledMachine) {
+    if (
+      resourceType === 'repository' &&
+      existingData?.machineName &&
+      existingData?.prefilledMachine
+    ) {
       data.machineName = existingData.machineName;
       // Also ensure teamName is preserved
       if (existingData?.teamName && !data.teamName) {

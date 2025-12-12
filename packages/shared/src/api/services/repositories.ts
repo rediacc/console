@@ -18,7 +18,9 @@ export interface CreateRepositoryOptions {
   repositoryGuid?: string;
 }
 
-const mapRepository = (repository: GetTeamRepositories_ResultSet1): GetTeamRepositories_ResultSet1 => ({
+const mapRepository = (
+  repository: GetTeamRepositories_ResultSet1
+): GetTeamRepositories_ResultSet1 => ({
   ...repository,
   repositoryTag: repository.repositoryTag || 'latest',
 });

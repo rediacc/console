@@ -31,7 +31,9 @@ interface UseRepoTableStateReturn {
   groupedRepositories: GroupedRepository[];
   setRepos: React.Dispatch<React.SetStateAction<Repository[]>>;
   setServicesData: React.Dispatch<React.SetStateAction<Record<string, RepositoryServicesState>>>;
-  setContainersData: React.Dispatch<React.SetStateAction<Record<string, RepositoryContainersState>>>;
+  setContainersData: React.Dispatch<
+    React.SetStateAction<Record<string, RepositoryContainersState>>
+  >;
 }
 
 export const useRepositoryTableState = ({
@@ -45,7 +47,9 @@ export const useRepositoryTableState = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [servicesData, setServicesData] = useState<Record<string, RepositoryServicesState>>({});
-  const [containersData, setContainersData] = useState<Record<string, RepositoryContainersState>>({});
+  const [containersData, setContainersData] = useState<Record<string, RepositoryContainersState>>(
+    {}
+  );
   const [groupedRepositories, setGroupedRepos] = useState<GroupedRepository[]>([]);
 
   useEffect(() => {
@@ -69,7 +73,9 @@ export const useRepositoryTableState = ({
                   const isGuid = isValidGuid(repository.name);
 
                   if (isGuid) {
-                    const matchingRepo = teamRepositories.find((r) => r.repositoryGuid === repository.name);
+                    const matchingRepo = teamRepositories.find(
+                      (r) => r.repositoryGuid === repository.name
+                    );
                     if (matchingRepo) {
                       return {
                         ...repository,
@@ -119,10 +125,12 @@ export const useRepositoryTableState = ({
                   );
 
                   const aFamily = aData?.grandGuid
-                    ? teamRepositories.find((r) => r.repositoryGuid === aData.grandGuid)?.repositoryName || a.name
+                    ? teamRepositories.find((r) => r.repositoryGuid === aData.grandGuid)
+                        ?.repositoryName || a.name
                     : a.name;
                   const bFamily = bData?.grandGuid
-                    ? teamRepositories.find((r) => r.repositoryGuid === bData.grandGuid)?.repositoryName || b.name
+                    ? teamRepositories.find((r) => r.repositoryGuid === bData.grandGuid)
+                        ?.repositoryName || b.name
                     : b.name;
 
                   if (aFamily !== bFamily) {
