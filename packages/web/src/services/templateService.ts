@@ -15,7 +15,7 @@ interface Template {
  * Template Service - Single source of truth for template URLs and fetching
  *
  * This service centralizes all template-related URL generation and data fetching
- * to ensure consistency across the application (Marketplace, Create Repo, etc.)
+ * to ensure consistency across the application (Marketplace, Create Repository, etc.)
  */
 class TemplateService {
   private templatesCache: Template[] | null = null;

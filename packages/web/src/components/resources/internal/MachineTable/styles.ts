@@ -45,7 +45,7 @@ export const BulkActionsBar = styled.div`
 `;
 
 export const BulkActionsSummary = styled.span`
-  font-weight: 600;
+  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: var(--color-text-primary);
 `;
 
@@ -106,7 +106,7 @@ export const GroupCardIndicator = styled.div<{ $color?: string }>`
 
 export const GroupCardTitle = styled.span`
   font-size: ${({ theme }) => theme.fontSize.LG}px;
-  font-weight: 700;
+  font-weight: ${({ theme }) => theme.fontWeight.BOLD};
   color: var(--color-text-primary);
 `;
 
@@ -156,8 +156,8 @@ export const GroupRowInfo = styled.div`
 `;
 
 export const GroupRowName = styled.span`
-  font-size: ${({ theme }) => theme.fontSize.BASE}px;
-  font-weight: 600;
+  font-size: ${({ theme }) => theme.fontSize.MD}px;
+  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: var(--color-text-primary);
 `;
 
@@ -185,7 +185,7 @@ export const GroupHeaderTag = styled(RediaccTag).attrs<{ $preset?: string; $vari
   })
 )<{ $preset?: string; $variant?: string }>`
   && {
-    font-size: ${({ theme }) => theme.fontSize.BASE}px;
+    font-size: ${({ theme }) => theme.fontSize.MD}px;
     padding: ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.spacing.MD}px;
   }
 `;

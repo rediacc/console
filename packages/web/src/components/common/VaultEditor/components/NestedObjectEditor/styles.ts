@@ -103,7 +103,7 @@ export const KeyTag = styled(RediaccTag).attrs({
   size: 'md',
 })`
   && {
-    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+    font-family: ${({ theme }) => theme.fontFamily.MONO};
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   }
 `;
@@ -185,7 +185,7 @@ export const FieldsText = styled(RediaccText).attrs({
   color: 'secondary',
 })`
   && {
-    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+    font-family: ${({ theme }) => theme.fontFamily.MONO};
     background-color: var(--color-bg-secondary);
     padding: ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.spacing.SM}px;
     border-radius: ${({ theme }) => theme.spacing.XS}px;

@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Tooltip } from 'antd';
 import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
-import { RepoDetailPanel } from '@/components/resources/internal/RepoDetailPanel';
-import type { Machine, PluginContainer, Repo } from '@/types';
+import { RepositoryDetailPanel } from '@/components/resources/internal/RepositoryDetailPanel';
+import type { Machine, PluginContainer, Repository } from '@/types';
 import {
   ContainerOutlined,
   DesktopOutlined,
@@ -39,7 +39,7 @@ interface ContainerData {
   mounts: string;
   networks: string;
   size: string;
-  repo: string;
+  repository: string;
   cpu_percent: string;
   memory_usage: string;
   memory_percent: string;
@@ -48,11 +48,11 @@ interface ContainerData {
   pids: string;
 }
 
-type ResourceType = 'machine' | 'repo' | 'container';
+type ResourceType = 'machine' | 'repository' | 'container';
 
 interface UnifiedDetailPanelProps {
   type: ResourceType;
-  data: Machine | Repo | ContainerData | PluginContainer | null;
+  data: Machine | Repository | ContainerData | PluginContainer | null;
   visible: boolean;
   onClose: () => void;
   splitWidth: number;
@@ -127,13 +127,17 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
 
   const actualType: ResourceType =
     type ||
-    ('machineName' in currentData ? 'machine' : 'repoName' in currentData ? 'repo' : 'container');
+    ('machineName' in currentData
+      ? 'machine'
+      : 'repositoryName' in currentData
+        ? 'repository'
+        : 'container');
 
   const getResourceIcon = () => {
     switch (actualType) {
       case 'machine':
         return <DesktopOutlined />;
-      case 'repo':
+      case 'repository':
         return <InboxOutlined />;
       case 'container':
       default:
@@ -173,9 +177,9 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
               onClose={onClose}
               splitView
             />
-          ) : actualType === 'repo' ? (
-            <RepoDetailPanel
-              repo={currentData as Repo}
+          ) : actualType === 'repository' ? (
+            <RepositoryDetailPanel
+              repository={currentData as Repository}
               visible={visible}
               onClose={onClose}
               splitView

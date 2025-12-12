@@ -3,7 +3,7 @@ import { Col, Empty, Form, Row, Select, Space, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import type { QueueFunction } from '@/api/queries/queue';
-import { useRepos } from '@/api/queries/repos';
+import { useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
 import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
@@ -111,8 +111,8 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const [showTemplateDetails, setShowTemplateDetails] = useState(false);
   const [templateToView, setTemplateToView] = useState<string | null>(null);
 
-  // Fetch repos for the current team
-  const { data: repos } = useRepos(teamName);
+  // Fetch repositories for the current team
+  const { data: repositories } = useRepositories(teamName);
 
   // Fetch machines and storage for destination dropdown
   const { data: machinesData } = useMachines(teamName);
@@ -358,7 +358,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               </div>
                               {additionalContext?.parentRepo && (
                                 <div>
-                                  <RediaccText weight="bold">Repo Lineage: </RediaccText>
+                                  <RediaccText weight="bold">Repository Lineage: </RediaccText>
                                   <Space>
                                     <LineageTag $variant="parent">
                                       {additionalContext.parentRepo}
@@ -376,7 +376,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               )}
                               {!additionalContext?.parentRepo && additionalContext?.sourceRepo && (
                                 <div>
-                                  <RediaccText weight="bold">Source Repo: </RediaccText>
+                                  <RediaccText weight="bold">Source Repository: </RediaccText>
                                   <LineageTag $variant="source">
                                     {additionalContext.sourceRepo}
                                   </LineageTag>
@@ -389,8 +389,8 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               <div>
                                 <RediaccText variant="description">
                                   {functionParams.state === 'online'
-                                    ? 'The repo will be pushed in online state (mounted).'
-                                    : 'The repo will be pushed in offline state (unmounted).'}
+                                    ? 'The repository will be pushed in online state (mounted).'
+                                    : 'The repository will be pushed in offline state (unmounted).'}
                                 </RediaccText>
                               </div>
                             </Space>
@@ -469,7 +469,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               setShowTemplateDetails(true);
                             }}
                             selectedTemplates={selectedTemplates}
-                            repos={repos}
+                            repositories={repositories}
                             machinesData={machinesData}
                             storageData={storageData}
                             currentMachineName={currentMachineName}
@@ -516,7 +516,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
           setShowTemplateDetails(false);
           setTemplateToView(null);
         }}
-        context="repo-creation"
+        context="repository-creation"
       />
     </>
   );

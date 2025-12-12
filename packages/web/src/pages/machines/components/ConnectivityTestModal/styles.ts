@@ -23,7 +23,7 @@ export const StyledModal = styled(BaseModal)`
 
   .ant-modal-header {
     .ant-modal-title {
-      font-size: ${({ theme }) => theme.fontSize.BASE}px;
+      font-size: ${({ theme }) => theme.fontSize.MD}px;
       color: ${({ theme }) => theme.colors.textPrimary};
 
       .anticon {

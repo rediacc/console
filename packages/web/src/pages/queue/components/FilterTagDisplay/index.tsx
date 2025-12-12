@@ -24,12 +24,12 @@ const FilterTagBar = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
 const ClearButton = styled(Button)`
-  font-size: 12px;
-  padding: 0 4px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
+  padding: 0 ${({ theme }) => theme.spacing.XS}px;
   height: auto;
 `;
 

@@ -156,7 +156,7 @@ export const AlertLinkWrapper = styled.div`
 `;
 
 export const AlertLink = styled.a`
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: ${({ theme }) => theme.colors.primary};
 
   &:hover {
@@ -184,7 +184,7 @@ export const LineageSeparator = styled(RediaccText).attrs({
 })``;
 
 export const HelpTooltipIcon = styled(InfoCircleOutlined)`
-  font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: ${({ theme }) => theme.colors.textSecondary};
   cursor: help;
 `;

@@ -44,7 +44,7 @@ export const StyledRediaccProgress = styled(AntProgress)<{
 }>`
   && {
     /* Line variant */
-    ${({ $variant }) =>
+    ${({ $variant, theme }) =>
       $variant === 'line' &&
       `
       .ant-progress-outer {
@@ -53,11 +53,11 @@ export const StyledRediaccProgress = styled(AntProgress)<{
       }
 
       .ant-progress-inner {
-        border-radius: 100px;
+        border-radius: ${theme.borderRadius.FULL}px;
       }
 
       .ant-progress-bg {
-        border-radius: 100px;
+        border-radius: ${theme.borderRadius.FULL}px;
       }
     `}
 

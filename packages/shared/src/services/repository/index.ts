@@ -1,6 +1,6 @@
-// Core repo functions
+// Core repository functions
 
-// Specialized repo services
+// Specialized repository services
 export * from './backup-validation';
 export * from './core';
 export * from './fork-operations';

@@ -3,58 +3,62 @@ import { isValidGuid } from '@/platform/utils/validation';
 import type { Machine } from '@/types';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
-import { groupReposByName } from '../utils';
+import { groupRepositoriesByName } from '../utils';
 import type {
   Container,
-  GroupedRepo,
-  Repo,
-  RepoContainersState,
-  RepoService,
-  RepoServicesState,
+  GroupedRepository,
+  Repository,
+  RepositoryContainersState,
+  RepositoryService,
+  RepositoryServicesState,
   SystemInfo,
 } from '../types';
 
 interface UseRepoTableStateProps {
   machine: Machine;
-  teamRepos: TeamRepo[];
-  reposLoading: boolean;
+  teamRepositories: TeamRepo[];
+  repositoriesLoading: boolean;
   refreshKey?: number;
 }
 
 interface UseRepoTableStateReturn {
-  repos: Repo[];
+  repositories: Repository[];
   systemInfo: SystemInfo | null;
   loading: boolean;
   error: string | null;
-  servicesData: Record<string, RepoServicesState>;
-  containersData: Record<string, RepoContainersState>;
-  groupedRepos: GroupedRepo[];
-  setRepos: React.Dispatch<React.SetStateAction<Repo[]>>;
-  setServicesData: React.Dispatch<React.SetStateAction<Record<string, RepoServicesState>>>;
-  setContainersData: React.Dispatch<React.SetStateAction<Record<string, RepoContainersState>>>;
+  servicesData: Record<string, RepositoryServicesState>;
+  containersData: Record<string, RepositoryContainersState>;
+  groupedRepositories: GroupedRepository[];
+  setRepos: React.Dispatch<React.SetStateAction<Repository[]>>;
+  setServicesData: React.Dispatch<React.SetStateAction<Record<string, RepositoryServicesState>>>;
+  setContainersData: React.Dispatch<
+    React.SetStateAction<Record<string, RepositoryContainersState>>
+  >;
 }
 
-export const useRepoTableState = ({
+export const useRepositoryTableState = ({
   machine,
-  teamRepos,
-  reposLoading,
+  teamRepositories,
+  repositoriesLoading,
   refreshKey,
 }: UseRepoTableStateProps): UseRepoTableStateReturn => {
-  const [repos, setRepos] = useState<Repo[]>([]);
+  const [repositories, setRepos] = useState<Repository[]>([]);
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [servicesData, setServicesData] = useState<Record<string, RepoServicesState>>({});
-  const [containersData, setContainersData] = useState<Record<string, RepoContainersState>>({});
-  const [groupedRepos, setGroupedRepos] = useState<GroupedRepo[]>([]);
+  const [servicesData, setServicesData] = useState<Record<string, RepositoryServicesState>>({});
+  const [containersData, setContainersData] = useState<Record<string, RepositoryContainersState>>(
+    {}
+  );
+  const [groupedRepositories, setGroupedRepos] = useState<GroupedRepository[]>([]);
 
   useEffect(() => {
-    if (!reposLoading && machine) {
+    if (!repositoriesLoading && machine) {
       if (machine.vaultStatus) {
         const parsed = parseVaultStatus(machine.vaultStatus);
 
         if (parsed.error) {
-          setError('Invalid Repo data');
+          setError('Invalid Repository data');
           setLoading(false);
         } else if (parsed.status === 'completed' && parsed.rawResult) {
           try {
@@ -65,39 +69,41 @@ export const useRepoTableState = ({
               }
 
               if (result.repositories && Array.isArray(result.repositories)) {
-                const mappedRepos = result.repositories.map((repo: Repo) => {
-                  const isGuid = isValidGuid(repo.name);
+                const mappedRepositories = result.repositories.map((repository: Repository) => {
+                  const isGuid = isValidGuid(repository.name);
 
                   if (isGuid) {
-                    const matchingRepo = teamRepos.find((r) => r.repoGuid === repo.name);
+                    const matchingRepo = teamRepositories.find(
+                      (r) => r.repositoryGuid === repository.name
+                    );
                     if (matchingRepo) {
                       return {
-                        ...repo,
-                        name: matchingRepo.repoName,
-                        repoTag: matchingRepo.repoTag,
+                        ...repository,
+                        name: matchingRepo.repositoryName,
+                        repositoryTag: matchingRepo.repositoryTag,
                         isUnmapped: false,
                       };
                     } else {
                       return {
-                        ...repo,
+                        ...repository,
                         isUnmapped: true,
-                        originalGuid: repo.name,
+                        originalGuid: repository.name,
                       };
                     }
                   }
 
                   return {
-                    ...repo,
+                    ...repository,
                     isUnmapped: false,
                   };
                 });
 
-                const reposWithPluginCounts = mappedRepos.map((repo: Repo) => {
+                const reposWithPluginCounts = mappedRepositories.map((repository: Repository) => {
                   let pluginCount = 0;
 
                   if (result.containers && Array.isArray(result.containers)) {
                     result.containers.forEach((container: Container) => {
-                      const belongsToRepo = container.Repo === repo.name;
+                      const belongsToRepo = container.Repository === repository.name;
                       if (belongsToRepo && container.name && container.name.startsWith('plugin-')) {
                         pluginCount++;
                       }
@@ -105,24 +111,26 @@ export const useRepoTableState = ({
                   }
 
                   return {
-                    ...repo,
+                    ...repository,
                     plugin_count: pluginCount,
                   };
                 });
 
-                const sortedRepos = reposWithPluginCounts.sort((a: Repo, b: Repo) => {
-                  const aData = teamRepos.find(
-                    (r) => r.repoName === a.name && r.repoTag === a.repoTag
+                const sortedRepos = reposWithPluginCounts.sort((a: Repository, b: Repository) => {
+                  const aData = teamRepositories.find(
+                    (r) => r.repositoryName === a.name && r.repositoryTag === a.repositoryTag
                   );
-                  const bData = teamRepos.find(
-                    (r) => r.repoName === b.name && r.repoTag === b.repoTag
+                  const bData = teamRepositories.find(
+                    (r) => r.repositoryName === b.name && r.repositoryTag === b.repositoryTag
                   );
 
                   const aFamily = aData?.grandGuid
-                    ? teamRepos.find((r) => r.repoGuid === aData.grandGuid)?.repoName || a.name
+                    ? teamRepositories.find((r) => r.repositoryGuid === aData.grandGuid)
+                        ?.repositoryName || a.name
                     : a.name;
                   const bFamily = bData?.grandGuid
-                    ? teamRepos.find((r) => r.repoGuid === bData.grandGuid)?.repoName || b.name
+                    ? teamRepositories.find((r) => r.repositoryGuid === bData.grandGuid)
+                        ?.repositoryName || b.name
                     : b.name;
 
                   if (aFamily !== bFamily) {
@@ -141,27 +149,27 @@ export const useRepoTableState = ({
 
                 setRepos(sortedRepos);
 
-                const grouped = groupReposByName(sortedRepos, teamRepos);
+                const grouped = groupRepositoriesByName(sortedRepos, teamRepositories);
                 setGroupedRepos(grouped);
 
                 if (result.containers && Array.isArray(result.containers)) {
-                  const containersMap: Record<string, RepoContainersState> = {};
+                  const containersMap: Record<string, RepositoryContainersState> = {};
 
-                  mappedRepos.forEach((repo: Repo) => {
-                    containersMap[repo.name] = { containers: [], error: null };
+                  mappedRepositories.forEach((repository: Repository) => {
+                    containersMap[repository.name] = { containers: [], error: null };
                   });
 
                   result.containers.forEach((container: Container) => {
-                    if (container.Repo) {
-                      const repoGuid = container.Repo;
-                      const mappedRepo = mappedRepos.find((repo: Repo) => {
+                    if (container.Repository) {
+                      const repositoryGuid = container.Repository;
+                      const mappedRepo = mappedRepositories.find((repository: Repository) => {
                         const originalRepo = result.repositories.find(
-                          (r: Repo) => r.name === repoGuid
+                          (r: Repository) => r.name === repositoryGuid
                         );
                         if (!originalRepo) return false;
                         return (
-                          repo.mount_path === originalRepo.mount_path ||
-                          repo.image_path === originalRepo.image_path
+                          repository.mount_path === originalRepo.mount_path ||
+                          repository.image_path === originalRepo.image_path
                         );
                       });
                       if (mappedRepo) {
@@ -174,23 +182,23 @@ export const useRepoTableState = ({
                 }
 
                 if (result.services && Array.isArray(result.services)) {
-                  const servicesMap: Record<string, RepoServicesState> = {};
+                  const servicesMap: Record<string, RepositoryServicesState> = {};
 
-                  mappedRepos.forEach((repo: Repo) => {
-                    servicesMap[repo.name] = { services: [], error: null };
+                  mappedRepositories.forEach((repository: Repository) => {
+                    servicesMap[repository.name] = { services: [], error: null };
                   });
 
-                  result.services.forEach((service: RepoService) => {
-                    if (service.Repo) {
-                      const repoGuid = service.Repo;
-                      const mappedRepo = mappedRepos.find((repo: Repo) => {
+                  result.services.forEach((service: RepositoryService) => {
+                    if (service.Repository) {
+                      const repositoryGuid = service.Repository;
+                      const mappedRepo = mappedRepositories.find((repository: Repository) => {
                         const originalRepo = result.repositories.find(
-                          (r: Repo) => r.name === repoGuid
+                          (r: Repository) => r.name === repositoryGuid
                         );
                         if (!originalRepo) return false;
                         return (
-                          repo.mount_path === originalRepo.mount_path ||
-                          repo.image_path === originalRepo.image_path
+                          repository.mount_path === originalRepo.mount_path ||
+                          repository.image_path === originalRepo.image_path
                         );
                       });
                       if (mappedRepo) {
@@ -200,15 +208,15 @@ export const useRepoTableState = ({
                       const serviceName = service.service_name || service.unit_file || '';
                       const guidMatch = serviceName.match(/rediacc_([0-9a-f-]{36})_/);
                       if (guidMatch) {
-                        const repoGuid = guidMatch[1];
-                        const mappedRepo = mappedRepos.find((repo: Repo) => {
+                        const repositoryGuid = guidMatch[1];
+                        const mappedRepo = mappedRepositories.find((repository: Repository) => {
                           const originalRepo = result.repositories.find(
-                            (r: Repo) => r.name === repoGuid
+                            (r: Repository) => r.name === repositoryGuid
                           );
                           if (!originalRepo) return false;
                           return (
-                            repo.mount_path === originalRepo.mount_path ||
-                            repo.image_path === originalRepo.image_path
+                            repository.mount_path === originalRepo.mount_path ||
+                            repository.image_path === originalRepo.image_path
                           );
                         });
                         if (mappedRepo) {
@@ -227,7 +235,7 @@ export const useRepoTableState = ({
               setLoading(false);
             }
           } catch {
-            setError('Failed to parse Repo data');
+            setError('Failed to parse Repository data');
             setLoading(false);
           }
         }
@@ -236,16 +244,16 @@ export const useRepoTableState = ({
         setLoading(false);
       }
     }
-  }, [machine, reposLoading, teamRepos, refreshKey]);
+  }, [machine, repositoriesLoading, teamRepositories, refreshKey]);
 
   return {
-    repos,
+    repositories,
     systemInfo,
     loading,
     error,
     servicesData,
     containersData,
-    groupedRepos,
+    groupedRepositories,
     setRepos,
     setServicesData,
     setContainersData,

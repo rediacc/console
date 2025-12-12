@@ -4,8 +4,8 @@ import {
   canPromoteToGrand,
   findSiblingClones,
   isCredential,
-  type RepoWithRelations,
-} from '@rediacc/shared/services/repo';
+  type RepositoryWithRelations,
+} from '@rediacc/shared/services/repository';
 import type { CompanyVaultRecord } from '@rediacc/shared/types';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
@@ -15,11 +15,11 @@ import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 
-export function registerRepoCommands(program: Command): void {
-  const repo = program.command('repo').description('Repository management commands');
+export function registerRepositoryCommands(program: Command): void {
+  const repository = program.command('repository').description('Repository management commands');
 
-  // repo list
-  repo
+  // repository list
+  repository
     .command('list')
     .description('List repositories')
     .option('-t, --team <name>', 'Team name')
@@ -33,22 +33,22 @@ export function registerRepoCommands(program: Command): void {
           process.exit(1);
         }
 
-        const repos = await withSpinner(
+        const repositories = await withSpinner(
           'Fetching repositories...',
-          () => api.repos.list({ teamName: opts.team as string }),
+          () => api.repositories.list({ teamName: opts.team as string }),
           'Repositories fetched'
         );
 
         const format = program.opts().output as OutputFormat;
 
-        outputService.print(repos, format);
+        outputService.print(repositories, format);
       } catch (error) {
         handleError(error);
       }
     });
 
-  // repo create
-  repo
+  // repository create
+  repository
     .command('create <name>')
     .description('Create a new repository')
     .option('-t, --team <name>', 'Team name')
@@ -66,20 +66,20 @@ export function registerRepoCommands(program: Command): void {
         }
 
         const createOptions: {
-          repoTag?: string;
-          parentRepoName?: string;
-          parentRepoTag?: string;
+          repositoryTag?: string;
+          parentRepositoryName?: string;
+          parentRepositoryTag?: string;
         } = {
-          repoTag: options.tag,
+          repositoryTag: options.tag,
         };
         if (options.parent) {
-          createOptions.parentRepoName = options.parent;
-          createOptions.parentRepoTag = options.parentTag || 'main';
+          createOptions.parentRepositoryName = options.parent;
+          createOptions.parentRepositoryTag = options.parentTag || 'main';
         }
 
         await withSpinner(
           `Creating repository "${name}:${options.tag}"...`,
-          () => api.repos.create(opts.team as string, name, createOptions),
+          () => api.repositories.create(opts.team as string, name, createOptions),
           `Repository "${name}:${options.tag}" created`
         );
       } catch (error) {
@@ -87,8 +87,8 @@ export function registerRepoCommands(program: Command): void {
       }
     });
 
-  // repo rename
-  repo
+  // repository rename
+  repository
     .command('rename <oldName> <newName>')
     .description('Rename a repository')
     .option('-t, --team <name>', 'Team name')
@@ -106,10 +106,10 @@ export function registerRepoCommands(program: Command): void {
         await withSpinner(
           `Renaming repository "${oldName}" to "${newName}"...`,
           () =>
-            api.repos.rename({
+            api.repositories.rename({
               teamName: opts.team as string,
-              currentRepoName: oldName,
-              newRepoName: newName,
+              currentRepositoryName: oldName,
+              newRepositoryName: newName,
             }),
           `Repository renamed to "${newName}"`
         );
@@ -118,8 +118,8 @@ export function registerRepoCommands(program: Command): void {
       }
     });
 
-  // repo delete - enhanced with shared orchestration
-  repo
+  // repository delete - enhanced with shared orchestration
+  repository
     .command('delete <name>')
     .description('Delete a repository')
     .option('-t, --team <name>', 'Team name')
@@ -135,36 +135,36 @@ export function registerRepoCommands(program: Command): void {
           process.exit(1);
         }
 
-        // Fetch all repos to validate deletion
-        const allRepos = await withSpinner(
+        // Fetch all repositories to validate deletion
+        const allRepositories = await withSpinner(
           'Checking repository relationships...',
-          () => api.repos.list({ teamName: opts.team as string }),
+          () => api.repositories.list({ teamName: opts.team as string }),
           'Repository relationships checked'
         );
 
         // Find the target repo
-        const targetRepo = allRepos.find(
-          (r: RepoWithRelations) =>
-            r.repoName === name && (r.repoTag === options.tag || !options.tag)
+        const targetRepository = allRepositories.find(
+          (r: RepositoryWithRelations) =>
+            r.repositoryName === name && (r.repositoryTag === options.tag || !options.tag)
         );
 
-        if (!targetRepo) {
+        if (!targetRepository) {
           outputService.error(`Repository "${name}:${options.tag}" not found`);
           process.exit(1);
         }
 
         // Use shared orchestration to validate deletion
-        if (isCredential(targetRepo)) {
-          const validation = canDeleteGrandRepo(targetRepo, allRepos);
+        if (isCredential(targetRepository)) {
+          const validation = canDeleteGrandRepo(targetRepository, allRepositories);
 
           if (!validation.canDelete) {
-            outputService.error(`Cannot delete grand repo: ${validation.reason}`);
+            outputService.error(`Cannot delete grand repository: ${validation.reason}`);
 
             if (validation.childClones.length > 0) {
               outputService.info('\nAffected child clones:');
               validation.childClones.forEach((clone) => {
                 outputService.info(
-                  `  - ${clone.repoName}${clone.repoTag ? `:${clone.repoTag}` : ''}`
+                  `  - ${clone.repositoryName}${clone.repositoryTag ? `:${clone.repositoryTag}` : ''}`
                 );
               });
               outputService.info('\nDelete or promote child clones first.');
@@ -177,8 +177,10 @@ export function registerRepoCommands(program: Command): void {
           const { askConfirm } = await import('../utils/prompt.js');
 
           // Show warning for grand repos
-          if (isCredential(targetRepo)) {
-            outputService.warn('This is a grand repo (credential). Deleting it is irreversible.');
+          if (isCredential(targetRepository)) {
+            outputService.warn(
+              'This is a grand repository (credential). Deleting it is irreversible.'
+            );
           }
 
           const confirm = await askConfirm(
@@ -193,10 +195,10 @@ export function registerRepoCommands(program: Command): void {
         await withSpinner(
           `Deleting repository "${name}:${options.tag}"...`,
           () =>
-            api.repos.delete({
+            api.repositories.delete({
               teamName: opts.team as string,
-              repoName: name,
-              repoTag: options.tag,
+              repositoryName: name,
+              repositoryTag: options.tag,
             }),
           `Repository "${name}:${options.tag}" deleted`
         );
@@ -205,8 +207,8 @@ export function registerRepoCommands(program: Command): void {
       }
     });
 
-  // repo promote - enhanced with shared orchestration
-  repo
+  // repository promote - enhanced with shared orchestration
+  repository
     .command('promote <name>')
     .description('Promote a fork to grand status')
     .option('-t, --team <name>', 'Team name')
@@ -222,26 +224,26 @@ export function registerRepoCommands(program: Command): void {
           process.exit(1);
         }
 
-        // Fetch all repos to validate promotion
-        const allRepos = await withSpinner(
+        // Fetch all repositories to validate promotion
+        const allRepositories = await withSpinner(
           'Checking repository relationships...',
-          () => api.repos.list({ teamName: opts.team as string }),
+          () => api.repositories.list({ teamName: opts.team as string }),
           'Repository relationships checked'
         );
 
         // Find the target repo
-        const targetRepo = allRepos.find(
-          (r: RepoWithRelations) =>
-            r.repoName === name && (r.repoTag === options.tag || !options.tag)
+        const targetRepository = allRepositories.find(
+          (r: RepositoryWithRelations) =>
+            r.repositoryName === name && (r.repositoryTag === options.tag || !options.tag)
         );
 
-        if (!targetRepo) {
+        if (!targetRepository) {
           outputService.error(`Repository "${name}:${options.tag}" not found`);
           process.exit(1);
         }
 
         // Use shared orchestration to validate promotion
-        const validation = canPromoteToGrand(targetRepo);
+        const validation = canPromoteToGrand(targetRepository);
 
         if (!validation.canPromote) {
           outputService.error(`Cannot promote: ${validation.reason}`);
@@ -249,18 +251,21 @@ export function registerRepoCommands(program: Command): void {
         }
 
         // Find and display affected siblings
-        const { siblingClones, currentGrandName } = findSiblingClones(targetRepo, allRepos);
+        const { siblingClones, currentGrandName } = findSiblingClones(
+          targetRepository,
+          allRepositories
+        );
 
         if (!options.force && siblingClones.length > 0) {
           outputService.info(
-            `\nThis will separate "${name}" from grand repo "${currentGrandName}"`
+            `\nThis will separate "${name}" from grand repository "${currentGrandName}"`
           );
           outputService.info(
             `\n${siblingClones.length} sibling clone(s) will remain linked to the original grand:`
           );
           siblingClones.forEach((sibling) => {
             outputService.info(
-              `  - ${sibling.repoName}${sibling.repoTag ? `:${sibling.repoTag}` : ''}`
+              `  - ${sibling.repositoryName}${sibling.repositoryTag ? `:${sibling.repositoryTag}` : ''}`
             );
           });
 
@@ -274,7 +279,11 @@ export function registerRepoCommands(program: Command): void {
 
         await withSpinner(
           `Promoting repository "${name}:${options.tag}"...`,
-          () => api.repos.promoteToGrand({ teamName: opts.team as string, repoName: name }),
+          () =>
+            api.repositories.promoteToGrand({
+              teamName: opts.team as string,
+              repositoryName: name,
+            }),
           `Repository "${name}:${options.tag}" promoted to grand status`
         );
       } catch (error) {
@@ -282,16 +291,16 @@ export function registerRepoCommands(program: Command): void {
       }
     });
 
-  // repo vault subcommand
-  const vault = repo.command('vault').description('Repository vault management');
+  // repository vault subcommand
+  const vault = repository.command('vault').description('Repository vault management');
 
-  // repo vault get
+  // repository vault get
   vault
-    .command('get <repoName>')
+    .command('get <repositoryName>')
     .description('Get repository vault data')
     .option('-t, --team <name>', 'Team name')
     .option('--tag <tag>', 'Repository tag', 'main')
-    .action(async (repoName, options) => {
+    .action(async (repositoryName, options) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
@@ -306,19 +315,19 @@ export function registerRepoCommands(program: Command): void {
           () =>
             api.company.getAllVaults({
               teamName: opts.team,
-              repoName,
-              repoTag: options.tag,
+              repositoryName,
+              repositoryTag: options.tag,
             }),
           'Vault fetched'
         );
 
-        const repoVault = vaultsResponse.vaults.find(
+        const repositoryVault = vaultsResponse.vaults.find(
           (vault: CompanyVaultRecord & { vaultType?: string }) => vault.vaultType === 'Repository'
         );
         const format = program.opts().output as OutputFormat;
 
-        if (repoVault) {
-          outputService.print(repoVault, format);
+        if (repositoryVault) {
+          outputService.print(repositoryVault, format);
         } else {
           outputService.info('No repository vault found');
         }
@@ -327,9 +336,9 @@ export function registerRepoCommands(program: Command): void {
       }
     });
 
-  // repo vault update
+  // repository vault update
   vault
-    .command('update <repoName>')
+    .command('update <repositoryName>')
     .description('Update repository vault data')
     .option('-t, --team <name>', 'Team name')
     .option('--tag <tag>', 'Repository tag', 'main')
@@ -339,7 +348,7 @@ export function registerRepoCommands(program: Command): void {
       'Current vault version (required for optimistic concurrency)',
       parseInt
     )
-    .action(async (repoName, options) => {
+    .action(async (repositoryName, options) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
@@ -381,10 +390,10 @@ export function registerRepoCommands(program: Command): void {
         await withSpinner(
           'Updating repository vault...',
           () =>
-            api.repos.updateVault({
+            api.repositories.updateVault({
               teamName: opts.team as string,
-              repoName,
-              repoTag: options.tag,
+              repositoryName,
+              repositoryTag: options.tag,
               vaultContent: vaultData,
               vaultVersion: options.vaultVersion,
             }),

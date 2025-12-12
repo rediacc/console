@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Space } from 'antd';
 import { List as ReactWindowList } from 'react-window';
 import * as InfiniteLoaderModule from 'react-window-infinite-loader';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
@@ -8,8 +7,19 @@ import { RediaccCheckbox } from '@/components/ui';
 import { useTableStyles } from '@/hooks/useComponentStyles';
 import { useMachineSelection } from '@/store/ceph/hooks';
 import { Machine } from '@/types';
-import { HeaderWrapper, RowWrapper, TableWrapper } from './styles';
-import styles from './VirtualMachineTable.module.css';
+import {
+  ActionsColumn,
+  CheckboxColumn,
+  HeaderContent,
+  HeaderWrapper,
+  LoadingRow,
+  MachineNameColumn,
+  RowContent,
+  RowWrapper,
+  StatusColumn,
+  TableWrapper,
+  TeamNameColumn,
+} from './styles';
 
 type ScrollAlign = 'auto' | 'smart' | 'center' | 'end' | 'start';
 
@@ -131,37 +141,32 @@ const MachineRow: React.FC<
         ...tableStyles.tableCell,
       }}
       $hasOnClick={!!onRowClick}
-      className={styles.row}
       onClick={handleRowClick}
       data-testid={`virtual-machine-row-${machine.machineName}`}
     >
-      <Space className={styles.rowContent}>
+      <RowContent>
         {selectable && (
-          <RediaccCheckbox
-            checked={isSelected}
-            onClick={handleCheckboxChange}
-            data-testid={`virtual-machine-checkbox-${machine.machineName}`}
-          />
+          <CheckboxColumn>
+            <RediaccCheckbox
+              checked={isSelected}
+              onClick={handleCheckboxChange}
+              data-testid={`virtual-machine-checkbox-${machine.machineName}`}
+            />
+          </CheckboxColumn>
         )}
-        <div
-          className={styles.machineName}
-          data-testid={`virtual-machine-name-${machine.machineName}`}
-        >
+        <MachineNameColumn data-testid={`virtual-machine-name-${machine.machineName}`}>
           {machine.machineName}
-        </div>
-        <div className={styles.teamName}>{machine.teamName}</div>
-        <div data-testid={`virtual-machine-status-${machine.machineName}`}>
+        </MachineNameColumn>
+        <TeamNameColumn>{machine.teamName}</TeamNameColumn>
+        <StatusColumn data-testid={`virtual-machine-status-${machine.machineName}`}>
           <MachineAssignmentStatusCell machine={machine} />
-        </div>
+        </StatusColumn>
         {renderActions && (
-          <div
-            className={styles.actions}
-            data-testid={`virtual-machine-actions-${machine.machineName}`}
-          >
+          <ActionsColumn data-testid={`virtual-machine-actions-${machine.machineName}`}>
             {renderActions(machine)}
-          </div>
+          </ActionsColumn>
         )}
-      </Space>
+      </RowContent>
     </RowWrapper>
   );
 };
@@ -215,17 +220,13 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
 
       if (!rowIsItemLoaded(index)) {
         return (
-          <div
-            style={style}
-            className={styles.loadingRow}
-            data-testid="virtual-machine-row-loading"
-          >
+          <LoadingRow style={style} data-testid="virtual-machine-row-loading">
             <InlineLoadingIndicator
               width="90%"
               height={24}
               data-testid="virtual-machine-row-loading-indicator"
             />
-          </div>
+          </LoadingRow>
         );
       }
 
@@ -363,7 +364,6 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
       style={{
         ...tableStyles.tableContainer,
       }}
-      className={styles.virtualTable}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       data-testid="virtual-machine-table"
@@ -372,16 +372,15 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
         style={{
           ...tableStyles.tableHeader,
         }}
-        className={styles.header}
         data-testid="virtual-machine-header"
       >
-        <Space className={styles.headerContent}>
-          {selectable && <div className={styles.checkboxColumn} />}
-          <div className={styles.machineName}>Machine Name</div>
-          <div className={styles.teamName}>Team</div>
-          <div className={styles.status}>Assignment Status</div>
-          {renderActions && <div className={styles.actions}>Actions</div>}
-        </Space>
+        <HeaderContent>
+          {selectable && <CheckboxColumn />}
+          <MachineNameColumn>Machine Name</MachineNameColumn>
+          <TeamNameColumn>Team</TeamNameColumn>
+          <StatusColumn>Assignment Status</StatusColumn>
+          {renderActions && <ActionsColumn>Actions</ActionsColumn>}
+        </HeaderContent>
       </HeaderWrapper>
       <div data-testid="virtual-machine-keyboard-navigation">{content}</div>
     </TableWrapper>

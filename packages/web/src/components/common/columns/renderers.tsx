@@ -20,8 +20,8 @@ export const VersionTag = styled(RediaccTag)`
  * Styled truncated text for monospace display
  */
 const TruncatedMonoText = styled.span`
-  font-family: monospace;
-  font-size: 12px;
+  font-family: ${({ theme }) => theme.fontFamily.MONO};
+  font-size: ${({ theme }) => theme.fontSize.XS}px;
   color: var(--color-text-secondary);
 `;
 

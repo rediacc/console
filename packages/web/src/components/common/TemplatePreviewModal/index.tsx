@@ -91,7 +91,7 @@ interface TemplatePreviewModalProps {
   templateName?: string | null; // For backward compatibility with TemplateDetailsModal
   onClose: () => void;
   onUseTemplate: (template: Template | string) => void;
-  context?: 'marketplace' | 'repo-creation';
+  context?: 'marketplace' | 'repository-creation';
 }
 
 type CodeRendererProps = ComponentPropsWithoutRef<'code'> & {
@@ -154,8 +154,8 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       try {
         setLoading(true);
 
-        // For repo creation context, fetch the template from templates.json to get README
-        if (context === 'repo-creation' && templateName && !baseTemplate.readme) {
+        // For repository creation context, fetch the template from templates.json to get README
+        if (context === 'repository-creation' && templateName && !baseTemplate.readme) {
           try {
             const templates: Template[] = await templateService.fetchTemplates();
             const foundTemplate = templates.find(
@@ -265,7 +265,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     if (context === 'marketplace') {
       onUseTemplate(effectiveTemplate);
     } else {
-      // For repo creation, pass the template name
+      // For repository creation, pass the template name
       onUseTemplate(effectiveTemplate.name);
     }
     onClose();
@@ -503,7 +503,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           )}
           <div>
             <NoMarginTitle level={4}>{modalTitle}</NoMarginTitle>
-            {context === 'repo-creation' && (
+            {context === 'repository-creation' && (
               <RediaccTag variant="primary" data-testid="template-details-name-tag">
                 {effectiveTemplate.name}
               </RediaccTag>

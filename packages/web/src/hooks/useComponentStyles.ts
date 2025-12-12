@@ -42,16 +42,16 @@ export const useComponentStyles = () => {
       buttonGhost: createButtonStyle('ghost'),
 
       // Typography (matching style-guide.md)
-      heading1: createTypographyStyle('XXXXXXL', 'SEMIBOLD', 'TIGHT'),
-      heading2: createTypographyStyle('XL', 'SEMIBOLD', 'TIGHT'),
-      heading3: createTypographyStyle('LG', 'SEMIBOLD', 'NORMAL'),
-      heading4: createTypographyStyle('H4', 'SEMIBOLD', 'NORMAL'),
-      heading5: createTypographyStyle('H5', 'MEDIUM', 'NORMAL'),
-      heading6: createTypographyStyle('BASE', 'MEDIUM', 'NORMAL'),
+      heading1: createTypographyStyle('XXXXL', 'SEMIBOLD', 'TIGHT'),
+      heading2: createTypographyStyle('XXXL', 'SEMIBOLD', 'TIGHT'),
+      heading3: createTypographyStyle('XXL', 'SEMIBOLD', 'NORMAL'),
+      heading4: createTypographyStyle('XL', 'SEMIBOLD', 'NORMAL'),
+      heading5: createTypographyStyle('LG', 'MEDIUM', 'NORMAL'),
+      heading6: createTypographyStyle('MD', 'MEDIUM', 'NORMAL'),
       bodyLarge: createTypographyStyle('LG', 'REGULAR', 'RELAXED'),
-      body: createTypographyStyle('BASE', 'REGULAR', 'NORMAL'),
+      body: createTypographyStyle('MD', 'REGULAR', 'NORMAL'),
       bodySmall: createTypographyStyle('SM', 'REGULAR', 'NORMAL'),
-      caption: createTypographyStyle('CAPTION', 'REGULAR', 'NORMAL'),
+      caption: createTypographyStyle('XS', 'REGULAR', 'NORMAL'),
       label: createTypographyStyle('SM', 'MEDIUM', 'NORMAL'),
 
       // Layout
@@ -135,7 +135,7 @@ export const useComponentStyles = () => {
         boxShadow: DESIGN_TOKENS.SHADOWS.ERROR_FIELD,
       },
       errorMessage: {
-        ...createTypographyStyle('XS', 'NORMAL', 'NORMAL'),
+        ...createTypographyStyle('XS', 'REGULAR', 'NORMAL'),
         color: 'var(--color-error)',
         marginTop: spacing('XS'),
       },
@@ -215,7 +215,7 @@ export const useFormStyles = () => {
       },
 
       formHelper: {
-        ...createTypographyStyle('XS', 'NORMAL', 'NORMAL'),
+        ...createTypographyStyle('XS', 'REGULAR', 'NORMAL'),
         color: 'var(--color-text-secondary)',
         marginTop: spacing('XS'),
       },

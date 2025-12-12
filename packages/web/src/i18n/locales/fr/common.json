@@ -392,7 +392,7 @@
           "label": "Nom de la région"
         }
       },
-      "REPO": {
+      "REPOSITORY": {
         "credential": {
           "description": "Mot de passe d'accès au référentiel (32 caractères, alphanumériques + caractères spéciaux)",
           "label": "Mot de passe d'accès"

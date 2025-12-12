@@ -24,8 +24,8 @@ import { getBasePath } from '@/utils/basePath';
 // Lazy load heavy pages
 const DashboardPage = lazy(() => import('@/pages/dashboard'));
 const MachinesPage = lazy(() => import('@/pages/machines/MachinesPage'));
-const MachineReposPage = lazy(() => import('@/pages/resources/MachineReposPage'));
-const RepoContainersPage = lazy(() => import('@/pages/resources/RepoContainersPage'));
+const MachineRepositoriesPage = lazy(() => import('@/pages/resources/MachineRepositoriesPage'));
+const RepositoryContainersPage = lazy(() => import('@/pages/resources/RepositoryContainersPage'));
 const CephPage = lazy(() => import('@/pages/ceph/CephPage'));
 const QueuePage = lazy(() => import('@/pages/queue/QueuePage'));
 const ArchitecturePage = lazy(() => import('@/pages/architecture/ArchitecturePage'));
@@ -236,23 +236,35 @@ const AppContent: React.FC = () => {
                     }
                   />
 
-                  {/* Machine Repos */}
+                  {/* Machine Repositories */}
                   <Route
-                    path="/machines/:machineName/repos"
+                    path="/machines/:machineName/repositories"
                     element={
                       <Suspense fallback={<PageLoader />}>
-                        <MachineReposPage />
+                        <MachineRepositoriesPage />
                       </Suspense>
                     }
                   />
 
-                  {/* Repo Containers */}
+                  {/* Repository Containers */}
                   <Route
-                    path="/machines/:machineName/repos/:repoName/containers"
+                    path="/machines/:machineName/repositories/:repositoryName/containers"
                     element={
                       <Suspense fallback={<PageLoader />}>
-                        <RepoContainersPage />
+                        <RepositoryContainersPage />
                       </Suspense>
+                    }
+                  />
+
+                  {/* Legacy repos routes - redirect to repositories */}
+                  <Route
+                    path="/machines/:machineName/repos"
+                    element={<Navigate to="../repositories" replace />}
+                  />
+                  <Route
+                    path="/machines/:machineName/repos/:repositoryName/containers"
+                    element={
+                      <Navigate to="../../repositories/:repositoryName/containers" replace />
                     }
                   />
 

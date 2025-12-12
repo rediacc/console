@@ -58,7 +58,7 @@ interface ContainerData {
   mounts: string;
   networks: string;
   size: string;
-  repo: string;
+  repository: string;
   cpu_percent: string;
   memory_usage: string;
   memory_percent: string;
@@ -178,7 +178,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             {container.state}
           </Tag>
           <Tag color="blue" icon={<FolderOutlined />} data-testid="container-detail-repo-tag">
-            {t('resources:containers.repoLabel', 'Repo')}: {container.repo}
+            {t('resources:containers.repositoryLabel', 'Repository')}: {container.repository}
           </Tag>
         </TagGroup>
       </Header>

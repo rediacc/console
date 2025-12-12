@@ -104,7 +104,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true,
           "ui": "repository-dropdown"
@@ -131,7 +131,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -159,7 +159,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -188,7 +188,7 @@
         "bridge": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -221,7 +221,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -252,7 +252,7 @@
         "bridge": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -293,7 +293,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -314,7 +314,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -339,7 +339,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -359,7 +359,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -384,7 +384,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -426,7 +426,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -456,7 +456,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -510,7 +510,7 @@
         "storage": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -564,7 +564,7 @@
         "storage": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -635,7 +635,7 @@
           "required": true,
           "ui": "source-dropdown"
         },
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true,
           "ui": "repository-dropdown"
@@ -678,7 +678,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -698,7 +698,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -718,7 +718,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -738,7 +738,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -764,7 +764,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -794,7 +794,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -814,7 +814,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -834,7 +834,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -854,7 +854,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -874,7 +874,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },
@@ -909,7 +909,7 @@
         "repository": true
       },
       "params": {
-        "repo": {
+        "repository": {
           "type": "string",
           "required": true
         },

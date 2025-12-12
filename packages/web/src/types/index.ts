@@ -45,7 +45,7 @@ declare global {
 
 export type {
   GetTeamMachines_ResultSet1 as Machine,
-  GetTeamRepositories_ResultSet1 as Repo,
+  GetTeamRepositories_ResultSet1 as Repository,
   MachineAssignmentStatus,
   MachineAssignmentType,
   PluginContainer,

@@ -70,7 +70,7 @@ import type { ColumnsType } from 'antd/es/table';
 
 const resourceIcons: Record<string, React.ReactNode> = {
   Machine: <DesktopOutlined />,
-  Repo: <InboxOutlined />,
+  Repository: <InboxOutlined />,
 };
 
 const CRITICAL_DAYS_THRESHOLD = 30;
@@ -282,7 +282,7 @@ const DashboardPage: React.FC = () => {
             {dashboard.resources
               .filter(
                 (resource) =>
-                  resource.resourceType === 'Machine' || resource.resourceType === 'Repo'
+                  resource.resourceType === 'Machine' || resource.resourceType === 'Repository'
               )
               .map((resource) => {
                 const progressColor =

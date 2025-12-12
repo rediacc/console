@@ -103,7 +103,7 @@ export const NotificationTitleContent = styled(InlineStack)`
 
 export const NotificationText = styled(RediaccText)<{ $isRead: boolean }>`
   font-weight: ${({ theme, $isRead }) =>
-    $isRead ? theme.fontWeight.NORMAL : theme.fontWeight.SEMIBOLD};
+    $isRead ? theme.fontWeight.REGULAR : theme.fontWeight.SEMIBOLD};
 `;
 
 export const NotificationTag = styled.span`
@@ -149,6 +149,6 @@ export const BellButton = styled(RediaccButton)`
 export const NotificationActionButton = styled(RediaccButton)`
   && {
     padding: 0 ${({ theme }) => theme.spacing.SM}px;
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
+    font-size: ${({ theme }) => theme.fontSize.XS}px;
   }
 `;

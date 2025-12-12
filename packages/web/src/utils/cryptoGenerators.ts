@@ -17,7 +17,7 @@ export function generateSecureString(length: number, charset: string): string {
   return Array.from(array, (byte) => charset[byte % charset.length]).join('');
 }
 
-// Generate repo credential (32 characters)
+// Generate repository credential (32 characters)
 export function generateRepoCredential(): string {
   const charset =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+{}|:<>,.?/';

@@ -104,7 +104,7 @@ export const VersionLabel = styled.span`
 `;
 
 export const EmojiIcon = styled.span`
-  font-size: ${({ theme }) => theme.fontSize.BASE}px;
+  font-size: ${({ theme }) => theme.fontSize.MD}px;
   line-height: 1;
   display: inline-flex;
   align-items: center;

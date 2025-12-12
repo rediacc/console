@@ -12,7 +12,7 @@ const NODE_COLORS: Record<ArchitectureMode, NodeColorMap> = {
     region: '#c2c2c2',
     bridge: '#b8b8b8',
     machine: '#aeaeae',
-    repo: '#a4a4a4',
+    repository: '#a4a4a4',
     storage: '#909090',
   },
   dark: {
@@ -22,7 +22,7 @@ const NODE_COLORS: Record<ArchitectureMode, NodeColorMap> = {
     region: '#7a8798',
     bridge: '#8a97a8',
     machine: '#9aa7b8',
-    repo: '#aab7c8',
+    repository: '#aab7c8',
     storage: '#cad7e8',
   },
 };

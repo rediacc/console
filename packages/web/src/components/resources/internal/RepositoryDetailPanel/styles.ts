@@ -39,7 +39,7 @@ export {
 };
 
 export const HeaderIcon = styled(FolderOutlined)`
-  font-size: ${({ theme }) => theme.fontSize.XXXXXXL}px;
+  font-size: ${({ theme }) => theme.fontSize.DISPLAY}px;
   color: var(--color-success);
 `;
 

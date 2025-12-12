@@ -8,7 +8,7 @@ import { registerMachineCommands } from './commands/machine.js';
 import { registerPermissionCommands } from './commands/permission.js';
 import { registerQueueCommands } from './commands/queue.js';
 import { registerRegionCommands } from './commands/region.js';
-import { registerRepoCommands } from './commands/repo.js';
+import { registerRepositoryCommands } from './commands/repository.js';
 import { registerShortcuts } from './commands/shortcuts.js';
 import { registerStorageCommands } from './commands/storage.js';
 import { registerTeamCommands } from './commands/team.js';
@@ -27,7 +27,7 @@ cli
 registerAuthCommands(cli);
 registerTeamCommands(cli);
 registerMachineCommands(cli);
-registerRepoCommands(cli);
+registerRepositoryCommands(cli);
 registerStorageCommands(cli);
 registerQueueCommands(cli);
 registerRegionCommands(cli);

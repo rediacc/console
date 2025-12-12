@@ -17,7 +17,7 @@ export const TitleIcon = styled.span`
 `;
 
 export const TitleText = styled.span`
-  font-size: ${({ theme }) => theme.fontSize.H4}px;
+  font-size: ${({ theme }) => theme.fontSize.XL}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: ${({ theme }) => theme.colors.textPrimary};
 `;

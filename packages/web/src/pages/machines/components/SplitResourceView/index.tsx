@@ -3,7 +3,7 @@ import { MachineTable } from '@/components/resources/internal/MachineTable';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
-import { Machine, Repo } from '@/types';
+import { Machine, Repository } from '@/types';
 import { Backdrop, LeftPanel, SplitViewContainer } from './styles';
 
 export interface ContainerData {
@@ -25,7 +25,7 @@ export interface ContainerData {
   mounts: string;
   networks: string;
   size: string;
-  repo: string;
+  repository: string;
   cpu_percent: string;
   memory_usage: string;
   memory_percent: string;
@@ -35,7 +35,7 @@ export interface ContainerData {
 }
 
 interface SplitResourceViewProps {
-  type: 'machine' | 'repo';
+  type: 'machine' | 'repository';
   teamFilter?: string | string[];
   showFilters?: boolean;
   showActions?: boolean;
@@ -44,15 +44,15 @@ interface SplitResourceViewProps {
   onVaultMachine?: (machine: Machine) => void;
   onFunctionsMachine?: (machine: Machine, functionName?: string) => void;
   onDeleteMachine?: (machine: Machine) => void;
-  onCreateRepo?: (machine: Machine, repoGuid?: string) => void;
+  onCreateRepository?: (machine: Machine, repositoryGuid?: string) => void;
   enabled?: boolean;
   className?: string;
   expandedRowKeys?: string[];
   onExpandedRowsChange?: (keys: string[]) => void;
   refreshKeys?: Record<string, number>;
   onQueueItemCreated?: (taskId: string, machineName: string) => void;
-  selectedResource: Machine | Repo | ContainerData | null;
-  onResourceSelect: (resource: Machine | Repo | ContainerData | null) => void;
+  selectedResource: Machine | Repository | ContainerData | null;
+  onResourceSelect: (resource: Machine | Repository | ContainerData | null) => void;
   isPanelCollapsed?: boolean;
   onTogglePanelCollapse?: () => void;
 }
@@ -138,8 +138,8 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
             type={
               'machineName' in selectedResource
                 ? 'machine'
-                : 'repoName' in selectedResource
-                  ? 'repo'
+                : 'repositoryName' in selectedResource
+                  ? 'repository'
                   : 'container'
             }
             data={selectedResource}
@@ -156,6 +156,6 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
     );
   }
 
-  // For repo type, we'll implement this in SplitRepoView
+  // For repository type, we'll implement this in SplitRepoView
   return null;
 };

@@ -18,7 +18,7 @@
       "description": "Network and socket mapping operations",
       "name": "Network Functions"
     },
-    "repo": {
+    "repository": {
       "description": "Repository management and operations",
       "name": "Repository Functions"
     }
@@ -38,7 +38,7 @@
       "description": "Create a local copy of the repository with a new tag",
       "name": "fork",
       "params": {
-        "repo": {
+        "repository": {
           "help": "Repository to fork",
           "label": "Repository"
         },
@@ -166,7 +166,7 @@
           "help": "Additional options",
           "label": "Options"
         },
-        "repo": {
+        "repository": {
           "help": "Repository name(s), comma-separated",
           "label": "Repository"
         }
@@ -176,7 +176,7 @@
       "description": "Deploy repository to multiple machines",
       "name": "deploy",
       "params": {
-        "repo": {
+        "repository": {
           "help": "Repository to deploy",
           "label": "Repository"
         },
@@ -228,7 +228,7 @@
       "description": "Validate repository by running prep, up, health checks, test, and down",
       "name": "validate",
       "params": {
-        "repo": {
+        "repository": {
           "help": "Repository name to validate",
           "label": "Repository"
         },
@@ -262,7 +262,7 @@
           "help": "Grand repository GUID",
           "label": "Grand Repository"
         },
-        "repo": {
+        "repository": {
           "help": "Repository name",
           "label": "Repository"
         },
@@ -302,7 +302,7 @@
           "help": "Remote machine to mount from",
           "label": "From Machine"
         },
-        "repo": {
+        "repository": {
           "help": "Repository name(s), comma-separated",
           "label": "Repository"
         },
@@ -316,7 +316,7 @@
       "description": "Create a new repository",
       "name": "new",
       "params": {
-        "repo": {
+        "repository": {
           "help": "Repository name",
           "label": "Repository"
         },
@@ -334,7 +334,7 @@
           "help": "Current owner",
           "label": "Current Owner"
         },
-        "repo": {
+        "repository": {
           "help": "Repository name",
           "label": "Repository"
         },
@@ -356,7 +356,7 @@
           "help": "Plugin name(s), comma-separated",
           "label": "Plugin"
         },
-        "repo": {
+        "repository": {
           "help": "Repository name(s), comma-separated",
           "label": "Repository"
         }
@@ -370,7 +370,7 @@
           "help": "Plugin name(s), comma-separated",
           "label": "Plugin"
         },
-        "repo": {
+        "repository": {
           "help": "Repository name(s), comma-separated",
           "label": "Repository"
         }
@@ -384,7 +384,7 @@
           "help": "Grand repository GUID",
           "label": "Grand Repository"
         },
-        "repo": {
+        "repository": {
           "help": "Repository name",
           "label": "Repository"
         },
@@ -402,7 +402,7 @@
           "help": "Select the source machine or storage",
           "label": "Source"
         },
-        "repo": {
+        "repository": {
           "help": "Repository name(s), comma-separated",
           "label": "Repository"
         },
@@ -428,7 +428,7 @@
           "help": "Options (e.g., override)",
           "label": "Options"
         },
-        "repo": {
+        "repository": {
           "help": "Repository name(s), comma-separated",
           "label": "Repository"
         },
@@ -450,7 +450,7 @@
       "description": "Resize repository storage (offline operation - repository must be unmounted)",
       "name": "resize",
       "params": {
-        "repo": {
+        "repository": {
           "help": "Repository name",
           "label": "Repository"
         },
@@ -464,7 +464,7 @@
       "description": "Delete repository",
       "name": "rm",
       "params": {
-        "repo": {
+        "repository": {
           "help": "Repository name",
           "label": "Repository"
         }
@@ -516,7 +516,7 @@
           "help": "Remote machine to unmount from",
           "label": "From Machine"
         },
-        "repo": {
+        "repository": {
           "help": "Repository name(s), comma-separated",
           "label": "Repository"
         },
@@ -534,7 +534,7 @@
           "help": "Options (e.g., prep-only)",
           "label": "Options"
         },
-        "repo": {
+        "repository": {
           "help": "Repository name(s), comma-separated",
           "label": "Repository"
         }

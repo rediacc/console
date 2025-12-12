@@ -25,7 +25,7 @@ type VariantTokenSet = {
  */
 const VARIANT_TOKENS: Record<string, (theme: StyledTheme) => VariantTokenSet> = {
   caption: (theme) => ({
-    fontSize: theme.fontSize.CAPTION,
+    fontSize: theme.fontSize.XS,
     fontWeight: theme.fontWeight.REGULAR,
     color: theme.colors.textSecondary,
     lineHeight: theme.lineHeight.NORMAL,
@@ -61,7 +61,7 @@ const VARIANT_TOKENS: Record<string, (theme: StyledTheme) => VariantTokenSet> = 
     lineHeight: theme.lineHeight.NORMAL,
   }),
   default: (theme) => ({
-    fontSize: theme.fontSize.BASE,
+    fontSize: theme.fontSize.MD,
     fontWeight: theme.fontWeight.REGULAR,
     color: theme.colors.textPrimary,
     lineHeight: theme.lineHeight.NORMAL,
@@ -88,7 +88,7 @@ export const resolveTextVariantTokens = (
 const SIZE_MAP: Record<TextSize, (theme: StyledTheme) => number> = {
   xs: (theme) => theme.fontSize.XS,
   sm: (theme) => theme.fontSize.SM,
-  md: (theme) => theme.fontSize.BASE,
+  md: (theme) => theme.fontSize.MD,
   lg: (theme) => theme.fontSize.LG,
   xl: (theme) => theme.fontSize.XL,
 };
@@ -108,7 +108,7 @@ const WEIGHT_MAP: Record<TextWeight, (theme: StyledTheme) => number> = {
   regular: (theme) => theme.fontWeight.REGULAR,
   medium: (theme) => theme.fontWeight.MEDIUM,
   semibold: (theme) => theme.fontWeight.SEMIBOLD,
-  bold: () => 700,
+  bold: (theme) => theme.fontWeight.BOLD,
 };
 
 /**
@@ -215,7 +215,7 @@ export const StyledRediaccText = styled(AntText).withConfig({
     ${({ $code, theme }) =>
       $code &&
       css`
-        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+        font-family: ${theme.fontFamily.MONO};
         font-size: ${theme.fontSize.SM}px;
         background-color: ${theme.colors.bgSecondary};
         padding: ${theme.spacing.XS}px ${theme.spacing.SM}px;

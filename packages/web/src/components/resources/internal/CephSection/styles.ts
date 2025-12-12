@@ -12,7 +12,7 @@ export const DividerContent = styled.div`
 `;
 
 export const SectionTitle = styled.span`
-  font-size: ${({ theme }) => theme.fontSize.BASE}px;
+  font-size: ${({ theme }) => theme.fontSize.MD}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: ${({ theme }) => theme.colors.textPrimary};
 `;

@@ -51,7 +51,7 @@ export type MachineFormValues = WithOptionalVault<CreateMachineParams>;
 export type TeamFormValues = WithOptionalVault<CreateTeamParams>;
 export type BridgeFormValues = WithOptionalVault<CreateBridgeParams>;
 export type RegionFormValues = WithOptionalVault<CreateRegionParams>;
-export type RepoFormValues = WithOptionalVault<CreateRepositoryParams>;
+export type RepositoryFormValues = WithOptionalVault<CreateRepositoryParams>;
 export type QueueItemFormValues = WithOptionalVault<CreateQueueItemParams>;
 
 // Ceph resources

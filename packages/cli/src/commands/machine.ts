@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import {
   getDeploymentSummary,
-  getMachineRepos,
+  getMachineRepositories,
   type MachineWithVaultStatus,
   parseVaultStatus,
 } from '@rediacc/shared/services/machine';
@@ -111,21 +111,23 @@ export function registerMachineCommands(program: Command): void {
         } else {
           outputService.info(`\nVault Status for ${name}:`);
           outputService.info(`  Status: ${summary.status}`);
-          outputService.info(`  Total Repos: ${summary.totalRepos}`);
+          outputService.info(`  Total Repositories: ${summary.totalRepositories}`);
           outputService.info(`  Mounted: ${summary.mountedCount}`);
           outputService.info(`  Docker Running: ${summary.dockerRunningCount}`);
 
-          if (parsed.repos.length > 0) {
+          if (parsed.repositories.length > 0) {
             outputService.info('\nDeployed Repositories:');
-            parsed.repos.forEach((repo) => {
+            parsed.repositories.forEach((repository) => {
               outputService.info(
-                `  - ${repo.name}${repo.size_human ? ` (${repo.size_human})` : ''}`
+                `  - ${repository.name}${repository.size_human ? ` (${repository.size_human})` : ''}`
               );
-              if (repo.mounted !== undefined) {
-                outputService.info(`    Mounted: ${repo.mounted ? 'Yes' : 'No'}`);
+              if (repository.mounted !== undefined) {
+                outputService.info(`    Mounted: ${repository.mounted ? 'Yes' : 'No'}`);
               }
-              if (repo.docker_running !== undefined) {
-                outputService.info(`    Docker: ${repo.docker_running ? 'Running' : 'Stopped'}`);
+              if (repository.docker_running !== undefined) {
+                outputService.info(
+                  `    Docker: ${repository.docker_running ? 'Running' : 'Stopped'}`
+                );
               }
             });
           }
@@ -135,7 +137,7 @@ export function registerMachineCommands(program: Command): void {
       }
     });
 
-  // Add repos command to list deployed repos using shared parsing
+  // Add repositories command to list deployed repositories using shared parsing
   machine
     .command('repos <name>')
     .description('List deployed repositories on a machine')
@@ -163,15 +165,15 @@ export function registerMachineCommands(program: Command): void {
         }
 
         // Use shared parsing service
-        const repos = getMachineRepos(machine);
+        const repositories = getMachineRepositories(machine);
         const format = program.opts().output as OutputFormat;
 
-        if (repos.length === 0) {
+        if (repositories.length === 0) {
           outputService.info('No repositories deployed on this machine');
           return;
         }
 
-        outputService.print(repos, format);
+        outputService.print(repositories, format);
       } catch (error) {
         handleError(error);
       }

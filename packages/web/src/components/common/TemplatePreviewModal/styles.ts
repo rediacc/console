@@ -153,7 +153,7 @@ export const FilePreviewCard = styled(ContentCard)`
 
 export const FilePath = styled(RediaccText)`
   && {
-    font-family: monospace;
+    font-family: ${({ theme }) => theme.fontFamily.MONO};
   }
 `;
 

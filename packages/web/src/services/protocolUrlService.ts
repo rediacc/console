@@ -13,7 +13,7 @@ export interface ProtocolError {
 export interface ProtocolUrlParams {
   team: string;
   machine: string;
-  repo: string;
+  repository: string;
   action?: ProtocolAction;
   queryParams?: Record<string, string | number | boolean>;
 }
@@ -21,7 +21,7 @@ export interface ProtocolUrlParams {
 export interface TerminalParams {
   command?: string;
   autoExecute?: boolean;
-  terminalType?: 'repo' | 'machine';
+  terminalType?: 'repository' | 'machine';
   fontSize?: number;
 }
 
@@ -65,7 +65,7 @@ class ProtocolUrlService {
    * Fork token will be created automatically for the specified action
    */
   async generateUrl(params: ProtocolUrlParams): Promise<string> {
-    const { team, machine, repo, action, queryParams } = params;
+    const { team, machine, repository, action, queryParams } = params;
 
     // Import services dynamically to avoid circular dependencies
     const { createFreshForkToken } = await import('./forkTokenService');
@@ -93,9 +93,9 @@ class ProtocolUrlService {
       encodeURIComponent(machine),
     ];
 
-    // Only add repo if it's provided and not empty
-    if (repo && repo.trim() !== '') {
-      pathParts.push(encodeURIComponent(repo));
+    // Only add repository if it's provided and not empty
+    if (repository && repository.trim() !== '') {
+      pathParts.push(encodeURIComponent(repository));
     }
 
     // Add action if specified
@@ -233,7 +233,7 @@ class ProtocolUrlService {
 
   /**
    * Generate a VSCode-specific URL
-   * This will launch VSCode with SSH remote connection to the repo or machine
+   * This will launch VSCode with SSH remote connection to the repository or machine
    */
   async generateVSCodeUrl(
     baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,

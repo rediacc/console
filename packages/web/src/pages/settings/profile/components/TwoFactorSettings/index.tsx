@@ -392,7 +392,7 @@ interface StatusOverviewProps {
 const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, onDisable, t }) => (
   <RediaccStack direction="vertical" gap="lg" fullWidth>
     <CenteredStack>
-      <StatusIcon $tone={isEnabled ? 'success' : 'muted'} $size={DESIGN_TOKENS.FONT_SIZE.XXXXXXL} />
+      <StatusIcon $tone={isEnabled ? 'success' : 'muted'} $size={DESIGN_TOKENS.FONT_SIZE.DISPLAY} />
       <SectionTitle level={4}>
         {isEnabled ? t('twoFactorAuth.status.enabled') : t('twoFactorAuth.status.disabled')}
       </SectionTitle>

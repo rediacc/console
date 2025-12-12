@@ -21,7 +21,7 @@ export const BulkActionsToolbar = styled.div`
 `;
 
 export const BulkActionsLabel = styled.span`
-  font-weight: 500;
+  font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
 `;
 
 export const RightAlignedCol = styled.div`

@@ -51,7 +51,7 @@ export const PreviewError = styled(FlexColumn).attrs({ $gap: 'XS' })`
 export const CommandParagraph = styled(RediaccText).attrs({ as: 'p' })`
   && {
     margin: 0;
-    font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-family: ${({ theme }) => theme.fontFamily.MONO};
     white-space: pre-wrap;
   }
 `;

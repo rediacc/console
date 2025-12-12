@@ -2,9 +2,9 @@
  * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
  *
  * Generated from: middleware/AppData/stored-procedures.json
- * Generated at: 2025-12-09T20:40:16Z
+ * Generated at: 2025-12-12T14:56:10Z
  * Schema version: 3.0.0
- * Schema generated: 2025-12-08T13:31:15.3412698Z
+ * Schema generated: 2025-12-12T14:56:10.0016831Z
  *
  * To regenerate, run: ./go deploy prep
  * Or directly: ./_scripts/console-schema.sh --generate
@@ -183,17 +183,17 @@ export interface CreateRepositoryParams {
   /** @sqlType nvarchar */
   teamName: string;
   /** @sqlType nvarchar */
-  repoName: string;
+  repositoryName: string;
   /** @sqlType nvarchar */
   vaultContent: string;
   /** @sqlType nvarchar */
-  parentRepoName?: string;
+  parentRepositoryName?: string;
   /** @sqlType uniqueidentifier */
-  repoGuid?: string;
+  repositoryGuid?: string;
   /** @sqlType nvarchar */
   networkMode?: string;
   /** @sqlType nvarchar */
-  repoTag?: string;
+  repositoryTag?: string;
 }
 
 export interface CreateStorageParams {
@@ -304,9 +304,9 @@ export interface DeleteRepositoryParams {
   /** @sqlType nvarchar */
   teamName: string;
   /** @sqlType nvarchar */
-  repoName: string;
+  repositoryName: string;
   /** @sqlType nvarchar */
-  repoTag?: string;
+  repositoryTag?: string;
 }
 
 export interface DeleteStorageParams {
@@ -574,7 +574,7 @@ export interface PromoteRepositoryToGrandParams {
   /** @sqlType nvarchar */
   teamName: string;
   /** @sqlType nvarchar */
-  repoName: string;
+  repositoryName: string;
 }
 
 export interface ResetBridgeAuthorizationParams {
@@ -786,16 +786,16 @@ export interface UpdateRepositoryNameParams {
   /** @sqlType nvarchar */
   teamName: string;
   /** @sqlType nvarchar */
-  currentRepoName: string;
+  currentRepositoryName: string;
   /** @sqlType nvarchar */
-  newRepoName: string;
+  newRepositoryName: string;
 }
 
 export interface UpdateRepositoryTagParams {
   /** @sqlType nvarchar */
   teamName: string;
   /** @sqlType nvarchar */
-  repoName: string;
+  repositoryName: string;
   /** @sqlType nvarchar */
   currentTag: string;
   /** @sqlType nvarchar */
@@ -806,9 +806,9 @@ export interface UpdateRepositoryVaultParams {
   /** @sqlType nvarchar */
   teamName: string;
   /** @sqlType nvarchar */
-  repoName: string;
+  repositoryName: string;
   /** @sqlType nvarchar */
-  repoTag?: string;
+  repositoryTag?: string;
   /** @sqlType nvarchar */
   vaultContent: string;
   /** @sqlType int */
@@ -1860,7 +1860,7 @@ export interface GetCompanyTeams_ResultSet1 {
   /** @sqlType int */
   machineCount: number | null;
   /** @sqlType int */
-  repoCount: number | null;
+  repositoryCount: number | null;
   /** @sqlType int */
   storageCount: number | null;
 }
@@ -2673,9 +2673,9 @@ export interface GetTeamRepositories_ResultSet0 {
 }
 export interface GetTeamRepositories_ResultSet1 {
   /** @sqlType nvarchar */
-  repoName: string;
+  repositoryName: string;
   /** @sqlType uniqueidentifier */
-  repoGuid: string;
+  repositoryGuid: string;
   /** @sqlType int */
   vaultVersion: number;
   /** @sqlType nvarchar */
@@ -2687,11 +2687,11 @@ export interface GetTeamRepositories_ResultSet1 {
   /** @sqlType uniqueidentifier */
   parentGuid: string | null;
   /** @sqlType int */
-  repoNetworkId: number;
+  repositoryNetworkId: number;
   /** @sqlType nvarchar */
-  repoNetworkMode: string;
+  repositoryNetworkMode: string;
   /** @sqlType nvarchar */
-  repoTag: string;
+  repositoryTag: string;
 }
 
 export type GetTeamRepositoriesResults = [
@@ -3366,7 +3366,7 @@ export interface UpdateRepositoryName_ResultSet0 {
 }
 export interface UpdateRepositoryName_ResultSet1 {
   /** @sqlType nvarchar */
-  repoName: string;
+  repositoryName: string;
   /** @sqlType nvarchar */
   teamName: string;
 }
@@ -3382,9 +3382,9 @@ export interface UpdateRepositoryTag_ResultSet0 {
 }
 export interface UpdateRepositoryTag_ResultSet1 {
   /** @sqlType nvarchar */
-  repoName: string;
+  repositoryName: string;
   /** @sqlType nvarchar */
-  repoTag: string;
+  repositoryTag: string;
   /** @sqlType nvarchar */
   teamName: string;
 }
@@ -3400,7 +3400,7 @@ export interface UpdateRepositoryVault_ResultSet0 {
 }
 export interface UpdateRepositoryVault_ResultSet1 {
   /** @sqlType nvarchar */
-  repoName: string;
+  repositoryName: string;
   /** @sqlType int */
   vaultVersion: number | null;
   /** @sqlType varchar */
@@ -4169,7 +4169,7 @@ export function createProcedureParams<T extends StoredProcedureName>(
  */
 export const PROCEDURE_GUID_PARAMS: Partial<Record<StoredProcedureName, readonly string[]>> = {
   CancelQueueItem: ['taskId'] as const,
-  CreateRepository: ['repoGuid'] as const,
+  CreateRepository: ['repositoryGuid'] as const,
   DeleteQueueItem: ['taskId'] as const,
   GetEntityHistory: ['credential'] as const,
   GetQueueItemTrace: ['taskId'] as const,
@@ -4186,7 +4186,7 @@ export const PROCEDURE_GUID_PARAMS: Partial<Record<StoredProcedureName, readonly
 
 export const API_SCHEMA_METADATA = {
   version: '3.0.0',
-  generated: '2025-12-08T13:31:15.3412698Z',
+  generated: '2025-12-12T14:56:10.0016831Z',
   procedureCount: 116,
 } as const;
 

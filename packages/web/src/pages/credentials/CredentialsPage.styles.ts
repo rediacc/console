@@ -21,7 +21,7 @@ export const SpacedAlert = styled(Alert)`
   }
 `;
 
-// Repo icon with primary color
+// Repository icon with primary color
 export const RepoIcon = styled(InboxOutlined)`
   color: ${({ theme }) => theme.colors.primary};
 `;
