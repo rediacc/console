@@ -455,7 +455,10 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
               { min: 2, message: t('endpointSelector.nameMinLength') },
             ]}
           >
-            <Input placeholder={t('endpointSelector.namePlaceholder')} data-testid="custom-endpoint-name-input" />
+            <Input
+              placeholder={t('endpointSelector.namePlaceholder')}
+              data-testid="custom-endpoint-name-input"
+            />
           </Form.Item>
 
           <Form.Item
@@ -470,7 +473,10 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             ]}
             extra={t('endpointSelector.urlHelp')}
           >
-            <Input placeholder={t('endpointSelector.urlPlaceholder')} data-testid="custom-endpoint-url-input" />
+            <Input
+              placeholder={t('endpointSelector.urlPlaceholder')}
+              data-testid="custom-endpoint-url-input"
+            />
           </Form.Item>
 
           <FormActionsRow>

@@ -8,11 +8,6 @@ export const RediaccStatistic: React.FC<RediaccStatisticProps> = ({
   ...rest
 }) => {
   return (
-    <StyledRediaccStatistic
-      $variant={variant}
-      $critical={critical}
-      $color={color}
-      {...rest}
-    />
+    <StyledRediaccStatistic $variant={variant} $critical={critical} $color={color} {...rest} />
   );
 };

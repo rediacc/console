@@ -34,10 +34,6 @@ export const StyledRediaccStatistic = styled(Statistic)<{
 }>`
   .ant-statistic-content-value {
     color: ${({ theme, $variant, $critical, $color }) =>
-      $color
-        ? $color
-        : $critical
-          ? theme.colors.error
-          : resolveStatisticColor($variant, theme)};
+      $color ? $color : $critical ? theme.colors.error : resolveStatisticColor($variant, theme)};
   }
 `;
