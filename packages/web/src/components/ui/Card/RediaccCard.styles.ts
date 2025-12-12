@@ -93,7 +93,7 @@ export const StyledRediaccCard = styled(AntCard)<{
     ${({ $selected, theme }) =>
       $selected &&
       css`
-      border-width: 2px;
+      border-width: ${theme.dimensions.BORDER_WIDTH_THICK}px;
       border-color: ${theme.colors.primary};
     `}
 

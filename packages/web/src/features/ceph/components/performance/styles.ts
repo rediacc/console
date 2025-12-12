@@ -20,14 +20,16 @@ export const RowWrapper = styled.div<RowWrapperProps>`
 `;
 
 export const TableWrapper = styled.div`
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  border: ${({ theme }) => theme.dimensions.BORDER_WIDTH}px solid
+    ${({ theme }) => theme.colors.borderSecondary};
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   overflow: hidden;
-  background: ${({ theme }) => theme.colors.bgPrimary};
+  background: ${({ theme }) => theme.colors.bgContainer};
 
   &:focus {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: -2px;
+    outline: ${({ theme }) => theme.dimensions.BORDER_WIDTH_THICK}px solid
+      ${({ theme }) => theme.colors.primary};
+    outline-offset: -${({ theme }) => theme.dimensions.BORDER_WIDTH_THICK}px;
   }
 `;
 
@@ -54,13 +56,13 @@ export const HeaderContent = styled.div`
 `;
 
 export const CheckboxColumn = styled.div`
-  width: 40px;
+  width: ${({ theme }) => theme.dimensions.CHECKBOX_COLUMN_WIDTH}px;
   flex-shrink: 0;
 `;
 
 export const MachineNameColumn = styled.div`
   flex: 1;
-  min-width: 200px;
+  min-width: ${({ theme }) => theme.dimensions.MACHINE_NAME_MIN_WIDTH}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   overflow: hidden;
   text-overflow: ellipsis;
@@ -68,7 +70,7 @@ export const MachineNameColumn = styled.div`
 `;
 
 export const TeamNameColumn = styled.div`
-  width: 150px;
+  width: ${({ theme }) => theme.dimensions.TEAM_COLUMN_WIDTH}px;
   color: ${({ theme }) => theme.colors.textSecondary};
   overflow: hidden;
   text-overflow: ellipsis;
@@ -76,11 +78,11 @@ export const TeamNameColumn = styled.div`
 `;
 
 export const StatusColumn = styled.div`
-  width: 200px;
+  width: ${({ theme }) => theme.dimensions.STATUS_COLUMN_WIDTH}px;
 `;
 
 export const ActionsColumn = styled.div`
-  width: 150px;
+  width: ${({ theme }) => theme.dimensions.ACTIONS_COLUMN_WIDTH}px;
   display: flex;
   justify-content: flex-end;
 `;
@@ -98,8 +100,8 @@ export const LoadingContainer = styled.div`
 
 // LazyAssignmentStatus styles
 export const LazyLoadingContainer = styled.div`
-  height: 22px;
-  width: 120px;
+  height: ${({ theme }) => theme.dimensions.SKELETON_HEIGHT}px;
+  width: ${({ theme }) => theme.dimensions.SKELETON_WIDTH}px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,14 +122,14 @@ export const LoadingMoreContainer = styled.div`
 
 export const StyledSkeletonInput = styled(Skeleton.Input)`
   && {
-    width: 120px;
-    height: 22px;
-    border-radius: var(--border-radius-sm);
+    width: ${({ theme }) => theme.dimensions.SKELETON_WIDTH}px;
+    height: ${({ theme }) => theme.dimensions.SKELETON_HEIGHT}px;
+    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
 `;
 
 export const StyledSkeletonButton = styled(Skeleton.Button)`
   && {
-    border-radius: var(--border-radius-sm);
+    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
 `;

@@ -36,7 +36,7 @@ export const ResizeHandle = styled.div`
   left: -3px;
   top: 0;
   bottom: 0;
-  width: 6px;
+  width: ${({ theme }) => theme.dimensions.SCROLLBAR_WIDTH}px;
   cursor: ew-resize;
   z-index: ${({ theme }) => theme.zIndex.STICKY};
   background-color: transparent;
@@ -44,10 +44,10 @@ export const ResizeHandle = styled.div`
 
 export const ResizeIndicator = styled.div`
   position: absolute;
-  left: 2px;
+  left: ${({ theme }) => theme.dimensions.SCROLLBAR_WIDTH_THIN}px;
   top: 0;
   bottom: 0;
-  width: 2px;
+  width: ${({ theme }) => theme.dimensions.SCROLLBAR_WIDTH_THIN}px;
   background-color: ${({ theme }) => theme.colors.borderSecondary};
   transition: background-color ${({ theme }) => theme.transitions.FAST};
 

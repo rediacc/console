@@ -83,7 +83,7 @@ export const CenteredBlock = styled.div`
 `;
 
 export const ErrorWrapper = styled.div`
-  max-width: 480px;
+  max-width: ${({ theme }) => theme.dimensions.ERROR_WRAPPER_WIDTH}px;
   margin: 0 auto;
   width: 100%;
 `;

@@ -6,11 +6,11 @@ export const SourceLabel = styled.div`
 `;
 
 export const SourceSelect = styled.div`
-  width: 300px;
+  width: ${({ theme }) => theme.dimensions.SOURCE_SELECT_WIDTH}px;
 `;
 
 export const SearchInput = styled.div`
-  width: 250px;
+  width: ${({ theme }) => theme.dimensions.SEARCH_INPUT_WIDTH_SM}px;
 `;
 
 export const FolderIcon = styled.span`
