@@ -5,45 +5,39 @@ import type { AlertSize, AlertSpacing, AlertVariant } from './RediaccAlert.types
 
 type AlertTokenSet = { bg: string; border: string; color: string };
 
+type AlertTokenKeys = {
+  bg: keyof StyledTheme['colors'];
+  border: keyof StyledTheme['colors'];
+  color: keyof StyledTheme['colors'];
+};
+
+const ALERT_VARIANT_MAP: Record<AlertVariant, AlertTokenKeys> = {
+  success: { bg: 'bgSuccess', border: 'success', color: 'success' },
+  warning: { bg: 'bgWarning', border: 'warning', color: 'warning' },
+  error: { bg: 'bgError', border: 'error', color: 'error' },
+  neutral: { bg: 'bgSecondary', border: 'borderSecondary', color: 'textSecondary' },
+  info: { bg: 'bgInfo', border: 'info', color: 'info' },
+};
+
 export const resolveAlertVariantTokens = (
   variant: AlertVariant = 'info',
   theme: StyledTheme
 ): AlertTokenSet => {
-  switch (variant) {
-    case 'success':
-      return {
-        bg: theme.colors.bgSuccess,
-        border: theme.colors.success,
-        color: theme.colors.success,
-      };
-    case 'warning':
-      return {
-        bg: theme.colors.bgWarning,
-        border: theme.colors.warning,
-        color: theme.colors.warning,
-      };
-    case 'error':
-      return { bg: theme.colors.bgError, border: theme.colors.error, color: theme.colors.error };
-    case 'neutral':
-      return {
-        bg: theme.colors.bgSecondary,
-        border: theme.colors.borderSecondary,
-        color: theme.colors.textSecondary,
-      };
-    case 'info':
-    default:
-      return { bg: theme.colors.bgInfo, border: theme.colors.info, color: theme.colors.info };
-  }
+  const keys = ALERT_VARIANT_MAP[variant] || ALERT_VARIANT_MAP.info;
+  return {
+    bg: theme.colors[keys.bg],
+    border: theme.colors[keys.border],
+    color: theme.colors[keys.color],
+  };
+};
+
+const ALERT_PADDING_MAP: Record<AlertSize, (theme: StyledTheme) => string> = {
+  sm: (theme) => `${theme.spacing.SM}px ${theme.spacing.MD}px`,
+  md: (theme) => `${theme.spacing.MD}px ${theme.spacing.LG}px`,
 };
 
 export const resolveAlertPadding = (theme: StyledTheme, size: AlertSize = 'md'): string => {
-  switch (size) {
-    case 'sm':
-      return `${theme.spacing.SM}px ${theme.spacing.MD}px`;
-    case 'md':
-    default:
-      return `${theme.spacing.MD}px ${theme.spacing.LG}px`;
-  }
+  return (ALERT_PADDING_MAP[size] || ALERT_PADDING_MAP.md)(theme);
 };
 
 // Map our variant to antd type
@@ -54,19 +48,18 @@ export const mapVariantToAntType = (
   return variant;
 };
 
+const ALERT_SPACING_MAP: Record<AlertSpacing, keyof StyledTheme['spacing'] | 0> = {
+  compact: 'SM',
+  default: 'MD',
+  spacious: 'LG',
+  none: 0,
+};
+
 // Resolve spacing to margin-bottom pixels
 export const resolveAlertSpacing = (theme: StyledTheme, spacing?: AlertSpacing): number => {
-  switch (spacing) {
-    case 'compact':
-      return theme.spacing.SM; // 8px
-    case 'default':
-      return theme.spacing.MD; // 16px
-    case 'spacious':
-      return theme.spacing.LG; // 24px
-    case 'none':
-    default:
-      return 0;
-  }
+  if (!spacing) return 0;
+  const value = ALERT_SPACING_MAP[spacing];
+  return typeof value === 'number' ? value : theme.spacing[value];
 };
 
 export const StyledRediaccAlert = styled(AntAlert).withConfig({

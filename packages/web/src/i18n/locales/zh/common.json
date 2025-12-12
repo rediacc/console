@@ -7,10 +7,10 @@
     "clearSelection": "清除选择",
     "close": "关闭",
     "create": "创建",
-    "createResource": "创建{{资源}}",
+    "createResource": "创建{{resource}}",
     "delete": "删除",
     "edit": "编辑",
-    "editResource": "编辑{{资源}}",
+    "editResource": "编辑{{resource}}",
     "editVault": "编辑保管库",
     "exitFullscreen": "退出全屏",
     "export": "出口",
@@ -183,7 +183,7 @@
     "dark": "深色",
     "light": "浅色",
     "switchToDark": "切换到深色模式",
-    "switchToLight": "切换到灯光模式"
+    "switchToLight": "切换到浅色模式"
   },
   "thisMonth": "本月",
   "today": "今天",

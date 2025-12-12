@@ -102,7 +102,7 @@
     },
     "success": {
       "errorCount": "{{count}} 個のエラー",
-      "importComplete": "インポートが完了しました: {{まとめ}}",
+      "importComplete": "インポートが完了しました: {{summary}}",
       "importedCount": "{{count}} 個のアイテムがインポートされました",
       "requestsBlocked": "ユーザーリクエストは正常にブロックされました",
       "requestsBlockedWithTerminations": "ユーザーリクエストはブロックされました。 {{count}} 個のアクティブなセッションが終了しました。",

@@ -80,7 +80,7 @@
     "machineNotFound": "Máquina seleccionada no encontrada"
   },
   "general": {
-    "actions": "Comportamiento",
+    "actions": "Acciones",
     "cancel": "Cancelar",
     "configureVault": "Configurar Vault - {{name}}",
     "create": "Crear",
@@ -88,7 +88,7 @@
     "edit": "Editar",
     "no": "No",
     "region": "Región",
-    "save": "Ahorrar",
+    "save": "Guardar",
     "team": "Equipo",
     "vault": "Bóveda",
     "vaultVersion": "Versión de bóveda",
@@ -342,7 +342,7 @@
     "deleteGrandQueued": "Eliminación del repositorio en cola: {{name}}",
     "deleteGrandSuccess": "Repositorio eliminado exitosamente",
     "deleteGrandWarning": "⚠️ Advertencia: esto eliminará permanentemente el repositorio original",
-    "deleteGrandWarningDesc": "Estás a punto de eliminar el repositorio '{{name}}'. Esta acción es irreversible y eliminará permanentemente todos los datos. Si hay clones en otras máquinas, pueden quedar huérfanos.",
+    "deleteGrandWarningDesc": "Está a punto de eliminar el repositorio '{{name}}'. Esta acción es irreversible y eliminará permanentemente todos los datos. Si hay clones en otras máquinas, pueden quedar huérfanos.",
     "deleteOptionsMessage": "Para eliminar este repositorio, primero debe eliminar todos los clones o promover uno de ellos para que se convierta en el nuevo repositorio original.",
     "deleteRepo": "Eliminar repositorio",
     "deleteSuccess": "Repositorio eliminado exitosamente",
@@ -488,7 +488,7 @@
     "storageDescription": "Configurar conexiones de almacenamiento en la nube"
   },
   "storage": {
-    "confirmDelete": "¿Estás segura de que quieres eliminar el almacenamiento \"{{storageName}}\"?",
+    "confirmDelete": "¿Está seguro de que desea eliminar el almacenamiento \"{{storageName}}\"?",
     "createStorage": "Agregar almacenamiento",
     "deleteError": "No se pudo eliminar el almacenamiento",
     "deleteStorage": "Eliminar almacenamiento",
@@ -542,7 +542,7 @@
     "title": "Ubicaciones de almacenamiento"
   },
   "teams": {
-    "confirmDelete": "¿Estás seguro de que deseas eliminar el equipo \"{{teamName}}\"? Esto eliminará todos los recursos del equipo.",
+    "confirmDelete": "¿Está seguro de que desea eliminar el equipo \"{{teamName}}\"? Esto eliminará todos los recursos del equipo.",
     "createTeam": "Agregar equipo",
     "deleteTeam": "Eliminar equipo",
     "editTeam": "Editar equipo",

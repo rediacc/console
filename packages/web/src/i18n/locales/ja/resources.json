@@ -240,7 +240,7 @@
   },
   "regions": {
     "bridges": "橋",
-    "bridgesInRegion": "{{地域}}の橋",
+    "bridgesInRegion": "{{region}}の橋",
     "confirmDelete": "リージョン「{{regionName}}」を削除してもよろしいですか? これにより、その地域内のすべての橋が削除されます。",
     "createRegion": "リージョンの作成",
     "deleteRegion": "領域の削除",
@@ -552,7 +552,7 @@
       "searchTeams": "チームを名前で検索...",
       "selectTeam": "チームを選択"
     },
-    "resourcesInTeam": "{{チーム}}のリソース",
+    "resourcesInTeam": "{{team}}のリソース",
     "resourcesInTeams": "{{count}} チームのリソース",
     "searchTeams": "チームを検索...",
     "selectTeamPrompt": "チームを選択してリソースを表示します",

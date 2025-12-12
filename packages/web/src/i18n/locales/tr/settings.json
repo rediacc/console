@@ -35,7 +35,7 @@
   "twoFactorAuth": {
     "disable": "İki Faktörlü Kimlik Doğrulamayı Devre Dışı Bırakma",
     "disableModal": {
-      "codeFormat": "Kod yalnızca sayı içermelidir",
+      "codeFormat": "Kod yalnızca rakam içermelidir",
       "codeLabel": "TFA Kodu",
       "codeLength": "Kod tam olarak 6 basamaklı olmalıdır",
       "codePlaceholder": "000000",
@@ -103,7 +103,7 @@
     },
     "title": "İki Faktörlü Kimlik Doğrulama",
     "verification": {
-      "codeFormat": "Kod yalnızca sayı içermelidir",
+      "codeFormat": "Kod yalnızca rakam içermelidir",
       "codeLabel": "Doğrulama Kodu",
       "codeLength": "Kod tam olarak 6 basamaklı olmalıdır",
       "codePlaceholder": "000000",

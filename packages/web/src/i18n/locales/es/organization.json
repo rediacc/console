@@ -62,10 +62,10 @@
   },
   "users": {
     "errors": {
-      "activateFailed": "No se pudo activar la usuaria",
+      "activateFailed": "No se pudo activar el usuario",
       "assignPermissionsFailed": "No se pudieron asignar permisos",
       "createFailed": "No se pudo crear el usuario",
-      "deactivateFailed": "No se pudo desactivar la usuaria",
+      "deactivateFailed": "No se pudo desactivar el usuario",
       "emailUpdateFailed": "No se pudo actualizar el correo electrónico",
       "languageUpdateFailed": "No se pudo guardar la preferencia de idioma",
       "passwordUpdateFailed": "No se pudo actualizar la contraseña",
@@ -100,9 +100,9 @@
     },
     "subtitle": "Manage users and their permissions",
     "success": {
-      "activated": "Usuario \"{{email}}\" activada",
+      "activated": "Usuario \"{{email}}\" activado",
       "created": "Usuario \"{{email}}\" creado exitosamente",
-      "deactivated": "Usuario \"{{email}}\" desactivada",
+      "deactivated": "Usuario \"{{email}}\" desactivado",
       "emailUpdated": "Correo electrónico actualizado a \"{{email}}\"",
       "languageSaved": "Preferencia de idioma guardada",
       "passwordUpdated": "Contraseña actualizada exitosamente. Por favor inicie sesión con su nueva contraseña.",

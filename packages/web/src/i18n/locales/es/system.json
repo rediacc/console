@@ -47,7 +47,7 @@
     "storages": "Almacenamientos",
     "teams": "equipos",
     "title": "Arquitectura de la empresa",
-    "users": "Usuarias",
+    "users": "Usuarios",
     "viewForce": "Fuerza",
     "viewHierarchy": "Jerarquía",
     "viewRadial": "Radial"
@@ -106,7 +106,7 @@
       "importedCount": "{{count}} artículos importados",
       "requestsBlocked": "Solicitudes de usuarios bloqueadas con éxito",
       "requestsBlockedWithTerminations": "Solicitudes de usuarios bloqueadas. Se finalizaron {{count}} sesiones activas.",
-      "requestsUnblocked": "Solicitudes de usuario desbloqueadas con éxito",
+      "requestsUnblocked": "Solicitudes de usuarios desbloqueadas con éxito",
       "skippedCount": "{{count}} elementos omitidos",
       "vaultUpdated": "La configuración de la bóveda se actualizó correctamente"
     }
@@ -115,11 +115,11 @@
     "blockUserRequests": {
       "blockButton": "Bloquear solicitudes de usuarios",
       "confirmBlock": {
-        "confirm": "¿Estás seguro de que quieres continuar?",
+        "confirm": "¿Está seguro de que desea continuar?",
         "description": "Esta acción:",
         "effect1": "Bloquear a todos los usuarios que no sean administradores del sistema",
         "effect2": "Terminar todas las sesiones de usuarios activos (excepto los administradores)",
-        "effect3": "Requiere desbloqueo manual para que las usuarios recuperen el acceso.",
+        "effect3": "Requiere desbloqueo manual para que los usuarios recuperen el acceso.",
         "okText": "Sí, bloquear usuarias",
         "title": "Bloquear solicitudes de usuarios"
       },
@@ -175,7 +175,7 @@
       "button": "Configuración de cifrado",
       "description": "Configure la contraseña de cifrado del lado del cliente que protege todos los datos confidenciales del almacén de su organización. Esta contraseña se comparte entre todos los usuarios y Rediacc nunca puede acceder a ella para mayor seguridad.",
       "effect1": "Vuelva a cifrar todas las bóvedas con la nueva contraseña",
-      "effect2": "Salir de todas las usuarios (excepto tú)",
+      "effect2": "Salir de todos los usuarios (excepto usted)",
       "effect3": "Requerir que todos los usuarios inicien sesión nuevamente después de finalizar",
       "error": {
         "fetchVaults": "No se pudieron recuperar las bóvedas actuales",
@@ -206,12 +206,12 @@
         "submitRemove": "Eliminar contraseña de cifrado",
         "submitUpdate": "Actualizar contraseña de cifrado",
         "title": "Configuración de contraseña de cifrado",
-        "warningDescription": "Estás a punto de modificar la contraseña maestra de toda tu empresa. Esto:",
-        "warningDescriptionCreate": "Estás a punto de crear una contraseña maestra para toda tu empresa. Esto:",
+        "warningDescription": "Está a punto de modificar la contraseña maestra de toda su empresa. Esto:",
+        "warningDescriptionCreate": "Está a punto de crear una contraseña maestra para toda su empresa. Esto:",
         "warningDescriptionRemove": "Está a punto de eliminar la contraseña maestra de toda su empresa. Esto:",
-        "warningDescriptionUpdate": "Estás a punto de actualizar la contraseña maestra de toda tu empresa. Esto:",
+        "warningDescriptionUpdate": "Está a punto de actualizar la contraseña maestra de toda su empresa. Esto:",
         "warningEffect1": "Bloquear el sistema temporalmente durante la operación.",
-        "warningEffect2": "Salir de todas las usuarios activas excepto tú",
+        "warningEffect2": "Salir de todos los usuarios activos excepto usted",
         "warningEffect3": "Vuelva a cifrar todos los datos de la bóveda con la nueva contraseña",
         "warningEffect3Create": "Cifre todos los datos de la bóveda con la contraseña maestra",
         "warningEffect3Remove": "Descifre todos los datos de la bóveda (las bóvedas se almacenarán sin cifrar)",
@@ -229,7 +229,7 @@
         "seconds": "artículos de segunda clase",
         "step1": "Todos los usuarios deben iniciar sesión nuevamente con sus credenciales existentes.",
         "step2": "Comparta la nueva contraseña de cifrado de forma segura con todos los usuarios autorizados de su organización",
-        "step2Remove": "Informe a las administradoras que las bóvedas ahora no están cifradas",
+        "step2Remove": "Informe a los administradores que las bóvedas ahora no están cifradas",
         "step3": "Sus propios puentes deben reconfigurarse manualmente con la nueva contraseña de cifrado",
         "step3Remove": "Sus propios puentes deben reconfigurarse manualmente sin cifrado del lado del cliente",
         "step4": "Actualice el sistema de gestión de contraseñas de su empresa con la nueva contraseña de cifrado compartido",
@@ -276,14 +276,14 @@
     "activeSessions": "Sesiones activas",
     "averageDuration": "Duración promedio",
     "columns": {
-      "actions": "Comportamiento",
+      "actions": "Acciones",
       "createdAt": "Hora de inicio de sesión",
       "duration": "Duración",
       "ipAddress": "Dirección IP",
       "lastActivity": "Última actividad",
       "sessionName": "Sesión",
       "status": "Estado",
-      "user": "Usuaria",
+      "user": "Usuario",
       "userAgent": "Agente de usuario"
     },
     "confirmTerminate": "Terminar sesión",
@@ -302,15 +302,15 @@
     "title": "Sesiones de usuario",
     "totalCount": "Total: {{count}} sesiones",
     "totalSessions": "Sesiones totales",
-    "uniqueUsers": "Usuarios únicas"
+    "uniqueUsers": "Usuarios únicos"
   },
   "users": {
     "activate": {
-      "confirmDescription": "¿Estás segura de que quieres activar \"{{email}}\"?",
+      "confirmDescription": "¿Está seguro de que desea activar \"{{email}}\"?",
       "confirmTitle": "Activar usuario"
     },
     "deactivate": {
-      "confirmDescription": "¿Estás segura de que quieres desactivar \"{{email}}\"?",
+      "confirmDescription": "¿Está seguro de que desea desactivar \"{{email}}\"?",
       "confirmTitle": "Desactivar usuario"
     }
   },

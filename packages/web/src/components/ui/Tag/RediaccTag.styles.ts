@@ -9,6 +9,23 @@ type TagTokenSet = {
   border: string;
 };
 
+type TagTokenKeys = {
+  bg: keyof StyledTheme['colors'];
+  color: keyof StyledTheme['colors'];
+  border: keyof StyledTheme['colors'];
+};
+
+const TAG_VARIANT_MAP: Record<TagVariant, TagTokenKeys> = {
+  primary: { bg: 'primaryBg', color: 'primary', border: 'primary' },
+  secondary: { bg: 'bgPrimary', color: 'secondary', border: 'secondary' },
+  success: { bg: 'bgSuccess', color: 'success', border: 'success' },
+  warning: { bg: 'bgWarning', color: 'warning', border: 'warning' },
+  error: { bg: 'bgError', color: 'error', border: 'error' },
+  info: { bg: 'bgInfo', color: 'info', border: 'info' },
+  neutral: { bg: 'bgSecondary', color: 'textSecondary', border: 'borderSecondary' },
+  default: { bg: 'bgPrimary', color: 'textPrimary', border: 'borderSecondary' },
+};
+
 /**
  * Resolves color tokens for each tag variant
  */
@@ -16,102 +33,51 @@ export const resolveRediaccTagVariantTokens = (
   variant: TagVariant = 'default',
   theme: StyledTheme
 ): TagTokenSet => {
-  switch (variant) {
-    case 'primary':
-      return {
-        bg: theme.colors.primaryBg,
-        color: theme.colors.primary,
-        border: theme.colors.primary,
-      };
-    case 'secondary':
-      return {
-        bg: theme.colors.bgPrimary,
-        color: theme.colors.secondary,
-        border: theme.colors.secondary,
-      };
-    case 'success':
-      return {
-        bg: theme.colors.bgSuccess,
-        color: theme.colors.success,
-        border: theme.colors.success,
-      };
-    case 'warning':
-      return {
-        bg: theme.colors.bgWarning,
-        color: theme.colors.warning,
-        border: theme.colors.warning,
-      };
-    case 'error':
-      return {
-        bg: theme.colors.bgError,
-        color: theme.colors.error,
-        border: theme.colors.error,
-      };
-    case 'info':
-      return {
-        bg: theme.colors.bgInfo,
-        color: theme.colors.info,
-        border: theme.colors.info,
-      };
-    case 'neutral':
-      return {
-        bg: theme.colors.bgSecondary,
-        color: theme.colors.textSecondary,
-        border: theme.colors.borderSecondary,
-      };
-    case 'default':
-    default:
-      return {
-        bg: theme.colors.bgPrimary,
-        color: theme.colors.textPrimary,
-        border: theme.colors.borderSecondary,
-      };
-  }
+  const keys = TAG_VARIANT_MAP[variant] || TAG_VARIANT_MAP.default;
+  return {
+    bg: theme.colors[keys.bg],
+    color: theme.colors[keys.color],
+    border: theme.colors[keys.border],
+  };
+};
+
+const TAG_FONT_SIZE_MAP: Record<TagSize, keyof StyledTheme['fontSize']> = {
+  sm: 'CAPTION',
+  md: 'SM',
+  lg: 'BASE',
 };
 
 /**
  * Resolves font size for each tag size
  */
 export const resolveRediaccTagFontSize = (theme: StyledTheme, size: TagSize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return theme.fontSize.CAPTION; // XS font
-    case 'lg':
-      return theme.fontSize.BASE; // BASE font
-    case 'md':
-    default:
-      return theme.fontSize.SM; // SM font
-  }
+  return theme.fontSize[TAG_FONT_SIZE_MAP[size] || TAG_FONT_SIZE_MAP.md];
+};
+
+const TAG_PADDING_MAP: Record<TagSize, (theme: StyledTheme) => string> = {
+  sm: (theme) => `0 ${theme.spacing.XS}px`,
+  md: (theme) => `${theme.spacing.XS}px ${theme.spacing.SM}px`,
+  lg: (theme) => `${theme.spacing.SM}px ${theme.spacing.MD}px`,
 };
 
 /**
  * Resolves padding for each tag size
  */
 export const resolveRediaccTagPadding = (theme: StyledTheme, size: TagSize = 'md'): string => {
-  switch (size) {
-    case 'sm':
-      return `0 ${theme.spacing.XS}px`;
-    case 'lg':
-      return `${theme.spacing.SM}px ${theme.spacing.MD}px`;
-    case 'md':
-    default:
-      return `${theme.spacing.XS}px ${theme.spacing.SM}px`;
-  }
+  return (TAG_PADDING_MAP[size] || TAG_PADDING_MAP.md)(theme);
+};
+
+const TAG_RADIUS_MAP: Record<TagSize, keyof StyledTheme['borderRadius']> = {
+  sm: 'SM',
+  md: 'MD',
+  lg: 'LG',
 };
 
 /**
  * Resolves border radius for each tag size
  */
 export const resolveRediaccTagRadius = (theme: StyledTheme, size: TagSize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return theme.borderRadius.SM;
-    case 'lg':
-      return theme.borderRadius.LG;
-    case 'md':
-    default:
-      return theme.borderRadius.MD;
-  }
+  return theme.borderRadius[TAG_RADIUS_MAP[size] || TAG_RADIUS_MAP.md];
 };
 
 /**

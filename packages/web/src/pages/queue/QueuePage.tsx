@@ -251,6 +251,7 @@ const QueuePage: React.FC = () => {
     handleViewTrace,
     handleCancelQueueItem,
     cancelLoading,
+    t,
   });
 
   return (

@@ -71,7 +71,7 @@
     "deleteSuccess": "クラスターは正常に削除されました",
     "deleteWarning": "クラスター「{{name}}」を削除してもよろしいですか?",
     "editCluster": "クラスターの編集",
-    "fsid": "ブレ",
+    "fsid": "FSID",
     "manageMachines": "マシンの管理",
     "monitorHosts": "ホストの監視",
     "name": "クラスター名",
@@ -85,7 +85,7 @@
   "common": {
     "actions": "アクション",
     "cancel": "キャンセル",
-    "close": "近い",
+    "close": "閉じる",
     "confirm": "確認する",
     "delete": "消去",
     "details": "詳細",
@@ -111,7 +111,7 @@
   },
   "description": "分散ストレージクラスター、プール、イメージ、スナップショットを管理する",
   "errors": {
-    "operationFailed": "{{オペレーション}} {{リソース}} に失敗しました"
+    "operationFailed": "{{operation}} {{resource}} に失敗しました"
   },
   "functions": {
     "cluster_dashboard": "オープンクラスターダッシュボード",

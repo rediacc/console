@@ -27,39 +27,45 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
 }) => {
   const { t } = useTranslation('machines');
 
+  const STATUS_CONFIG_MAP: Record<
+    MachineAssignmentType,
+    { variant: TagVariant; icon: React.ReactNode; textKey: string }
+  > = {
+    AVAILABLE: {
+      variant: 'success',
+      icon: <CheckCircleOutlined />,
+      textKey: 'assignmentStatus.available',
+    },
+    CLUSTER: {
+      variant: 'primary',
+      icon: <CloudServerOutlined />,
+      textKey: 'assignmentStatus.cluster',
+    },
+    IMAGE: {
+      variant: 'info',
+      icon: <FileImageOutlined />,
+      textKey: 'assignmentStatus.image',
+    },
+    CLONE: {
+      variant: 'warning',
+      icon: <CopyOutlined />,
+      textKey: 'assignmentStatus.clone',
+    },
+  };
+
   const getStatusConfig = () => {
-    switch (assignmentType) {
-      case 'AVAILABLE':
-        return {
-          variant: 'success' as TagVariant,
-          icon: <CheckCircleOutlined />,
-          text: t('assignmentStatus.available'),
-        };
-      case 'CLUSTER':
-        return {
-          variant: 'primary' as TagVariant,
-          icon: <CloudServerOutlined />,
-          text: t('assignmentStatus.cluster'),
-        };
-      case 'IMAGE':
-        return {
-          variant: 'info' as TagVariant,
-          icon: <FileImageOutlined />,
-          text: t('assignmentStatus.image'),
-        };
-      case 'CLONE':
-        return {
-          variant: 'warning' as TagVariant,
-          icon: <CopyOutlined />,
-          text: t('assignmentStatus.clone'),
-        };
-      default:
-        return {
-          variant: 'neutral' as TagVariant,
-          icon: null,
-          text: 'Unknown',
-        };
+    const config = STATUS_CONFIG_MAP[assignmentType];
+    if (config) {
+      return {
+        ...config,
+        text: t(config.textKey),
+      };
     }
+    return {
+      variant: 'neutral' as TagVariant,
+      icon: null,
+      text: 'Unknown',
+    };
   };
 
   const config = getStatusConfig();

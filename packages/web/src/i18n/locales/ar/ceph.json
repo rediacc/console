@@ -26,7 +26,7 @@
   "assignmentStatus": {
     "available": "متاح",
     "clone": "استنساخ",
-    "cluster": "تَجَمَّع",
+    "cluster": "مجموعة",
     "image": "صورة"
   },
   "clones": {
@@ -71,7 +71,7 @@
     "deleteSuccess": "تم حذف المجموعة بنجاح",
     "deleteWarning": "هل أنت متأكد أنك تريد حذف المجموعة '{{name}}'؟",
     "editCluster": "تحرير الكتلة",
-    "fsid": "معركة",
+    "fsid": "FSID",
     "manageMachines": "إدارة الآلات",
     "monitorHosts": "مراقبة المضيفين",
     "name": "اسم الكتلة",
@@ -107,11 +107,11 @@
     "teamBreakdown": "توزيع آلة الفريق",
     "title": "آلات التخزين الموزعة",
     "totalClusters": "مجموع المجموعات",
-    "utilizationDetails": "{{مستعملة}} من {{total}} من الأجهزة المستخدمة"
+    "utilizationDetails": "{{used}} من {{total}} من الأجهزة المستخدمة"
   },
   "description": "إدارة مجموعات التخزين الموزعة والتجمعات والصور واللقطات",
   "errors": {
-    "operationFailed": "فشل في {{العملية}} {{resource}}"
+    "operationFailed": "فشل في {{operation}} {{resource}}"
   },
   "functions": {
     "cluster_dashboard": "افتح لوحة معلومات المجموعة",
@@ -193,7 +193,7 @@
     },
     "resources": {
       "cloneMachines": "آلات استنساخ",
-      "cluster": "تَجَمَّع",
+      "cluster": "مجموعة",
       "clusterVault": "قبو الكتلة",
       "imageMachine": "آلة الصورة",
       "machineCluster": "كتلة الآلة",
@@ -206,7 +206,7 @@
     }
   },
   "pools": {
-    "clusterPrefix": "تَجَمَّع",
+    "clusterPrefix": "مجموعة",
     "configureVault": "تكوين قبو",
     "confirmDelete": "حذف التجمع",
     "create": "إنشاء تجمع",

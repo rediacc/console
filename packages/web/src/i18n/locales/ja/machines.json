@@ -58,7 +58,7 @@
   "createSuccess": "マシンが正常に作成されました",
   "currentClusterAssignment": "現在クラスターに割り当てられています: {{cluster}}",
   "currentMachine": "現在のマシン",
-  "currentMachineAssignment": "現在割り当てられているのは: {{マシン}}",
+  "currentMachineAssignment": "現在割り当てられているのは: {{machine}}",
   "daysAgo": "{{count}} 日前",
   "daysAgo_plural": "{{count}} 日前",
   "defaultsApplied": "デフォルト値が自動的に適用される",

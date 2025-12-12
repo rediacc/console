@@ -101,8 +101,8 @@
       "vaultUpdateFailed": "فشل تحديث تكوين المخزن"
     },
     "success": {
-      "errorCount": "{{عدد}} أخطاء",
-      "importComplete": "اكتمل الاستيراد: {{الملخص}}",
+      "errorCount": "{{count}} أخطاء",
+      "importComplete": "اكتمل الاستيراد: {{summary}}",
       "importedCount": "تم استيراد {{count}} من العناصر",
       "requestsBlocked": "تم حظر طلبات المستخدم بنجاح",
       "requestsBlockedWithTerminations": "تم حظر طلبات المستخدم. تم إنهاء {{count}} من الجلسات النشطة.",

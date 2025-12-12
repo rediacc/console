@@ -117,5 +117,19 @@
     "failedTitle": "任务永久失败"
   },
   "team": "团队",
-  "title": "队列管理"
+  "title": "队列管理",
+  "columns": {
+    "taskId": "任务ID",
+    "status": "状态",
+    "priority": "优先级",
+    "age": "年龄",
+    "team": "团队",
+    "machine": "机器",
+    "region": "地区",
+    "bridge": "桥接",
+    "response": "响应",
+    "errorRetries": "错误 / 重试",
+    "createdBy": "创建者",
+    "created": "创建时间"
+  }
 }

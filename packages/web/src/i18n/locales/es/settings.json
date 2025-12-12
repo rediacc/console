@@ -22,7 +22,7 @@
       "requirement4": "Contiene al menos un carácter especial.",
       "requirementsTitle": "Requisitos de contraseña",
       "submit": "Cambiar la contraseña",
-      "successContent": "Su contraseña ha sido cambiada. Cerrarás tu sesión en {{segundos}} segundos...",
+      "successContent": "Su contraseña ha sido cambiada. Cerrará su sesión en {{seconds}} segundos...",
       "successTitle": "Contraseña cambiada exitosamente",
       "title": "Cambiar la contraseña"
     },

@@ -33,10 +33,10 @@
     "selectedCount": "Выбрано {{count}} машины",
     "selectedCount_plural": "Выбрано {{count}} машин",
     "validating": "Проверка доступности машины...",
-    "nothingToRollback": "No completed bulk operation is available to roll back.",
-    "rollbackFailure": "Unable to roll back the last operation.",
-    "rollbackSuccess": "Rolled back the last operation for {{count}} machines.",
-    "rollbackUnavailable": "Rollback is only available for the most recent assignment operation."
+    "nothingToRollback": "Нет завершенных массовых операций для отката.",
+    "rollbackFailure": "Не удалось откатить последнюю операцию.",
+    "rollbackSuccess": "Откат последней операции для {{count}} машин выполнен.",
+    "rollbackUnavailable": "Откат доступен только для самой последней операции назначения."
   },
   "changeClusterAssignment": "Изменить назначение кластера",
   "clearFilters": "Очистить фильтры",

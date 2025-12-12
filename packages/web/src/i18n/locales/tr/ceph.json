@@ -12,7 +12,7 @@
       "removedFromClone": "Klon'dan kaldırıldı",
       "removedFromCluster": "Kümeden Çıkarıldı"
     },
-    "assignedTo": "{{type}}'a atandı: YER SAHIBI_1__",
+    "assignedTo": "{{type}}'a atandı: {{name}}",
     "assignedToClone": "Klon'a Atandı",
     "assignedToCluster": "Kümeye Atandı",
     "assignedToImage": "Görüntüye Atandı",
@@ -86,8 +86,8 @@
     "actions": "Eylemler",
     "cancel": "İptal",
     "close": "Kapat",
-    "confirm": "Onaylayın",
-    "delete": "Silme",
+    "confirm": "Onayla",
+    "delete": "Sil",
     "details": "Detaylar",
     "edit": "Düzenle",
     "error": "Hata",
@@ -100,7 +100,7 @@
     "vault": "Kasa"
   },
   "dashboard": {
-    "avgMachinesPerCluster": "Avg Makineler/Küme",
+    "avgMachinesPerCluster": "Ort. Makineler/Küme",
     "clusterSummary": "Küme Özeti",
     "machineUtilization": "Makine Kullanımı",
     "subtitle": "{{total}} tüm ekiplerdeki toplam makineler",

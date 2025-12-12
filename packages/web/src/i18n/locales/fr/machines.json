@@ -69,7 +69,7 @@
   "description": "Description (facultatif)",
   "descriptionPlaceholder": "Ajouter une description personnalisée pour cet élément de file d'attente",
   "cephCluster": "Stockage distribué",
-  "editMachine": "Modifier l'appareil",
+  "editMachine": "Modifier la machine",
   "experimental": "expérimentale",
   "failed": "Échoué",
   "filterByBridge": "Filtrer par pont",
@@ -81,7 +81,7 @@
     "selectTeam": "Sélectionnez une équipe",
     "title": {
       "create": "Créer une nouvelle machine",
-      "edit": "Modifier l'appareil",
+      "edit": "Modifier la machine",
       "vault": "Configurer le coffre-fort de machines"
     },
     "vaultConfig": "Configuration du coffre-fort (JSON)"
@@ -106,9 +106,9 @@
   "machine": "Machine",
   "machineCount": "machines | machines",
   "machineCreatedButSetupFailed": "Machine créée avec succès, mais l'installation n'a pas pu être mise en file d'attente.",
-  "machineName": "Nom de l'appareil",
-  "machineNotFound": "Appareil introuvable",
-  "machineNotFoundDescription": "La machine \"{{machineName}}\" est introuvable. Il a peut-être été supprimé ou vous n'y avez peut-être pas accès.",
+  "machineName": "Nom de la machine",
+  "machineNotFound": "Machine introuvable",
+  "machineNotFoundDescription": "La machine \"{{machineName}}\" est introuvable. Elle a peut-être été supprimée ou vous n'y avez peut-être pas accès.",
   "machines": "Machines",
   "machinesConnectedWithFailures": "{{successCount}} machines connectées, {{failedCount}} échecs",
   "manage": "Gérer",
@@ -151,7 +151,7 @@
   "searchPlaceholder": "Rechercher des machines...",
   "selectCluster": "Sélectionnez un cluster ou laissez vide pour annuler l'attribution",
   "selectFunctionToConfigure": "Sélectionnez une fonction à configurer",
-  "selectMachine": "Sélectionnez un appareil",
+  "selectMachine": "Sélectionnez une machine",
   "selectMachines": "Sélectionnez les machines",
   "setupQueued": "Machine créée avec succès. L'installation a été mise en file d'attente.",
   "setupQueuedForSubmission": "Machine créée avec succès. Programme d'installation en file d'attente pour soumission.",
@@ -175,7 +175,7 @@
     "noMachinesSelected": "Veuillez sélectionner au moins une machine",
     "sshPasswordNotAllowed": "Le mot de passe SSH ne peut pas être utilisé sans les clés SSH configurées. Veuillez d'abord configurer les clés SSH ou supprimer le mot de passe."
   },
-  "vault": "Sauter",
+  "vault": "Coffre-fort",
   "vaultUpdateSuccess": "La configuration du coffre-fort de machines a été mise à jour avec succès",
   "vaultVersion": "Version du coffre-fort",
   "viewBy": "Afficher par",

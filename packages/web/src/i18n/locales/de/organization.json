@@ -7,57 +7,57 @@
       "deleteGroupFailed": "Die Berechtigungsgruppe konnte nicht gelöscht werden",
       "removePermissionFailed": "Die Berechtigung konnte nicht aus der Gruppe entfernt werden"
     },
-    "heading": "Access Control",
+    "heading": "Zugriffskontrolle",
     "modals": {
-      "addPermissionButton": "Add Permission",
-      "addPermissionsTab": "Add Permissions",
-      "assignUserTitle": "Assign User",
-      "assignUserTo": "to {{group}}",
-      "createGroupTitle": "Create Permission Group",
-      "currentPermissionsTab": "Current Permissions",
-      "deleteGroupDescription": "Are you sure you want to delete group \"{{group}}\"?",
-      "deleteGroupTitle": "Delete Permission Group",
-      "groupNameRequired": "Please enter a group name",
-      "groupPlaceholder": "Enter group name",
-      "managePermissionsTitle": "Manage Permissions",
-      "noPermissions": "No permissions assigned",
-      "permissionPlaceholder": "Select permission to add",
-      "userPlaceholder": "Select user"
+      "addPermissionButton": "Berechtigung hinzufügen",
+      "addPermissionsTab": "Berechtigungen hinzufügen",
+      "assignUserTitle": "Benutzer zuweisen",
+      "assignUserTo": "zu {{group}}",
+      "createGroupTitle": "Berechtigungsgruppe erstellen",
+      "currentPermissionsTab": "Aktuelle Berechtigungen",
+      "deleteGroupDescription": "Sind Sie sicher, dass Sie die Gruppe '{{group}}' löschen möchten?",
+      "deleteGroupTitle": "Berechtigungsgruppe löschen",
+      "groupNameRequired": "Bitte geben Sie einen Gruppennamen ein",
+      "groupPlaceholder": "Gruppennamen eingeben",
+      "managePermissionsTitle": "Berechtigungen verwalten",
+      "noPermissions": "Keine Berechtigungen zugewiesen",
+      "permissionPlaceholder": "Berechtigung zum Hinzufügen auswählen",
+      "userPlaceholder": "Benutzer auswählen"
     },
     "permissions": {
-      "searchPlaceholder": "Search permission groups...",
-      "subtitle": "Manage permission groups and their assignments",
-      "title": "Permission Groups"
+      "searchPlaceholder": "Berechtigungsgruppen durchsuchen...",
+      "subtitle": "Berechtigungsgruppen und deren Zuweisungen verwalten",
+      "title": "Berechtigungsgruppen"
     },
     "success": {
-      "groupCreated": "Berechtigungsgruppe „{{group}}“ erfolgreich erstellt",
-      "groupDeleted": "Berechtigungsgruppe „{{group}}“ erfolgreich gelöscht",
-      "permissionAdded": "Berechtigung „{{permission}}“ zur Gruppe hinzugefügt",
-      "permissionRemoved": "Berechtigung „{{permission}}“ aus der Gruppe entfernt",
-      "userAssigned": "Benutzer der Berechtigungsgruppe „{{group}}“ zugewiesen"
+      "groupCreated": "Berechtigungsgruppe '{{group}}' erfolgreich erstellt",
+      "groupDeleted": "Berechtigungsgruppe '{{group}}' erfolgreich gelöscht",
+      "permissionAdded": "Berechtigung '{{permission}}' zur Gruppe hinzugefügt",
+      "permissionRemoved": "Berechtigung '{{permission}}' aus der Gruppe entfernt",
+      "userAssigned": "Benutzer der Berechtigungsgruppe '{{group}}' zugewiesen"
     },
     "tabs": {
-      "permissions": "Permissions",
-      "sessions": "Sessions"
+      "permissions": "Berechtigungen",
+      "sessions": "Sitzungen"
     }
   },
   "teams": {
     "heading": "Teams",
     "manageMembers": {
-      "accessStatus": "Has Access",
-      "addTab": "Add Member",
-      "currentTab": "Current Members",
-      "empty": "No members in this team",
-      "memberStatus": "Member",
-      "pendingStatus": "Pending",
-      "removeButton": "Remove",
-      "removeDescription": "Are you sure you want to remove \"{{email}}\" from this team?",
-      "removeTitle": "Remove Team Member",
-      "selectUser": "Select user",
-      "title": "Manage Team Members"
+      "accessStatus": "Hat Zugriff",
+      "addTab": "Mitglied hinzufügen",
+      "currentTab": "Aktuelle Mitglieder",
+      "empty": "Keine Mitglieder in diesem Team",
+      "memberStatus": "Mitglied",
+      "pendingStatus": "Ausstehend",
+      "removeButton": "Entfernen",
+      "removeDescription": "Sind Sie sicher, dass Sie '{{email}}' aus diesem Team entfernen möchten?",
+      "removeTitle": "Teammitglied entfernen",
+      "selectUser": "Benutzer auswählen",
+      "title": "Teammitglieder verwalten"
     },
-    "searchPlaceholder": "Search teams...",
-    "subtitle": "Manage teams and their members",
+    "searchPlaceholder": "Teams durchsuchen...",
+    "subtitle": "Teams und deren Mitglieder verwalten",
     "title": "Teams"
   },
   "users": {
@@ -71,46 +71,46 @@
       "passwordUpdateFailed": "Das Passwort konnte nicht aktualisiert werden",
       "permissionGroupCreateFailed": "Die Berechtigungsgruppe konnte nicht erstellt werden",
       "sessionTerminateFailed": "Sitzung konnte nicht beendet werden",
-      "userVaultUpdateFailed": "Benutzertresor konnte nicht aktualisiert werden"
+      "userVaultUpdateFailed": "Benutzerkonfiguration konnte nicht aktualisiert werden"
     },
     "form": {
-      "emailLabel": "Email",
-      "passwordLabel": "Password",
-      "passwordPlaceholder": "Enter password"
+      "emailLabel": "E-Mail",
+      "passwordLabel": "Passwort",
+      "passwordPlaceholder": "Passwort eingeben"
     },
-    "heading": "Users",
+    "heading": "Benutzer",
     "lastActive": {
-      "never": "Never"
+      "never": "Nie"
     },
     "modals": {
-      "assignTitle": "Assign Permissions",
-      "createTitle": "Create User",
-      "permissionGroupLabel": "Permission Group",
-      "permissionGroupPlaceholder": "Select permission group",
-      "permissionsLabel": "permissions",
-      "usersLabel": "users"
+      "assignTitle": "Berechtigungen zuweisen",
+      "createTitle": "Benutzer erstellen",
+      "permissionGroupLabel": "Berechtigungsgruppe",
+      "permissionGroupPlaceholder": "Berechtigungsgruppe auswählen",
+      "permissionsLabel": "Berechtigungen",
+      "usersLabel": "Benutzer"
     },
     "permissionGroups": {
-      "none": "No Group"
+      "none": "Keine Gruppe"
     },
-    "searchPlaceholder": "Search users...",
+    "searchPlaceholder": "Benutzer durchsuchen...",
     "status": {
-      "active": "Active",
-      "inactive": "Inactive"
+      "active": "Aktiv",
+      "inactive": "Inaktiv"
     },
-    "subtitle": "Manage users and their permissions",
+    "subtitle": "Benutzer und deren Berechtigungen verwalten",
     "success": {
-      "activated": "Benutzer „{{email}}“ aktiviert",
-      "created": "Benutzer „{{email}}“ erfolgreich erstellt",
-      "deactivated": "Benutzer „{{email}}“ deaktiviert",
-      "emailUpdated": "E-Mail aktualisiert auf „{{email}}“",
+      "activated": "Benutzer '{{email}}' aktiviert",
+      "created": "Benutzer '{{email}}' erfolgreich erstellt",
+      "deactivated": "Benutzer '{{email}}' deaktiviert",
+      "emailUpdated": "E-Mail aktualisiert auf '{{email}}'",
       "languageSaved": "Spracheinstellung gespeichert",
       "passwordUpdated": "Passwort erfolgreich aktualisiert. Bitte melden Sie sich mit Ihrem neuen Passwort an.",
-      "permissionGroupCreated": "Berechtigungsgruppe „{{groupName}}“ erstellt",
-      "permissionsAssigned": "Benutzer „{{email}}“ der Gruppe „{{group}}“ zugewiesen",
+      "permissionGroupCreated": "Berechtigungsgruppe '{{groupName}}' erstellt",
+      "permissionsAssigned": "Benutzer '{{email}}' der Gruppe '{{group}}' zugewiesen",
       "sessionTerminated": "Sitzung erfolgreich beendet",
-      "userVaultUpdated": "Benutzertresor erfolgreich aktualisiert"
+      "userVaultUpdated": "Benutzerkonfiguration erfolgreich aktualisiert"
     },
-    "title": "Users"
+    "title": "Benutzer"
   }
 }

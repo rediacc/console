@@ -19,6 +19,7 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { useTranslation } from 'react-i18next';
 import {
   useCancelQueueItem,
   useQueueItemTrace,
@@ -106,6 +107,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   onCancel,
   onTaskStatusChange,
 }) => {
+  const { t } = useTranslation(['queue', 'common']);
   const styles = useComponentStyles();
   const {
     data: traceData,
@@ -665,7 +667,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                               'CANCELLING' &&
                             normalizeToString(traceData.queueDetails, 'status', 'Status') !==
                               'FAILED' ? (
-                              <Tooltip title="This task can be cancelled">
+                              <Tooltip title={t('common:tooltips.taskCancellable')}>
                                 <Badge status="processing" text="Cancellable" />
                               </Tooltip>
                             ) : undefined,
@@ -676,7 +678,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                 <RediaccStack variant="column" fullWidth gap="md">
                                   <Card
                                     size="small"
-                                    title="Task Information"
+                                    title={t('trace.taskInfo')}
                                     data-testid="queue-trace-task-info"
                                   >
                                     <Descriptions column={1} size="small">
@@ -784,7 +786,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
 
                                   <Card
                                     size="small"
-                                    title="Processing Information"
+                                    title={t('trace.processingInfo')}
                                     data-testid="queue-trace-processing-info"
                                   >
                                     <Descriptions column={1} size="small">
@@ -1172,7 +1174,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                       {/* SSH Test Result Summary */}
                                                       <SpacedCardBottom
                                                         size="sm"
-                                                        title="SSH Test Result"
+                                                        title={t('trace.sshTestResult')}
                                                       >
                                                         <Descriptions column={2} size="small">
                                                           <Descriptions.Item label="Status">
@@ -1211,7 +1213,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                       {/* System Information */}
                                                       <SpacedCardBottom
                                                         size="sm"
-                                                        title="System Information"
+                                                        title={t('trace.systemInfo')}
                                                       >
                                                         <Descriptions column={1} size="small">
                                                           <Descriptions.Item label="Operating System">
@@ -1417,7 +1419,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <>
                               <Row gutter={[16, 16]}>
                                 <Col span={12}>
-                                  <Card size="small" title="Tasks Before This One">
+                                  <Card size="small" title={t('trace.tasksBefore')}>
                                     <ScrollContainer>
                                       {traceData.queuePosition
                                         .filter(
@@ -1451,7 +1453,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                           position.relativePosition === 'Before'
                                       ).length === 0 && (
                                         <Empty
-                                          description="No tasks ahead"
+                                          description={t('trace.noTasksAhead')}
                                           image={Empty.PRESENTED_IMAGE_SIMPLE}
                                         />
                                       )}
@@ -1459,7 +1461,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                   </Card>
                                 </Col>
                                 <Col span={12}>
-                                  <Card size="small" title="Tasks After This One">
+                                  <Card size="small" title={t('trace.tasksAfter')}>
                                     <ScrollContainer>
                                       {traceData.queuePosition
                                         .filter(
@@ -1544,7 +1546,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                 <Col span={8}>
                                   <Card>
                                     <Statistic
-                                      title="Current Queue Depth"
+                                      title={t('trace.queueDepth')}
                                       value={traceData.machineStats.currentQueueDepth}
                                       prefix={<HourglassOutlined />}
                                       suffix="tasks"
@@ -1572,7 +1574,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                 <Col span={8}>
                                   <Card>
                                     <Statistic
-                                      title="Active Processing Count"
+                                      title={t('trace.activeProcessing')}
                                       value={traceData.machineStats.activeProcessingCount}
                                       prefix={<SyncOutlined spin />}
                                       suffix="tasks"
@@ -1585,7 +1587,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                 <Col span={8}>
                                   <Card>
                                     <Statistic
-                                      title="Processing Capacity"
+                                      title={t('trace.processingCapacity')}
                                       value={`${traceData.machineStats.activeProcessingCount}/${traceData.machineStats.maxConcurrentTasks || 'N/A'}`}
                                       prefix={<DashboardOutlined />}
                                       valueStyle={{

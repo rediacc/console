@@ -71,7 +71,7 @@
     "deleteSuccess": "Cluster supprimé avec succès",
     "deleteWarning": "Êtes-vous sûr de vouloir supprimer le cluster « {{name}} » ?",
     "editCluster": "Modifier le cluster",
-    "fsid": "Blé",
+    "fsid": "FSID",
     "manageMachines": "Gérer les machines",
     "monitorHosts": "Surveiller les hôtes",
     "name": "Nom du cluster",
@@ -97,7 +97,7 @@
     "refresh": "Rafraîchir",
     "save": "Sauvegarder",
     "success": "Succès",
-    "vault": "Sauter"
+    "vault": "Coffre-fort"
   },
   "dashboard": {
     "avgMachinesPerCluster": "Machines/cluster moyenne",
@@ -111,7 +111,7 @@
   },
   "description": "Gérer les clusters de stockage distribué, les pools, les images et les instantanés",
   "errors": {
-    "operationFailed": "Échec de {{opération}} {{ressource}}"
+    "operationFailed": "Échec de {{operation}} {{resource}}"
   },
   "functions": {
     "cluster_dashboard": "Ouvrir le tableau de bord du cluster",

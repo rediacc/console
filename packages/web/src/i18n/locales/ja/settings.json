@@ -22,7 +22,7 @@
       "requirement4": "少なくとも 1 つの特殊文字が含まれています",
       "requirementsTitle": "パスワード要件",
       "submit": "パスワードを変更する",
-      "successContent": "パスワードが変更されました。 {{秒}} 秒後にログアウトされます...",
+      "successContent": "パスワードが変更されました。 {{seconds}} 秒後にログアウトされます...",
       "successTitle": "パスワードが正常に変更されました",
       "title": "パスワードを変更する"
     },

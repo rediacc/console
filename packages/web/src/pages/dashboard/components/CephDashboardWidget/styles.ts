@@ -1,4 +1,3 @@
-import { Statistic } from 'antd';
 import styled from 'styled-components';
 import { ActionGroup } from '@/components/common/styled';
 import { RediaccCard, RediaccList, RediaccText } from '@/components/ui';
@@ -42,13 +41,6 @@ export const AssignmentStack = styled(FlexColumn).attrs({ $gap: 'XS', $align: 'c
 export const AssignmentIcon = styled.div<{ $color: string }>`
   font-size: ${({ theme }) => theme.dimensions.ICON_XL}px;
   color: ${({ $color }) => $color};
-`;
-
-export const AssignmentStatistic = styled(Statistic)<{ $color: string }>`
-  && .ant-statistic-content-value {
-    color: ${({ $color }) => $color};
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  }
 `;
 
 export const PercentageText = styled.span`

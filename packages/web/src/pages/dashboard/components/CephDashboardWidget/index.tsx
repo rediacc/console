@@ -3,7 +3,7 @@ import { Col, Progress, Row, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccText } from '@/components/ui';
+import { RediaccStatistic, RediaccText } from '@/components/ui';
 import {
   CloudServerOutlined,
   CopyOutlined,
@@ -16,7 +16,6 @@ import {
   AssignmentCard,
   AssignmentIcon,
   AssignmentStack,
-  AssignmentStatistic,
   PercentageText,
   SummaryPanel,
   TeamHeader,
@@ -165,12 +164,12 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
               >
                 <AssignmentStack>
                   <AssignmentIcon $color={item.color}>{item.icon}</AssignmentIcon>
-                  <AssignmentStatistic
+                  <RediaccStatistic
                     data-testid={`ds-widget-stat-value-${item.type}`}
                     title={item.label}
                     value={item.count}
                     suffix={<PercentageText>({item.percentage}%)</PercentageText>}
-                    $color={item.color}
+                    color={item.color}
                   />
                 </AssignmentStack>
               </AssignmentCard>
@@ -184,20 +183,20 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
               <RediaccText variant="title">{t('ceph:dashboard.clusterSummary')}</RediaccText>
               <Row gutter={16}>
                 <Col span={12}>
-                  <AssignmentStatistic
+                  <RediaccStatistic
                     data-testid="ds-widget-stat-total-clusters"
                     title={t('ceph:dashboard.totalClusters')}
                     value={stats.total_clusters}
-                    $color={styledTheme.colors.textPrimary}
+                    variant="textPrimary"
                   />
                 </Col>
                 <Col span={12}>
-                  <AssignmentStatistic
+                  <RediaccStatistic
                     data-testid="ds-widget-stat-avg-machines"
                     title={t('ceph:dashboard.avgMachinesPerCluster')}
                     value={stats.avg_machines_per_cluster}
                     precision={1}
-                    $color={styledTheme.colors.textPrimary}
+                    variant="textPrimary"
                   />
                 </Col>
               </Row>

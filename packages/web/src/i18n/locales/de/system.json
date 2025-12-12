@@ -316,13 +316,13 @@
   },
   "vaultProtocol": {
     "errors": {
-      "disableFailed": "Die Tresorverschlüsselung konnte nicht deaktiviert werden",
-      "enableFailed": "Die Tresorverschlüsselung konnte nicht aktiviert werden",
+      "disableFailed": "Die Datenverschlüsselung konnte nicht deaktiviert werden",
+      "enableFailed": "Die Datenverschlüsselung konnte nicht aktiviert werden",
       "noCompanySelected": "Kein Unternehmen ausgewählt. Bitte wählen Sie ein Unternehmen aus, bevor Sie die Verschlüsselung aktualisieren."
     },
     "success": {
-      "disabled": "Tresorverschlüsselung deaktiviert. Master-Passwörter sind nicht mehr erforderlich.",
-      "enabled": "Die Tresorverschlüsselung wurde erfolgreich aktiviert. Alle Benutzer müssen nun dieses Master-Passwort verwenden."
+      "disabled": "Datenverschlüsselung deaktiviert. Master-Passwörter sind nicht mehr erforderlich.",
+      "enabled": "Die Datenverschlüsselung wurde erfolgreich aktiviert. Alle Benutzer müssen nun dieses Master-Passwort verwenden."
     }
   }
 }

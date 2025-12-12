@@ -11,78 +11,66 @@ import type {
 // Resolve variant to direction, gap, and wrap
 type VariantDefaults = { direction: StackDirection; gap: StackGap; wrap?: boolean };
 
-export const resolveStackVariantDefaults = (variant: StackVariant = 'default'): VariantDefaults => {
-  switch (variant) {
-    case 'row':
-      return { direction: 'horizontal', gap: 'md' };
-    case 'column':
-      return { direction: 'vertical', gap: 'md' };
-    case 'tight-row':
-      return { direction: 'horizontal', gap: 'xs' };
-    case 'spaced-column':
-      return { direction: 'vertical', gap: 'lg' };
-    case 'wrap-grid':
-      return { direction: 'horizontal', gap: 'sm', wrap: true };
-    case 'default':
-    default:
-      return { direction: 'horizontal', gap: 'md' };
-  }
+/**
+ * Variant defaults map
+ */
+const VARIANT_DEFAULTS_MAP: Record<StackVariant, VariantDefaults> = {
+  default: { direction: 'horizontal', gap: 'md' },
+  row: { direction: 'horizontal', gap: 'md' },
+  column: { direction: 'vertical', gap: 'md' },
+  'tight-row': { direction: 'horizontal', gap: 'xs' },
+  'spaced-column': { direction: 'vertical', gap: 'lg' },
+  'wrap-grid': { direction: 'horizontal', gap: 'sm', wrap: true },
+};
+
+export const resolveStackVariantDefaults = (variant: StackVariant = 'default'): VariantDefaults =>
+  VARIANT_DEFAULTS_MAP[variant];
+
+/**
+ * Gap to spacing map
+ */
+const GAP_MAP: Record<StackGap, (theme: StyledTheme) => number> = {
+  none: () => 0,
+  xs: (theme) => theme.spacing.XS, // 4px
+  sm: (theme) => theme.spacing.SM, // 8px
+  md: (theme) => theme.spacing.MD, // 16px
+  lg: (theme) => theme.spacing.LG, // 24px
+  xl: (theme) => theme.spacing.XL, // 32px
 };
 
 // Resolve gap to pixels
 export const resolveStackGap = (theme: StyledTheme, gap: StackGap | number = 'md'): number => {
   if (typeof gap === 'number') return gap;
+  return GAP_MAP[gap](theme);
+};
 
-  switch (gap) {
-    case 'none':
-      return 0;
-    case 'xs':
-      return theme.spacing.XS; // 4px
-    case 'sm':
-      return theme.spacing.SM; // 8px
-    case 'lg':
-      return theme.spacing.LG; // 24px
-    case 'xl':
-      return theme.spacing.XL; // 32px
-    case 'md':
-    default:
-      return theme.spacing.MD; // 16px
-  }
+/**
+ * Align to CSS align-items map
+ */
+const ALIGN_MAP: Record<StackAlign, string> = {
+  start: 'flex-start',
+  end: 'flex-end',
+  center: 'center',
+  baseline: 'baseline',
+  stretch: 'stretch',
 };
 
 // Map align to CSS align-items
-const mapAlign = (align: StackAlign = 'stretch'): string => {
-  switch (align) {
-    case 'start':
-      return 'flex-start';
-    case 'end':
-      return 'flex-end';
-    case 'center':
-      return 'center';
-    case 'baseline':
-      return 'baseline';
-    case 'stretch':
-    default:
-      return 'stretch';
-  }
+const mapAlign = (align: StackAlign = 'stretch'): string => ALIGN_MAP[align];
+
+/**
+ * Justify to CSS justify-content map
+ */
+const JUSTIFY_MAP: Record<StackJustify, string> = {
+  start: 'flex-start',
+  end: 'flex-end',
+  center: 'center',
+  between: 'space-between',
+  around: 'space-around',
 };
 
 // Map justify to CSS justify-content
-const mapJustify = (justify: StackJustify = 'start'): string => {
-  switch (justify) {
-    case 'end':
-      return 'flex-end';
-    case 'center':
-      return 'center';
-    case 'between':
-      return 'space-between';
-    case 'around':
-      return 'space-around';
-    case 'start':
-    default:
-      return 'flex-start';
-  }
-};
+const mapJustify = (justify: StackJustify = 'start'): string => JUSTIFY_MAP[justify];
 
 export const StyledRediaccStack = styled.div<{
   $direction: StackDirection;

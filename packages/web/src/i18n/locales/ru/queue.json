@@ -71,7 +71,7 @@
   "statusFailed": "Неуспешный",
   "statusPending": "В ожидании",
   "statusProcessing": "Обработка",
-  "statusRunning": "Бег",
+  "statusRunning": "Выполняется",
   "statusStale": "Несвежий",
   "success": {
     "cancellationInitiated": "Начата отмена элемента очереди {{taskId}}.",
@@ -117,5 +117,19 @@
     "failedTitle": "Задача не выполнена навсегда"
   },
   "team": "Команда",
-  "title": "Управление очередью"
+  "title": "Управление очередью",
+  "columns": {
+    "taskId": "ID задачи",
+    "status": "Статус",
+    "priority": "Приоритет",
+    "age": "Возраст",
+    "team": "Команда",
+    "machine": "Машина",
+    "region": "Регион",
+    "bridge": "Мост",
+    "response": "Ответ",
+    "errorRetries": "Ошибка / Повторы",
+    "createdBy": "Создано",
+    "created": "Создан"
+  }
 }

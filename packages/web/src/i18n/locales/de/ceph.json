@@ -71,7 +71,7 @@
     "deleteSuccess": "Cluster erfolgreich gelöscht",
     "deleteWarning": "Sind Sie sicher, dass Sie den Cluster „{{name}}“ löschen möchten?",
     "editCluster": "Cluster bearbeiten",
-    "fsid": "Ble",
+    "fsid": "FSID",
     "manageMachines": "Maschinen verwalten",
     "monitorHosts": "Überwachen Sie Hosts",
     "name": "Clustername",
@@ -84,20 +84,20 @@
   },
   "common": {
     "actions": "Aktionen",
-    "cancel": "Stornieren",
+    "cancel": "Abbrechen",
     "close": "Schließen",
     "confirm": "Bestätigen",
     "delete": "Löschen",
     "details": "Einzelheiten",
     "edit": "Bearbeiten",
     "error": "Fehler",
-    "hasVault": "Hat Tresor",
+    "hasVault": "Hat Konfiguration",
     "loading": "Laden...",
     "none": "Keiner",
     "refresh": "Aktualisieren",
     "save": "Speichern",
     "success": "Erfolg",
-    "vault": "Gewölbe"
+    "vault": "Konfiguration"
   },
   "dashboard": {
     "avgMachinesPerCluster": "Durchschnittliche Maschinen/Cluster",

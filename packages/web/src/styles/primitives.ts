@@ -166,26 +166,21 @@ const resolveStatusTokens = (variant: StatusVariant = 'info', theme: StyledTheme
   };
 };
 
+const ICON_SIZE_MAP: Record<IconSize, keyof StyledTheme['dimensions']> = {
+  SM: 'ICON_SM',
+  MD: 'ICON_MD',
+  LG: 'ICON_LG',
+  XL: 'ICON_XL',
+  XXL: 'ICON_XXL',
+  XXXL: 'ICON_XXXL',
+};
+
 const resolveIconSize = (theme: StyledTheme, size?: IconSizeValue) => {
   if (typeof size === 'number') {
     return size;
   }
   const token = size || 'MD';
-  switch (token) {
-    case 'SM':
-      return theme.dimensions.ICON_SM;
-    case 'LG':
-      return theme.dimensions.ICON_LG;
-    case 'XL':
-      return theme.dimensions.ICON_XL;
-    case 'XXL':
-      return theme.dimensions.ICON_XXL;
-    case 'XXXL':
-      return theme.dimensions.ICON_XXXL;
-    case 'MD':
-    default:
-      return theme.dimensions.ICON_MD;
-  }
+  return theme.dimensions[ICON_SIZE_MAP[token] || ICON_SIZE_MAP.MD];
 };
 
 type FontWeightScale = StyledTheme['fontWeight'];
@@ -302,24 +297,21 @@ export const FilterCheckbox = styled(RediaccCheckbox)`
 // STATS COMPONENTS
 // ============================================
 
+const STAT_VARIANT_COLOR_MAP: Partial<Record<StatusVariant, keyof StyledTheme['colors']>> = {
+  success: 'success',
+  warning: 'warning',
+  error: 'error',
+  info: 'info',
+};
+
 // Resolve variant to theme color
 const resolveStatVariantColor = (
   variant: StatusVariant | undefined,
   theme: StyledTheme
 ): string => {
   if (!variant) return theme.colors.textPrimary;
-  switch (variant) {
-    case 'success':
-      return theme.colors.success;
-    case 'warning':
-      return theme.colors.warning;
-    case 'error':
-      return theme.colors.error;
-    case 'info':
-      return theme.colors.info;
-    default:
-      return theme.colors.textPrimary;
-  }
+  const colorKey = STAT_VARIANT_COLOR_MAP[variant];
+  return colorKey ? theme.colors[colorKey] : theme.colors.textPrimary;
 };
 
 export const StatValue = styled(RediaccText).attrs(() => ({
@@ -587,40 +579,27 @@ export const ModalTitleRow = styled.div<{ $gap?: SpacingValue }>`
 
 type AlertVariant = 'info' | 'success' | 'warning' | 'error' | 'neutral';
 
+type AlertColorKeys = {
+  bg: keyof StyledTheme['colors'];
+  border: keyof StyledTheme['colors'];
+  color: keyof StyledTheme['colors'];
+};
+
+const ALERT_COLORS_MAP: Record<AlertVariant, AlertColorKeys> = {
+  success: { bg: 'bgSuccess', border: 'success', color: 'success' },
+  warning: { bg: 'bgWarning', border: 'warning', color: 'warning' },
+  error: { bg: 'bgError', border: 'error', color: 'error' },
+  info: { bg: 'bgInfo', border: 'info', color: 'info' },
+  neutral: { bg: 'bgSecondary', border: 'borderSecondary', color: 'textSecondary' },
+};
+
 const resolveAlertColors = (variant: AlertVariant | undefined, theme: StyledTheme) => {
-  switch (variant) {
-    case 'success':
-      return {
-        bg: theme.colors.bgSuccess,
-        border: theme.colors.success,
-        color: theme.colors.success,
-      };
-    case 'warning':
-      return {
-        bg: theme.colors.bgWarning,
-        border: theme.colors.warning,
-        color: theme.colors.warning,
-      };
-    case 'error':
-      return {
-        bg: theme.colors.bgError,
-        border: theme.colors.error,
-        color: theme.colors.error,
-      };
-    case 'info':
-      return {
-        bg: theme.colors.bgInfo,
-        border: theme.colors.info,
-        color: theme.colors.info,
-      };
-    case 'neutral':
-    default:
-      return {
-        bg: theme.colors.bgSecondary,
-        border: theme.colors.borderSecondary,
-        color: theme.colors.textSecondary,
-      };
-  }
+  const keys = ALERT_COLORS_MAP[variant || 'neutral'];
+  return {
+    bg: theme.colors[keys.bg],
+    border: theme.colors[keys.border],
+    color: theme.colors[keys.color],
+  };
 };
 
 export const AlertCard = styled(RediaccAlert)<{ $variant?: AlertVariant }>`

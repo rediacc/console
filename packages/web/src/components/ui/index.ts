@@ -35,6 +35,7 @@ export * from './List';
 export * from './Modal';
 export * from './Progress';
 export * from './Stack';
+export * from './Statistic';
 export * from './Tabs';
 // Tag component
 export * from './Tag';

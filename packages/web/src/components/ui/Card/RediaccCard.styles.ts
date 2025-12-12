@@ -3,54 +3,58 @@ import styled, { css } from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { CardSize, CardSpacing, CardVariant } from './RediaccCard.types';
 
+const CARD_SPACING_MAP: Record<CardSpacing, keyof StyledTheme['spacing'] | 0> = {
+  compact: 'SM',
+  default: 'MD',
+  spacious: 'LG',
+  none: 0,
+};
+
 // Resolve spacing to margin-bottom pixels
 export const resolveCardSpacing = (theme: StyledTheme, spacing?: CardSpacing): number => {
-  switch (spacing) {
-    case 'compact':
-      return theme.spacing.SM; // 8px
-    case 'default':
-      return theme.spacing.MD; // 16px
-    case 'spacious':
-      return theme.spacing.LG; // 24px
-    case 'none':
-    default:
-      return 0;
-  }
+  if (!spacing) return 0;
+  const value = CARD_SPACING_MAP[spacing];
+  return typeof value === 'number' ? value : theme.spacing[value];
+};
+
+const CARD_PADDING_MAP: Record<CardSize, keyof StyledTheme['spacing']> = {
+  sm: 'SM_LG',
+  md: 'MD',
+  lg: 'LG',
 };
 
 // Resolve padding based on size
 export const resolveCardPadding = (theme: StyledTheme, size: CardSize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return theme.spacing.SM_LG; // 12px
-    case 'lg':
-      return theme.spacing.LG; // 24px
-    case 'md':
-    default:
-      return theme.spacing.MD; // 16px
-  }
+  return theme.spacing[CARD_PADDING_MAP[size] || CARD_PADDING_MAP.md];
 };
 
 // Token set for card variants
 type CardTokenSet = { bg: string; border: string; shadow: string };
 
+type CardTokenKeys = {
+  bg: keyof StyledTheme['colors'];
+  border: keyof StyledTheme['colors'] | 'transparent';
+  shadow: keyof StyledTheme['shadows'] | 'none';
+};
+
+const CARD_VARIANT_MAP: Record<CardVariant, CardTokenKeys> = {
+  elevated: { bg: 'bgPrimary', border: 'transparent', shadow: 'CARD' },
+  bordered: { bg: 'bgPrimary', border: 'borderSecondary', shadow: 'none' },
+  section: { bg: 'bgSecondary', border: 'borderSecondary', shadow: 'none' },
+  selectable: { bg: 'bgPrimary', border: 'borderSecondary', shadow: 'none' },
+  default: { bg: 'bgPrimary', border: 'borderSecondary', shadow: 'none' },
+};
+
 export const resolveCardVariantTokens = (
   variant: CardVariant = 'default',
   theme: StyledTheme
 ): CardTokenSet => {
-  switch (variant) {
-    case 'elevated':
-      return { bg: theme.colors.bgPrimary, border: 'transparent', shadow: theme.shadows.CARD };
-    case 'bordered':
-      return { bg: theme.colors.bgPrimary, border: theme.colors.borderSecondary, shadow: 'none' };
-    case 'section':
-      return { bg: theme.colors.bgSecondary, border: theme.colors.borderSecondary, shadow: 'none' };
-    case 'selectable':
-      return { bg: theme.colors.bgPrimary, border: theme.colors.borderSecondary, shadow: 'none' };
-    case 'default':
-    default:
-      return { bg: theme.colors.bgPrimary, border: theme.colors.borderSecondary, shadow: 'none' };
-  }
+  const keys = CARD_VARIANT_MAP[variant] || CARD_VARIANT_MAP.default;
+  return {
+    bg: theme.colors[keys.bg],
+    border: keys.border === 'transparent' ? 'transparent' : theme.colors[keys.border],
+    shadow: keys.shadow === 'none' ? 'none' : theme.shadows[keys.shadow],
+  };
 };
 
 export const StyledRediaccCard = styled(AntCard)<{

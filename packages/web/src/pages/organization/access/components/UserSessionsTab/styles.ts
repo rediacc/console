@@ -1,4 +1,3 @@
-import { Statistic } from 'antd';
 import styled from 'styled-components';
 import { CardTitle, RediaccButton, RediaccCard, RediaccInput, RediaccTag } from '@/components/ui';
 import { FlexColumn } from '@/styles/primitives';
@@ -21,13 +20,6 @@ export const StatTitle = styled.span`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-export const StatMetric = styled(Statistic)<{ $color?: string }>`
-  && .ant-statistic-content-value {
-    font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-    color: ${({ $color }) => $color || 'var(--color-text-primary)'};
-  }
 `;
 
 export const StatSuffix = styled.span`

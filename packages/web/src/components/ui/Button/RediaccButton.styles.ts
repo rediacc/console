@@ -14,84 +14,81 @@ type ButtonTokenSet = {
 };
 
 /**
- * Resolves color tokens for each button variant
+ * Variant token map for button variants
  * Variants: primary, danger, default, text, link, ghost
+ */
+const VARIANT_TOKENS: Record<ButtonVariant, (theme: StyledTheme) => ButtonTokenSet> = {
+  primary: (theme) => ({
+    bg: theme.colors.buttonPrimary,
+    color: theme.colors.buttonPrimaryText,
+    border: theme.colors.buttonPrimary,
+    hoverBg: theme.colors.buttonPrimaryHover,
+    hoverColor: theme.colors.buttonPrimaryText,
+    hoverBorder: theme.colors.buttonPrimaryHover,
+  }),
+  danger: (theme) => ({
+    bg: theme.colors.error,
+    color: theme.colors.textInverse,
+    border: theme.colors.error,
+    hoverBg: theme.colors.error,
+    hoverColor: theme.colors.textInverse,
+    hoverBorder: theme.colors.error,
+  }),
+  default: (theme) => ({
+    bg: theme.colors.bgPrimary,
+    color: theme.colors.textPrimary,
+    border: theme.colors.borderSecondary,
+    hoverBg: theme.colors.bgSecondary,
+    hoverColor: theme.colors.textPrimary,
+    hoverBorder: theme.colors.borderPrimary,
+  }),
+  text: (theme) => ({
+    bg: 'transparent',
+    color: theme.colors.textPrimary,
+    border: 'transparent',
+    hoverBg: theme.colors.bgSecondary,
+    hoverColor: theme.colors.textPrimary,
+    hoverBorder: 'transparent',
+  }),
+  link: (theme) => ({
+    bg: 'transparent',
+    color: theme.colors.primary,
+    border: 'transparent',
+    hoverBg: 'transparent',
+    hoverColor: theme.colors.primaryHover,
+    hoverBorder: 'transparent',
+  }),
+  ghost: (theme) => ({
+    bg: 'transparent',
+    color: theme.colors.textPrimary,
+    border: theme.colors.borderSecondary,
+    hoverBg: theme.colors.bgSecondary,
+    hoverColor: theme.colors.textPrimary,
+    hoverBorder: theme.colors.borderPrimary,
+  }),
+};
+
+/**
+ * Resolves color tokens for each button variant
  */
 export const resolveRediaccButtonVariantTokens = (
   variant: ButtonVariant = 'primary',
   theme: StyledTheme
-): ButtonTokenSet => {
-  switch (variant) {
-    case 'danger':
-      return {
-        bg: theme.colors.error,
-        color: theme.colors.textInverse,
-        border: theme.colors.error,
-        hoverBg: theme.colors.error,
-        hoverColor: theme.colors.textInverse,
-        hoverBorder: theme.colors.error,
-      };
-    case 'default':
-      return {
-        bg: theme.colors.bgPrimary,
-        color: theme.colors.textPrimary,
-        border: theme.colors.borderSecondary,
-        hoverBg: theme.colors.bgSecondary,
-        hoverColor: theme.colors.textPrimary,
-        hoverBorder: theme.colors.borderPrimary,
-      };
-    case 'text':
-      return {
-        bg: 'transparent',
-        color: theme.colors.textPrimary,
-        border: 'transparent',
-        hoverBg: theme.colors.bgSecondary,
-        hoverColor: theme.colors.textPrimary,
-        hoverBorder: 'transparent',
-      };
-    case 'link':
-      return {
-        bg: 'transparent',
-        color: theme.colors.primary,
-        border: 'transparent',
-        hoverBg: 'transparent',
-        hoverColor: theme.colors.primaryHover,
-        hoverBorder: 'transparent',
-      };
-    case 'ghost':
-      return {
-        bg: 'transparent',
-        color: theme.colors.textPrimary,
-        border: theme.colors.borderSecondary,
-        hoverBg: theme.colors.bgSecondary,
-        hoverColor: theme.colors.textPrimary,
-        hoverBorder: theme.colors.borderPrimary,
-      };
-    case 'primary':
-    default:
-      return {
-        bg: theme.colors.buttonPrimary,
-        color: theme.colors.buttonPrimaryText,
-        border: theme.colors.buttonPrimary,
-        hoverBg: theme.colors.buttonPrimaryHover,
-        hoverColor: theme.colors.buttonPrimaryText,
-        hoverBorder: theme.colors.buttonPrimaryHover,
-      };
-  }
+): ButtonTokenSet => VARIANT_TOKENS[variant](theme);
+
+/**
+ * Button height map by size
+ */
+const SIZE_HEIGHT_MAP: Record<ButtonSize, (theme: StyledTheme) => number> = {
+  sm: (theme) => theme.dimensions.CONTROL_HEIGHT_SM, // 28px
+  md: (theme) => theme.dimensions.CONTROL_HEIGHT, // 32px
 };
 
 /**
  * Resolves height for each button size
  */
-export const resolveRediaccButtonHeight = (theme: StyledTheme, size: ButtonSize = 'md'): number => {
-  switch (size) {
-    case 'sm':
-      return theme.dimensions.CONTROL_HEIGHT_SM; // 28px
-    case 'md':
-    default:
-      return theme.dimensions.CONTROL_HEIGHT; // 32px
-  }
-};
+export const resolveRediaccButtonHeight = (theme: StyledTheme, size: ButtonSize = 'md'): number =>
+  SIZE_HEIGHT_MAP[size](theme);
 
 /**
  * Unified Button styled component

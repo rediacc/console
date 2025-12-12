@@ -21,6 +21,54 @@ type VariantTokenSet = {
 };
 
 /**
+ * Variant token map for text variants
+ */
+const VARIANT_TOKENS: Record<string, (theme: StyledTheme) => VariantTokenSet> = {
+  caption: (theme) => ({
+    fontSize: theme.fontSize.CAPTION,
+    fontWeight: theme.fontWeight.REGULAR,
+    color: theme.colors.textSecondary,
+    lineHeight: theme.lineHeight.NORMAL,
+  }),
+  label: (theme) => ({
+    fontSize: theme.fontSize.XS,
+    fontWeight: theme.fontWeight.REGULAR,
+    color: theme.colors.textSecondary,
+    lineHeight: theme.lineHeight.NORMAL,
+  }),
+  value: (theme) => ({
+    fontSize: theme.fontSize.SM,
+    fontWeight: theme.fontWeight.REGULAR,
+    color: theme.colors.textPrimary,
+    lineHeight: theme.lineHeight.NORMAL,
+  }),
+  title: (theme) => ({
+    fontSize: theme.fontSize.LG,
+    fontWeight: theme.fontWeight.SEMIBOLD,
+    color: theme.colors.textPrimary,
+    lineHeight: theme.lineHeight.NORMAL,
+  }),
+  description: (theme) => ({
+    fontSize: theme.fontSize.SM,
+    fontWeight: theme.fontWeight.REGULAR,
+    color: theme.colors.textSecondary,
+    lineHeight: theme.lineHeight.NORMAL,
+  }),
+  helper: (theme) => ({
+    fontSize: theme.fontSize.SM,
+    fontWeight: theme.fontWeight.REGULAR,
+    color: theme.colors.textSecondary,
+    lineHeight: theme.lineHeight.NORMAL,
+  }),
+  default: (theme) => ({
+    fontSize: theme.fontSize.BASE,
+    fontWeight: theme.fontWeight.REGULAR,
+    color: theme.colors.textPrimary,
+    lineHeight: theme.lineHeight.NORMAL,
+  }),
+};
+
+/**
  * Resolves theme tokens for each text variant
  */
 export const resolveTextVariantTokens = (
@@ -31,58 +79,18 @@ export const resolveTextVariantTokens = (
     throw new Error('Theme is required for resolveTextVariantTokens');
   }
 
-  switch (variant) {
-    case 'caption':
-      return {
-        fontSize: theme.fontSize.CAPTION,
-        fontWeight: theme.fontWeight.REGULAR,
-        color: theme.colors.textSecondary,
-        lineHeight: theme.lineHeight.NORMAL,
-      };
-    case 'label':
-      return {
-        fontSize: theme.fontSize.XS,
-        fontWeight: theme.fontWeight.REGULAR,
-        color: theme.colors.textSecondary,
-        lineHeight: theme.lineHeight.NORMAL,
-      };
-    case 'value':
-      return {
-        fontSize: theme.fontSize.SM,
-        fontWeight: theme.fontWeight.REGULAR,
-        color: theme.colors.textPrimary,
-        lineHeight: theme.lineHeight.NORMAL,
-      };
-    case 'title':
-      return {
-        fontSize: theme.fontSize.LG,
-        fontWeight: theme.fontWeight.SEMIBOLD,
-        color: theme.colors.textPrimary,
-        lineHeight: theme.lineHeight.NORMAL,
-      };
-    case 'description':
-      return {
-        fontSize: theme.fontSize.SM,
-        fontWeight: theme.fontWeight.REGULAR,
-        color: theme.colors.textSecondary,
-        lineHeight: theme.lineHeight.NORMAL,
-      };
-    case 'helper':
-      return {
-        fontSize: theme.fontSize.SM,
-        fontWeight: theme.fontWeight.REGULAR,
-        color: theme.colors.textSecondary,
-        lineHeight: theme.lineHeight.NORMAL,
-      };
-    default:
-      // Default styling (previously 'body')
-      return {
-        fontSize: theme.fontSize.BASE,
-        fontWeight: theme.fontWeight.REGULAR,
-        color: theme.colors.textPrimary,
-        lineHeight: theme.lineHeight.NORMAL,
-      };
-  }
+  return VARIANT_TOKENS[variant ?? 'default'](theme);
+};
+
+/**
+ * Size to font size map
+ */
+const SIZE_MAP: Record<TextSize, (theme: StyledTheme) => number> = {
+  xs: (theme) => theme.fontSize.XS,
+  sm: (theme) => theme.fontSize.SM,
+  md: (theme) => theme.fontSize.BASE,
+  lg: (theme) => theme.fontSize.LG,
+  xl: (theme) => theme.fontSize.XL,
 };
 
 /**
@@ -90,20 +98,17 @@ export const resolveTextVariantTokens = (
  */
 export const resolveTextSize = (theme: StyledTheme, size?: TextSize): number | undefined => {
   if (!size) return undefined;
-  switch (size) {
-    case 'xs':
-      return theme.fontSize.XS;
-    case 'sm':
-      return theme.fontSize.SM;
-    case 'md':
-      return theme.fontSize.BASE;
-    case 'lg':
-      return theme.fontSize.LG;
-    case 'xl':
-      return theme.fontSize.XL;
-    default:
-      return undefined;
-  }
+  return SIZE_MAP[size](theme);
+};
+
+/**
+ * Weight to font weight map
+ */
+const WEIGHT_MAP: Record<TextWeight, (theme: StyledTheme) => number> = {
+  regular: (theme) => theme.fontWeight.REGULAR,
+  medium: (theme) => theme.fontWeight.MEDIUM,
+  semibold: (theme) => theme.fontWeight.SEMIBOLD,
+  bold: () => 700,
 };
 
 /**
@@ -111,18 +116,22 @@ export const resolveTextSize = (theme: StyledTheme, size?: TextSize): number | u
  */
 export const resolveTextWeight = (theme: StyledTheme, weight?: TextWeight): number | undefined => {
   if (!weight) return undefined;
-  switch (weight) {
-    case 'regular':
-      return theme.fontWeight.REGULAR;
-    case 'medium':
-      return theme.fontWeight.MEDIUM;
-    case 'semibold':
-      return theme.fontWeight.SEMIBOLD;
-    case 'bold':
-      return 700;
-    default:
-      return undefined;
-  }
+  return WEIGHT_MAP[weight](theme);
+};
+
+/**
+ * Color to theme color map
+ */
+const COLOR_MAP: Record<TextColor, (theme: StyledTheme) => string> = {
+  primary: (theme) => theme.colors.textPrimary,
+  secondary: (theme) => theme.colors.textSecondary,
+  tertiary: (theme) => theme.colors.textTertiary,
+  muted: (theme) => theme.colors.textMuted,
+  danger: (theme) => theme.colors.error,
+  success: (theme) => theme.colors.success,
+  warning: (theme) => theme.colors.warning,
+  info: (theme) => theme.colors.info,
+  inherit: () => 'inherit',
 };
 
 /**
@@ -130,28 +139,7 @@ export const resolveTextWeight = (theme: StyledTheme, weight?: TextWeight): numb
  */
 export const resolveTextColor = (theme: StyledTheme, color?: TextColor): string | undefined => {
   if (!color) return undefined;
-  switch (color) {
-    case 'primary':
-      return theme.colors.textPrimary;
-    case 'secondary':
-      return theme.colors.textSecondary;
-    case 'tertiary':
-      return theme.colors.textTertiary;
-    case 'muted':
-      return theme.colors.textMuted;
-    case 'danger':
-      return theme.colors.error;
-    case 'success':
-      return theme.colors.success;
-    case 'warning':
-      return theme.colors.warning;
-    case 'info':
-      return theme.colors.info;
-    case 'inherit':
-      return 'inherit';
-    default:
-      return undefined;
-  }
+  return COLOR_MAP[color](theme);
 };
 
 /**
