@@ -1,4 +1,3 @@
-import { Statistic } from 'antd';
 import styled from 'styled-components';
 import { RediaccCard } from '@/components/ui';
 import { FlexRow, StyledIcon } from '@/styles/primitives';
@@ -34,12 +33,6 @@ export const RefreshIcon = styled(StyledIcon).attrs(({ theme }) => ({
 
 export const StatCard = styled(RediaccCard)`
   text-align: center;
-`;
-
-export const SummaryStatistic = styled(Statistic)<{ $accent?: string }>`
-  && .ant-statistic-content-value {
-    color: ${({ $accent, theme }) => $accent || theme.colors.textPrimary};
-  }
 `;
 
 export const PercentageSuffix = styled.span`

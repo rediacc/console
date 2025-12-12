@@ -71,7 +71,7 @@
     "deleteSuccess": "Кластер успешно удален",
     "deleteWarning": "Вы уверены, что хотите удалить кластер «{{name}}»?",
     "editCluster": "Редактировать кластер",
-    "fsid": "Бле",
+    "fsid": "FSID",
     "manageMachines": "Управление машинами",
     "monitorHosts": "Мониторинг хостов",
     "name": "Имя кластера",
@@ -85,8 +85,8 @@
   "common": {
     "actions": "Действия",
     "cancel": "Отмена",
-    "close": "Закрывать",
-    "confirm": "Подтверждать",
+    "close": "Закрыть",
+    "confirm": "Подтвердить",
     "delete": "Удалить",
     "details": "Подробности",
     "edit": "Редактировать",
@@ -95,7 +95,7 @@
     "loading": "Загрузка...",
     "none": "Никто",
     "refresh": "Обновить",
-    "save": "Сохранять",
+    "save": "Сохранить",
     "success": "Успех",
     "vault": "Сейф"
   },
@@ -111,7 +111,7 @@
   },
   "description": "Управление распределенными кластерами хранения, пулами, образами и снимками",
   "errors": {
-    "operationFailed": "Не удалось выполнить {{операцию}} {{ресурс}}"
+    "operationFailed": "Не удалось выполнить {{operation}} {{resource}}"
   },
   "functions": {
     "cluster_dashboard": "Открыть панель управления кластером",
@@ -198,8 +198,8 @@
       "imageMachine": "имидж-машина",
       "machineCluster": "машинный кластер",
       "machineClusterAssignment": "назначение кластера машин",
-      "pool": "бассейн",
-      "poolVault": "свод бассейна",
+      "pool": "пул",
+      "poolVault": "хранилище пула",
       "rbdClone": "Клон РБД",
       "rbdImage": "RBD-изображение",
       "rbdSnapshot": "Снимок RBD"
@@ -219,14 +219,14 @@
     "editPool": "Изменить пул",
     "minSize": "Минимальный размер",
     "name": "Имя пула",
-    "noPools": "Бассейнов не найдено",
+    "noPools": "Пулов не найдено",
     "pgNum": "Номер PG",
     "pgpNum": "Номер PGP",
-    "poolDetails": "Детали бассейна",
+    "poolDetails": "Детали пула",
     "poolId": "Идентификатор пула",
     "poolName": "Имя пула",
     "size": "Размер",
-    "title": "Бассейны",
+    "title": "Пулы",
     "updateSuccess": "Пул успешно обновлен"
   },
   "queue": {
@@ -253,7 +253,7 @@
   "tabs": {
     "clusters": "Кластеры",
     "machines": "Машины",
-    "pools": "Бассейны"
+    "pools": "Пулы"
   },
   "title": "Распределенное хранилище",
   "warnings": {

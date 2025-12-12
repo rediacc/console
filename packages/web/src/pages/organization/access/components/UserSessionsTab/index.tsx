@@ -12,7 +12,7 @@ import {
   createTruncatedColumn,
 } from '@/components/common/columns';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccText } from '@/components/ui';
+import { RediaccStatistic, RediaccText } from '@/components/ui';
 import { createDateSorter } from '@/platform';
 import { selectUser } from '@/store/auth/authSelectors';
 import { TableContainer } from '@/styles/primitives';
@@ -32,7 +32,6 @@ import {
   SearchInput,
   SessionTag,
   StatCard,
-  StatMetric,
   StatSuffix,
   StatTitle,
   TabContainer,
@@ -244,7 +243,7 @@ const UserSessionsTab: React.FC = () => {
       <Row gutter={16}>
         <Col span={6}>
           <StatCard data-testid="sessions-stat-total">
-            <StatMetric
+            <RediaccStatistic
               title={<StatTitle>{t('userSessions.totalSessions')}</StatTitle>}
               value={sessions.length}
             />
@@ -252,16 +251,16 @@ const UserSessionsTab: React.FC = () => {
         </Col>
         <Col span={6}>
           <StatCard data-testid="sessions-stat-active">
-            <StatMetric
+            <RediaccStatistic
               title={<StatTitle>{t('userSessions.activeSessions')}</StatTitle>}
               value={activeSessions.length}
-              $color="var(--color-success)"
+              variant="success"
             />
           </StatCard>
         </Col>
         <Col span={6}>
           <StatCard data-testid="sessions-stat-unique-users">
-            <StatMetric
+            <RediaccStatistic
               title={<StatTitle>{t('userSessions.uniqueUsers')}</StatTitle>}
               value={new Set(sessions.map((session) => session.userEmail)).size}
             />
@@ -269,7 +268,7 @@ const UserSessionsTab: React.FC = () => {
         </Col>
         <Col span={6}>
           <StatCard data-testid="sessions-stat-average-duration">
-            <StatMetric
+            <RediaccStatistic
               title={<StatTitle>{t('userSessions.averageDuration')}</StatTitle>}
               value={
                 sessions.length > 0

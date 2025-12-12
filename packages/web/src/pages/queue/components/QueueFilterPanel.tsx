@@ -52,7 +52,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
       <FilterSelect
         size="sm"
         $minWidth={150}
-        placeholder="Team"
+        placeholder={t('filters.teamPlaceholder')}
         value={filters.teamName || undefined}
         onChange={(value) => {
           const nextValue = typeof value === 'string' ? value : '';
@@ -66,7 +66,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
       <FilterSelect
         size="sm"
         $minWidth={150}
-        placeholder="Machine"
+        placeholder={t('filters.machinePlaceholder')}
         value={filters.machineName || undefined}
         onChange={(value) => onFilterChange('machineName', typeof value === 'string' ? value : '')}
         allowClear
@@ -79,7 +79,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
       <FilterSelect
         size="sm"
         $minWidth={130}
-        placeholder="Region"
+        placeholder={t('filters.regionPlaceholder')}
         value={filters.regionName || undefined}
         onChange={(value) => onFilterChange('regionName', typeof value === 'string' ? value : '')}
         allowClear
@@ -89,7 +89,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
       <FilterSelect
         size="sm"
         $minWidth={130}
-        placeholder="Bridge"
+        placeholder={t('filters.bridgePlaceholder')}
         value={filters.bridgeName || undefined}
         onChange={(value) => onFilterChange('bridgeName', typeof value === 'string' ? value : '')}
         allowClear
@@ -107,7 +107,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         size="sm"
         mode="multiple"
         $minWidth={160}
-        placeholder="Status"
+        placeholder={t('filters.statusPlaceholder')}
         value={filters.statusFilter}
         onChange={onStatusFilterChange}
         options={[
@@ -122,7 +122,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
       />
       <FilterInput
         size="sm"
-        placeholder="Task ID (GUID)"
+        placeholder={t('filters.taskIdPlaceholder')}
         prefix={<SearchOutlined />}
         value={filters.taskIdFilter}
         onChange={(e) => onFilterChange('taskIdFilter', e.target.value)}

@@ -117,5 +117,19 @@
     "failedTitle": "La tâche a échoué définitivement"
   },
   "team": "Équipe",
-  "title": "Gestion des files d'attente"
+  "title": "Gestion des files d'attente",
+  "columns": {
+    "taskId": "ID de tâche",
+    "status": "Statut",
+    "priority": "Priorité",
+    "age": "Âge",
+    "team": "Équipe",
+    "machine": "Machine",
+    "region": "Région",
+    "bridge": "Pont",
+    "response": "Réponse",
+    "errorRetries": "Erreur / Tentatives",
+    "createdBy": "Créé par",
+    "created": "Créé"
+  }
 }

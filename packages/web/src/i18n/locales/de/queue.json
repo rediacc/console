@@ -1,6 +1,6 @@
 {
   "cancelConfirm": {
-    "content": "Sind Sie sicher, dass Sie dieses Warteschlangenelement stornieren möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "content": "Sind Sie sicher, dass Sie dieses Warteschlangenelement abbrechen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
     "okText": "Ja, Abbrechen",
     "title": "Warteschlangenelement abbrechen"
   },
@@ -117,5 +117,19 @@
     "failedTitle": "Die Aufgabe ist dauerhaft fehlgeschlagen"
   },
   "team": "Team",
-  "title": "Warteschlangenverwaltung"
+  "title": "Warteschlangenverwaltung",
+  "columns": {
+    "taskId": "Aufgaben-ID",
+    "status": "Status",
+    "priority": "Priorität",
+    "age": "Alter",
+    "team": "Team",
+    "machine": "Maschine",
+    "region": "Region",
+    "bridge": "Bridge",
+    "response": "Antwort",
+    "errorRetries": "Fehler / Wiederholungen",
+    "createdBy": "Erstellt von",
+    "created": "Erstellt"
+  }
 }

@@ -3,6 +3,7 @@ import { Col, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccStatistic } from '@/components/ui';
 import {
   CheckCircleOutlined,
   CloudServerOutlined,
@@ -17,7 +18,6 @@ import {
   RefreshIcon,
   StatCard,
   StyledRediaccCard,
-  SummaryStatistic,
 } from './styles';
 import { MachineAvailabilitySummaryProps, MachineStats } from './types';
 
@@ -147,12 +147,12 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
         {statCards.map((item) => (
           <Col key={item.key} {...item.col}>
             <StatCard size="sm" data-testid={item.testId}>
-              <SummaryStatistic
+              <RediaccStatistic
                 title={item.label}
                 value={item.value}
                 prefix={item.icon}
                 suffix={item.suffix}
-                $accent={item.accent}
+                color={item.accent}
               />
             </StatCard>
           </Col>

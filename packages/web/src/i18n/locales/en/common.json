@@ -1,4 +1,30 @@
 {
+  "aria": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "closeNotification": "Close notification",
+    "collapsePanel": "Collapse panel",
+    "expandPanel": "Expand Panel",
+    "notifications": "Notifications",
+    "refresh": "Refresh",
+    "refreshMachines": "Refresh machines",
+    "trace": "Trace"
+  },
+  "tooltips": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "expandPanel": "Expand Panel",
+    "refresh": "Refresh",
+    "taskCancellable": "This task can be cancelled",
+    "trace": "Trace"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. This has been automatically reported.",
+    "errorDetails": "Error Details (Development Mode)",
+    "tryAgain": "Try Again",
+    "reloadPage": "Reload Page"
+  },
   "actions": {
     "addToQueue": "Add to Queue",
     "advanced": "Advanced",

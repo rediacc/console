@@ -2,6 +2,7 @@ import React, { Component, ReactNode } from 'react';
 import { BugOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Result } from 'antd';
 import { RediaccButton } from '@/components/ui';
+import i18n from '@/i18n/config';
 import { telemetryService } from '@/services/telemetryService';
 import { ErrorContent, ErrorDetails, ErrorSummary, FallbackContainer } from './styles';
 
@@ -111,13 +112,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <FallbackContainer>
           <Result
             status="error"
-            title="Something went wrong"
+            title={i18n.t('common:errorBoundary.title')}
             subTitle={
               <div>
-                <p>An unexpected error occurred. This has been automatically reported.</p>
+                <p>{i18n.t('common:errorBoundary.description')}</p>
                 {import.meta.env.DEV && this.state.error && (
                   <ErrorDetails>
-                    <ErrorSummary>Error Details (Development Mode)</ErrorSummary>
+                    <ErrorSummary>{i18n.t('common:errorBoundary.errorDetails')}</ErrorSummary>
                     <ErrorContent>
                       <strong>Error:</strong> {this.state.error.message}
                       <br />
@@ -135,7 +136,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             }
             extra={[
               <RediaccButton key="retry" onClick={this.handleRetry} icon={<BugOutlined />}>
-                Try Again
+                {i18n.t('common:errorBoundary.tryAgain')}
               </RediaccButton>,
               <RediaccButton
                 key="reload"
@@ -143,7 +144,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 onClick={this.handleReload}
                 icon={<ReloadOutlined />}
               >
-                Reload Page
+                {i18n.t('common:errorBoundary.reloadPage')}
               </RediaccButton>,
             ]}
           />

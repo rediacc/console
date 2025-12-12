@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Form, Input, Modal, Select } from 'antd';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import apiClient from '@/api/client';
 import { RediaccButton, RediaccStack } from '@/components/ui';
@@ -51,6 +52,7 @@ interface EndpointSelectorProps {
 const HEALTH_INDICATOR_SYMBOL = '●';
 
 const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComplete }) => {
+  const { t } = useTranslation('auth');
   const { confirm, contextHolder } = useConfirmDialog();
   const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
   const [selectedEndpoint, setSelectedEndpoint] = useState<Endpoint | null>(null);
@@ -297,8 +299,8 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
     e.stopPropagation(); // Prevent dropdown from closing
 
     confirm({
-      title: 'Remove Custom Endpoint',
-      content: 'Are you sure you want to remove this custom endpoint?',
+      title: t('endpointSelector.removeTitle'),
+      content: t('endpointSelector.removeConfirm'),
       onOk: async () => {
         endpointService.removeCustomEndpoint(endpointId);
 
@@ -311,14 +313,14 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           setSelectedEndpoint(null);
         }
 
-        showMessage('success', 'Custom endpoint removed');
+        showMessage('success', t('endpointSelector.removeSuccess'));
       },
     });
   };
 
   // Show loading state
   if (loading) {
-    return <LoadingText color="secondary">Loading...</LoadingText>;
+    return <LoadingText color="secondary">{t('endpointSelector.loading')}</LoadingText>;
   }
 
   // If no endpoint selected and we have endpoints, show the first one
@@ -416,7 +418,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             data-testid="endpoint-option-add-custom"
           >
             <AddCustomOption>
-              <PlusOutlined /> Add Custom Endpoint...
+              <PlusOutlined /> {t('endpointSelector.addCustom')}
             </AddCustomOption>
           </Option>
         </StyledSelect>
@@ -436,7 +438,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
       {/* Add Custom Endpoint Modal */}
       <Modal
-        title="Add Custom Endpoint"
+        title={t('endpointSelector.addTitle')}
         open={customModal.isOpen}
         onCancel={() => {
           customModal.close();
@@ -447,28 +449,28 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
         <Form form={customForm} layout="vertical" onFinish={handleAddCustomEndpoint}>
           <Form.Item
             name="name"
-            label="Endpoint Name"
+            label={t('endpointSelector.nameLabel')}
             rules={[
-              { required: true, message: 'Please enter a name for this endpoint' },
-              { min: 2, message: 'Name must be at least 2 characters' },
+              { required: true, message: t('endpointSelector.nameRequired') },
+              { min: 2, message: t('endpointSelector.nameMinLength') },
             ]}
           >
-            <Input placeholder="e.g., Staging Server" data-testid="custom-endpoint-name-input" />
+            <Input placeholder={t('endpointSelector.namePlaceholder')} data-testid="custom-endpoint-name-input" />
           </Form.Item>
 
           <Form.Item
             name="url"
-            label="API URL"
+            label={t('endpointSelector.urlLabel')}
             rules={[
-              { required: true, message: 'Please enter the API URL' },
+              { required: true, message: t('endpointSelector.urlRequired') },
               {
                 pattern: /^https?:\/\/.+/,
-                message: 'URL must start with http:// or https://',
+                message: t('endpointSelector.urlFormat'),
               },
             ]}
-            extra="The URL will be normalized to end with /api if not already"
+            extra={t('endpointSelector.urlHelp')}
           >
-            <Input placeholder="https://api.example.com" data-testid="custom-endpoint-url-input" />
+            <Input placeholder={t('endpointSelector.urlPlaceholder')} data-testid="custom-endpoint-url-input" />
           </Form.Item>
 
           <FormActionsRow>

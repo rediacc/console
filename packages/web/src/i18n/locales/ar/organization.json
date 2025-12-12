@@ -12,7 +12,7 @@
       "addPermissionButton": "إضافة إذن",
       "addPermissionsTab": "إضافة أذونات",
       "assignUserTitle": "تعيين المستخدم",
-      "assignUserTo": "إلى {{مجموعة}}",
+      "assignUserTo": "إلى {{group}}",
       "createGroupTitle": "إنشاء مجموعة الأذونات",
       "currentPermissionsTab": "الأذونات الحالية",
       "deleteGroupDescription": "هل أنت متأكد أنك تريد حذف المجموعة \"{{group}}\"؟",

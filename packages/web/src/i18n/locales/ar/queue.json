@@ -28,7 +28,7 @@
     "permanentlyFailed": "فشلت مهمة قائمة الانتظار {{taskId}} نهائيًا بعد {{attempts}} من المحاولات ({{teamName}} - {{machineName}})",
     "permanentlyFailedWithReason": "فشلت مهمة قائمة الانتظار {{taskId}} بشكل دائم: {{reason}} ({{teamName}} - {{machineName}})",
     "queuedForRetry": "مهمة قائمة الانتظار {{taskId}} في قائمة الانتظار لإعادة المحاولة (محاولة {{attempt}} من {{maxAttempts}}) ({{teamName}} - {{machineName}})",
-    "staleTask": "يبدو أن مهمة قائمة الانتظار {{taskId}} قديمة (لا يوجد تقدم لمدة {{دقائق}} دقيقة)",
+    "staleTask": "يبدو أن مهمة قائمة الانتظار {{taskId}} قديمة (لا يوجد تقدم لمدة {{minutes}} دقيقة)",
     "startedMonitoring": "تم بدء مراقبة مهمة قائمة الانتظار {{taskId}} ({{teamName}} - {{machineName}})",
     "startedProcessing": "بدأت مهمة قائمة الانتظار {{taskId}} في المعالجة ({{teamName}} - {{machineName}})",
     "stoppedMonitoring": "تم إيقاف مهمة قائمة انتظار المراقبة {{taskId}}",
@@ -45,7 +45,7 @@
     "clearCompleted": "مسح مكتمل",
     "description": "تتم إدارة عناصر قائمة الانتظار ذات الأولوية القصوى (الأولوية 1) لضمان تشغيل مهمة واحدة فقط لكل جسر في المرة الواحدة.",
     "emptyState": "لا توجد عناصر ذات أولوية قصوى في قائمة الانتظار",
-    "itemQueued": "المهمة ذات الأولوية القصوى في قائمة الانتظار. المنصب: {{الموضع}}",
+    "itemQueued": "المهمة ذات الأولوية القصوى في قائمة الانتظار. الموضع: {{position}}",
     "taskCancelled": "تم إلغاء المهمة: لديك بالفعل مهمة ذات أولوية 1 على هذا الجسر",
     "title": "مدير قائمة الانتظار",
     "tooltip": "مدير قائمة الانتظار ذات الأولوية القصوى"
@@ -111,11 +111,25 @@
   "taskStatus": {
     "cancelledDescription": "تم إلغاء المهمة ولن تتم معالجتها.",
     "cancelledTitle": "تم إلغاء المهمة",
-    "completedDescription": "انتهت المهمة بنجاح بعد {{دقائق}} دقيقة.",
+    "completedDescription": "انتهت المهمة بنجاح بعد {{minutes}} دقيقة.",
     "completedTitle": "تمت المهمة بنجاح",
     "failedDescription": "لقد فشلت المهمة بشكل دائم بعد إعادة المحاولة {{retries}}.",
     "failedTitle": "فشلت المهمة نهائيًا"
   },
   "team": "فريق",
-  "title": "إدارة قائمة الانتظار"
+  "title": "إدارة قائمة الانتظار",
+  "columns": {
+    "taskId": "معرف المهمة",
+    "status": "حالة",
+    "priority": "أولوية",
+    "age": "العمر",
+    "team": "فريق",
+    "machine": "آلة",
+    "region": "منطقة",
+    "bridge": "جسر",
+    "response": "استجابة",
+    "errorRetries": "خطأ / إعادة المحاولات",
+    "createdBy": "أنشئت بواسطة",
+    "created": "تم إنشاؤها"
+  }
 }

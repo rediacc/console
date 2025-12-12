@@ -7,27 +7,27 @@
       "deleteGroupFailed": "Échec de la suppression du groupe d'autorisations",
       "removePermissionFailed": "Échec de la suppression de l'autorisation du groupe"
     },
-    "heading": "Access Control",
+    "heading": "Contrôle d'accès",
     "modals": {
-      "addPermissionButton": "Add Permission",
-      "addPermissionsTab": "Add Permissions",
-      "assignUserTitle": "Assign User",
-      "assignUserTo": "to {{group}}",
-      "createGroupTitle": "Create Permission Group",
-      "currentPermissionsTab": "Current Permissions",
-      "deleteGroupDescription": "Are you sure you want to delete group \"{{group}}\"?",
-      "deleteGroupTitle": "Delete Permission Group",
-      "groupNameRequired": "Please enter a group name",
-      "groupPlaceholder": "Enter group name",
-      "managePermissionsTitle": "Manage Permissions",
-      "noPermissions": "No permissions assigned",
-      "permissionPlaceholder": "Select permission to add",
-      "userPlaceholder": "Select user"
+      "addPermissionButton": "Ajouter une autorisation",
+      "addPermissionsTab": "Ajouter des autorisations",
+      "assignUserTitle": "Assigner un utilisateur",
+      "assignUserTo": "à {{group}}",
+      "createGroupTitle": "Créer un groupe d'autorisations",
+      "currentPermissionsTab": "Autorisations actuelles",
+      "deleteGroupDescription": "Êtes-vous sûr de vouloir supprimer le groupe \"{{group}}\" ?",
+      "deleteGroupTitle": "Supprimer le groupe d'autorisations",
+      "groupNameRequired": "Veuillez saisir un nom de groupe",
+      "groupPlaceholder": "Saisissez le nom du groupe",
+      "managePermissionsTitle": "Gérer les autorisations",
+      "noPermissions": "Aucune autorisation assignée",
+      "permissionPlaceholder": "Sélectionnez l'autorisation à ajouter",
+      "userPlaceholder": "Sélectionnez l'utilisateur"
     },
     "permissions": {
-      "searchPlaceholder": "Search permission groups...",
-      "subtitle": "Manage permission groups and their assignments",
-      "title": "Permission Groups"
+      "searchPlaceholder": "Rechercher des groupes d'autorisations...",
+      "subtitle": "Gérer les groupes d'autorisations et leurs attributions",
+      "title": "Groupes d'autorisations"
     },
     "success": {
       "groupCreated": "Groupe d'autorisations \"{{group}}\" créé avec succès",
@@ -42,23 +42,23 @@
     }
   },
   "teams": {
-    "heading": "Teams",
+    "heading": "Équipes",
     "manageMembers": {
-      "accessStatus": "Has Access",
-      "addTab": "Add Member",
-      "currentTab": "Current Members",
-      "empty": "No members in this team",
-      "memberStatus": "Member",
-      "pendingStatus": "Pending",
-      "removeButton": "Remove",
-      "removeDescription": "Are you sure you want to remove \"{{email}}\" from this team?",
-      "removeTitle": "Remove Team Member",
-      "selectUser": "Select user",
-      "title": "Manage Team Members"
+      "accessStatus": "A accès",
+      "addTab": "Ajouter un membre",
+      "currentTab": "Membres actuels",
+      "empty": "Aucun membre dans cette équipe",
+      "memberStatus": "Membre",
+      "pendingStatus": "En attente",
+      "removeButton": "Retirer",
+      "removeDescription": "Êtes-vous sûr de vouloir retirer \"{{email}}\" de cette équipe ?",
+      "removeTitle": "Retirer le membre de l'équipe",
+      "selectUser": "Sélectionnez l'utilisateur",
+      "title": "Gérer les membres de l'équipe"
     },
-    "searchPlaceholder": "Search teams...",
-    "subtitle": "Manage teams and their members",
-    "title": "Teams"
+    "searchPlaceholder": "Rechercher des équipes...",
+    "subtitle": "Gérer les équipes et leurs membres",
+    "title": "Équipes"
   },
   "users": {
     "errors": {
@@ -75,30 +75,30 @@
     },
     "form": {
       "emailLabel": "Email",
-      "passwordLabel": "Password",
-      "passwordPlaceholder": "Enter password"
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Saisissez le mot de passe"
     },
-    "heading": "Users",
+    "heading": "Utilisateurs",
     "lastActive": {
-      "never": "Never"
+      "never": "Jamais"
     },
     "modals": {
-      "assignTitle": "Assign Permissions",
-      "createTitle": "Create User",
-      "permissionGroupLabel": "Permission Group",
-      "permissionGroupPlaceholder": "Select permission group",
-      "permissionsLabel": "permissions",
-      "usersLabel": "users"
+      "assignTitle": "Assigner des autorisations",
+      "createTitle": "Créer un utilisateur",
+      "permissionGroupLabel": "Groupe d'autorisations",
+      "permissionGroupPlaceholder": "Sélectionnez le groupe d'autorisations",
+      "permissionsLabel": "autorisations",
+      "usersLabel": "utilisateurs"
     },
     "permissionGroups": {
-      "none": "No Group"
+      "none": "Aucun groupe"
     },
-    "searchPlaceholder": "Search users...",
+    "searchPlaceholder": "Rechercher des utilisateurs...",
     "status": {
-      "active": "Active",
-      "inactive": "Inactive"
+      "active": "Actif",
+      "inactive": "Inactif"
     },
-    "subtitle": "Manage users and their permissions",
+    "subtitle": "Gérer les utilisateurs et leurs autorisations",
     "success": {
       "activated": "Utilisateur \"{{email}}\" activé",
       "created": "L'utilisateur \"{{email}}\" a été créé avec succès",
@@ -111,6 +111,6 @@
       "sessionTerminated": "Session terminée avec succès",
       "userVaultUpdated": "Coffre-fort d'utilisateurs mis à jour avec succès"
     },
-    "title": "Users"
+    "title": "Utilisateurs"
   }
 }

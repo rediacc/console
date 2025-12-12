@@ -4,7 +4,25 @@
     "title": "Filters",
     "onlyStale": "Only Stale Items",
     "dateFrom": "From",
-    "dateTo": "To"
+    "dateTo": "To",
+    "teamPlaceholder": "Team",
+    "machinePlaceholder": "Machine",
+    "regionPlaceholder": "Region",
+    "bridgePlaceholder": "Bridge",
+    "statusPlaceholder": "Status",
+    "taskIdPlaceholder": "Task ID (GUID)"
+  },
+  "trace": {
+    "taskInfo": "Task Information",
+    "processingInfo": "Processing Information",
+    "sshTestResult": "SSH Test Result",
+    "systemInfo": "System Information",
+    "tasksBefore": "Tasks Before This One",
+    "tasksAfter": "Tasks After This One",
+    "noTasksAhead": "No tasks ahead",
+    "queueDepth": "Current Queue Depth",
+    "activeProcessing": "Active Processing Count",
+    "processingCapacity": "Processing Capacity"
   },
   "includeCancelled": "Include Cancelled",
   "includeCompleted": "Include Completed",
@@ -100,6 +118,20 @@
   },
   "team": "Team",
   "title": "Queue Management",
+  "columns": {
+    "taskId": "Task ID",
+    "status": "Status",
+    "priority": "Priority",
+    "age": "Age",
+    "team": "Team",
+    "machine": "Machine",
+    "region": "Region",
+    "bridge": "Bridge",
+    "response": "Response",
+    "errorRetries": "Error / Retries",
+    "createdBy": "Created By",
+    "created": "Created"
+  },
   "errors": {
     "createFailed": "Failed to create queue item",
     "updateFailed": "Failed to update queue item",

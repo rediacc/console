@@ -71,7 +71,7 @@
     "deleteSuccess": "Clúster eliminado correctamente",
     "deleteWarning": "¿Está seguro de que desea eliminar el clúster '{{name}}'?",
     "editCluster": "Editar grupo",
-    "fsid": "Blé",
+    "fsid": "FSID",
     "manageMachines": "Administrar máquinas",
     "monitorHosts": "Monitorear hosts",
     "name": "Nombre del clúster",
@@ -83,9 +83,9 @@
     "updateSuccess": "Clúster actualizado correctamente"
   },
   "common": {
-    "actions": "Comportamiento",
+    "actions": "Acciones",
     "cancel": "Cancelar",
-    "close": "Cerca",
+    "close": "Cerrar",
     "confirm": "Confirmar",
     "delete": "Borrar",
     "details": "Detalles",
@@ -95,7 +95,7 @@
     "loading": "Cargando...",
     "none": "Ninguna",
     "refresh": "Refrescar",
-    "save": "Ahorrar",
+    "save": "Guardar",
     "success": "Éxito",
     "vault": "Bóveda"
   },
@@ -111,7 +111,7 @@
   },
   "description": "Administre clústeres, grupos, imágenes e instantáneas de almacenamiento distribuido",
   "errors": {
-    "operationFailed": "Error al {{operación}} {{recurso}}"
+    "operationFailed": "Error al {{operation}} {{resource}}"
   },
   "functions": {
     "cluster_dashboard": "Panel de control de clúster abierto",
@@ -215,18 +215,18 @@
     "crush": "Regla de aplastamiento",
     "deletePool": "Eliminar grupo",
     "deleteSuccess": "Grupo eliminado con éxito",
-    "deleteWarning": "¿Estás segura de que quieres eliminar el grupo '{{name}}'?",
+    "deleteWarning": "¿Está seguro de que desea eliminar el pool '{{name}}'?",
     "editPool": "Editar grupo",
     "minSize": "Tamaño mínimo",
-    "name": "Nombre de la piscina",
-    "noPools": "No se encontraron piscinas",
+    "name": "Nombre del pool",
+    "noPools": "No se encontraron pools",
     "pgNum": "Número de PG",
     "pgpNum": "Número PGP",
-    "poolDetails": "Detalles de la piscina",
-    "poolId": "ID de piscina",
-    "poolName": "Nombre de la piscina",
+    "poolDetails": "Detalles del pool",
+    "poolId": "ID del pool",
+    "poolName": "Nombre del pool",
     "size": "Tamaño",
-    "title": "Quinielas",
+    "title": "Pools",
     "updateSuccess": "Grupo actualizado exitosamente"
   },
   "queue": {
@@ -253,7 +253,7 @@
   "tabs": {
     "clusters": "Clústeres",
     "machines": "maquinas",
-    "pools": "Quinielas"
+    "pools": "Pools"
   },
   "title": "Almacenamiento distribuido",
   "warnings": {

@@ -1,4 +1,4 @@
-import { Statistic, Timeline, Typography } from 'antd';
+import { Timeline, Typography } from 'antd';
 import { Link as RouterLink } from 'react-router-dom';
 import styled from 'styled-components';
 import {
@@ -177,22 +177,6 @@ export const ActionIcon = styled.span<{ $color: IconColorVariant }>`
 export const ErrorText = styled(RediaccText)`
   && {
     color: ${({ theme }) => theme.colors.error};
-  }
-`;
-
-type StatisticVariant = 'primary' | 'warning' | 'error' | 'success' | 'info' | 'textPrimary';
-
-export const StyledStatistic = styled(Statistic)<{
-  $variant?: StatisticVariant;
-  $critical?: boolean;
-}>`
-  .ant-statistic-content-value {
-    color: ${({ theme, $variant, $critical }) =>
-      $critical
-        ? theme.colors.error
-        : $variant
-          ? theme.colors[$variant]
-          : theme.colors.textPrimary};
   }
 `;
 

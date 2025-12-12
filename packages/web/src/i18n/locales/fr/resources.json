@@ -90,7 +90,7 @@
     "region": "Région",
     "save": "Sauvegarder",
     "team": "Équipe",
-    "vault": "Sauter",
+    "vault": "Coffre-fort",
     "vaultVersion": "Version du coffre-fort",
     "yes": "Oui"
   },
@@ -180,7 +180,7 @@
   },
   "machines": {
     "createMachine": "Ajouter une machine",
-    "machineName": "Nom de l'appareil",
+    "machineName": "Nom de la machine",
     "placeholders": {
       "enterMachineName": "Entrez le nom de la machine"
     }
@@ -350,7 +350,7 @@
     "deploymentQueued": "{{count}} tâches de déploiement mises en file d'attente avec succès",
     "destinationMachineNotFound": "La machine de destination '{{machine}}' est introuvable dans l'équipe",
     "destinationStorageNotFound": "Le stockage de destination '{{storage}}' est introuvable dans l'équipe",
-    "deviceName": "Appareil",
+    "deviceName": "Périphérique",
     "diskSpace": "Espace disque",
     "diskUsage": "Utilisation du disque",
     "editRepo": "Modifier le référentiel",

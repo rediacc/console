@@ -7,27 +7,27 @@
       "deleteGroupFailed": "Не удалось удалить группу разрешений.",
       "removePermissionFailed": "Не удалось удалить разрешение из группы."
     },
-    "heading": "Access Control",
+    "heading": "Контроль доступа",
     "modals": {
-      "addPermissionButton": "Add Permission",
-      "addPermissionsTab": "Add Permissions",
-      "assignUserTitle": "Assign User",
-      "assignUserTo": "to {{group}}",
-      "createGroupTitle": "Create Permission Group",
-      "currentPermissionsTab": "Current Permissions",
-      "deleteGroupDescription": "Are you sure you want to delete group \"{{group}}\"?",
-      "deleteGroupTitle": "Delete Permission Group",
-      "groupNameRequired": "Please enter a group name",
-      "groupPlaceholder": "Enter group name",
-      "managePermissionsTitle": "Manage Permissions",
-      "noPermissions": "No permissions assigned",
-      "permissionPlaceholder": "Select permission to add",
-      "userPlaceholder": "Select user"
+      "addPermissionButton": "Добавить разрешение",
+      "addPermissionsTab": "Добавить разрешения",
+      "assignUserTitle": "Назначить пользователя",
+      "assignUserTo": "в {{group}}",
+      "createGroupTitle": "Создать группу разрешений",
+      "currentPermissionsTab": "Текущие разрешения",
+      "deleteGroupDescription": "Вы уверены, что хотите удалить группу «{{group}}»?",
+      "deleteGroupTitle": "Удалить группу разрешений",
+      "groupNameRequired": "Пожалуйста, введите название группы",
+      "groupPlaceholder": "Введите название группы",
+      "managePermissionsTitle": "Управление разрешениями",
+      "noPermissions": "Разрешения не назначены",
+      "permissionPlaceholder": "Выберите разрешение для добавления",
+      "userPlaceholder": "Выберите пользователя"
     },
     "permissions": {
-      "searchPlaceholder": "Search permission groups...",
-      "subtitle": "Manage permission groups and their assignments",
-      "title": "Permission Groups"
+      "searchPlaceholder": "Поиск групп разрешений...",
+      "subtitle": "Управление группами разрешений и их назначениями",
+      "title": "Группы разрешений"
     },
     "success": {
       "groupCreated": "Группа разрешений «{{group}}» успешно создана.",
@@ -37,28 +37,28 @@
       "userAssigned": "Пользователь назначен группе разрешений \"{{group}}\""
     },
     "tabs": {
-      "permissions": "Permissions",
-      "sessions": "Sessions"
+      "permissions": "Разрешения",
+      "sessions": "Сеансы"
     }
   },
   "teams": {
-    "heading": "Teams",
+    "heading": "Команды",
     "manageMembers": {
-      "accessStatus": "Has Access",
-      "addTab": "Add Member",
-      "currentTab": "Current Members",
-      "empty": "No members in this team",
-      "memberStatus": "Member",
-      "pendingStatus": "Pending",
-      "removeButton": "Remove",
-      "removeDescription": "Are you sure you want to remove \"{{email}}\" from this team?",
-      "removeTitle": "Remove Team Member",
-      "selectUser": "Select user",
-      "title": "Manage Team Members"
+      "accessStatus": "Имеет доступ",
+      "addTab": "Добавить участника",
+      "currentTab": "Текущие участники",
+      "empty": "В этой команде нет участников",
+      "memberStatus": "Участник",
+      "pendingStatus": "В ожидании",
+      "removeButton": "Удалить",
+      "removeDescription": "Вы уверены, что хотите удалить «{{email}}» из этой команды?",
+      "removeTitle": "Удалить участника команды",
+      "selectUser": "Выберите пользователя",
+      "title": "Управление участниками команды"
     },
-    "searchPlaceholder": "Search teams...",
-    "subtitle": "Manage teams and their members",
-    "title": "Teams"
+    "searchPlaceholder": "Поиск команд...",
+    "subtitle": "Управление командами и их участниками",
+    "title": "Команды"
   },
   "users": {
     "errors": {
@@ -74,31 +74,31 @@
       "userVaultUpdateFailed": "Не удалось обновить хранилище пользователей."
     },
     "form": {
-      "emailLabel": "Email",
-      "passwordLabel": "Password",
-      "passwordPlaceholder": "Enter password"
+      "emailLabel": "Электронная почта",
+      "passwordLabel": "Пароль",
+      "passwordPlaceholder": "Введите пароль"
     },
-    "heading": "Users",
+    "heading": "Пользователи",
     "lastActive": {
-      "never": "Never"
+      "never": "Никогда"
     },
     "modals": {
-      "assignTitle": "Assign Permissions",
-      "createTitle": "Create User",
-      "permissionGroupLabel": "Permission Group",
-      "permissionGroupPlaceholder": "Select permission group",
-      "permissionsLabel": "permissions",
-      "usersLabel": "users"
+      "assignTitle": "Назначить разрешения",
+      "createTitle": "Создать пользователя",
+      "permissionGroupLabel": "Группа разрешений",
+      "permissionGroupPlaceholder": "Выберите группу разрешений",
+      "permissionsLabel": "разрешения",
+      "usersLabel": "пользователи"
     },
     "permissionGroups": {
-      "none": "No Group"
+      "none": "Нет группы"
     },
-    "searchPlaceholder": "Search users...",
+    "searchPlaceholder": "Поиск пользователей...",
     "status": {
-      "active": "Active",
-      "inactive": "Inactive"
+      "active": "Активный",
+      "inactive": "Неактивный"
     },
-    "subtitle": "Manage users and their permissions",
+    "subtitle": "Управление пользователями и их разрешениями",
     "success": {
       "activated": "Пользователь \"{{email}}\" активирован",
       "created": "Пользователь «{{email}}» успешно создан.",
@@ -111,6 +111,6 @@
       "sessionTerminated": "Сеанс успешно завершен",
       "userVaultUpdated": "Хранилище пользователей успешно обновлено"
     },
-    "title": "Users"
+    "title": "Пользователи"
   }
 }

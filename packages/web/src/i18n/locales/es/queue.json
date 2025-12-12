@@ -28,7 +28,7 @@
     "permanentlyFailed": "La tarea de cola {{taskId}} falló permanentemente después de {{attempts}} intentos ({{teamName}} - {{machineName}})",
     "permanentlyFailedWithReason": "La tarea de cola {{taskId}} falló permanentemente: {{reason}} ({{teamName}} - {{machineName}})",
     "queuedForRetry": "Tarea en cola {{taskId}} en cola para reintento (intento {{attempt}} de {{maxAttempts}}) ({{teamName}} - {{machineName}})",
-    "staleTask": "La tarea en cola {{taskId}} parece estar obsoleta (sin progreso durante {{minutos}} minutos)",
+    "staleTask": "La tarea en cola {{taskId}} parece estar obsoleta (sin progreso durante {{minutes}} minutos)",
     "startedMonitoring": "Se inició la tarea de cola de monitoreo {{taskId}} ({{teamName}} - {{machineName}})",
     "startedProcessing": "La tarea en cola {{taskId}} comenzó a procesarse ({{teamName}} - {{machineName}})",
     "stoppedMonitoring": "Se detuvo la tarea de la cola de monitoreo {{taskId}}",
@@ -45,7 +45,7 @@
     "clearCompleted": "Borrar completada",
     "description": "Los elementos de la cola de mayor prioridad (prioridad 1) se administran para garantizar que solo se ejecute una tarea por puente a la vez.",
     "emptyState": "No hay elementos de máxima prioridad en la cola",
-    "itemQueued": "Tarea de mayor prioridad en cola. Posición: {{posición}}",
+    "itemQueued": "Tarea de mayor prioridad en cola. Posición: {{position}}",
     "taskCancelled": "Tarea cancelada: ya tengo una tarea de prioridad 1 en este puente",
     "title": "Administrador de colas",
     "tooltip": "Gestor de colas de máxima prioridad"
@@ -111,11 +111,25 @@
   "taskStatus": {
     "cancelledDescription": "La tarea fue cancelada y no será procesada.",
     "cancelledTitle": "Tarea cancelada",
-    "completedDescription": "La tarea finalizó exitosamente después de {{minutos}} minutos.",
+    "completedDescription": "La tarea finalizó exitosamente después de {{minutes}} minutos.",
     "completedTitle": "Tarea completada con éxito",
     "failedDescription": "La tarea falló permanentemente después de {{retries}} reintentos.",
     "failedTitle": "La tarea falló permanentemente"
   },
   "team": "Equipo",
-  "title": "Gestión de colas"
+  "title": "Gestión de colas",
+  "columns": {
+    "taskId": "ID de tarea",
+    "status": "Estado",
+    "priority": "Prioridad",
+    "age": "Edad",
+    "team": "Equipo",
+    "machine": "Máquina",
+    "region": "Región",
+    "bridge": "Puente",
+    "response": "Respuesta",
+    "errorRetries": "Error / Reintentos",
+    "createdBy": "Creado por",
+    "created": "Creado"
+  }
 }

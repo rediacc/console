@@ -81,7 +81,7 @@
   },
   "general": {
     "actions": "Aktionen",
-    "cancel": "Stornieren",
+    "cancel": "Abbrechen",
     "configureVault": "Vault konfigurieren – {{name}}",
     "create": "Erstellen",
     "delete": "Löschen",
@@ -90,7 +90,7 @@
     "region": "Region",
     "save": "Speichern",
     "team": "Team",
-    "vault": "Gewölbe",
+    "vault": "Konfiguration",
     "vaultVersion": "Vault-Version",
     "yes": "Ja"
   },
@@ -276,7 +276,7 @@
     "activeState": "Zustand",
     "activity": "Aktivität",
     "addCredential": "Anmeldeinformationen hinzufügen",
-    "advanced": "fortschrittlich",
+    "advanced": "Erweitert",
     "affectedForks": "Betroffene Forks:",
     "affectedMachines": "Maschinen mit Bereitstellungen:",
     "allBackupsFailed": "Alle Sicherungen sind fehlgeschlagen",

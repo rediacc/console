@@ -73,7 +73,7 @@
   "securityTip2": "Examinez et ajustez les limites de ressources en fonction de vos besoins",
   "securityTip3": "Activer les fonctionnalités de sécurité appropriées pour une utilisation en production",
   "securityTip4": "Gardez tous les composants à jour avec les dernières versions",
-  "selectMachine": "Sélectionnez un appareil",
+  "selectMachine": "Sélectionnez une machine",
   "selectTags": "Sélectionnez les balises...",
   "selectTeam": "Sélectionnez une équipe",
   "selectTeamAndMachine": "Sélectionnez une équipe pour continuer",
