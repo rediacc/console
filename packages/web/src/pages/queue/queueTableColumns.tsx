@@ -148,7 +148,6 @@ export const getQueueColumns = ({
       <Space size="small">
         <Tooltip title={t('common:tooltips.trace')}>
           <RediaccButton
-            size="sm"
             iconOnly
             icon={<HistoryOutlined />}
             onClick={() => record.taskId && handleViewTrace(record.taskId)}
@@ -161,7 +160,6 @@ export const getQueueColumns = ({
           record.healthStatus !== 'CANCELLING' && (
             <Tooltip title={t('common:tooltips.cancel')}>
               <RediaccButton
-                size="sm"
                 danger
                 iconOnly
                 icon={<CloseCircleOutlined />}

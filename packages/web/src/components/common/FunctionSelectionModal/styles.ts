@@ -92,7 +92,7 @@ export const FunctionOption = styled.button.attrs({ type: 'button' })<{
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.XS}px;
-  min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
+  min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
   transition: ${({ theme }) => theme.transitions.HOVER};
   text-align: left;
   font: inherit;

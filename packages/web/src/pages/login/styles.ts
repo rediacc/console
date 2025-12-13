@@ -1,4 +1,4 @@
-import { Input as AntdInput, Form } from 'antd';
+import { Form } from 'antd';
 import styled from 'styled-components';
 import { RediaccButton, RediaccInput, RediaccPasswordInput } from '@/components/ui';
 import { focusRing } from '@/styles/mixins';
@@ -134,7 +134,7 @@ export const TFAModalTitle = styled(FlexRow).attrs({ $gap: 'SM' })`
   }
 `;
 
-export const TFACodeInput = styled(AntdInput)`
+export const TFACodeInput = styled(RediaccInput)`
   && {
     font-size: ${({ theme }) => theme.fontSize.XL}px;
     letter-spacing: ${({ theme }) => theme.spacing.SM}px;

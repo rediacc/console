@@ -59,7 +59,7 @@ export const ActionsGroup = styled(ActionGroup)`
 export const SearchInput = styled(RediaccSearchInput)`
   && {
     width: ${({ theme }) => theme.dimensions.SEARCH_INPUT_WIDTH}px;
-    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
 
@@ -93,7 +93,7 @@ export const EmptyActions = styled(RediaccStack).attrs({
 `;
 
 const actionButtonStyles = css`
-  min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
+  min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
   border-radius: ${({ theme }) => theme.borderRadius.LG}px;
 `;
 

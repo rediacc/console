@@ -1,7 +1,6 @@
 import { Input as AntInput, InputNumber as AntInputNumber } from 'antd';
 import styled, { css } from 'styled-components';
-import type { StyledTheme } from '@/styles/styledTheme';
-import type { InputSize, InputVariant } from './RediaccInput.types';
+import type { InputVariant } from './RediaccInput.types';
 
 const { TextArea: AntTextArea, Password: AntPassword, Search: AntSearch } = AntInput;
 
@@ -52,19 +51,6 @@ export const inputPrefixStyles = css`
   }
 `;
 
-const INPUT_HEIGHT_MAP: Record<InputSize, keyof StyledTheme['dimensions']> = {
-  sm: 'INPUT_HEIGHT_SM', // 36px
-  md: 'INPUT_HEIGHT', // 44px
-};
-
-/**
- * Resolves height for each input size
- */
-export const resolveInputHeight = (theme: StyledTheme, size: InputSize = 'md'): number => {
-  const heightKey = INPUT_HEIGHT_MAP[size] ?? 'INPUT_HEIGHT';
-  return theme.dimensions[heightKey];
-};
-
 /**
  * Resolves variant-specific styles for inputs
  */
@@ -81,12 +67,11 @@ const resolveVariantStyles = (variant: InputVariant = 'default') => {
  */
 const baseInputStyles = css<{
   $variant?: InputVariant;
-  $size?: InputSize;
   $fullWidth?: boolean;
   $centered?: boolean;
 }>`
   && {
-    height: ${({ theme, $size }) => resolveInputHeight(theme, $size)}px;
+    height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -130,7 +115,6 @@ const baseInputStyles = css<{
  */
 export const StyledRediaccInput = styled(AntInput)<{
   $variant?: InputVariant;
-  $size?: InputSize;
   $fullWidth?: boolean;
   $centered?: boolean;
 }>`
@@ -141,12 +125,11 @@ export const StyledRediaccInput = styled(AntInput)<{
  * Styled RediaccPasswordInput component
  */
 export const StyledRediaccPasswordInput = styled(AntPassword)<{
-  $size?: InputSize;
   $fullWidth?: boolean;
   $centered?: boolean;
 }>`
   && {
-    height: ${({ theme, $size }) => resolveInputHeight(theme, $size)}px;
+    height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -235,11 +218,10 @@ export const StyledRediaccTextArea = styled(AntTextArea)<{
  * Styled RediaccInputNumber component
  */
 export const StyledRediaccInputNumber = styled(AntInputNumber)<{
-  $size?: InputSize;
   $fullWidth?: boolean;
 }>`
   && {
-    height: ${({ theme, $size }) => resolveInputHeight(theme, $size)}px;
+    height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -274,12 +256,11 @@ export const StyledRediaccInputNumber = styled(AntInputNumber)<{
  * Styled RediaccSearchInput component
  */
 export const StyledRediaccSearchInput = styled(AntSearch)<{
-  $size?: InputSize;
   $fullWidth?: boolean;
 }>`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    min-height: ${({ theme, $size }) => resolveInputHeight(theme, $size)}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
 
     /* Full width modifier */
     ${({ $fullWidth }) =>
@@ -290,19 +271,19 @@ export const StyledRediaccSearchInput = styled(AntSearch)<{
 
     /* Input wrapper */
     .ant-input-wrapper {
-      height: ${({ theme, $size }) => resolveInputHeight(theme, $size)}px;
+      height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     }
 
     /* Search input specific styles */
     input.ant-input {
-      height: ${({ theme, $size }) => resolveInputHeight(theme, $size)}px;
+      height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
       border-radius: ${({ theme }) => theme.borderRadius.LG}px 0 0 ${({ theme }) =>
         theme.borderRadius.LG}px;
     }
 
     /* Search button */
     .ant-input-search-button {
-      height: ${({ theme, $size }) => resolveInputHeight(theme, $size)}px;
+      height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     }
 
     /* Apply focus styles */

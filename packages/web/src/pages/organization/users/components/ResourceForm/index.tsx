@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
-import { Button, Form } from 'antd';
+import { Form } from 'antd';
 import { Controller, FieldValues } from 'react-hook-form';
-import { RediaccStack } from '@/components/ui';
+import { RediaccButton, RediaccStack } from '@/components/ui';
 import { FieldSelect, FormActions, PasswordInput, StyledForm, TextInput } from './styles';
 import { FormFieldConfig, ResourceFormProps } from './types';
 
@@ -121,18 +121,22 @@ function ResourceForm<T extends FieldValues = FieldValues>({
       <FormActions wrapperCol={{ offset: labelCol.span, span: wrapperCol.span }}>
         <RediaccStack direction="horizontal" justify="end" fullWidth>
           {onCancel && (
-            <Button onClick={onCancel} disabled={loading} data-testid="resource-form-cancel-button">
+            <RediaccButton
+              onClick={onCancel}
+              disabled={loading}
+              data-testid="resource-form-cancel-button"
+            >
               {cancelText}
-            </Button>
+            </RediaccButton>
           )}
-          <Button
-            type="primary"
+          <RediaccButton
+            variant="primary"
             htmlType="submit"
             loading={loading}
             data-testid="resource-form-submit-button"
           >
             {submitText}
-          </Button>
+          </RediaccButton>
         </RediaccStack>
       </FormActions>
     </StyledForm>

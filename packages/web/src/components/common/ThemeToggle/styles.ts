@@ -3,8 +3,8 @@ import { RediaccButton } from '@/components/ui';
 
 export const ToggleButton = styled(RediaccButton)`
   && {
-    min-width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+    min-width: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     display: inline-flex;
     align-items: center;

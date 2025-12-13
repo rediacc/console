@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
-import { Alert, Form, Input } from 'antd';
+import { Alert, Form } from 'antd';
 import { useTranslation } from 'react-i18next';
 import apiClient, { api } from '@/api/client';
-import { RediaccButton, RediaccCheckbox, RediaccStack } from '@/components/ui';
+import {
+  RediaccButton,
+  RediaccCheckbox,
+  RediaccInput,
+  RediaccPasswordInput,
+  RediaccStack,
+} from '@/components/ui';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { LanguageLink } from '@/pages/login/components/LanguageLink';
 import { Turnstile } from '@/pages/login/components/Turnstile';
@@ -286,10 +292,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           { min: 3, message: t('auth:registration.companyNameMin') },
         ]}
       >
-        <Input
+        <RediaccInput
           prefix={<BankOutlined />}
           placeholder={t('auth:registration.companyNamePlaceholder')}
-          size="large"
           data-testid="registration-company-input"
         />
       </FormField>
@@ -302,10 +307,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           { type: 'email', message: t('common:messages.invalidEmail') },
         ]}
       >
-        <Input
+        <RediaccInput
           prefix={<MailOutlined />}
           placeholder={t('auth:registration.emailPlaceholder')}
-          size="large"
           autoComplete="email"
           data-testid="registration-email-input"
         />
@@ -319,10 +323,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           { min: 8, message: t('auth:registration.passwordMin') },
         ]}
       >
-        <Input.Password
+        <RediaccPasswordInput
           prefix={<LockOutlined />}
           placeholder={t('auth:registration.passwordPlaceholder')}
-          size="large"
           autoComplete="new-password"
           data-testid="registration-password-input"
         />
@@ -344,10 +347,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           }),
         ]}
       >
-        <Input.Password
+        <RediaccPasswordInput
           prefix={<LockOutlined />}
           placeholder={t('auth:registration.passwordConfirmPlaceholder')}
-          size="large"
           autoComplete="new-password"
           data-testid="registration-password-confirm-input"
         />
@@ -424,7 +426,6 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         <RediaccButton
           htmlType="submit"
           fullWidth
-          size="md"
           loading={loading}
           disabled={isCaptchaEnabled && !ciMode && !turnstileToken}
           data-testid="registration-submit-button"
@@ -462,7 +463,6 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           ]}
         >
           <CodeInput
-            size="md"
             placeholder={t('auth:registration.activationCodePlaceholder')}
             autoComplete="off"
             maxLength={6}
@@ -474,7 +474,6 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           <RediaccButton
             htmlType="submit"
             fullWidth
-            size="md"
             loading={loading}
             data-testid="registration-verify-button"
           >

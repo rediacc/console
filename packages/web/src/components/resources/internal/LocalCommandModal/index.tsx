@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Input, message } from 'antd';
+import { Form, message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import {
   type CheckboxChangeEvent,
   type RadioChangeEvent,
+  RediaccButton,
   RediaccCheckbox,
+  RediaccInput,
   RediaccRadio,
   RediaccText,
 } from '@/components/ui';
@@ -285,7 +287,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
                   label={t('resources:localCommandBuilder.command')}
                   help={t('resources:localCommandBuilder.commandHelp')}
                 >
-                  <Input
+                  <RediaccInput
                     placeholder="docker ps"
                     value={termCommand}
                     onChange={handleTermCommandChange}
@@ -356,16 +358,16 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       </CommandPreview>
 
       <ActionsRow>
-        <Button onClick={onClose}>{t('common:close')}</Button>
-        <Button
-          type="primary"
+        <RediaccButton onClick={onClose}>{t('common:close')}</RediaccButton>
+        <RediaccButton
+          variant="primary"
           icon={<CopyOutlined />}
           onClick={copyToClipboard}
           disabled={isGeneratingToken}
           loading={isGeneratingToken}
         >
           {t('resources:localCommandBuilder.copyCommand')}
-        </Button>
+        </RediaccButton>
       </ActionsRow>
     </StyledModal>
   );

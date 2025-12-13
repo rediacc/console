@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Empty, Modal, message, Space, Table, Tabs, Tag } from 'antd';
+import { Empty, Modal, message, Space, Table, Tabs, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   CephClusterMachine,
@@ -13,6 +13,7 @@ import {
 import { createDateColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector';
+import { RediaccButton } from '@/components/ui';
 import { createSorter, formatTimestampAsIs } from '@/platform';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
@@ -266,8 +267,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
               {t('machines:bulkOperations.selectedCount', { count: selectedRemoveMachines.length })}
             </Tag>
             <RemoveButton
-              type="primary"
-              danger
+              variant="danger"
               icon={<DeleteOutlined />}
               onClick={handleRemoveMachines}
               loading={removingMachines}
@@ -304,13 +304,13 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       className={ModalSize.Large}
       data-testid="ds-manage-cluster-machines-modal"
       footer={[
-        <Button key="cancel" onClick={onCancel} data-testid="ds-manage-machines-cancel">
+        <RediaccButton key="cancel" onClick={onCancel} data-testid="ds-manage-machines-cancel">
           {t('common:actions.cancel')}
-        </Button>,
+        </RediaccButton>,
         activeTab === 'assign' && (
-          <Button
+          <RediaccButton
             key="assign"
-            type="primary"
+            variant="primary"
             icon={<PlusOutlined />}
             loading={assigningMachines}
             disabled={selectedMachines.length === 0}
@@ -318,7 +318,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
             data-testid="ds-manage-machines-assign-button"
           >
             {t('machines:assignToCluster')}
-          </Button>
+          </RediaccButton>
         ),
       ].filter(Boolean)}
     >

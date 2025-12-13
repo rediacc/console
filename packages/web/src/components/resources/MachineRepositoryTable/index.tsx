@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Button, Input, Space, Tooltip, Typography } from 'antd';
+import { Alert, Space, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -16,7 +16,13 @@ import { useTeams } from '@/api/queries/teams';
 import { createActionColumn } from '@/components/common/columns';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccAlert, RediaccStack, RediaccText } from '@/components/ui';
+import {
+  RediaccAlert,
+  RediaccButton,
+  RediaccInput,
+  RediaccStack,
+  RediaccText,
+} from '@/components/ui';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { useQueueAction } from '@/hooks/useQueueAction';
@@ -393,7 +399,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           <Typography.Paragraph>
             {t('resources:repositories.renameMessage', { name: Repository.name })}
           </Typography.Paragraph>
-          <Input
+          <RediaccInput
             defaultValue={Repository.name}
             placeholder={t('resources:repositories.newRepoName')}
             onChange={(e) => {
@@ -472,7 +478,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
               tag: Repository.repositoryTag,
             })}
           </Typography.Paragraph>
-          <Input
+          <RediaccInput
             defaultValue={Repository.repositoryTag}
             placeholder={t('resources:repositories.newTagName')}
             onChange={(e) => {
@@ -1023,8 +1029,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           showIcon
           action={
             <Tooltip title={t('common:actions.retry')}>
-              <Button
-                size="small"
+              <RediaccButton
                 onClick={handleRefresh}
                 data-testid="machine-repo-list-retry"
                 aria-label={t('common:actions.retry')}

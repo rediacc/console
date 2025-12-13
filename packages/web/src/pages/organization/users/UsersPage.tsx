@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Form, Modal, Popconfirm, Select, Space, Tag, Tooltip } from 'antd';
+import { Form, Modal, Popconfirm, Space, Tag, Tooltip } from 'antd';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
@@ -22,6 +22,8 @@ import {
   ListSubtitle as UsersListSubtitle,
   ListTitle as UsersListTitle,
   PageWrapper as UsersPageWrapper,
+  RediaccButton,
+  RediaccSelect,
   SectionHeading as UsersSectionHeading,
   SectionStack as UsersSectionStack,
 } from '@/components/ui';
@@ -189,9 +191,8 @@ const UsersPage: React.FC = () => {
       render: (_: unknown, record: User) => (
         <Space>
           <Tooltip title={tSystem('actions.permissions')}>
-            <Button
-              type="primary"
-              size="small"
+            <RediaccButton
+              variant="primary"
               icon={<SafetyOutlined />}
               onClick={() => {
                 assignPermissionModal.open(record);
@@ -202,9 +203,8 @@ const UsersPage: React.FC = () => {
             />
           </Tooltip>
           <Tooltip title={tSystem('actions.trace')}>
-            <Button
-              type="primary"
-              size="small"
+            <RediaccButton
+              variant="primary"
               icon={<HistoryOutlined />}
               onClick={() =>
                 auditTrace.open({
@@ -230,10 +230,8 @@ const UsersPage: React.FC = () => {
               okButtonProps={{ danger: true }}
             >
               <Tooltip title={tSystem('actions.deactivate')}>
-                <Button
-                  type="primary"
-                  danger
-                  size="small"
+                <RediaccButton
+                  variant="danger"
                   icon={<StopOutlined />}
                   loading={deactivateUserMutation.isPending}
                   data-testid={`system-user-deactivate-button-${record.userEmail}`}
@@ -254,9 +252,8 @@ const UsersPage: React.FC = () => {
               cancelText={tCommon('general.no')}
             >
               <Tooltip title={tSystem('actions.activate')}>
-                <Button
-                  type="primary"
-                  size="small"
+                <RediaccButton
+                  variant="primary"
                   icon={<CheckOutlined />}
                   loading={reactivateUserMutation.isPending}
                   data-testid={`system-user-activate-button-${record.userEmail}`}
@@ -293,8 +290,8 @@ const UsersPage: React.FC = () => {
           data-testid="system-user-table"
           actions={
             <Tooltip title={tSystem('actions.createUser')}>
-              <Button
-                type="primary"
+              <RediaccButton
+                variant="primary"
                 icon={<PlusOutlined />}
                 onClick={() => createUserModal.open()}
                 data-testid="system-create-user-button"
@@ -345,7 +342,7 @@ const UsersPage: React.FC = () => {
           <Form.Item
             label={t('users.modals.permissionGroupLabel', { defaultValue: 'Permission Group' })}
           >
-            <Select
+            <RediaccSelect
               value={selectedUserGroup}
               onChange={(value) => setSelectedUserGroup((value as string) || '')}
               placeholder={t('users.modals.permissionGroupPlaceholder', {

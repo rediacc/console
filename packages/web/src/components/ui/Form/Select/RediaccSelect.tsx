@@ -1,23 +1,11 @@
 import { StyledRediaccSelect } from './RediaccSelect.styles';
-import type { RediaccSelectProps, SelectSize } from './RediaccSelect.types';
-
-const mapToAntdSize = (size: SelectSize = 'md'): 'small' | 'middle' | 'large' => {
-  switch (size) {
-    case 'sm':
-      return 'small';
-    case 'lg':
-      return 'large';
-    case 'md':
-    default:
-      return 'middle';
-  }
-};
+import type { RediaccSelectProps } from './RediaccSelect.types';
 
 /**
  * Unified RediaccSelect Component
  *
  * A single, centralized select component that replaces all legacy select variants.
- * Based on Ant Design Select with consistent theming and size variants.
+ * Based on Ant Design Select with consistent theming.
  *
  * @example
  * // Basic select with options
@@ -35,10 +23,6 @@ const mapToAntdSize = (size: SelectSize = 'md'): 'small' | 'middle' | 'large' =>
  * <RediaccSelect fullWidth options={options} />
  *
  * @example
- * // Small size select with minimum width
- * <RediaccSelect size="small" minWidth={150} options={options} />
- *
- * @example
  * // Searchable select
  * <RediaccSelect showSearch filterOption options={options} />
  *
@@ -54,7 +38,6 @@ const mapToAntdSize = (size: SelectSize = 'md'): 'small' | 'middle' | 'large' =>
  * </RediaccSelect>
  */
 export const RediaccSelect: React.FC<RediaccSelectProps> = ({
-  size = 'md',
   fullWidth = false,
   minWidth,
   value,
@@ -75,12 +58,8 @@ export const RediaccSelect: React.FC<RediaccSelectProps> = ({
   children,
   ...rest
 }) => {
-  const antdSize = mapToAntdSize(size);
-
   return (
     <StyledRediaccSelect
-      $size={size}
-      size={antdSize}
       $fullWidth={fullWidth}
       $minWidth={minWidth}
       value={value}

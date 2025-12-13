@@ -163,7 +163,6 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             {t('ceph:machines.selectMachines')}:
           </RediaccText>
           <RediaccSelect
-            size="sm"
             fullWidth
             mode="multiple"
             placeholder={t('machines:selectMachines')}

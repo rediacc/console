@@ -1,5 +1,6 @@
 import React from 'react';
-import { Form, Input } from 'antd';
+import { Form } from 'antd';
+import { RediaccPasswordInput } from '@/components/ui';
 import type { Rule } from 'antd/es/form';
 
 export interface PasswordConfirmFieldProps {
@@ -17,8 +18,6 @@ export interface PasswordConfirmFieldProps {
   requiredMessage?: string;
   /** Custom mismatch message */
   mismatchMessage?: string;
-  /** Input size (default: 'large') */
-  size?: 'small' | 'middle' | 'large';
   /** Autocomplete attribute (default: 'new-password') */
   autoComplete?: string;
   /** data-testid attribute */
@@ -48,7 +47,6 @@ export const PasswordConfirmField: React.FC<PasswordConfirmFieldProps> = ({
   required = true,
   requiredMessage,
   mismatchMessage = 'Passwords do not match',
-  size = 'large',
   autoComplete = 'new-password',
   'data-testid': dataTestId,
 }) => {
@@ -72,9 +70,8 @@ export const PasswordConfirmField: React.FC<PasswordConfirmFieldProps> = ({
 
   return (
     <Form.Item name={name} label={label} dependencies={[passwordFieldName]} rules={rules}>
-      <Input.Password
+      <RediaccPasswordInput
         placeholder={placeholder}
-        size={size}
         autoComplete={autoComplete}
         data-testid={dataTestId}
       />

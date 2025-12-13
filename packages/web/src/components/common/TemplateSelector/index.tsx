@@ -164,7 +164,6 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             </RediaccText>
             {((multiple && Array.isArray(value) && value.length > 0) || (!multiple && value)) && (
               <ClearButton
-                size="sm"
                 data-testid="resource-modal-template-clear-button"
                 onClick={() => onChange?.(multiple ? [] : null)}
               >
@@ -263,7 +262,6 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
                   <DetailsButton
                     variant="link"
-                    size="sm"
                     data-testid={`resource-modal-template-details-button-${template.name}`}
                     icon={<InfoCircleOutlined />}
                     onClick={(e) => {

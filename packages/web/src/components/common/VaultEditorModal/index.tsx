@@ -173,16 +173,11 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               }}
               data-testid="vault-modal-file-upload"
             >
-              <FileActionButton
-                size="sm"
-                icon={<UploadIcon />}
-                data-testid="vault-modal-import-button"
-              >
+              <FileActionButton icon={<UploadIcon />} data-testid="vault-modal-import-button">
                 {t('vaultEditor.importJson')}
               </FileActionButton>
             </Upload>
             <FileActionButton
-              size="sm"
               icon={<DownloadIcon />}
               onClick={() => {
                 if (importExportHandlers.current) {

@@ -1,7 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
 
-export type SelectSize = 'sm' | 'md' | 'lg';
-
 export interface RediaccSelectOption<T = string> {
   value: T;
   label: ReactNode;
@@ -10,8 +8,6 @@ export interface RediaccSelectOption<T = string> {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface RediaccSelectProps<T = any> {
-  /** Select size: sm (28px), md (32px), lg (40px) */
-  size?: SelectSize;
   /** Stretch to full container width */
   fullWidth?: boolean;
   /** Minimum width in pixels */

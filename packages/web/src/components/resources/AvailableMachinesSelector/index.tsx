@@ -1,9 +1,9 @@
 import React from 'react';
-import { Empty, Select } from 'antd';
+import { Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAvailableMachinesForClone } from '@/api/queries/ceph';
 import { StatusIcon } from '@/components/common/styled';
-import { RediaccTag, RediaccText } from '@/components/ui';
+import { RediaccOption, RediaccSelect, RediaccTag, RediaccText } from '@/components/ui';
 import type { Machine } from '@/types';
 import { CheckCircleOutlined, CloudServerOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 import {
@@ -18,8 +18,6 @@ import {
   TeamTag,
 } from './styles';
 import type { DefaultOptionType } from 'antd/es/select';
-
-const { Option } = Select;
 
 interface AvailableMachinesSelectorProps {
   machines: Machine[];
@@ -76,7 +74,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
     const isDisabled = !allowSelectAssigned && isAssigned;
 
     return (
-      <Option
+      <RediaccOption
         key={machine.machineName}
         value={machine.machineName}
         label={machine.machineName}
@@ -134,12 +132,13 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
             </StatusContainer>
           )}
         </OptionContent>
-      </Option>
+      </RediaccOption>
     );
   };
 
   return (
     <StyledSelect
+      as={RediaccSelect}
       mode="multiple"
       style={style}
       placeholder={placeholder || t('machines:selectMachines')}

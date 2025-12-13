@@ -40,8 +40,8 @@ export const HeaderRight = styled(InlineStack)``;
 export const MenuToggleButton = styled(RediaccButton)`
   && {
     border-radius: 50%;
-    width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_LG}px;
-    height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_LG}px;
+    width: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
+    height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     font-size: ${({ theme }) => theme.fontSize.LG}px;
     color: var(--color-text-primary);
     transition: all 0.2s ease;
@@ -56,8 +56,8 @@ export const MenuToggleButton = styled(RediaccButton)`
 export const UserMenuButton = styled(RediaccButton)`
   && {
     border-radius: 50%;
-    width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_LG}px;
-    height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_LG}px;
+    width: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
+    height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
   }
 `;
 

@@ -219,12 +219,12 @@ export const PageCard = styled(RediaccCard).attrs({ className: 'page-card' })``;
 // TABLE PRIMITIVES
 // ============================================
 
-export const IconActionButton = styled(RediaccButton).attrs({ iconOnly: true, size: 'sm' })`
+export const IconActionButton = styled(RediaccButton).attrs({ iconOnly: true })`
   && {
-    width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-    height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-    min-width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
+    width: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
+    height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
+    min-width: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     border: none;
     background: transparent;
@@ -838,7 +838,7 @@ export const ModalTitleRight = styled.div`
 
 export const LargeInput = styled(RediaccInput)`
   && {
-    height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_LG}px;
+    height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     font-size: ${({ theme }) => theme.fontSize.MD}px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -859,7 +859,7 @@ export const LargeInput = styled(RediaccInput)`
 
 export const LargePasswordInput = styled(RediaccPasswordInput)`
   && {
-    height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_LG}px;
+    height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     font-size: ${({ theme }) => theme.fontSize.MD}px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -904,7 +904,7 @@ export const LargePasswordInput = styled(RediaccPasswordInput)`
 export const SearchInput = styled(RediaccSearchInput)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
   }
 `;
 
@@ -927,7 +927,7 @@ export const LoadingText = styled.div`
 // ============================================
 
 export const ModeSegmented = styled(Segmented)`
-  min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+  min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
 `;
 
 export const LastFetchedText = styled.span`

@@ -1,30 +1,13 @@
 import { Select as AntSelect } from 'antd';
 import styled, { css } from 'styled-components';
 import { disabledState } from '@/styles/mixins';
-import type { StyledTheme } from '@/styles/styledTheme';
-import type { SelectSize } from './RediaccSelect.types';
-
-const SELECT_HEIGHT_MAP: Record<SelectSize, keyof StyledTheme['dimensions']> = {
-  sm: 'CONTROL_HEIGHT_SM', // 28px
-  md: 'CONTROL_HEIGHT', // 32px
-  lg: 'CONTROL_HEIGHT_LG', // 40px
-};
-
-/**
- * Resolves height for each select size
- */
-export const resolveSelectHeight = (theme: StyledTheme, size: SelectSize = 'md'): number => {
-  const heightKey = SELECT_HEIGHT_MAP[size] ?? 'CONTROL_HEIGHT';
-  return theme.dimensions[heightKey];
-};
 
 /**
  * Unified RediaccSelect styled component
  */
 export const StyledRediaccSelect = styled(AntSelect).withConfig({
-  shouldForwardProp: (prop) => !['$size', '$fullWidth', '$minWidth'].includes(prop),
+  shouldForwardProp: (prop) => !['$fullWidth', '$minWidth'].includes(prop),
 })<{
-  $size: SelectSize;
   $fullWidth?: boolean;
   $minWidth?: number;
 }>`
@@ -44,7 +27,7 @@ export const StyledRediaccSelect = styled(AntSelect).withConfig({
 
     /* Selector styling */
     .ant-select-selector {
-      min-height: ${({ theme, $size }) => resolveSelectHeight(theme, $size)}px;
+      min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
       border-radius: ${({ theme }) => theme.borderRadius.MD}px;
       background-color: ${({ theme }) => theme.colors.inputBg};
       border-color: ${({ theme }) => theme.colors.inputBorder};
@@ -59,10 +42,7 @@ export const StyledRediaccSelect = styled(AntSelect).withConfig({
       .ant-select-selection-item {
         display: inline-flex;
         align-items: center;
-        height: ${({ theme, $size }) => {
-          const height = resolveSelectHeight(theme, $size);
-          return height - 8;
-        }}px;
+        height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT - 8}px;
         line-height: ${({ theme }) => theme.lineHeight.TIGHT};
         margin: ${({ theme }) => `${theme.spacing.XS}px ${theme.spacing.XS}px ${theme.spacing.XS}px 0`};
         padding: 0 ${({ theme }) => theme.spacing.XS}px;

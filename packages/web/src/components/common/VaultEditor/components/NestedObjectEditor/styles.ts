@@ -67,7 +67,6 @@ export const KeyInputWrapper = styled.div`
 `;
 
 export const KeyInput = styled(RediaccInput).attrs({
-  size: 'sm',
   fullWidth: true,
 })`
   && {
@@ -77,16 +76,13 @@ export const KeyInput = styled(RediaccInput).attrs({
 
 export const PrimaryActionButton = styled(RediaccButton).attrs({
   variant: 'primary',
-  size: 'sm',
 })`
   && {
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   }
 `;
 
-export const SecondaryActionButton = styled(RediaccButton).attrs({
-  size: 'sm',
-})``;
+export const SecondaryActionButton = styled(RediaccButton)``;
 
 export const CollapseWrapper = styled(Collapse)`
   && {

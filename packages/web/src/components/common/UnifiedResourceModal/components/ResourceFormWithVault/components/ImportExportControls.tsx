@@ -1,5 +1,6 @@
-import { Button, Space, Tooltip, Upload } from 'antd';
+import { Space, Tooltip, Upload } from 'antd';
 import { ImportExportRow } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/styles';
+import { RediaccButton } from '@/components/ui';
 import { DownloadOutlined, UploadOutlined } from '@/utils/optimizedIcons';
 import type { UploadFile } from 'antd/es/upload/interface';
 
@@ -20,16 +21,11 @@ export const ImportExportControls: React.FC<ImportExportControlsProps> = ({
     <Space>
       <Upload accept=".json" showUploadList={false} beforeUpload={onImport}>
         <Tooltip title={importLabel}>
-          <Button size="small" icon={<UploadOutlined />} aria-label={importLabel} />
+          <RediaccButton icon={<UploadOutlined />} aria-label={importLabel} />
         </Tooltip>
       </Upload>
       <Tooltip title={exportLabel}>
-        <Button
-          size="small"
-          icon={<DownloadOutlined />}
-          onClick={onExport}
-          aria-label={exportLabel}
-        />
+        <RediaccButton icon={<DownloadOutlined />} onClick={onExport} aria-label={exportLabel} />
       </Tooltip>
     </Space>
   </ImportExportRow>

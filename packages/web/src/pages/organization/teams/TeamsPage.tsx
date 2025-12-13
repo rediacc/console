@@ -246,7 +246,6 @@ const TeamsPage: React.FC = () => {
                               <RediaccButton
                                 variant="primary"
                                 danger
-                                size="sm"
                                 loading={removeTeamMemberMutation.isPending}
                                 icon={<DeleteOutlined />}
                                 aria-label={tCommon('actions.remove')}

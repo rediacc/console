@@ -3,7 +3,6 @@ import {
   Select as AntSelect,
   Button,
   Card,
-  Input,
   List,
   Modal,
   Popconfirm,
@@ -32,6 +31,7 @@ import {
   ListSubtitle as AccessListSubtitle,
   ListTitle as AccessListTitle,
   PageWrapper as AccessPageWrapper,
+  RediaccInput,
   SectionHeading as AccessSectionHeading,
   SectionStack as AccessSectionStack,
   InlineFormRow,
@@ -347,7 +347,7 @@ const AccessPage: React.FC = () => {
         okButtonProps={{ 'data-testid': 'modal-create-permission-group-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-create-permission-group-cancel' }}
       >
-        <Input
+        <RediaccInput
           placeholder={t('access.modals.groupPlaceholder', { defaultValue: 'Enter group name' })}
           value={newGroupName}
           onChange={(e) => setNewGroupName(e.target.value)}

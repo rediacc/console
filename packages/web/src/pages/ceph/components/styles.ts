@@ -1,12 +1,13 @@
 import { FileImageOutlined } from '@ant-design/icons';
-import { Space, Button, Card, Select } from 'antd';
+import { Card, Space } from 'antd';
 import styled from 'styled-components';
+import { RediaccButton, RediaccSelect } from '@/components/ui';
 
 export const FullWidthSpace = styled(Space)`
   width: 100%;
 `;
 
-export const RemoveButton = styled(Button)`
+export const RemoveButton = styled(RediaccButton)`
   margin-left: ${({ theme }) => theme.spacing.SM}px;
 `;
 
@@ -37,7 +38,7 @@ export const ImageName = styled.span`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export const ExpandButton = styled(Button)`
+export const ExpandButton = styled(RediaccButton)`
   margin-right: ${({ theme }) => theme.spacing.SM}px;
   border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   border: none;
@@ -54,7 +55,7 @@ export const FiltersCard = styled(Card)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const FullWidthSelect = styled(Select)`
+export const FullWidthSelect = styled(RediaccSelect)`
   width: 100%;
 `;
 
@@ -68,7 +69,7 @@ export const ImageListContainer = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const CreateImageButton = styled(Button)`
+export const CreateImageButton = styled(RediaccButton)`
   border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-  min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+  min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
 `;

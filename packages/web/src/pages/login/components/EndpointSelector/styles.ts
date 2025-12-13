@@ -10,7 +10,7 @@ export const StyledSelect = styled(RediaccSelect)`
   && .ant-select-selector {
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     padding: ${({ theme }) => `${theme.spacing.XS}px ${theme.spacing.SM}px`};
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     display: flex;
     align-items: center;
   }
