@@ -424,7 +424,7 @@ const ExternalVolumeWarning: React.FC<SectionProps> = ({ repository, panelData }
           </VolumeList>
           <FieldValue color="secondary">
             <strong>Warning:</strong> If this repository is cloned, these volumes will be orphaned.
-            Use bind mounts to <FieldValue code>$REPO_PATH</FieldValue> instead.
+            Use bind mounts to <FieldValue code>$REPOSITORY_PATH</FieldValue> instead.
           </FieldValue>
         </VolumeDescription>
       }

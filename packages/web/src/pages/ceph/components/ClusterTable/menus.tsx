@@ -2,23 +2,28 @@ import { ExpandOutlined, FunctionOutlined, KeyOutlined } from '@/utils/optimized
 import type { MenuProps } from 'antd';
 import type { TFunction } from 'i18next';
 
+// Helper to create menu labels with consistent data-testid
+const createActionLabel = (actionKey: string, label: React.ReactNode) => (
+  <span data-testid={`cluster-action-${actionKey.replace(/_/g, '-')}`}>{label}</span>
+);
+
 export const getClusterFunctionMenuItems = (
   t: TFunction<'ceph' | 'common' | 'machines'>
 ): MenuProps['items'] => [
   {
     key: 'status',
-    label: t('functions.cluster_status'),
+    label: createActionLabel('status', t('functions.cluster_status')),
     icon: <ExpandOutlined />,
   },
   {
     key: 'dashboard',
-    label: t('functions.cluster_dashboard'),
+    label: createActionLabel('dashboard', t('functions.cluster_dashboard')),
     icon: <KeyOutlined />,
   },
   { type: 'divider' },
   {
     key: 'advanced',
-    label: t('common:actions.advanced'),
+    label: createActionLabel('advanced', t('common:actions.advanced')),
     icon: <FunctionOutlined />,
   },
 ];

@@ -87,8 +87,13 @@ export const SessionExpiredDialog: React.FC = () => {
       maskClosable={false}
       centered
       className={ModalSize.Small}
+      data-testid="session-expired-modal"
       footer={[
-        <FooterButton key="stay" onClick={handleStayLoggedOut}>
+        <FooterButton
+          key="stay"
+          onClick={handleStayLoggedOut}
+          data-testid="session-expired-stay-button"
+        >
           Stay Logged Out
         </FooterButton>,
         <FooterButton
@@ -96,6 +101,7 @@ export const SessionExpiredDialog: React.FC = () => {
           variant="primary"
           onClick={handleContinueToLogin}
           icon={<LogoutOutlined />}
+          data-testid="session-expired-login-button"
         >
           Continue to Login
         </FooterButton>,

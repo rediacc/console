@@ -2,21 +2,26 @@ import { DatabaseOutlined, FunctionOutlined, PlusOutlined } from '@/utils/optimi
 import type { MenuProps } from 'antd';
 import type { TFunction } from 'i18next';
 
+// Helper to create menu labels with consistent data-testid
+const createActionLabel = (actionKey: string, label: React.ReactNode) => (
+  <span data-testid={`pool-action-${actionKey.replace(/_/g, '-')}`}>{label}</span>
+);
+
 export const getPoolFunctionMenuItems = (t: TFunction<'ceph' | 'common'>): MenuProps['items'] => [
   {
     key: 'list',
-    label: t('functions.pool_list'),
+    label: createActionLabel('list', t('functions.pool_list')),
     icon: <DatabaseOutlined />,
   },
   {
     key: 'image_create',
-    label: t('functions.image_create'),
+    label: createActionLabel('image-create', t('functions.image_create')),
     icon: <PlusOutlined />,
   },
   { type: 'divider' },
   {
     key: 'advanced',
-    label: t('common:actions.advanced'),
+    label: createActionLabel('advanced', t('common:actions.advanced')),
     icon: <FunctionOutlined />,
   },
 ];
