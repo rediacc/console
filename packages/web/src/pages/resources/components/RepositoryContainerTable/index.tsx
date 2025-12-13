@@ -593,6 +593,11 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
       fixed: 'end',
 
       renderActions: (container) => {
+        // Helper to create menu labels with consistent data-testid
+        const createActionLabel = (actionKey: string, label: React.ReactNode) => (
+          <span data-testid={`container-action-${actionKey.replace(/_/g, '-')}`}>{label}</span>
+        );
+
         const menuItems: MenuProps['items'] = [];
 
         if (container.state === 'running') {
@@ -600,7 +605,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
             {
               key: 'stop',
 
-              label: t('functions:functions.container_stop.name'),
+              label: createActionLabel('stop', t('functions:functions.container_stop.name')),
 
               icon: <StopOutlined />,
 
@@ -610,7 +615,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
             {
               key: 'restart',
 
-              label: t('functions:functions.container_restart.name'),
+              label: createActionLabel('restart', t('functions:functions.container_restart.name')),
 
               icon: <ReloadOutlined />,
 
@@ -620,7 +625,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
             {
               key: 'pause',
 
-              label: t('functions:functions.container_pause.name'),
+              label: createActionLabel('pause', t('functions:functions.container_pause.name')),
 
               icon: <PauseCircleOutlined />,
 
@@ -631,7 +636,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
           menuItems.push({
             key: 'unpause',
 
-            label: t('functions:functions.container_unpause.name'),
+            label: createActionLabel('unpause', t('functions:functions.container_unpause.name')),
 
             icon: <PlayCircleOutlined />,
 
@@ -642,7 +647,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
             {
               key: 'start',
 
-              label: t('functions:functions.container_start.name'),
+              label: createActionLabel('start', t('functions:functions.container_start.name')),
 
               icon: <PlayCircleOutlined />,
 
@@ -652,7 +657,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
             {
               key: 'remove',
 
-              label: t('functions:functions.container_remove.name'),
+              label: createActionLabel('remove', t('functions:functions.container_remove.name')),
 
               icon: <DeleteOutlined />,
 

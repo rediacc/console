@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { MenuItem } from '@/components/layout/MainLayout/helpers';
 import { SIDEBAR_COLLAPSED_WIDTH } from '@/components/layout/MainLayout/types';
+import { formatKeyForTestId } from '@/utils/testIdHelpers';
 import {
   MenuIcon,
   MenuLabel,
@@ -105,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 $padding={padding}
                 $collapsed={collapsed}
                 onClick={() => handleParentClick(item, visibleChildren)}
-                data-testid={`sidebar-menu-${item.key.replace(/\//g, '-').replace(/^-/, '')}`}
+                data-testid={`sidebar-menu-${formatKeyForTestId(item.key)}`}
               >
                 <MenuIcon $isActive={isParentActive} $collapsed={collapsed}>
                   {item.icon}
@@ -163,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           key={child.key}
                           $isActive={childActive}
                           onClick={() => handleChildClick(child)}
-                          data-testid={`sidebar-submenu-${child.key.replace(/\//g, '-').replace(/^-/, '')}`}
+                          data-testid={`sidebar-submenu-${formatKeyForTestId(child.key)}`}
                         >
                           {child.label}
                         </SubMenuItem>

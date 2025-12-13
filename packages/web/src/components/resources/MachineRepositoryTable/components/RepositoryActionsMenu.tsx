@@ -70,6 +70,11 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   onCreateRepository,
   t,
 }) => {
+  // Helper to create menu labels with consistent data-testid
+  const createActionLabel = (actionKey: string, label: React.ReactNode) => (
+    <span data-testid={`repo-action-${actionKey.replace(/_/g, '-')}`}>{label}</span>
+  );
+
   const RepoData = teamRepositories.find(
     (r) => r.repositoryName === record.name && r.repositoryTag === record.repositoryTag
   );
@@ -78,7 +83,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
 
   menuItems.push({
     key: 'up',
-    label: <span data-testid="repo-action-up">{t('functions:functions.up.name')}</span>,
+    label: createActionLabel('up', t('functions:functions.up.name')),
     icon: <PlayCircleOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();
@@ -89,7 +94,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   if (record.mounted) {
     menuItems.push({
       key: 'down',
-      label: <span data-testid="repo-action-down">{t('functions:functions.down.name')}</span>,
+      label: createActionLabel('down', t('functions:functions.down.name')),
       icon: <PauseCircleOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -101,9 +106,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   if (!record.mounted) {
     menuItems.push({
       key: 'validate',
-      label: (
-        <span data-testid="repo-action-validate">{t('functions:functions.validate.name')}</span>
-      ),
+      label: createActionLabel('validate', t('functions:functions.validate.name')),
       icon: <CheckCircleOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -114,7 +117,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
 
   menuItems.push({
     key: 'fork',
-    label: <span data-testid="repo-action-fork">{t('functions:functions.fork.name')}</span>,
+    label: createActionLabel('fork', t('functions:functions.fork.name')),
     icon: <CopyOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();
@@ -124,7 +127,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
 
   menuItems.push({
     key: 'deploy',
-    label: <span data-testid="repo-action-deploy">{t('functions:functions.deploy.name')}</span>,
+    label: createActionLabel('deploy', t('functions:functions.deploy.name')),
     icon: <CloudUploadOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();
@@ -135,7 +138,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   const repoIsFork = RepoData ? coreIsFork(RepoData) : false;
   menuItems.push({
     key: 'backup',
-    label: <span data-testid="repo-action-backup">{t('functions:functions.backup.name')}</span>,
+    label: createActionLabel('backup', t('functions:functions.backup.name')),
     icon: <SaveOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();
@@ -147,11 +150,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
 
   menuItems.push({
     key: 'apply_template',
-    label: (
-      <span data-testid="repo-action-apply-template">
-        {t('functions:functions.apply_template.name')}
-      </span>
-    ),
+    label: createActionLabel('apply_template', t('functions:functions.apply_template.name')),
     icon: <AppstoreOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();
@@ -164,7 +163,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   if (!record.mounted) {
     advancedSubmenuItems.push({
       key: 'mount',
-      label: t('resources:repositories.mount'),
+      label: createActionLabel('mount', t('resources:repositories.mount')),
       icon: <DatabaseOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -174,7 +173,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   } else {
     advancedSubmenuItems.push({
       key: 'unmount',
-      label: t('resources:repositories.unmount'),
+      label: createActionLabel('unmount', t('resources:repositories.unmount')),
       icon: <DisconnectOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -186,7 +185,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   if (!record.mounted) {
     advancedSubmenuItems.push({
       key: 'resize',
-      label: t('functions:functions.resize.name'),
+      label: createActionLabel('resize', t('functions:functions.resize.name')),
       icon: <ShrinkOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -198,7 +197,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   if (record.mounted) {
     advancedSubmenuItems.push({
       key: 'expand',
-      label: t('functions:functions.expand.name'),
+      label: createActionLabel('expand', t('functions:functions.expand.name')),
       icon: <ExpandOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -213,7 +212,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
 
   advancedSubmenuItems.push({
     key: 'experimental',
-    label: t('machines:experimental'),
+    label: createActionLabel('experimental', t('machines:experimental')),
     icon: <FunctionOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();
@@ -233,7 +232,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   if (RepoData && coreIsFork(RepoData)) {
     menuItems.push({
       key: 'promote-to-grand',
-      label: t('resources:repositories.promoteToGrand'),
+      label: createActionLabel('promote-to-grand', t('resources:repositories.promoteToGrand')),
       icon: <RiseOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -242,7 +241,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
     });
     menuItems.push({
       key: 'delete-fork',
-      label: t('resources:repositories.deleteFork'),
+      label: createActionLabel('delete-fork', t('resources:repositories.deleteFork')),
       icon: <DeleteOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -258,7 +257,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
 
   menuItems.push({
     key: 'rename',
-    label: t('resources:repositories.rename'),
+    label: createActionLabel('rename', t('resources:repositories.rename')),
     icon: <EditOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();
@@ -269,7 +268,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   if (RepoData && coreIsCredential(RepoData)) {
     menuItems.push({
       key: 'delete-grand',
-      label: t('resources:repositories.deleteGrand'),
+      label: createActionLabel('delete-grand', t('resources:repositories.deleteGrand')),
       icon: <DeleteOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
