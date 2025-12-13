@@ -25,7 +25,7 @@ export const AutoSetupCheckbox = styled(RediaccCheckbox)`
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     display: flex;
     align-items: center;
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
   }
 `;
 

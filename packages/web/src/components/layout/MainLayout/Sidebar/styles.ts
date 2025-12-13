@@ -48,7 +48,7 @@ export const MenuItem = styled.div<{ $isActive: boolean; $padding: string; $coll
     $collapsed ? `${theme.spacing.XS}px` : `${theme.spacing.XS}px ${theme.spacing.SM_LG}px`};
   border-radius: ${({ theme }) => theme.borderRadius.XL}px;
   cursor: pointer;
-  min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
+  min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
   justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
   background-color: ${({ $isActive }) => ($isActive ? 'var(--color-bg-selected)' : 'transparent')};
   color: ${({ $isActive }) =>

@@ -109,7 +109,7 @@ export const colorTokens = {
  * Shared Design Tokens (theme-independent)
  */
 const RADIUS = { SM: 4, MD: 6, LG: 8, XL: 12 } as const;
-const CONTROL_HEIGHT = { SM: 32, MD: 44, LG: 48 } as const;
+const CONTROL_HEIGHT = 44; // Unified form control height
 
 const sharedTokens = {
   borderRadius: RADIUS.MD,
@@ -135,7 +135,7 @@ const sharedTokens = {
 };
 
 const baseControlTokens = {
-  controlHeight: CONTROL_HEIGHT.MD,
+  controlHeight: CONTROL_HEIGHT,
   borderRadius: RADIUS.MD,
 };
 
@@ -226,7 +226,7 @@ const createMenuTokens = (
   itemDisabledColor: theme.textMuted,
   horizontalItemHoverBg: 'transparent',
   iconSize: 16,
-  itemHeight: CONTROL_HEIGHT.MD,
+  itemHeight: CONTROL_HEIGHT,
   itemBorderRadius: RADIUS.MD,
 });
 
@@ -244,7 +244,7 @@ const createComponentConfig = (isDark: boolean) => {
   return {
     Input: {
       ...paddedControlTokens,
-      controlHeightLG: CONTROL_HEIGHT.LG,
+      controlHeightLG: CONTROL_HEIGHT,
       colorBorder: theme.borderPrimary,
       colorBgContainer: theme.bgPrimary,
       errorActiveShadow: `0 0 0 1px ${brandColors.error}`,
@@ -257,7 +257,7 @@ const createComponentConfig = (isDark: boolean) => {
     Select: {
       ...baseControlTokens,
       selectHeight: baseControlTokens.controlHeight,
-      controlHeightSM: CONTROL_HEIGHT.SM,
+      controlHeightSM: CONTROL_HEIGHT,
       colorBorder: theme.borderPrimary,
       colorBgContainer: theme.bgPrimary,
       optionSelectedBg: theme.bgSelected,
@@ -267,7 +267,7 @@ const createComponentConfig = (isDark: boolean) => {
       optionPadding: `${DESIGN_TOKENS.SPACING.SM}px ${DESIGN_TOKENS.SPACING.SM_LG}px`,
       optionFontSize: DESIGN_TOKENS.FONT_SIZE.SM,
       optionLineHeight: `${DESIGN_TOKENS.FONT_SIZE.XL}px`,
-      optionHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT_LG,
+      optionHeight: DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT,
       controlOutline: primaryBg,
       selectorBg: theme.bgPrimary,
       clearBg: 'transparent',
@@ -353,7 +353,7 @@ const createComponentConfig = (isDark: boolean) => {
       labelFontSize: DESIGN_TOKENS.FONT_SIZE.SM,
       labelColor: theme.textPrimary,
       labelRequiredMarkColor: brandColors.error,
-      labelHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
+      labelHeight: DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT,
       verticalLabelPadding: `0 0 ${DESIGN_TOKENS.SPACING.SM}px`,
       verticalLabelMargin: '0',
       itemMarginBottom: DESIGN_TOKENS.SPACING.LG,

@@ -14,12 +14,10 @@ export const HelperRow = styled(FlexRow).attrs({
   $wrap: true,
 })``;
 
-export const ClearButton = styled(RediaccButton).attrs({
-  size: 'sm',
-})`
+export const ClearButton = styled(RediaccButton)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
   }
 `;
 
@@ -87,9 +85,7 @@ export const TemplateIconWrapper = styled.div<{ $muted?: boolean }>`
 
 // TemplateDescription removed - use <RediaccText variant="description"> directly
 
-export const DetailsButton = styled(RediaccButton).attrs({
-  size: 'sm',
-})`
+export const DetailsButton = styled(RediaccButton)`
   && {
     padding: 0;
     display: inline-flex;

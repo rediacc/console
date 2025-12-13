@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Button, Card, Col, Input, Row, Select, Space } from 'antd';
+import { Card, Col, Row, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useMachines } from '@/api/queries/machines';
+import { RediaccButton, RediaccSearchInput } from '@/components/ui';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { useDialogState } from '@/hooks/useDialogState';
 import { AssignToClusterModal } from '@/pages/ceph/components/AssignToClusterModal';
@@ -16,7 +17,6 @@ import {
   ExportOutlined,
   FilterOutlined,
   InfoCircleOutlined,
-  SearchOutlined,
 } from '@/utils/optimizedIcons';
 import { FilterableMachineTable } from './FilterableMachineTable';
 import { MachineAvailabilitySummary } from './MachineAvailabilitySummary';
@@ -27,8 +27,6 @@ import {
   FiltersCard,
   FullWidthSelect,
 } from './styles';
-
-const { Search } = Input;
 
 interface CephMachinesTabProps {
   teamFilter?: string | string[];
@@ -146,41 +144,40 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
           <BulkActionsLabel>
             {t('machines:bulkActions.selected', { count: selectedMachines.length })}
           </BulkActionsLabel>
-          <Button
-            size="small"
+          <RediaccButton
             onClick={() => setSelectedMachines([])}
             data-testid="ds-machines-clear-selection"
             style={componentStyles.controlSurface}
           >
             {t('common:actions.clearSelection')}
-          </Button>
+          </RediaccButton>
         </Space>
         <Space>
-          <Button
-            type="primary"
+          <RediaccButton
+            variant="primary"
             icon={<CloudServerOutlined />}
             onClick={() => setBulkAssignClusterModal(true)}
             data-testid="ds-machines-bulk-assign-cluster"
             style={componentStyles.controlSurface}
           >
             {t('machines:bulkActions.assignToCluster')}
-          </Button>
-          <Button
+          </RediaccButton>
+          <RediaccButton
             icon={<CloudServerOutlined />}
             onClick={() => setRemoveFromClusterModal(true)}
             data-testid="ds-machines-bulk-remove-cluster"
             style={componentStyles.controlSurface}
           >
             {t('machines:bulkActions.removeFromCluster')}
-          </Button>
-          <Button
+          </RediaccButton>
+          <RediaccButton
             icon={<InfoCircleOutlined />}
             onClick={() => setViewAssignmentStatusModal(true)}
             data-testid="ds-machines-bulk-view-status"
             style={componentStyles.controlSurface}
           >
             {t('machines:bulkActions.viewAssignmentStatus')}
-          </Button>
+          </RediaccButton>
         </Space>
       </BulkActionsToolbar>
     );
@@ -195,11 +192,10 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
       <FiltersCard style={componentStyles.card}>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} lg={8}>
-            <Search
+            <RediaccSearchInput
               placeholder={t('machines.filters.searchPlaceholder')}
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              prefix={<SearchOutlined />}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
               allowClear
               data-testid="ds-machines-search"
               style={componentStyles.input}
@@ -214,26 +210,27 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
               onChange={(value) => setAssignmentFilter(value as AssignmentFilter)}
               suffixIcon={<FilterOutlined />}
               data-testid="ds-machines-filter-assignment"
-            >
-              <Select.Option value="all">{t('machines.filters.allStatuses')}</Select.Option>
-              <Select.Option value="available">{t('assignment.available')}</Select.Option>
-              <Select.Option value="cluster">{t('assignment.assignedToCluster')}</Select.Option>
-              <Select.Option value="image">{t('assignment.assignedToImage')}</Select.Option>
-              <Select.Option value="clone">{t('assignment.assignedToClone')}</Select.Option>
-            </FullWidthSelect>
+              options={[
+                { value: 'all', label: t('machines.filters.allStatuses') },
+                { value: 'available', label: t('assignment.available') },
+                { value: 'cluster', label: t('assignment.assignedToCluster') },
+                { value: 'image', label: t('assignment.assignedToImage') },
+                { value: 'clone', label: t('assignment.assignedToClone') },
+              ]}
+            />
           </Col>
 
           <Col xs={24} lg={8}>
             <RightAlignedCol>
               <Space>
-                <Button
+                <RediaccButton
                   icon={<ExportOutlined />}
                   onClick={handleExport}
                   data-testid="ds-machines-export-button"
                   style={componentStyles.controlSurface}
                 >
                   {t('machines.actions.exportReport')}
-                </Button>
+                </RediaccButton>
               </Space>
             </RightAlignedCol>
           </Col>

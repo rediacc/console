@@ -53,9 +53,7 @@ export const ViewToggleContainer = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const ViewToggleButton = styled(RediaccButton).attrs({
-  size: 'sm',
-})`
+export const ViewToggleButton = styled(RediaccButton)`
   && {
     min-width: 42px;
   }
@@ -161,9 +159,7 @@ export const GroupRowName = styled.span`
   color: var(--color-text-primary);
 `;
 
-export const GroupRowActionButton = styled(RediaccButton).attrs({
-  size: 'sm',
-})`
+export const GroupRowActionButton = styled(RediaccButton)`
   && {
     /* Maintain compact pill styling to mirror historical control surface */
     gap: ${({ theme }) => theme.spacing.XS}px;

@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Form, Input, Modal, Select } from 'antd';
+import { Form, Modal } from 'antd';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import apiClient from '@/api/client';
-import { RediaccButton, RediaccStack } from '@/components/ui';
+import { RediaccButton, RediaccInput, RediaccOption, RediaccStack } from '@/components/ui';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { apiConnectionService } from '@/services/apiConnectionService';
@@ -31,8 +31,6 @@ import {
   StyledSelect,
   VersionLabel,
 } from './styles';
-
-const { Option } = Select;
 
 const FormActionsRow = styled(Form.Item)`
  margin-bottom: 0;
@@ -338,7 +336,6 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           // checkAllEndpointsHealth(endpoints);
           // }
           // }}
-          size="sm"
           suffixIcon={<EndpointSuffixIcon />}
           popupMatchSelectWidth={false}
           data-testid="endpoint-selector"
@@ -371,7 +368,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             );
 
             return (
-              <Option
+              <RediaccOption
                 key={endpoint.id}
                 value={endpoint.id}
                 data-testid={`endpoint-option-${endpoint.id}`}
@@ -407,12 +404,12 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                     )}
                   </OptionRight>
                 </OptionWrapper>
-              </Option>
+              </RediaccOption>
             );
           })}
 
           {/* Add custom endpoint option */}
-          <Option
+          <RediaccOption
             key="__add_custom__"
             value="__add_custom__"
             data-testid="endpoint-option-add-custom"
@@ -420,7 +417,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             <AddCustomOption>
               <PlusOutlined /> {t('endpointSelector.addCustom')}
             </AddCustomOption>
-          </Option>
+          </RediaccOption>
         </StyledSelect>
 
         {/* Display selected endpoint URL */}
@@ -455,7 +452,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
               { min: 2, message: t('endpointSelector.nameMinLength') },
             ]}
           >
-            <Input
+            <RediaccInput
               placeholder={t('endpointSelector.namePlaceholder')}
               data-testid="custom-endpoint-name-input"
             />
@@ -473,7 +470,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             ]}
             extra={t('endpointSelector.urlHelp')}
           >
-            <Input
+            <RediaccInput
               placeholder={t('endpointSelector.urlPlaceholder')}
               data-testid="custom-endpoint-url-input"
             />

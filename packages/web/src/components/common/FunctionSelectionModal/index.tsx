@@ -1,12 +1,12 @@
 import React, { startTransition, useEffect, useMemo, useRef, useState } from 'react';
-import { Col, Empty, Form, Row, Select, Space, Typography } from 'antd';
+import { Col, Empty, Form, Row, Space, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import type { QueueFunction } from '@/api/queries/queue';
 import { useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
-import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccSelect, RediaccStack, RediaccText } from '@/components/ui';
 import { useLocalizedFunctions } from '@/services/functionsService';
 import { ModalHeader, ModalSubtitle, ModalTitle } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
@@ -426,7 +426,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                     {/* Machine Selection */}
                     {showMachineSelection && (
                       <Form.Item label={t('machines:machine')} required>
-                        <Select
+                        <RediaccSelect
                           value={selectedMachine}
                           onChange={setSelectedMachine}
                           placeholder={t('machines:selectMachine')}

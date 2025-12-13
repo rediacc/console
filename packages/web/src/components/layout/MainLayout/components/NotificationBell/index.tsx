@@ -121,7 +121,6 @@ const NotificationBell: React.FC = () => {
         {notifications.length > 0 && (
           <Space>
             <NotificationActionButton
-              size="sm"
               onClick={handleMarkAllAsRead}
               disabled={unreadCount === 0}
               data-testid="notification-mark-all-read"
@@ -129,7 +128,6 @@ const NotificationBell: React.FC = () => {
               {t('notifications.markAllRead', 'Mark all as read')}
             </NotificationActionButton>
             <NotificationActionButton
-              size="sm"
               variant="danger"
               onClick={handleClearAll}
               data-testid="notification-clear-all"
@@ -170,7 +168,6 @@ const NotificationBell: React.FC = () => {
                         {getIcon(notification.type)}
                       </NotificationTitleContent>
                       <NotificationCloseButton
-                        size="sm"
                         iconOnly
                         icon={<CloseOutlined />}
                         onClick={(e) => handleClear(notification.id, e)}

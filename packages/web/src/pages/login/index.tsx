@@ -587,7 +587,6 @@ const LoginPage: React.FC = () => {
                 <AdvancedOptionsContainer>
                   <AdvancedOptionsButton
                     variant="text"
-                    size="sm"
                     onClick={() => {
                       setShowAdvancedOptions(true);
                       setTimeout(() => {
@@ -611,7 +610,6 @@ const LoginPage: React.FC = () => {
                 <RediaccButton
                   variant="primary"
                   htmlType="submit"
-                  size="md"
                   fullWidth
                   loading={loading}
                   disabled={!isConnectionSecure}
@@ -690,7 +688,6 @@ const LoginPage: React.FC = () => {
               ]}
             >
               <TFACodeInput
-                size="middle"
                 placeholder={t('login.twoFactorAuth.codePlaceholder')}
                 value={twoFACode}
                 onChange={(e) => setTwoFACode(e.target.value)}

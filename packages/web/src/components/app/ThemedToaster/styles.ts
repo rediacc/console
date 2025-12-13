@@ -12,7 +12,7 @@ const baseToastStyles = {
   fontSize: `${DESIGN_TOKENS.FONT_SIZE.SM}px`,
   fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM,
   padding: `${DESIGN_TOKENS.SPACING.MD}px`,
-  minHeight: `${DESIGN_TOKENS.DIMENSIONS.INPUT_HEIGHT}px`,
+  minHeight: `${DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT}px`,
   display: 'flex',
   alignItems: 'center',
 } as const;

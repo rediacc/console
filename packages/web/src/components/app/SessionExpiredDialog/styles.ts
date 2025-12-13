@@ -35,6 +35,6 @@ export const CountdownText = styled(RediaccText)`
 
 export const FooterButton = styled(RediaccButton)`
   && {
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_LG}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
   }
 `;

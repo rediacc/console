@@ -1,16 +1,15 @@
 import React from 'react';
-import { Dropdown, Select } from 'antd';
+import { Dropdown } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useUpdateUserLanguage } from '@/api/queries/users';
 import { InlineStack } from '@/components/common/styled';
+import { RediaccSelect } from '@/components/ui';
 import type { RootState } from '@/store/store';
 import { GlobalOutlined } from '@/utils/optimizedIcons';
 import { LanguageButton, LanguageSelect } from './styles';
-
-const { Option } = Select;
 
 interface Language {
   code: string;
@@ -82,20 +81,21 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
 
   return (
     <LanguageSelect
+      as={RediaccSelect}
       value={i18n.language}
       onChange={(value) => handleChange(value as string)}
       suffixIcon={<GlobalOutlined />}
       popupMatchSelectWidth={false}
-      data-testid="language-selector"
-    >
-      {languages.map((lang) => (
-        <Option key={lang.code} value={lang.code} data-testid={`language-option-${lang.code}`}>
+      options={languages.map((lang) => ({
+        value: lang.code,
+        label: (
           <InlineStack>
             {lang.flag} {lang.name}
           </InlineStack>
-        </Option>
-      ))}
-    </LanguageSelect>
+        ),
+      }))}
+      data-testid="language-selector"
+    />
   );
 };
 

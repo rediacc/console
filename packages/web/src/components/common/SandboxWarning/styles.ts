@@ -14,7 +14,7 @@ export const SandboxBanner = styled(RediaccAlert)`
     border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
     background-color: ${({ theme }) => theme.colors.bgWarning};
     color: ${({ theme }) => theme.colors.warning};
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_LG}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     display: flex;
     align-items: center;
     justify-content: center;

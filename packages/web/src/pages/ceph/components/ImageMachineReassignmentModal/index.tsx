@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { Select } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type AvailableMachine,
@@ -55,6 +54,33 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       setSelectedMachine('');
     }
   }, [open]);
+
+  const selectOptions = useMemo(() => {
+    const options = [];
+
+    // Include current machine if it exists
+    if (image?.machineName) {
+      options.push({
+        value: image.machineName,
+        label: (
+          <DisabledOptionText>
+            {image.machineName} ({t('common:current')})
+          </DisabledOptionText>
+        ),
+        disabled: true,
+      });
+    }
+
+    // Available machines
+    availableMachines.forEach((machine) => {
+      options.push({
+        value: machine.machineName,
+        label: <SelectOptionText>{machine.machineName}</SelectOptionText>,
+      });
+    });
+
+    return options;
+  }, [image, availableMachines, t]);
 
   const handleOk = async () => {
     if (!image || !selectedMachine) return;
@@ -144,33 +170,9 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                         <SelectOptionText>{t('common:noMatchingResults')}</SelectOptionText>
                       )
                     }
+                    options={selectOptions}
                     data-testid="image-reassign-machine-select"
-                  >
-                    {/* Include current machine if it exists */}
-                    {image.machineName && (
-                      <Select.Option
-                        key={image.machineName}
-                        value={image.machineName}
-                        disabled
-                        data-testid={`image-reassign-machine-option-${image.machineName}`}
-                      >
-                        <DisabledOptionText>
-                          {image.machineName} ({t('common:current')})
-                        </DisabledOptionText>
-                      </Select.Option>
-                    )}
-
-                    {/* Available machines */}
-                    {availableMachines.map((machine) => (
-                      <Select.Option
-                        key={machine.machineName}
-                        value={machine.machineName}
-                        data-testid={`image-reassign-machine-option-${machine.machineName}`}
-                      >
-                        <SelectOptionText>{machine.machineName}</SelectOptionText>
-                      </Select.Option>
-                    ))}
-                  </StyledSelect>
+                  />
 
                   <RediaccText variant="caption">{t('ceph:images.reassignmentInfo')}</RediaccText>
                 </>

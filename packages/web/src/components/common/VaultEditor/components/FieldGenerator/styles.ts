@@ -66,30 +66,25 @@ export const ValueContent = styled.div`
   line-height: ${({ theme }) => theme.lineHeight.NORMAL};
 `;
 
-export const ControlButton = styled(RediaccButton).attrs({
-  size: 'sm',
-})`
+export const ControlButton = styled(RediaccButton)`
   && {
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
 `;
 
 export const GeneratorButton = styled(RediaccButton).attrs({
   iconOnly: true,
-  size: 'sm',
 })`
   && {
     color: ${({ theme }) => theme.colors.primary};
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-    min-width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
+    min-width: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
 `;
 
-export const CopyButton = styled(RediaccButton).attrs({
-  size: 'sm',
-})`
+export const CopyButton = styled(RediaccButton)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     font-size: ${({ theme }) => theme.fontSize.XS}px;

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Form, Input } from 'antd';
+import { Form } from 'antd';
+import { RediaccPasswordInput } from '@/components/ui';
 import { KeyOutlined } from '@/utils/optimizedIcons';
 import type { Rule } from 'antd/es/form';
 
@@ -22,8 +23,6 @@ export interface PasswordFieldProps {
   patternMessage?: string;
   /** Show key icon prefix (default: false) */
   showIcon?: boolean;
-  /** Input size (default: 'large') */
-  size?: 'small' | 'middle' | 'large';
   /** Autocomplete attribute (default: 'new-password') */
   autoComplete?: string;
   /** data-testid attribute */
@@ -62,7 +61,6 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
   minLengthMessage,
   patternMessage,
   showIcon = false,
-  size = 'large',
   autoComplete = 'new-password',
   'data-testid': dataTestId,
   additionalRules = [],
@@ -93,10 +91,9 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
 
   return (
     <Form.Item name={name} label={label} rules={rules}>
-      <Input.Password
+      <RediaccPasswordInput
         prefix={showIcon ? <KeyOutlined /> : undefined}
         placeholder={placeholder}
-        size={size}
         autoComplete={autoComplete}
         data-testid={dataTestId}
       />

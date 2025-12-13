@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { Alert, Button as AntButton, Space, Tag, Tooltip } from 'antd';
+import { Alert, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -290,9 +290,9 @@ const MachineReposPage: React.FC = () => {
               description={
                 <ErrorWrapper>
                   <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
-                  <AntButton type="primary" onClick={handleBackToMachines}>
+                  <RediaccButton variant="primary" onClick={handleBackToMachines}>
                     {t('machines:backToMachines')}
-                  </AntButton>
+                  </RediaccButton>
                 </ErrorWrapper>
               }
               type="error"

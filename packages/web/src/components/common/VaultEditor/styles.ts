@@ -46,7 +46,7 @@ export const TestConnectionButton = styled(RediaccButton).attrs({
   fullWidth: true,
 })`
   && {
-    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
   }
 `;
 
@@ -101,9 +101,7 @@ export const FormatActions = styled(FlexRow).attrs({
   margin-bottom: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const FormatButton = styled(RediaccButton).attrs({
-  size: 'sm',
-})`
+export const FormatButton = styled(RediaccButton)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   }

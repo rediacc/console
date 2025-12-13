@@ -61,11 +61,9 @@ export const FooterBar = styled.div`
 
 export const FileActions = ActionGroup;
 
-export const FileActionButton = styled(RediaccButton).attrs({
-  size: 'sm',
-})`
+export const FileActionButton = styled(RediaccButton)`
   && {
-    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_SM}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   }
 `;

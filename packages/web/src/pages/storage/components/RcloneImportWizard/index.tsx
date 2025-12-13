@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Button, Space, Steps, Table, Tag, Tooltip, Typography, Upload } from 'antd';
+import { Space, Steps, Table, Tag, Tooltip, Typography, Upload } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useCreateStorage, useStorage } from '@/api/queries/storage';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccAlert, RediaccCheckbox } from '@/components/ui';
+import { RediaccAlert, RediaccButton, RediaccCheckbox } from '@/components/ui';
 import { createSorter } from '@/platform';
 import {
   CheckCircleOutlined,
@@ -591,31 +591,38 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       onCancel={handleClose}
       footer={
         currentStep === 0 ? (
-          <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">
+          <RediaccButton onClick={handleClose} data-testid="rclone-wizard-cancel-button">
             {t('common:actions.cancel')}
-          </Button>
+          </RediaccButton>
         ) : currentStep === 1 ? (
           <>
-            <Button onClick={() => setCurrentStep(0)} data-testid="rclone-wizard-back-button">
+            <RediaccButton
+              onClick={() => setCurrentStep(0)}
+              data-testid="rclone-wizard-back-button"
+            >
               {t('common:actions.back')}
-            </Button>
-            <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">
+            </RediaccButton>
+            <RediaccButton onClick={handleClose} data-testid="rclone-wizard-cancel-button">
               {t('common:actions.cancel')}
-            </Button>
-            <Button
-              type="primary"
+            </RediaccButton>
+            <RediaccButton
+              variant="primary"
               onClick={handleImport}
               disabled={!importStatuses.some((s) => s.selected)}
               loading={isImporting}
               data-testid="rclone-wizard-import-button"
             >
               {t('resources:storage.import.importSelected')}
-            </Button>
+            </RediaccButton>
           </>
         ) : (
-          <Button type="primary" onClick={handleClose} data-testid="rclone-wizard-close-button">
+          <RediaccButton
+            variant="primary"
+            onClick={handleClose}
+            data-testid="rclone-wizard-close-button"
+          >
             {t('common:actions.close')}
-          </Button>
+          </RediaccButton>
         )
       }
     >

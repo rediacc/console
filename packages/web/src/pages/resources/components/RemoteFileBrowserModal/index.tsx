@@ -9,18 +9,7 @@ import {
   ReloadOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import {
-  Alert,
-  Breadcrumb,
-  Button,
-  Empty,
-  Input,
-  Modal,
-  Select,
-  Space,
-  Table,
-  Tooltip,
-} from 'antd';
+import { Alert, Breadcrumb, Button, Empty, Modal, Space, Table, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
@@ -30,7 +19,7 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { createTruncatedColumn } from '@/components/common/columns';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccStack } from '@/components/ui';
+import { RediaccInput, RediaccSelect, RediaccStack } from '@/components/ui';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { createCustomSorter, createSorter } from '@/platform';
@@ -788,7 +777,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
             <Space>
               <SourceSelect>
                 <FullWidthSelect>
-                  <Select
+                  <RediaccSelect
                     placeholder={t('resources:remoteFiles.selectSource')}
                     value={selectedSource}
                     onChange={(value) => {
@@ -831,7 +820,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
               </Tooltip>
             </Space>
             <SearchInput>
-              <Input
+              <RediaccInput
                 placeholder={t('common:actions.search')}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}

@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
-import { Badge, Select } from 'antd';
+import { Badge } from 'antd';
 import { ActionGroup } from '@/components/common/styled';
 import { MachineAssignmentService } from '@/features/ceph';
 import {
@@ -16,8 +16,6 @@ import {
 import { VirtualMachineTable } from '@/features/ceph/components/performance/VirtualMachineTable';
 import { useDebounce } from '@/features/ceph/utils/useDebounce';
 import { Machine, MachineAssignmentType } from '@/types';
-
-const { Option } = Select;
 
 interface VirtualFilterableMachineTableProps {
   machines: Machine[];
@@ -118,6 +116,62 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
 
   const hasMore = displayedCount < filteredMachines.length;
 
+  const assignmentOptions = useMemo(
+    () => [
+      {
+        value: 'ALL',
+        label: (
+          <Badge count={assignmentCounts.ALL} showZero color="blue">
+            <OptionLabel>All Machines</OptionLabel>
+          </Badge>
+        ),
+      },
+      {
+        value: 'AVAILABLE',
+        label: (
+          <Badge count={assignmentCounts.AVAILABLE} showZero color="green">
+            <OptionLabel>Available</OptionLabel>
+          </Badge>
+        ),
+      },
+      {
+        value: 'CLUSTER',
+        label: (
+          <Badge count={assignmentCounts.CLUSTER} showZero color="blue">
+            <OptionLabel>Assigned to Cluster</OptionLabel>
+          </Badge>
+        ),
+      },
+      {
+        value: 'IMAGE',
+        label: (
+          <Badge count={assignmentCounts.IMAGE} showZero color="purple">
+            <OptionLabel>Assigned to Image</OptionLabel>
+          </Badge>
+        ),
+      },
+      {
+        value: 'CLONE',
+        label: (
+          <Badge count={assignmentCounts.CLONE} showZero color="orange">
+            <OptionLabel>Assigned to Clone</OptionLabel>
+          </Badge>
+        ),
+      },
+    ],
+    [assignmentCounts]
+  );
+
+  const pageSizeOptions = useMemo(
+    () => [
+      { value: 50, label: '50 per batch' },
+      { value: 100, label: '100 per batch' },
+      { value: 200, label: '200 per batch' },
+      { value: 500, label: '500 per batch' },
+    ],
+    []
+  );
+
   return (
     <Container data-testid="filterable-machine-container">
       <ToolbarStack>
@@ -136,52 +190,15 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
             value={assignmentFilter}
             onChange={(value) => setAssignmentFilter(value as MachineAssignmentType | 'ALL')}
             placeholder="Filter by assignment"
-          >
-            <Option value="ALL" data-testid="filterable-machine-filter-option-all">
-              <Badge count={assignmentCounts.ALL} showZero color="blue">
-                <OptionLabel>All Machines</OptionLabel>
-              </Badge>
-            </Option>
-            <Option value="AVAILABLE" data-testid="filterable-machine-filter-option-available">
-              <Badge count={assignmentCounts.AVAILABLE} showZero color="green">
-                <OptionLabel>Available</OptionLabel>
-              </Badge>
-            </Option>
-            <Option value="CLUSTER" data-testid="filterable-machine-filter-option-cluster">
-              <Badge count={assignmentCounts.CLUSTER} showZero color="blue">
-                <OptionLabel>Assigned to Cluster</OptionLabel>
-              </Badge>
-            </Option>
-            <Option value="IMAGE" data-testid="filterable-machine-filter-option-image">
-              <Badge count={assignmentCounts.IMAGE} showZero color="purple">
-                <OptionLabel>Assigned to Image</OptionLabel>
-              </Badge>
-            </Option>
-            <Option value="CLONE" data-testid="filterable-machine-filter-option-clone">
-              <Badge count={assignmentCounts.CLONE} showZero color="orange">
-                <OptionLabel>Assigned to Clone</OptionLabel>
-              </Badge>
-            </Option>
-          </AssignmentSelect>
+            options={assignmentOptions}
+          />
 
           <PageSizeSelect
             data-testid="filterable-machine-page-size"
             value={pageSize}
             onChange={(value) => setPageSize(Number(value))}
-          >
-            <Option value={50} data-testid="filterable-machine-page-size-50">
-              50 per batch
-            </Option>
-            <Option value={100} data-testid="filterable-machine-page-size-100">
-              100 per batch
-            </Option>
-            <Option value={200} data-testid="filterable-machine-page-size-200">
-              200 per batch
-            </Option>
-            <Option value={500} data-testid="filterable-machine-page-size-500">
-              500 per batch
-            </Option>
-          </PageSizeSelect>
+            options={pageSizeOptions}
+          />
 
           {onRefresh && (
             <RefreshButton

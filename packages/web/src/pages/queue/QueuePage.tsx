@@ -285,7 +285,6 @@ const QueuePage: React.FC = () => {
           <Space size={4}>
             <Tooltip title={t('common:actions.refresh')}>
               <RediaccButton
-                size="sm"
                 iconOnly
                 icon={<ReloadOutlined />}
                 onClick={() => refetch()}
@@ -307,7 +306,6 @@ const QueuePage: React.FC = () => {
             >
               <Tooltip title={t('common:export')}>
                 <RediaccButton
-                  size="sm"
                   iconOnly
                   icon={<ExportOutlined />}
                   data-testid="queue-export-dropdown"

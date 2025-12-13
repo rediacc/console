@@ -358,7 +358,6 @@ const CompanyPage: React.FC = () => {
                   <RediaccButton
                     icon={<SettingOutlined />}
                     onClick={() => companyVaultModal.open()}
-                    size="md"
                     data-testid="system-company-vault-button"
                     aria-label={t('company.configureVault')}
                   />
@@ -796,7 +795,6 @@ const CompanyPage: React.FC = () => {
               </CenteredBlock>
 
               <RediaccButton
-                size="md"
                 fullWidth
                 onClick={() => {
                   dispatch(logout());

@@ -139,8 +139,8 @@ export const GlobalStyles = createGlobalStyle`
     --spacing-xxl: ${({ theme }) => theme.spacing.XXL}px;
     --spacing-xxxl: ${({ theme }) => theme.spacing.XXXL}px;
     /* Dimension CSS variables */
-    --dimension-input-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
-    --dimension-control-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+    --dimension-input-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
+    --dimension-control-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     /* Overlay CSS variables */
     --overlay-nav-active: ${({ theme }) => theme.overlays.navActive};
     /* Transition CSS variables */

@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Button, Empty, Space, Table, Tooltip } from 'antd';
+import { Empty, Space, Table, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +7,7 @@ import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
-import { RediaccEmpty } from '@/components/ui';
+import { RediaccButton, RediaccEmpty } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
@@ -284,20 +284,19 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             {t('machines:bulkActions.selected', { count: selectedRowKeys.length })}
           </BulkActionsSummary>
           <Tooltip title={t('common:actions.clearSelection')}>
-            <Button
-              size="small"
+            <RediaccButton
               onClick={() => setSelectedRowKeys([])}
               data-testid="machine-bulk-clear-selection"
               aria-label={t('common:actions.clearSelection')}
             >
               Clear
-            </Button>
+            </RediaccButton>
           </Tooltip>
         </Space>
         <Space size="middle">
           <Tooltip title={t('machines:bulkActions.assignToCluster')}>
-            <Button
-              type="primary"
+            <RediaccButton
+              variant="primary"
               icon={<CloudServerOutlined />}
               onClick={() => setBulkAssignClusterModal(true)}
               data-testid="machine-bulk-assign-cluster"
@@ -305,7 +304,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             />
           </Tooltip>
           <Tooltip title={t('machines:bulkActions.removeFromCluster')}>
-            <Button
+            <RediaccButton
               icon={<CloudServerOutlined />}
               onClick={() => setRemoveFromClusterModal(true)}
               data-testid="machine-bulk-remove-cluster"
@@ -313,7 +312,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             />
           </Tooltip>
           <Tooltip title={t('machines:bulkActions.viewAssignmentStatus')}>
-            <Button
+            <RediaccButton
               icon={<InfoCircleOutlined />}
               onClick={() => setViewAssignmentStatusModal(true)}
               data-testid="machine-bulk-view-status"

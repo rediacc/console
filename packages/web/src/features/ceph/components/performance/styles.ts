@@ -12,7 +12,7 @@ export const RowWrapper = styled.div<RowWrapperProps>`
   transition: background-color ${({ theme }) => theme.transitions.DEFAULT};
   display: flex;
   align-items: center;
-  min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px;
+  min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.bgHover};

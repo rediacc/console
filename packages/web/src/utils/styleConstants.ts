@@ -64,13 +64,8 @@ export const DESIGN_TOKENS = {
   },
 
   DIMENSIONS: {
-    // Control sizes
-    CONTROL_HEIGHT: 32,
-    CONTROL_HEIGHT_SM: 28,
-    CONTROL_HEIGHT_LG: 40,
-    INPUT_HEIGHT: 44,
-    INPUT_HEIGHT_SM: 36,
-    INPUT_HEIGHT_LG: 52,
+    // Unified form control height (44px for all form elements)
+    FORM_CONTROL_HEIGHT: 44,
 
     // Modal/Card widths
     MODAL_WIDTH: 560,
@@ -216,7 +211,7 @@ export const DESIGN_TOKENS = {
 
 // Style object generators for common patterns
 export const createControlSurfaceStyle = (
-  size: number = DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT
+  size: number = DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT
 ) => ({
   width: size,
   height: size,

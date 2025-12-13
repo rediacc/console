@@ -1,19 +1,14 @@
 import type { CSSProperties, MouseEvent, ReactNode } from 'react';
 
 export type ButtonVariant = 'primary' | 'danger' | 'default' | 'text' | 'link' | 'ghost';
-export type ButtonSize = 'sm' | 'md';
 
 export interface RediaccButtonProps {
   /** Visual style variant */
   variant?: ButtonVariant;
-  /** Button size: sm (28px), md (32px) */
-  size?: ButtonSize;
   /** Render as icon-only button (square, no text) */
   iconOnly?: boolean;
   /** Alias for iconOnly - square button with icon only */
   square?: boolean;
-  /** Compact mode: smaller size with tighter padding (equivalent to size='sm') */
-  compact?: boolean;
   /** Icon element to render before children */
   icon?: ReactNode;
   /** Loading state - shows spinner and disables button */

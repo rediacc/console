@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Col, message, Popconfirm, Row, Space, Table, Tooltip } from 'antd';
+import { Col, message, Popconfirm, Row, Space, Table, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,7 @@ import {
   createTruncatedColumn,
 } from '@/components/common/columns';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccStatistic, RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccStatistic, RediaccText } from '@/components/ui';
 import { createDateSorter } from '@/platform';
 import { selectUser } from '@/store/auth/authSelectors';
 import { TableContainer } from '@/styles/primitives';
@@ -139,9 +139,9 @@ const UserSessionsTab: React.FC = () => {
         disabled={!record.isActive}
       >
         <Tooltip title={t('userSessions.terminate')}>
-          <Button
+          <RediaccButton
             data-testid={`sessions-terminate-${record.requestId}`}
-            type="link"
+            variant="link"
             danger
             icon={<CloseCircleOutlined />}
             disabled={!record.isActive}

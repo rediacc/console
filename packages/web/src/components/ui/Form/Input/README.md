@@ -24,9 +24,6 @@ import { Input } from '@/components/ui';
 // Full-width input
 <Input fullWidth placeholder="Enter email" />
 
-// Large size
-<Input size="lg" placeholder="Search..." />
-
 // Code/secret variant (monospace font)
 <Input variant="code" placeholder="Enter code" />
 
@@ -36,7 +33,6 @@ import { Input } from '@/components/ui';
 
 **Props:**
 - `variant?: 'default' | 'search' | 'code' | 'secret'`
-- `size?: 'sm' | 'md' | 'lg'` (36px | 44px | 52px)
 - `fullWidth?: boolean`
 - `centered?: boolean`
 - All standard input props (placeholder, value, onChange, etc.)
@@ -48,7 +44,6 @@ Password input with visibility toggle.
 import { PasswordInput } from '@/components/ui';
 
 <PasswordInput fullWidth placeholder="Enter password" />
-<PasswordInput size="lg" placeholder="Confirm password" />
 ```
 
 ### 3. TextArea
@@ -87,13 +82,9 @@ import { SearchInput } from '@/components/ui';
 <SearchInput fullWidth loading={isSearching} enterButton="Search" />
 ```
 
-## Size Tokens
+## Unified Height
 
-| Size | Height | Use Case |
-|------|--------|----------|
-| `sm` | 36px   | Compact forms, filters |
-| `md` | 44px   | Default, most forms |
-| `lg` | 52px   | Prominent inputs, login forms |
+All form inputs use a consistent 44px height (`FORM_CONTROL_HEIGHT`) for visual alignment across the application. This ensures inputs, buttons, and selects all align perfectly in forms and toolbars.
 
 ## Migration Guide
 
@@ -118,7 +109,7 @@ import { LargeInput } from '@/styles/primitives';
 
 // After
 import { Input } from '@/components/ui';
-<Input size="lg" placeholder="Search" />
+<Input placeholder="Search" />
 ```
 
 #### SearchInput → SearchInput
@@ -204,9 +195,7 @@ The component uses tokens from `@/utils/styleConstants`:
 
 ```typescript
 DIMENSIONS: {
-  INPUT_HEIGHT_SM: 36,
-  INPUT_HEIGHT: 44,
-  INPUT_HEIGHT_LG: 52,
+  FORM_CONTROL_HEIGHT: 44,  // Unified height for all form controls
 }
 
 BORDER_RADIUS: {
@@ -293,27 +282,19 @@ test('handles user input', async () => {
 This unified system replaces **18+ scattered input components**:
 
 ### From primitives.ts:
-- ✅ FullWidthInput
-- ✅ FullWidthPasswordInput
-- ✅ FullWidthTextArea
-- ✅ FullWidthInputNumber
-- ✅ LargeInput
-- ✅ LargePasswordInput
-- ✅ SearchInput
-- ✅ FilterInput
+- FullWidthInput
+- FullWidthPasswordInput
+- FullWidthTextArea
+- FullWidthInputNumber
+- LargeInput
+- LargePasswordInput
+- SearchInput
+- FilterInput
 
 ### From various component files:
-- ✅ CenteredInput
-- ✅ CenteredCodeInput
-- ✅ SecretInput
-- ✅ TFACodeInput
-- ✅ CodeInput
-- ✅ Multiple SearchInput redefinitions (4+ instances)
-
-## Future Enhancements
-
-Potential additions:
-- OTP Input component (specialized 6-digit input)
-- Phone Input with country code selector
-- Currency Input with formatting
-- Date/Time Input components
+- CenteredInput
+- CenteredCodeInput
+- SecretInput
+- TFACodeInput
+- CodeInput
+- Multiple SearchInput redefinitions (4+ instances)
