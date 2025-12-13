@@ -78,7 +78,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
 
   menuItems.push({
     key: 'up',
-    label: t('functions:functions.up.name'),
+    label: <span data-testid="repo-action-up">{t('functions:functions.up.name')}</span>,
     icon: <PlayCircleOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();
@@ -89,7 +89,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   if (record.mounted) {
     menuItems.push({
       key: 'down',
-      label: t('functions:functions.down.name'),
+      label: <span data-testid="repo-action-down">{t('functions:functions.down.name')}</span>,
       icon: <PauseCircleOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -101,7 +101,9 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   if (!record.mounted) {
     menuItems.push({
       key: 'validate',
-      label: t('functions:functions.validate.name'),
+      label: (
+        <span data-testid="repo-action-validate">{t('functions:functions.validate.name')}</span>
+      ),
       icon: <CheckCircleOutlined />,
       onClick: (info: MenuClickEvent) => {
         info.domEvent.stopPropagation();
@@ -112,7 +114,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
 
   menuItems.push({
     key: 'fork',
-    label: t('functions:functions.fork.name'),
+    label: <span data-testid="repo-action-fork">{t('functions:functions.fork.name')}</span>,
     icon: <CopyOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();
@@ -122,7 +124,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
 
   menuItems.push({
     key: 'deploy',
-    label: t('functions:functions.deploy.name'),
+    label: <span data-testid="repo-action-deploy">{t('functions:functions.deploy.name')}</span>,
     icon: <CloudUploadOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();
@@ -133,7 +135,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   const repoIsFork = RepoData ? coreIsFork(RepoData) : false;
   menuItems.push({
     key: 'backup',
-    label: t('functions:functions.backup.name'),
+    label: <span data-testid="repo-action-backup">{t('functions:functions.backup.name')}</span>,
     icon: <SaveOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();
@@ -145,7 +147,11 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
 
   menuItems.push({
     key: 'apply_template',
-    label: t('functions:functions.apply_template.name'),
+    label: (
+      <span data-testid="repo-action-apply-template">
+        {t('functions:functions.apply_template.name')}
+      </span>
+    ),
     icon: <AppstoreOutlined />,
     onClick: (info: MenuClickEvent) => {
       info.domEvent.stopPropagation();

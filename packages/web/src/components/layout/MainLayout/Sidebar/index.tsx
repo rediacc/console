@@ -82,6 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       $isDrawer={isDrawer}
       role="navigation"
       aria-label={t('navigation.mainNavigation')}
+      data-testid="main-sidebar"
     >
       <SidebarContent $isDrawer={isDrawer}>
         <MenuScrollArea>
@@ -104,6 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 $padding={padding}
                 $collapsed={collapsed}
                 onClick={() => handleParentClick(item, visibleChildren)}
+                data-testid={`sidebar-menu-${item.key.replace(/\//g, '-').replace(/^-/, '')}`}
               >
                 <MenuIcon $isActive={isParentActive} $collapsed={collapsed}>
                   {item.icon}
@@ -161,6 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           key={child.key}
                           $isActive={childActive}
                           onClick={() => handleChildClick(child)}
+                          data-testid={`sidebar-submenu-${child.key.replace(/\//g, '-').replace(/^-/, '')}`}
                         >
                           {child.label}
                         </SubMenuItem>

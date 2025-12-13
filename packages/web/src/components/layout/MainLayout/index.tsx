@@ -228,7 +228,7 @@ const MainLayout: React.FC = () => {
         </Drawer>
 
         <Layout>
-          <StyledHeader $isDark={theme === 'dark'}>
+          <StyledHeader $isDark={theme === 'dark'} data-testid="main-header">
             <HeaderLeft>
               <MenuToggleButton
                 iconOnly
@@ -282,7 +282,11 @@ const MainLayout: React.FC = () => {
               </Dropdown>
             </HeaderRight>
           </StyledHeader>
-          <StyledContent $marginLeft={sidebarWidth} $paddingTop={contentPaddingTop}>
+          <StyledContent
+            $marginLeft={sidebarWidth}
+            $paddingTop={contentPaddingTop}
+            data-testid="main-content"
+          >
             {isTransitioning ? (
               <TransitionOverlay>
                 <TransitionIcon>

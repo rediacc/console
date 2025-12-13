@@ -47,15 +47,21 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   return (
     <MenuContainer>
-      <UserInfo>
+      <UserInfo data-testid="user-info">
         <UserAvatar icon={<UserOutlined />} size={DESIGN_TOKENS.DIMENSIONS.ICON_XXL} />
         <UserDetails>
-          <BlockText variant="value" weight="semibold">
+          <BlockText variant="value" weight="semibold" data-testid="user-info-email">
             {user?.email}
           </BlockText>
-          {company && <BlockText variant="caption">{company}</BlockText>}
+          {company && (
+            <BlockText variant="caption" data-testid="user-info-company">
+              {company}
+            </BlockText>
+          )}
           {companyData?.activeSubscription && (
-            <PlanBadge>{companyData.activeSubscription.planCode ?? 'UNKNOWN'}</PlanBadge>
+            <PlanBadge data-testid="user-info-plan">
+              {companyData.activeSubscription.planCode ?? 'UNKNOWN'}
+            </PlanBadge>
           )}
         </UserDetails>
       </UserInfo>
