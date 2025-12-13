@@ -16,7 +16,13 @@ import { useTeams } from '@/api/queries/teams';
 import { createActionColumn } from '@/components/common/columns';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccAlert, RediaccButton, RediaccInput, RediaccStack, RediaccText } from '@/components/ui';
+import {
+  RediaccAlert,
+  RediaccButton,
+  RediaccInput,
+  RediaccStack,
+  RediaccText,
+} from '@/components/ui';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { useQueueAction } from '@/hooks/useQueueAction';

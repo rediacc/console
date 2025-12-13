@@ -596,7 +596,10 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
           </RediaccButton>
         ) : currentStep === 1 ? (
           <>
-            <RediaccButton onClick={() => setCurrentStep(0)} data-testid="rclone-wizard-back-button">
+            <RediaccButton
+              onClick={() => setCurrentStep(0)}
+              data-testid="rclone-wizard-back-button"
+            >
               {t('common:actions.back')}
             </RediaccButton>
             <RediaccButton onClick={handleClose} data-testid="rclone-wizard-cancel-button">
@@ -613,7 +616,11 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
             </RediaccButton>
           </>
         ) : (
-          <RediaccButton variant="primary" onClick={handleClose} data-testid="rclone-wizard-close-button">
+          <RediaccButton
+            variant="primary"
+            onClick={handleClose}
+            data-testid="rclone-wizard-close-button"
+          >
             {t('common:actions.close')}
           </RediaccButton>
         )

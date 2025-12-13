@@ -80,7 +80,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
     });
 
     return options;
-  }, [image?.machineName, availableMachines, t]);
+  }, [image, availableMachines, t]);
 
   const handleOk = async () => {
     if (!image || !selectedMachine) return;

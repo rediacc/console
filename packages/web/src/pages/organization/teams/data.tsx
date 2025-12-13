@@ -1,11 +1,11 @@
 import { Badge, Popconfirm, Space, Tooltip } from 'antd';
 import type { Team } from '@/api/queries/teams';
-import { RediaccButton } from '@/components/ui';
 import {
   createCountColumn,
   createTruncatedColumn,
   createVersionColumn,
 } from '@/components/common/columns';
+import { RediaccButton } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import {
   CloudServerOutlined,

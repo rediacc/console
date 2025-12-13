@@ -173,10 +173,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               }}
               data-testid="vault-modal-file-upload"
             >
-              <FileActionButton
-                icon={<UploadIcon />}
-                data-testid="vault-modal-import-button"
-              >
+              <FileActionButton icon={<UploadIcon />} data-testid="vault-modal-import-button">
                 {t('vaultEditor.importJson')}
               </FileActionButton>
             </Upload>

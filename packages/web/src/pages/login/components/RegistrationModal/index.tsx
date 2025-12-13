@@ -2,7 +2,13 @@ import React, { useState } from 'react';
 import { Alert, Form } from 'antd';
 import { useTranslation } from 'react-i18next';
 import apiClient, { api } from '@/api/client';
-import { RediaccButton, RediaccCheckbox, RediaccInput, RediaccPasswordInput, RediaccStack } from '@/components/ui';
+import {
+  RediaccButton,
+  RediaccCheckbox,
+  RediaccInput,
+  RediaccPasswordInput,
+  RediaccStack,
+} from '@/components/ui';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { LanguageLink } from '@/pages/login/components/LanguageLink';
 import { Turnstile } from '@/pages/login/components/Turnstile';

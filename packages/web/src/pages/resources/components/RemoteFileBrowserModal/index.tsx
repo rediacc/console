@@ -9,16 +9,7 @@ import {
   ReloadOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import {
-  Alert,
-  Breadcrumb,
-  Button,
-  Empty,
-  Modal,
-  Space,
-  Table,
-  Tooltip,
-} from 'antd';
+import { Alert, Breadcrumb, Button, Empty, Modal, Space, Table, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';

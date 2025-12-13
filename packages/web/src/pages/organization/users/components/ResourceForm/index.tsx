@@ -121,7 +121,11 @@ function ResourceForm<T extends FieldValues = FieldValues>({
       <FormActions wrapperCol={{ offset: labelCol.span, span: wrapperCol.span }}>
         <RediaccStack direction="horizontal" justify="end" fullWidth>
           {onCancel && (
-            <RediaccButton onClick={onCancel} disabled={loading} data-testid="resource-form-cancel-button">
+            <RediaccButton
+              onClick={onCancel}
+              disabled={loading}
+              data-testid="resource-form-cancel-button"
+            >
               {cancelText}
             </RediaccButton>
           )}

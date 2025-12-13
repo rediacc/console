@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Empty, Modal, message, Space, Table, Tabs, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccButton } from '@/components/ui';
 import {
   CephClusterMachine,
   useAvailableMachinesForClone,
@@ -14,6 +13,7 @@ import {
 import { createDateColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector';
+import { RediaccButton } from '@/components/ui';
 import { createSorter, formatTimestampAsIs } from '@/platform';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';

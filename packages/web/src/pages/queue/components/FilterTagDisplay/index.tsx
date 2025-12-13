@@ -1,8 +1,8 @@
 import React from 'react';
 import { Tag } from 'antd';
 import styled from 'styled-components';
-import type { Dayjs } from 'dayjs';
 import { RediaccButton } from '@/components/ui';
+import type { Dayjs } from 'dayjs';
 
 type FilterTagValue = string | string[] | boolean | [Dayjs | null, Dayjs | null] | null;
 

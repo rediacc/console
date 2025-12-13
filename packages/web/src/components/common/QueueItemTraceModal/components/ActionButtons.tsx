@@ -1,6 +1,6 @@
 import React from 'react';
-import { normalizeToBoolean, normalizeToNumber, normalizeToString } from '@/platform';
 import { RediaccButton } from '@/components/ui';
+import { normalizeToBoolean, normalizeToNumber, normalizeToString } from '@/platform';
 import { CloseCircleOutlined, ReloadOutlined, RetweetOutlined } from '@/utils/optimizedIcons';
 import { ActionButton } from '../styles';
 import type { ActionButtonsProps } from '../types';

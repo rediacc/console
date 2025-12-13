@@ -28,7 +28,6 @@ import {
   FullWidthSelect,
 } from './styles';
 
-
 interface CephMachinesTabProps {
   teamFilter?: string | string[];
 }

@@ -25,11 +25,7 @@ export const ImportExportControls: React.FC<ImportExportControlsProps> = ({
         </Tooltip>
       </Upload>
       <Tooltip title={exportLabel}>
-        <RediaccButton
-          icon={<DownloadOutlined />}
-          onClick={onExport}
-          aria-label={exportLabel}
-        />
+        <RediaccButton icon={<DownloadOutlined />} onClick={onExport} aria-label={exportLabel} />
       </Tooltip>
     </Space>
   </ImportExportRow>

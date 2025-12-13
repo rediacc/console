@@ -369,11 +369,7 @@ const SuccessContent: React.FC<SuccessContentProps> = ({ t, onDone }) => (
           data-testid="tfa-settings-success-alert"
         />
 
-        <RediaccButton
-          fullWidth
-          onClick={onDone}
-          data-testid="tfa-settings-success-done-button"
-        >
+        <RediaccButton fullWidth onClick={onDone} data-testid="tfa-settings-success-done-button">
           {t('twoFactorAuth.done')}
         </RediaccButton>
       </RediaccStack>
