@@ -744,6 +744,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                           variant="info"
                           showIcon
                           icon={<InfoCircleOutlined />}
+                          data-testid="vault-editor-connection-required-alert"
                         />
                       )}
                       <TestConnectionButton
