@@ -139,22 +139,6 @@ npm run build
 npm run dev
 ```
 
-### Playwright E2E Tests
-
-```bash
-# Install Playwright browsers (first time only)
-npx playwright install chromium
-
-# Run E2E tests
-npm run test:e2e
-
-# Run E2E tests in UI mode
-npm run test:e2e:ui
-
-# Run specific test file
-npx playwright test tests/login.spec.ts
-```
-
 ## 🐛 Reporting Issues
 
 Found a bug? Please create an issue with:

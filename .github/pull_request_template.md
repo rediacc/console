@@ -32,7 +32,6 @@ Fixes #(issue number)
 ### Test Coverage
 - [ ] Unit tests pass
 - [ ] Integration tests pass
-- [ ] Playwright E2E tests pass
 - [ ] Manual testing completed
 
 ### Browser Testing

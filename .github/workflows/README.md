@@ -176,7 +176,6 @@ Workflows require these permissions:
 ## Future Enhancements
 
 Planned additions:
-- [ ] Playwright E2E tests in CI
 - [ ] Visual regression testing
 - [ ] Performance benchmarking
 - [ ] Lighthouse CI for web vitals

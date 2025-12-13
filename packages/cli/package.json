@@ -16,7 +16,16 @@
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "bun:dev": "bun run src/index.ts",
+    "bun:start": "bun run dist/index.js",
+    "bun:test": "bun test",
+    "build:exe": "bun build --compile --minify --sourcemap src/index.ts --outfile dist/rdc",
+    "build:exe:win": "bun build --compile --minify --target=bun-windows-x64 src/index.ts --outfile dist/rdc-win.exe",
+    "build:exe:mac": "bun build --compile --minify --target=bun-darwin-x64 src/index.ts --outfile dist/rdc-mac",
+    "build:exe:mac-arm": "bun build --compile --minify --target=bun-darwin-arm64 src/index.ts --outfile dist/rdc-mac-arm",
+    "build:exe:linux": "bun build --compile --minify --target=bun-linux-x64 src/index.ts --outfile dist/rdc-linux",
+    "build:exe:all": "bun run build:exe:win && bun run build:exe:mac && bun run build:exe:mac-arm && bun run build:exe:linux"
   },
   "dependencies": {
     "@rediacc/shared": "^0.1.0",
