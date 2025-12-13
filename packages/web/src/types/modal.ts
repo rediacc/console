@@ -12,18 +12,15 @@
 
 /**
  * Modal size enum with CSS class names
+ * Simplified to 3 core sizes plus fullscreen (uses DESIGN_TOKENS.DIMENSIONS)
  */
 export enum ModalSize {
-  /** Small modal - ideal for confirmations, simple forms */
+  /** Small modal (560px) - ideal for confirmations, simple forms */
   Small = 'modal-sm',
-  /** Medium modal - ideal for standard forms, content viewing */
+  /** Medium modal (768px) - ideal for standard forms, content viewing */
   Medium = 'modal-md',
-  /** Large modal - ideal for complex forms, detailed content */
+  /** Large modal (1024px) - ideal for complex forms, dashboards, detailed content */
   Large = 'modal-lg',
-  /** Extra large modal - ideal for full-featured interfaces */
-  ExtraLarge = 'modal-xl',
-  /** Full width modal - ideal for tables, dashboards */
-  Full = 'modal-full',
   /** Fullscreen modal - occupies entire browser viewport */
   Fullscreen = 'modal-fullscreen',
 }
@@ -66,32 +63,29 @@ export function getModalClassName(config: ModalConfig): string {
 
 /**
  * Modal size recommendations based on content type
+ * Simplified to 3 core sizes (Small, Medium, Large)
  */
 export const MODAL_SIZE_RECOMMENDATIONS = {
-  // Simple content
+  // Simple content → Small (560px)
   confirmation: ModalSize.Small,
   alert: ModalSize.Small,
   simpleForm: ModalSize.Small,
 
-  // Standard content
+  // Standard content → Medium (768px)
   standardForm: ModalSize.Medium,
   contentView: ModalSize.Medium,
   userProfile: ModalSize.Medium,
 
-  // Complex content
+  // Complex content → Large (1024px)
   complexForm: ModalSize.Large,
   multiStepWizard: ModalSize.Large,
   detailedView: ModalSize.Large,
-
-  // Full-featured content
-  dashboard: ModalSize.ExtraLarge,
-  dataTable: ModalSize.ExtraLarge,
-  editor: ModalSize.ExtraLarge,
-
-  // Maximum content
-  fullInterface: ModalSize.Full,
-  reporting: ModalSize.Full,
-  analytics: ModalSize.Full,
+  dashboard: ModalSize.Large,
+  dataTable: ModalSize.Large,
+  editor: ModalSize.Large,
+  fullInterface: ModalSize.Large,
+  reporting: ModalSize.Large,
+  analytics: ModalSize.Large,
 } as const;
 
 /**

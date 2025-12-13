@@ -82,6 +82,9 @@ export interface StyledTheme {
   // Dimensions
   dimensions: typeof DESIGN_TOKENS.DIMENSIONS;
 
+  // Modal max heights
+  modalMaxHeight: typeof DESIGN_TOKENS.MODAL_MAX_HEIGHT;
+
   // Shadows (includes theme-aware computed values)
   shadows: typeof DESIGN_TOKENS.SHADOWS & {
     panel: string;
@@ -134,6 +137,7 @@ const sharedThemeValues = {
   lineHeight: DESIGN_TOKENS.LINE_HEIGHT,
   letterSpacing: DESIGN_TOKENS.LETTER_SPACING,
   dimensions: DESIGN_TOKENS.DIMENSIONS,
+  modalMaxHeight: DESIGN_TOKENS.MODAL_MAX_HEIGHT,
   zIndex: DESIGN_TOKENS.Z_INDEX,
   breakpoints: DESIGN_TOKENS.BREAKPOINTS,
   transitions: DESIGN_TOKENS.TRANSITIONS,

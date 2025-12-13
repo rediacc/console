@@ -47,6 +47,7 @@ export const StyledRediaccModal = styled(AntModal).withConfig({
     }
 
     .ant-modal-body {
+      /* 120px = modal header(64) + modal footer(56) */
       max-height: calc(100vh - 120px);
       overflow-y: auto;
     }
