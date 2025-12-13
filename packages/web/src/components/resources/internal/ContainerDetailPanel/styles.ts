@@ -51,7 +51,7 @@ export const DividerLabel = styled.span`
 
 export const MetricsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(${({ theme }) => theme.dimensions.SEARCH_INPUT_WIDTH_SM}px, 1fr));
   gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 

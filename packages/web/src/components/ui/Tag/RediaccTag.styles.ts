@@ -102,7 +102,7 @@ export const StyledRediaccTag = styled(AntTag)<{
       $compact ? theme.fontSize.XS : resolveRediaccTagFontSize(theme, $size)}px;
     font-weight: ${({ theme, $emphasized }) =>
       $emphasized ? theme.fontWeight.SEMIBOLD : theme.fontWeight.MEDIUM};
-    line-height: 1.2;
+    line-height: ${({ theme }) => theme.lineHeight.TIGHT};
     transition: ${({ theme }) => theme.transitions.DEFAULT};
 
     /* Variant-specific colors */

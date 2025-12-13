@@ -60,7 +60,7 @@ export const VisualizationCanvas = styled.svg`
 
 export const LegendGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(${({ theme }) => theme.dimensions.FILTER_INPUT_WIDTH}px, 1fr));
   gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
