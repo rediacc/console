@@ -109,7 +109,7 @@ export const StyledRediaccButton = styled(AntButton)<{
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
     font-size: ${({ theme }) => theme.fontSize.SM}px;
-    line-height: 1.2;
+    line-height: ${({ theme }) => theme.lineHeight.TIGHT};
     transition: ${({ theme }) => theme.transitions.BUTTON};
 
     /* Variant-specific colors */

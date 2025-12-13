@@ -19,7 +19,7 @@ export const StyledSelect = styled(RediaccSelect)`
     display: flex;
     align-items: center;
     gap: ${({ theme }) => theme.spacing.XS}px;
-    line-height: 1.5;
+    line-height: ${({ theme }) => theme.lineHeight.NORMAL};
   }
   
   && .ant-select-arrow {

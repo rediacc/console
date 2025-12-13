@@ -4,8 +4,10 @@ export const DESIGN_TOKENS = {
     XXS: 2, // Extra extra small (micro adjustments)
     XS: 4, // Extra small
     SM: 8, // Small
+    SM_MD: 10, // Small-Medium (sidebar vertical padding)
     SM_LG: 12, // Small-Large (between SM and MD)
     MD: 16, // Medium
+    MD_LG: 18, // Medium-Large (sidebar horizontal padding expanded)
     LG: 24, // Large
     XL: 32, // Extra large
     XXL: 40, // 2x Extra large
@@ -52,7 +54,8 @@ export const DESIGN_TOKENS = {
   LINE_HEIGHT: {
     TIGHT: 1.25,
     NORMAL: 1.5,
-    RELAXED: 1.75,
+    RELAXED: 1.6, // Body text (was hardcoded 1.6)
+    LOOSE: 1.75, // Extra spacing for readability
   },
 
   LETTER_SPACING: {
@@ -134,6 +137,13 @@ export const DESIGN_TOKENS = {
     // Skeleton loading dimensions
     SKELETON_HEIGHT: 22,
     SKELETON_WIDTH: 120,
+  },
+
+  // Modal max heights (prevents excessive height on large screens)
+  MODAL_MAX_HEIGHT: {
+    SM: 640,
+    MD: 800,
+    LG: 960,
   },
 
   SHADOWS: {

@@ -522,7 +522,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       }
       open={open}
       onCancel={onClose}
-      className={ModalSize.ExtraLarge}
+      className={ModalSize.Large}
       footer={[
         <RediaccButton
           key="close"

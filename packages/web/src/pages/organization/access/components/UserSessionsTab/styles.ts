@@ -45,7 +45,7 @@ export const RefreshButton = styled(RediaccButton)`
 
 export const SearchInput = styled(RediaccInput)`
   && {
-    width: min(320px, 100%);
+    width: min(${({ theme }) => theme.dimensions.CARD_WIDTH}px, 100%);
     max-width: 100%;
   }
 `;

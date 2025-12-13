@@ -12,6 +12,7 @@ export const StyledModal = styled(BaseModal)`
   }
 
   .ant-modal-body {
+    /* 180px = modal header(56) + modal footer(56) + modal padding(68) */
     height: calc(90vh - 180px);
     padding: ${({ theme }) => theme.spacing.MD}px;
   }
@@ -48,12 +49,14 @@ export const StyledTabs = styled(RediaccTabs)`
 `;
 
 export const OverviewScroll = styled.div`
+  /* 340px = modal chrome(180) + tabs(48) + section header(60) + margins(52) */
   height: calc(90vh - 340px);
   overflow: auto;
 `;
 
 export const DescriptionCard = styled(ContentCard)`
   .ant-card-body {
+    /* 420px = modal chrome(180) + tabs(48) + card header(40) + section spacing(152) */
     max-height: calc(90vh - 420px);
     overflow: auto;
     padding: ${({ theme }) => theme.spacing.MD}px;
@@ -88,6 +91,7 @@ export const CenteredLoadingContainer = styled(LoadingContainer)`
 `;
 
 export const FilesLayout = styled(FlexRow).attrs({ $gap: 'MD' })`
+  /* 340px = modal chrome(180) + tabs(48) + section header(60) + margins(52) */
   height: calc(90vh - 340px);
 `;
 
@@ -109,7 +113,7 @@ export const FileListCard = styled(ContentCard)`
 
     .ant-card-body {
       padding: 0;
-      height: calc(100% - 44px);
+      height: calc(100% - ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px);
     }
   }
 `;

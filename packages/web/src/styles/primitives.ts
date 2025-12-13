@@ -278,11 +278,12 @@ export const TableCellText = styled.span<{
 // ============================================
 
 export const FilterSelect = styled(RediaccSelect)<{ $minWidth?: number }>`
-  min-width: ${({ $minWidth }) => ($minWidth ? `${$minWidth}px` : '150px')};
+  min-width: ${({ $minWidth, theme }) =>
+    $minWidth ? `${$minWidth}px` : `${theme.dimensions.LOGO_MAX_WIDTH}px`};
 `;
 
 export const FilterRangePicker = styled(RediaccDatePicker.RangePicker)`
-  min-width: 220px;
+  min-width: ${({ theme }) => theme.dimensions.FILTER_INPUT_WIDTH}px;
 `;
 
 export const FilterInput = styled(RediaccInput)`
@@ -439,7 +440,7 @@ export const ControlStack = styled.div`
 
 export const InputSlot = styled.div`
   flex: 1 1 280px;
-  min-width: 240px;
+  min-width: ${({ theme }) => theme.dimensions.SEARCH_INPUT_WIDTH_SM}px;
 `;
 
 export const ActionBar = styled.div`
@@ -775,7 +776,7 @@ export const ConsoleOutput = styled.div<{ $height?: number }>`
   padding: ${({ theme }) => theme.spacing.SM}px;
   font-family: ${({ theme }) => theme.fontFamily.MONO};
   font-size: ${({ theme }) => theme.fontSize.XS}px;
-  line-height: 1.5;
+  line-height: ${({ theme }) => theme.lineHeight.NORMAL};
   white-space: pre-wrap;
   word-break: break-word;
   height: ${({ theme, $height }) =>

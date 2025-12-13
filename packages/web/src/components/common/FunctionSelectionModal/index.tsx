@@ -258,7 +258,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
         }
         open={open}
         onCancel={handleCancel}
-        className={ModalSize.ExtraLarge}
+        className={ModalSize.Large}
         footer={[
           <RediaccButton key="cancel" onClick={handleCancel} data-testid="function-modal-cancel">
             {t('common:actions.cancel')}

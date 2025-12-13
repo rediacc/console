@@ -21,7 +21,7 @@ export const CopyButton = styled(RediaccButton).attrs({ size: 'sm' })`
 
 export const NotesList = styled.ul`
   margin-bottom: 0;
-  padding-left: 20px;
+  padding-left: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 export const CommandDescription = styled.div`
