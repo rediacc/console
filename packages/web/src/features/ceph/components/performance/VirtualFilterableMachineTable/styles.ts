@@ -17,20 +17,20 @@ export const ToolbarStack = styled(FlexColumn).attrs({
 
 export const FilterInput = styled(RediaccInput)`
   && {
-    width: min(320px, 100%);
+    width: min(${({ theme }) => theme.dimensions.CARD_WIDTH}px, 100%);
     max-width: 100%;
   }
 `;
 
 export const AssignmentSelect = styled(RediaccSelect)`
   && {
-    width: min(240px, 100%);
+    width: min(${({ theme }) => theme.dimensions.SEARCH_INPUT_WIDTH_SM}px, 100%);
   }
 `;
 
 export const PageSizeSelect = styled(RediaccSelect)`
   && {
-    width: min(200px, 100%);
+    width: min(${({ theme }) => theme.dimensions.FILTER_INPUT_WIDTH}px, 100%);
   }
 `;
 

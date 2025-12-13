@@ -68,7 +68,7 @@ interface StorageFunctionData {
 
 const TeamSelectorWrapper = styled.div`
   width: 100%;
-  max-width: 420px;
+  max-width: ${({ theme }) => theme.dimensions.SELECTOR_MAX_WIDTH}px;
 `;
 
 const StorageLocationIcon = styled(CloudOutlined)`

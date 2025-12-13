@@ -1,5 +1,6 @@
 import { createGlobalStyle, css } from 'styled-components';
 import { colorTokens } from '@/config/antdTheme';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const toCssVars = (tokens: Record<string, string>) =>
   Object.entries(tokens)
@@ -7,12 +8,26 @@ const toCssVars = (tokens: Record<string, string>) =>
     .map(([key, value]) => `--color-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`)
     .join('\n');
 
+// Modal sizes using design tokens (simplified from 5 to 3 sizes)
 const MODAL_SIZES = {
-  sm: { width: 480, height: 640, vh: 85, vw: 90 },
-  md: { width: 720, height: 800, vh: 88, vw: 92 },
-  lg: { width: 1200, height: 960, vh: 90, vw: 90 },
-  xl: { width: 1400, height: 1120, vh: 92, vw: 95 },
-  full: { width: 1600, height: 1280, vh: 95, vw: 98 },
+  sm: {
+    width: DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH,
+    height: DESIGN_TOKENS.MODAL_MAX_HEIGHT.SM,
+    vh: 85,
+    vw: 90,
+  },
+  md: {
+    width: DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_LG,
+    height: DESIGN_TOKENS.MODAL_MAX_HEIGHT.MD,
+    vh: 88,
+    vw: 92,
+  },
+  lg: {
+    width: DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_XL,
+    height: DESIGN_TOKENS.MODAL_MAX_HEIGHT.LG,
+    vh: 90,
+    vw: 90,
+  },
 } as const;
 
 const scrollbarStyles = css`
@@ -49,7 +64,7 @@ export const GlobalStyles = createGlobalStyle`
     font-family: ${({ theme }) => theme.fontFamily.SYSTEM};
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    line-height: 1.6;
+    line-height: ${({ theme }) => theme.lineHeight.RELAXED};
     background-color: var(--color-bg-primary, #ffffff);
     color: var(--color-text-primary, #1a1a1a);
   }
@@ -270,7 +285,7 @@ export const GlobalStyles = createGlobalStyle`
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 200px;
+    min-height: ${({ theme }) => theme.dimensions.FILTER_INPUT_WIDTH}px;
     padding: ${({ theme }) => theme.spacing.XL}px;
   }
 
@@ -366,7 +381,7 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   .no-scroll-page .ant-layout-content {
-    height: calc(100vh - 64px);
+    height: calc(100vh - ${({ theme }) => theme.dimensions.HEADER_HEIGHT}px);
     overflow: hidden;
     display: flex;
     flex-direction: column;

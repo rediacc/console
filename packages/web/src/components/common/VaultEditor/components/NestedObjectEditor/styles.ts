@@ -57,7 +57,7 @@ export const EntryActionsRow = ActionGroup;
 
 export const KeyInputWrapper = styled.div`
   flex: 1 1 60%;
-  min-width: 220px;
+  min-width: ${({ theme }) => theme.dimensions.FILTER_INPUT_WIDTH}px;
   max-width: 100%;
 
   ${media.mobile`
@@ -157,7 +157,7 @@ export const ImagePatternCard = styled(RediaccCard)`
 
 export const NumericInput = styled(RediaccInput).attrs({ fullWidth: true })`
   && {
-    max-width: 200px;
+    max-width: ${({ theme }) => theme.dimensions.FILTER_INPUT_WIDTH}px;
   }
 `;
 

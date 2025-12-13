@@ -6,7 +6,7 @@ export const TooltipContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.XS / 2}px;
-  min-width: 240px;
+  min-width: ${({ theme }) => theme.dimensions.SEARCH_INPUT_WIDTH_SM}px;
 `;
 
 export const TooltipContentSection = styled.div`
@@ -27,7 +27,7 @@ export const SeverityPill = styled(RediaccTag)<{ $color?: string }>`
   && {
     margin: 0;
     font-size: ${({ theme }) => theme.fontSize.XS}px;
-    line-height: 1.2;
+    line-height: ${({ theme }) => theme.lineHeight.TIGHT};
     ${({ $color }) => $color && `background-color: ${$color}; border-color: ${$color}; color: white;`}
   }
 `;

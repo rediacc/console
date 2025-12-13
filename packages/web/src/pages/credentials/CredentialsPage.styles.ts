@@ -6,7 +6,7 @@ import { InboxOutlined } from '@/utils/optimizedIcons';
 export const InlineList = styled.ul`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
   margin-bottom: 0;
-  padding-left: 20px;
+  padding-left: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 // Section wrapper for affected resources display
@@ -38,5 +38,5 @@ export const SecondaryTag = styled(Tag)`
 // Wrapper for team selector with constrained width
 export const TeamSelectorWrapper = styled.div`
   width: 100%;
-  max-width: 420px;
+  max-width: ${({ theme }) => theme.dimensions.SELECTOR_MAX_WIDTH}px;
 `;
