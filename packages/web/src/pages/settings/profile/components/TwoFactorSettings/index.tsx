@@ -370,7 +370,6 @@ const SuccessContent: React.FC<SuccessContentProps> = ({ t, onDone }) => (
         />
 
         <RediaccButton
-          size="md"
           fullWidth
           onClick={onDone}
           data-testid="tfa-settings-success-done-button"
@@ -418,7 +417,6 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
     {isEnabled ? (
       <RediaccButton
         variant="danger"
-        size="md"
         fullWidth
         icon={<WarningOutlined />}
         onClick={onDisable}
@@ -428,7 +426,6 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
       </RediaccButton>
     ) : (
       <RediaccButton
-        size="md"
         fullWidth
         icon={<CheckCircleOutlined />}
         onClick={onEnable}
@@ -483,7 +480,6 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
         <RediaccPasswordInput
           prefix={<KeyOutlined />}
           placeholder={t('twoFactorAuth.enableModal.passwordPlaceholder')}
-          size="md"
           autoComplete="off"
           data-testid="tfa-settings-enable-password-input"
         />
@@ -550,7 +546,6 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
         <RediaccPasswordInput
           prefix={<KeyOutlined />}
           placeholder={t('twoFactorAuth.disableModal.passwordPlaceholder')}
-          size="md"
           autoComplete="off"
           data-testid="tfa-settings-disable-password-input"
         />

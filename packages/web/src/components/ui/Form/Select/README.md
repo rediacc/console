@@ -1,12 +1,12 @@
 # Select Component
 
-A unified, centralized Select component that replaces all legacy select variants across the codebase. Based on Ant Design Select with consistent theming and size variants.
+A unified, centralized Select component that replaces all legacy select variants across the codebase. Based on Ant Design Select with consistent theming.
 
 ## Features
 
-- Three size variants: `sm`, `md` (default), `lg`
+- Unified 44px height matching other form controls
 - Full width and minimum width options
-- Consistent theming with Input component
+- Consistent theming with Input and Button components
 - Search and filtering capabilities
 - Multiple selection mode
 - Loading and disabled states
@@ -29,19 +29,6 @@ import { Select } from '@/components/ui/Form';
   ]}
   placeholder="Select an option"
 />
-```
-
-## Size Variants
-
-```tsx
-// Small (28px height) - for compact layouts
-<Select size="sm" options={options} />
-
-// Medium (32px height) - default
-<Select size="md" options={options} />
-
-// Large (40px height) - for prominent selections
-<Select size="lg" options={options} />
 ```
 
 ## Width Options
@@ -178,7 +165,6 @@ import { ModalSelect } from '@/components/common/styled';
 import { Select } from '@/components/ui/Form';
 
 <Select
-  size="sm"
   fullWidth
   options={[
     { value: '1', label: 'Option 1' }
@@ -220,7 +206,6 @@ const AssignmentSelect = styled(Select)`
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | Select size variant |
 | `fullWidth` | `boolean` | `false` | Stretch to container width |
 | `minWidth` | `number` | `undefined` | Minimum width in pixels |
 | `value` | `T` | `undefined` | Selected value |
@@ -256,7 +241,7 @@ import { Select, Option } from '@/components/ui/Form';
 
 ## Design Principles
 
-1. **Consistent Sizing**: Matches Input component sizes (28px, 32px, 40px)
+1. **Unified Height**: Uses 44px height to match Input and Button components
 2. **Responsive**: Supports fullWidth and minWidth for flexible layouts
 3. **Accessible**: Proper ARIA labels and keyboard navigation
 4. **Themed**: Uses design tokens for colors, spacing, and borders
@@ -275,7 +260,3 @@ The following components should be migrated to use the unified Select:
 - `AssignmentSelect` in `/src/features/distributed-storage/.../styles.ts`
 - `PageSizeSelect` in `/src/features/distributed-storage/.../styles.ts`
 - Various `StyledSelect` instances across the codebase
-
-## Examples
-
-See `Select.example.tsx` for complete working examples of all features and migration patterns.

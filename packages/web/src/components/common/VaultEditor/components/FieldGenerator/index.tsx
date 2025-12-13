@@ -147,7 +147,6 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
           <ValueHeader>
             <RediaccText weight="bold">{field}:</RediaccText>
             <CopyButton
-              size="sm"
               icon={
                 copiedField === field ? (
                   <SmallIcon>
@@ -249,7 +248,6 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
               <KeyOutlined />
             </SmallIcon>
           }
-          size="sm"
           data-testid={props['data-testid'] || 'vault-editor-field-generator'}
         />
       </Tooltip>

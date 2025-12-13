@@ -1,7 +1,8 @@
 import React from 'react';
-import { Button, Tag } from 'antd';
+import { Tag } from 'antd';
 import styled from 'styled-components';
 import type { Dayjs } from 'dayjs';
+import { RediaccButton } from '@/components/ui';
 
 type FilterTagValue = string | string[] | boolean | [Dayjs | null, Dayjs | null] | null;
 
@@ -27,10 +28,12 @@ const FilterTagBar = styled.div`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-const ClearButton = styled(Button)`
-  font-size: ${({ theme }) => theme.fontSize.XS}px;
-  padding: 0 ${({ theme }) => theme.spacing.XS}px;
-  height: auto;
+const ClearButton = styled(RediaccButton)`
+  && {
+    font-size: ${({ theme }) => theme.fontSize.XS}px;
+    padding: 0 ${({ theme }) => theme.spacing.XS}px;
+    height: auto;
+  }
 `;
 
 const isStringArray = (value: FilterTagValue): value is string[] =>
@@ -112,7 +115,7 @@ const FilterTagDisplay: React.FC<FilterTagDisplayProps> = ({
         <React.Fragment key={filter.key}>{renderFilterTag(filter)}</React.Fragment>
       ))}
       {showClearAll && onClearAll && (
-        <ClearButton type="link" size="small" onClick={onClearAll}>
+        <ClearButton variant="text" onClick={onClearAll}>
           {clearAllText}
         </ClearButton>
       )}

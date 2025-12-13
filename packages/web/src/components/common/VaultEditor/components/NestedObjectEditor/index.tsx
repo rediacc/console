@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Col, Empty, Input, Popconfirm, Row } from 'antd';
+import { Col, Empty, Popconfirm, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
-import { RediaccSwitch, RediaccText } from '@/components/ui';
+import { RediaccInput, RediaccSwitch, RediaccText } from '@/components/ui';
 import {
   CodeOutlined,
   DeleteOutlined,
@@ -269,7 +269,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                 <InlineFormItem
                   label={<RediaccText variant="label">{t('nestedObjectEditor.Image')}</RediaccText>}
                 >
-                  <Input
+                  <RediaccInput
                     value={imageValue}
                     onChange={(event) =>
                       handleUpdateEntry(index, {
@@ -361,7 +361,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
     }
 
     return (
-      <Input
+      <RediaccInput
         value={entry.value as string | undefined}
         onChange={(event) => handleUpdateEntry(index, { value: event.target.value })}
         disabled={readOnly}
@@ -483,7 +483,6 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                       variant="text"
                       danger
                       icon={<DeleteOutlined />}
-                      size="sm"
                       data-testid={
                         dataTestId
                           ? `${dataTestId}-delete-${entry.key}`

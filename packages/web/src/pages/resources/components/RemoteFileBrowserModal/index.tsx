@@ -14,9 +14,7 @@ import {
   Breadcrumb,
   Button,
   Empty,
-  Input,
   Modal,
-  Select,
   Space,
   Table,
   Tooltip,
@@ -30,7 +28,7 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { createTruncatedColumn } from '@/components/common/columns';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccStack } from '@/components/ui';
+import { RediaccInput, RediaccSelect, RediaccStack } from '@/components/ui';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { createCustomSorter, createSorter } from '@/platform';
@@ -788,7 +786,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
             <Space>
               <SourceSelect>
                 <FullWidthSelect>
-                  <Select
+                  <RediaccSelect
                     placeholder={t('resources:remoteFiles.selectSource')}
                     value={selectedSource}
                     onChange={(value) => {
@@ -831,7 +829,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
               </Tooltip>
             </Space>
             <SearchInput>
-              <Input
+              <RediaccInput
                 placeholder={t('common:actions.search')}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}

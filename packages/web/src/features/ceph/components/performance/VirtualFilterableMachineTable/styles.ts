@@ -40,7 +40,7 @@ export const RefreshButton = styled(RediaccButton)`
     align-items: center;
     justify-content: center;
     min-width: ${({ theme }) => theme.spacing.XXXL}px;
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
   }
 `;
 

@@ -2,7 +2,7 @@ import { Button as AntButton } from 'antd';
 import styled, { css } from 'styled-components';
 import { disabledState } from '@/styles/mixins';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { ButtonSize, ButtonVariant } from './RediaccButton.types';
+import type { ButtonVariant } from './RediaccButton.types';
 
 type ButtonTokenSet = {
   bg: string;
@@ -77,25 +77,10 @@ export const resolveRediaccButtonVariantTokens = (
 ): ButtonTokenSet => VARIANT_TOKENS[variant](theme);
 
 /**
- * Button height map by size
- */
-const SIZE_HEIGHT_MAP: Record<ButtonSize, (theme: StyledTheme) => number> = {
-  sm: (theme) => theme.dimensions.CONTROL_HEIGHT_SM, // 28px
-  md: (theme) => theme.dimensions.CONTROL_HEIGHT, // 32px
-};
-
-/**
- * Resolves height for each button size
- */
-export const resolveRediaccButtonHeight = (theme: StyledTheme, size: ButtonSize = 'md'): number =>
-  SIZE_HEIGHT_MAP[size](theme);
-
-/**
  * Unified Button styled component
  */
 export const StyledRediaccButton = styled(AntButton)<{
   $variant: ButtonVariant;
-  $size: ButtonSize;
   $iconOnly: boolean;
   $minWidth?: number;
   $fullWidth?: boolean;
@@ -105,7 +90,7 @@ export const StyledRediaccButton = styled(AntButton)<{
     align-items: center;
     justify-content: center;
     gap: ${({ theme }) => theme.spacing.XS}px;
-    min-height: ${({ theme, $size }) => resolveRediaccButtonHeight(theme, $size)}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
     font-size: ${({ theme }) => theme.fontSize.SM}px;
@@ -118,11 +103,11 @@ export const StyledRediaccButton = styled(AntButton)<{
     border: 1px solid ${({ theme, $variant }) => resolveRediaccButtonVariantTokens($variant, theme).border};
 
     /* Icon-only mode - square button */
-    ${({ $iconOnly, theme, $size }) =>
+    ${({ $iconOnly, theme }) =>
       $iconOnly &&
       css`
-        width: ${resolveRediaccButtonHeight(theme, $size)}px;
-        min-width: ${resolveRediaccButtonHeight(theme, $size)}px;
+        width: ${theme.dimensions.FORM_CONTROL_HEIGHT}px;
+        min-width: ${theme.dimensions.FORM_CONTROL_HEIGHT}px;
         padding: 0;
       `}
 

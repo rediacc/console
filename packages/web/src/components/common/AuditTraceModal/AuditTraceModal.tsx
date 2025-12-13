@@ -1,10 +1,9 @@
 import React from 'react';
-import { Button, Dropdown, message, Space, Table, Tag, Typography } from 'antd';
+import { Dropdown, message, Space, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { AuditTraceRecord, useEntityAuditTrace } from '@/api/queries/audit';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { IconWrapper, RediaccAlert, RediaccText } from '@/components/ui';
-import { useComponentStyles } from '@/hooks/useComponentStyles';
+import { IconWrapper, RediaccAlert, RediaccButton, RediaccText } from '@/components/ui';
 import { createDateSorter, createSorter, formatTimestampAsIs } from '@/platform';
 import type { BaseModalProps } from '@/types';
 import {
@@ -51,7 +50,6 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
   entityName,
 }) => {
   const { t } = useTranslation(['resources', 'common']);
-  const styles = useComponentStyles();
 
   const { data, isLoading, error } = useEntityAuditTrace(
     entityType,
@@ -356,13 +354,12 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                   placement="bottomRight"
                   data-testid="audit-trace-export-dropdown"
                 >
-                  <Button
+                  <RediaccButton
                     icon={<DownloadOutlined />}
                     data-testid="audit-trace-export-button"
-                    style={styles.buttonSecondary}
                   >
                     {t('audit.export')}
-                  </Button>
+                  </RediaccButton>
                 </Dropdown>
               </SummaryRow>
             </SummaryContainer>

@@ -50,7 +50,6 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
   return (
     <Space size={8} wrap>
       <FilterSelect
-        size="sm"
         $minWidth={150}
         placeholder={t('filters.teamPlaceholder')}
         value={filters.teamName || undefined}
@@ -64,7 +63,6 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         data-testid="queue-filter-team"
       />
       <FilterSelect
-        size="sm"
         $minWidth={150}
         placeholder={t('filters.machinePlaceholder')}
         value={filters.machineName || undefined}
@@ -77,7 +75,6 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         data-testid="queue-filter-machine"
       />
       <FilterSelect
-        size="sm"
         $minWidth={130}
         placeholder={t('filters.regionPlaceholder')}
         value={filters.regionName || undefined}
@@ -87,7 +84,6 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         data-testid="queue-filter-region"
       />
       <FilterSelect
-        size="sm"
         $minWidth={130}
         placeholder={t('filters.bridgePlaceholder')}
         value={filters.bridgeName || undefined}
@@ -104,7 +100,6 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         data-testid="queue-filter-date"
       />
       <FilterSelect
-        size="sm"
         mode="multiple"
         $minWidth={160}
         placeholder={t('filters.statusPlaceholder')}
@@ -121,7 +116,6 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         data-testid="queue-filter-status"
       />
       <FilterInput
-        size="sm"
         placeholder={t('filters.taskIdPlaceholder')}
         prefix={<SearchOutlined />}
         value={filters.taskIdFilter}

@@ -15,7 +15,7 @@ export const CommandBox = styled.div`
   justify-content: space-between;
 `;
 
-export const CopyButton = styled(RediaccButton).attrs({ size: 'sm' })`
+export const CopyButton = styled(RediaccButton)`
   margin-left: ${({ theme }) => theme.spacing.XS}px;
 `;
 

@@ -1,13 +1,10 @@
 import type { ChangeEvent, CSSProperties, ReactNode } from 'react';
 
 export type InputVariant = 'default';
-export type InputSize = 'sm' | 'md';
 
 export interface RediaccBaseInputProps {
   /** Visual style variant */
   variant?: InputVariant;
-  /** Input size: sm (36px), md (44px) */
-  size?: InputSize;
   /** Stretch to full container width */
   fullWidth?: boolean;
   /** Center text alignment */
@@ -77,7 +74,7 @@ export interface RediaccPasswordInputProps extends Omit<RediaccBaseInputProps, '
 export interface RediaccTextAreaProps
   extends Omit<
     RediaccBaseInputProps,
-    'variant' | 'prefix' | 'suffix' | 'size' | 'onChange' | 'onBlur' | 'onFocus' | 'onPressEnter'
+    'variant' | 'prefix' | 'suffix' | 'onChange' | 'onBlur' | 'onFocus' | 'onPressEnter'
   > {
   /** Number of rows */
   rows?: number;

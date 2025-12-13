@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Button, Modal, Space, Tag, Tooltip } from 'antd';
+import { Modal, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -29,6 +29,7 @@ import {
   ListTitle,
   ListTitleRow,
   PageWrapper,
+  RediaccButton,
   RediaccText,
   SectionHeading,
   SectionStack,
@@ -665,8 +666,8 @@ const CredentialsPage: React.FC = () => {
               hasTeamSelection ? (
                 <>
                   <Tooltip title={t('repositories.createRepository')}>
-                    <Button
-                      type="primary"
+                    <RediaccButton
+                      variant="primary"
                       icon={<PlusOutlined />}
                       data-testid="resources-create-repositorie-button"
                       onClick={() => openUnifiedModal('create', undefined, 'credentials-only')}
@@ -674,7 +675,7 @@ const CredentialsPage: React.FC = () => {
                     />
                   </Tooltip>
                   <Tooltip title={t('common:actions.refresh')}>
-                    <Button
+                    <RediaccButton
                       icon={<ReloadOutlined />}
                       data-testid="resources-refresh-button"
                       onClick={() => refetchRepos()}

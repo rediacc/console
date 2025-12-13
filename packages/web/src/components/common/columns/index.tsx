@@ -1,7 +1,7 @@
 import React from 'react';
 import { DeleteOutlined, EditOutlined, EyeOutlined, MoreOutlined } from '@ant-design/icons';
-import { Button, Dropdown, Space, Tooltip } from 'antd';
-import { RediaccText } from '@/components/ui';
+import { Dropdown, Space, Tooltip } from 'antd';
+import { RediaccButton, RediaccText } from '@/components/ui';
 import i18n from '@/i18n/config';
 import {
   createStatusRenderer,
@@ -272,9 +272,9 @@ export const createActionColumn = <T,>(
 
     return (
       <Dropdown menu={menu} trigger={['click']}>
-        <Button icon={options.buttonIcon || <MoreOutlined />} variant="text">
+        <RediaccButton icon={options.buttonIcon || <MoreOutlined />}>
           {options.buttonLabel}
-        </Button>
+        </RediaccButton>
       </Dropdown>
     );
   },

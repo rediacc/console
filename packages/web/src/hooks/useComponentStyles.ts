@@ -21,8 +21,8 @@ export const useComponentStyles = () => {
     () => ({
       // Control surfaces
       controlSurface: createControlSurfaceStyle(),
-      controlSurfaceLarge: createControlSurfaceStyle(DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT_LG),
-      controlSurfaceSmall: createControlSurfaceStyle(DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT_SM),
+      controlSurfaceLarge: createControlSurfaceStyle(DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT),
+      controlSurfaceSmall: createControlSurfaceStyle(DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT),
 
       // Cards and modals
       card: createCardStyle(),
@@ -33,8 +33,8 @@ export const useComponentStyles = () => {
 
       // Form elements
       input: createInputStyle(),
-      inputSmall: createInputStyle(DESIGN_TOKENS.DIMENSIONS.INPUT_HEIGHT_SM),
-      inputLarge: createInputStyle(DESIGN_TOKENS.DIMENSIONS.INPUT_HEIGHT_LG),
+      inputSmall: createInputStyle(DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT),
+      inputLarge: createInputStyle(DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT),
 
       // Buttons
       buttonPrimary: createButtonStyle('primary'),
@@ -263,7 +263,7 @@ export const useTableStyles = () => {
       },
 
       tableActionButton: {
-        ...createControlSurfaceStyle(DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT),
+        ...createControlSurfaceStyle(DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT),
         borderRadius: borderRadius('MD'),
         border: 'none',
         background: 'transparent',
@@ -294,7 +294,7 @@ export const useNavigationStyles = () => {
         cursor: 'pointer',
         textDecoration: 'none',
         color: 'var(--color-text-primary)',
-        minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
+        minHeight: DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT,
         '&:hover': {
           background: 'var(--color-fill-tertiary)',
         },

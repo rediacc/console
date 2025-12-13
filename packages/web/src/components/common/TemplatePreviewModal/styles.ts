@@ -113,7 +113,7 @@ export const FileListCard = styled(ContentCard)`
 
     .ant-card-body {
       padding: 0;
-      height: calc(100% - ${({ theme }) => theme.dimensions.INPUT_HEIGHT}px);
+      height: calc(100% - ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px);
     }
   }
 `;

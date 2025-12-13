@@ -5,7 +5,6 @@ import {
   DatePicker,
   Dropdown,
   Empty,
-  Input,
   message,
   Row,
   Select,
@@ -16,7 +15,7 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useAuditLogs } from '@/api/queries/audit';
-import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccInput, RediaccStack, RediaccText } from '@/components/ui';
 import { useFilters, usePagination } from '@/hooks';
 import {
   buildCSVContent,
@@ -254,7 +253,7 @@ const AuditPage = () => {
               <Col xs={24} sm={12} md={6}>
                 <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <FilterLabel>{t('system:audit.filters.search')}</FilterLabel>
-                  <Input
+                  <RediaccInput
                     data-testid="audit-filter-search"
                     placeholder={t('system:audit.filters.searchPlaceholder')}
                     prefix={<SearchOutlined />}
@@ -315,7 +314,7 @@ const AuditPage = () => {
             closable
             showIcon
             action={
-              <RediaccButton size="sm" onClick={() => refetch()} loading={isLoading}>
+              <RediaccButton onClick={() => refetch()} loading={isLoading}>
                 {t('system:audit.errors.tryAgain')}
               </RediaccButton>
             }

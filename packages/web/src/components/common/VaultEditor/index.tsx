@@ -1,16 +1,5 @@
 import React, { type JSX, useCallback } from 'react';
-import {
-  Alert,
-  Card,
-  Col,
-  Descriptions,
-  Divider,
-  Form,
-  message,
-  Select,
-  Space,
-  Tooltip,
-} from 'antd';
+import { Alert, Card, Col, Descriptions, Divider, Form, message, Space, Tooltip } from 'antd';
 import {
   RediaccAlert,
   RediaccStack,
@@ -21,6 +10,7 @@ import {
 import {
   RediaccInput,
   RediaccInputNumber,
+  RediaccOption,
   RediaccPasswordInput,
   RediaccSelect,
   RediaccTextArea,
@@ -417,9 +407,9 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
         >
           <RediaccSelect fullWidth {...commonProps} data-testid={`vault-editor-field-${fieldName}`}>
             {field.enum.map((option) => (
-              <Select.Option key={option} value={option}>
+              <RediaccOption key={option} value={option}>
                 {option}
-              </Select.Option>
+              </RediaccOption>
             ))}
           </RediaccSelect>
         </FieldFormItem>
@@ -1214,7 +1204,6 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
 
                 <FormatActions>
                   <FormatButton
-                    size="sm"
                     variant="default"
                     onClick={() => formatJsonRef.current?.()}
                     data-testid="vault-editor-format-json"

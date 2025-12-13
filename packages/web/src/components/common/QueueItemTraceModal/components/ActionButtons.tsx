@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button } from 'antd';
 import { normalizeToBoolean, normalizeToNumber, normalizeToString } from '@/platform';
+import { RediaccButton } from '@/components/ui';
 import { CloseCircleOutlined, ReloadOutlined, RetweetOutlined } from '@/utils/optimizedIcons';
 import { ActionButton } from '../styles';
 import type { ActionButtonsProps } from '../types';
@@ -59,7 +59,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     ) : null,
     // Show Retry button only for failed tasks that haven't reached max retries
     showRetryButton ? (
-      <Button
+      <RediaccButton
         key="retry"
         data-testid="queue-trace-retry-button"
         danger
@@ -69,9 +69,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         style={styles.buttonPrimary}
       >
         Retry Again
-      </Button>
+      </RediaccButton>
     ) : null,
-    <Button
+    <RediaccButton
       key="refresh"
       data-testid="queue-trace-refresh-button"
       icon={<ReloadOutlined />}
@@ -80,14 +80,14 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       style={styles.buttonSecondary}
     >
       Refresh
-    </Button>,
-    <Button
+    </RediaccButton>,
+    <RediaccButton
       key="close"
       data-testid="queue-trace-close-button"
       onClick={onClose}
       style={styles.buttonSecondary}
     >
       Close
-    </Button>,
+    </RediaccButton>,
   ].filter(Boolean);
 };

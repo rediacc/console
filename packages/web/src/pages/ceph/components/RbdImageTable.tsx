@@ -352,7 +352,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     <>
       <ImageListContainer data-testid="rbd-image-list-container">
         <CreateImageButton
-          type="primary"
+          variant="primary"
           icon={<PlusOutlined />}
           onClick={handleCreate}
           data-testid="rbd-create-image-button"
@@ -377,7 +377,6 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
             onExpandedRowsChange: (keys: readonly Key[]) => setExpandedRowKeys(keys.map(String)),
             expandIcon: ({ expanded, onExpand, record }) => (
               <ExpandButton
-                size="small"
                 icon={expanded ? <CameraOutlined /> : <CameraOutlined />}
                 onClick={(e) => onExpand(record, e)}
                 data-testid={`rbd-expand-snapshots-${record.imageName}`}

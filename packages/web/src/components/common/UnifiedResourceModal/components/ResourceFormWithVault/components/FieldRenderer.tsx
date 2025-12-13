@@ -1,4 +1,3 @@
-import { Input } from 'antd';
 import { Control, Controller } from 'react-hook-form';
 import {
   SizeInputGroup,
@@ -6,7 +5,7 @@ import {
   SizeUnitSelect,
 } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/styles';
 import type { FormFieldConfig } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/types';
-import { RediaccSelect } from '@/components/ui';
+import { RediaccInput, RediaccPasswordInput, RediaccSelect } from '@/components/ui';
 import type { FieldValues } from 'react-hook-form';
 
 interface FieldRendererProps<T extends FieldValues> {
@@ -44,7 +43,7 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
           control={control}
           rules={field.rules}
           render={({ field: controllerField }) => (
-            <Input.Password
+            <RediaccPasswordInput
               {...controllerField}
               placeholder={field.placeholder}
               disabled={field.disabled}
@@ -146,17 +145,24 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
           name={field.name}
           control={control}
           rules={field.rules}
-          render={({ field: controllerField }) => (
-            <Input
-              {...controllerField}
-              data-testid={`resource-modal-field-${field.name}-input`}
-              type={field.type || 'text'}
-              placeholder={field.placeholder}
-              disabled={field.disabled}
-              readOnly={field.readOnly}
-              autoComplete="off"
-            />
-          )}
+          render={({ field: controllerField }) => {
+            // RediaccInput only supports: 'text' | 'email' | 'url' | 'tel' | 'password'
+            // For other types like 'number', use 'text' as fallback
+            const inputType: 'text' | 'email' | 'url' | 'tel' | 'password' =
+              field.type === 'email' ? 'email' : field.type === 'password' ? 'password' : 'text';
+
+            return (
+              <RediaccInput
+                {...controllerField}
+                data-testid={`resource-modal-field-${field.name}-input`}
+                type={inputType}
+                placeholder={field.placeholder}
+                disabled={field.disabled}
+                readOnly={field.readOnly}
+                autoComplete="off"
+              />
+            );
+          }}
         />
       );
   }

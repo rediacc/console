@@ -40,7 +40,6 @@ export const RediaccInput = forwardRef<any, RediaccInputProps>(
   (
     {
       variant = 'default',
-      size = 'md',
       fullWidth = false,
       centered = false,
       placeholder,
@@ -73,7 +72,6 @@ export const RediaccInput = forwardRef<any, RediaccInputProps>(
       <StyledRediaccInput
         ref={ref}
         $variant={variant}
-        $size={size}
         $fullWidth={fullWidth}
         $centered={centered}
         type={type}
@@ -125,7 +123,6 @@ RediaccInput.displayName = 'RediaccInput';
 export const RediaccPasswordInput = forwardRef<any, RediaccPasswordInputProps>(
   (
     {
-      size = 'md',
       fullWidth = false,
       centered = false,
       placeholder,
@@ -158,7 +155,6 @@ export const RediaccPasswordInput = forwardRef<any, RediaccPasswordInputProps>(
     return (
       <StyledRediaccPasswordInput
         ref={ref}
-        $size={size}
         $fullWidth={fullWidth}
         $centered={centered}
         placeholder={placeholder}
@@ -293,7 +289,6 @@ RediaccTextArea.displayName = 'RediaccTextArea';
 export const RediaccInputNumber = forwardRef<any, RediaccInputNumberProps>(
   (
     {
-      size = 'md',
       fullWidth = false,
       placeholder,
       value,
@@ -331,7 +326,6 @@ export const RediaccInputNumber = forwardRef<any, RediaccInputNumberProps>(
     return (
       <StyledRediaccInputNumber
         ref={ref}
-        $size={size}
         $fullWidth={fullWidth}
         placeholder={placeholder}
         value={value}
@@ -388,7 +382,6 @@ RediaccInputNumber.displayName = 'RediaccInputNumber';
 export const RediaccSearchInput = forwardRef<any, RediaccSearchInputProps>(
   (
     {
-      size = 'md',
       fullWidth = false,
       placeholder,
       value,
@@ -421,7 +414,6 @@ export const RediaccSearchInput = forwardRef<any, RediaccSearchInputProps>(
     return (
       <StyledRediaccSearchInput
         ref={ref}
-        $size={size}
         $fullWidth={fullWidth}
         placeholder={placeholder}
         value={value}

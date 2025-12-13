@@ -197,14 +197,14 @@ export const TableActionButton = styled(RediaccButton).attrs<TableActionButtonPr
     ${({ $hasLabel, theme }) =>
       $hasLabel
         ? `
-      min-width: ${theme.dimensions.CONTROL_HEIGHT}px;
+      min-width: ${theme.dimensions.FORM_CONTROL_HEIGHT}px;
       padding: 0 ${theme.spacing.SM}px;
       gap: ${theme.spacing.XS}px;
     `
         : `
-      width: ${theme.dimensions.CONTROL_HEIGHT}px;
+      width: ${theme.dimensions.FORM_CONTROL_HEIGHT}px;
     `}
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   }
 `;

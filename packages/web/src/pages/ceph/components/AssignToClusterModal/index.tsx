@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Select, Table } from 'antd';
+import { Table } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { type CephCluster, useCephClusters } from '@/api/queries/ceph';
 import {
@@ -176,6 +176,15 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
 
   const modalSize = isBulkMode ? ModalSize.Large : ModalSize.Medium;
 
+  const clusterOptions = useMemo(
+    () =>
+      clusters.map((cluster) => ({
+        value: cluster.clusterName,
+        label: cluster.clusterName,
+      })),
+    [clusters]
+  );
+
   return (
     <StyledModal
       $size={modalSize}
@@ -269,18 +278,9 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
                 onChange={(value) => setSelectedCluster(value as string | null)}
                 showSearch
                 optionFilterProp="children"
+                options={clusterOptions}
                 data-testid="ds-assign-cluster-select"
-              >
-                {clusters.map((cluster) => (
-                  <Select.Option
-                    key={cluster.clusterName}
-                    value={cluster.clusterName}
-                    data-testid={`cluster-option-${cluster.clusterName}`}
-                  >
-                    {cluster.clusterName}
-                  </Select.Option>
-                ))}
-              </StyledSelect>
+              />
               {!isBulkMode && (
                 <RediaccText size="xs" color="muted">
                   {t('machines:clusterAssignmentHelp')}

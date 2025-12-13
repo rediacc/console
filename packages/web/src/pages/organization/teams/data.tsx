@@ -1,5 +1,6 @@
-import { Badge, Button, Popconfirm, Space, Tooltip } from 'antd';
+import { Badge, Popconfirm, Space, Tooltip } from 'antd';
 import type { Team } from '@/api/queries/teams';
+import { RediaccButton } from '@/components/ui';
 import {
   createCountColumn,
   createTruncatedColumn,
@@ -163,9 +164,8 @@ export const getTeamColumns = ({
     render: (_, record: Team) => (
       <Space size={4} wrap>
         <Tooltip title={tSystem('actions.edit')}>
-          <Button
-            type="primary"
-            size="small"
+          <RediaccButton
+            variant="primary"
             icon={<EditOutlined />}
             onClick={() => onEdit(record)}
             data-testid={`system-team-edit-button-${record.teamName}`}
@@ -173,9 +173,8 @@ export const getTeamColumns = ({
           />
         </Tooltip>
         <Tooltip title={tSystem('actions.members')}>
-          <Button
-            type="primary"
-            size="small"
+          <RediaccButton
+            variant="primary"
             icon={<UserOutlined />}
             onClick={() => onManageMembers(record)}
             data-testid={`system-team-members-button-${record.teamName}`}
@@ -183,9 +182,8 @@ export const getTeamColumns = ({
           />
         </Tooltip>
         <Tooltip title={tSystem('actions.trace')}>
-          <Button
-            type="primary"
-            size="small"
+          <RediaccButton
+            variant="primary"
             icon={<HistoryOutlined />}
             onClick={() => onTrace(record)}
             data-testid={`system-team-trace-button-${record.teamName}`}
@@ -204,10 +202,8 @@ export const getTeamColumns = ({
           okButtonProps={{ danger: true }}
         >
           <Tooltip title={tCommon('actions.delete')}>
-            <Button
-              type="primary"
-              danger
-              size="small"
+            <RediaccButton
+              variant="danger"
               icon={<DeleteOutlined />}
               loading={isDeleting}
               data-testid={`system-team-delete-button-${record.teamName}`}

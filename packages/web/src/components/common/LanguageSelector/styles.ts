@@ -20,7 +20,7 @@ export const LanguageSelect = styled(RediaccSelect)`
 
     .ant-select-selector {
       border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-      min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+      min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
       color: ${({ theme }) => theme.colors.textPrimary};
     }
 

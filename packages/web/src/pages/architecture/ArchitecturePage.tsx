@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Col, Row, Select, Space, Tooltip } from 'antd';
+import { Alert, Col, Row, Space, Tooltip } from 'antd';
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { useCompanyArchitecture } from '@/api/queries/architecture';
@@ -8,6 +8,7 @@ import {
   PageCard,
   RediaccButton,
   RediaccRadio,
+  RediaccSelect,
   RediaccStack,
   RediaccStatistic,
   RediaccText,
@@ -692,7 +693,6 @@ const ArchitecturePage: React.FC = () => {
           action={
             <Tooltip title={t('actions.retry', { ns: 'common' })}>
               <RediaccButton
-                size="sm"
                 iconOnly
                 icon={<ReloadOutlined />}
                 onClick={() => refetch()}
@@ -785,7 +785,7 @@ const ArchitecturePage: React.FC = () => {
                 </RediaccText>
               </FilterLabel>
               <FilterSelectWrapper>
-                <Select
+                <RediaccSelect
                   mode="multiple"
                   allowClear
                   placeholder={t('architecture.selectEntities', { ns: 'system' })}
@@ -793,27 +793,22 @@ const ArchitecturePage: React.FC = () => {
                   onChange={setSelectedEntityTypes}
                   maxTagCount={3}
                   maxTagPlaceholder={(omittedValues) => `+${omittedValues.length} more`}
-                  data-testid="architecture-entity-filter"
-                >
-                  {entityTypes.map((type) => (
-                    <Select.Option
-                      key={type.value}
-                      value={type.value}
-                      data-testid={`architecture-filter-${type.value}`}
-                    >
+                  options={entityTypes.map((type) => ({
+                    value: type.value,
+                    label: (
                       <Space>
                         <span>{type.icon}</span>
                         <span>{type.label}</span>
                       </Space>
-                    </Select.Option>
-                  ))}
-                </Select>
+                    ),
+                  }))}
+                  data-testid="architecture-entity-filter"
+                />
               </FilterSelectWrapper>
               <FilterActions>
                 <Tooltip title={t('architecture.selectAll', { ns: 'system' })}>
                   <RediaccButton
                     iconOnly
-                    size="sm"
                     icon={<CheckOutlined />}
                     onClick={() => setSelectedEntityTypes(entityTypes.map((t) => t.value))}
                     data-testid="architecture-select-all-button"
@@ -823,7 +818,6 @@ const ArchitecturePage: React.FC = () => {
                 <Tooltip title={t('architecture.clearAll', { ns: 'system' })}>
                   <RediaccButton
                     iconOnly
-                    size="sm"
                     icon={<MinusCircleOutlined />}
                     onClick={() => setSelectedEntityTypes([])}
                     data-testid="architecture-clear-all-button"

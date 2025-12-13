@@ -136,7 +136,6 @@ const ProfilePage: React.FC = () => {
                       refetchUserVault();
                       userVaultModal.open();
                     }}
-                    size="md"
                     data-testid="system-user-vault-button"
                     aria-label={t('personal.configureVault')}
                   />
@@ -146,7 +145,6 @@ const ProfilePage: React.FC = () => {
                 <RediaccButton
                   icon={<KeyOutlined />}
                   onClick={openChangePassword}
-                  size="md"
                   data-testid="system-change-password-button"
                   aria-label={tSystem('actions.changePassword')}
                 />
@@ -155,7 +153,6 @@ const ProfilePage: React.FC = () => {
                 <RediaccButton
                   icon={<SafetyCertificateOutlined />}
                   onClick={() => twoFactorModal.open()}
-                  size="md"
                   data-testid="system-two-factor-button"
                   aria-label={tSystem('actions.twoFactorAuth')}
                 />

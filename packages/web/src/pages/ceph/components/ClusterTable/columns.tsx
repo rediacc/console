@@ -93,7 +93,6 @@ export const buildClusterColumns = ({
         <MachineManageCell>
           <MachineCountBadge cluster={record} />
           <ManageMachinesButton
-            size="sm"
             data-testid={`ds-cluster-manage-machines-${record.clusterName}`}
             onClick={(event) => {
               event.stopPropagation();

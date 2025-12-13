@@ -31,9 +31,7 @@ export const AlertWrapper = styled(RediaccAlert)`
   }
 `;
 
-export const ActionButton = styled(RediaccButton).attrs({
-  size: 'sm',
-})`
+export const ActionButton = styled(RediaccButton)`
   && {
     gap: ${({ theme }) => theme.spacing.XS}px;
   }

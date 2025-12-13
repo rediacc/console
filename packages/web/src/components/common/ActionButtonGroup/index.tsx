@@ -97,8 +97,8 @@ const Container = styled.div<{ $gap: 'XS' | 'SM' | 'MD' }>`
  * Placeholder element that reserves space for hidden buttons
  */
 const ButtonPlaceholder = styled.div`
-  width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
-  min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+  width: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
+  min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
   flex-shrink: 0;
 `;
 

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { Button, Modal, Space, Tag, Tooltip } from 'antd';
+import { Modal, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components';
 import { useMachines } from '@/api/queries/machines';
@@ -28,6 +28,7 @@ import {
   ListTitle,
   ListTitleRow,
   PageWrapper,
+  RediaccButton,
   SectionHeading,
   SectionStack,
 } from '@/components/ui';
@@ -496,8 +497,8 @@ const StoragePage: React.FC = () => {
               hasTeamSelection ? (
                 <>
                   <Tooltip title={t('storage.createStorage')}>
-                    <Button
-                      type="primary"
+                    <RediaccButton
+                      variant="primary"
                       icon={<PlusOutlined />}
                       data-testid="resources-create-storage-button"
                       onClick={() => openUnifiedModal('create')}
@@ -505,7 +506,7 @@ const StoragePage: React.FC = () => {
                     />
                   </Tooltip>
                   <Tooltip title={t('resources:storage.import.button')}>
-                    <Button
+                    <RediaccButton
                       icon={<ImportOutlined />}
                       data-testid="resources-import-button"
                       onClick={() => rcloneImportWizard.open()}
@@ -513,7 +514,7 @@ const StoragePage: React.FC = () => {
                     />
                   </Tooltip>
                   <Tooltip title={t('common:actions.refresh')}>
-                    <Button
+                    <RediaccButton
                       icon={<ReloadOutlined />}
                       data-testid="resources-refresh-button"
                       onClick={() => refetchStorage()}
