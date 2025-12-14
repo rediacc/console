@@ -19,6 +19,7 @@ export default tseslint.config(
       '*.config.js',
       '*.config.ts',
       'packages/web/vite.config.ts',
+      'packages/cli/bundle.mjs',
     ]
   },
   
