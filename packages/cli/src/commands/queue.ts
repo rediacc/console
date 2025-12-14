@@ -169,7 +169,9 @@ export async function traceAction(
         const statusText = formatStatus(summary.status || 'UNKNOWN');
         const ageText = summary.ageInMinutes != null ? formatAge(summary.ageInMinutes) : 'unknown';
         const progressText = summary.progress || 'No progress';
-        spinner.text = `${statusText} | Age: ${ageText} | ${progressText}`;
+        if (spinner) {
+          spinner.text = `${statusText} | Age: ${ageText} | ${progressText}`;
+        }
 
         const terminalStatuses = ['COMPLETED', 'FAILED', 'CANCELLED'];
         const status = summary.status?.toUpperCase();
