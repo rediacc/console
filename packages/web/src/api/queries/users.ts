@@ -35,7 +35,8 @@ export const useCreateUser = () => {
       const passwordHash = await hashPassword(password);
       return api.users.create(email, passwordHash, { language: i18n.language || 'en' });
     },
-    successMessage: (_, vars) => i18n.t('organization:users.success.created', { email: vars.email }),
+    successMessage: (_, vars) =>
+      i18n.t('organization:users.success.created', { email: vars.email }),
     errorMessage: i18n.t('organization:users.errors.createFailed'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });

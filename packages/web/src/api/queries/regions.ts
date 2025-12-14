@@ -71,22 +71,20 @@ export const useUpdateRegionName = () => {
 // Update region vault
 export const useUpdateRegionVault = () => {
   const queryClient = useQueryClient();
-  return useMutationWithFeedback<
-    unknown,
-    Error,
-    UpdateRegionVaultParams & Record<string, unknown>
-  >({
-    mutationFn: (params) =>
-      api.regions.updateVault({
-        ...params,
-        vaultContent: minifyJSON(params.vaultContent),
-      }),
-    successMessage: (_, vars) => `Region "${vars.regionName}" vault updated successfully`,
-    errorMessage: 'Failed to update region vault',
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['regions'] });
-    },
-  });
+  return useMutationWithFeedback<unknown, Error, UpdateRegionVaultParams & Record<string, unknown>>(
+    {
+      mutationFn: (params) =>
+        api.regions.updateVault({
+          ...params,
+          vaultContent: minifyJSON(params.vaultContent),
+        }),
+      successMessage: (_, vars) => `Region "${vars.regionName}" vault updated successfully`,
+      errorMessage: 'Failed to update region vault',
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['regions'] });
+      },
+    }
+  );
 };
 
 // Delete region

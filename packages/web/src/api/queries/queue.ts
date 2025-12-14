@@ -107,7 +107,8 @@ export const useCreateQueueItem = () => {
   >({
     mutationFn: async (data) => {
       // Ensure priority is within valid range
-      const priority = data.priority && data.priority >= 1 && data.priority <= 5 ? data.priority : 3;
+      const priority =
+        data.priority && data.priority >= 1 && data.priority <= 5 ? data.priority : 3;
       // Minify the vault JSON before sending
       const params: CreateQueueItemParams = {
         teamName: data.teamName,

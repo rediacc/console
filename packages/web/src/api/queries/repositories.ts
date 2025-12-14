@@ -136,7 +136,8 @@ export const usePromoteRepositoryToGrand = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, PromoteRepositoryToGrandParams>({
     mutationFn: (params) => api.repositories.promoteToGrand(params),
-    successMessage: (_, vars) => `Repository "${vars.repositoryName}" promoted to original successfully`,
+    successMessage: (_, vars) =>
+      `Repository "${vars.repositoryName}" promoted to original successfully`,
     errorMessage: 'Failed to promote repository',
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] });

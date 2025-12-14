@@ -61,22 +61,20 @@ export const useUpdateBridgeName = () => {
 // Update bridge vault
 export const useUpdateBridgeVault = () => {
   const queryClient = useQueryClient();
-  return useMutationWithFeedback<
-    unknown,
-    Error,
-    UpdateBridgeVaultParams & Record<string, unknown>
-  >({
-    mutationFn: (params) =>
-      api.bridges.updateVault({
-        ...params,
-        vaultContent: minifyJSON(params.vaultContent),
-      }),
-    successMessage: (_, vars) => `Bridge "${vars.bridgeName}" vault updated successfully`,
-    errorMessage: 'Failed to update bridge vault',
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bridges'] });
-    },
-  });
+  return useMutationWithFeedback<unknown, Error, UpdateBridgeVaultParams & Record<string, unknown>>(
+    {
+      mutationFn: (params) =>
+        api.bridges.updateVault({
+          ...params,
+          vaultContent: minifyJSON(params.vaultContent),
+        }),
+      successMessage: (_, vars) => `Bridge "${vars.bridgeName}" vault updated successfully`,
+      errorMessage: 'Failed to update bridge vault',
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['bridges'] });
+      },
+    }
+  );
 };
 
 // Delete bridge
