@@ -38,11 +38,22 @@ export async function withSpinner<T>(
   fn: () => Promise<T>,
   successText?: string
 ): Promise<T> {
-  // Skip spinner in non-interactive environments
+  // In non-interactive environments, skip spinner but still print status
   if (!isInteractive()) {
-    return fn();
+    try {
+      const result = await fn();
+      // Always print success message for CI/piped output
+      if (successText) {
+        console.log(`✓ ${successText}`);
+      }
+      return result;
+    } catch (error) {
+      console.error(`✗ ${text.replace('...', '')} failed`);
+      throw error;
+    }
   }
 
+  // Interactive mode - use spinner
   const spinner = startSpinner(text);
   try {
     const result = await fn();
