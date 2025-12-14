@@ -78,6 +78,7 @@ export interface CreateActionOptions {
   priority: string;
   param?: string[];
   function: string;
+  vault?: string;
   [key: string]: unknown;
 }
 
@@ -95,27 +96,34 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
     process.exit(1);
   }
 
-  // Parse parameters
-  const params: Record<string, string> = {};
-  for (const param of options.param || []) {
-    const [key, ...valueParts] = param.split('=');
-    params[key] = valueParts.join('=');
-  }
+  let queueVault: string;
 
-  // Build proper queue vault using the queue service
-  const queueVault = await withSpinner(
-    'Building queue vault...',
-    () =>
-      queueService.buildQueueVault({
-        teamName: opts.team as string,
-        machineName: opts.machine,
-        bridgeName: opts.bridge,
-        functionName: options.function,
-        params,
-        priority: parseInt(options.priority, 10),
-      }),
-    'Queue vault built'
-  );
+  if (options.vault) {
+    // Use provided vault directly (for scripts/CI that need raw vault control)
+    queueVault = options.vault;
+  } else {
+    // Parse parameters
+    const params: Record<string, string> = {};
+    for (const param of options.param || []) {
+      const [key, ...valueParts] = param.split('=');
+      params[key] = valueParts.join('=');
+    }
+
+    // Build proper queue vault using the queue service
+    queueVault = await withSpinner(
+      'Building queue vault...',
+      () =>
+        queueService.buildQueueVault({
+          teamName: opts.team as string,
+          machineName: opts.machine,
+          bridgeName: opts.bridge,
+          functionName: options.function,
+          params,
+          priority: parseInt(options.priority, 10),
+        }),
+      'Queue vault built'
+    );
+  }
 
   const response = await withSpinner(
     `Creating queue item for function "${options.function}"...`,
@@ -306,6 +314,7 @@ export function registerQueueCommands(program: Command): void {
       },
       []
     )
+    .option('--vault <json>', 'Raw vault content (bypasses auto-build)')
     .action(async (options) => {
       try {
         await createAction(options);

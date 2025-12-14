@@ -14,6 +14,7 @@ export function registerAuthCommands(program: Command): void {
     .command('login')
     .description('Authenticate with Rediacc')
     .option('-e, --email <email>', 'Email address')
+    .option('-p, --password <password>', 'Password (for non-interactive login)')
     .option('-n, --name <name>', 'Session name')
     .action(async (options) => {
       try {
@@ -24,8 +25,8 @@ export function registerAuthCommands(program: Command): void {
             validate: (input) => input.includes('@') || 'Please enter a valid email',
           }));
 
-        // Get password
-        const password = await askPassword('Password:');
+        // Get password (use provided or prompt interactively)
+        const password = options.password || (await askPassword('Password:'));
 
         // Attempt login
         const result = await withSpinner(
@@ -234,6 +235,7 @@ export function registerAuthCommands(program: Command): void {
     .command('login')
     .description('Authenticate with Rediacc (shortcut for: auth login)')
     .option('-e, --email <email>', 'Email address')
+    .option('-p, --password <password>', 'Password (for non-interactive login)')
     .option('-n, --name <name>', 'Session name')
     .action(async (options) => {
       // Forward to auth login
@@ -243,6 +245,7 @@ export function registerAuthCommands(program: Command): void {
           'node',
           'rediacc',
           ...(options.email ? ['-e', options.email] : []),
+          ...(options.password ? ['-p', options.password] : []),
           ...(options.name ? ['-n', options.name] : []),
         ]);
     });

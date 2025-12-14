@@ -2,7 +2,19 @@ import ora, { Ora } from 'ora';
 
 let currentSpinner: Ora | null = null;
 
-export function startSpinner(text: string): Ora {
+/**
+ * Check if we're in an interactive environment (TTY).
+ * Spinners should only be shown in interactive terminals.
+ */
+function isInteractive(): boolean {
+  return process.stdout.isTTY === true;
+}
+
+export function startSpinner(text: string): Ora | null {
+  // Skip spinner in non-interactive environments (piped output, CI)
+  if (!isInteractive()) {
+    return null;
+  }
   if (currentSpinner) {
     currentSpinner.stop();
   }
@@ -26,13 +38,18 @@ export async function withSpinner<T>(
   fn: () => Promise<T>,
   successText?: string
 ): Promise<T> {
+  // Skip spinner in non-interactive environments
+  if (!isInteractive()) {
+    return fn();
+  }
+
   const spinner = startSpinner(text);
   try {
     const result = await fn();
-    spinner.succeed(successText || text);
+    spinner?.succeed(successText || text);
     return result;
   } catch (error) {
-    spinner.fail();
+    spinner?.fail();
     throw error;
   }
 }

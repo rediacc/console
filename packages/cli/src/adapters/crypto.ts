@@ -15,6 +15,9 @@ const ENCRYPTION_CONFIG = {
   HASH: 'sha256',
 } as const;
 
+// Password salt - must match database sfHash function (db_middleware_000_functions.sql)
+const PASSWORD_SALT = 'Rd!@cc111$ecur3P@$$w0rd$@lt#H@$h';
+
 class NodeCryptoProvider implements ICryptoProvider {
   async encrypt(data: string, password: string): Promise<string> {
     const salt = randomBytes(ENCRYPTION_CONFIG.SALT_LENGTH);
@@ -85,9 +88,11 @@ class NodeCryptoProvider implements ICryptoProvider {
   }
 
   async generateHash(data: string): Promise<string> {
+    // Password hashing with salt - must match desktop CLI (api_client.py)
+    const salted = data + PASSWORD_SALT;
     const hash = createHash(ENCRYPTION_CONFIG.HASH);
-    hash.update(data);
-    return hash.digest('hex');
+    hash.update(salted);
+    return '0x' + hash.digest('hex');
   }
 }
 

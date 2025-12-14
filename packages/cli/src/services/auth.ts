@@ -36,8 +36,7 @@ class AuthService {
 
     // Check authentication status
     const authResult = parseAuthenticationResult(response as ApiResponse);
-    const authStatus = authResult.authenticationStatus;
-    if (authStatus !== 'authorized') {
+    if (!authResult.isAuthorized) {
       return {
         success: false,
         message: response.message || 'Authentication failed',
@@ -115,6 +114,13 @@ class AuthService {
     // Return cached password if available
     if (this.cachedMasterPassword) {
       return this.cachedMasterPassword;
+    }
+
+    // Check for environment variable (for non-interactive/scripted usage)
+    const envPassword = process.env.REDIACC_MASTER_PASSWORD;
+    if (envPassword) {
+      this.cachedMasterPassword = envPassword;
+      return envPassword;
     }
 
     // Try to get stored encrypted password

@@ -221,13 +221,17 @@ class CliApiClient implements SharedApiClient {
   }
 
   private async handleTokenRotation(response: ApiResponse): Promise<void> {
-    const row = parseFirst<{ nextRequestToken?: string }>(
-      response as ApiResponse<{ nextRequestToken?: string }>,
-      {
-        extractor: responseExtractors.primaryOrSecondary,
-      }
-    );
-    const newToken = row?.nextRequestToken;
+    // Desktop CLI specifically uses resultSets[0] for token rotation
+    // (see /desktop/src/cli/core/api_client.py lines 382-396)
+    const resultSets = response.resultSets;
+    if (!resultSets || resultSets.length === 0) return;
+
+    const firstResultSet = resultSets[0];
+    if (!firstResultSet?.data?.length) return;
+
+    const row = firstResultSet.data[0] as Record<string, unknown>;
+    const newToken = (row?.nextRequestToken || row?.NextRequestToken) as string | undefined;
+
     if (newToken) {
       await nodeStorageAdapter.setItem(STORAGE_KEYS.TOKEN, newToken);
     }
