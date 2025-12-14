@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Modal, message, Space, Upload } from 'antd';
+import { Modal, Space, Upload } from 'antd';
 import { type Resolver, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -14,6 +14,7 @@ import ResourceFormWithVault, {
 } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
 import { RediaccButton, RediaccText } from '@/components/ui';
+import { useMessage } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
 import { templateService } from '@/services/templateService';
 import { RootState } from '@/store/store';
@@ -121,6 +122,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   creationContext,
 }) => {
   const { t } = useTranslation(['resources', 'machines', 'common', 'ceph', 'system']);
+  const message = useMessage();
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const isExpertMode = uiMode === 'expert';
   const { data: dropdownData } = useDropdownData();
@@ -353,17 +355,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       const sshKeyConfigured = vaultData.ssh_key_configured;
       // Only block if password exists AND SSH key is not configured
       if (typeof sshPassword === 'string' && sshPassword && !sshKeyConfigured) {
-        message.error(t('machines:validation.sshPasswordNotAllowed'));
+        message.error('machines:validation.sshPasswordNotAllowed');
         return;
       }
 
       if (!testConnectionSuccess) {
-        message.warning(
-          t('machines:validation.sshConnectionNotTested', {
-            defaultValue:
-              'SSH connection has not been tested yet. We recommend running Test Connection before creating.',
-          })
-        );
+        message.warning('machines:validation.sshConnectionNotTested');
       }
     }
 
@@ -409,7 +406,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         data.tmpl = await templateService.getEncodedTemplateDataById(selectedTemplate);
       } catch (error) {
         console.error('Failed to load template:', error);
-        message.warning(t('resources:templates.failedToLoadTemplate'));
+        message.warning('resources:templates.failedToLoadTemplate');
       }
     }
 

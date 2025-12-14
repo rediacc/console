@@ -1,9 +1,5 @@
-import type { ComponentType } from 'react';
-import { Table as AntTable } from 'antd';
-import styled, { css } from 'styled-components';
-import { borderedCard } from '@/styles/mixins';
+import styled from 'styled-components';
 import { ExpandIcon as BaseExpandIcon } from '@/styles/primitives';
-import type { TableProps } from 'antd';
 
 const withAlpha = (color: string, alphaHex: string) =>
   color.startsWith('#') ? `${color}${alphaHex}` : color;
@@ -65,15 +61,8 @@ export const PluginsSection = styled.div`
   margin-top: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-const StyledTableBase = styled(AntTable)<{ $removeMargins?: boolean }>`
-  background-color: ${({ theme }) => theme.colors.bgPrimary};
-  ${borderedCard()}
-  overflow: hidden;
-
-  .ant-table {
-    border-radius: inherit;
-  }
-
+/** Wrapper for repository table row styling */
+export const TableStyleWrapper = styled.div`
   .Repository-row {
     cursor: pointer;
     transition: background-color ${({ theme }) => theme.transitions.HOVER};
@@ -95,20 +84,7 @@ const StyledTableBase = styled(AntTable)<{ $removeMargins?: boolean }>`
   .Repository-fork-row:hover {
     background-color: ${({ theme }) => theme.colors.bgSecondary};
   }
-
-  ${({ $removeMargins }) =>
-    $removeMargins &&
-    css`
-      .ant-table.ant-table-small {
-        margin-block: 0;
-        margin-inline: 0;
-      }
-    `}
 `;
-
-export const StyledTable = StyledTableBase as ComponentType<
-  TableProps<unknown> & { $removeMargins?: boolean }
->;
 
 export const SystemContainersWrapper = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.XL}px;

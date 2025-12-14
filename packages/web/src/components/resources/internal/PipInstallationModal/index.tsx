@@ -1,18 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Checkbox,
-  Collapse,
-  Modal,
-  message,
-  Space,
-  Tabs,
-  Tag,
-  Typography,
-} from 'antd';
+import { Alert, Button, Checkbox, Collapse, Modal, Space, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { RediaccStack, RediaccText } from '@/components/ui';
+import { useMessage } from '@/hooks';
 import { InstallOptions, pipInstallationService } from '@/services/pipInstallationService';
 import { ModalSize } from '@/types/modal';
 import {
@@ -54,18 +44,19 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
   showCopy = true,
 }) => {
   const [copied, setCopied] = useState(false);
+  const message = useMessage();
 
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(command);
       setCopied(true);
-      message.success('Command copied to clipboard!');
+      message.success('common:commandCopied');
       // Reset copy state immediately after user interaction
       setCopied(false);
     } catch {
-      message.error('Failed to copy command');
+      message.error('common:commandCopyFailed');
     }
-  }, [command]);
+  }, [command, message]);
 
   const formattedCommands = pipInstallationService.formatCommandsForDisplay([command]);
   const { isCommand, isComment } = formattedCommands[0];
@@ -107,6 +98,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   errorType = 'not-installed',
 }) => {
   const { t } = useTranslation();
+  const message = useMessage();
   const [useUserInstall, setUseUserInstall] = useState(false);
   const [activeTab, setActiveTab] = useState('quick');
 
@@ -128,7 +120,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
     ].join('\n');
 
     navigator.clipboard.writeText(allCommands);
-    message.success('All commands copied to clipboard!');
+    message.success('common:allCommandsCopied');
   };
 
   const renderPlatformIcon = () => {

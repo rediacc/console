@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Table } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { type CephCluster, useCephClusters } from '@/api/queries/ceph';
 import {
@@ -8,7 +7,7 @@ import {
 } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccStack, RediaccText } from '@/components/ui';
+import { RediaccStack, RediaccTable, RediaccText } from '@/components/ui';
 import { AlertCard } from '@/styles/primitives';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
@@ -21,7 +20,6 @@ import {
   FieldGroup,
   MachineDetailsSection,
   MachineNameRow,
-  MachinesTable,
   StyledModal,
   StyledSelect,
   TeamTag,
@@ -223,12 +221,11 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
               variant="info"
               showIcon
             />
-            <MachinesTable
-              as={Table<Machine>}
+            <RediaccTable<Machine>
               columns={bulkColumns}
               dataSource={targetMachines}
               rowKey="machineName"
-              size="small"
+              size="sm"
               pagination={false}
               scroll={{ y: 200 }}
               data-testid="ds-assign-cluster-bulk-table"

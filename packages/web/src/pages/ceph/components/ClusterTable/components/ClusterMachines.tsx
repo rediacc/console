@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { Empty, Table } from 'antd';
+import { Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CephCluster, CephClusterMachine, useCephClusterMachines } from '@/api/queries/ceph';
-import { RediaccTag } from '@/components/ui';
+import { RediaccTable, RediaccTag } from '@/components/ui';
 import {
   AssignedDateText,
   ExpandedRowContainer,
@@ -66,14 +66,15 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
         <Empty description={t('clusters.noMachinesAssigned')} />
       ) : (
         <MachinesTableWrapper>
-          <Table
+          <RediaccTable<CephClusterMachine>
             data-testid={`ds-cluster-machines-table-${cluster.clusterName}`}
             columns={machineColumns}
             dataSource={machines}
             rowKey="machineName"
             loading={isLoading}
-            size="small"
+            size="sm"
             pagination={false}
+            removeMargins
           />
         </MachinesTableWrapper>
       )}

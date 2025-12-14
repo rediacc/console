@@ -112,17 +112,6 @@ import { Input } from '@/components/ui';
 <Input placeholder="Search" />
 ```
 
-#### SearchInput → SearchInput
-```tsx
-// Before
-import { SearchInput } from '@/styles/primitives';
-<SearchInput placeholder="Search..." />
-
-// After
-import { SearchInput } from '@/components/ui';
-<SearchInput placeholder="Search..." />
-```
-
 #### FilterInput → Input
 ```tsx
 // Before
@@ -288,7 +277,6 @@ This unified system replaces **18+ scattered input components**:
 - FullWidthInputNumber
 - LargeInput
 - LargePasswordInput
-- SearchInput
 - FilterInput
 
 ### From various component files:

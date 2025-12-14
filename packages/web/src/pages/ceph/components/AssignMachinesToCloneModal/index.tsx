@@ -14,7 +14,7 @@ import {
 } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton, RediaccSelect, RediaccTag, RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccSelect, RediaccTable, RediaccTag, RediaccText } from '@/components/ui';
 import { AlertCard } from '@/styles/primitives';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';
@@ -24,7 +24,6 @@ import {
   EmptyState,
   FieldGroup,
   MachineNameRow,
-  MachinesTable,
   ManageTabContainer,
   StyledModal,
   TitleStack,
@@ -237,12 +236,12 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           showIcon
         />
 
-        <MachinesTable
-          rowSelection={rowSelection as TableRowSelection<unknown>}
-          columns={columns as ColumnsType<unknown>}
+        <RediaccTable<CloneMachine>
+          rowSelection={rowSelection}
+          columns={columns}
           dataSource={assignedMachines}
           rowKey="machineName"
-          size="small"
+          size="sm"
           pagination={false}
           scroll={{ y: 300 }}
           data-testid="assign-clone-machines-table"

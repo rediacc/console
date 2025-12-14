@@ -1,7 +1,7 @@
 import type { Key, ReactNode } from 'react';
-import { Empty, Table, type TableProps, Tooltip } from 'antd';
+import { Empty } from 'antd';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton, RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccTable, RediaccText, RediaccTooltip } from '@/components/ui';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@/utils/optimizedIcons';
 import {
   ActionsGroup,
@@ -14,8 +14,8 @@ import {
   HeaderSection,
   RefreshButton,
   SearchInput,
-  TableWrapper,
 } from './styles';
+import type { TableProps } from 'antd';
 
 export { COLUMN_RESPONSIVE, COLUMN_WIDTHS } from './columnConstants';
 
@@ -126,24 +126,24 @@ function ResourceListView<T extends object = Record<string, unknown>>({
                 {(onCreateNew || onRefresh) && (
                   <EmptyActions>
                     {onCreateNew && (
-                      <Tooltip title={createButtonText}>
+                      <RediaccTooltip title={createButtonText}>
                         <RediaccButton
                           icon={<PlusOutlined />}
                           onClick={onCreateNew}
                           data-testid="resource-list-create-new"
                           aria-label={createButtonText}
                         />
-                      </Tooltip>
+                      </RediaccTooltip>
                     )}
                     {onRefresh && (
-                      <Tooltip title="Refresh">
+                      <RediaccTooltip title="Refresh">
                         <RefreshButton
                           icon={<ReloadOutlined />}
                           onClick={onRefresh}
                           data-testid="resource-list-refresh"
                           aria-label="Refresh"
                         />
-                      </Tooltip>
+                      </RediaccTooltip>
                     )}
                   </EmptyActions>
                 )}
@@ -153,21 +153,19 @@ function ResourceListView<T extends object = Record<string, unknown>>({
             data-testid="resource-list-empty"
           />
         ) : (
-          <TableWrapper>
-            <Table<T>
-              columns={columns}
-              dataSource={data}
-              rowKey={rowKey}
-              pagination={resolvedPagination}
-              onRow={(record, index) => ({
-                ...onRow?.(record, index),
-                'data-testid': getRowDataTestId(record),
-              })}
-              rowSelection={rowSelection}
-              scroll={{ x: true }}
-              data-testid="resource-list-table"
-            />
-          </TableWrapper>
+          <RediaccTable<T>
+            columns={columns}
+            dataSource={data}
+            rowKey={rowKey}
+            pagination={resolvedPagination}
+            onRow={(record, index) => ({
+              ...onRow?.(record, index),
+              'data-testid': getRowDataTestId(record),
+            })}
+            rowSelection={rowSelection}
+            scroll={{ x: true }}
+            data-testid="resource-list-table"
+          />
         )}
       </LoadingWrapper>
     </ContainerCard>

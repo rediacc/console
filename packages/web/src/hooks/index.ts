@@ -54,3 +54,6 @@ export type { UseTeamSelectionOptions, UseTeamSelectionReturn } from './useTeamS
 export { useTeamSelection } from './useTeamSelection';
 export type { UnifiedModalState, UseUnifiedModalReturn } from './useUnifiedModal';
 export { useUnifiedModal } from './useUnifiedModal';
+export type { MessageOptions, UseMessageReturn } from './useMessage';
+// Toast notification hook with i18n support
+export { useMessage } from './useMessage';

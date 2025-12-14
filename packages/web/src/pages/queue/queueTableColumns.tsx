@@ -1,6 +1,6 @@
-import { Space, Tooltip } from 'antd';
+import { Space } from 'antd';
 import { renderBoolean, renderTimestamp } from '@/components/common/columns';
-import { RediaccButton, RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccText, RediaccTooltip } from '@/components/ui';
 import {
   ApiOutlined,
   CloseCircleOutlined,
@@ -146,7 +146,7 @@ export const getQueueColumns = ({
     width: 180,
     render: (_: unknown, record: QueueItem) => (
       <Space size="small">
-        <Tooltip title={t('common:tooltips.trace')}>
+        <RediaccTooltip title={t('common:tooltips.trace')}>
           <RediaccButton
             iconOnly
             icon={<HistoryOutlined />}
@@ -154,11 +154,11 @@ export const getQueueColumns = ({
             data-testid={`queue-trace-button-${record.taskId}`}
             aria-label={t('common:aria.trace')}
           />
-        </Tooltip>
+        </RediaccTooltip>
         {record.canBeCancelled &&
           record.healthStatus !== 'CANCELLED' &&
           record.healthStatus !== 'CANCELLING' && (
-            <Tooltip title={t('common:tooltips.cancel')}>
+            <RediaccTooltip title={t('common:tooltips.cancel')}>
               <RediaccButton
                 danger
                 iconOnly
@@ -168,7 +168,7 @@ export const getQueueColumns = ({
                 data-testid={`queue-cancel-button-${record.taskId}`}
                 aria-label={t('common:aria.cancel')}
               />
-            </Tooltip>
+            </RediaccTooltip>
           )}
       </Space>
     ),

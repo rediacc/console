@@ -113,26 +113,3 @@ export const RefreshButton = styled(RediaccButton).attrs({
     ${actionButtonStyles};
   }
 `;
-
-export const TableWrapper = styled.div`
-  /* Better scroll experience on mobile devices */
-  @media (max-width: ${({ theme }) => theme.breakpoints.MOBILE}px) {
-    -webkit-overflow-scrolling: touch;
-
-    .ant-table-wrapper {
-      overflow-x: auto;
-    }
-
-    .ant-table-pagination {
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: ${({ theme }) => theme.spacing.SM}px;
-
-      .ant-pagination-total-text {
-        flex-basis: 100%;
-        text-align: center;
-        margin-bottom: ${({ theme }) => theme.spacing.XS}px;
-      }
-    }
-  }
-`;

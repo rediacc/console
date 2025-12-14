@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tooltip } from 'antd';
+import { RediaccTooltip } from '@/components/ui';
 import { FieldInfoIcon, FieldLabelStack } from '../styles';
 import type { FieldLabelProps } from '../types';
 
@@ -7,9 +7,9 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({ label, description }) =>
   <FieldLabelStack>
     {label}
     {description && (
-      <Tooltip title={description}>
+      <RediaccTooltip title={description}>
         <FieldInfoIcon />
-      </Tooltip>
+      </RediaccTooltip>
     )}
   </FieldLabelStack>
 );

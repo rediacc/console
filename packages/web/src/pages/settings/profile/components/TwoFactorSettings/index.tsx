@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Form, Modal, message, Result, Tabs, Typography } from 'antd';
+import { Card, Form, Modal, Result, Tabs, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
 import { useSelector } from 'react-redux';
@@ -13,6 +13,7 @@ import {
   RediaccStack,
   RediaccText,
 } from '@/components/ui';
+import { useMessage } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
 import { OTPCodeField } from '@/pages/settings/profile/components/OTPCodeField';
 import { RootState } from '@/store/store';
@@ -50,6 +51,7 @@ interface TwoFactorSettingsProps {
 
 const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel }) => {
   const { t } = useTranslation('settings');
+  const message = useMessage();
   const [passwordForm] = Form.useForm();
   const [disableForm] = Form.useForm();
   const [verificationForm] = Form.useForm();
@@ -131,7 +133,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    message.success(t('twoFactorAuth.secretCopied'));
+    message.success('settings:twoFactorAuth.secretCopied');
   };
 
   const generateOtpAuthUrl = (secret: string, email: string) => {

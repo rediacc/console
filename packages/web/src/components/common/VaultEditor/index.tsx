@@ -1,11 +1,12 @@
 import React, { type JSX, useCallback } from 'react';
-import { Alert, Card, Col, Descriptions, Divider, Form, message, Space, Tooltip } from 'antd';
+import { Alert, Card, Col, Descriptions, Divider, Form, Space } from 'antd';
 import {
   RediaccAlert,
   RediaccStack,
   RediaccSwitch,
   RediaccTag,
   RediaccText,
+  RediaccTooltip,
 } from '@/components/ui';
 import {
   RediaccInput,
@@ -16,6 +17,7 @@ import {
   RediaccTextArea,
 } from '@/components/ui/Form';
 import { featureFlags } from '@/config/featureFlags';
+import { useMessage } from '@/hooks';
 import {
   CheckCircleOutlined,
   CodeOutlined,
@@ -107,6 +109,8 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
     t,
   } = useVaultEditorState(props);
 
+  const message = useMessage();
+
   // Direct onChange callback
   const directOnChange = useCallback(
     (data: VaultFormValues, hasChanges: boolean) => {
@@ -174,20 +178,16 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
 
       // Show toast messages for field movements
       if (movedToExtra.length > 0) {
-        message.info(
-          t('vaultEditor.fieldsMovedToExtra', {
-            count: movedToExtra.length,
-            fields: movedToExtra.join(', '),
-          })
-        );
+        message.info('common:vaultEditor.fieldsMovedToExtra', {
+          count: movedToExtra.length,
+          fields: movedToExtra.join(', '),
+        });
       }
       if (movedFromExtra.length > 0) {
-        message.success(
-          t('vaultEditor.fieldsMovedFromExtra', {
-            count: movedFromExtra.length,
-            fields: movedFromExtra.join(', '),
-          })
-        );
+        message.success('common:vaultEditor.fieldsMovedFromExtra', {
+          count: movedFromExtra.length,
+          fields: movedFromExtra.join(', '),
+        });
       }
 
       // Encode base64 fields before saving
@@ -747,7 +747,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                           try {
                             await form.validateFields();
                           } catch {
-                            message.error(t('vaultEditor.pleaseFixErrors'));
+                            message.error('common:vaultEditor.pleaseFixErrors');
                             return;
                           }
 
@@ -755,7 +755,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                           const { ip, user, ssh_password, port, datastore } = values;
 
                           if (!ip || !user) {
-                            message.error(t('vaultEditor.testConnection.missingFields'));
+                            message.error('common:vaultEditor.testConnection.missingFields');
                             return;
                           }
 
@@ -796,18 +796,18 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                                   if (response && response.taskId) {
                                     setTestTaskId(response.taskId);
                                     setIsTestingConnection(true);
-                                    message.info(t('vaultEditor.testConnection.testing'));
+                                    message.info('common:vaultEditor.testConnection.testing');
                                   } else {
-                                    message.error(t('vaultEditor.testConnection.failed'));
+                                    message.error('common:vaultEditor.testConnection.failed');
                                   }
                                 },
                                 onError: () => {
-                                  message.error(t('vaultEditor.testConnection.failed'));
+                                  message.error('common:vaultEditor.testConnection.failed');
                                 },
                               }
                             );
                           } catch {
-                            message.error(t('vaultEditor.testConnection.failed'));
+                            message.error('common:vaultEditor.testConnection.failed');
                           }
                         }}
                       >
@@ -1143,9 +1143,9 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                 title={
                   <Space>
                     {t('vaultEditor.extraFields')}
-                    <Tooltip title={t('vaultEditor.extraFieldsTooltip')}>
+                    <RediaccTooltip title={t('vaultEditor.extraFieldsTooltip')}>
                       <ExtraFieldsWarningIcon />
-                    </Tooltip>
+                    </RediaccTooltip>
                   </Space>
                 }
                 variant="borderless"
@@ -1174,9 +1174,9 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                   <Space>
                     <CodeOutlined />
                     {t('vaultEditor.rawJsonEditor')}
-                    <Tooltip title={t('vaultEditor.rawJsonTooltip')}>
+                    <RediaccTooltip title={t('vaultEditor.rawJsonTooltip')}>
                       <DangerAlertIcon />
-                    </Tooltip>
+                    </RediaccTooltip>
                   </Space>
                 }
                 variant="borderless"

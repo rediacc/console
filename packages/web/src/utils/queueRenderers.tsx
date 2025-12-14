@@ -4,7 +4,8 @@
  */
 
 import React from 'react';
-import { Tag, Tooltip } from 'antd';
+import { Tag } from 'antd';
+import { RediaccTooltip } from '@/components/ui';
 import {
   formatAge,
   PRIORITY_CONFIG,
@@ -77,11 +78,11 @@ export function renderQueueStatus(
   }
 
   return (
-    <Tooltip title={tooltipText}>
+    <RediaccTooltip title={tooltipText}>
       <Tag color={config.color} icon={icon}>
         {statusText}
       </Tag>
-    </Tooltip>
+    </RediaccTooltip>
   );
 }
 
@@ -101,11 +102,11 @@ export function renderPriority(
   const icon = PRIORITY_ICONS[priority];
 
   return (
-    <Tooltip title={tooltipContent}>
+    <RediaccTooltip title={tooltipContent}>
       <Tag color={config.color} icon={icon}>
         {priorityLabel}
       </Tag>
-    </Tooltip>
+    </RediaccTooltip>
   );
 }
 

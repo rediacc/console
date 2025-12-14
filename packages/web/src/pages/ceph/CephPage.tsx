@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Empty, Tooltip } from 'antd';
+import { Alert, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { CephCluster, CephPool } from '@/api/queries/ceph';
 import { useCephClusters, useCephPools } from '@/api/queries/ceph';
@@ -15,7 +15,7 @@ import { useCompanyInfo } from '@/api/queries/dashboard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccTooltip } from '@/components/ui';
 import { useQueueTraceModal, useTeamSelection } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
@@ -286,7 +286,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
 
     return (
       <ActionGroup>
-        <Tooltip title={createLabel}>
+        <RediaccTooltip title={createLabel}>
           <RediaccButton
             iconOnly
             icon={<PlusOutlined />}
@@ -300,8 +300,8 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             data-testid={createTestId}
             aria-label={createLabel}
           />
-        </Tooltip>
-        <Tooltip title={t('common:actions.refresh')}>
+        </RediaccTooltip>
+        <RediaccTooltip title={t('common:actions.refresh')}>
           <RediaccButton
             iconOnly
             icon={<ReloadOutlined />}
@@ -315,7 +315,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             data-testid="ds-refresh-button"
             aria-label={t('common:actions.refresh')}
           />
-        </Tooltip>
+        </RediaccTooltip>
       </ActionGroup>
     );
   };

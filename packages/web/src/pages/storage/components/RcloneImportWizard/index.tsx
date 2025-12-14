@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Space, Steps, Table, Tag, Tooltip, Typography, Upload } from 'antd';
+import { Space, Steps, Tag, Typography, Upload } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useCreateStorage, useStorage } from '@/api/queries/storage';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccTable, RediaccTooltip } from '@/components/ui';
 import { RediaccAlert, RediaccButton, RediaccCheckbox } from '@/components/ui';
 import { createSorter } from '@/platform';
 import {
@@ -126,12 +127,12 @@ const SelectionStep: React.FC<SelectionStepProps> = ({ t, importStatuses, column
       showIcon
     />
 
-    <Table
+    <RediaccTable<ImportStatus>
       dataSource={importStatuses}
       columns={columns}
       rowKey="name"
       pagination={false}
-      size="small"
+      size="sm"
       data-testid="rclone-wizard-config-table"
     />
   </div>
@@ -167,12 +168,12 @@ const ResultStep: React.FC<ResultStepProps> = ({ t, importStatuses, columns, isI
           showIcon
         />
 
-        <Table
+        <RediaccTable<ImportStatus>
           dataSource={importStatuses}
           columns={columns}
           rowKey="name"
           pagination={false}
-          size="small"
+          size="sm"
           data-testid="rclone-wizard-results-table"
         />
       </>
@@ -514,11 +515,11 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
             <CloudOutlined />
             <NameText>{truncated}</NameText>
             {record.exists && (
-              <Tooltip title={t('resources:storage.import.alreadyExists')}>
+              <RediaccTooltip title={t('resources:storage.import.alreadyExists')}>
                 <Tag color="warning">
                   <InfoCircleOutlined /> {t('resources:storage.import.exists')}
                 </Tag>
-              </Tooltip>
+              </RediaccTooltip>
             )}
           </Space>
         );

@@ -1,7 +1,7 @@
 ﻿import React from 'react';
-import { Table } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable';
+import { RediaccTable } from '@/components/ui';
 import type { Machine } from '@/types';
 import { buildMachineTableColumns } from './columns';
 import { ExpandedRowContent, TableContainer } from './styles';
@@ -63,7 +63,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
 
   return (
     <TableContainer>
-      <Table<Machine>
+      <RediaccTable<Machine>
         columns={columns}
         dataSource={machines}
         rowKey="machineName"

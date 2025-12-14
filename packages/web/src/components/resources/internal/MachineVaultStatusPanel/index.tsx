@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo } from 'react';
-import { Col, Progress, Row, Tooltip } from 'antd';
+import { Col, Progress, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { CephSection } from '@/components/resources/internal/CephSection';
-import { RediaccEmpty, RediaccStack, RediaccText } from '@/components/ui';
+import { RediaccEmpty, RediaccStack, RediaccText, RediaccTooltip } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTraceModal } from '@/hooks/useDialogState';
 import {
@@ -277,12 +277,12 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
           {machine.vaultStatusTime && (
             <TimestampWrapper>
-              <Tooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
+              <RediaccTooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
                 <RediaccText variant="caption" data-testid="vault-status-last-updated">
                   {t('machines:lastUpdated')}:{' '}
                   {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
                 </RediaccText>
-              </Tooltip>
+              </RediaccTooltip>
             </TimestampWrapper>
           )}
         </Header>

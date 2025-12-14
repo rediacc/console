@@ -1,10 +1,9 @@
 import { CloudUploadOutlined, EllipsisOutlined } from '@ant-design/icons';
-import { Tooltip } from 'antd';
 import { TFunction } from 'i18next';
 import type { CephRbdSnapshot } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
-import { RediaccTag } from '@/components/ui';
+import { RediaccTag, RediaccTooltip } from '@/components/ui';
 import { createSorter } from '@/platform';
 import { NameCell, NameIcon, NameText } from './styles';
 import type { MenuProps } from 'antd';
@@ -31,7 +30,7 @@ export const buildSnapshotColumns = ({
         <NameIcon />
         <NameText>{text}</NameText>
         {record.vaultContent && (
-          <Tooltip title={t('common.hasVault')}>
+          <RediaccTooltip title={t('common.hasVault')}>
             <RediaccTag
               variant="neutral"
               compact
@@ -39,7 +38,7 @@ export const buildSnapshotColumns = ({
             >
               {t('common.vault')}
             </RediaccTag>
-          </Tooltip>
+          </RediaccTooltip>
         )}
       </NameCell>
     ),

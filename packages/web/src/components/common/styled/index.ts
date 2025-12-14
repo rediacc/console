@@ -5,12 +5,9 @@
  * Import from '@/components/common/styled' instead of defining in page styles.
  */
 
-import type { ComponentType } from 'react';
-import { Table } from 'antd';
 import styled from 'styled-components';
 import { RediaccButton, RediaccSelect, RediaccStack } from '@/components/ui';
 import type { StatusVariant } from '@/styles/primitives';
-import type { TableProps } from 'antd';
 
 /**
  * Stack layout with vertical direction, large gap, and full width.
@@ -164,15 +161,6 @@ export const InlineStack = styled.div<{ $align?: 'flex-start' | 'center' | 'flex
   align-items: ${({ $align = 'center' }) => $align};
   gap: ${({ theme }) => theme.spacing.SM}px;
   flex-wrap: wrap;
-`;
-
-const BaseTable = Table as ComponentType<TableProps<unknown>>;
-
-export const DataTable = styled(BaseTable)<{ $isLoading?: boolean }>`
-  .ant-spin-nested-loading {
-    opacity: ${({ $isLoading }) => ($isLoading ? 0.65 : 1)};
-    transition: ${({ theme }) => theme.transitions.DEFAULT};
-  }
 `;
 
 // =============================================================================
