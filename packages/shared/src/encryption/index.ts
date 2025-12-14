@@ -38,3 +38,4 @@ export function createVaultEncryptor(provider: ICryptoProvider): VaultEncryptor 
 
 export { hasVaultFields, isVaultField, transformVaultFields };
 export type { ICryptoProvider };
+export { isEncrypted, VaultProtocolState, analyzeVaultProtocolState } from './vaultProtocol';

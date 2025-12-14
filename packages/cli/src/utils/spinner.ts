@@ -44,7 +44,7 @@ export async function withSpinner<T>(
       const result = await fn();
       // Always print success message for CI/piped output
       if (successText) {
-        console.log(`✓ ${successText}`);
+        process.stdout.write(`✓ ${successText}\n`);
       }
       return result;
     } catch (error) {
