@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { api } from '../services/api.js';
+import { api, apiClient } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
 import { handleError } from '../utils/errors.js';
@@ -16,8 +16,14 @@ export function registerAuthCommands(program: Command): void {
     .option('-e, --email <email>', 'Email address')
     .option('-p, --password <password>', 'Password (for non-interactive login)')
     .option('-n, --name <name>', 'Session name')
+    .option('--endpoint <url>', 'API endpoint URL (overrides REDIACC_API_URL)')
     .action(async (options) => {
       try {
+        // Set API endpoint if provided
+        if (options.endpoint) {
+          await apiClient.setApiUrl(options.endpoint);
+        }
+
         // Get email
         const email =
           options.email ||
@@ -237,6 +243,7 @@ export function registerAuthCommands(program: Command): void {
     .option('-e, --email <email>', 'Email address')
     .option('-p, --password <password>', 'Password (for non-interactive login)')
     .option('-n, --name <name>', 'Session name')
+    .option('--endpoint <url>', 'API endpoint URL (overrides REDIACC_API_URL)')
     .action(async (options) => {
       // Forward to auth login
       await auth.commands
@@ -247,6 +254,7 @@ export function registerAuthCommands(program: Command): void {
           ...(options.email ? ['-e', options.email] : []),
           ...(options.password ? ['-p', options.password] : []),
           ...(options.name ? ['-n', options.name] : []),
+          ...(options.endpoint ? ['--endpoint', options.endpoint] : []),
         ]);
     });
 

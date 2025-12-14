@@ -6,10 +6,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "rdc": "./dist/index.js"
+    "rdc": "./dist/cli-bundle.cjs"
   },
   "scripts": {
     "build": "tsc",
+    "build:bundle": "node bundle.mjs",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest",
@@ -17,7 +18,7 @@
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run build && npm run build:bundle",
     "bun:dev": "bun run src/index.ts",
     "bun:start": "bun run dist/index.js",
     "bun:test": "bun test",
@@ -29,28 +30,29 @@
     "build:exe:all": "bun run build:exe:win && bun run build:exe:mac && bun run build:exe:mac-arm && bun run build:exe:linux"
   },
   "dependencies": {
+    "inquirer": "^13.0.2"
+  },
+  "devDependencies": {
     "@rediacc/shared": "^0.1.0",
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^24.10.1",
     "axios": "^1.13.2",
     "chalk": "^5.4.1",
     "cli-table3": "^0.6.5",
     "commander": "^14.0.2",
-    "inquirer": "^13.0.2",
+    "esbuild": "^0.27.1",
     "ora": "^9.0.0",
-    "yaml": "^2.7.0"
-  },
-  "devDependencies": {
-    "@types/inquirer": "^9.0.7",
-    "@types/node": "^24.10.1",
     "rimraf": "^6.1.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^4.0.15"
+    "vitest": "^4.0.15",
+    "yaml": "^2.7.0"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "files": [
-    "dist"
+    "dist/cli-bundle.cjs"
   ],
   "keywords": [
     "rediacc",
