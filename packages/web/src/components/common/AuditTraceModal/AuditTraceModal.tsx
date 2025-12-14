@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dropdown, Space, Tag, Typography } from 'antd';
+import { Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { AuditTraceRecord, useEntityAuditTrace } from '@/api/queries/audit';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
@@ -7,6 +7,7 @@ import {
   IconWrapper,
   RediaccAlert,
   RediaccButton,
+  RediaccDropdown,
   RediaccTable,
   RediaccText,
 } from '@/components/ui';
@@ -340,7 +341,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                 </SummaryStats>
 
                 {/* Export Button */}
-                <Dropdown
+                <RediaccDropdown
                   menu={{
                     items: [
                       {
@@ -368,7 +369,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                   >
                     {t('audit.export')}
                   </RediaccButton>
-                </Dropdown>
+                </RediaccDropdown>
               </SummaryRow>
             </SummaryContainer>
           )}

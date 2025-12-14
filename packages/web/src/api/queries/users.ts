@@ -1,6 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { createMutation } from '@/hooks/api/mutationFactory';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
 import { hashPassword } from '@/utils/auth';
@@ -29,25 +28,22 @@ export const useUsers = () => {
 };
 
 // Create user
-export const useCreateUser = createMutation<
-  { email: string; password: string },
-  unknown,
-  { email: string; passwordHash: string }
->({
-  request: ({ email, passwordHash }) =>
-    api.users.create(email, passwordHash, { language: i18n.language || 'en' }),
-  invalidateKeys: ['users', 'dropdown-data'],
-  successMessage: (vars) => i18n.t('organization:users.success.created', { email: vars.email }),
-  errorMessage: i18n.t('organization:users.errors.createFailed'),
-  transformData: async (data) => {
-    const passwordHash = await hashPassword(data.password);
-    return {
-      email: data.email,
-      passwordHash,
-    };
-  },
-  operationName: 'users.create',
-});
+export const useCreateUser = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, { email: string; password: string }>({
+    mutationFn: async ({ email, password }) => {
+      const passwordHash = await hashPassword(password);
+      return api.users.create(email, passwordHash, { language: i18n.language || 'en' });
+    },
+    successMessage: (_, vars) =>
+      i18n.t('organization:users.success.created', { email: vars.email }),
+    errorMessage: i18n.t('organization:users.errors.createFailed'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
+    },
+  });
+};
 
 // Activate user - special case using auth service
 export const useActivateUser = () => {
@@ -71,43 +67,55 @@ export const useActivateUser = () => {
 };
 
 // Deactivate user
-export const useDeactivateUser = createMutation<UpdateUserToDeactivatedParams>({
-  request: (params) => api.users.deactivate(params),
-  invalidateKeys: ['users'],
-  successMessage: (params) =>
-    i18n.t('organization:users.success.deactivated', { email: params.userEmail }),
-  errorMessage: i18n.t('organization:users.errors.deactivateFailed'),
-  operationName: 'users.deactivate',
-});
+export const useDeactivateUser = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateUserToDeactivatedParams>({
+    mutationFn: (params) => api.users.deactivate(params),
+    successMessage: (_, params) =>
+      i18n.t('organization:users.success.deactivated', { email: params.userEmail }),
+    errorMessage: i18n.t('organization:users.errors.deactivateFailed'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};
 
 // Reactivate user
-export const useReactivateUser = createMutation<UpdateUserToActivatedParams>({
-  request: (params) => api.users.activate(params),
-  invalidateKeys: ['users'],
-  successMessage: (params) =>
-    i18n.t('organization:users.success.activated', { email: params.userEmail }),
-  errorMessage: i18n.t('organization:users.errors.activateFailed'),
-  operationName: 'users.activate',
-});
+export const useReactivateUser = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateUserToActivatedParams>({
+    mutationFn: (params) => api.users.activate(params),
+    successMessage: (_, params) =>
+      i18n.t('organization:users.success.activated', { email: params.userEmail }),
+    errorMessage: i18n.t('organization:users.errors.activateFailed'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};
 
 // Update user email
-export const useUpdateUserEmail = createMutation<UpdateUserEmailParams>({
-  request: (params) => api.users.updateEmail(params),
-  invalidateKeys: ['users'],
-  successMessage: (vars) =>
-    i18n.t('organization:users.success.emailUpdated', { email: vars.newUserEmail }),
-  errorMessage: i18n.t('organization:users.errors.emailUpdateFailed'),
-  operationName: 'users.updateEmail',
-});
+export const useUpdateUserEmail = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateUserEmailParams>({
+    mutationFn: (params) => api.users.updateEmail(params),
+    successMessage: (_, vars) =>
+      i18n.t('organization:users.success.emailUpdated', { email: vars.newUserEmail }),
+    errorMessage: i18n.t('organization:users.errors.emailUpdateFailed'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};
 
 // Update user language preference
-export const useUpdateUserLanguage = createMutation<UpdateUserLanguageParams>({
-  request: (params) => api.users.updateLanguage(params),
-  invalidateKeys: [],
-  successMessage: () => i18n.t('organization:users.success.languageSaved'),
-  errorMessage: i18n.t('organization:users.errors.languageUpdateFailed'),
-  operationName: 'users.updateLanguage',
-});
+export const useUpdateUserLanguage = () => {
+  return useMutationWithFeedback<unknown, Error, UpdateUserLanguageParams>({
+    mutationFn: (params) => api.users.updateLanguage(params),
+    successMessage: () => i18n.t('organization:users.success.languageSaved'),
+    errorMessage: i18n.t('organization:users.errors.languageUpdateFailed'),
+  });
+};
 
 // Get permission groups
 export const usePermissionGroups = () => {
@@ -118,48 +126,50 @@ export const usePermissionGroups = () => {
 };
 
 // Create permission group
-export const useCreatePermissionGroup = createMutation<CreatePermissionGroupParams>({
-  request: (params) => api.permissions.createGroup(params),
-  invalidateKeys: ['permission-groups'],
-  successMessage: (params) =>
-    i18n.t('organization:users.success.permissionGroupCreated', {
-      groupName: params.permissionGroupName,
-    }),
-  errorMessage: i18n.t('organization:users.errors.permissionGroupCreateFailed'),
-  operationName: 'permissions.createGroup',
-});
+export const useCreatePermissionGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, CreatePermissionGroupParams>({
+    mutationFn: (params) => api.permissions.createGroup(params),
+    successMessage: (_, params) =>
+      i18n.t('organization:users.success.permissionGroupCreated', {
+        groupName: params.permissionGroupName,
+      }),
+    errorMessage: i18n.t('organization:users.errors.permissionGroupCreateFailed'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['permission-groups'] });
+    },
+  });
+};
 
 // Assign user to permission group
-export const useAssignUserPermissions = createMutation<UpdateUserAssignedPermissionsParams>({
-  request: (params) => api.users.assignPermissions(params),
-  invalidateKeys: ['users'],
-  successMessage: (vars) =>
-    i18n.t('organization:users.success.permissionsAssigned', {
-      email: vars.userEmail,
-      group: vars.permissionGroupName,
-    }),
-  errorMessage: i18n.t('organization:users.errors.assignPermissionsFailed'),
-  operationName: 'users.assignPermissions',
-});
+export const useAssignUserPermissions = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateUserAssignedPermissionsParams>({
+    mutationFn: (params) => api.users.assignPermissions(params),
+    successMessage: (_, vars) =>
+      i18n.t('organization:users.success.permissionsAssigned', {
+        email: vars.userEmail,
+        group: vars.permissionGroupName,
+      }),
+    errorMessage: i18n.t('organization:users.errors.assignPermissionsFailed'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};
 
 // Update user password
-export const useUpdateUserPassword = createMutation<
-  { userEmail: string; newPassword: string },
-  unknown,
-  UpdateUserPasswordParams
->({
-  request: (params) => api.users.updatePassword(params),
-  invalidateKeys: [],
-  successMessage: () => i18n.t('organization:users.success.passwordUpdated'),
-  errorMessage: i18n.t('organization:users.errors.passwordUpdateFailed'),
-  transformData: async (data) => {
-    const passwordHash = await hashPassword(data.newPassword);
-    return {
-      userNewPass: passwordHash,
-    };
-  },
-  operationName: 'users.updatePassword',
-});
+export const useUpdateUserPassword = () => {
+  return useMutationWithFeedback<unknown, Error, { userEmail: string; newPassword: string }>({
+    mutationFn: async ({ newPassword }) => {
+      const passwordHash = await hashPassword(newPassword);
+      const params: UpdateUserPasswordParams = { userNewPass: passwordHash };
+      return api.users.updatePassword(params);
+    },
+    successMessage: () => i18n.t('organization:users.success.passwordUpdated'),
+    errorMessage: i18n.t('organization:users.errors.passwordUpdateFailed'),
+  });
+};
 
 // Get active user requests/sessions
 export const useUserRequests = () => {
@@ -172,13 +182,17 @@ export const useUserRequests = () => {
 };
 
 // Delete/terminate a user request/session
-export const useDeleteUserRequest = createMutation<DeleteUserRequestParams>({
-  request: (params) => api.auth.terminateSession(params),
-  invalidateKeys: ['user-requests'],
-  successMessage: () => i18n.t('organization:users.success.sessionTerminated'),
-  errorMessage: i18n.t('organization:users.errors.sessionTerminateFailed'),
-  operationName: 'auth.terminateSession',
-});
+export const useDeleteUserRequest = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, DeleteUserRequestParams>({
+    mutationFn: (params) => api.auth.terminateSession(params),
+    successMessage: () => i18n.t('organization:users.success.sessionTerminated'),
+    errorMessage: i18n.t('organization:users.errors.sessionTerminateFailed'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-requests'] });
+    },
+  });
+};
 
 // Get current user's vault data
 export const useUserVault = () => {
@@ -189,13 +203,17 @@ export const useUserVault = () => {
 };
 
 // Update current user's vault
-export const useUpdateUserVault = createMutation<UpdateUserVaultParams>({
-  request: (params) => api.users.updateVault(params),
-  invalidateKeys: ['user-vault'],
-  successMessage: () => i18n.t('organization:users.success.userVaultUpdated'),
-  errorMessage: i18n.t('organization:users.errors.userVaultUpdateFailed'),
-  operationName: 'users.updateVault',
-});
+export const useUpdateUserVault = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateUserVaultParams>({
+    mutationFn: (params) => api.users.updateVault(params),
+    successMessage: () => i18n.t('organization:users.success.userVaultUpdated'),
+    errorMessage: i18n.t('organization:users.errors.userVaultUpdateFailed'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-vault'] });
+    },
+  });
+};
 
 export type {
   GetCompanyUsers_ResultSet1,

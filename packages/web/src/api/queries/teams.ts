@@ -1,11 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { QUERY_KEY_STRINGS, QUERY_KEYS } from '@/api/queryKeys';
-import {
-  createMutation,
-  createResourceMutation,
-  createVaultUpdateMutation,
-} from '@/hooks/api/mutationFactory';
+import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
+import { minifyJSON } from '@/utils/json';
 import type {
   CreateTeamMembershipParams,
   CreateTeamParams,
@@ -48,50 +45,89 @@ export type {
 };
 
 // Create team
-export const useCreateTeam = createResourceMutation<WithOptionalVault<CreateTeamParams>>(
-  'Team',
-  'create',
-  (params) => api.teams.create(params),
-  'teamName'
-);
+export const useCreateTeam = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateTeamParams>>({
+    mutationFn: (params) =>
+      api.teams.create({
+        ...params,
+        vaultContent: params.vaultContent || '{}',
+      }),
+    successMessage: (_, vars) => `Team "${vars.teamName}" created successfully`,
+    errorMessage: 'Failed to create team',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
+    },
+  });
+};
 
 // Update team name
-export const useUpdateTeamName = createMutation<UpdateTeamNameParams>({
-  request: (params) => api.teams.rename(params),
-  invalidateKeys: [QUERY_KEY_STRINGS.teams, QUERY_KEY_STRINGS.dropdown],
-  successMessage: (variables) => `Team renamed to "${variables.newTeamName}"`,
-  errorMessage: 'Failed to update team name',
-  operationName: 'teams.rename',
-});
+export const useUpdateTeamName = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateTeamNameParams>({
+    mutationFn: (params) => api.teams.rename(params),
+    successMessage: (_, vars) => `Team renamed to "${vars.newTeamName}"`,
+    errorMessage: 'Failed to update team name',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.dropdown] });
+    },
+  });
+};
 
 // Update team vault
-export const useUpdateTeamVault = createVaultUpdateMutation<
-  UpdateTeamVaultParams & Record<string, unknown>
->('Team', (params) => api.teams.updateVault(params), 'teamName', 'vaultContent');
+export const useUpdateTeamVault = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateTeamVaultParams & Record<string, unknown>>({
+    mutationFn: (params) =>
+      api.teams.updateVault({
+        ...params,
+        vaultContent: minifyJSON(params.vaultContent),
+      }),
+    successMessage: (_, vars) => `Team "${vars.teamName}" vault updated successfully`,
+    errorMessage: 'Failed to update team vault',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
+    },
+  });
+};
 
 // Delete team
-export const useDeleteTeam = createMutation<DeleteTeamParams>({
-  request: (params) => api.teams.delete(params),
-  invalidateKeys: [QUERY_KEY_STRINGS.teams, QUERY_KEY_STRINGS.dropdown],
-  successMessage: (params) => `Team "${params.teamName}" deleted successfully`,
-  errorMessage: 'Failed to delete team',
-  operationName: 'teams.delete',
-});
+export const useDeleteTeam = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, DeleteTeamParams>({
+    mutationFn: (params) => api.teams.delete(params),
+    successMessage: (_, vars) => `Team "${vars.teamName}" deleted successfully`,
+    errorMessage: 'Failed to delete team',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.dropdown] });
+    },
+  });
+};
 
 // Add team member
-export const useAddTeamMember = createMutation<CreateTeamMembershipParams>({
-  request: (params) => api.teams.addMember(params),
-  invalidateKeys: (variables) => [QUERY_KEY_STRINGS.teamMembers, variables.teamName],
-  successMessage: (variables) => `User "${variables.newUserEmail}" added to team`,
-  errorMessage: 'Failed to add team member',
-  operationName: 'teams.addMember',
-});
+export const useAddTeamMember = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, CreateTeamMembershipParams>({
+    mutationFn: (params) => api.teams.addMember(params),
+    successMessage: (_, vars) => `User "${vars.newUserEmail}" added to team`,
+    errorMessage: 'Failed to add team member',
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teamMembers, vars.teamName] });
+    },
+  });
+};
 
 // Remove team member
-export const useRemoveTeamMember = createMutation<DeleteUserFromTeamParams>({
-  request: (params) => api.teams.removeMember(params),
-  invalidateKeys: (variables) => [QUERY_KEY_STRINGS.teamMembers, variables.teamName],
-  successMessage: (variables) => `User "${variables.removeUserEmail}" removed from team`,
-  errorMessage: 'Failed to remove team member',
-  operationName: 'teams.removeMember',
-});
+export const useRemoveTeamMember = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, DeleteUserFromTeamParams>({
+    mutationFn: (params) => api.teams.removeMember(params),
+    successMessage: (_, vars) => `User "${vars.removeUserEmail}" removed from team`,
+    errorMessage: 'Failed to remove team member',
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teamMembers, vars.teamName] });
+    },
+  });
+};

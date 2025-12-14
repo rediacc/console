@@ -1,6 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { createMutation } from '@/hooks/api/mutationFactory';
 import { createResourceQuery } from '@/hooks/api/queryFactory';
+import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import { minifyJSON } from '@/utils/json';
 import type {
   CreateRepositoryParams,
@@ -36,90 +37,112 @@ type CreateRepositoryHookParams = Pick<CreateRepositoryParams, 'teamName' | 'rep
   repositoryGuid?: string;
 };
 
-export const useCreateRepository = createMutation<CreateRepositoryHookParams>({
-  request: ({
-    teamName,
-    repositoryName,
-    repositoryTag,
-    vaultContent,
-    parentRepositoryName,
-    repositoryGuid,
-  }) =>
-    api.repositories.create(teamName, repositoryName, {
-      repositoryTag,
-      vaultContent,
+export const useCreateRepository = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, CreateRepositoryHookParams>({
+    mutationFn: ({
+      teamName,
+      repositoryName,
+      repositoryTag = 'latest',
+      vaultContent = '{}',
       parentRepositoryName,
       repositoryGuid,
-    }),
-  invalidateKeys: ['repositories', 'teams', 'machines'],
-  successMessage: (vars) =>
-    `Repository "${vars.repositoryName}:${vars.repositoryTag || 'latest'}" created successfully`,
-  errorMessage: 'Failed to create repository',
-  transformData: (data) => ({
-    ...data,
-    vaultContent: data.vaultContent || '{}',
-    repositoryTag: data.repositoryTag || 'latest',
-  }),
-  operationName: 'repositories.create',
-});
+    }) =>
+      api.repositories.create(teamName, repositoryName, {
+        repositoryTag,
+        vaultContent,
+        parentRepositoryName,
+        repositoryGuid,
+      }),
+    successMessage: (_, vars) =>
+      `Repository "${vars.repositoryName}:${vars.repositoryTag || 'latest'}" created successfully`,
+    errorMessage: 'Failed to create repository',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['machines'] });
+    },
+  });
+};
 
 // Update repository name
-export const useUpdateRepositoryName = createMutation<UpdateRepositoryNameParams>({
-  request: (params) => api.repositories.rename(params),
-  invalidateKeys: ['repositories', 'machines'],
-  successMessage: (vars) => `Repository renamed to "${vars.newRepositoryName}"`,
-  errorMessage: 'Failed to update repository name',
-  operationName: 'repositories.rename',
-});
+export const useUpdateRepositoryName = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateRepositoryNameParams>({
+    mutationFn: (params) => api.repositories.rename(params),
+    successMessage: (_, vars) => `Repository renamed to "${vars.newRepositoryName}"`,
+    errorMessage: 'Failed to update repository name',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      queryClient.invalidateQueries({ queryKey: ['machines'] });
+    },
+  });
+};
 
 // Update repository tag
-export const useUpdateRepositoryTag = createMutation<UpdateRepositoryTagParams>({
-  request: (params) => api.repositories.renameTag(params),
-  invalidateKeys: ['repositories', 'machines'],
-  successMessage: (vars) => `Tag renamed to "${vars.newTag}"`,
-  errorMessage: 'Failed to update tag',
-  operationName: 'repositories.renameTag',
-});
+export const useUpdateRepositoryTag = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateRepositoryTagParams>({
+    mutationFn: (params) => api.repositories.renameTag(params),
+    successMessage: (_, vars) => `Tag renamed to "${vars.newTag}"`,
+    errorMessage: 'Failed to update tag',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      queryClient.invalidateQueries({ queryKey: ['machines'] });
+    },
+  });
+};
 
 // Update repository vault
-export const useUpdateRepositoryVault = createMutation<UpdateRepositoryVaultParams>({
-  request: (params) => api.repositories.updateVault(params),
-  invalidateKeys: ['repositories'],
-  successMessage: (vars) => `Repository vault updated for "${vars.repositoryName}"`,
-  errorMessage: 'Failed to update repository vault',
-  transformData: (data) => ({
-    ...data,
-    vaultContent: minifyJSON(data.vaultContent),
-  }),
-  operationName: 'repositories.updateVault',
-});
+export const useUpdateRepositoryVault = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateRepositoryVaultParams>({
+    mutationFn: (params) =>
+      api.repositories.updateVault({
+        ...params,
+        vaultContent: minifyJSON(params.vaultContent),
+      }),
+    successMessage: (_, vars) => `Repository vault updated for "${vars.repositoryName}"`,
+    errorMessage: 'Failed to update repository vault',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+    },
+  });
+};
 
 // Delete repository - uses custom type to match service signature with optional repositoryTag
 type DeleteRepositoryHookParams = Pick<DeleteRepositoryParams, 'teamName' | 'repositoryName'> & {
   repositoryTag?: string;
 };
 
-export const useDeleteRepository = createMutation<DeleteRepositoryHookParams>({
-  request: ({ teamName, repositoryName, repositoryTag }) =>
-    api.repositories.delete({ teamName, repositoryName, repositoryTag: repositoryTag || 'latest' }),
-  invalidateKeys: ['repositories', 'teams', 'machines'],
-  successMessage: (vars) =>
-    `Repository "${vars.repositoryName}:${vars.repositoryTag || 'latest'}" deleted successfully`,
-  errorMessage: 'Failed to delete repository',
-  transformData: (data) => ({
-    ...data,
-    repositoryTag: data.repositoryTag || 'latest',
-  }),
-  operationName: 'repositories.delete',
-});
+export const useDeleteRepository = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, DeleteRepositoryHookParams>({
+    mutationFn: ({ teamName, repositoryName, repositoryTag = 'latest' }) =>
+      api.repositories.delete({ teamName, repositoryName, repositoryTag }),
+    successMessage: (_, vars) =>
+      `Repository "${vars.repositoryName}:${vars.repositoryTag || 'latest'}" deleted successfully`,
+    errorMessage: 'Failed to delete repository',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['machines'] });
+    },
+  });
+};
 
 // Promote repository to grand (convert clone to original)
-export const usePromoteRepositoryToGrand = createMutation<PromoteRepositoryToGrandParams>({
-  request: (params) => api.repositories.promoteToGrand(params),
-  invalidateKeys: ['repositories'],
-  successMessage: (vars) => `Repository "${vars.repositoryName}" promoted to original successfully`,
-  errorMessage: 'Failed to promote repository',
-  operationName: 'repositories.promoteToGrand',
-});
+export const usePromoteRepositoryToGrand = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, PromoteRepositoryToGrandParams>({
+    mutationFn: (params) => api.repositories.promoteToGrand(params),
+    successMessage: (_, vars) =>
+      `Repository "${vars.repositoryName}" promoted to original successfully`,
+    errorMessage: 'Failed to promote repository',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+    },
+  });
+};
 
 export type { GetTeamRepositories_ResultSet1, GetTeamRepositories_ResultSet1 as Repository };
