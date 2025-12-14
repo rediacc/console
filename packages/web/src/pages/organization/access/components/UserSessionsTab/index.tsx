@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Col, message, Popconfirm, Row, Space, Table, Tooltip } from 'antd';
+import { Col, Popconfirm, Row, Space } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
@@ -12,10 +12,11 @@ import {
   createTruncatedColumn,
 } from '@/components/common/columns';
 import { InlineStack } from '@/components/common/styled';
+import { RediaccTable, RediaccTooltip } from '@/components/ui';
 import { RediaccButton, RediaccStatistic, RediaccText } from '@/components/ui';
+import { useMessage } from '@/hooks';
 import { createDateSorter } from '@/platform';
 import { selectUser } from '@/store/auth/authSelectors';
-import { TableContainer } from '@/styles/primitives';
 import {
   BranchesOutlined,
   CheckCircleOutlined,
@@ -44,6 +45,7 @@ dayjs.extend(relativeTime);
 
 const UserSessionsTab: React.FC = () => {
   const { t } = useTranslation('system');
+  const message = useMessage();
   const user = useSelector(selectUser);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -54,7 +56,7 @@ const UserSessionsTab: React.FC = () => {
     try {
       await deleteUserRequestMutation.mutateAsync({ targetRequestId: session.requestId });
       if (session.userEmail === user?.email) {
-        message.warning(t('userSessions.selfTerminateWarning'));
+        message.warning('system:userSessions.selfTerminateWarning');
       }
     } catch {
       // noop
@@ -138,7 +140,7 @@ const UserSessionsTab: React.FC = () => {
         cancelText={t('common:no')}
         disabled={!record.isActive}
       >
-        <Tooltip title={t('userSessions.terminate')}>
+        <RediaccTooltip title={t('userSessions.terminate')}>
           <RediaccButton
             data-testid={`sessions-terminate-${record.requestId}`}
             variant="link"
@@ -148,7 +150,7 @@ const UserSessionsTab: React.FC = () => {
             loading={deleteUserRequestMutation.isPending}
             aria-label={t('userSessions.terminate')}
           />
-        </Tooltip>
+        </RediaccTooltip>
       </Popconfirm>
     ),
   });
@@ -184,7 +186,7 @@ const UserSessionsTab: React.FC = () => {
           <Space size="small">
             <CellText>{name}</CellText>
             {record.parentRequestId && (
-              <Tooltip title={t('userSessions.forkToken')}>
+              <RediaccTooltip title={t('userSessions.forkToken')}>
                 <SessionTag
                   variant="primary"
                   icon={<LinkOutlined />}
@@ -192,10 +194,10 @@ const UserSessionsTab: React.FC = () => {
                 >
                   {t('userSessions.fork')}
                 </SessionTag>
-              </Tooltip>
+              </RediaccTooltip>
             )}
             {childCount > 0 && (
-              <Tooltip title={t('userSessions.hasChildren', { count: childCount })}>
+              <RediaccTooltip title={t('userSessions.hasChildren', { count: childCount })}>
                 <SessionTag
                   variant="warning"
                   icon={<BranchesOutlined />}
@@ -203,7 +205,7 @@ const UserSessionsTab: React.FC = () => {
                 >
                   {childCount}
                 </SessionTag>
-              </Tooltip>
+              </RediaccTooltip>
             )}
           </Space>
         );
@@ -294,7 +296,7 @@ const UserSessionsTab: React.FC = () => {
           <TableCardTitle>
             <InlineStack>
               <CardTitleText>{t('userSessions.title')}</CardTitleText>
-              <Tooltip title={t('common:actions.refresh')}>
+              <RediaccTooltip title={t('common:actions.refresh')}>
                 <RefreshButton
                   data-testid="sessions-refresh-button"
                   icon={<ReloadOutlined />}
@@ -302,7 +304,7 @@ const UserSessionsTab: React.FC = () => {
                   loading={isLoading}
                   aria-label={t('common:actions.refresh')}
                 />
-              </Tooltip>
+              </RediaccTooltip>
             </InlineStack>
             <SearchInput
               data-testid="sessions-search-input"
@@ -315,30 +317,28 @@ const UserSessionsTab: React.FC = () => {
           </TableCardTitle>
         }
       >
-        <TableContainer>
-          <Table
-            data-testid="sessions-table"
-            columns={columns}
-            dataSource={filteredSessions}
-            rowKey={(record) => record.requestId.toString()}
-            loading={isLoading}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showTotal: (total) => (
-                <RediaccText variant="caption">
-                  {t('userSessions.totalCount', { count: total })}
-                </RediaccText>
-              ),
-            }}
-            scroll={{ x: 1500 }}
-            onRow={(record) =>
-              ({
-                'data-testid': `sessions-row-${record.requestId}`,
-              }) as React.HTMLAttributes<HTMLTableRowElement>
-            }
-          />
-        </TableContainer>
+        <RediaccTable<UserRequest>
+          data-testid="sessions-table"
+          columns={columns}
+          dataSource={filteredSessions}
+          rowKey={(record) => record.requestId.toString()}
+          loading={isLoading}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => (
+              <RediaccText variant="caption">
+                {t('userSessions.totalCount', { count: total })}
+              </RediaccText>
+            ),
+          }}
+          scroll={{ x: 1500 }}
+          onRow={(record) =>
+            ({
+              'data-testid': `sessions-row-${record.requestId}`,
+            }) as React.HTMLAttributes<HTMLTableRowElement>
+          }
+        />
       </TableCard>
     </TabContainer>
   );

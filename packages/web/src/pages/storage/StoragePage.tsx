@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { Modal, Space, Tag, Tooltip } from 'antd';
+import { Modal, Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components';
 import { useMachines } from '@/api/queries/machines';
@@ -23,6 +23,7 @@ import ResourceListView, {
 } from '@/components/common/ResourceListView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { RediaccTooltip } from '@/components/ui';
 import {
   ListSubtitle,
   ListTitle,
@@ -496,7 +497,7 @@ const StoragePage: React.FC = () => {
             actions={
               hasTeamSelection ? (
                 <>
-                  <Tooltip title={t('storage.createStorage')}>
+                  <RediaccTooltip title={t('storage.createStorage')}>
                     <RediaccButton
                       variant="primary"
                       icon={<PlusOutlined />}
@@ -504,23 +505,23 @@ const StoragePage: React.FC = () => {
                       onClick={() => openUnifiedModal('create')}
                       aria-label={t('storage.createStorage')}
                     />
-                  </Tooltip>
-                  <Tooltip title={t('resources:storage.import.button')}>
+                  </RediaccTooltip>
+                  <RediaccTooltip title={t('resources:storage.import.button')}>
                     <RediaccButton
                       icon={<ImportOutlined />}
                       data-testid="resources-import-button"
                       onClick={() => rcloneImportWizard.open()}
                       aria-label={t('resources:storage.import.button')}
                     />
-                  </Tooltip>
-                  <Tooltip title={t('common:actions.refresh')}>
+                  </RediaccTooltip>
+                  <RediaccTooltip title={t('common:actions.refresh')}>
                     <RediaccButton
                       icon={<ReloadOutlined />}
                       data-testid="resources-refresh-button"
                       onClick={() => refetchStorage()}
                       aria-label={t('common:actions.refresh')}
                     />
-                  </Tooltip>
+                  </RediaccTooltip>
                 </>
               ) : undefined
             }

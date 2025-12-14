@@ -1,7 +1,5 @@
-import React from 'react';
-import { Table as AntTable, Typography } from 'antd';
-import styled, { css } from 'styled-components';
-import type { TableProps } from 'antd';
+import { Typography } from 'antd';
+import styled from 'styled-components';
 
 const { Title } = Typography;
 
@@ -23,16 +21,8 @@ export const EmptyState = styled.div`
   text-align: center;
 `;
 
-const StyledTableBase = styled(AntTable)<{ $removeMargins?: boolean }>`
-  ${({ $removeMargins }) =>
-    $removeMargins &&
-    css`
-      .ant-table.ant-table-small {
-        margin-block: 0;
-        margin-inline: 0;
-      }
-    `}
-
+/** Wrapper for repository container table row styling */
+export const TableStyleWrapper = styled.div`
   .repository-container-row td {
     transition: background-color ${({ theme }) => theme.transitions.DEFAULT};
   }
@@ -49,10 +39,6 @@ const StyledTableBase = styled(AntTable)<{ $removeMargins?: boolean }>`
     background-color: ${({ theme }) => theme.colors.primaryBg};
   }
 `;
-
-export const StyledTable = StyledTableBase as <T = unknown>(
-  props: TableProps<T> & { $removeMargins?: boolean }
-) => React.ReactElement;
 
 export const SectionTitle = styled(Title)`
   && {

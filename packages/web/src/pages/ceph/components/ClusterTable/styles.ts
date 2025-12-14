@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { RediaccBadge, RediaccButton } from '@/components/ui';
+import { TableWrapper as UITableWrapper } from '@/components/ui/Table';
 import {
   ActionsRow,
   ExpandIcon,
@@ -7,10 +8,10 @@ import {
   NameText,
   TableWrapper,
 } from '@/pages/ceph/styles/tableAliases';
-import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
+import { StyledIcon } from '@/styles/primitives';
 import { CloudServerOutlined, DesktopOutlined, TeamOutlined } from '@/utils/optimizedIcons';
 
-export const TableContainer = styled(BaseTableContainer)`
+export const TableContainer = styled(UITableWrapper).attrs({ $variant: 'default' })`
   .cluster-row {
     cursor: pointer;
     transition: background-color ${({ theme }) => theme.transitions.FAST};

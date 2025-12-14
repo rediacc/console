@@ -1,7 +1,7 @@
 import React from 'react';
 import { DeleteOutlined, EditOutlined, EyeOutlined, MoreOutlined } from '@ant-design/icons';
-import { Dropdown, Space, Tooltip } from 'antd';
-import { RediaccButton, RediaccText } from '@/components/ui';
+import { Space } from 'antd';
+import { RediaccButton, RediaccDropdown, RediaccText, RediaccTooltip } from '@/components/ui';
 import i18n from '@/i18n/config';
 import {
   createStatusRenderer,
@@ -271,11 +271,11 @@ export const createActionColumn = <T,>(
     };
 
     return (
-      <Dropdown menu={menu} trigger={['click']}>
+      <RediaccDropdown menu={menu} trigger={['click']}>
         <RediaccButton icon={options.buttonIcon || <MoreOutlined />}>
           {options.buttonLabel}
         </RediaccButton>
-      </Dropdown>
+      </RediaccDropdown>
     );
   },
 });
@@ -427,9 +427,9 @@ export const createTruncatedColumn = <T,>(
         : resolvedValue;
 
       const content = shouldTruncate ? (
-        <Tooltip title={resolvedValue} placement={placement}>
+        <RediaccTooltip title={resolvedValue} placement={placement}>
           <span>{displayText}</span>
-        </Tooltip>
+        </RediaccTooltip>
       ) : (
         <span>{displayText}</span>
       );
@@ -486,12 +486,12 @@ export const createCountColumn = <T,>(options: CountColumnOptions<T>): ColumnsTy
 
       if (options.useBadge) {
         return (
-          <Tooltip title={options.title}>
+          <RediaccTooltip title={options.title}>
             <Space size="small">
               {options.icon}
               <span>{count}</span>
             </Space>
-          </Tooltip>
+          </RediaccTooltip>
         );
       }
 

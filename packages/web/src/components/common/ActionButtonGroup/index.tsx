@@ -1,6 +1,6 @@
 import React from 'react';
-import { Dropdown, Tooltip } from 'antd';
 import styled from 'styled-components';
+import { RediaccDropdown, RediaccTooltip } from '@/components/ui';
 // eslint-disable-next-line import/order -- False positive: no empty line exists
 import { TableActionButton } from '@/components/common/styled';
 // =============================================================================
@@ -218,7 +218,7 @@ export function ActionButtonGroup<T>({
         // Wrap in dropdown if needed
         if (config.dropdownItems) {
           return (
-            <Dropdown
+            <RediaccDropdown
               key={config.type}
               menu={{
                 items: config.dropdownItems,
@@ -228,15 +228,15 @@ export function ActionButtonGroup<T>({
               }}
               trigger={['click']}
             >
-              <Tooltip title={tooltipText}>{buttonElement}</Tooltip>
-            </Dropdown>
+              <RediaccTooltip title={tooltipText}>{buttonElement}</RediaccTooltip>
+            </RediaccDropdown>
           );
         }
 
         return (
-          <Tooltip key={config.type} title={tooltipText}>
+          <RediaccTooltip key={config.type} title={tooltipText}>
             {buttonElement}
-          </Tooltip>
+          </RediaccTooltip>
         );
       })}
     </Container>

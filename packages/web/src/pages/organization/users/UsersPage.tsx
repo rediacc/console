@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, Modal, Popconfirm, Space, Tag, Tooltip } from 'antd';
+import { Form, Modal, Popconfirm, Space, Tag } from 'antd';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
@@ -17,6 +17,7 @@ import {
 } from '@/api/queries/users';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import ResourceListView from '@/components/common/ResourceListView';
+import { RediaccTooltip } from '@/components/ui';
 import {
   ListTitleRow as UsersListHeader,
   ListSubtitle as UsersListSubtitle,
@@ -190,7 +191,7 @@ const UsersPage: React.FC = () => {
       width: 300,
       render: (_: unknown, record: User) => (
         <Space>
-          <Tooltip title={tSystem('actions.permissions')}>
+          <RediaccTooltip title={tSystem('actions.permissions')}>
             <RediaccButton
               variant="primary"
               icon={<SafetyOutlined />}
@@ -201,8 +202,8 @@ const UsersPage: React.FC = () => {
               data-testid={`system-user-permissions-button-${record.userEmail}`}
               aria-label={tSystem('actions.permissions')}
             />
-          </Tooltip>
-          <Tooltip title={tSystem('actions.trace')}>
+          </RediaccTooltip>
+          <RediaccTooltip title={tSystem('actions.trace')}>
             <RediaccButton
               variant="primary"
               icon={<HistoryOutlined />}
@@ -216,7 +217,7 @@ const UsersPage: React.FC = () => {
               data-testid={`system-user-trace-button-${record.userEmail}`}
               aria-label={tSystem('actions.trace')}
             />
-          </Tooltip>
+          </RediaccTooltip>
           {record.activated && (
             <Popconfirm
               title={tSystem('users.deactivate.confirmTitle', { defaultValue: 'Deactivate User' })}
@@ -229,7 +230,7 @@ const UsersPage: React.FC = () => {
               cancelText={tCommon('general.no')}
               okButtonProps={{ danger: true }}
             >
-              <Tooltip title={tSystem('actions.deactivate')}>
+              <RediaccTooltip title={tSystem('actions.deactivate')}>
                 <RediaccButton
                   variant="danger"
                   icon={<StopOutlined />}
@@ -237,7 +238,7 @@ const UsersPage: React.FC = () => {
                   data-testid={`system-user-deactivate-button-${record.userEmail}`}
                   aria-label={tSystem('actions.deactivate')}
                 />
-              </Tooltip>
+              </RediaccTooltip>
             </Popconfirm>
           )}
           {!record.activated && (
@@ -251,7 +252,7 @@ const UsersPage: React.FC = () => {
               okText={tCommon('general.yes')}
               cancelText={tCommon('general.no')}
             >
-              <Tooltip title={tSystem('actions.activate')}>
+              <RediaccTooltip title={tSystem('actions.activate')}>
                 <RediaccButton
                   variant="primary"
                   icon={<CheckOutlined />}
@@ -259,7 +260,7 @@ const UsersPage: React.FC = () => {
                   data-testid={`system-user-activate-button-${record.userEmail}`}
                   aria-label={tSystem('actions.activate')}
                 />
-              </Tooltip>
+              </RediaccTooltip>
             </Popconfirm>
           )}
         </Space>
@@ -289,7 +290,7 @@ const UsersPage: React.FC = () => {
           searchPlaceholder={t('users.searchPlaceholder', { defaultValue: 'Search users...' })}
           data-testid="system-user-table"
           actions={
-            <Tooltip title={tSystem('actions.createUser')}>
+            <RediaccTooltip title={tSystem('actions.createUser')}>
               <RediaccButton
                 variant="primary"
                 icon={<PlusOutlined />}
@@ -297,7 +298,7 @@ const UsersPage: React.FC = () => {
                 data-testid="system-create-user-button"
                 aria-label={tSystem('actions.createUser')}
               />
-            </Tooltip>
+            </RediaccTooltip>
           }
         />
       </UsersSectionStack>

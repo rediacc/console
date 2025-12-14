@@ -1,11 +1,11 @@
-import { Badge, Popconfirm, Space, Tooltip } from 'antd';
+import { Badge, Popconfirm, Space } from 'antd';
 import type { Team } from '@/api/queries/teams';
 import {
   createCountColumn,
   createTruncatedColumn,
   createVersionColumn,
 } from '@/components/common/columns';
-import { RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccTooltip } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import {
   CloudServerOutlined,
@@ -105,33 +105,35 @@ export const getTeamColumns = ({
       render: (_, record: Team) => (
         <StatsColumn>
           <Space direction="vertical" size={4}>
-            <Tooltip title={`${record.memberCount} ${tSystem('tables.teams.members')}`}>
+            <RediaccTooltip title={`${record.memberCount} ${tSystem('tables.teams.members')}`}>
               <Space size="small">
                 <Badge count={record.memberCount} showZero size="small">
                   <UserOutlined />
                 </Badge>
               </Space>
-            </Tooltip>
-            <Tooltip title={`${record.machineCount} ${tSystem('tables.teams.machines')}`}>
+            </RediaccTooltip>
+            <RediaccTooltip title={`${record.machineCount} ${tSystem('tables.teams.machines')}`}>
               <Space size="small">
                 <DesktopOutlined />
                 <span>{record.machineCount}</span>
               </Space>
-            </Tooltip>
-            <Tooltip
+            </RediaccTooltip>
+            <RediaccTooltip
               title={`${record.repositoryCount || 0} ${tSystem('tables.teams.repositories')}`}
             >
               <Space size="small">
                 <DatabaseOutlined />
                 <span>{record.repositoryCount || 0}</span>
               </Space>
-            </Tooltip>
-            <Tooltip title={`${record.storageCount || 0} ${tSystem('tables.teams.storage')}`}>
+            </RediaccTooltip>
+            <RediaccTooltip
+              title={`${record.storageCount || 0} ${tSystem('tables.teams.storage')}`}
+            >
               <Space size="small">
                 <CloudServerOutlined />
                 <span>{record.storageCount || 0}</span>
               </Space>
-            </Tooltip>
+            </RediaccTooltip>
           </Space>
         </StatsColumn>
       ),
@@ -163,7 +165,7 @@ export const getTeamColumns = ({
     width: 160,
     render: (_, record: Team) => (
       <Space size={4} wrap>
-        <Tooltip title={tSystem('actions.edit')}>
+        <RediaccTooltip title={tSystem('actions.edit')}>
           <RediaccButton
             variant="primary"
             icon={<EditOutlined />}
@@ -171,8 +173,8 @@ export const getTeamColumns = ({
             data-testid={`system-team-edit-button-${record.teamName}`}
             aria-label={tSystem('actions.edit')}
           />
-        </Tooltip>
-        <Tooltip title={tSystem('actions.members')}>
+        </RediaccTooltip>
+        <RediaccTooltip title={tSystem('actions.members')}>
           <RediaccButton
             variant="primary"
             icon={<UserOutlined />}
@@ -180,8 +182,8 @@ export const getTeamColumns = ({
             data-testid={`system-team-members-button-${record.teamName}`}
             aria-label={tSystem('actions.members')}
           />
-        </Tooltip>
-        <Tooltip title={tSystem('actions.trace')}>
+        </RediaccTooltip>
+        <RediaccTooltip title={tSystem('actions.trace')}>
           <RediaccButton
             variant="primary"
             icon={<HistoryOutlined />}
@@ -189,7 +191,7 @@ export const getTeamColumns = ({
             data-testid={`system-team-trace-button-${record.teamName}`}
             aria-label={tSystem('actions.trace')}
           />
-        </Tooltip>
+        </RediaccTooltip>
         <Popconfirm
           title={tSystem('teams.delete.confirmTitle', { defaultValue: 'Delete Team' })}
           description={tSystem('teams.delete.confirmDescription', {
@@ -201,7 +203,7 @@ export const getTeamColumns = ({
           cancelText={tCommon('general.no')}
           okButtonProps={{ danger: true }}
         >
-          <Tooltip title={tCommon('actions.delete')}>
+          <RediaccTooltip title={tCommon('actions.delete')}>
             <RediaccButton
               variant="danger"
               icon={<DeleteOutlined />}
@@ -209,7 +211,7 @@ export const getTeamColumns = ({
               data-testid={`system-team-delete-button-${record.teamName}`}
               aria-label={tCommon('actions.delete')}
             />
-          </Tooltip>
+          </RediaccTooltip>
         </Popconfirm>
       </Space>
     ),

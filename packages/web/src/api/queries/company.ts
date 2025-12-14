@@ -1,12 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { createMutation } from '@/hooks/api/mutationFactory';
+import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
 import { selectCompany } from '@/store/auth/authSelectors';
 import { useAppSelector } from '@/store/store';
 import { minifyJSON } from '@/utils/json';
 import { showMessage } from '@/utils/messages';
-import { createErrorHandler } from '@/utils/mutationUtils';
 import type {
   CompanyBlockUserRequestsResult,
   CompanyExportData,
@@ -49,37 +49,30 @@ export const useUpdateCompanyVault = createMutation<UpdateCompanyVaultParams>({
 // Block or unblock user requests - Special case with dynamic success message
 export const useUpdateCompanyBlockUserRequests = () => {
   const queryClient = useQueryClient();
-  const blockStatusErrorHandler = createErrorHandler(
-    i18n.t('system:company.errors.blockRequestsFailed')
-  );
 
-  return useMutation({
+  return useMutationWithFeedback({
     mutationFn: async (blockUserRequests: boolean) => {
       const params: UpdateCompanyBlockUserRequestsParams = { blockUserRequests };
       return api.company.updateBlockUserRequests(params);
     },
-    onSuccess: (data, variables) => {
+    successMessage: (data, variables) => {
       const deactivatedCount = (data as CompanyBlockUserRequestsResult)?.deactivatedCount ?? 0;
-      let message: string;
 
       if (variables) {
-        message =
-          deactivatedCount > 0
-            ? i18n.t('system:company.success.requestsBlockedWithTerminations', {
-                count: deactivatedCount,
-              })
-            : i18n.t('system:company.success.requestsBlocked');
-      } else {
-        message = i18n.t('system:company.success.requestsUnblocked');
+        return deactivatedCount > 0
+          ? i18n.t('system:company.success.requestsBlockedWithTerminations', {
+              count: deactivatedCount,
+            })
+          : i18n.t('system:company.success.requestsBlocked');
       }
-
-      showMessage('success', message);
-
+      return i18n.t('system:company.success.requestsUnblocked');
+    },
+    errorMessage: i18n.t('system:company.errors.blockRequestsFailed'),
+    onSuccess: () => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['company'] });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
-    onError: blockStatusErrorHandler,
   });
 };
 
@@ -125,15 +118,19 @@ export const useCompanyVaults = () => {
 export const useUpdateCompanyVaults = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (vaultUpdates: Array<Record<string, unknown>>) => {
+  return useMutationWithFeedback<CompanyVaultUpdateResult, Error, Array<Record<string, unknown>>>({
+    mutationFn: async (vaultUpdates) => {
       const params: UpdateCompanyVaultsParams = { updates: JSON.stringify(vaultUpdates) };
       return api.company.updateAllVaults(params);
     },
-    onSuccess: (data: CompanyVaultUpdateResult) => {
+    // No success toast - handled by modal in SystemPage
+    successMessage: () => null,
+    errorMessage: i18n.t('system:dangerZone.updateMasterPassword.error.updateFailed'),
+    onSuccess: (data) => {
       const totalUpdated = data.totalUpdated ?? 0;
       const failedCount = data.failedCount ?? 0;
 
+      // Show error for partial failure
       if (failedCount > 0) {
         const message = i18n.t('system:dangerZone.updateMasterPassword.error.partialSuccess', {
           updated: totalUpdated,
@@ -141,18 +138,9 @@ export const useUpdateCompanyVaults = () => {
         });
         showMessage('error', message);
       }
-      // Success toast removed - handled by modal in SystemPage
 
       // Invalidate all queries to refresh data
       queryClient.invalidateQueries();
-    },
-    onError: (error: unknown) => {
-      // Show the actual error message from the API response
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : i18n.t('system:dangerZone.updateMasterPassword.error.updateFailed');
-      showMessage('error', errorMessage);
     },
   });
 };
@@ -175,17 +163,20 @@ export const useExportCompanyData = () => {
 // Import company data
 export const useImportCompanyData = () => {
   const queryClient = useQueryClient();
-  const importErrorHandler = createErrorHandler(i18n.t('system:company.errors.importFailed'));
 
-  return useMutation({
-    mutationFn: async (data: { companyDataJson: string; importMode?: 'skip' | 'override' }) => {
+  return useMutationWithFeedback<
+    CompanyImportResult,
+    Error,
+    { companyDataJson: string; importMode?: 'skip' | 'override' }
+  >({
+    mutationFn: async (data) => {
       const params: ImportCompanyDataParams = {
         companyDataJson: data.companyDataJson,
         importMode: data.importMode || 'skip',
       };
       return api.company.importData(params);
     },
-    onSuccess: (data: CompanyImportResult) => {
+    successMessage: (data) => {
       const importedCount = data.importedCount ?? 0;
       const skippedCount = data.skippedCount ?? 0;
       const errorCount = data.errorCount ?? 0;
@@ -198,14 +189,12 @@ export const useImportCompanyData = () => {
         errorCount > 0 ? i18n.t('system:company.success.errorCount', { count: errorCount }) : null,
       ].filter(Boolean);
 
-      showMessage(
-        'success',
-        i18n.t('system:company.success.importComplete', { summary: parts.join(', ') })
-      );
-
+      return i18n.t('system:company.success.importComplete', { summary: parts.join(', ') });
+    },
+    errorMessage: i18n.t('system:company.errors.importFailed'),
+    onSuccess: () => {
       // Invalidate all queries to refresh data
       queryClient.invalidateQueries();
     },
-    onError: importErrorHandler,
   });
 };

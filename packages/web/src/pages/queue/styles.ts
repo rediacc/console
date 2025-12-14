@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { RediaccStack, RediaccText } from '@/components/ui';
+import { RediaccText } from '@/components/ui';
 import { RediaccTag } from '@/components/ui/Tag';
 
 export const TooltipContent = styled.div`
@@ -11,16 +11,6 @@ export const TooltipContent = styled.div`
 
 export const TooltipContentSection = styled.div`
   width: 100%;
-`;
-
-/**
- * @deprecated Use <RediaccStack variant="row" gap={4} fullWidth /> with inline style for margin
- */
-export const TooltipPrimaryRow = styled(RediaccStack).attrs({ direction: 'horizontal', gap: 4 })`
-  && {
-    width: 100%;
-    margin-bottom: ${({ theme }) => theme.spacing.XS / 2}px;
-  }
 `;
 
 export const SeverityPill = styled(RediaccTag)<{ $color?: string }>`

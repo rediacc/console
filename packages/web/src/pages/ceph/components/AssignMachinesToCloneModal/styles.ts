@@ -3,7 +3,6 @@ import { InlineStack } from '@/components/common/styled';
 import { RediaccTag } from '@/components/ui';
 import {
   BaseModal,
-  BaseTable,
   FlexColumn,
   ModalContentStack,
   ModalTitleRow,
@@ -28,12 +27,6 @@ export const FieldGroup = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 
 export const EmptyState = styled(StyledEmpty)`
   margin-top: ${({ theme }) => theme.spacing.XL}px;
-`;
-
-export const MachinesTable = styled(BaseTable)`
-  .ant-table-tbody > tr > td {
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-  }
 `;
 
 export const MachineNameRow = styled(InlineStack)``;

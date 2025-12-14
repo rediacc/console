@@ -4,6 +4,9 @@ import type { AuditTraceResponse, GetAuditLogs_ResultSet1 } from '@rediacc/share
 
 export type { AuditTraceRecord, GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
 
+// Type alias for clearer usage in components
+export type AuditLog = GetAuditLogs_ResultSet1;
+
 export interface AuditLogsParams {
   startDate?: string;
   endDate?: string;

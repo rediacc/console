@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { Alert, Space, Tag, Tooltip } from 'antd';
+import { Alert, Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -10,6 +10,7 @@ import { ActionGroup, CenteredState } from '@/components/common/styled';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
+import { RediaccTooltip } from '@/components/ui';
 import { RediaccButton, RediaccCard, RediaccText } from '@/components/ui';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
@@ -328,7 +329,7 @@ const MachineReposPage: React.FC = () => {
             <HeaderRow>
               <TitleColumn>
                 <TitleRow>
-                  <Tooltip title={t('machines:backToMachines')}>
+                  <RediaccTooltip title={t('machines:backToMachines')}>
                     <RediaccButton
                       iconOnly
                       icon={<DoubleLeftOutlined />}
@@ -336,7 +337,7 @@ const MachineReposPage: React.FC = () => {
                       aria-label={t('machines:backToMachines')}
                       data-testid="machine-repositories-back-button"
                     />
-                  </Tooltip>
+                  </RediaccTooltip>
                   <HeaderTitleText level={4}>
                     <Space>
                       <DesktopOutlined />
@@ -362,30 +363,30 @@ const MachineReposPage: React.FC = () => {
               </TitleColumn>
 
               <ActionsRow>
-                <Tooltip title={t('machines:createRepository')}>
+                <RediaccTooltip title={t('machines:createRepository')}>
                   <RediaccButton
                     iconOnly
                     icon={<PlusOutlined />}
                     onClick={handleCreateRepo}
                     data-testid="machine-repositories-create-repo-button"
                   />
-                </Tooltip>
-                <Tooltip title={t('functions:functions.pull.name')}>
+                </RediaccTooltip>
+                <RediaccTooltip title={t('functions:functions.pull.name')}>
                   <RediaccButton
                     iconOnly
                     icon={<CloudDownloadOutlined />}
                     onClick={handlePull}
                     data-testid="machine-repositories-pull-button"
                   />
-                </Tooltip>
-                <Tooltip title={t('common:actions.refresh')}>
+                </RediaccTooltip>
+                <RediaccTooltip title={t('common:actions.refresh')}>
                   <RediaccButton
                     iconOnly
                     icon={<ReloadOutlined />}
                     onClick={handleRefresh}
                     data-testid="machine-repositories-refresh-button"
                   />
-                </Tooltip>
+                </RediaccTooltip>
               </ActionsRow>
             </HeaderRow>
           </HeaderSection>

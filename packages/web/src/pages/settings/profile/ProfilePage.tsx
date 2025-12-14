@@ -1,11 +1,12 @@
 import React from 'react';
-import { Form, Modal, Tooltip } from 'antd';
+import { Form, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useUpdateUserPassword, useUpdateUserVault, useUserVault } from '@/api/queries/users';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
 import { PasswordConfirmField, PasswordField } from '@/components/forms/FormFields';
+import { RediaccTooltip } from '@/components/ui';
 import {
   CardActions,
   CardContent,
@@ -16,6 +17,7 @@ import {
   ModalActions,
   PageWrapper,
   RediaccButton,
+  RediaccCard,
   RequirementsList,
   SectionHeading,
   SectionStack,
@@ -23,7 +25,7 @@ import {
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState, useModalForm } from '@/hooks';
 import TwoFactorSettings from '@/pages/settings/profile/components/TwoFactorSettings';
-import { FormItemActions, ModalAlert, SettingsCard } from '@/pages/system/styles';
+import { FormItemActions, ModalAlert } from '@/pages/system/styles';
 import { logout } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
@@ -116,7 +118,7 @@ const ProfilePage: React.FC = () => {
       <SectionStack>
         <SectionHeading level={3}>{t('personal.title')}</SectionHeading>
 
-        <SettingsCard>
+        <RediaccCard fullHeight>
           <CardContent>
             <CardHeader>
               <IconWrapper $size="md">
@@ -129,7 +131,7 @@ const ProfilePage: React.FC = () => {
 
             <CardActions>
               {featureFlags.isEnabled('personalVaultConfiguration') && (
-                <Tooltip title={t('personal.configureVault')}>
+                <RediaccTooltip title={t('personal.configureVault')}>
                   <RediaccButton
                     icon={<SettingOutlined />}
                     onClick={() => {
@@ -139,27 +141,27 @@ const ProfilePage: React.FC = () => {
                     data-testid="system-user-vault-button"
                     aria-label={t('personal.configureVault')}
                   />
-                </Tooltip>
+                </RediaccTooltip>
               )}
-              <Tooltip title={tSystem('actions.changePassword')}>
+              <RediaccTooltip title={tSystem('actions.changePassword')}>
                 <RediaccButton
                   icon={<KeyOutlined />}
                   onClick={openChangePassword}
                   data-testid="system-change-password-button"
                   aria-label={tSystem('actions.changePassword')}
                 />
-              </Tooltip>
-              <Tooltip title={tSystem('actions.twoFactorAuth')}>
+              </RediaccTooltip>
+              <RediaccTooltip title={tSystem('actions.twoFactorAuth')}>
                 <RediaccButton
                   icon={<SafetyCertificateOutlined />}
                   onClick={() => twoFactorModal.open()}
                   data-testid="system-two-factor-button"
                   aria-label={tSystem('actions.twoFactorAuth')}
                 />
-              </Tooltip>
+              </RediaccTooltip>
             </CardActions>
           </CardContent>
-        </SettingsCard>
+        </RediaccCard>
       </SectionStack>
 
       <VaultEditorModal

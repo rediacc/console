@@ -1,7 +1,6 @@
 import React from 'react';
-import { Table } from 'antd';
 import type { CephPool } from '@/api/queries/ceph';
-import { RediaccTag } from '@/components/ui';
+import { RediaccTable, RediaccTag } from '@/components/ui';
 import {
   CardHeader,
   CardIcon,
@@ -58,13 +57,14 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
       }
     >
       <TableWrapper>
-        <Table<CephPool>
+        <RediaccTable<CephPool>
           columns={columns}
           dataSource={pools}
           rowKey="poolGuid"
           loading={loading}
           scroll={{ x: 'max-content' }}
           pagination={false}
+          interactive
           data-testid={`ds-pool-table-${clusterName}`}
           expandable={{
             expandedRowRender,

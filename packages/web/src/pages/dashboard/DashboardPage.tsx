@@ -1,11 +1,12 @@
 import React from 'react';
-import { Alert, Col, Empty, Row, Table, Tag, Tooltip } from 'antd';
+import { Alert, Col, Empty, Row, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { useRecentAuditLogs } from '@/api/queries/audit';
 import { useDashboard } from '@/api/queries/dashboard';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccTable, RediaccTooltip } from '@/components/ui';
 import { RediaccCard, RediaccStack, RediaccStatistic, RediaccText } from '@/components/ui';
 import CephDashboardWidget from '@/pages/dashboard/components/CephDashboardWidget';
 import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
@@ -423,7 +424,7 @@ const DashboardPage: React.FC = () => {
                                 remaining
                               </DaysRemainingText>
                             </LicenseHeader>
-                            <Tooltip
+                            <RediaccTooltip
                               title={`From ${new Date(sub.startDate).toLocaleDateString()} to ${new Date(sub.endDate).toLocaleDateString()}`}
                             >
                               <ResourceProgress
@@ -433,7 +434,7 @@ const DashboardPage: React.FC = () => {
                                 strokeColor={strokeColor}
                                 data-testid={`dashboard-progress-subscription-${sub.planCode}`}
                               />
-                            </Tooltip>
+                            </RediaccTooltip>
                           </LicenseItem>
                         );
                       })}
@@ -671,8 +672,8 @@ const DashboardPage: React.FC = () => {
                         <DesktopOutlined /> Machine Queue Status
                       </SectionTitle>
                       <HorizontalScroll>
-                        <Table
-                          size="small"
+                        <RediaccTable<QueueMachineIssue>
+                          size="sm"
                           dataSource={machineIssues}
                           pagination={false}
                           columns={machineIssueColumns}

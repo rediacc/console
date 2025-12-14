@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Space, Tooltip, Typography } from 'antd';
+import { Alert, Space, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -21,7 +21,9 @@ import {
   RediaccButton,
   RediaccInput,
   RediaccStack,
+  RediaccTable,
   RediaccText,
+  RediaccTooltip,
 } from '@/components/ui';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
@@ -58,11 +60,7 @@ import type {
   Repository,
   RepositoryTableRow,
 } from './types';
-import type { TableProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-
-const RepoTableComponent = S.StyledTable as React.ComponentType<TableProps<RepositoryTableRow>>;
-const SystemTableComponent = S.StyledTable as React.ComponentType<TableProps<Container>>;
 
 export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   machine,
@@ -1028,13 +1026,13 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           type="error"
           showIcon
           action={
-            <Tooltip title={t('common:actions.retry')}>
+            <RediaccTooltip title={t('common:actions.retry')}>
               <RediaccButton
                 onClick={handleRefresh}
                 data-testid="machine-repo-list-retry"
                 aria-label={t('common:actions.retry')}
               />
-            </Tooltip>
+            </RediaccTooltip>
           }
         />
       </TableStateContainer>
@@ -1106,45 +1104,45 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         }
       })()}
 
-      <RepoTableComponent
-        columns={columns}
-        dataSource={getTableDataSource()}
-        rowKey={(record: RepositoryTableRow) =>
-          record.key || `${record.name}-${record.repositoryTag || 'latest'}`
-        }
-        size="small"
-        pagination={false}
-        scroll={{ x: 'max-content' }}
-        data-testid="machine-repo-list-table"
-        rowClassName={(record: RepositoryTableRow) => {
-          const repositoryData = teamRepositories.find(
-            (r) => r.repositoryName === record.name && r.repositoryTag === record.repositoryTag
-          );
-          const classes = ['Repository-row'];
-          if (repositoryData && coreIsFork(repositoryData)) {
-            classes.push('Repository-fork-row');
-          }
-          if (highlightedRepository?.name === record.name) {
-            classes.push('Repository-row--highlighted');
-          }
-          return classes.join(' ');
-        }}
-        locale={{
-          emptyText: t('resources:repositories.noRepositories'),
-        }}
-        onRow={(record: RepositoryTableRow) => ({
-          onClick: (e: React.MouseEvent<HTMLElement>) => {
-            const target = e.target as HTMLElement;
-            if (target.closest('button') || target.closest('.ant-dropdown')) {
-              return;
+      <S.TableStyleWrapper>
+        <RediaccTable<RepositoryTableRow>
+          columns={columns}
+          dataSource={getTableDataSource()}
+          rowKey={(record) => record.key || `${record.name}-${record.repositoryTag || 'latest'}`}
+          size="sm"
+          pagination={false}
+          scroll={{ x: 'max-content' }}
+          data-testid="machine-repo-list-table"
+          rowClassName={(record) => {
+            const repositoryData = teamRepositories.find(
+              (r) => r.repositoryName === record.name && r.repositoryTag === record.repositoryTag
+            );
+            const classes = ['Repository-row'];
+            if (repositoryData && coreIsFork(repositoryData)) {
+              classes.push('Repository-fork-row');
             }
+            if (highlightedRepository?.name === record.name) {
+              classes.push('Repository-row--highlighted');
+            }
+            return classes.join(' ');
+          }}
+          locale={{
+            emptyText: t('resources:repositories.noRepositories'),
+          }}
+          onRow={(record) => ({
+            onClick: (e: React.MouseEvent<HTMLElement>) => {
+              const target = e.target as HTMLElement;
+              if (target.closest('button') || target.closest('.ant-dropdown')) {
+                return;
+              }
 
-            navigate(`/machines/${machine.machineName}/repositories/${record.name}/containers`, {
-              state: { machine, Repository: record },
-            });
-          },
-        })}
-      />
+              navigate(`/machines/${machine.machineName}/repositories/${record.name}/containers`, {
+                state: { machine, Repository: record },
+              });
+            },
+          })}
+        />
+      </S.TableStyleWrapper>
 
       {systemContainers.length > 0 && !hideSystemInfo && (
         <S.SystemContainersWrapper data-testid="machine-repo-list-system-containers">
@@ -1155,11 +1153,11 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           >
             {t('resources:repositories.systemContainers')}
           </S.SystemContainersTitle>
-          <SystemTableComponent
+          <RediaccTable<Container>
             columns={systemContainerColumns}
             dataSource={systemContainers}
             rowKey="id"
-            size="small"
+            size="sm"
             pagination={false}
             scroll={{ x: 'max-content' }}
             data-testid="machine-repo-list-system-containers-table"

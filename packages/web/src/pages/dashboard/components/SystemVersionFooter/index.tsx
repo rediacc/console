@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Tooltip } from 'antd';
 import { useApiHealth } from '@/api/queries/health';
+import { RediaccTooltip } from '@/components/ui';
 import { RediaccText } from '@/components/ui';
 import { versionService } from '@/services/versionService';
 import {
@@ -76,14 +76,14 @@ const SystemVersionFooter: React.FC = () => {
       {uptime && (
         <>
           <Separator>|</Separator>
-          <Tooltip title="API Uptime">
+          <RediaccTooltip title="API Uptime">
             <VersionItem>
               <UptimeIcon />
               <RediaccText size="xs" color="muted" data-testid="api-uptime">
                 {formatUptime(uptime)}
               </RediaccText>
             </VersionItem>
-          </Tooltip>
+          </RediaccTooltip>
         </>
       )}
     </FooterContainer>

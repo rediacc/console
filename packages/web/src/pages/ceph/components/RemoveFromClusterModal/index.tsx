@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Table } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useUpdateMachineClusterAssignment } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
-import { RediaccText } from '@/components/ui';
+import { RediaccTable, RediaccText } from '@/components/ui';
 import { AlertCard } from '@/styles/primitives';
 import type { Machine } from '@/types';
 import { showMessage } from '@/utils/messages';
@@ -12,7 +11,6 @@ import {
   ClusterTag,
   DangerIcon,
   MachineNameRow,
-  MachinesTable,
   StyledAlertCard,
   StyledModal,
   TitleStack,
@@ -169,12 +167,11 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
             as={StyledAlertCard}
           />
 
-          <MachinesTable
-            as={Table<Machine>}
+          <RediaccTable<Machine>
             columns={columns}
             dataSource={machinesWithClusters}
             rowKey="machineName"
-            size="small"
+            size="sm"
             pagination={false}
             scroll={{ y: 300 }}
             data-testid="ds-remove-cluster-table"

@@ -25,13 +25,6 @@ export const ACTIONS_COLUMN_WIDTH = DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH;
 // ANT DESIGN CARD WRAPPERS
 // ============================================
 
-/**
- * @deprecated Use <RediaccCard fullHeight /> directly
- */
-export const SettingsCard = styled(RediaccCard)`
-  height: 100%;
-`;
-
 export const DangerCard = styled(RediaccCard)`
   border-color: ${({ theme }) => theme.colors.error};
 `;

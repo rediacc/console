@@ -1,7 +1,6 @@
 import React from 'react';
-import { Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccStack, RediaccText } from '@/components/ui';
+import { RediaccStack, RediaccText, RediaccTooltip } from '@/components/ui';
 import {
   formatTimestampAsIs,
   getSeverityColor,
@@ -22,7 +21,6 @@ import {
   SeverityPill,
   TooltipContent,
   TooltipContentSection,
-  TooltipPrimaryRow,
   TruncatedErrorText,
 } from '../styles';
 
@@ -105,7 +103,7 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
     <RediaccStack variant="column" fullWidth gap="xs">
       {/* Error messages with severity badges */}
       {allErrors.length > 0 && (
-        <Tooltip
+        <RediaccTooltip
           title={
             <TooltipContent>
               {allErrors.map((error: ParsedError, index: number) => (
@@ -126,14 +124,14 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
         >
           <TooltipContentSection>
             {/* Show primary (highest severity) error */}
-            <TooltipPrimaryRow>
+            <RediaccStack direction="horizontal" gap={4} style={{ width: '100%', marginBottom: 2 }}>
               {primaryError?.severity && (
                 <SeverityPill $color={getSeverityColor(primaryError.severity)}>
                   {primaryError.severity}
                 </SeverityPill>
               )}
               <TruncatedErrorText as="span">{primaryError?.message}</TruncatedErrorText>
-            </TooltipPrimaryRow>
+            </RediaccStack>
             {/* Show count of additional errors if any */}
             {allErrors.length > 1 && (
               <AdditionalMessagesText>
@@ -141,7 +139,7 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
               </AdditionalMessagesText>
             )}
           </TooltipContentSection>
-        </Tooltip>
+        </RediaccTooltip>
       )}
 
       {/* Retry count badge */}

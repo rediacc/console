@@ -15,7 +15,6 @@ import {
   Statistic,
   Steps,
   Tabs,
-  Tooltip,
 } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -27,7 +26,13 @@ import {
 } from '@/api/queries/queue';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
-import { RediaccAlert, RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
+import {
+  RediaccAlert,
+  RediaccStack,
+  RediaccTag,
+  RediaccText,
+  RediaccTooltip,
+} from '@/components/ui';
 import { useTheme } from '@/context/ThemeContext';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import {
@@ -667,9 +672,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                               'CANCELLING' &&
                             normalizeToString(traceData.queueDetails, 'status', 'Status') !==
                               'FAILED' ? (
-                              <Tooltip title={t('common:tooltips.taskCancellable')}>
+                              <RediaccTooltip title={t('common:tooltips.taskCancellable')}>
                                 <Badge status="processing" text="Cancellable" />
-                              </Tooltip>
+                              </RediaccTooltip>
                             ) : undefined,
                           children: (
                             <Row gutter={[24, 16]}>

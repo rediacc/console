@@ -1,8 +1,9 @@
 import { useCallback, useMemo } from 'react';
-import { Modal, Table } from 'antd';
+import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CephCluster } from '@/api/queries/ceph';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { RediaccTable } from '@/components/ui';
 import { useDialogState, useExpandableTable, useTraceModal } from '@/hooks';
 import { ManageClusterMachinesModal } from '@/pages/ceph/components/ManageClusterMachinesModal';
 import { EmptyStatePanel } from '@/styles/primitives';
@@ -133,12 +134,13 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
     <>
       {contextHolder}
       <TableContainer>
-        <Table<CephCluster>
+        <RediaccTable<CephCluster>
           data-testid="ds-cluster-table"
           columns={columns}
           dataSource={clusters}
           rowKey="clusterName"
           loading={loading}
+          interactive
           scroll={{ x: 'max-content' }}
           pagination={{
             showSizeChanger: true,

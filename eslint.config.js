@@ -19,6 +19,7 @@ export default tseslint.config(
       '*.config.js',
       '*.config.ts',
       'packages/web/vite.config.ts',
+      'packages/cli/bundle.mjs',
     ]
   },
   
@@ -57,7 +58,11 @@ export default tseslint.config(
       },
       'import/resolver': {
         typescript: {
-          project: ['packages/web/tsconfig.json', 'packages/shared/tsconfig.json'],
+          project: [
+            'packages/web/tsconfig.json',
+            'packages/shared/tsconfig.json',
+            'packages/cli/tsconfig.json',
+          ],
         },
       },
     },

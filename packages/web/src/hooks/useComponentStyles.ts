@@ -273,6 +273,37 @@ export const useTableStyles = () => {
           background: 'var(--color-fill-tertiary)',
         },
       },
+
+      // Row state styles for custom row classNames
+      tableRowInteractive: {
+        cursor: 'pointer',
+        transition: DESIGN_TOKENS.TRANSITIONS.HOVER,
+      },
+
+      tableRowHover: {
+        backgroundColor: 'var(--color-bg-hover)',
+      },
+
+      tableRowSelected: {
+        backgroundColor: 'var(--color-primary-bg)',
+      },
+
+      tableRowHighlighted: {
+        backgroundColor: 'var(--color-primary-bg)',
+      },
+
+      // Loading overlay styles
+      tableLoadingOverlay: {
+        position: 'absolute' as const,
+        inset: 0,
+        backgroundColor: 'var(--color-bg-primary)',
+        opacity: 0.8,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: DESIGN_TOKENS.Z_INDEX.OVERLAY,
+        borderRadius: borderRadius('SM'),
+      },
     }),
     [baseStyles]
   );

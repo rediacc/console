@@ -1,21 +1,18 @@
 import { useCallback, useMemo } from 'react';
-import {
-  Alert,
-  Col,
-  DatePicker,
-  Dropdown,
-  Empty,
-  message,
-  Row,
-  Select,
-  Space,
-  Table,
-  Tooltip,
-} from 'antd';
+import { Alert, Col, DatePicker, Dropdown, Empty, Row, Select, Space } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useAuditLogs } from '@/api/queries/audit';
-import { RediaccButton, RediaccInput, RediaccStack, RediaccText } from '@/components/ui';
+import type { AuditLog } from '@/api/queries/audit';
+import {
+  RediaccButton,
+  RediaccInput,
+  RediaccStack,
+  RediaccTable,
+  RediaccText,
+  RediaccTooltip,
+} from '@/components/ui';
+import { useMessage } from '@/hooks';
 import { useFilters, usePagination } from '@/hooks';
 import {
   buildCSVContent,
@@ -48,6 +45,7 @@ const { RangePicker } = DatePicker;
 
 const AuditPage = () => {
   const { t } = useTranslation(['system', 'common']);
+  const message = useMessage();
 
   // Filter state with useFilters hook
   const { filters, setFilter, clearAllFilters } = useFilters<AuditPageFilters>({
@@ -133,7 +131,7 @@ const AuditPage = () => {
 
     const csvContent = buildCSVContent(headers, rows);
     downloadCSV(csvContent, generateTimestampedFilename('audit_logs', 'csv').replace('.csv', ''));
-    message.success(t('system:audit.export.successCSV', { count: filteredLogs.length }));
+    message.success('system:audit.export.successCSV', { count: filteredLogs.length });
   };
 
   const exportToJSON = () => {
@@ -159,7 +157,7 @@ const AuditPage = () => {
       exportData,
       generateTimestampedFilename('audit_logs', 'json').replace('.json', '')
     );
-    message.success(t('system:audit.export.successJSON', { count: filteredLogs.length }));
+    message.success('system:audit.export.successJSON', { count: filteredLogs.length });
   };
 
   const exportMenuItems = [
@@ -280,7 +278,7 @@ const AuditPage = () => {
               <Col xs={24} sm={12} md={2}>
                 <RediaccStack direction="vertical" gap="sm" fullWidth>
                   <PlaceholderLabel>{t('system:audit.filters.export')}</PlaceholderLabel>
-                  <Tooltip
+                  <RediaccTooltip
                     title={
                       !filteredLogs || filteredLogs.length === 0
                         ? t('system:audit.export.noData')
@@ -298,7 +296,7 @@ const AuditPage = () => {
                         {t('common:actions.export')}
                       </ActionButtonFull>
                     </Dropdown>
-                  </Tooltip>
+                  </RediaccTooltip>
                 </RediaccStack>
               </Col>
             </Row>
@@ -323,7 +321,7 @@ const AuditPage = () => {
 
         {/* Audit Logs Table */}
         <PageCard data-testid="audit-table-card">
-          <Table
+          <RediaccTable<AuditLog>
             data-testid="audit-table"
             columns={columns}
             dataSource={filteredLogs}

@@ -1,11 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
-import {
-  createApiServices,
-  normalizeResponse,
-  parseFirst,
-  responseExtractors,
-} from '@rediacc/shared/api';
+import { createApiServices, normalizeResponse } from '@rediacc/shared/api';
 import { createVaultEncryptor } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
 import { nodeCryptoProvider } from '../adapters/crypto.js';

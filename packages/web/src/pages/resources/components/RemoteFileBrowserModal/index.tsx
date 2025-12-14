@@ -9,7 +9,7 @@ import {
   ReloadOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import { Alert, Breadcrumb, Button, Empty, Modal, Space, Table, Tooltip } from 'antd';
+import { Alert, Breadcrumb, Button, Empty, Modal, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
@@ -19,6 +19,7 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { createTruncatedColumn } from '@/components/common/columns';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { RediaccTable, RediaccTooltip } from '@/components/ui';
 import { RediaccInput, RediaccSelect, RediaccStack } from '@/components/ui';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
@@ -670,12 +671,12 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
               <TooltipGuidText>Original file: {record.originalGuid}</TooltipGuidText>
             </div>
           );
-          return <Tooltip title={tooltipContent}>{content}</Tooltip>;
+          return <RediaccTooltip title={tooltipContent}>{content}</RediaccTooltip>;
         }
 
         // If name is long, show tooltip with full name
         if (name.length > 50) {
-          return <Tooltip title={name}>{content}</Tooltip>;
+          return <RediaccTooltip title={name}>{content}</RediaccTooltip>;
         }
 
         return content;
@@ -738,15 +739,15 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       onCancel={onCancel}
       className={ModalSize.Large}
       footer={[
-        <Tooltip key="cancel" title={t('common:actions.cancel')}>
+        <RediaccTooltip key="cancel" title={t('common:actions.cancel')}>
           <Button
             icon={<CloseOutlined />}
             onClick={onCancel}
             data-testid="file-browser-cancel-button"
             aria-label={t('common:actions.cancel')}
           />
-        </Tooltip>,
-        <Tooltip key="refresh" title={t('common:actions.refresh')}>
+        </RediaccTooltip>,
+        <RediaccTooltip key="refresh" title={t('common:actions.refresh')}>
           <Button
             icon={<ReloadOutlined />}
             onClick={loadFiles}
@@ -754,8 +755,8 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
             data-testid="file-browser-refresh-button"
             aria-label={t('common:actions.refresh')}
           />
-        </Tooltip>,
-        <Tooltip key="pull" title={t('resources:remoteFiles.pull')}>
+        </RediaccTooltip>,
+        <RediaccTooltip key="pull" title={t('resources:remoteFiles.pull')}>
           <Button
             type="primary"
             icon={<CloudDownloadOutlined />}
@@ -764,7 +765,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
             data-testid="file-browser-pull-button"
             aria-label={t('resources:remoteFiles.pull')}
           />
-        </Tooltip>,
+        </RediaccTooltip>,
       ]}
     >
       <RediaccStack direction="vertical" gap="md" fullWidth>
@@ -808,7 +809,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                   />
                 </FullWidthSelect>
               </SourceSelect>
-              <Tooltip title={t('resources:remoteFiles.loadFiles')}>
+              <RediaccTooltip title={t('resources:remoteFiles.loadFiles')}>
                 <Button
                   icon={<FolderOpenOutlined />}
                   onClick={loadFiles}
@@ -817,7 +818,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                   data-testid="file-browser-load-files-button"
                   aria-label={t('resources:remoteFiles.loadFiles')}
                 />
-              </Tooltip>
+              </RediaccTooltip>
             </Space>
             <SearchInput>
               <RediaccInput
@@ -852,7 +853,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
               data-testid="file-browser-empty-state"
             />
           ) : (
-            <Table
+            <RediaccTable<RemoteFile>
               dataSource={filteredFiles}
               columns={columns}
               rowKey="name"

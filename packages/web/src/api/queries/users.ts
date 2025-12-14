@@ -1,10 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { createMutation } from '@/hooks/api/mutationFactory';
+import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
 import { hashPassword } from '@/utils/auth';
-import { showMessage } from '@/utils/messages';
-import { createErrorHandler } from '@/utils/mutationUtils';
 import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 import type {
   CreatePermissionGroupParams,
@@ -53,11 +52,8 @@ export const useCreateUser = createMutation<
 // Activate user - special case using auth service
 export const useActivateUser = () => {
   const queryClient = useQueryClient();
-  const activationErrorHandler = createErrorHandler(
-    i18n.t('organization:users.errors.activateFailed')
-  );
 
-  return useMutation({
+  return useMutationWithFeedback({
     mutationFn: async (data: {
       userEmail: string;
       activationCode: string;
@@ -65,14 +61,12 @@ export const useActivateUser = () => {
     }) => {
       return api.auth.activateAccount(data.userEmail, data.activationCode, data.passwordHash);
     },
-    onSuccess: (_, variables) => {
+    successMessage: (_, variables) =>
+      i18n.t('organization:users.success.activated', { email: variables.userEmail }),
+    errorMessage: i18n.t('organization:users.errors.activateFailed'),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      showMessage(
-        'success',
-        i18n.t('organization:users.success.activated', { email: variables.userEmail })
-      );
     },
-    onError: activationErrorHandler,
   });
 };
 

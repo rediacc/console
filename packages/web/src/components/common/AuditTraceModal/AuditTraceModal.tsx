@@ -1,9 +1,16 @@
 import React from 'react';
-import { Dropdown, message, Space, Table, Tag, Typography } from 'antd';
+import { Dropdown, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { AuditTraceRecord, useEntityAuditTrace } from '@/api/queries/audit';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { IconWrapper, RediaccAlert, RediaccButton, RediaccText } from '@/components/ui';
+import {
+  IconWrapper,
+  RediaccAlert,
+  RediaccButton,
+  RediaccTable,
+  RediaccText,
+} from '@/components/ui';
+import { useMessage } from '@/hooks';
 import { createDateSorter, createSorter, formatTimestampAsIs } from '@/platform';
 import type { BaseModalProps } from '@/types';
 import {
@@ -50,6 +57,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
   entityName,
 }) => {
   const { t } = useTranslation(['resources', 'common']);
+  const message = useMessage();
 
   const { data, isLoading, error } = useEntityAuditTrace(
     entityType,
@@ -183,7 +191,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    message.success(t('audit.exportSuccess', { format: 'CSV' }));
+    message.success('resources:audit.exportSuccess', { format: 'CSV' });
   };
 
   const exportToJSON = () => {
@@ -217,7 +225,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    message.success(t('audit.exportSuccess', { format: 'JSON' }));
+    message.success('resources:audit.exportSuccess', { format: 'JSON' });
   };
 
   const columns = [
@@ -366,7 +374,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           )}
 
           {/* Records Table */}
-          <Table
+          <RediaccTable<AuditTraceRecord>
             columns={columns}
             dataSource={data.records}
             rowKey={(record, index) => `${record.timestamp}-${index}`}
@@ -381,7 +389,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                 }),
             }}
             scroll={{ x: 800 }}
-            size="small"
+            size="sm"
             data-testid="audit-trace-table"
           />
 

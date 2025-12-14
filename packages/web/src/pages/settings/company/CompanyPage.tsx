@@ -1,17 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Col,
-  Form,
-  Modal,
-  Popconfirm,
-  Radio,
-  Result,
-  Row,
-  Space,
-  Tooltip,
-  Typography,
-  Upload,
-} from 'antd';
+import { Col, Form, Modal, Popconfirm, Radio, Result, Row, Space, Typography, Upload } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -47,7 +35,9 @@ import {
   ModalStackLarge,
   OrderedList,
   RediaccButton,
+  RediaccCard,
   RediaccText,
+  RediaccTooltip,
   RequirementsList,
   RightAlign,
 } from '@/components/ui';
@@ -59,7 +49,6 @@ import {
   FormItemNoMargin,
   FormItemSpaced,
   ModalAlert,
-  SettingsCard,
 } from '@/pages/system/styles';
 import { masterPasswordService } from '@/services/masterPasswordService';
 import { logout } from '@/store/auth/authSlice';
@@ -341,7 +330,7 @@ const CompanyPage: React.FC = () => {
       <CompanySectionStack>
         <CompanySectionHeading level={3}>{t('company.title')}</CompanySectionHeading>
 
-        <SettingsCard>
+        <RediaccCard fullHeight>
           <CardContent>
             <CardHeader>
               <IconWrapper $size="md">
@@ -354,18 +343,18 @@ const CompanyPage: React.FC = () => {
 
             {featureFlags.isEnabled('companyVaultConfiguration') && (
               <CardActions>
-                <Tooltip title={t('company.configureVault')}>
+                <RediaccTooltip title={t('company.configureVault')}>
                   <RediaccButton
                     icon={<SettingOutlined />}
                     onClick={() => companyVaultModal.open()}
                     data-testid="system-company-vault-button"
                     aria-label={t('company.configureVault')}
                   />
-                </Tooltip>
+                </RediaccTooltip>
               </CardActions>
             )}
           </CardContent>
-        </SettingsCard>
+        </RediaccCard>
 
         {featureFlags.isEnabled('dangerZone') && (
           <DangerSection>
@@ -416,14 +405,14 @@ const CompanyPage: React.FC = () => {
                         cancelText={tCommon('general.cancel')}
                         okButtonProps={{ danger: true }}
                       >
-                        <Tooltip title={tSystem('dangerZone.blockUserRequests.blockButton')}>
+                        <RediaccTooltip title={tSystem('dangerZone.blockUserRequests.blockButton')}>
                           <RediaccButton
                             variant="danger"
                             icon={<LockOutlined />}
                             loading={blockUserRequestsMutation.isPending}
                             aria-label={tSystem('dangerZone.blockUserRequests.blockButton')}
                           />
-                        </Tooltip>
+                        </RediaccTooltip>
                       </Popconfirm>
                       <Popconfirm
                         title={tSystem('dangerZone.blockUserRequests.confirmUnblock.title')}
@@ -434,13 +423,15 @@ const CompanyPage: React.FC = () => {
                         okText={tSystem('dangerZone.blockUserRequests.confirmUnblock.okText')}
                         cancelText={tCommon('general.cancel')}
                       >
-                        <Tooltip title={tSystem('dangerZone.blockUserRequests.unblockButton')}>
+                        <RediaccTooltip
+                          title={tSystem('dangerZone.blockUserRequests.unblockButton')}
+                        >
                           <RediaccButton
                             icon={<UnlockOutlined />}
                             loading={blockUserRequestsMutation.isPending}
                             aria-label={tSystem('dangerZone.blockUserRequests.unblockButton')}
                           />
-                        </Tooltip>
+                        </RediaccTooltip>
                       </Popconfirm>
                     </RightAlign>
                   </Col>
@@ -459,7 +450,7 @@ const CompanyPage: React.FC = () => {
                   </Col>
                   <Col xs={24} lg={8}>
                     <RightAlign>
-                      <Tooltip title={tSystem('dangerZone.exportVaults.button')}>
+                      <RediaccTooltip title={tSystem('dangerZone.exportVaults.button')}>
                         <RediaccButton
                           icon={<DownloadOutlined />}
                           onClick={handleExportVaults}
@@ -467,7 +458,7 @@ const CompanyPage: React.FC = () => {
                           data-testid="system-export-vaults-button"
                           aria-label={tSystem('dangerZone.exportVaults.button')}
                         />
-                      </Tooltip>
+                      </RediaccTooltip>
                     </RightAlign>
                   </Col>
                 </Row>
@@ -485,7 +476,7 @@ const CompanyPage: React.FC = () => {
                   </Col>
                   <Col xs={24} lg={8}>
                     <RightAlign>
-                      <Tooltip title={tSystem('dangerZone.exportData.button')}>
+                      <RediaccTooltip title={tSystem('dangerZone.exportData.button')}>
                         <RediaccButton
                           icon={<ExportOutlined />}
                           onClick={handleExportCompanyData}
@@ -493,7 +484,7 @@ const CompanyPage: React.FC = () => {
                           data-testid="system-export-data-button"
                           aria-label={tSystem('dangerZone.exportData.button')}
                         />
-                      </Tooltip>
+                      </RediaccTooltip>
                     </RightAlign>
                   </Col>
                 </Row>
@@ -511,7 +502,7 @@ const CompanyPage: React.FC = () => {
                   </Col>
                   <Col xs={24} lg={8}>
                     <RightAlign>
-                      <Tooltip title={tSystem('dangerZone.importData.button')}>
+                      <RediaccTooltip title={tSystem('dangerZone.importData.button')}>
                         <RediaccButton
                           variant="danger"
                           icon={<ImportOutlined />}
@@ -519,7 +510,7 @@ const CompanyPage: React.FC = () => {
                           data-testid="system-import-data-button"
                           aria-label={tSystem('dangerZone.importData.button')}
                         />
-                      </Tooltip>
+                      </RediaccTooltip>
                     </RightAlign>
                   </Col>
                 </Row>
@@ -547,7 +538,7 @@ const CompanyPage: React.FC = () => {
                   </Col>
                   <Col xs={24} lg={8}>
                     <RightAlign>
-                      <Tooltip title={tSystem('dangerZone.updateMasterPassword.button')}>
+                      <RediaccTooltip title={tSystem('dangerZone.updateMasterPassword.button')}>
                         <RediaccButton
                           variant="danger"
                           icon={<KeyOutlined />}
@@ -555,7 +546,7 @@ const CompanyPage: React.FC = () => {
                           data-testid="system-update-master-password-button"
                           aria-label={tSystem('dangerZone.updateMasterPassword.button')}
                         />
-                      </Tooltip>
+                      </RediaccTooltip>
                     </RightAlign>
                   </Col>
                 </Row>

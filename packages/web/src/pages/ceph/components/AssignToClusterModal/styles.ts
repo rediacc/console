@@ -4,7 +4,6 @@ import { RediaccSelect, RediaccTag } from '@/components/ui';
 import {
   AlertCard,
   BaseModal,
-  BaseTable,
   FlexColumn,
   FlexRow,
   ModalContentStack,
@@ -37,12 +36,6 @@ export const FieldGroup = styled(FlexColumn).attrs({ $gap: 'XS' })``;
 export const StyledSelect = RediaccSelect;
 
 export const LoadingWrapper = styled(FlexRow).attrs({ $gap: 'SM' })``;
-
-export const MachinesTable = styled(BaseTable)`
-  .ant-table-tbody > tr > td {
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-  }
-`;
 
 export const MachineNameRow = styled(InlineStack)``;
 

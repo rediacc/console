@@ -1,5 +1,4 @@
-import type { ComponentType } from 'react';
-import { Row, Segmented, Table, Typography } from 'antd';
+import { Row, Segmented, Typography } from 'antd';
 import styled, { css, keyframes } from 'styled-components';
 // Import Rediacc components directly to avoid circular dependencies
 // (barrel export @/components/ui includes card.tsx which imports from primitives)
@@ -14,17 +13,13 @@ import {
   RediaccDatePicker,
   RediaccInput,
   RediaccPasswordInput,
-  RediaccSearchInput,
   RediaccSelect,
 } from '@/components/ui/Form';
 import { RediaccModal } from '@/components/ui/Modal';
 import { RediaccTag } from '@/components/ui/Tag';
 import { RediaccText } from '@/components/ui/Text';
-import { borderedCard } from '@/styles/mixins';
 import type { StyledTheme } from '@/styles/styledTheme';
 import { RightOutlined } from '@/utils/optimizedIcons';
-import type { TableProps } from 'antd';
-
 // ============================================
 // SHARED ANIMATIONS
 // ============================================
@@ -104,8 +99,6 @@ export const inputPrefixStyles = css`
   }
 `;
 
-const GenericTable = Table as ComponentType<TableProps<unknown>>;
-
 export type StatusVariant = 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'processing';
 export type TagVariant =
   | 'primary'
@@ -183,17 +176,6 @@ const resolveIconSize = (theme: StyledTheme, size?: IconSizeValue) => {
   return theme.dimensions[ICON_SIZE_MAP[token] || ICON_SIZE_MAP.MD];
 };
 
-type FontWeightScale = StyledTheme['fontWeight'];
-type FontWeightToken = keyof FontWeightScale;
-
-const resolveFontWeight = (theme: StyledTheme, value?: FontWeightToken | number) => {
-  if (typeof value === 'number') {
-    return value;
-  }
-  const token = (value || 'SEMIBOLD') as FontWeightToken;
-  return theme.fontWeight[token];
-};
-
 type DimensionScale = StyledTheme['dimensions'];
 type DimensionToken = keyof DimensionScale;
 
@@ -251,26 +233,6 @@ export const ExpandIcon = styled(RightOutlined)<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-`;
-
-export const TableContainer = styled.div`
-  ${borderedCard()}
-  overflow: hidden;
-  background: ${({ theme }) => theme.colors.bgPrimary};
-`;
-
-export const TableCellContent = styled.span<{ $gap?: SpacingValue }>`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'SM')}px;
-`;
-
-export const TableCellText = styled.span<{
-  $muted?: boolean;
-  $weight?: FontWeightToken | number;
-}>`
-  font-weight: ${({ theme, $weight }) => resolveFontWeight(theme, $weight)};
-  color: ${({ theme, $muted }) => ($muted ? theme.colors.textSecondary : theme.colors.textPrimary)};
 `;
 
 // ============================================
@@ -617,34 +579,6 @@ export const AlertCard = styled(RediaccAlert)<{ $variant?: AlertVariant }>`
   }
 `;
 
-export const BaseTable = styled(GenericTable)<{ $isInteractive?: boolean }>`
-  ${borderedCard()}
-  overflow: hidden;
-
-  .ant-table {
-    background-color: ${({ theme }) => theme.colors.bgPrimary};
-  }
-
-  .ant-table-thead > tr > th {
-    background-color: ${({ theme }) => theme.colors.bgSecondary};
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
-  }
-
-  ${(props) =>
-    props.$isInteractive
-      ? `
-    .ant-table-tbody > tr {
-      transition: ${props.theme.transitions.DEFAULT};
-    }
-
-    .ant-table-tbody > tr:hover td {
-      background-color: ${props.theme.colors.bgHover};
-    }
-  `
-      : ''}
-`;
-
 // ============================================
 // ADDITIONAL CARD VARIANTS
 // ============================================
@@ -895,16 +829,6 @@ export const LargePasswordInput = styled(RediaccPasswordInput)`
     }
 
     ${inputFocusStyles}
-  }
-`;
-
-/**
- * @deprecated Use SearchInput from @/components/ui/Form instead
- */
-export const SearchInput = styled(RediaccSearchInput)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
   }
 `;
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Form, message } from 'antd';
+import { Form } from 'antd';
 import { useTranslation } from 'react-i18next';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import {
@@ -11,6 +11,7 @@ import {
   RediaccRadio,
   RediaccText,
 } from '@/components/ui';
+import { useMessage } from '@/hooks';
 import { createFreshForkToken } from '@/services/forkTokenService';
 import type { PluginContainer } from '@/types';
 import {
@@ -56,6 +57,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   pluginContainers: _pluginContainers = [],
 }) => {
   const { t } = useTranslation();
+  const message = useMessage();
   const [activeTab, setActiveTab] = useState<CommandTab>('vscode');
   const [os, setOs] = useState<OperatingSystem>('unix');
   const [useDocker, setUseDocker] = useState(false);
@@ -114,7 +116,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate token';
       setTokenError(errorMessage);
       console.error('Failed to generate fork token:', error);
-      message.error(`Token generation failed: ${errorMessage}`);
+      message.error('common:tokenGenerationFailed', { error: errorMessage });
       throw error;
     } finally {
       setIsGeneratingToken(false);
@@ -165,7 +167,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             : buildTermCommand(token);
 
       await navigator.clipboard.writeText(commandWithToken);
-      message.success(t('common:copiedToClipboard'));
+      message.success('common:copiedToClipboard');
       onClose();
     } catch {
       try {
@@ -177,10 +179,10 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
               : buildTermCommandWithoutToken();
 
         await navigator.clipboard.writeText(fallbackCommand);
-        message.warning('Copied without secure token - please login manually');
+        message.warning('common:copiedWithoutToken');
         onClose();
       } catch {
-        message.error(t('common:copyFailed'));
+        message.error('common:copyFailed');
       }
     } finally {
       setIsGeneratingToken(false);

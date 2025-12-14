@@ -1,9 +1,9 @@
 import React from 'react';
-import { Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { MenuItem } from '@/components/layout/MainLayout/helpers';
 import { SIDEBAR_COLLAPSED_WIDTH } from '@/components/layout/MainLayout/types';
+import { RediaccTooltip } from '@/components/ui';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { formatKeyForTestId } from '@/utils/testIdHelpers';
 import {
@@ -143,15 +143,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               );
 
               return (
-                <Tooltip
+                <RediaccTooltip
                   key={itemKey}
                   title={tooltipContent}
                   placement="right"
-                  color="var(--color-bg-primary)"
-                  overlayInnerStyle={{ padding: 0 }}
+                  overlayInnerStyle={{ padding: 0, background: 'var(--color-bg-primary)' }}
                 >
                   {parentContent}
-                </Tooltip>
+                </RediaccTooltip>
               );
             }
 

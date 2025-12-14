@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
 import { RediaccTag } from '@/components/ui';
-import { BaseModal, BaseTable, FlexRow, ModalTitleRow } from '@/styles/primitives';
+import { BaseModal, FlexRow, ModalTitleRow } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import { InfoCircleOutlined } from '@/utils/optimizedIcons';
 
@@ -21,12 +21,6 @@ export const SummaryRow = styled(FlexRow).attrs({ $gap: 'LG', $wrap: true })`
 
 export const SummaryItem = styled(InlineStack)`
   gap: ${({ theme }) => theme.spacing.XS}px;
-`;
-
-export const MachinesTable = styled(BaseTable)`
-  .ant-table-tbody > tr > td {
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-  }
 `;
 
 export const MachineNameRow = styled(InlineStack)``;

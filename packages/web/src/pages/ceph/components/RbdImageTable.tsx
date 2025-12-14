@@ -16,7 +16,7 @@ import {
   SettingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { message, Space, Table, Tag, Tooltip } from 'antd';
+import { Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -33,6 +33,8 @@ import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { RediaccTable, RediaccTooltip } from '@/components/ui';
+import { useMessage } from '@/hooks';
 import { useDialogState, useExpandableTable, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
@@ -68,6 +70,7 @@ type ImageFormValues = Pick<FullImageFormValues, 'imageName' | 'machineName'> & 
 
 const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   const { t } = useTranslation('ceph');
+  const message = useMessage();
   const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable();
   const [modalState, setModalState] = useState<RbdImageModalState>({ open: false, mode: 'create' });
   const queueTrace = useQueueTraceModal();
@@ -145,13 +148,13 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
         handleQueueItemCreated(taskId);
       }
     } catch {
-      message.error(t('queue.createError'));
+      message.error('ceph:queue.createError');
     }
   };
 
   const handleQueueItemCreated = (taskId: string) => {
     queueTrace.open(taskId);
-    message.success(t('queue.itemCreated'));
+    message.success('ceph:queue.itemCreated');
   };
 
   const getImageMenuItems = (image: CephRbdImage): MenuProps['items'] => [
@@ -273,11 +276,11 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           <ImageIcon />
           <ImageName>{text}</ImageName>
           {record.vaultContent && (
-            <Tooltip title={t('common.hasVault')}>
+            <RediaccTooltip title={t('common.hasVault')}>
               <Tag color="blue" data-testid={`rbd-vault-tag-${record.imageName}`}>
                 {t('common.vault')}
               </Tag>
-            </Tooltip>
+            </RediaccTooltip>
           )}
         </Space>
       ),
@@ -362,12 +365,12 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       </ImageListContainer>
 
       <TableContainer>
-        <Table
+        <RediaccTable<CephRbdImage>
           columns={columns}
           dataSource={images}
           rowKey="imageGuid"
           loading={isLoading}
-          size="small"
+          size="sm"
           pagination={false}
           data-testid="rbd-image-table"
           onRow={getRowProps}

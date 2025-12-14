@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { message, Popover, Tooltip } from 'antd';
+import { Popover } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccStack, RediaccText } from '@/components/ui';
+import { RediaccStack, RediaccText, RediaccTooltip } from '@/components/ui';
+import { useMessage } from '@/hooks';
 import {
   GenerationOptions,
   generateRepoCredential,
@@ -34,6 +35,7 @@ interface FieldGeneratorProps {
 const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   const { fieldType, onGenerate, entityType } = props;
   const { t } = useTranslation('common');
+  const message = useMessage();
   const [visible, setVisible] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generatedValues, setGeneratedValues] = useState<Record<string, string>>({});
@@ -57,9 +59,9 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     try {
       const values = await generators[fieldType]();
       setGeneratedValues(values);
-      message.success(t('fieldGenerator.generationSuccess'));
+      message.success('common:fieldGenerator.generationSuccess');
     } catch {
-      message.error(t('fieldGenerator.generationError'));
+      message.error('common:fieldGenerator.generationError');
     } finally {
       setGenerating(false);
     }
@@ -69,7 +71,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     onGenerate(generatedValues);
     setVisible(false);
     setGeneratedValues({});
-    message.success(t('fieldGenerator.applied'));
+    message.success('common:fieldGenerator.applied');
   };
 
   const handleCopy = (field: string, value: string) => {
@@ -77,11 +79,11 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
       .writeText(value)
       .then(() => {
         setCopiedField(field);
-        message.success(t('fieldGenerator.copied'));
-        // Reset copy state immediately after user interaction
-        setCopiedField(null);
+        message.success('common:fieldGenerator.copied');
+        // Reset copy state after delay to show visual feedback
+        setTimeout(() => setCopiedField(null), 2000);
       })
-      .catch(() => message.error(t('fieldGenerator.copyError')));
+      .catch(() => message.error('common:fieldGenerator.copyError'));
   };
 
   const keyTypeOptions: ReadonlyArray<{
@@ -240,7 +242,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
       onOpenChange={setVisible}
       placement="left"
     >
-      <Tooltip title={t('fieldGenerator.tooltip')}>
+      <RediaccTooltip title={t('fieldGenerator.tooltip')}>
         <GeneratorButton
           variant="text"
           icon={
@@ -250,7 +252,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
           }
           data-testid={props['data-testid'] || 'vault-editor-field-generator'}
         />
-      </Tooltip>
+      </RediaccTooltip>
     </Popover>
   );
 };

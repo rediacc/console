@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import { InlineStack, StatusIcon } from '@/components/common/styled';
-import { RediaccAlert, RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
+import {
+  RediaccAlert,
+  RediaccButton,
+  RediaccStack,
+  RediaccTable,
+  RediaccText,
+  RediaccTooltip,
+} from '@/components/ui';
 import type { QueueItemCompletionResult } from '@/services/helloService';
 import { usePingFunction } from '@/services/pingService';
 import { ModalContentStack, ModalFooterActions } from '@/styles/primitives';
@@ -23,9 +29,9 @@ import {
   ProgressBar,
   ProgressSection,
   ResourceTag,
+  StatusTableWrapper,
   StyledInfoAlert,
   StyledModal,
-  StyledTable,
   SummaryContainer,
   SummaryMetric,
   SummaryMetrics,
@@ -309,7 +315,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           >
             {isRunning ? t('machines:testing') : t('machines:runTest')}
           </RediaccButton>
-          <Tooltip title="Close">
+          <RediaccTooltip title="Close">
             <RediaccButton
               iconOnly
               icon={<CloseCircleOutlined />}
@@ -317,7 +323,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
               data-testid="connectivity-close-button"
               aria-label="Close"
             />
-          </Tooltip>
+          </RediaccTooltip>
         </ModalFooterActions>
       }
     >
@@ -350,16 +356,18 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             />
           </StyledInfoAlert>
 
-          <StyledTable
-            columns={columns as ColumnsType<unknown>}
-            dataSource={testResults}
-            rowKey="machineName"
-            pagination={false}
-            scroll={{ y: 400 }}
-            loading={machines.length === 0}
-            rowClassName={(record: unknown) => `status-${(record as TestResult).status}`}
-            data-testid="connectivity-results-table"
-          />
+          <StatusTableWrapper>
+            <RediaccTable<TestResult>
+              columns={columns}
+              dataSource={testResults}
+              rowKey="machineName"
+              pagination={false}
+              scroll={{ y: 400 }}
+              loading={machines.length === 0}
+              rowClassName={(record) => `status-${record.status}`}
+              data-testid="connectivity-results-table"
+            />
+          </StatusTableWrapper>
 
           {!isRunning && testResults.some((r) => r.status !== 'pending') && (
             <SummaryContainer data-testid="connectivity-summary-statistics">

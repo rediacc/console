@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Empty, Modal, message, Space, Table, Tabs, Tag } from 'antd';
+import { Empty, Modal, Space, Tabs, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   CephClusterMachine,
@@ -13,7 +13,8 @@ import {
 import { createDateColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector';
-import { RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccTable } from '@/components/ui';
+import { useMessage } from '@/hooks';
 import { createSorter, formatTimestampAsIs } from '@/platform';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
@@ -43,6 +44,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
   onSuccess,
 }) => {
   const { t } = useTranslation(['ceph', 'machines', 'common']);
+  const message = useMessage();
   const [confirmModal, confirmContextHolder] = Modal.useModal();
   const [activeTab, setActiveTab] = useState<'assign' | 'manage'>('assign');
   const [selectedMachines, setSelectedMachines] = useState<string[]>([]);
@@ -77,7 +79,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
 
   const handleAssignMachines = async () => {
     if (selectedMachines.length === 0) {
-      message.warning(t('machines:bulkOperations.selectMachines'));
+      message.warning('machines:bulkOperations.selectMachines');
       return;
     }
 
@@ -99,17 +101,15 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       const failedCount = results.filter((r) => r.status === 'rejected').length;
 
       if (failedCount === 0) {
-        message.success(t('machines:bulkOperations.assignmentSuccess', { count: successCount }));
+        message.success('machines:bulkOperations.assignmentSuccess', { count: successCount });
         setSelectedMachines([]);
         refetchClusterMachines();
         if (onSuccess) onSuccess();
       } else {
-        message.warning(
-          t('machines:bulkOperations.assignmentPartial', {
-            success: successCount,
-            total: results.length,
-          })
-        );
+        message.warning('machines:bulkOperations.assignmentPartial', {
+          success: successCount,
+          total: results.length,
+        });
         refetchClusterMachines();
       }
     } finally {
@@ -119,7 +119,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
 
   const handleRemoveMachines = async () => {
     if (selectedRemoveMachines.length === 0) {
-      message.warning(t('machines:validation.noMachinesSelected'));
+      message.warning('machines:validation.noMachinesSelected');
       return;
     }
 
@@ -148,17 +148,15 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
           const successCount = results.filter((r) => r.status === 'fulfilled').length;
 
           if (successCount === selectedRemoveMachines.length) {
-            message.success(t('machines:bulkOperations.removalSuccess', { count: successCount }));
+            message.success('machines:bulkOperations.removalSuccess', { count: successCount });
             setSelectedRemoveMachines([]);
             refetchClusterMachines();
             if (onSuccess) onSuccess();
           } else {
-            message.warning(
-              t('machines:bulkOperations.assignmentPartial', {
-                success: successCount,
-                total: results.length,
-              })
-            );
+            message.warning('machines:bulkOperations.assignmentPartial', {
+              success: successCount,
+              total: results.length,
+            });
             refetchClusterMachines();
           }
         } finally {
@@ -278,12 +276,12 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
           </div>
         )}
 
-        <Table
+        <RediaccTable<CephClusterMachine>
           rowSelection={rowSelection}
           columns={assignedColumns}
           dataSource={clusterMachines}
           rowKey="machineName"
-          size="small"
+          size="sm"
           pagination={false}
           data-testid="ds-manage-machines-assigned-table"
         />
