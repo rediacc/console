@@ -1,4 +1,5 @@
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
+import { isEncrypted } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
 import { api, apiClient } from './api.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
@@ -46,9 +47,15 @@ class AuthService {
     // Store email for convenience
     await nodeStorageAdapter.setItem(STORAGE_KEYS.USER_EMAIL, email);
 
-    // Encrypt and store master password for vault operations
-    // Use a derived key from the password itself for storage encryption
-    await this.setMasterPassword(password);
+    // Only store master password if company has encryption enabled
+    // This matches the console's behavior - see web/src/pages/login/index.tsx
+    if (isEncrypted(authResult.vaultCompany)) {
+      await this.setMasterPassword(password);
+    } else {
+      // Clear any previously stored password if company doesn't have encryption
+      await nodeStorageAdapter.removeItem(STORAGE_KEYS.MASTER_PASSWORD);
+      this.cachedMasterPassword = null;
+    }
 
     return { success: true };
   }
@@ -142,19 +149,12 @@ class AuthService {
       }
     }
 
-    // No stored password - prompt for new one
-    const password = await askPassword('Enter master password for vault encryption:');
-
-    if (!password || password.length === 0) {
-      throw new AuthError(
-        'Master password is required for vault operations',
-        EXIT_CODES.AUTH_REQUIRED
-      );
-    }
-
-    // Store the password encrypted with itself
-    await this.setMasterPassword(password);
-    return password;
+    // No stored password - company doesn't have encryption enabled
+    // Don't prompt for new password; vault operations will skip client-side encryption
+    throw new AuthError(
+      'No master password configured. Company may not have encryption enabled.',
+      EXIT_CODES.AUTH_REQUIRED
+    );
   }
 
   clearCachedPassword(): void {
