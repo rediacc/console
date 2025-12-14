@@ -26,7 +26,13 @@ import {
 } from '@/api/queries/queue';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
-import { RediaccAlert, RediaccStack, RediaccTag, RediaccText, RediaccTooltip } from '@/components/ui';
+import {
+  RediaccAlert,
+  RediaccStack,
+  RediaccTag,
+  RediaccText,
+  RediaccTooltip,
+} from '@/components/ui';
 import { useTheme } from '@/context/ThemeContext';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import {

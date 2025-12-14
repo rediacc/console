@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import type { JSX, Ref } from 'react';
 import { StyledRediaccTable, TableWrapper } from './RediaccTable.styles';
 import type { RediaccTableProps } from './RediaccTable.types';
 
@@ -16,7 +16,7 @@ import type { RediaccTableProps } from './RediaccTable.types';
  *
  * @example
  * ```tsx
- * <RediaccTable
+ * <RediaccTable<MyDataType>
  *   dataSource={data}
  *   columns={columns}
  *   interactive
@@ -25,40 +25,36 @@ import type { RediaccTableProps } from './RediaccTable.types';
  * />
  * ```
  */
-export const RediaccTable = forwardRef<HTMLDivElement, RediaccTableProps>(
-  (
-    {
-      variant = 'default',
-      size = 'md',
-      interactive = false,
-      isLoading = false,
-      selectable = false,
-      removeMargins = false,
-      wrapperClassName,
-      'data-testid': testId,
-      ...tableProps
-    },
-    ref
-  ) => {
-    return (
-      <TableWrapper
-        ref={ref}
+function RediaccTableInner<T extends object = object>(
+  {
+    variant = 'default',
+    size = 'md',
+    interactive = false,
+    isLoading = false,
+    selectable = false,
+    removeMargins = false,
+    wrapperClassName,
+    'data-testid': testId,
+    ...tableProps
+  }: RediaccTableProps<T>,
+  ref: Ref<HTMLDivElement>
+) {
+  return (
+    <TableWrapper ref={ref} $variant={variant} className={wrapperClassName} data-testid={testId}>
+      <StyledRediaccTable
         $variant={variant}
-        className={wrapperClassName}
-        data-testid={testId}
-      >
-        <StyledRediaccTable
-          $variant={variant}
-          $size={size}
-          $interactive={interactive}
-          $isLoading={isLoading}
-          $selectable={selectable}
-          $removeMargins={removeMargins}
-          {...tableProps}
-        />
-      </TableWrapper>
-    );
-  }
-);
+        $size={size}
+        $interactive={interactive}
+        $isLoading={isLoading}
+        $selectable={selectable}
+        $removeMargins={removeMargins}
+        {...(tableProps as Record<string, unknown>)}
+      />
+    </TableWrapper>
+  );
+}
 
-RediaccTable.displayName = 'RediaccTable';
+// Export with generic support using type assertion
+export const RediaccTable = RediaccTableInner as <T extends object = object>(
+  props: RediaccTableProps<T> & { ref?: Ref<HTMLDivElement> }
+) => JSX.Element;

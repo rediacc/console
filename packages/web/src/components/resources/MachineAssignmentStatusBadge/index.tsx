@@ -97,7 +97,9 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
   }
 
   return (
-    <RediaccTooltip title={assignmentDetails ? <TooltipText>{assignmentDetails}</TooltipText> : undefined}>
+    <RediaccTooltip
+      title={assignmentDetails ? <TooltipText>{assignmentDetails}</TooltipText> : undefined}
+    >
       <span data-testid="machine-status-badge-tooltip-wrapper">
         <AssignmentBadge
           variant={config.variant}

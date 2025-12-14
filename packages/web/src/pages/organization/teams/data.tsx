@@ -126,7 +126,9 @@ export const getTeamColumns = ({
                 <span>{record.repositoryCount || 0}</span>
               </Space>
             </RediaccTooltip>
-            <RediaccTooltip title={`${record.storageCount || 0} ${tSystem('tables.teams.storage')}`}>
+            <RediaccTooltip
+              title={`${record.storageCount || 0} ${tSystem('tables.teams.storage')}`}
+            >
               <Space size="small">
                 <CloudServerOutlined />
                 <span>{record.storageCount || 0}</span>

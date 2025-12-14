@@ -1,16 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Col,
-  Form,
-  Modal,
-  Popconfirm,
-  Radio,
-  Result,
-  Row,
-  Space,
-  Typography,
-  Upload,
-} from 'antd';
+import { Col, Form, Modal, Popconfirm, Radio, Result, Row, Space, Typography, Upload } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -434,7 +423,9 @@ const CompanyPage: React.FC = () => {
                         okText={tSystem('dangerZone.blockUserRequests.confirmUnblock.okText')}
                         cancelText={tCommon('general.cancel')}
                       >
-                        <RediaccTooltip title={tSystem('dangerZone.blockUserRequests.unblockButton')}>
+                        <RediaccTooltip
+                          title={tSystem('dangerZone.blockUserRequests.unblockButton')}
+                        >
                           <RediaccButton
                             icon={<UnlockOutlined />}
                             loading={blockUserRequestsMutation.isPending}

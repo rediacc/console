@@ -59,7 +59,7 @@ export function useMutationWithFeedback<
   TContext = unknown,
 >(
   options: UseMutationOptions<TData, TError, TVariables, TContext> &
-    MutationFeedbackOptions<TData, TError, TVariables>,
+    MutationFeedbackOptions<TData, TError, TVariables>
 ): UseMutationResult<TData, TError, TVariables, TContext> {
   const {
     successMessage,
@@ -72,7 +72,7 @@ export function useMutationWithFeedback<
 
   return useMutation({
     ...mutationOptions,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, onMutateResult, mutationContext) => {
       // Show success feedback
       if (!disableFeedback && successMessage) {
         const message =
@@ -83,9 +83,9 @@ export function useMutationWithFeedback<
         }
       }
       // Call user's callback
-      userOnSuccess?.(data, variables, context);
+      userOnSuccess?.(data, variables, onMutateResult, mutationContext);
     },
-    onError: (error, variables, context) => {
+    onError: (error, variables, onMutateResult, mutationContext) => {
       // Show error feedback
       if (!disableFeedback) {
         const message =
@@ -95,7 +95,7 @@ export function useMutationWithFeedback<
         showMessage('error', message);
       }
       // Call user's callback
-      userOnError?.(error, variables, context);
+      userOnError?.(error, variables, onMutateResult, mutationContext);
     },
   });
 }

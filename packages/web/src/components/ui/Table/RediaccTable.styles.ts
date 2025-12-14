@@ -43,8 +43,8 @@ const VARIANT_CONFIG: Record<TableVariant, VariantConfig> = {
 /**
  * Table wrapper with bordered card styling and overflow handling
  */
-export const TableWrapper = styled.div<{ $variant: TableVariant }>`
-  ${({ $variant }) => borderedCard(VARIANT_CONFIG[$variant].borderColor)}
+export const TableWrapper = styled.div<{ $variant?: TableVariant }>`
+  ${({ $variant = 'default' }) => borderedCard(VARIANT_CONFIG[$variant].borderColor)}
   overflow: hidden;
   background: ${({ theme }) => theme.colors.bgPrimary};
 `;
@@ -67,8 +67,7 @@ export const StyledRediaccTable = styled(GenericTable)<StyledTableProps>`
 
   /* Header styling */
   .ant-table-thead > tr > th {
-    background-color: ${({ theme, $variant }) =>
-      theme.colors[VARIANT_CONFIG[$variant].headerBg]};
+    background-color: ${({ theme, $variant }) => theme.colors[VARIANT_CONFIG[$variant].headerBg]};
     color: ${({ theme }) => theme.colors.textSecondary};
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
     font-size: ${({ theme }) => theme.fontSize.SM}px;
@@ -203,8 +202,7 @@ export const TableCellText = styled.span<{
     if (typeof $weight === 'number') return $weight;
     return theme.fontWeight[$weight || 'REGULAR'];
   }};
-  color: ${({ theme, $muted }) =>
-    $muted ? theme.colors.textSecondary : theme.colors.textPrimary};
+  color: ${({ theme, $muted }) => ($muted ? theme.colors.textSecondary : theme.colors.textPrimary)};
 `;
 
 /**

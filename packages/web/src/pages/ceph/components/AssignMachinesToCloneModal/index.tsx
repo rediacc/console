@@ -14,7 +14,13 @@ import {
 } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton, RediaccSelect, RediaccTable, RediaccTag, RediaccText } from '@/components/ui';
+import {
+  RediaccButton,
+  RediaccSelect,
+  RediaccTable,
+  RediaccTag,
+  RediaccText,
+} from '@/components/ui';
 import { AlertCard } from '@/styles/primitives';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';

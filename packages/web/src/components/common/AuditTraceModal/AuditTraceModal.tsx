@@ -3,7 +3,13 @@ import { Dropdown, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { AuditTraceRecord, useEntityAuditTrace } from '@/api/queries/audit';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { IconWrapper, RediaccAlert, RediaccButton, RediaccTable, RediaccText } from '@/components/ui';
+import {
+  IconWrapper,
+  RediaccAlert,
+  RediaccButton,
+  RediaccTable,
+  RediaccText,
+} from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { createDateSorter, createSorter, formatTimestampAsIs } from '@/platform';
 import type { BaseModalProps } from '@/types';

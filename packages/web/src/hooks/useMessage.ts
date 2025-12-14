@@ -85,8 +85,7 @@ export const useMessage = (): UseMessageReturn => {
         show('error', keyOrMessage, options),
       warning: (keyOrMessage: string, options?: MessageOptions) =>
         show('warning', keyOrMessage, options),
-      info: (keyOrMessage: string, options?: MessageOptions) =>
-        show('info', keyOrMessage, options),
+      info: (keyOrMessage: string, options?: MessageOptions) => show('info', keyOrMessage, options),
     }),
     [show]
   );

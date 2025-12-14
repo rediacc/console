@@ -1,4 +1,3 @@
-import { forwardRef } from 'react';
 import { StyledRediaccDropdown } from './RediaccDropdown.styles';
 import type { RediaccDropdownProps } from './RediaccDropdown.types';
 
@@ -24,51 +23,43 @@ import type { RediaccDropdownProps } from './RediaccDropdown.types';
  *   <RediaccButton icon={<UserOutlined />} />
  * </RediaccDropdown>
  */
-export const RediaccDropdown = forwardRef<HTMLDivElement, RediaccDropdownProps>(
-  (
-    {
-      menu,
-      popupRender,
-      trigger = ['click'],
-      placement = 'bottomLeft',
-      disabled = false,
-      open,
-      onOpenChange,
-      overlayStyle,
-      overlayClassName,
-      autoAdjustOverflow = true,
-      arrow = false,
-      destroyPopupOnHide = false,
-      getPopupContainer,
-      children,
-      'data-testid': testId,
-      ...rest
-    },
-    ref
-  ) => {
-    return (
-      <StyledRediaccDropdown
-        ref={ref}
-        menu={menu}
-        dropdownRender={popupRender}
-        trigger={trigger}
-        placement={placement}
-        disabled={disabled}
-        open={open}
-        onOpenChange={onOpenChange}
-        overlayStyle={overlayStyle}
-        overlayClassName={overlayClassName}
-        autoAdjustOverflow={autoAdjustOverflow}
-        arrow={arrow}
-        destroyPopupOnHide={destroyPopupOnHide}
-        getPopupContainer={getPopupContainer}
-        data-testid={testId}
-        {...rest}
-      >
-        {children}
-      </StyledRediaccDropdown>
-    );
-  }
-);
-
-RediaccDropdown.displayName = 'RediaccDropdown';
+export const RediaccDropdown = ({
+  menu,
+  popupRender,
+  trigger = ['click'],
+  placement = 'bottomLeft',
+  disabled = false,
+  open,
+  onOpenChange,
+  overlayStyle,
+  overlayClassName,
+  autoAdjustOverflow = true,
+  arrow = false,
+  destroyPopupOnHide = false,
+  getPopupContainer,
+  children,
+  'data-testid': testId,
+  ...rest
+}: RediaccDropdownProps) => {
+  return (
+    <StyledRediaccDropdown
+      menu={menu}
+      dropdownRender={popupRender}
+      trigger={trigger}
+      placement={placement}
+      disabled={disabled}
+      open={open}
+      onOpenChange={onOpenChange}
+      overlayStyle={overlayStyle}
+      overlayClassName={overlayClassName}
+      autoAdjustOverflow={autoAdjustOverflow}
+      arrow={arrow}
+      destroyPopupOnHide={destroyPopupOnHide}
+      getPopupContainer={getPopupContainer}
+      data-testid={testId}
+      {...rest}
+    >
+      {children}
+    </StyledRediaccDropdown>
+  );
+};

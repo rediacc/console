@@ -100,7 +100,12 @@ export function RediaccActionMenu<T>({
   );
 
   return (
-    <RediaccDropdown menu={menuConfig} trigger={['click']} placement={placement} disabled={disabled}>
+    <RediaccDropdown
+      menu={menuConfig}
+      trigger={['click']}
+      placement={placement}
+      disabled={disabled}
+    >
       {tooltip ? <RediaccTooltip title={tooltip}>{triggerButton}</RediaccTooltip> : triggerButton}
     </RediaccDropdown>
   );
