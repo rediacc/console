@@ -1,11 +1,12 @@
 import { useCallback, useMemo } from 'react';
-import { Alert, Col, DatePicker, Dropdown, Empty, Row, Select, Space } from 'antd';
+import { Alert, Col, DatePicker, Empty, Row, Select, Space } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useAuditLogs } from '@/api/queries/audit';
 import type { AuditLog } from '@/api/queries/audit';
 import {
   RediaccButton,
+  RediaccDropdown,
   RediaccInput,
   RediaccStack,
   RediaccTable,
@@ -285,7 +286,7 @@ const AuditPage = () => {
                         : t('system:audit.export.tooltip')
                     }
                   >
-                    <Dropdown
+                    <RediaccDropdown
                       menu={{ items: exportMenuItems }}
                       disabled={!filteredLogs || filteredLogs.length === 0}
                     >
@@ -295,7 +296,7 @@ const AuditPage = () => {
                       >
                         {t('common:actions.export')}
                       </ActionButtonFull>
-                    </Dropdown>
+                    </RediaccDropdown>
                   </RediaccTooltip>
                 </RediaccStack>
               </Col>
