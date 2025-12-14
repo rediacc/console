@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { QUERY_KEY_STRINGS, QUERY_KEYS } from '@/api/queryKeys';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
+import { minifyJSON } from '@/utils/json';
 import type {
   CreateTeamMembershipParams,
   CreateTeamParams,
@@ -81,7 +82,7 @@ export const useUpdateTeamVault = () => {
     mutationFn: (params) =>
       api.teams.updateVault({
         ...params,
-        vaultContent: JSON.stringify(JSON.parse(params.vaultContent)),
+        vaultContent: minifyJSON(params.vaultContent),
       }),
     successMessage: (_, vars) => `Team "${vars.teamName}" vault updated successfully`,
     errorMessage: 'Failed to update team vault',

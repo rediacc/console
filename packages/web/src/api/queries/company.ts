@@ -1,6 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { createMutation } from '@/hooks/api/mutationFactory';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
 import { selectCompany } from '@/store/auth/authSelectors';
@@ -34,17 +33,21 @@ export const useCompanyVault = () => {
 };
 
 // Update company vault configuration
-export const useUpdateCompanyVault = createMutation<UpdateCompanyVaultParams>({
-  request: (params) => api.company.updateVault(params),
-  invalidateKeys: ['company-vault'],
-  successMessage: () => i18n.t('system:company.success.vaultUpdated'),
-  errorMessage: i18n.t('system:company.errors.vaultUpdateFailed'),
-  transformData: (data) => ({
-    ...data,
-    vaultContent: minifyJSON(data.vaultContent),
-  }),
-  operationName: 'company.updateVault',
-});
+export const useUpdateCompanyVault = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateCompanyVaultParams>({
+    mutationFn: (params) =>
+      api.company.updateVault({
+        ...params,
+        vaultContent: minifyJSON(params.vaultContent),
+      }),
+    successMessage: () => i18n.t('system:company.success.vaultUpdated'),
+    errorMessage: i18n.t('system:company.errors.vaultUpdateFailed'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['company-vault'] });
+    },
+  });
+};
 
 // Block or unblock user requests - Special case with dynamic success message
 export const useUpdateCompanyBlockUserRequests = () => {

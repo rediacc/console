@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
+import { minifyJSON } from '@/utils/json';
 import type {
   CreateRegionParams,
   DeleteRegionParams,
@@ -78,7 +79,7 @@ export const useUpdateRegionVault = () => {
     mutationFn: (params) =>
       api.regions.updateVault({
         ...params,
-        vaultContent: JSON.stringify(JSON.parse(params.vaultContent)),
+        vaultContent: minifyJSON(params.vaultContent),
       }),
     successMessage: (_, vars) => `Region "${vars.regionName}" vault updated successfully`,
     errorMessage: 'Failed to update region vault',

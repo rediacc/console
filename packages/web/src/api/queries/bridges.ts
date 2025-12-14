@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
+import { minifyJSON } from '@/utils/json';
 import type {
   CreateBridgeParams,
   DeleteBridgeParams,
@@ -68,7 +69,7 @@ export const useUpdateBridgeVault = () => {
     mutationFn: (params) =>
       api.bridges.updateVault({
         ...params,
-        vaultContent: JSON.stringify(JSON.parse(params.vaultContent)),
+        vaultContent: minifyJSON(params.vaultContent),
       }),
     successMessage: (_, vars) => `Bridge "${vars.bridgeName}" vault updated successfully`,
     errorMessage: 'Failed to update bridge vault',

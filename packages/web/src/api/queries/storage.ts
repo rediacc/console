@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
+import { minifyJSON } from '@/utils/json';
 import type {
   CreateStorageParams,
   DeleteStorageParams,
@@ -67,7 +68,7 @@ export const useUpdateStorageVault = () => {
     mutationFn: (params) =>
       api.storage.updateVault({
         ...params,
-        vaultContent: JSON.stringify(JSON.parse(params.vaultContent)),
+        vaultContent: minifyJSON(params.vaultContent),
       }),
     successMessage: (_, vars) => `Storage "${vars.storageName}" vault updated successfully`,
     errorMessage: 'Failed to update storage vault',

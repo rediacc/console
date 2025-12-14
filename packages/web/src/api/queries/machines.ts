@@ -4,6 +4,7 @@ import { QUERY_KEY_STRINGS } from '@/api/queryKeys';
 import { createResourceQuery } from '@/hooks/api/queryFactory';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import type { Machine } from '@/types';
+import { minifyJSON } from '@/utils/json';
 import type {
   CreateMachineParams,
   DeleteMachineParams,
@@ -82,7 +83,7 @@ export const useUpdateMachineVault = () => {
     mutationFn: (params) =>
       api.machines.updateVault({
         ...params,
-        vaultContent: JSON.stringify(JSON.parse(params.vaultContent)),
+        vaultContent: minifyJSON(params.vaultContent),
       }),
     successMessage: (_, vars) => `Machine "${vars.machineName}" vault updated successfully`,
     errorMessage: 'Failed to update machine vault',
