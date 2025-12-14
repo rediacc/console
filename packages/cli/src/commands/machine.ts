@@ -38,12 +38,21 @@ export function registerMachineCommands(program: Command): void {
       rename: (payload) => api.machines.rename(payload as unknown as UpdateMachineNameParams),
       delete: (payload) => api.machines.delete(payload as unknown as DeleteMachineParams),
     },
-    createOptions: [{ flags: '-b, --bridge <name>', description: 'Bridge name', required: true }],
-    transformCreatePayload: (name, opts) => ({
-      machineName: name,
-      teamName: opts.team,
-      bridgeName: opts.bridge,
-    }),
+    createOptions: [
+      { flags: '-b, --bridge <name>', description: 'Bridge name', required: true },
+      { flags: '--vault <json>', description: 'Machine vault data as JSON string' },
+    ],
+    transformCreatePayload: (name, opts) => {
+      const payload: Record<string, unknown> = {
+        machineName: name,
+        teamName: opts.team,
+        bridgeName: opts.bridge,
+      };
+      if (opts.vault) {
+        payload.vaultContent = opts.vault;
+      }
+      return payload;
+    },
     vaultConfig: {
       fetch: (params) => api.company.getAllVaults(params),
       vaultType: 'Machine',
