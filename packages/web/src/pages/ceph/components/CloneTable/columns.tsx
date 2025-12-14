@@ -1,11 +1,10 @@
 import React from 'react';
 import { CloudUploadOutlined, EllipsisOutlined } from '@ant-design/icons';
-import { Tooltip } from 'antd';
 import { TFunction } from 'i18next';
 import type { CephRbdClone } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn } from '@/components/common/columns';
-import { RediaccTag } from '@/components/ui';
+import { RediaccTag, RediaccTooltip } from '@/components/ui';
 import { CloneIcon, CloneName, NameCell } from './styles';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -32,7 +31,7 @@ export const buildCloneColumns = ({
         <CloneIcon />
         <CloneName>{text}</CloneName>
         {record.vaultContent && (
-          <Tooltip title={t('common.hasVault')}>
+          <RediaccTooltip title={t('common.hasVault')}>
             <RediaccTag
               variant="neutral"
               compact
@@ -40,7 +39,7 @@ export const buildCloneColumns = ({
             >
               {t('common.vault')}
             </RediaccTag>
-          </Tooltip>
+          </RediaccTooltip>
         )}
       </NameCell>
     ),

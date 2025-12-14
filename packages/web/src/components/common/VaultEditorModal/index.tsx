@@ -1,9 +1,10 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
-import { Modal, message, Space, Tooltip, Upload } from 'antd';
+import { Modal, Space, Upload } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { ActionGroup } from '@/components/common/styled';
 import VaultEditor from '@/components/common/VaultEditor';
-import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccStack, RediaccText, RediaccTooltip } from '@/components/ui';
+import { useMessage } from '@/hooks';
 import type { BaseModalProps } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons';
@@ -46,6 +47,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   loading = false,
 }) => {
   const { t } = useTranslation('common');
+  const message = useMessage();
   const [vaultData, setVaultData] = useState<Record<string, unknown>>({});
   const [vaultVersion, setVaultVersion] = useState(initialVersion);
   const [isValid, setIsValid] = useState(true);
@@ -86,7 +88,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   const handleSave = async () => {
     if (!isValid) {
       setShowValidationErrors(true);
-      message.error(t('vaultEditor.pleaseFixErrors'));
+      message.error('common:vaultEditor.pleaseFixErrors');
       return;
     }
 
@@ -203,7 +205,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                 </RediaccText>
               </>
             )}
-            <Tooltip title={t('actions.cancel')}>
+            <RediaccTooltip title={t('actions.cancel')}>
               <RediaccButton
                 iconOnly
                 icon={<CloseOutlined />}
@@ -211,8 +213,8 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                 data-testid="vault-modal-cancel-button"
                 aria-label={t('actions.cancel')}
               />
-            </Tooltip>
-            <Tooltip title={t('vaultEditor.saveVaultConfiguration')}>
+            </RediaccTooltip>
+            <RediaccTooltip title={t('vaultEditor.saveVaultConfiguration')}>
               <RediaccButton
                 iconOnly
                 icon={<SaveOutlined />}
@@ -222,7 +224,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                 data-testid="vault-modal-save-button"
                 aria-label={t('vaultEditor.saveVaultConfiguration')}
               />
-            </Tooltip>
+            </RediaccTooltip>
           </ActionGroup>
         </FooterBar>
       </FooterWrapper>

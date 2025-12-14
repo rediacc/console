@@ -1,10 +1,11 @@
 import React, { useCallback, useState } from 'react';
-import { Dropdown, message, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { LocalCommandModal } from '@/components/resources/internal/LocalCommandModal';
 import { PipInstallationModal } from '@/components/resources/internal/PipInstallationModal';
+import { RediaccDropdown, RediaccTooltip } from '@/components/ui';
 import { IconWrapper } from '@/components/ui';
+import { useMessage } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
 import {
   type ContainerParams,
@@ -61,6 +62,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   isMachineOnlyMenu = false,
 }) => {
   const { t } = useTranslation();
+  const message = useMessage();
   const installModal = useDialogState<
     'not-installed' | 'protocol-not-registered' | 'permission-denied'
   >();
@@ -126,7 +128,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         }
       } catch (error) {
         console.error('Failed to generate protocol URL:', error);
-        message.error('Failed to create secure connection for desktop app');
+        message.error('common:desktopConnectionFailed');
         return;
       }
 
@@ -169,6 +171,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       containerName,
       isMachineOnlyMenu,
       installModal,
+      message,
     ]
   );
 
@@ -256,13 +259,13 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
 
   return (
     <>
-      <Dropdown
+      <RediaccDropdown
         menu={menuConfig}
         trigger={['click']}
         disabled={disabled || isCheckingProtocol}
         data-testid={`local-actions-dropdown-container-${repository}`}
       >
-        <Tooltip title={tooltipLabel}>
+        <RediaccTooltip title={tooltipLabel}>
           <TriggerButton
             icon={createMenuIcon(DesktopOutlined)}
             loading={isCheckingProtocol}
@@ -270,8 +273,8 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
             data-testid={triggerTestId}
             aria-label={tooltipLabel}
           />
-        </Tooltip>
-      </Dropdown>
+        </RediaccTooltip>
+      </RediaccDropdown>
 
       <PipInstallationModal
         open={installModal.isOpen}

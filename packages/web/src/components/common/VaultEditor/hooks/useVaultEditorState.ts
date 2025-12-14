@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Form, message } from 'antd';
+import { Form } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue';
 import { useTeams } from '@/api/queries/teams';
+import { useMessage } from '@/hooks';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { STORAGE_FIELDS_TO_KEEP, storageProviderConfig, vaultDefinitionConfig } from '../constants';
 import { decodeBase64, encodeBase64, formatValidationErrors, processExtraFields } from '../utils';
@@ -30,6 +31,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
   } = props;
 
   const { t } = useTranslation(['common', 'storageProviders']);
+  const message = useMessage();
   const theme = useTheme();
   const [form] = Form.useForm();
   const [extraFields, setExtraFields] = useState<VaultFormValues>({});
@@ -103,23 +105,19 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
   const showFieldMovementToasts = useCallback(
     (movedToExtra: string[], movedFromExtra: string[]) => {
       if (movedToExtra.length > 0) {
-        message.info(
-          t('vaultEditor.fieldsMovedToExtra', {
-            count: movedToExtra.length,
-            fields: movedToExtra.join(', '),
-          })
-        );
+        message.info('common:vaultEditor.fieldsMovedToExtra', {
+          count: movedToExtra.length,
+          fields: movedToExtra.join(', '),
+        });
       }
       if (movedFromExtra.length > 0) {
-        message.success(
-          t('vaultEditor.fieldsMovedFromExtra', {
-            count: movedFromExtra.length,
-            fields: movedFromExtra.join(', '),
-          })
-        );
+        message.success('common:vaultEditor.fieldsMovedFromExtra', {
+          count: movedFromExtra.length,
+          fields: movedFromExtra.join(', '),
+        });
       }
     },
-    [t]
+    [message]
   );
 
   // Reset when modal opens (transitions from closed to open)
@@ -162,7 +160,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
           if (result) {
             if (result.status === 'success') {
-              message.success(t('vaultEditor.testConnection.success'));
+              message.success('common:vaultEditor.testConnection.success');
 
               if (result.ssh_key_configured !== undefined) {
                 form.setFieldValue('ssh_key_configured', result.ssh_key_configured);
@@ -200,7 +198,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
                 ssh_password: '',
               });
             } else {
-              message.error(result.message || t('vaultEditor.testConnection.failed'));
+              message.error(result.message || 'common:vaultEditor.testConnection.failed');
               setTestConnectionSuccess(false);
               if (onTestConnectionStateChange) {
                 onTestConnectionStateChange(false);
@@ -208,7 +206,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
             }
           }
         } catch {
-          message.error(t('vaultEditor.testConnection.failed'));
+          message.error('common:vaultEditor.testConnection.failed');
           setTestConnectionSuccess(false);
           if (onTestConnectionStateChange) {
             onTestConnectionStateChange(false);
@@ -218,7 +216,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
           setTestTaskId(null);
         }
       } else if (status === 'FAILED' || status === 'CANCELLED') {
-        message.error(t('vaultEditor.testConnection.failed'));
+        message.error('common:vaultEditor.testConnection.failed');
         setIsTestingConnection(false);
         setTestTaskId(null);
         setTestConnectionSuccess(false);
@@ -228,7 +226,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [testTraceData, form, t, onOsSetupStatusChange, onTestConnectionStateChange]);
+  }, [testTraceData, form, message, onOsSetupStatusChange, onTestConnectionStateChange]);
 
   // Stabilize importedData to prevent unnecessary re-renders
   const importedDataString = useMemo(() => JSON.stringify(importedData), [importedData]);

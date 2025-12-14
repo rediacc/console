@@ -10,7 +10,6 @@ import {
   SyncOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import { message, Table, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -26,7 +25,8 @@ import {
 } from '@/api/queries/cephMutations';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccButton } from '@/components/ui';
+import { RediaccButton, RediaccTable, RediaccTooltip } from '@/components/ui';
+import { useMessage } from '@/hooks';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
@@ -52,6 +52,7 @@ type CloneModalData = CephRbdClone & {
 
 const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   const { t } = useTranslation('ceph');
+  const message = useMessage();
   const cloneModal = useFormModal<CloneModalData>();
   const queueTrace = useQueueTraceModal();
   const machineModal = useDialogState<CephRbdClone>();
@@ -95,9 +96,9 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   const handleQueueItemCreated = useCallback(
     (taskId: string) => {
       queueTrace.open(taskId);
-      message.success(t('queue.itemCreated'));
+      message.success('ceph:queue.itemCreated');
     },
-    [t, queueTrace]
+    [message, queueTrace]
   );
 
   const handleManageMachines = useCallback(
@@ -138,7 +139,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
           handleQueueItemCreated(response.taskId);
         }
       } catch {
-        message.error(t('queue.createError'));
+        message.error('ceph:queue.createError');
       }
     },
     [
@@ -146,11 +147,11 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
       handleQueueItemCreated,
       image.imageName,
       managedQueueMutation,
+      message,
       pool.clusterName,
       pool.poolName,
       pool.teamName,
       snapshot.snapshotName,
-      t,
     ]
   );
 
@@ -255,7 +256,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
       <Container data-testid="clone-list-container">
         <Title>{t('clones.title')}</Title>
         <ActionsRow>
-          <Tooltip title={t('clones.create')}>
+          <RediaccTooltip title={t('clones.create')}>
             <RediaccButton
               icon={<PlusOutlined />}
               onClick={handleCreate}
@@ -263,16 +264,16 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
             >
               {t('clones.create')}
             </RediaccButton>
-          </Tooltip>
+          </RediaccTooltip>
         </ActionsRow>
 
         <TableWrapper>
-          <Table
+          <RediaccTable<CephRbdClone>
             columns={columns}
             dataSource={clones}
             rowKey="cloneGuid"
             loading={isLoading}
-            size="small"
+            size="sm"
             pagination={false}
             data-testid="clone-list-table"
             expandable={{

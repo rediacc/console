@@ -2,7 +2,7 @@ import styled, { keyframes } from 'styled-components';
 import { ActionGroup } from '@/components/common/styled';
 import { RediaccProgress, RediaccTag, RediaccText } from '@/components/ui';
 import type { TagVariant } from '@/components/ui/Tag';
-import { BaseModal, BaseTable, FlexColumn, ModalBody } from '@/styles/primitives';
+import { BaseModal, FlexColumn, ModalBody } from '@/styles/primitives';
 
 const pulse = keyframes`
   0% {
@@ -82,7 +82,8 @@ export const SummaryValue = styled(RediaccText).attrs({ weight: 'semibold' })<{
   }
 `;
 
-export const StyledTable = styled(BaseTable)`
+/** Wrapper for status-based row styling in connectivity test table */
+export const StatusTableWrapper = styled.div`
   .status-testing td {
     animation: ${pulse} ${({ theme }) => theme.transitions.SLOW};
     background-color: ${({ theme }) => theme.colors.primaryBg};

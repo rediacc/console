@@ -1,17 +1,15 @@
 import React from 'react';
-import { Table } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { createTruncatedColumn } from '@/components/common/columns';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
-import { RediaccText } from '@/components/ui';
+import { RediaccTable, RediaccText } from '@/components/ui';
 import type { Machine } from '@/types';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import {
   ClusterTag,
   InfoIcon,
   MachineNameRow,
-  MachinesTable,
   StyledModal,
   SummaryItem,
   SummaryRow,
@@ -137,12 +135,11 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
         </SummaryItem>
       </SummaryRow>
 
-      <MachinesTable
-        as={Table<Machine>}
+      <RediaccTable<Machine>
         columns={columns}
         dataSource={targetMachines}
         rowKey="machineName"
-        size="small"
+        size="sm"
         pagination={{
           pageSize: 10,
           showSizeChanger: false,

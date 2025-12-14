@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Drawer, Dropdown, Layout, message } from 'antd';
+import { Drawer, Layout } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -11,8 +11,10 @@ import logoWhite from '@/assets/logo_white.png';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
 import NotificationBell from '@/components/layout/MainLayout/components/NotificationBell';
+import { RediaccDropdown } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTheme } from '@/context/ThemeContext';
+import { useMessage } from '@/hooks';
 import { masterPasswordService } from '@/services/masterPasswordService';
 import { selectCompany, selectUser } from '@/store/auth/authSelectors';
 import { logout, updateCompany } from '@/store/auth/authSlice';
@@ -62,6 +64,7 @@ const MainLayout: React.FC = () => {
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const { theme } = useTheme();
   const { t } = useTranslation('common');
+  const message = useMessage();
   const { data: companyData } = useCompanyInfo();
   const { trackUserAction } = useTelemetry();
 
@@ -98,7 +101,7 @@ const MainLayout: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+  }, [message]);
 
   const allMenuItems = useMemo(() => getMenuItems(t), [t]);
   const menuItems = useMemo(
@@ -257,7 +260,7 @@ const MainLayout: React.FC = () => {
             </HeaderLeft>
             <HeaderRight>
               <NotificationBell />
-              <Dropdown
+              <RediaccDropdown
                 trigger={['click']}
                 placement="bottomRight"
                 popupRender={() => (
@@ -279,7 +282,7 @@ const MainLayout: React.FC = () => {
                   aria-label={t('navigation.userMenu', { defaultValue: 'Open user menu' })}
                   data-testid="user-menu-button"
                 />
-              </Dropdown>
+              </RediaccDropdown>
             </HeaderRight>
           </StyledHeader>
           <StyledContent

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, List, Modal, Popconfirm, Space, Tabs, Tooltip } from 'antd';
+import { Card, List, Modal, Popconfirm, Space, Tabs } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   Team,
@@ -19,6 +19,7 @@ import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal, {
   type ExistingResourceData,
 } from '@/components/common/UnifiedResourceModal';
+import { RediaccTooltip } from '@/components/ui';
 import {
   InlineFormRow,
   ListSubtitle,
@@ -183,7 +184,7 @@ const TeamsPage: React.FC = () => {
           searchPlaceholder={t('teams.searchPlaceholder', { defaultValue: 'Search teams...' })}
           data-testid="system-team-table"
           actions={
-            <Tooltip title={tSystem('actions.createTeam')}>
+            <RediaccTooltip title={tSystem('actions.createTeam')}>
               <RediaccButton
                 variant="primary"
                 icon={<PlusOutlined />}
@@ -191,7 +192,7 @@ const TeamsPage: React.FC = () => {
                 data-testid="system-create-team-button"
                 aria-label={tSystem('actions.createTeam')}
               />
-            </Tooltip>
+            </RediaccTooltip>
           }
         />
       </SectionStack>
@@ -242,7 +243,7 @@ const TeamsPage: React.FC = () => {
                             cancelText={tCommon('general.no')}
                             okButtonProps={{ danger: true }}
                           >
-                            <Tooltip title={tCommon('actions.remove')}>
+                            <RediaccTooltip title={tCommon('actions.remove')}>
                               <RediaccButton
                                 variant="primary"
                                 danger
@@ -250,7 +251,7 @@ const TeamsPage: React.FC = () => {
                                 icon={<DeleteOutlined />}
                                 aria-label={tCommon('actions.remove')}
                               />
-                            </Tooltip>
+                            </RediaccTooltip>
                           </Popconfirm>,
                         ]}
                       >
@@ -314,7 +315,7 @@ const TeamsPage: React.FC = () => {
                           })) || []
                       }
                     />
-                    <Tooltip title={tSystem('actions.addMember')}>
+                    <RediaccTooltip title={tSystem('actions.addMember')}>
                       <RediaccButton
                         variant="primary"
                         onClick={handleAddTeamMember}
@@ -323,7 +324,7 @@ const TeamsPage: React.FC = () => {
                         icon={<PlusOutlined />}
                         aria-label={tSystem('actions.addMember')}
                       />
-                    </Tooltip>
+                    </RediaccTooltip>
                   </InlineFormRow>
                 </ModalStack>
               ),

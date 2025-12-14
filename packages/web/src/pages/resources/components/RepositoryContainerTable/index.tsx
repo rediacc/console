@@ -10,7 +10,7 @@ import {
 } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
-import { RediaccText } from '@/components/ui';
+import { RediaccTable, RediaccText } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTableStyles } from '@/hooks/useComponentStyles';
 import { useQueueAction } from '@/hooks/useQueueAction';
@@ -758,18 +758,20 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
 
       {containers.length > 0 ? (
         <S.ContainersSection data-testid="regular-containers-section">
-          <S.StyledTable<Container>
-            columns={containerColumns}
-            dataSource={containers}
-            rowKey="id"
-            size="small"
-            $removeMargins={true}
-            pagination={false}
-            scroll={{ x: 'max-content' }}
-            style={tableStyles.tableContainer}
-            data-testid="regular-containers-table"
-            onRow={(container: Container) => buildRowHandlers(container)}
-          />
+          <S.TableStyleWrapper>
+            <RediaccTable<Container>
+              columns={containerColumns}
+              dataSource={containers}
+              rowKey="id"
+              size="sm"
+              removeMargins
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+              style={tableStyles.tableContainer}
+              data-testid="regular-containers-table"
+              onRow={(container) => buildRowHandlers(container)}
+            />
+          </S.TableStyleWrapper>
         </S.ContainersSection>
       ) : (
         <S.EmptyState data-testid="no-containers">
@@ -783,18 +785,20 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         <S.PluginContainersSection data-testid="plugin-containers-section">
           <S.SectionTitle level={5}>{t('resources:containers.pluginContainers')}</S.SectionTitle>
 
-          <S.StyledTable<Container>
-            columns={containerColumns}
-            dataSource={pluginContainers}
-            rowKey="id"
-            size="small"
-            $removeMargins={true}
-            pagination={false}
-            scroll={{ x: 'max-content' }}
-            style={tableStyles.tableContainer}
-            data-testid="plugin-containers-table"
-            onRow={(container: Container) => buildRowHandlers(container)}
-          />
+          <S.TableStyleWrapper>
+            <RediaccTable<Container>
+              columns={containerColumns}
+              dataSource={pluginContainers}
+              rowKey="id"
+              size="sm"
+              removeMargins
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+              style={tableStyles.tableContainer}
+              data-testid="plugin-containers-table"
+              onRow={(container) => buildRowHandlers(container)}
+            />
+          </S.TableStyleWrapper>
         </S.PluginContainersSection>
       )}
     </div>

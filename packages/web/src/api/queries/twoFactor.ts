@@ -1,11 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { api } from '@/api/client';
+import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
 import { RootState } from '@/store/store';
 import { hashPassword } from '@/utils/auth';
-import { showMessage } from '@/utils/messages';
-import { createErrorHandler, extractErrorMessage } from '@/utils/mutationUtils';
+import { extractErrorMessage } from '@/utils/mutationUtils';
 import type { AuthRequestStatus, EnableTfaResponse, VerifyTfaResult } from '@rediacc/shared/types';
 
 export type TwoFactorStatus = AuthRequestStatus;
@@ -37,7 +37,7 @@ export const useEnableTFA = () => {
   const queryClient = useQueryClient();
   const userEmail = useSelector((state: RootState) => state.auth.user?.email);
 
-  return useMutation({
+  return useMutationWithFeedback({
     mutationFn: async (data: {
       password?: string;
       generateOnly?: boolean;
@@ -67,8 +67,12 @@ export const useEnableTFA = () => {
 
       throw new Error(i18n.t('settings:twoFactorAuth.errors.invalidParameters'));
     },
+    // Only show success message when confirming enable (not when generating secret)
+    successMessage: (_data, variables) =>
+      variables.confirmEnable ? i18n.t('settings:twoFactorAuth.success.enabled') : null,
+    errorMessage: i18n.t('settings:twoFactorAuth.errors.enableFailed'),
     onSuccess: (_data, variables) => {
-      // Only update cache and show success if we're confirming enable
+      // Only update cache if we're confirming enable
       if (variables.confirmEnable) {
         // Immediately update the cache with the new status
         queryClient.setQueryData(['tfa-status', userEmail], {
@@ -79,7 +83,6 @@ export const useEnableTFA = () => {
 
         // Then invalidate to ensure fresh data on next fetch
         queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
-        showMessage('success', i18n.t('settings:twoFactorAuth.success.enabled'));
       }
     },
     onError: (error: unknown) => {
@@ -90,8 +93,6 @@ export const useEnableTFA = () => {
       if (errorMessage.includes('already enabled')) {
         queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
       }
-
-      createErrorHandler(fallbackMessage)(error);
     },
   });
 };
@@ -101,11 +102,13 @@ export const useDisableTFA = () => {
   const queryClient = useQueryClient();
   const userEmail = useSelector((state: RootState) => state.auth.user?.email);
 
-  return useMutation({
+  return useMutationWithFeedback({
     mutationFn: async (data: { password: string; currentCode: string }) => {
       const passwordHash = await hashPassword(data.password);
       await api.auth.disableTfa(passwordHash, data.currentCode);
     },
+    successMessage: i18n.t('settings:twoFactorAuth.success.disabled'),
+    errorMessage: i18n.t('settings:twoFactorAuth.errors.disableFailed'),
     onSuccess: () => {
       // Immediately update the cache with the new status
       queryClient.setQueryData(['tfa-status', userEmail], {
@@ -116,9 +119,7 @@ export const useDisableTFA = () => {
 
       // Then invalidate to ensure fresh data on next fetch
       queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
-      showMessage('success', i18n.t('settings:twoFactorAuth.success.disabled'));
     },
-    onError: createErrorHandler(i18n.t('settings:twoFactorAuth.errors.disableFailed')),
   });
 };
 
@@ -126,15 +127,17 @@ export const useDisableTFA = () => {
 export const useVerifyTFA = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutationWithFeedback({
     mutationFn: async (data: { code: string }): Promise<VerifyTfaResult> =>
       api.auth.verifyTfa(data.code),
+    // Only show success message when verification results in authorization
+    successMessage: (data) =>
+      data.isAuthorized ? i18n.t('settings:twoFactorAuth.success.verified') : null,
+    errorMessage: i18n.t('settings:twoFactorAuth.errors.verificationFailed'),
     onSuccess: (data) => {
       if (data.isAuthorized) {
         queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
-        showMessage('success', i18n.t('settings:twoFactorAuth.success.verified'));
       }
     },
-    onError: createErrorHandler(i18n.t('settings:twoFactorAuth.errors.verificationFailed')),
   });
 };

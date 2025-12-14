@@ -30,6 +30,8 @@ export * from './Card';
 // Danger zone components
 export * from './Danger';
 export * from './Divider';
+// Dropdown component
+export * from './Dropdown';
 export * from './Empty';
 export * from './List';
 export * from './Modal';
@@ -37,9 +39,13 @@ export * from './Progress';
 export * from './Stack';
 export * from './Statistic';
 export * from './Tabs';
+// Table component
+export * from './Table';
 // Tag component
 export * from './Tag';
 // Text component (unified)
 export * from './Text';
+// Tooltip component
+export * from './Tooltip';
 // Utility components
 export * from './Utils';

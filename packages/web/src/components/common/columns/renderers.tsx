@@ -1,8 +1,7 @@
 import React from 'react';
-import { Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import styled from 'styled-components';
-import { RediaccTag, RediaccText } from '@/components/ui';
+import { RediaccTag, RediaccText, RediaccTooltip } from '@/components/ui';
 
 /**
  * Styled version tag used across column renderers
@@ -85,9 +84,9 @@ export const renderTruncatedId = (
   const display = showEllipsis ? `${truncated}...` : truncated;
 
   return (
-    <Tooltip title={id}>
+    <RediaccTooltip title={id}>
       <TruncatedMonoText>{display}</TruncatedMonoText>
-    </Tooltip>
+    </RediaccTooltip>
   );
 };
 
@@ -152,9 +151,9 @@ export const createStatusRenderer = <T extends string>(
   function StatusRenderer(status: T): React.ReactNode {
     const config = statusMap[status] || defaultConfig;
     return (
-      <Tooltip title={config.label || status}>
+      <RediaccTooltip title={config.label || status}>
         <StatusIconWrapper>{config.icon}</StatusIconWrapper>
-      </Tooltip>
+      </RediaccTooltip>
     );
   }
 

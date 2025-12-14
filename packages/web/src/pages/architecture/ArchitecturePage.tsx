@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Col, Row, Space, Tooltip } from 'antd';
+import { Alert, Col, Row, Space } from 'antd';
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { useCompanyArchitecture } from '@/api/queries/architecture';
@@ -12,6 +12,7 @@ import {
   RediaccStack,
   RediaccStatistic,
   RediaccText,
+  RediaccTooltip,
 } from '@/components/ui';
 import { useTheme } from '@/context/ThemeContext';
 import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
@@ -691,14 +692,14 @@ const ArchitecturePage: React.FC = () => {
           type="error"
           showIcon
           action={
-            <Tooltip title={t('actions.retry', { ns: 'common' })}>
+            <RediaccTooltip title={t('actions.retry', { ns: 'common' })}>
               <RediaccButton
                 iconOnly
                 icon={<ReloadOutlined />}
                 onClick={() => refetch()}
                 aria-label={t('actions.retry', { ns: 'common' })}
               />
-            </Tooltip>
+            </RediaccTooltip>
           }
         />
       </PageContainer>
@@ -752,15 +753,15 @@ const ArchitecturePage: React.FC = () => {
                     {t('architecture.viewRadial')}
                   </RediaccRadio.Button>
                 </RediaccRadio.Group>
-                <Tooltip title={t('actions.refresh', { ns: 'common' })}>
+                <RediaccTooltip title={t('actions.refresh', { ns: 'common' })}>
                   <RediaccButton
                     iconOnly
                     icon={<ReloadOutlined />}
                     onClick={() => refetch()}
                     data-testid="architecture-refresh-button"
                   />
-                </Tooltip>
-                <Tooltip
+                </RediaccTooltip>
+                <RediaccTooltip
                   title={
                     isFullscreen
                       ? t('actions.exitFullscreen', { ns: 'common' })
@@ -773,7 +774,7 @@ const ArchitecturePage: React.FC = () => {
                     onClick={toggleFullscreen}
                     data-testid="architecture-fullscreen-button"
                   />
-                </Tooltip>
+                </RediaccTooltip>
               </ActionGroup>
             </SectionHeaderRow>
 
@@ -806,7 +807,7 @@ const ArchitecturePage: React.FC = () => {
                 />
               </FilterSelectWrapper>
               <FilterActions>
-                <Tooltip title={t('architecture.selectAll', { ns: 'system' })}>
+                <RediaccTooltip title={t('architecture.selectAll', { ns: 'system' })}>
                   <RediaccButton
                     iconOnly
                     icon={<CheckOutlined />}
@@ -814,8 +815,8 @@ const ArchitecturePage: React.FC = () => {
                     data-testid="architecture-select-all-button"
                     aria-label={t('architecture.selectAll', { ns: 'system' })}
                   />
-                </Tooltip>
-                <Tooltip title={t('architecture.clearAll', { ns: 'system' })}>
+                </RediaccTooltip>
+                <RediaccTooltip title={t('architecture.clearAll', { ns: 'system' })}>
                   <RediaccButton
                     iconOnly
                     icon={<MinusCircleOutlined />}
@@ -823,7 +824,7 @@ const ArchitecturePage: React.FC = () => {
                     data-testid="architecture-clear-all-button"
                     aria-label={t('architecture.clearAll', { ns: 'system' })}
                   />
-                </Tooltip>
+                </RediaccTooltip>
               </FilterActions>
             </FiltersRow>
 

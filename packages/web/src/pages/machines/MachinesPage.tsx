@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useEffect, useState } from 'react';
-import { Modal, Tooltip } from 'antd';
+import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -15,6 +15,7 @@ import { Repository, useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { RediaccTooltip } from '@/components/ui';
 import {
   ActionBar as ButtonGroup,
   ContentSection,
@@ -479,7 +480,7 @@ const MachinesPage: React.FC = () => {
                 </TeamControls>
                 {selectedTeams.length > 0 && (
                   <ButtonGroup>
-                    <Tooltip title={t('machines:createMachine')}>
+                    <RediaccTooltip title={t('machines:createMachine')}>
                       <RediaccButton
                         iconOnly
                         icon={<PlusOutlined />}
@@ -487,8 +488,8 @@ const MachinesPage: React.FC = () => {
                         onClick={() => openUnifiedModal('create')}
                         aria-label={t('machines:createMachine')}
                       />
-                    </Tooltip>
-                    <Tooltip title={t('machines:connectivityTest')}>
+                    </RediaccTooltip>
+                    <RediaccTooltip title={t('machines:connectivityTest')}>
                       <RediaccButton
                         iconOnly
                         icon={<WifiOutlined />}
@@ -497,8 +498,8 @@ const MachinesPage: React.FC = () => {
                         disabled={machines.length === 0}
                         aria-label={t('machines:connectivityTest')}
                       />
-                    </Tooltip>
-                    <Tooltip title={t('common:actions.refresh')}>
+                    </RediaccTooltip>
+                    <RediaccTooltip title={t('common:actions.refresh')}>
                       <RediaccButton
                         iconOnly
                         icon={<ReloadOutlined />}
@@ -506,7 +507,7 @@ const MachinesPage: React.FC = () => {
                         onClick={handleRefreshMachines}
                         aria-label={t('common:actions.refresh')}
                       />
-                    </Tooltip>
+                    </RediaccTooltip>
                   </ButtonGroup>
                 )}
               </HeaderRow>

@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Space, Tag, Tooltip } from 'antd';
+import { Alert, Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -8,6 +8,7 @@ import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ActionGroup, CenteredState } from '@/components/common/styled';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
+import { RediaccTooltip } from '@/components/ui';
 import { RediaccButton, RediaccText } from '@/components/ui';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { useQueueTraceModal } from '@/hooks/useDialogState';
@@ -276,7 +277,7 @@ const RepoContainersPage: React.FC = () => {
           <HeaderRow>
             <TitleColumn>
               <TitleRow>
-                <Tooltip title={t('machines:backToRepos')}>
+                <RediaccTooltip title={t('machines:backToRepos')}>
                   <RediaccButton
                     iconOnly
                     icon={<DoubleLeftOutlined />}
@@ -284,7 +285,7 @@ const RepoContainersPage: React.FC = () => {
                     aria-label={t('machines:backToRepos')}
                     data-testid="repository-containers-back-button"
                   />
-                </Tooltip>
+                </RediaccTooltip>
                 <HeaderTitleText level={4}>
                   <Space>
                     <InboxOutlined />
@@ -313,14 +314,14 @@ const RepoContainersPage: React.FC = () => {
             </TitleColumn>
 
             <ActionsRow>
-              <Tooltip title={t('common:actions.refresh')}>
+              <RediaccTooltip title={t('common:actions.refresh')}>
                 <RediaccButton
                   iconOnly
                   icon={<ReloadOutlined />}
                   onClick={handleRefresh}
                   data-testid="repository-containers-refresh-button"
                 />
-              </Tooltip>
+              </RediaccTooltip>
             </ActionsRow>
           </HeaderRow>
         </HeaderSection>

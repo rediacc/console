@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
-import { Modal, message } from 'antd';
+import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { QueueFunction } from '@/api/queries/queue';
+import { useMessage } from '@/hooks';
 import { templateService } from '@/services/templateService';
 
 type FunctionParamValue = string | number | string[] | undefined;
@@ -39,6 +40,7 @@ export const useFunctionSubmission = ({
   onSubmit,
 }: UseFunctionSubmissionProps) => {
   const { t } = useTranslation(['functions', 'resources']);
+  const message = useMessage();
 
   const handleSubmit = useCallback(async () => {
     if (!selectedFunction) return;
@@ -134,7 +136,7 @@ export const useFunctionSubmission = ({
             }
           } catch (error) {
             console.error('Failed to encode templates:', error);
-            message.error(t('resources:templates.failedToLoadTemplate'));
+            message.error('resources:templates.failedToLoadTemplate');
             return;
           }
         }
@@ -160,6 +162,7 @@ export const useFunctionSubmission = ({
     functionDescription,
     onSubmit,
     t,
+    message,
   ]);
 
   return { handleSubmit };

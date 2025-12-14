@@ -13,7 +13,6 @@ import {
   Space,
   Table,
   Tag,
-  Tooltip,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -52,11 +51,13 @@ import {
   RediaccEmpty,
   RediaccInput,
   RediaccText,
+  RediaccTooltip,
   RegionsListWrapper,
   SectionHeading,
   SectionStack,
 } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
+import { useCopyToClipboard } from '@/hooks';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { ACTIONS_COLUMN_WIDTH, ModalAlert, TokenCopyRow } from '@/pages/system/styles';
 import { createSorter } from '@/platform';
@@ -83,6 +84,9 @@ const InfrastructurePage: React.FC = () => {
   const { t: tSystem } = useTranslation('system');
   const { t: tCommon } = useTranslation('common');
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
+  const { copy: copyToken, copied: tokenCopied } = useCopyToClipboard({
+    successMessage: 'common:copiedToClipboard',
+  });
 
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const bridgeCredentialsModal = useDialogState<Bridge>();
@@ -310,7 +314,7 @@ const InfrastructurePage: React.FC = () => {
       width: 300,
       render: (_: unknown, record: Region) => (
         <Space>
-          <Tooltip title={t('general.edit')}>
+          <RediaccTooltip title={t('general.edit')}>
             <Button
               type="primary"
               size="small"
@@ -319,8 +323,8 @@ const InfrastructurePage: React.FC = () => {
               data-testid={`system-region-edit-button-${record.regionName}`}
               aria-label={t('general.edit')}
             />
-          </Tooltip>
-          <Tooltip title={tSystem('actions.trace')}>
+          </RediaccTooltip>
+          <RediaccTooltip title={tSystem('actions.trace')}>
             <Button
               type="primary"
               size="small"
@@ -335,7 +339,7 @@ const InfrastructurePage: React.FC = () => {
               data-testid={`system-region-trace-button-${record.regionName}`}
               aria-label={tSystem('actions.trace')}
             />
-          </Tooltip>
+          </RediaccTooltip>
           <Popconfirm
             title={t('regions.deleteRegion')}
             description={t('regions.confirmDelete', { regionName: record.regionName })}
@@ -344,7 +348,7 @@ const InfrastructurePage: React.FC = () => {
             cancelText={t('general.no')}
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title={t('general.delete')}>
+            <RediaccTooltip title={t('general.delete')}>
               <Button
                 type="primary"
                 danger
@@ -354,7 +358,7 @@ const InfrastructurePage: React.FC = () => {
                 data-testid={`system-region-delete-button-${record.regionName}`}
                 aria-label={t('general.delete')}
               />
-            </Tooltip>
+            </RediaccTooltip>
           </Popconfirm>
         </Space>
       ),
@@ -444,7 +448,7 @@ const InfrastructurePage: React.FC = () => {
       width: ACTIONS_COLUMN_WIDTH,
       render: (_: unknown, record: Bridge) => (
         <Space>
-          <Tooltip title={t('general.edit')}>
+          <RediaccTooltip title={t('general.edit')}>
             <Button
               type="primary"
               size="small"
@@ -453,8 +457,8 @@ const InfrastructurePage: React.FC = () => {
               data-testid={`system-bridge-edit-button-${record.bridgeName}`}
               aria-label={t('general.edit')}
             />
-          </Tooltip>
-          <Tooltip title={tSystem('actions.token')}>
+          </RediaccTooltip>
+          <RediaccTooltip title={tSystem('actions.token')}>
             <Button
               type="primary"
               size="small"
@@ -463,8 +467,8 @@ const InfrastructurePage: React.FC = () => {
               data-testid={`system-bridge-token-button-${record.bridgeName}`}
               aria-label={tSystem('actions.token')}
             />
-          </Tooltip>
-          <Tooltip title={tSystem('actions.resetAuth')}>
+          </RediaccTooltip>
+          <RediaccTooltip title={tSystem('actions.resetAuth')}>
             <Button
               type="primary"
               size="small"
@@ -479,8 +483,8 @@ const InfrastructurePage: React.FC = () => {
               data-testid={`system-bridge-reset-auth-button-${record.bridgeName}`}
               aria-label={tSystem('actions.resetAuth')}
             />
-          </Tooltip>
-          <Tooltip title={tSystem('actions.trace')}>
+          </RediaccTooltip>
+          <RediaccTooltip title={tSystem('actions.trace')}>
             <Button
               type="primary"
               size="small"
@@ -495,7 +499,7 @@ const InfrastructurePage: React.FC = () => {
               data-testid={`system-bridge-trace-button-${record.bridgeName}`}
               aria-label={tSystem('actions.trace')}
             />
-          </Tooltip>
+          </RediaccTooltip>
           <Popconfirm
             title={t('bridges.deleteBridge')}
             description={t('bridges.confirmDelete', { bridgeName: record.bridgeName })}
@@ -504,7 +508,7 @@ const InfrastructurePage: React.FC = () => {
             cancelText={t('general.no')}
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title={t('general.delete')}>
+            <RediaccTooltip title={t('general.delete')}>
               <Button
                 type="primary"
                 danger
@@ -514,7 +518,7 @@ const InfrastructurePage: React.FC = () => {
                 data-testid={`system-bridge-delete-button-${record.bridgeName}`}
                 aria-label={t('general.delete')}
               />
-            </Tooltip>
+            </RediaccTooltip>
           </Popconfirm>
         </Space>
       ),
@@ -573,7 +577,7 @@ const InfrastructurePage: React.FC = () => {
                 searchPlaceholder={t('regions.searchRegions')}
                 data-testid="system-region-table"
                 actions={
-                  <Tooltip title={t('regions.createRegion')}>
+                  <RediaccTooltip title={t('regions.createRegion')}>
                     <Button
                       type="primary"
                       icon={<PlusOutlined />}
@@ -581,7 +585,7 @@ const InfrastructurePage: React.FC = () => {
                       data-testid="system-create-region-button"
                       aria-label={t('regions.createRegion')}
                     />
-                  </Tooltip>
+                  </RediaccTooltip>
                 }
                 rowSelection={{
                   type: 'radio',
@@ -621,7 +625,7 @@ const InfrastructurePage: React.FC = () => {
                     )}
                   </div>
                   {effectiveRegion && (
-                    <Tooltip title={t('bridges.createBridge')}>
+                    <RediaccTooltip title={t('bridges.createBridge')}>
                       <Button
                         type="primary"
                         icon={<PlusOutlined />}
@@ -631,7 +635,7 @@ const InfrastructurePage: React.FC = () => {
                         data-testid="system-create-bridge-button"
                         aria-label={t('bridges.createBridge')}
                       />
-                    </Tooltip>
+                    </RediaccTooltip>
                   )}
                 </CardHeaderRow>
 
@@ -725,12 +729,10 @@ const InfrastructurePage: React.FC = () => {
                   <TokenCopyRow>
                     <RediaccInput fullWidth value={token} readOnly autoComplete="off" />
                     <Button
-                      icon={<KeyOutlined />}
-                      onClick={() => {
-                        navigator.clipboard.writeText(token);
-                      }}
+                      icon={tokenCopied ? <CheckCircleOutlined /> : <KeyOutlined />}
+                      onClick={() => copyToken(token)}
                     >
-                      {tCommon('actions.copy')}
+                      {tokenCopied ? tCommon('actions.copied') : tCommon('actions.copy')}
                     </Button>
                   </TokenCopyRow>
                 </div>

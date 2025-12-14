@@ -11,15 +11,7 @@ export type { TagVariant, TagPreset };
 export const MachineTableWrapper = styled(FlexColumn).attrs({ $gap: 'MD' })`
   height: 100%;
 
-  .machine-table-row {
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
-
-  .machine-table-row:hover {
-    background-color: var(--color-bg-hover);
-  }
-
+  /* Custom selection state - RediaccTable handles hover via interactive prop */
   .machine-table-row--selected td {
     background-color: var(--color-bg-selected);
   }

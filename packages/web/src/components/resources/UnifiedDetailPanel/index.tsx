@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Tooltip } from 'antd';
 import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
 import { RepositoryDetailPanel } from '@/components/resources/internal/RepositoryDetailPanel';
+import { RediaccTooltip } from '@/components/ui';
 import type { Machine, PluginContainer, Repository } from '@/types';
 import {
   ContainerOutlined,
@@ -157,7 +157,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
 
       {isCollapsed ? (
         <CollapsedPanel data-testid="unified-detail-collapsed">
-          <Tooltip title="Expand Panel" placement="left">
+          <RediaccTooltip title="Expand Panel" placement="left">
             <ToggleButton
               variant="text"
               icon={<DoubleLeftOutlined />}
@@ -165,7 +165,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
               data-testid="unified-detail-expand-button"
               aria-label="Expand Panel"
             />
-          </Tooltip>
+          </RediaccTooltip>
           <CollapsedIcon $type={actualType}>{getResourceIcon()}</CollapsedIcon>
         </CollapsedPanel>
       ) : (

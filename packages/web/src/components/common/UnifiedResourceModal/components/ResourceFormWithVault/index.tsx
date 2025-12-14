@@ -1,9 +1,10 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Col, Form, message, Row } from 'antd';
+import { Col, Form, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import VaultEditor from '@/components/common/VaultEditor';
 import { RediaccDivider } from '@/components/ui';
+import { useMessage } from '@/hooks';
 import { DefaultsBanner } from './components/DefaultsBanner';
 import { FieldRenderer } from './components/FieldRenderer';
 import { ImportExportControls } from './components/ImportExportControls';
@@ -43,6 +44,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     ref
   ) {
     const { t } = useTranslation('common');
+    const message = useMessage();
     const theme = useStyledTheme();
     const rowGutter: [number, number] = [theme.spacing.SM, theme.spacing.SM];
     const [vaultData, setVaultData] = useState<Record<string, unknown>>(initialVaultData);
@@ -67,7 +69,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
       if (!isVaultValid && !shouldSkipVaultValidation) {
         setShowVaultValidationErrors(true);
-        message.error(t('vaultEditor.pleaseFixErrors'));
+        message.error('common:vaultEditor.pleaseFixErrors');
         return;
       }
 

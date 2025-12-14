@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Modal, Space, Tag, Tooltip } from 'antd';
+import { Modal, Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -24,6 +24,7 @@ import ResourceListView, {
 } from '@/components/common/ResourceListView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { RediaccTooltip } from '@/components/ui';
 import {
   ListSubtitle,
   ListTitle,
@@ -665,7 +666,7 @@ const CredentialsPage: React.FC = () => {
             actions={
               hasTeamSelection ? (
                 <>
-                  <Tooltip title={t('repositories.createRepository')}>
+                  <RediaccTooltip title={t('repositories.createRepository')}>
                     <RediaccButton
                       variant="primary"
                       icon={<PlusOutlined />}
@@ -673,15 +674,15 @@ const CredentialsPage: React.FC = () => {
                       onClick={() => openUnifiedModal('create', undefined, 'credentials-only')}
                       aria-label={t('repositories.createRepository')}
                     />
-                  </Tooltip>
-                  <Tooltip title={t('common:actions.refresh')}>
+                  </RediaccTooltip>
+                  <RediaccTooltip title={t('common:actions.refresh')}>
                     <RediaccButton
                       icon={<ReloadOutlined />}
                       data-testid="resources-refresh-button"
                       onClick={() => refetchRepos()}
                       aria-label={t('common:actions.refresh')}
                     />
-                  </Tooltip>
+                  </RediaccTooltip>
                 </>
               ) : undefined
             }

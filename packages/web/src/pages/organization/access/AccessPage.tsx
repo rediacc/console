@@ -9,7 +9,6 @@ import {
   Result,
   Space,
   Tabs,
-  Tooltip,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -37,6 +36,7 @@ import {
   InlineFormRow,
   ModalStack,
   RediaccSelect,
+  RediaccTooltip,
 } from '@/components/ui';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import UserSessionsTab from '@/pages/organization/access/components/UserSessionsTab';
@@ -189,7 +189,7 @@ const AccessPage: React.FC = () => {
       width: 360,
       render: (_: unknown, record: PermissionGroup) => (
         <Space>
-          <Tooltip title={tSystem('actions.permissions')}>
+          <RediaccTooltip title={tSystem('actions.permissions')}>
             <Button
               type="primary"
               size="small"
@@ -198,8 +198,8 @@ const AccessPage: React.FC = () => {
               data-testid={`system-permission-group-manage-button-${record.permissionGroupName}`}
               aria-label={tSystem('actions.permissions')}
             />
-          </Tooltip>
-          <Tooltip title={tSystem('actions.assignUser')}>
+          </RediaccTooltip>
+          <RediaccTooltip title={tSystem('actions.assignUser')}>
             <Button
               type="primary"
               size="small"
@@ -208,8 +208,8 @@ const AccessPage: React.FC = () => {
               data-testid={`system-permission-group-assign-user-button-${record.permissionGroupName}`}
               aria-label={tSystem('actions.assignUser')}
             />
-          </Tooltip>
-          <Tooltip title={tSystem('actions.trace')}>
+          </RediaccTooltip>
+          <RediaccTooltip title={tSystem('actions.trace')}>
             <Button
               type="primary"
               size="small"
@@ -224,7 +224,7 @@ const AccessPage: React.FC = () => {
               data-testid={`system-permission-group-trace-button-${record.permissionGroupName}`}
               aria-label={tSystem('actions.trace')}
             />
-          </Tooltip>
+          </RediaccTooltip>
           <Popconfirm
             title={t('access.modals.deleteGroupTitle', { defaultValue: 'Delete Permission Group' })}
             description={t('access.modals.deleteGroupDescription', {
@@ -236,7 +236,7 @@ const AccessPage: React.FC = () => {
             cancelText={tCommon('general.no')}
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title={tCommon('actions.delete')}>
+            <RediaccTooltip title={tCommon('actions.delete')}>
               <Button
                 type="primary"
                 danger
@@ -246,7 +246,7 @@ const AccessPage: React.FC = () => {
                 data-testid={`system-permission-group-delete-button-${record.permissionGroupName}`}
                 aria-label={tCommon('actions.delete')}
               />
-            </Tooltip>
+            </RediaccTooltip>
           </Popconfirm>
         </Space>
       ),
@@ -276,7 +276,7 @@ const AccessPage: React.FC = () => {
       })}
       data-testid="system-permission-group-table"
       actions={
-        <Tooltip title={tSystem('actions.createGroup')}>
+        <RediaccTooltip title={tSystem('actions.createGroup')}>
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -284,7 +284,7 @@ const AccessPage: React.FC = () => {
             data-testid="system-create-permission-group-button"
             aria-label={tSystem('actions.createGroup')}
           />
-        </Tooltip>
+        </RediaccTooltip>
       }
     />
   );
@@ -388,7 +388,7 @@ const AccessPage: React.FC = () => {
                     renderItem={(permission: string) => (
                       <List.Item
                         actions={[
-                          <Tooltip key="remove" title={tCommon('actions.remove')}>
+                          <RediaccTooltip key="remove" title={tCommon('actions.remove')}>
                             <Button
                               type="primary"
                               danger
@@ -398,7 +398,7 @@ const AccessPage: React.FC = () => {
                               data-testid={`permission-remove-button-${permission}`}
                               aria-label={tCommon('actions.remove')}
                             />
-                          </Tooltip>,
+                          </RediaccTooltip>,
                         ]}
                       >
                         <List.Item.Meta avatar={<KeyOutlined />} title={permission} />
@@ -441,7 +441,7 @@ const AccessPage: React.FC = () => {
                         </AntSelect.Option>
                       ))}
                     </RediaccSelect>
-                    <Tooltip title={tSystem('actions.addPermission')}>
+                    <RediaccTooltip title={tSystem('actions.addPermission')}>
                       <Button
                         type="primary"
                         onClick={handleAddPermission}
@@ -451,7 +451,7 @@ const AccessPage: React.FC = () => {
                         aria-label={tSystem('actions.addPermission')}
                         icon={<PlusOutlined />}
                       />
-                    </Tooltip>
+                    </RediaccTooltip>
                   </InlineFormRow>
                 </ModalStack>
               ),

@@ -1,6 +1,6 @@
-import { QueryKey } from '@tanstack/react-query';
+import { QueryKey, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { createMutation } from '@/hooks/api/mutationFactory';
+import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
 import type {
   CreateCephClusterParams,
@@ -36,9 +36,14 @@ interface MutationFactoryConfig<TData> {
   additionalInvalidateKeys?: (variables: TData) => QueryKey[];
 }
 
+// Helper to normalize query keys to the format expected by queryClient
+const normalizeQueryKey = (key: string | QueryKey): QueryKey => {
+  return typeof key === 'string' ? [key] : key;
+};
+
 /**
  * Factory function for creating ceph mutations
- * Uses the main mutation factory with i18n support for ceph operations
+ * Uses useMutationWithFeedback with i18n support for ceph operations
  */
 export function createCephMutation<TData extends object>(config: MutationFactoryConfig<TData>) {
   const operationLabel = i18n.t(`ceph:mutations.operations.${config.operation}`);
@@ -48,15 +53,24 @@ export function createCephMutation<TData extends object>(config: MutationFactory
     resource: resourceLabel,
   });
 
-  return createMutation<TData>({
-    request: config.request,
-    invalidateKeys: config.getInvalidateKeys,
-    additionalInvalidateKeys: config.additionalInvalidateKeys,
-    successMessage: i18n.t(`ceph:${config.translationKey}`),
-    errorMessage: fallbackError,
-    operationName: `ceph.${config.operation}.${config.resourceKey}`,
-    disableTelemetry: false,
-  });
+  return () => {
+    const queryClient = useQueryClient();
+
+    return useMutationWithFeedback<unknown, Error, TData>({
+      mutationFn: config.request,
+      successMessage: i18n.t(`ceph:${config.translationKey}`),
+      errorMessage: fallbackError,
+      onSuccess: (_, variables) => {
+        const primaryKeys = config.getInvalidateKeys(variables);
+        const additionalKeys = config.additionalInvalidateKeys?.(variables) ?? [];
+        const allKeysToInvalidate = [...primaryKeys, ...additionalKeys];
+
+        allKeysToInvalidate.forEach((key) => {
+          queryClient.invalidateQueries({ queryKey: normalizeQueryKey(key) });
+        });
+      },
+    });
+  };
 }
 
 // =============================================================================

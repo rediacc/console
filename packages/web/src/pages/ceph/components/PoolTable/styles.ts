@@ -1,14 +1,12 @@
 import styled from 'styled-components';
 import { RediaccCard } from '@/components/ui';
+import { TableWrapper as UITableWrapper } from '@/components/ui/Table';
 import { ActionsRow, ExpandIcon, NameCell, NameText } from '@/pages/ceph/styles/tableAliases';
 import { borderedCard } from '@/styles/mixins';
-import { TableContainer as BaseTableContainer, StyledIcon } from '@/styles/primitives';
+import { StyledIcon } from '@/styles/primitives';
 import { CloudServerOutlined, DatabaseOutlined } from '@/utils/optimizedIcons';
 
-/**
- * @deprecated Use <RediaccCard spacing="default" /> with inline styles
- * Note: Cannot fully replace due to custom border/shadow - keep wrapper or use inline styles
- */
+/** Card wrapper for cluster pool groupings with bordered styling */
 export const ClusterCard = styled(RediaccCard)`
   && {
     ${borderedCard()}
@@ -32,7 +30,7 @@ export const CardTitle = styled.span`
 
 // ClusterTag removed - use <RediaccTag variant="primary" compact> directly
 
-export const TableWrapper = styled(BaseTableContainer)`
+export const TableWrapper = styled(UITableWrapper).attrs({ $variant: 'default' })`
   margin-top: ${({ theme }) => theme.spacing.MD}px;
   .pool-row {
     cursor: pointer;

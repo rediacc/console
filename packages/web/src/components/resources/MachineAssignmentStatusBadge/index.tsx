@@ -5,9 +5,8 @@ import {
   CopyOutlined,
   FileImageOutlined,
 } from '@ant-design/icons';
-import { Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { IconWrapper } from '@/components/ui';
+import { IconWrapper, RediaccTooltip } from '@/components/ui';
 import type { TagVariant } from '@/components/ui/Tag';
 import type { MachineAssignmentType } from '@/types';
 import { AssignmentBadge, AssignmentTag, TooltipText } from './styles';
@@ -89,16 +88,18 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
     );
 
     return assignmentDetails ? (
-      <Tooltip title={assignmentDetails}>
+      <RediaccTooltip title={assignmentDetails}>
         <span data-testid="machine-status-badge-tooltip-wrapper">{content}</span>
-      </Tooltip>
+      </RediaccTooltip>
     ) : (
       content
     );
   }
 
   return (
-    <Tooltip title={assignmentDetails ? <TooltipText>{assignmentDetails}</TooltipText> : undefined}>
+    <RediaccTooltip
+      title={assignmentDetails ? <TooltipText>{assignmentDetails}</TooltipText> : undefined}
+    >
       <span data-testid="machine-status-badge-tooltip-wrapper">
         <AssignmentBadge
           variant={config.variant}
@@ -114,7 +115,7 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
           {config.text}
         </AssignmentBadge>
       </span>
-    </Tooltip>
+    </RediaccTooltip>
   );
 };
 

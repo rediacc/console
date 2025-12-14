@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Form, Modal, Tooltip } from 'antd';
+import { Alert, Form, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -10,6 +10,7 @@ import logoWhite from '@/assets/logo_white.png';
 import InsecureConnectionWarning from '@/components/common/InsecureConnectionWarning';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
+import { RediaccTooltip } from '@/components/ui';
 import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTheme } from '@/context/ThemeContext';
@@ -551,9 +552,9 @@ const LoginPage: React.FC = () => {
                   label={
                     <MasterPasswordLabel htmlFor="login-master-password-input">
                       <span>{t('auth:login.masterPassword')}</span>
-                      <Tooltip title={t('auth:login.masterPasswordTooltip')}>
+                      <RediaccTooltip title={t('auth:login.masterPasswordTooltip')}>
                         <InfoCircleOutlined />
-                      </Tooltip>
+                      </RediaccTooltip>
                     </MasterPasswordLabel>
                   }
                   validateStatus={
@@ -600,7 +601,7 @@ const LoginPage: React.FC = () => {
               )}
 
             <LargeGapFormItem>
-              <Tooltip
+              <RediaccTooltip
                 title={
                   !isConnectionSecure
                     ? t('auth:login.insecureConnection.buttonDisabled')
@@ -617,7 +618,7 @@ const LoginPage: React.FC = () => {
                 >
                   {loading ? t('auth:login.signingIn') : t('auth:login.signIn')}
                 </RediaccButton>
-              </Tooltip>
+              </RediaccTooltip>
             </LargeGapFormItem>
           </Form>
 
