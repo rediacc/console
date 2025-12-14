@@ -199,7 +199,7 @@ const NotificationBell: React.FC = () => {
     <Badge count={unreadCount} offset={[-4, 4]}>
       <RediaccDropdown
         trigger={['click']}
-        placement={isMobile ? 'bottom' : 'bottomRight'}
+        placement={isMobile ? 'bottomCenter' : 'bottomRight'}
         open={dropdownOpen}
         onOpenChange={setDropdownOpen}
         menu={{ items: [] }}

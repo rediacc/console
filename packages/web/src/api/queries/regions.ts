@@ -1,10 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import {
-  createMutation,
-  createResourceMutation,
-  createVaultUpdateMutation,
-} from '@/hooks/api/mutationFactory';
+import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import type {
   CreateRegionParams,
   DeleteRegionParams,
@@ -41,32 +37,67 @@ export const useRegionBridges = (regionName: string) => {
 export type { GetCompanyRegions_ResultSet1, GetCompanyRegions_ResultSet1 as Region };
 
 // Create region
-export const useCreateRegion = createResourceMutation<WithOptionalVault<CreateRegionParams>>(
-  'Region',
-  'create',
-  (params) => api.regions.create(params),
-  'regionName'
-);
+export const useCreateRegion = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateRegionParams>>({
+    mutationFn: (params) =>
+      api.regions.create({
+        ...params,
+        vaultContent: params.vaultContent || '{}',
+      }),
+    successMessage: (_, vars) => `Region "${vars.regionName}" created successfully`,
+    errorMessage: 'Failed to create region',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['regions'] });
+    },
+  });
+};
 
 // Update region name
-export const useUpdateRegionName = createMutation<UpdateRegionNameParams>({
-  request: (params) => api.regions.rename(params),
-  invalidateKeys: ['regions', 'dropdown-data'],
-  successMessage: (variables) => `Region renamed to "${variables.newRegionName}"`,
-  errorMessage: 'Failed to update region name',
-  operationName: 'regions.rename',
-});
+export const useUpdateRegionName = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateRegionNameParams>({
+    mutationFn: (params) => api.regions.rename(params),
+    successMessage: (_, vars) => `Region renamed to "${vars.newRegionName}"`,
+    errorMessage: 'Failed to update region name',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['regions'] });
+      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
+    },
+  });
+};
 
 // Update region vault
-export const useUpdateRegionVault = createVaultUpdateMutation<
-  UpdateRegionVaultParams & Record<string, unknown>
->('Region', (params) => api.regions.updateVault(params), 'regionName', 'vaultContent');
+export const useUpdateRegionVault = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<
+    unknown,
+    Error,
+    UpdateRegionVaultParams & Record<string, unknown>
+  >({
+    mutationFn: (params) =>
+      api.regions.updateVault({
+        ...params,
+        vaultContent: JSON.stringify(JSON.parse(params.vaultContent)),
+      }),
+    successMessage: (_, vars) => `Region "${vars.regionName}" vault updated successfully`,
+    errorMessage: 'Failed to update region vault',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['regions'] });
+    },
+  });
+};
 
 // Delete region
-export const useDeleteRegion = createMutation<DeleteRegionParams>({
-  request: (params) => api.regions.delete(params),
-  invalidateKeys: ['regions', 'dropdown-data'],
-  successMessage: (params) => `Region "${params.regionName}" deleted successfully`,
-  errorMessage: 'Failed to delete region',
-  operationName: 'regions.delete',
-});
+export const useDeleteRegion = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, DeleteRegionParams>({
+    mutationFn: (params) => api.regions.delete(params),
+    successMessage: (_, vars) => `Region "${vars.regionName}" deleted successfully`,
+    errorMessage: 'Failed to delete region',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['regions'] });
+      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
+    },
+  });
+};

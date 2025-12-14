@@ -1,10 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import {
-  createMutation,
-  createResourceMutation,
-  createVaultUpdateMutation,
-} from '@/hooks/api/mutationFactory';
+import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import type {
   CreateStorageParams,
   DeleteStorageParams,
@@ -30,35 +26,69 @@ export const useStorage = (teamFilter?: string | string[]) => {
 };
 
 // Create storage
-export const useCreateStorage = createMutation<WithOptionalVault<CreateStorageParams>>({
-  request: (params) => api.storage.create(params),
-  invalidateKeys: ['storage', 'teams'],
-  successMessage: (vars) => `Storage "${vars.storageName}" created successfully`,
-  errorMessage: 'Failed to create storage',
-  transformData: (data) => ({
-    ...data,
-    vaultContent: data.vaultContent || '{}',
-  }),
-  operationName: 'storage.create',
-});
+export const useCreateStorage = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateStorageParams>>({
+    mutationFn: (params) =>
+      api.storage.create({
+        ...params,
+        vaultContent: params.vaultContent || '{}',
+      }),
+    successMessage: (_, vars) => `Storage "${vars.storageName}" created successfully`,
+    errorMessage: 'Failed to create storage',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['storage'] });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+    },
+  });
+};
 
 // Update storage name
-export const useUpdateStorageName = createMutation<UpdateStorageNameParams>({
-  request: (params) => api.storage.rename(params),
-  invalidateKeys: ['storage'],
-  successMessage: (vars) => `Storage renamed to "${vars.newStorageName}"`,
-  errorMessage: 'Failed to update storage name',
-  operationName: 'storage.rename',
-});
+export const useUpdateStorageName = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateStorageNameParams>({
+    mutationFn: (params) => api.storage.rename(params),
+    successMessage: (_, vars) => `Storage renamed to "${vars.newStorageName}"`,
+    errorMessage: 'Failed to update storage name',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['storage'] });
+    },
+  });
+};
 
 // Update storage vault
-export const useUpdateStorageVault = createVaultUpdateMutation<
-  UpdateStorageVaultParams & Record<string, unknown>
->('Storage', (params) => api.storage.updateVault(params), 'storageName', 'vaultContent');
+export const useUpdateStorageVault = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<
+    unknown,
+    Error,
+    UpdateStorageVaultParams & Record<string, unknown>
+  >({
+    mutationFn: (params) =>
+      api.storage.updateVault({
+        ...params,
+        vaultContent: JSON.stringify(JSON.parse(params.vaultContent)),
+      }),
+    successMessage: (_, vars) => `Storage "${vars.storageName}" vault updated successfully`,
+    errorMessage: 'Failed to update storage vault',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['storage'] });
+    },
+  });
+};
 
 // Delete storage
-export const useDeleteStorage = createResourceMutation<
-  DeleteStorageParams & Record<string, unknown>
->('Storage', 'delete', (params) => api.storage.delete(params), 'storageName', ['teams']);
+export const useDeleteStorage = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, DeleteStorageParams & Record<string, unknown>>({
+    mutationFn: (params) => api.storage.delete(params),
+    successMessage: (_, vars) => `Storage "${vars.storageName}" deleted successfully`,
+    errorMessage: 'Failed to delete storage',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['storage'] });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+    },
+  });
+};
 
 export type { GetTeamStorages_ResultSet1 };

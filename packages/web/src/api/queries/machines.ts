@@ -1,11 +1,8 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { QUERY_KEY_STRINGS } from '@/api/queryKeys';
-import {
-  createMutation,
-  createResourceMutation,
-  createVaultUpdateMutation,
-} from '@/hooks/api/mutationFactory';
 import { createResourceQuery } from '@/hooks/api/queryFactory';
+import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import type { Machine } from '@/types';
 import type {
   CreateMachineParams,
@@ -24,53 +21,88 @@ export const useMachines = createResourceQuery<Machine>({
 });
 
 // Create machine
-export const useCreateMachine = createMutation<WithOptionalVault<CreateMachineParams>>({
-  request: (params) => api.machines.create(params),
-  invalidateKeys: [
-    QUERY_KEY_STRINGS.machines,
-    QUERY_KEY_STRINGS.teams,
-    QUERY_KEY_STRINGS.bridges,
-    QUERY_KEY_STRINGS.dropdown,
-  ],
-  successMessage: (vars) => `Machine "${vars.machineName}" created successfully`,
-  errorMessage: 'Failed to create machine',
-  transformData: ({ teamName, bridgeName, machineName, vaultContent }) => ({
-    teamName,
-    bridgeName,
-    machineName,
-    vaultContent: vaultContent || '{}',
-  }),
-  operationName: 'machines.create',
-});
+export const useCreateMachine = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateMachineParams>>({
+    mutationFn: ({ teamName, bridgeName, machineName, vaultContent }) =>
+      api.machines.create({
+        teamName,
+        bridgeName,
+        machineName,
+        vaultContent: vaultContent || '{}',
+      }),
+    successMessage: (_, vars) => `Machine "${vars.machineName}" created successfully`,
+    errorMessage: 'Failed to create machine',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.bridges] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.dropdown] });
+    },
+  });
+};
 
 // Update machine name
-export const useUpdateMachineName = createMutation<UpdateMachineNameParams>({
-  request: (params) => api.machines.rename(params),
-  invalidateKeys: [QUERY_KEY_STRINGS.machines, QUERY_KEY_STRINGS.dropdown],
-  successMessage: (vars) => `Machine renamed to "${vars.newMachineName}"`,
-  errorMessage: 'Failed to update machine name',
-  operationName: 'machines.rename',
-});
+export const useUpdateMachineName = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateMachineNameParams>({
+    mutationFn: (params) => api.machines.rename(params),
+    successMessage: (_, vars) => `Machine renamed to "${vars.newMachineName}"`,
+    errorMessage: 'Failed to update machine name',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.dropdown] });
+    },
+  });
+};
 
 // Update machine bridge assignment
-export const useUpdateMachineBridge = createMutation<UpdateMachineAssignedBridgeParams>({
-  request: (params) => api.machines.assignBridge(params),
-  invalidateKeys: [QUERY_KEY_STRINGS.machines, QUERY_KEY_STRINGS.bridges],
-  successMessage: (vars) =>
-    `Machine "${vars.machineName}" reassigned to bridge "${vars.newBridgeName}"`,
-  errorMessage: 'Failed to update machine bridge',
-  operationName: 'machines.assignBridge',
-});
+export const useUpdateMachineBridge = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, UpdateMachineAssignedBridgeParams>({
+    mutationFn: (params) => api.machines.assignBridge(params),
+    successMessage: (_, vars) =>
+      `Machine "${vars.machineName}" reassigned to bridge "${vars.newBridgeName}"`,
+    errorMessage: 'Failed to update machine bridge',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.bridges] });
+    },
+  });
+};
 
 // Update machine vault
-export const useUpdateMachineVault = createVaultUpdateMutation<
-  UpdateMachineVaultParams & Record<string, unknown>
->('Machine', (data) => api.machines.updateVault(data), 'machineName', 'vaultContent');
+export const useUpdateMachineVault = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<
+    unknown,
+    Error,
+    UpdateMachineVaultParams & Record<string, unknown>
+  >({
+    mutationFn: (params) =>
+      api.machines.updateVault({
+        ...params,
+        vaultContent: JSON.stringify(JSON.parse(params.vaultContent)),
+      }),
+    successMessage: (_, vars) => `Machine "${vars.machineName}" vault updated successfully`,
+    errorMessage: 'Failed to update machine vault',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
+    },
+  });
+};
 
 // Delete machine
-export const useDeleteMachine = createResourceMutation<
-  DeleteMachineParams & Record<string, unknown>
->('Machine', 'delete', (variables) => api.machines.delete(variables), 'machineName', [
-  QUERY_KEY_STRINGS.teams,
-  QUERY_KEY_STRINGS.bridges,
-]);
+export const useDeleteMachine = () => {
+  const queryClient = useQueryClient();
+  return useMutationWithFeedback<unknown, Error, DeleteMachineParams & Record<string, unknown>>({
+    mutationFn: (params) => api.machines.delete(params),
+    successMessage: (_, vars) => `Machine "${vars.machineName}" deleted successfully`,
+    errorMessage: 'Failed to delete machine',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.bridges] });
+    },
+  });
+};
