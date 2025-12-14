@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Badge, Dropdown, Empty, Grid, List, Space, Tag } from 'antd';
+import { Badge, Empty, Grid, List, Space, Tag } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { RediaccText } from '@/components/ui';
+import { RediaccDropdown, RediaccText } from '@/components/ui';
 import {
   clearAllNotifications,
   clearNotification,
@@ -197,9 +197,9 @@ const NotificationBell: React.FC = () => {
 
   return (
     <Badge count={unreadCount} offset={[-4, 4]}>
-      <Dropdown
+      <RediaccDropdown
         trigger={['click']}
-        placement={isMobile ? 'bottom' : 'bottomRight'}
+        placement={isMobile ? 'bottomCenter' : 'bottomRight'}
         open={dropdownOpen}
         onOpenChange={setDropdownOpen}
         menu={{ items: [] }}
@@ -211,7 +211,7 @@ const NotificationBell: React.FC = () => {
           aria-label="Notifications"
           data-testid="notification-bell"
         />
-      </Dropdown>
+      </RediaccDropdown>
     </Badge>
   );
 };
