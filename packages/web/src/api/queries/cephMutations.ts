@@ -61,17 +61,13 @@ export function createCephMutation<TData extends object>(config: MutationFactory
       successMessage: i18n.t(`ceph:${config.translationKey}`),
       errorMessage: fallbackError,
       onSuccess: (_, variables) => {
-        // Invalidate primary keys
-        const keys = config.getInvalidateKeys(variables);
-        keys.forEach((key) => queryClient.invalidateQueries({ queryKey: normalizeQueryKey(key) }));
+        const primaryKeys = config.getInvalidateKeys(variables);
+        const additionalKeys = config.additionalInvalidateKeys?.(variables) ?? [];
+        const allKeysToInvalidate = [...primaryKeys, ...additionalKeys];
 
-        // Invalidate additional keys if provided
-        if (config.additionalInvalidateKeys) {
-          const additionalKeys = config.additionalInvalidateKeys(variables);
-          additionalKeys.forEach((key) =>
-            queryClient.invalidateQueries({ queryKey: normalizeQueryKey(key) })
-          );
-        }
+        allKeysToInvalidate.forEach((key) => {
+          queryClient.invalidateQueries({ queryKey: normalizeQueryKey(key) });
+        });
       },
     });
   };

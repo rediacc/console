@@ -1,8 +1,8 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Alert, Button, Checkbox, Collapse, Modal, Space, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { RediaccStack, RediaccText } from '@/components/ui';
-import { useMessage } from '@/hooks';
+import { useCopyToClipboard, useMessage } from '@/hooks';
 import { InstallOptions, pipInstallationService } from '@/services/pipInstallationService';
 import { ModalSize } from '@/types/modal';
 import {
@@ -43,20 +43,12 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
   description,
   showCopy = true,
 }) => {
-  const [copied, setCopied] = useState(false);
-  const message = useMessage();
+  const { copy, copied } = useCopyToClipboard({
+    successMessage: 'common:commandCopied',
+    errorMessage: 'common:commandCopyFailed',
+  });
 
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(command);
-      setCopied(true);
-      message.success('common:commandCopied');
-      // Reset copy state immediately after user interaction
-      setCopied(false);
-    } catch {
-      message.error('common:commandCopyFailed');
-    }
-  }, [command, message]);
+  const handleCopy = () => copy(command);
 
   const formattedCommands = pipInstallationService.formatCommandsForDisplay([command]);
   const { isCommand, isComment } = formattedCommands[0];

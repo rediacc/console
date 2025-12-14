@@ -57,6 +57,7 @@ import {
   SectionStack,
 } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
+import { useCopyToClipboard } from '@/hooks';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { ACTIONS_COLUMN_WIDTH, ModalAlert, TokenCopyRow } from '@/pages/system/styles';
 import { createSorter } from '@/platform';
@@ -83,6 +84,9 @@ const InfrastructurePage: React.FC = () => {
   const { t: tSystem } = useTranslation('system');
   const { t: tCommon } = useTranslation('common');
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
+  const { copy: copyToken, copied: tokenCopied } = useCopyToClipboard({
+    successMessage: 'common:copiedToClipboard',
+  });
 
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const bridgeCredentialsModal = useDialogState<Bridge>();
@@ -725,12 +729,10 @@ const InfrastructurePage: React.FC = () => {
                   <TokenCopyRow>
                     <RediaccInput fullWidth value={token} readOnly autoComplete="off" />
                     <Button
-                      icon={<KeyOutlined />}
-                      onClick={() => {
-                        navigator.clipboard.writeText(token);
-                      }}
+                      icon={tokenCopied ? <CheckCircleOutlined /> : <KeyOutlined />}
+                      onClick={() => copyToken(token)}
                     >
-                      {tCommon('actions.copy')}
+                      {tokenCopied ? tCommon('actions.copied') : tCommon('actions.copy')}
                     </Button>
                   </TokenCopyRow>
                 </div>

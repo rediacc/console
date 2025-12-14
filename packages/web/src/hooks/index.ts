@@ -57,3 +57,6 @@ export { useUnifiedModal } from './useUnifiedModal';
 export type { MessageOptions, UseMessageReturn } from './useMessage';
 // Toast notification hook with i18n support
 export { useMessage } from './useMessage';
+export type { UseCopyToClipboardOptions, UseCopyToClipboardReturn } from './useCopyToClipboard';
+// Clipboard copy hook with visual feedback
+export { useCopyToClipboard } from './useCopyToClipboard';

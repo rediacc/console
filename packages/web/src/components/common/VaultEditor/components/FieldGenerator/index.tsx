@@ -80,8 +80,8 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
       .then(() => {
         setCopiedField(field);
         message.success('common:fieldGenerator.copied');
-        // Reset copy state immediately after user interaction
-        setCopiedField(null);
+        // Reset copy state after delay to show visual feedback
+        setTimeout(() => setCopiedField(null), 2000);
       })
       .catch(() => message.error('common:fieldGenerator.copyError'));
   };
