@@ -1,0 +1,1 @@
+import{j as r}from"./chunk-BcoMUYMA.js";import{cB as a}from"../index-BH3CdaUu.js";const o=({variant:o="default",critical:c=!1,color:i,...t})=>r.jsx(a,{$variant:o,$critical:c,$color:i,...t});export{o as R};
