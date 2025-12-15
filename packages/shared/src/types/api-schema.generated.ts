@@ -2,7 +2,7 @@
  * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
  *
  * Generated from: middleware/AppData/stored-procedures.json
- * Generated at: 2025-12-12T14:56:10Z
+ * Generated at: 2025-12-15T09:40:56Z
  * Schema version: 3.0.0
  * Schema generated: 2025-12-12T14:56:10.0016831Z
  *

@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import { createApiServices, normalizeResponse } from '@rediacc/shared/api';
-import { createVaultEncryptor } from '@rediacc/shared/encryption';
+import { createVaultEncryptor, isEncrypted } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { nodeStorageAdapter } from '../adapters/storage.js';
@@ -15,6 +15,39 @@ const STORAGE_KEYS = {
 } as const;
 
 const vaultEncryptor = createVaultEncryptor(nodeCryptoProvider);
+
+/**
+ * Check if an object contains any vault fields with actually encrypted content.
+ * This differs from hasVaultFields() which only checks field names.
+ * We check the actual content to determine if decryption is needed.
+ */
+function hasEncryptedVaultContent(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+
+  const check = (obj: unknown): boolean => {
+    if (!obj || typeof obj !== 'object') return false;
+
+    if (Array.isArray(obj)) {
+      return obj.some(item => check(item));
+    }
+
+    for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
+      // Check if this is a vault field with encrypted content
+      if (key.toLowerCase().includes('vault') && typeof val === 'string') {
+        if (isEncrypted(val)) {
+          return true;
+        }
+      }
+      // Recursively check nested objects
+      if (val && typeof val === 'object' && check(val)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  return check(value);
+}
 
 class CliApiClient implements SharedApiClient {
   private client: AxiosInstance;
@@ -193,8 +226,11 @@ class CliApiClient implements SharedApiClient {
         throw this.createApiError(responseData);
       }
 
-      // Decrypt vault fields in response data (only get password if needed and not already fetched)
-      if (vaultEncryptor.hasVaultFields(responseData)) {
+      // Decrypt vault fields in response data (only if content is actually encrypted)
+      // We check if vault fields contain encrypted content (not just if vault fields exist)
+      // This prevents unnecessary master password prompts when company doesn't have encryption
+      const hasEncrypted = hasEncryptedVaultContent(responseData);
+      if (hasEncrypted) {
         if (!masterPassword) {
           masterPassword = await this.getMasterPassword();
         }
