@@ -170,12 +170,15 @@ class CliApiClient implements SharedApiClient {
     }
 
     try {
-      // Encrypt vault fields in request data if present
+      // Encrypt vault fields in request data if present (only get password if needed)
       let requestData = data || {};
-      const masterPassword = await this.getMasterPassword();
+      let masterPassword: string | null = null;
 
-      if (masterPassword && vaultEncryptor.hasVaultFields(requestData)) {
-        requestData = await vaultEncryptor.encrypt(requestData, masterPassword);
+      if (vaultEncryptor.hasVaultFields(requestData)) {
+        masterPassword = await this.getMasterPassword();
+        if (masterPassword) {
+          requestData = await vaultEncryptor.encrypt(requestData, masterPassword);
+        }
       }
 
       const response = await this.client.post<ApiResponse<T>>(endpoint, requestData, {
@@ -190,9 +193,14 @@ class CliApiClient implements SharedApiClient {
         throw this.createApiError(responseData);
       }
 
-      // Decrypt vault fields in response data
-      if (masterPassword && vaultEncryptor.hasVaultFields(responseData)) {
-        responseData = await vaultEncryptor.decrypt(responseData, masterPassword);
+      // Decrypt vault fields in response data (only get password if needed and not already fetched)
+      if (vaultEncryptor.hasVaultFields(responseData)) {
+        if (!masterPassword) {
+          masterPassword = await this.getMasterPassword();
+        }
+        if (masterPassword) {
+          responseData = await vaultEncryptor.decrypt(responseData, masterPassword);
+        }
       }
 
       return normalizeResponse(responseData);
