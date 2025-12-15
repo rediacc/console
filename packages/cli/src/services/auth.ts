@@ -134,6 +134,15 @@ class AuthService {
     const encrypted = await nodeStorageAdapter.getItem(STORAGE_KEYS.MASTER_PASSWORD);
 
     if (encrypted) {
+      // In non-interactive mode (no TTY), skip prompting and throw error
+      // This prevents blocking in CI/scripted environments
+      if (!process.stdin.isTTY) {
+        throw new AuthError(
+          'Master password required but running in non-interactive mode. Set REDIACC_MASTER_PASSWORD environment variable.',
+          EXIT_CODES.AUTH_REQUIRED
+        );
+      }
+
       // We need the password to decrypt it - prompt user
       const password = await askPassword('Enter your master password:');
 
