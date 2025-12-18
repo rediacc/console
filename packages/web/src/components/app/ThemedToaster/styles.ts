@@ -17,33 +17,31 @@ const baseToastStyles = {
   alignItems: 'center',
 } as const;
 
-const getToneStyles = (tone: 'success' | 'error' | 'info' | 'warning', isDark: boolean) => {
+const getToneStyles = (tone: 'success' | 'error' | 'info' | 'warning') => {
   const toneMap = {
     success: {
       color: 'var(--color-success)',
-      background: isDark ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)',
+      background: 'var(--color-bg-primary)',
     },
     error: {
       color: 'var(--color-error)',
-      background: isDark ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)',
+      background: 'var(--color-bg-primary)',
     },
     info: {
       color: 'var(--color-info)',
-      background: isDark ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)',
+      background: 'var(--color-bg-primary)',
     },
     warning: {
       color: 'var(--color-warning)',
-      background: isDark ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)',
+      background: 'var(--color-bg-primary)',
     },
   };
 
   return toneMap[tone];
 };
 
-export const createToastOptions = (mode: 'light' | 'dark'): DefaultToastOptions => {
-  const isDark = mode === 'dark';
-  const surface = isDark ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)';
-  const borderColor = 'var(--color-border-primary)';
+export const createToastOptions = (): DefaultToastOptions => {
+  const surface = 'var(--color-bg-primary)';
 
   return {
     duration: 4000,
@@ -51,8 +49,6 @@ export const createToastOptions = (mode: 'light' | 'dark'): DefaultToastOptions 
       ...baseToastStyles,
       background: surface,
       color: 'var(--color-text-primary)',
-      border: `1px solid ${borderColor}`,
-      boxShadow: 'var(--shadow-lg)',
     },
     success: {
       iconTheme: {
@@ -61,8 +57,7 @@ export const createToastOptions = (mode: 'light' | 'dark'): DefaultToastOptions 
       },
       style: {
         ...baseToastStyles,
-        ...getToneStyles('success', isDark),
-        border: `2px solid var(--color-success)`,
+        ...getToneStyles('success'),
       },
     },
     error: {
@@ -72,8 +67,7 @@ export const createToastOptions = (mode: 'light' | 'dark'): DefaultToastOptions 
       },
       style: {
         ...baseToastStyles,
-        ...getToneStyles('error', isDark),
-        border: `2px solid var(--color-error)`,
+        ...getToneStyles('error'),
       },
     },
     loading: {
@@ -83,15 +77,13 @@ export const createToastOptions = (mode: 'light' | 'dark'): DefaultToastOptions 
       },
       style: {
         ...baseToastStyles,
-        ...getToneStyles('info', isDark),
-        border: `2px solid var(--color-info)`,
+        ...getToneStyles('info'),
       },
     },
     custom: {
       style: {
         ...baseToastStyles,
-        ...getToneStyles('warning', isDark),
-        border: `2px solid var(--color-warning)`,
+        ...getToneStyles('warning'),
       },
     },
   };

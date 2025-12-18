@@ -10,11 +10,7 @@ export const EditorContainer = styled.div`
 `;
 
 export const SummaryCard = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-  padding: ${({ theme }) => theme.spacing.MD}px;
-  background-color: ${({ theme }) => theme.colors.bgTertiary};
   ${borderedCard()}
-  box-shadow: ${({ theme }) => theme.shadows.CARD};
 `;
 
 // Removed: Use <RediaccText size="lg" weight="semibold" style={{ marginBottom: theme.spacing.XS }}>
@@ -26,8 +22,6 @@ export const SummaryCard = styled.div`
 export const SummaryBadgeRow = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const UniformTag = styled(RediaccTag)`
@@ -39,15 +33,13 @@ export const UniformTag = styled(RediaccTag)`
 // Removed: Use <RediaccText variant="caption" color="secondary"> with inline styles
 // for font-family, background-color, padding, border-radius
 
-export const EditorStack = styled(FlexColumn).attrs({ $gap: 'LG' })`
+export const EditorStack = styled(FlexColumn).attrs({})`
   width: 100%;
 `;
 
 export const AddEntryCard = styled(RediaccCard)`
   && {
-    background-color: ${({ theme }) => theme.colors.bgSecondary};
-    ${borderedCard('borderPrimary')}
-    box-shadow: ${({ theme }) => theme.shadows.CARD};
+    ${borderedCard()}
   }
 `;
 
@@ -87,7 +79,6 @@ export const SecondaryActionButton = styled(RediaccButton)``;
 export const CollapseWrapper = styled(Collapse)`
   && {
     background-color: transparent;
-    border: none;
   }
 `;
 
@@ -116,16 +107,11 @@ export const PanelActions = InlineStack;
 
 export const PanelDeleteButton = styled(RediaccButton).attrs({ iconOnly: true, variant: 'danger' })`
   && {
-    padding: 0;
   }
 `;
 
 export const RawJsonCard = styled(RediaccCard)`
   && {
-    background-color: ${({ theme }) => theme.colors.bgSecondary};
-    border: 1px solid ${({ theme }) => theme.colors.borderPrimary};
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    box-shadow: ${({ theme }) => theme.shadows.CARD};
   }
 `;
 
@@ -138,16 +124,10 @@ export const RawJsonCard = styled(RediaccCard)`
 // Removed: Use <RediaccText variant="label"> directly (or size="sm" weight="medium")
 
 export const InlineFormItem = styled(Form.Item)`
-  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const ImagePatternCard = styled(RediaccCard)`
   && {
-    margin-top: ${({ theme }) => theme.spacing.SM}px;
-    background-color: ${({ theme }) => theme.colors.bgTertiary};
-    border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    box-shadow: ${({ theme }) => theme.shadows.CARD};
   }
 `;
 
@@ -162,7 +142,6 @@ export const TitleText = styled(RediaccText).attrs({
   weight: 'semibold',
 })`
   && {
-    margin-bottom: ${({ theme }) => theme.spacing.XS / 2}px;
   }
 `;
 
@@ -172,7 +151,6 @@ export const DescriptionWrapper = styled(RediaccText).attrs({
   && {
     display: flex;
     align-items: center;
-    gap: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 
@@ -182,9 +160,6 @@ export const FieldsText = styled(RediaccText).attrs({
 })`
   && {
     font-family: ${({ theme }) => theme.fontFamily.MONO};
-    background-color: var(--color-bg-secondary);
-    padding: ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.spacing.SM}px;
-    border-radius: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 
@@ -195,7 +170,6 @@ export const JsonEditorTitleWrapper = styled(RediaccText).attrs({
   && {
     display: flex;
     align-items: center;
-    gap: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 
@@ -204,6 +178,5 @@ export const JsonErrorText = styled(RediaccText).attrs({
 })`
   && {
     display: block;
-    margin-bottom: ${({ theme }) => theme.spacing.SM}px;
   }
 `;

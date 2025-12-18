@@ -10,8 +10,6 @@ import { CloudServerOutlined, DatabaseOutlined } from '@/utils/optimizedIcons';
 export const ClusterCard = styled(RediaccCard)`
   && {
     ${borderedCard()}
-    box-shadow: ${({ theme }) => theme.shadows.CARD};
-    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
 
@@ -25,20 +23,16 @@ export const CardIcon = styled(StyledIcon).attrs(({ theme }) => ({
 
 export const CardTitle = styled.span`
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 // ClusterTag removed - use <RediaccTag variant="primary" compact> directly
 
 export const TableWrapper = styled(UITableWrapper).attrs({ $variant: 'default' })`
-  margin-top: ${({ theme }) => theme.spacing.MD}px;
   .pool-row {
     cursor: pointer;
-    transition: background-color ${({ theme }) => theme.transitions.FAST};
   }
 
   .pool-row:hover {
-    background: ${({ theme }) => theme.colors.bgHover};
   }
 `;
 

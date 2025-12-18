@@ -710,7 +710,11 @@ const CredentialsPage: React.FC = () => {
         hiddenParams={['repository', 'grand']}
         defaultParams={
           currentResource
-            ? { repository: currentResource.repositoryGuid, grand: currentResource.grandGuid || '' }
+            ? {
+                repository: currentResource.repositoryGuid,
+                repositoryName: currentResource.repositoryName,
+                grand: currentResource.grandGuid || '',
+              }
             : {}
         }
       />

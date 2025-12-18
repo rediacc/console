@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { Alert, Space, Tag } from 'antd';
+import { Alert, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -8,9 +8,10 @@ import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ActionGroup, CenteredState } from '@/components/common/styled';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
 import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import { RediaccTooltip } from '@/components/ui';
+import { RediaccTag, RediaccTooltip } from '@/components/ui';
 import { RediaccButton, RediaccCard, RediaccText } from '@/components/ui';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
@@ -116,6 +117,9 @@ const MachineReposPage: React.FC = () => {
     data?: Record<string, unknown>;
     creationContext?: 'credentials-only' | 'normal';
   }>();
+
+  // Connectivity test modal state
+  const connectivityTest = useDialogState();
 
   // Fetch all machines to find our specific machine if not passed via state
   const {
@@ -348,16 +352,16 @@ const MachineReposPage: React.FC = () => {
                   </HeaderTitleText>
                 </TitleRow>
                 <ActionGroup>
-                  <Tag color="success">
+                  <RediaccTag variant="success">
                     {t('machines:team')}: {machine?.teamName}
-                  </Tag>
-                  <Tag color="blue">
+                  </RediaccTag>
+                  <RediaccTag variant="info">
                     {t('machines:bridge')}: {machine?.bridgeName}
-                  </Tag>
+                  </RediaccTag>
                   {machine?.regionName && (
-                    <Tag color="default">
+                    <RediaccTag variant="neutral">
                       {t('machines:region')}: {machine.regionName}
-                    </Tag>
+                    </RediaccTag>
                   )}
                 </ActionGroup>
               </TitleColumn>
@@ -379,12 +383,14 @@ const MachineReposPage: React.FC = () => {
                     data-testid="machine-repositories-pull-button"
                   />
                 </RediaccTooltip>
-                <RediaccTooltip title={t('common:actions.refresh')}>
+                <RediaccTooltip title={t('machines:checkAndRefresh')}>
                   <RediaccButton
                     iconOnly
                     icon={<ReloadOutlined />}
-                    onClick={handleRefresh}
-                    data-testid="machine-repositories-refresh-button"
+                    onClick={() => connectivityTest.open()}
+                    disabled={!machine}
+                    data-testid="machine-repositories-test-and-refresh-button"
+                    aria-label={t('machines:checkAndRefresh')}
                   />
                 </RediaccTooltip>
               </ActionsRow>
@@ -466,6 +472,17 @@ const MachineReposPage: React.FC = () => {
         teamFilter={machine?.teamName ? [machine.teamName] : undefined}
         creationContext={unifiedModal.state.data?.creationContext}
         onSubmit={handleUnifiedModalSubmit}
+      />
+
+      <ConnectivityTestModal
+        data-testid="machine-repositories-connectivity-test-modal"
+        open={connectivityTest.isOpen}
+        onClose={() => {
+          connectivityTest.close();
+          handleRefresh();
+        }}
+        machines={machine ? [machine] : []}
+        teamFilter={machine?.teamName ? [machine.teamName] : undefined}
       />
     </PageWrapper>
   );

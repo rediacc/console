@@ -10,21 +10,19 @@ export const StyledModal = styled(BaseModal)`
 `;
 
 export const ContentStack = styled(ModalBody)`
-  gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const SessionExpiredTitle = styled(RediaccText)`
   && {
-    margin: 0;
     color: var(--color-error);
   }
 `;
 
 export const CountdownCard = styled.div`
-  background: ${({ theme }) => theme.colors.bgSecondary};
+  background: ${({ theme }) => theme.colors.bgPrimary};
   padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
   text-align: center;
-  ${borderedCard('borderSecondary', 'MD')}
+  ${borderedCard()}
 `;
 
 export const CountdownText = styled(RediaccText)`

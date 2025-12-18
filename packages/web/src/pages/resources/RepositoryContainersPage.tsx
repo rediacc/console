@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Space, Tag } from 'antd';
+import { Alert, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -8,10 +8,11 @@ import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ActionGroup, CenteredState } from '@/components/common/styled';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import { RediaccTooltip } from '@/components/ui';
+import { RediaccTag, RediaccTooltip } from '@/components/ui';
 import { RediaccButton, RediaccText } from '@/components/ui';
 import { DETAIL_PANEL } from '@/constants/layout';
-import { useQueueTraceModal } from '@/hooks/useDialogState';
+import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
+import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { RepositoryContainerTable } from '@/pages/resources/components/RepositoryContainerTable';
 import { Machine, PluginContainer } from '@/types';
@@ -80,6 +81,7 @@ const RepoContainersPage: React.FC = () => {
   const [selectedContainer, setSelectedContainer] = useState<PluginContainer | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const queueTrace = useQueueTraceModal();
+  const connectivityTest = useDialogState();
 
   // Fetch machine data if not provided via state
   const { data: machines, isLoading: machinesLoading, refetch: refetchMachines } = useMachines();
@@ -296,30 +298,32 @@ const RepoContainersPage: React.FC = () => {
                 </HeaderTitleText>
               </TitleRow>
               <ActionGroup>
-                <Tag color="default">
+                <RediaccTag variant="neutral">
                   {t('machines:machine')}: {actualMachine.machineName}
-                </Tag>
-                <Tag color="success">
+                </RediaccTag>
+                <RediaccTag variant="success">
                   {t('machines:team')}: {actualMachine.teamName}
-                </Tag>
-                <Tag color="blue">
+                </RediaccTag>
+                <RediaccTag variant="info">
                   {t('machines:bridge')}: {actualMachine.bridgeName}
-                </Tag>
+                </RediaccTag>
                 {actualMachine.regionName && (
-                  <Tag color="cyan">
+                  <RediaccTag variant="info">
                     {t('machines:region')}: {actualMachine.regionName}
-                  </Tag>
+                  </RediaccTag>
                 )}
               </ActionGroup>
             </TitleColumn>
 
             <ActionsRow>
-              <RediaccTooltip title={t('common:actions.refresh')}>
+              <RediaccTooltip title={t('machines:checkAndRefresh')}>
                 <RediaccButton
                   iconOnly
                   icon={<ReloadOutlined />}
-                  onClick={handleRefresh}
-                  data-testid="repository-containers-refresh-button"
+                  onClick={() => connectivityTest.open()}
+                  disabled={!actualMachine}
+                  data-testid="repository-containers-test-and-refresh-button"
+                  aria-label={t('machines:checkAndRefresh')}
                 />
               </RediaccTooltip>
             </ActionsRow>
@@ -383,6 +387,17 @@ const RepoContainersPage: React.FC = () => {
           }}
         />
       )}
+
+      <ConnectivityTestModal
+        data-testid="repository-containers-connectivity-test-modal"
+        open={connectivityTest.isOpen}
+        onClose={() => {
+          connectivityTest.close();
+          handleRefresh();
+        }}
+        machines={actualMachine ? [actualMachine] : []}
+        teamFilter={actualMachine?.teamName ? [actualMachine.teamName] : undefined}
+      />
     </PageWrapper>
   );
 };

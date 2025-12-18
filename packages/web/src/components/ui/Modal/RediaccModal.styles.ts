@@ -1,17 +1,6 @@
 import { Modal as AntModal } from 'antd';
-import styled, { css, keyframes } from 'styled-components';
+import styled, { css } from 'styled-components';
 import type { ModalSize, ModalVariant } from './RediaccModal.types';
-
-export const fadeInAnimation = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
 
 const MODAL_WIDTH_MAP: Record<ModalSize, string | number> = {
   sm: 400,
@@ -38,12 +27,10 @@ export const StyledRediaccModal = styled(AntModal).withConfig({
       max-width: 100vw;
       top: 0;
       padding: 0;
-      margin: 0;
     }
 
     .ant-modal-content {
       height: 100vh;
-      border-radius: 0;
     }
 
     .ant-modal-body {
@@ -54,21 +41,13 @@ export const StyledRediaccModal = styled(AntModal).withConfig({
   `}
 
   .ant-modal-content {
-    background-color: ${({ theme }) => theme.colors.bgPrimary};
-    border-radius: ${({ theme }) => theme.borderRadius.XL}px;
-    box-shadow: ${({ theme }) => theme.shadows.MODAL};
-    animation: ${fadeInAnimation} 0.3s ease-in-out;
   }
 
   .ant-modal-header {
-    border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
     padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
-    background-color: ${({ theme }) => theme.colors.bgPrimary};
-    border-radius: ${({ theme }) => `${theme.borderRadius.XL}px ${theme.borderRadius.XL}px 0 0`};
   }
 
   .ant-modal-title {
-    color: ${({ theme }) => theme.colors.textPrimary};
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
     font-size: ${({ theme }) => theme.fontSize.LG}px;
   }
@@ -85,22 +64,14 @@ export const StyledRediaccModal = styled(AntModal).withConfig({
   }
 
   .ant-modal-footer {
-    border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
     padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
-    background-color: ${({ theme }) => theme.colors.bgPrimary};
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: ${({ theme }) => theme.spacing.SM}px;
-    border-radius: ${({ theme }) => `0 0 ${theme.borderRadius.XL}px ${theme.borderRadius.XL}px`};
   }
 
   .ant-modal-close {
-    color: ${({ theme }) => theme.colors.textTertiary};
-
     &:hover {
-      color: ${({ theme }) => theme.colors.textSecondary};
-      background-color: ${({ theme }) => theme.colors.bgHover};
     }
   }
 `;

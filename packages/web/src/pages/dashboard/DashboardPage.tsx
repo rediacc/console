@@ -1,12 +1,12 @@
 import React from 'react';
-import { Alert, Col, Empty, Row, Tag } from 'antd';
+import { Alert, Col, Empty, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { useRecentAuditLogs } from '@/api/queries/audit';
 import { useDashboard } from '@/api/queries/dashboard';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccTable, RediaccTooltip } from '@/components/ui';
+import { RediaccTable, RediaccTag, RediaccTooltip } from '@/components/ui';
 import { RediaccCard, RediaccStack, RediaccStatistic, RediaccText } from '@/components/ui';
 import CephDashboardWidget from '@/pages/dashboard/components/CephDashboardWidget';
 import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
@@ -181,9 +181,11 @@ const DashboardPage: React.FC = () => {
       width: 200,
       render: (_: unknown, record: QueueMachineIssue) => (
         <InlineStack>
-          {(record.staleItems || 0) > 0 && <Tag color="warning">{record.staleItems} stale</Tag>}
-          <Tag color="processing">{record.pendingItems || 0} pending</Tag>
-          <Tag color="blue">{record.activeItems || 0} active</Tag>
+          {(record.staleItems || 0) > 0 && (
+            <RediaccTag variant="warning">{record.staleItems} stale</RediaccTag>
+          )}
+          <RediaccTag variant="info">{record.pendingItems || 0} pending</RediaccTag>
+          <RediaccTag variant="info">{record.activeItems || 0} active</RediaccTag>
         </InlineStack>
       ),
     },
@@ -413,7 +415,7 @@ const DashboardPage: React.FC = () => {
                               <InlineStack>
                                 <RediaccText weight="bold">{sub.planCode}</RediaccText>
                                 <QuantityBadge count={sub.quantity} />
-                                {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
+                                {sub.isTrial === 1 && <RediaccTag variant="info">Trial</RediaccTag>}
                               </InlineStack>
                               <DaysRemainingText
                                 variant="caption"
@@ -649,14 +651,16 @@ const DashboardPage: React.FC = () => {
                                 <RediaccText weight="bold">{teamIssue.teamName}</RediaccText>
                                 <InlineStack>
                                   {(teamIssue.staleItems || 0) > 0 && (
-                                    <Tag color="warning">
+                                    <RediaccTag variant="warning">
                                       <WarningOutlined /> {teamIssue.staleItems} stale
-                                    </Tag>
+                                    </RediaccTag>
                                   )}
-                                  <Tag color="processing">
+                                  <RediaccTag variant="info">
                                     {teamIssue.pendingItems || 0} pending
-                                  </Tag>
-                                  <Tag color="blue">{teamIssue.activeItems || 0} active</Tag>
+                                  </RediaccTag>
+                                  <RediaccTag variant="info">
+                                    {teamIssue.activeItems || 0} active
+                                  </RediaccTag>
                                 </InlineStack>
                               </FlexBetween>
                             </BorderlessListItem>
@@ -718,7 +722,7 @@ const DashboardPage: React.FC = () => {
                           <FlexBetween>
                             <RediaccText>Low Priority</RediaccText>
                             <QueueBadge
-                              $variant="muted"
+                              $variant="default"
                               count={queueStats.lowPriorityPending ?? 0}
                               data-testid="dashboard-badge-low-priority"
                             />
@@ -750,9 +754,11 @@ const DashboardPage: React.FC = () => {
             <RediaccStack direction="vertical" gap="md" fullWidth>
               <FlexBetween>
                 <RediaccText>Overall Status</RediaccText>
-                <Tag color={STATUS_TYPE_MAP[accountHealth.subscriptionStatus] || 'success'}>
+                <RediaccTag
+                  variant={STATUS_TYPE_MAP[accountHealth.subscriptionStatus] || 'success'}
+                >
                   {accountHealth.subscriptionStatus}
-                </Tag>
+                </RediaccTag>
               </FlexBetween>
 
               <RediaccStack direction="vertical" gap="sm" fullWidth>
@@ -836,7 +842,7 @@ const DashboardPage: React.FC = () => {
                       <FlexBetween>
                         <InlineStack>
                           <RediaccText weight="bold">{log.action.replace(/_/g, ' ')}</RediaccText>
-                          <Tag>{log.entity}</Tag>
+                          <RediaccTag variant="neutral">{log.entity}</RediaccTag>
                         </InlineStack>
                         <AuditMeta>{formatTimestamp(log.timestamp)}</AuditMeta>
                       </FlexBetween>

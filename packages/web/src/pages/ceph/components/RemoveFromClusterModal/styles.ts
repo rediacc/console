@@ -12,7 +12,6 @@ export const StyledModal = styled(BaseModal).attrs({
 export const TitleStack = styled(ModalTitleRow)``;
 
 export const DangerIcon = styled(WarningOutlined)`
-  color: ${({ theme }) => theme.colors.error};
   font-size: ${({ theme }) => theme.fontSize.XL}px;
 `;
 
@@ -24,10 +23,8 @@ export const ClusterTag = styled(RediaccTag).attrs({
 })`
   && {
     font-size: ${({ theme }) => theme.fontSize.XS}px;
-    padding: 0 ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 
 export const StyledAlertCard = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;

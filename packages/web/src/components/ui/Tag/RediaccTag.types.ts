@@ -1,14 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react';
 
-export type TagVariant =
-  | 'default'
-  | 'primary'
-  | 'secondary'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'info'
-  | 'neutral';
+export type TagVariant = 'primary' | 'success' | 'warning' | 'error' | 'info' | 'neutral';
 
 export type TagSize = 'sm' | 'md' | 'lg';
 

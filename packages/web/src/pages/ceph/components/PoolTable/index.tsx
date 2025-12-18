@@ -130,7 +130,6 @@ export const PoolTable: React.FC<PoolTableProps> = ({
     return (
       <EmptyStatePanel
         description={t('pools.noPools')}
-        $marginBottom="XL"
         action={
           <RediaccButton onClick={onCreatePool} data-testid="ds-create-pool-empty">
             {t('pools.create')}

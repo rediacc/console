@@ -1,7 +1,8 @@
 import React from 'react';
 import { Space } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { FilterCheckbox, FilterInput, FilterRangePicker, FilterSelect } from '@/styles/primitives';
+import { RediaccCheckbox } from '@/components/ui';
+import { FilterInput, FilterRangePicker, FilterSelect } from '@/styles/primitives';
 import { SearchOutlined } from '@/utils/optimizedIcons';
 import type { Dayjs } from 'dayjs';
 
@@ -123,13 +124,13 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         allowClear
         data-testid="queue-filter-task"
       />
-      <FilterCheckbox
+      <RediaccCheckbox
         checked={filters.onlyStale}
         onChange={(e) => onFilterChange('onlyStale', e.target.checked)}
         data-testid="queue-checkbox-only-stale"
       >
         {t('queue:filters.onlyStale')}
-      </FilterCheckbox>
+      </RediaccCheckbox>
     </Space>
   );
 };

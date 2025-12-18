@@ -28,11 +28,7 @@ export const StyledRediaccSelect = styled(AntSelect).withConfig({
     /* Selector styling */
     .ant-select-selector {
       min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-      border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-      background-color: ${({ theme }) => theme.colors.inputBg};
-      border-color: ${({ theme }) => theme.colors.inputBorder};
       padding: 0 ${({ theme }) => theme.spacing.SM}px;
-      transition: ${({ theme }) => theme.transitions.DEFAULT};
 
       /* Ensure proper vertical centering */
       display: flex;
@@ -44,11 +40,7 @@ export const StyledRediaccSelect = styled(AntSelect).withConfig({
         align-items: center;
         height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT - 8}px;
         line-height: ${({ theme }) => theme.lineHeight.TIGHT};
-        margin: ${({ theme }) => `${theme.spacing.XS}px ${theme.spacing.XS}px ${theme.spacing.XS}px 0`};
         padding: 0 ${({ theme }) => theme.spacing.XS}px;
-        border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-        background-color: ${({ theme }) => theme.colors.bgSecondary};
-        border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
       }
 
       /* Selected value text */
@@ -60,41 +52,30 @@ export const StyledRediaccSelect = styled(AntSelect).withConfig({
       .ant-select-selection-placeholder {
         display: flex;
         align-items: center;
-        color: ${({ theme }) => theme.colors.textTertiary};
       }
     }
 
     /* Focus state */
     &.ant-select-focused .ant-select-selector {
-      border-color: ${({ theme }) => theme.colors.primary};
-      box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary};
       outline: none;
     }
 
     /* Error state */
     &.ant-select-status-error .ant-select-selector {
-      border-color: ${({ theme }) => theme.colors.error};
-      box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.error};
     }
 
     /* Warning state */
     &.ant-select-status-warning .ant-select-selector {
-      border-color: ${({ theme }) => theme.colors.warning};
-      box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.warning};
     }
 
     /* Disabled state */
     &.ant-select-disabled .ant-select-selector {
-      background-color: ${({ theme }) => theme.colors.bgSecondary};
-      color: ${({ theme }) => theme.colors.textTertiary};
       ${disabledState}
     }
 
     /* Arrow icon */
     .ant-select-arrow {
-      color: ${({ theme }) => theme.colors.textTertiary};
       font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
-      transition: ${({ theme }) => theme.transitions.FAST};
 
       .anticon {
         display: flex;
@@ -105,20 +86,10 @@ export const StyledRediaccSelect = styled(AntSelect).withConfig({
 
     &.ant-select-focused .ant-select-arrow,
     &:hover .ant-select-arrow {
-      color: ${({ theme }) => theme.colors.primary};
     }
 
     /* Clear icon */
     .ant-select-clear {
-      background-color: ${({ theme }) => theme.colors.bgPrimary};
-      color: ${({ theme }) => theme.colors.textTertiary};
-      opacity: 0.6;
-      transition: ${({ theme }) => theme.transitions.FAST};
-
-      &:hover {
-        opacity: 1;
-        color: ${({ theme }) => theme.colors.textSecondary};
-      }
     }
   }
 `;

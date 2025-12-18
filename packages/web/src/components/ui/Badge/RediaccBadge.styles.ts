@@ -2,24 +2,7 @@ import { Badge as AntBadge } from 'antd';
 import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { BadgeSize, BadgeVariant } from './RediaccBadge.types';
-
-const BADGE_COLOR_MAP: Record<BadgeVariant, keyof StyledTheme['colors']> = {
-  primary: 'primary',
-  success: 'success',
-  warning: 'warning',
-  error: 'error',
-  info: 'info',
-  muted: 'textTertiary',
-  default: 'primary',
-};
-
-// Get badge color based on variant
-export const resolveBadgeColor = (
-  variant: BadgeVariant = 'default',
-  theme: StyledTheme
-): string => {
-  return theme.colors[BADGE_COLOR_MAP[variant] || BADGE_COLOR_MAP.default];
-};
+import { resolveBadgeColor } from '@/styles/variantMaps';
 
 const BADGE_SIZE_MAP: Record<BadgeSize, number> = {
   sm: 16,
@@ -53,8 +36,6 @@ export const StyledRediaccBadge = styled(AntBadge)<{
     line-height: ${({ $size }) => resolveBadgeSize($size)}px;
     font-size: ${({ theme, $size }) => resolveBadgeFontSize(theme, $size)}px;
     padding: 0 ${({ theme }) => theme.spacing.XS}px;
-    border-radius: ${({ $size }) => resolveBadgeSize($size) / 2}px;
-    box-shadow: none;
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   }
 
@@ -62,6 +43,5 @@ export const StyledRediaccBadge = styled(AntBadge)<{
     background-color: ${({ theme, $variant }) => resolveBadgeColor($variant, theme)};
     width: ${({ theme }) => theme.spacing.SM}px;
     height: ${({ theme }) => theme.spacing.SM}px;
-    box-shadow: none;
   }
 `;

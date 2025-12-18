@@ -12,7 +12,6 @@ import {
   Row,
   Space,
   Table,
-  Tag,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -50,6 +49,7 @@ import {
   PageWrapper,
   RediaccEmpty,
   RediaccInput,
+  RediaccTag,
   RediaccText,
   RediaccTooltip,
   RegionsListWrapper,
@@ -376,9 +376,9 @@ const InfrastructurePage: React.FC = () => {
           <ApiOutlined />
           <strong>{text}</strong>
           {Number(record.hasAccess || 0) === 1 && (
-            <Tag color="success" icon={<CheckCircleOutlined />}>
+            <RediaccTag variant="success" icon={<CheckCircleOutlined />}>
               {t('bridges.access')}
-            </Tag>
+            </RediaccTag>
           )}
         </Space>
       ),
@@ -404,13 +404,13 @@ const InfrastructurePage: React.FC = () => {
       sorter: createSorter<Bridge>('isGlobalBridge'),
       render: (isGlobal: boolean) =>
         isGlobal ? (
-          <Tag color="default" icon={<CloudServerOutlined />}>
+          <RediaccTag variant="neutral" icon={<CloudServerOutlined />}>
             {t('bridges.global')}
-          </Tag>
+          </RediaccTag>
         ) : (
-          <Tag color="blue" icon={<ApiOutlined />}>
+          <RediaccTag variant="info" icon={<ApiOutlined />}>
             {t('bridges.regular')}
-          </Tag>
+          </RediaccTag>
         ),
     },
     {
@@ -420,13 +420,13 @@ const InfrastructurePage: React.FC = () => {
       width: 140,
       sorter: createSorter<Bridge>('managementMode'),
       render: (mode: string) => {
-        if (!mode) return <Tag>{t('bridges.local')}</Tag>;
-        const color = mode === 'Cloud' ? 'success' : 'default';
+        if (!mode) return <RediaccTag variant="neutral">{t('bridges.local')}</RediaccTag>;
+        const variant = mode === 'Cloud' ? 'success' : 'neutral';
         const icon = mode === 'Cloud' ? <CloudServerOutlined /> : <DesktopOutlined />;
         return (
-          <Tag color={color} icon={icon}>
+          <RediaccTag variant={variant as 'success' | 'neutral'} icon={icon}>
             {mode}
-          </Tag>
+          </RediaccTag>
         );
       },
     },

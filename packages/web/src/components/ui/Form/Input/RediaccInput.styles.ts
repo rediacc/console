@@ -10,15 +10,11 @@ const { TextArea: AntTextArea, Password: AntPassword, Search: AntSearch } = AntI
 export const inputFocusStyles = css`
   &:focus,
   &.ant-input-affix-wrapper-focused {
-    border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary};
     outline: none;
   }
 
   &.ant-input-status-error,
   &.ant-input-affix-wrapper-status-error {
-    border-color: ${({ theme }) => theme.colors.error};
-    box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.error};
   }
 `;
 
@@ -27,11 +23,7 @@ export const inputFocusStyles = css`
  */
 export const inputPrefixStyles = css`
   .ant-input-prefix {
-    margin-left: ${({ theme }) => theme.spacing.SM_LG}px;
-    margin-right: ${({ theme }) => theme.spacing.SM}px;
-    color: ${({ theme }) => theme.colors.textTertiary};
     font-size: ${({ theme }) => theme.fontSize.LG}px;
-    transition: color 0.2s ease;
 
     .anticon {
       display: flex;
@@ -41,13 +33,11 @@ export const inputPrefixStyles = css`
   }
 
   .ant-input-suffix {
-    margin-right: ${({ theme }) => theme.spacing.SM_LG}px;
   }
 
   &:hover .ant-input-prefix,
   &:focus .ant-input-prefix,
   &.ant-input-affix-wrapper-focused .ant-input-prefix {
-    color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
 
@@ -72,9 +62,7 @@ const baseInputStyles = css<{
 }>`
   && {
     height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Full width modifier */
     ${({ $fullWidth }) =>
@@ -130,9 +118,7 @@ export const StyledRediaccPasswordInput = styled(AntPassword)<{
 }>`
   && {
     height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
 
     /* Full width modifier */
@@ -167,19 +153,13 @@ export const StyledRediaccPasswordInput = styled(AntPassword)<{
 
     /* Password visibility icon styles */
     .ant-input-suffix {
-      margin-left: ${({ theme }) => theme.spacing.SM}px;
 
       .ant-input-password-icon {
-        color: ${({ theme }) => theme.colors.textTertiary};
         font-size: ${({ theme }) => theme.fontSize.LG}px;
-        transition: ${({ theme }) => theme.transitions.FAST};
         cursor: pointer;
         padding: ${({ theme }) => theme.spacing.XS}px;
-        border-radius: ${({ theme }) => theme.borderRadius.SM}px;
 
         &:hover {
-          color: ${({ theme }) => theme.colors.textSecondary};
-          background-color: ${({ theme }) => theme.colors.bgHover};
         }
       }
     }
@@ -197,9 +177,7 @@ export const StyledRediaccTextArea = styled(AntTextArea)<{
   $resize?: 'none' | 'vertical' | 'horizontal' | 'both';
 }>`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     resize: ${({ $resize }) => $resize || 'vertical'};
 
     /* Full width modifier */
@@ -222,9 +200,7 @@ export const StyledRediaccInputNumber = styled(AntInputNumber)<{
 }>`
   && {
     height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Full width modifier */
     ${({ $fullWidth }) =>
@@ -259,7 +235,6 @@ export const StyledRediaccSearchInput = styled(AntSearch)<{
   $fullWidth?: boolean;
 }>`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
 
     /* Full width modifier */
@@ -277,8 +252,6 @@ export const StyledRediaccSearchInput = styled(AntSearch)<{
     /* Search input specific styles */
     input.ant-input {
       height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-      border-radius: ${({ theme }) => theme.borderRadius.LG}px 0 0 ${({ theme }) =>
-        theme.borderRadius.LG}px;
     }
 
     /* Search button */

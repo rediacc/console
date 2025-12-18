@@ -234,6 +234,7 @@ const MainLayout: React.FC = () => {
           <StyledHeader $isDark={theme === 'dark'} data-testid="main-header">
             <HeaderLeft>
               <MenuToggleButton
+                variant="ghost"
                 iconOnly
                 icon={<MenuOutlined />}
                 onClick={handleSidebarToggle}

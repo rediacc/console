@@ -8,10 +8,6 @@ import { RediaccTag, RediaccText, RediaccTooltip } from '@/components/ui';
  */
 export const VersionTag = styled(RediaccTag)`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    border-color: ${({ theme }) => theme.colors.info};
-    color: ${({ theme }) => theme.colors.info};
-    background: ${({ theme }) => theme.colors.bgPrimary};
   }
 `;
 

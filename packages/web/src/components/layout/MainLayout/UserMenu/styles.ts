@@ -5,12 +5,8 @@ import { RediaccButton, RediaccTag, RediaccText } from '@/components/ui';
 import { FlexColumn } from '@/styles/primitives';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
-export const MenuContainer = styled(FlexColumn).attrs({ $gap: 'MD' })`
+export const MenuContainer = styled(FlexColumn).attrs({})`
   width: ${({ theme }) => theme.dimensions.DROPDOWN_WIDTH_MD}px;
-  background-color: var(--color-bg-primary);
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  box-shadow: ${DESIGN_TOKENS.SHADOWS.XL};
-  border: 1px solid var(--color-border-secondary);
   padding: ${({ theme }) => theme.spacing.MD}px;
 `;
 
@@ -23,17 +19,12 @@ export const UserDetails = styled.div`
 
 export const PlanBadge = styled(RediaccTag).attrs({ variant: 'primary', size: 'sm' })`
   && {
-    margin-top: ${({ theme }) => theme.spacing.XS}px;
     font-size: ${DESIGN_TOKENS.FONT_SIZE.XS}px;
     font-weight: ${DESIGN_TOKENS.FONT_WEIGHT.SEMIBOLD};
-    box-shadow: ${DESIGN_TOKENS.SHADOWS.BUTTON_DEFAULT};
   }
 `;
 
-export const ModeSegmented = styled(Segmented)`
-  margin-top: ${({ theme }) => theme.spacing.XS}px;
-  background: var(--color-bg-tertiary);
-`;
+export const ModeSegmented = styled(Segmented)``;
 
 export const AppearanceRow = styled(FlexBetween)``;
 
@@ -42,12 +33,9 @@ export const LanguageSection = styled.div``;
 export const LogoutButton = styled(RediaccButton)`
   width: 100%;
   justify-content: flex-start;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const UserAvatar = styled(Avatar)`
-  background-color: var(--color-text-tertiary);
-`;
+export const UserAvatar = styled(Avatar)``;
 
 export const BlockText = styled(RediaccText)`
   display: block;
@@ -55,5 +43,4 @@ export const BlockText = styled(RediaccText)`
 
 export const LanguageLabel = styled(RediaccText)`
   display: block;
-  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
 `;

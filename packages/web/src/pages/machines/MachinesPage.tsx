@@ -39,7 +39,7 @@ import type { QueueActionParams } from '@/services/queueActionService';
 import { type Machine } from '@/types';
 import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
-import { PlusOutlined, ReloadOutlined, WifiOutlined } from '@/utils/optimizedIcons';
+import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import type { MachineFormValues as BaseMachineFormValues } from '@rediacc/shared/types';
 import { EmptyState, StyledTeamSelector } from './MachinesPage.styles';
 
@@ -489,23 +489,14 @@ const MachinesPage: React.FC = () => {
                         aria-label={t('machines:createMachine')}
                       />
                     </RediaccTooltip>
-                    <RediaccTooltip title={t('machines:connectivityTest')}>
-                      <RediaccButton
-                        iconOnly
-                        icon={<WifiOutlined />}
-                        data-testid="machines-connectivity-test-button"
-                        onClick={() => connectivityTest.open()}
-                        disabled={machines.length === 0}
-                        aria-label={t('machines:connectivityTest')}
-                      />
-                    </RediaccTooltip>
-                    <RediaccTooltip title={t('common:actions.refresh')}>
+                    <RediaccTooltip title={t('machines:checkAndRefresh')}>
                       <RediaccButton
                         iconOnly
                         icon={<ReloadOutlined />}
-                        data-testid="machines-refresh-button"
-                        onClick={handleRefreshMachines}
-                        aria-label={t('common:actions.refresh')}
+                        data-testid="machines-test-and-refresh-button"
+                        onClick={() => connectivityTest.open()}
+                        disabled={machines.length === 0}
+                        aria-label={t('machines:checkAndRefresh')}
                       />
                     </RediaccTooltip>
                   </ButtonGroup>
@@ -608,7 +599,10 @@ const MachinesPage: React.FC = () => {
       <ConnectivityTestModal
         data-testid="machines-connectivity-test-modal"
         open={connectivityTest.isOpen}
-        onClose={connectivityTest.close}
+        onClose={() => {
+          connectivityTest.close();
+          handleRefreshMachines();
+        }}
         machines={machines}
         teamFilter={selectedTeams}
       />

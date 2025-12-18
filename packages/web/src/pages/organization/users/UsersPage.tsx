@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, Modal, Popconfirm, Space, Tag } from 'antd';
+import { Form, Modal, Popconfirm, Space } from 'antd';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
@@ -17,7 +17,7 @@ import {
 } from '@/api/queries/users';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import ResourceListView from '@/components/common/ResourceListView';
-import { RediaccTooltip } from '@/components/ui';
+import { RediaccTag, RediaccTooltip } from '@/components/ui';
 import {
   ListTitleRow as UsersListHeader,
   ListSubtitle as UsersListSubtitle,
@@ -152,13 +152,13 @@ const UsersPage: React.FC = () => {
       width: 120,
       render: (activated: boolean) =>
         activated ? (
-          <Tag icon={<CheckCircleOutlined />} color="success">
+          <RediaccTag icon={<CheckCircleOutlined />} variant="success">
             {t('users.status.active', { defaultValue: 'Active' })}
-          </Tag>
+          </RediaccTag>
         ) : (
-          <Tag icon={<StopOutlined />} color="default">
+          <RediaccTag icon={<StopOutlined />} variant="neutral">
             {t('users.status.inactive', { defaultValue: 'Inactive' })}
-          </Tag>
+          </RediaccTag>
         ),
     },
     {
@@ -167,13 +167,13 @@ const UsersPage: React.FC = () => {
       key: 'permissionGroupName',
       render: (group: string) =>
         group ? (
-          <Tag icon={<SafetyOutlined />} color="blue">
+          <RediaccTag icon={<SafetyOutlined />} variant="info">
             {group}
-          </Tag>
+          </RediaccTag>
         ) : (
-          <Tag color="default">
+          <RediaccTag variant="neutral">
             {t('users.permissionGroups.none', { defaultValue: 'No Group' })}
-          </Tag>
+          </RediaccTag>
         ),
     },
     {

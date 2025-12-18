@@ -4,20 +4,16 @@ import { InboxOutlined } from '@/utils/optimizedIcons';
 
 // Inline list for modal content
 export const InlineList = styled.ul`
-  margin-top: ${({ theme }) => theme.spacing.SM}px;
-  margin-bottom: 0;
   padding-left: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 // Section wrapper for affected resources display
 export const AffectedSection = styled.div`
-  margin-top: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 // Alert with top margin for spacing
 export const SpacedAlert = styled(Alert)`
   && {
-    margin-top: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
 
@@ -29,9 +25,8 @@ export const RepoIcon = styled(InboxOutlined)`
 // Secondary colored tag
 export const SecondaryTag = styled(Tag)`
   && {
-    background-color: ${({ theme }) => theme.colors.secondary};
+    background-color: ${({ theme }) => theme.colors.textSecondary}; // Was secondary
     color: ${({ theme }) => theme.colors.bgPrimary};
-    border-color: ${({ theme }) => theme.colors.secondary};
   }
 `;
 

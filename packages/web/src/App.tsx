@@ -18,6 +18,7 @@ import { selectIsAuthenticated } from '@/store/auth/authSelectors';
 import { loginSuccess } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { GlobalStyles } from '@/styles/GlobalStyles';
+import '@/styles/colors.css';
 import { getAuthData, migrateFromLocalStorage } from '@/utils/auth';
 import { getBasePath } from '@/utils/basePath';
 

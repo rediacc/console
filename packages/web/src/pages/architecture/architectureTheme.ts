@@ -1,5 +1,3 @@
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
-
 export type ArchitectureMode = 'light' | 'dark';
 
 type NodeColorMap = Record<string, string>;
@@ -33,7 +31,6 @@ export interface ArchitecturePalette {
   nodeBorder: string;
   linkStroke: string;
   labelFill: string;
-  labelShadow: string;
 }
 
 const architecturePalette: Record<ArchitectureMode, ArchitecturePalette> = {
@@ -43,7 +40,6 @@ const architecturePalette: Record<ArchitectureMode, ArchitecturePalette> = {
     nodeBorder: '#333333',
     linkStroke: '#cccccc',
     labelFill: '#1a1a1a',
-    labelShadow: DESIGN_TOKENS.SHADOWS.LABEL_TEXT_LIGHT,
   },
   dark: {
     nodes: NODE_COLORS.dark,
@@ -51,7 +47,6 @@ const architecturePalette: Record<ArchitectureMode, ArchitecturePalette> = {
     nodeBorder: '#333333',
     linkStroke: '#cccccc',
     labelFill: '#e8e8e8',
-    labelShadow: DESIGN_TOKENS.SHADOWS.LABEL_TEXT_DARK,
   },
 };
 

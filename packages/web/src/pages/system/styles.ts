@@ -25,9 +25,7 @@ export const ACTIONS_COLUMN_WIDTH = DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH;
 // ANT DESIGN CARD WRAPPERS
 // ============================================
 
-export const DangerCard = styled(RediaccCard)`
-  border-color: ${({ theme }) => theme.colors.error};
-`;
+export const DangerCard = styled(RediaccCard)``;
 
 // ============================================
 // ANT DESIGN BADGE WRAPPERS
@@ -35,7 +33,6 @@ export const DangerCard = styled(RediaccCard)`
 
 export const PrimaryBadge = styled(RediaccBadge)`
   .ant-scroll-number {
-    background-color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
@@ -46,30 +43,25 @@ export const ModalAlert = styled(RediaccAlert).attrs({ spacing: 'spacious' })``;
 
 export const TokenCopyRow = styled(SpaceCompact)`
   width: 100%;
-  margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const FormItemSpaced = styled(Form.Item)`
   && {
-    margin-bottom: ${({ theme }) => theme.spacing.LG}px;
   }
 `;
 
 export const FormItemNoMargin = styled(Form.Item)`
   && {
-    margin-bottom: 0;
   }
 `;
 
 export const FormItemActions = styled(Form.Item)`
   && {
-    margin: ${({ theme }) => theme.spacing.LG}px 0 0;
   }
 `;
 
 export const FormItemActionsLg = styled(Form.Item)`
   && {
-    margin: ${({ theme }) => theme.spacing.XL}px 0 0;
   }
 `;
 

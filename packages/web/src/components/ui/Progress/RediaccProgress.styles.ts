@@ -44,20 +44,11 @@ export const StyledRediaccProgress = styled(AntProgress)<{
 }>`
   && {
     /* Line variant */
-    ${({ $variant, theme }) =>
+    ${({ $variant }) =>
       $variant === 'line' &&
       `
       .ant-progress-outer {
-        margin-right: 0;
         padding-right: 0;
-      }
-
-      .ant-progress-inner {
-        border-radius: ${theme.borderRadius.FULL}px;
-      }
-
-      .ant-progress-bg {
-        border-radius: ${theme.borderRadius.FULL}px;
       }
     `}
 
@@ -80,17 +71,14 @@ export const StyledRediaccProgress = styled(AntProgress)<{
 
     /* Status colors */
     .ant-progress-bg {
-      background-color: ${({ theme, $status }) => resolveProgressColor($status, theme)};
     }
 
     /* Trail color */
     .ant-progress-inner {
-      background-color: ${({ theme }) => theme.colors.bgSecondary};
     }
 
     /* Text styling */
     .ant-progress-text {
-      color: ${({ theme }) => theme.colors.textSecondary};
       font-size: ${({ theme }) => theme.fontSize.SM}px;
     }
   }

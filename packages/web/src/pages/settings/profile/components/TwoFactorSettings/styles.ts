@@ -2,15 +2,12 @@ import { Form, Space, Typography } from 'antd';
 import styled from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
 import { RediaccAlert, RediaccInput } from '@/components/ui';
-import { FlexRow, NeutralStack, StyledIcon } from '@/styles/primitives';
+import { FlexColumn, FlexRow, StyledIcon } from '@/styles/primitives';
 import { SafetyCertificateOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
-type SpacingKey = keyof typeof DESIGN_TOKENS.SPACING;
-
-export const CenteredStack = styled(NeutralStack)<{ $gap?: SpacingKey }>`
+export const CenteredStack = styled(FlexColumn)`
   && {
-    gap: ${({ theme, $gap = 'MD' }) => `${theme.spacing[$gap]}px`};
   }
   text-align: center;
   align-items: center;
@@ -33,15 +30,10 @@ export const StatusIcon = styled(StyledIcon).attrs<{
 
 export const SectionTitle = styled(Typography.Title)`
   && {
-    margin-top: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
 
 export const QRCodeContainer = styled.div`
-  background-color: ${({ theme }) => theme.colors.bgPrimary};
-  padding: ${({ theme }) => theme.spacing.MD}px;
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   display: inline-flex;
 `;
 
@@ -51,7 +43,6 @@ export const ManualSetupAlert = styled(RediaccAlert)`
 
 export const SecretInputRow = styled(Space.Compact)`
   width: 100%;
-  margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const SecretInput = styled(RediaccInput)`
@@ -72,18 +63,14 @@ export const CenteredCodeInput = styled(RediaccInput).attrs({
 export const FormActionRow = styled(FlexRow).attrs<{ $align?: 'space-between' | 'flex-end' }>(
   ({ $align = 'flex-end' }) => ({
     $justify: $align,
-    $gap: 'SM',
   })
 )<{ $align?: 'space-between' | 'flex-end' }>`
   width: 100%;
 `;
 
-export const CardContent = styled(NeutralStack)`
-  gap: ${({ theme }) => theme.spacing.MD}px;
-`;
+export const CardContent = FlexColumn;
 
 export const FormItemNoMargin = styled(Form.Item)`
-  margin-bottom: 0;
 `;
 
 export const ModalTitleIcon = styled(StyledIcon).attrs({

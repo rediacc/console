@@ -5,16 +5,11 @@ export const ToggleButton = styled(RediaccButton)`
   && {
     min-width: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    transition: ${({ theme }) => theme.transitions.BUTTON};
 
     &:not(:disabled):hover {
-      color: ${({ theme }) => theme.colors.primary};
-      background-color: ${({ theme }) => theme.colors.bgHover};
     }
 
     .anticon {

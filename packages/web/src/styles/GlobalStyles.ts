@@ -59,7 +59,6 @@ export const GlobalStyles = createGlobalStyle`
 
   html,
   body {
-    margin: 0;
     padding: 0;
     font-family: ${({ theme }) => theme.fontFamily.SYSTEM};
     -webkit-font-smoothing: antialiased;
@@ -98,21 +97,16 @@ export const GlobalStyles = createGlobalStyle`
   .page-container {
     width: 100%;
     max-width: 100%;
-    margin: 0 auto;
     padding: var(--page-padding, ${({ theme }) => theme.spacing.PAGE_CONTAINER}px);
   }
 
   .page-stack {
     display: flex;
     flex-direction: column;
-    gap: var(--page-section-gap, ${({ theme }) => theme.spacing.PAGE_SECTION_GAP}px);
   }
 
   .page-card {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     background-color: ${({ theme }) => theme.colors.bgPrimary};
-    box-shadow: ${({ theme }) => theme.shadows.CARD};
-    border: 1px solid var(--color-border-secondary);
     overflow: hidden;
   }
 
@@ -165,40 +159,39 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   /* ============================================
-     INPUT AUTOFILL
+     INPUT AUTOFILL - Remove browser backgrounds
      ============================================ */
 
+  /* Override browser autofill backgrounds with theme colors */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
-  input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px ${({ theme }) => theme.colors.bgPrimary} inset;
+  input:-webkit-autofill:active,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  textarea:-webkit-autofill:active,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus,
+  select:-webkit-autofill:active {
+    /* Text color */
     -webkit-text-fill-color: ${({ theme }) => theme.colors.textPrimary};
+
+    /* Background override - use box-shadow trick for reliability */
+    -webkit-box-shadow: 0 0 0 1000px ${({ theme }) => theme.colors.bgPrimary} inset;
+    box-shadow: 0 0 0 1000px ${({ theme }) => theme.colors.bgPrimary} inset;
+
+    /* Transition delay to override browser's 5000ms delay */
     transition: background-color 5000s ease-in-out 0s;
+
+    /* Cursor color consistency */
+    caret-color: ${({ theme }) => theme.colors.textPrimary};
   }
 
   /* ============================================
      THEME TRANSITIONS
      ============================================ */
-
-  body,
-  .ant-layout,
-  .ant-layout-header,
-  .ant-layout-content,
-  .ant-layout-sider,
-  .ant-card,
-  .ant-table,
-  .ant-menu,
-  .ant-modal-content {
-    transition: background-color 0.15s ease, color 0.15s ease;
-  }
-
-  .ant-card,
-  .ant-table-thead > tr > th,
-  .ant-table-tbody > tr > td,
-  .ant-select-selector {
-    transition: border-color 0.15s ease;
-  }
 
   input,
   textarea,
@@ -221,7 +214,6 @@ export const GlobalStyles = createGlobalStyle`
   :focus-visible {
     outline: 3px solid var(--color-primary);
     outline-offset: 2px;
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   }
 
   a:focus-visible,
@@ -230,51 +222,6 @@ export const GlobalStyles = createGlobalStyle`
   [tabindex]:focus-visible {
     outline: 3px solid var(--color-primary);
     outline-offset: 2px;
-    box-shadow: 0 0 0 ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.colors.shadow};
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-  }
-
-  /* ============================================
-     ANIMATIONS
-     ============================================ */
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes slideIn {
-    from {
-      transform: translateX(-100%);
-    }
-    to {
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
   }
 
   /* ============================================
@@ -290,14 +237,7 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   .skeleton-shimmer {
-    background: linear-gradient(
-      90deg,
-      ${({ theme }) => theme.colors.bgSecondary} 25%,
-      ${({ theme }) => theme.colors.bgTertiary} 50%,
-      ${({ theme }) => theme.colors.bgSecondary} 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.5s ease-in-out infinite;
+    background: ${({ theme }) => theme.colors.borderPrimary};
   }
 
   /* ============================================
@@ -331,7 +271,6 @@ export const GlobalStyles = createGlobalStyle`
 
   .modal-fullscreen .ant-modal-header {
     flex-shrink: 0;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   }
 
   .modal-fullscreen .ant-modal-body {
@@ -344,7 +283,6 @@ export const GlobalStyles = createGlobalStyle`
 
   .modal-fullscreen .ant-modal-footer {
     flex-shrink: 0;
-    border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   }
 
   /* ============================================
@@ -364,7 +302,6 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   .notification-dropdown .ant-list-item-meta-title {
-    margin-top: 0;
   }
 
   /* ============================================

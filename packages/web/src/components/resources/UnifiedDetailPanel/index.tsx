@@ -148,7 +148,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   const actualWidth = isCollapsed ? collapsedWidth : splitWidth;
 
   return (
-    <PanelContainer $width={actualWidth} $opacity={1} data-testid="unified-detail-panel">
+    <PanelContainer $width={actualWidth} data-testid="unified-detail-panel">
       {!isCollapsed && (
         <ResizeHandle onMouseDown={handleMouseDown} data-testid="unified-detail-resize-handle">
           <ResizeIndicator />

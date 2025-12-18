@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 
 export const SourceLabel = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
 `;
 
@@ -14,16 +13,13 @@ export const SearchInput = styled.div`
 `;
 
 export const FolderIcon = styled.span`
-  color: ${({ theme }) => theme.colors.primary};
 `;
 
 export const FileIcon = styled.span`
-  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const TooltipGuidText = styled.div`
-  margin-top: ${({ theme }) => theme.spacing.XS}px;
-  opacity: 0.85;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const FullWidthSelect = styled.div`
@@ -31,5 +27,4 @@ export const FullWidthSelect = styled.div`
 `;
 
 export const LoadingPadding = styled.div`
-  padding: ${({ theme }) => theme.spacing.SM}px;
 `;

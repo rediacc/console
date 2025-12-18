@@ -15,6 +15,7 @@ import {
   Statistic,
   Steps,
   Tabs,
+  Typography,
 } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -70,9 +71,7 @@ import { StatsPanel } from './components/StatsPanel';
 import { TimelineView } from './components/TimelineView';
 import { useTraceState } from './hooks/useTraceState';
 import {
-  CenteredFooter,
   CenteredMessage,
-  CenteredRow,
   CompatibilityStatusText,
   IssuesList,
   ItalicCaption,
@@ -84,7 +83,6 @@ import {
   ModalTitleRight,
   ModeSegmented,
   MonospaceText,
-  NoMarginTitle,
   NoteWrapper,
   RecommendationsList,
   ScrollContainer,
@@ -418,7 +416,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                     >
                       {simplifiedStatus.icon}
                     </span>
-                    <NoMarginTitle level={3}>Task {simplifiedStatus.status}</NoMarginTitle>
+                    <Typography.Title level={3}>Task {simplifiedStatus.status}</Typography.Title>
                   </Space>
                 </CenteredMessage>
 
@@ -520,7 +518,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
 
                 {/* Key Info - Only shown in detailed mode */}
                 {!simpleMode && (
-                  <CenteredRow gutter={[spacing('MD'), spacing('MD')]}>
+                  <Row gutter={[spacing('MD'), spacing('MD')]}>
                     <Col span={8}>
                       <KeyInfoCard
                         data-testid="queue-trace-info-duration"
@@ -562,7 +560,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             variant={
                               getPriorityInfo(
                                 normalizeToNumber(traceData.queueDetails, 0, 'priority', 'Priority')
-                              ).color as 'default'
+                              ).color as 'neutral'
                             }
                           >
                             {
@@ -579,7 +577,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                         </div>
                       </KeyInfoCard>
                     </Col>
-                  </CenteredRow>
+                  </Row>
                 )}
               </RediaccStack>
             </SpacedCardBottom>
@@ -646,7 +644,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                               <RediaccTag
                                 variant={
                                   simplifiedStatus.color as
-                                    | 'default'
+                                    | 'neutral'
                                     | 'success'
                                     | 'error'
                                     | 'warning'
@@ -770,7 +768,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                   'priority',
                                                   'Priority'
                                                 )
-                                              ).color as 'default'
+                                              ).color as 'neutral'
                                             }
                                           >
                                             {
@@ -935,7 +933,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                     'Status'
                                                   ) === 'ASSIGNED'
                                                 ? 'primary'
-                                                : 'default'
+                                                : 'neutral'
                                   }
                                 >
                                   {normalizeToString(traceData.queueDetails, 'status', 'Status')}
@@ -1197,7 +1195,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                             {result.user}
                                                           </Descriptions.Item>
                                                           <Descriptions.Item label="Auth Method">
-                                                            <RediaccTag variant="default">
+                                                            <RediaccTag variant="neutral">
                                                               {result.auth_method}
                                                             </RediaccTag>
                                                           </Descriptions.Item>
@@ -1276,7 +1274,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                                                 );
                                                               } else {
                                                                 return (
-                                                                  <RediaccTag variant="default">
+                                                                  <RediaccTag variant="neutral">
                                                                     Unknown
                                                                   </RediaccTag>
                                                                 );
@@ -1508,7 +1506,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                   </Card>
                                 </Col>
                               </Row>
-                              <CenteredFooter>
+                              <div>
                                 <RediaccText variant="caption" color="muted">
                                   Total:{' '}
                                   {
@@ -1526,7 +1524,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                                   }{' '}
                                   tasks behind
                                 </RediaccText>
-                              </CenteredFooter>
+                              </div>
                             </>
                           ),
                         }

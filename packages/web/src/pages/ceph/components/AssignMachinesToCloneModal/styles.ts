@@ -23,10 +23,9 @@ const TabStack = styled(ModalContentStack)`
 export const AssignTabContainer = TabStack;
 export const ManageTabContainer = TabStack;
 
-export const FieldGroup = styled(FlexColumn).attrs({ $gap: 'XS' })``;
+export const FieldGroup = styled(FlexColumn).attrs({})``;
 
 export const EmptyState = styled(StyledEmpty)`
-  margin-top: ${({ theme }) => theme.spacing.XL}px;
 `;
 
 export const MachineNameRow = styled(InlineStack)``;

@@ -6,7 +6,11 @@ import { StyledIcon } from '@/styles/primitives';
 import { DownloadOutlined, UploadOutlined } from '@/utils/optimizedIcons';
 
 export const FooterLeftActions = styled.div`
-  margin-right: auto;
+`;
+
+export const FooterRightActions = styled.div`
+  display: flex;
+  align-items: center;
 `;
 
 export const UploadIcon = styled(StyledIcon).attrs({
@@ -21,7 +25,6 @@ export const DownloadIcon = styled(StyledIcon).attrs({
 
 export const AutoSetupCheckbox = styled(RediaccCheckbox)`
   && {
-    margin-right: auto;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     display: flex;
     align-items: center;
@@ -30,11 +33,9 @@ export const AutoSetupCheckbox = styled(RediaccCheckbox)`
 `;
 
 export const TemplateCollapse = styled(Collapse)`
-  margin: ${({ theme }) => `${theme.spacing.MD}px 0`};
 `;
 
 export const SelectedTemplateTag = styled(RediaccTag)`
   && {
-    margin-left: ${({ theme }) => theme.spacing.SM}px;
   }
 `;

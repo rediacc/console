@@ -37,6 +37,7 @@ import {
   AutoSetupCheckbox,
   DownloadIcon,
   FooterLeftActions,
+  FooterRightActions,
   SelectedTemplateTag,
   TemplateCollapse,
   UploadIcon,
@@ -564,44 +565,46 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                 </AutoSetupCheckbox>,
               ]
             : []),
-          <RediaccButton key="cancel" data-testid="resource-modal-cancel-button" onClick={onCancel}>
-            {t('general.cancel')}
-          </RediaccButton>,
-          ...(mode === 'create' && existingData && onUpdateVault
-            ? [
-                <RediaccButton
-                  key="vault"
-                  data-testid="resource-modal-vault-button"
-                  onClick={() => vaultModal.open()}
-                >
-                  {t('general.vault')}
-                </RediaccButton>,
-              ]
-            : []),
-          ...(showFunctions
-            ? [
-                <RediaccButton
-                  key="functions"
-                  data-testid="resource-modal-functions-button"
-                  onClick={() => functionModal.open()}
-                >
-                  {t(`${resourceType}s.${resourceType}Functions`)}
-                </RediaccButton>,
-              ]
-            : []),
-          <RediaccButton
-            key="submit"
-            data-testid="resource-modal-ok-button"
-            loading={isSubmitting}
-            disabled={mode === 'create' && resourceType === 'machine' && !testConnectionSuccess}
-            onClick={() => {
-              if (formRef.current) {
-                formRef.current.submit();
-              }
-            }}
-          >
-            {mode === 'create' ? t('general.create') : t('general.save')}
-          </RediaccButton>,
+          <FooterRightActions key="right-buttons">
+            <RediaccButton
+              key="cancel"
+              data-testid="resource-modal-cancel-button"
+              onClick={onCancel}
+            >
+              {t('general.cancel')}
+            </RediaccButton>
+            {mode === 'create' && existingData && onUpdateVault && (
+              <RediaccButton
+                key="vault"
+                data-testid="resource-modal-vault-button"
+                onClick={() => vaultModal.open()}
+              >
+                {t('general.vault')}
+              </RediaccButton>
+            )}
+            {showFunctions && (
+              <RediaccButton
+                key="functions"
+                data-testid="resource-modal-functions-button"
+                onClick={() => functionModal.open()}
+              >
+                {t(`${resourceType}s.${resourceType}Functions`)}
+              </RediaccButton>
+            )}
+            <RediaccButton
+              key="submit"
+              data-testid="resource-modal-ok-button"
+              loading={isSubmitting}
+              disabled={mode === 'create' && resourceType === 'machine' && !testConnectionSuccess}
+              onClick={() => {
+                if (formRef.current) {
+                  formRef.current.submit();
+                }
+              }}
+            >
+              {mode === 'create' ? t('general.create') : t('general.save')}
+            </RediaccButton>
+          </FooterRightActions>,
         ]}
         className={ModalSize.Fullscreen}
       >

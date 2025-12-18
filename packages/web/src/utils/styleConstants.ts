@@ -141,48 +141,16 @@ export const DESIGN_TOKENS = {
     LG: 960,
   },
 
-  SHADOWS: {
-    SM: '0 1px 2px rgba(0,0,0,0.05)',
-    MD: '0 4px 6px rgba(0,0,0,0.1)',
-    XL: '0 20px 25px rgba(0,0,0,0.1)',
-    CARD: '0 1px 3px rgba(0,0,0,0.1)',
-    MODAL: '0 20px 25px rgba(0,0,0,0.1)',
-    BUTTON_HOVER: '0 6px 20px rgba(85, 107, 47, 0.35)',
-    BUTTON_DEFAULT: '0 4px 12px rgba(85, 107, 47, 0.25)',
-    ERROR_FIELD: '0 4px 16px rgba(220, 53, 69, 0.25)',
-    HEADER: '0 2px 8px rgba(0,0,0,0.06)',
-    HEADER_DARK: '0 2px 8px rgba(0,0,0,0.3)',
-    // Panel shadows (left-facing, for slide-in panels)
-    PANEL_LEFT: '-2px 0 8px rgba(0, 0, 0, 0.15)',
-    PANEL_LEFT_DARK: '-2px 0 8px rgba(0, 0, 0, 0.4)',
-    // Switch/control handle shadow
-    CONTROL_HANDLE: '0 2px 4px rgba(0, 0, 0, 0.2)',
-    CONTROL_HANDLE_DARK: '0 2px 4px rgba(0, 0, 0, 0.4)',
-    // Label text shadows (for contrast on busy backgrounds)
-    LABEL_TEXT_LIGHT: '1px 1px 2px rgba(255, 255, 255, 0.8)',
-    LABEL_TEXT_DARK: '1px 1px 2px rgba(0, 0, 0, 0.8)',
-    // Ant Design compatible shadows (different blur/spread for component library)
-    ANT_SM_LIGHT: '0 1px 3px rgba(0, 0, 0, 0.1)',
-    ANT_SM_DARK: '0 1px 3px rgba(0, 0, 0, 0.3)',
-    ANT_MD_LIGHT: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    ANT_MD_DARK: '0 4px 12px rgba(0, 0, 0, 0.4)',
-    ANT_LG_LIGHT: '0 6px 16px rgba(0, 0, 0, 0.12)',
-    ANT_LG_DARK: '0 6px 16px rgba(0, 0, 0, 0.4)',
-    // Strong shadow for elevated elements (used by theme.colors.shadowStrong)
-    SHADOW_STRONG_LIGHT: 'rgba(0, 0, 0, 0.15)',
-    SHADOW_STRONG_DARK: 'rgba(0, 0, 0, 0.5)',
-  },
-
   OVERLAYS: {
     // Modal/drawer backdrops
-    BACKDROP_LIGHT: 'rgba(0, 0, 0, 0.4)',
-    BACKDROP_DARK: 'rgba(0, 0, 0, 0.6)',
+    BACKDROP_LIGHT: '#404040',
+    BACKDROP_DARK: '#2a2a2a',
     // Loading/content overlays
-    CONTENT_LIGHT: 'rgba(255, 255, 255, 0.85)',
-    CONTENT_DARK: 'rgba(0, 0, 0, 0.75)',
+    CONTENT_LIGHT: '#ffffff',
+    CONTENT_DARK: '#000000',
     // Navigation active state
-    NAV_ACTIVE_LIGHT: 'rgba(85, 107, 47, 0.1)',
-    NAV_ACTIVE_DARK: 'rgba(106, 106, 106, 0.15)',
+    NAV_ACTIVE_LIGHT: '#556B2F',
+    NAV_ACTIVE_DARK: '#ffffff',
   },
 
   Z_INDEX: {
@@ -225,18 +193,12 @@ export const createControlSurfaceStyle = (
 export const createCardStyle = (width?: number | string) => ({
   width: width || '100%',
   maxWidth: 'calc(100vw - 32px)',
-  borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, // Cards: 8px border radius
-  boxShadow: DESIGN_TOKENS.SHADOWS.CARD,
-  border: '1px solid var(--color-border-secondary)', // As per style guide
   background: 'var(--color-bg-primary)',
 });
 
 export const createModalStyle = (width?: number) => ({
   width: width || DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH,
   maxWidth: 'calc(100vw - 32px)',
-  borderRadius: DESIGN_TOKENS.BORDER_RADIUS.XL, // Modals: 12px border radius
-  boxShadow: DESIGN_TOKENS.SHADOWS.MODAL,
-  border: 'none',
   padding: DESIGN_TOKENS.SPACING.XL, // 32px padding as per style guide
 });
 

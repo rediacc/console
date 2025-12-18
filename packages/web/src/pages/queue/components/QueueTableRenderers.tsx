@@ -124,7 +124,7 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
         >
           <TooltipContentSection>
             {/* Show primary (highest severity) error */}
-            <RediaccStack direction="horizontal" gap={4} style={{ width: '100%', marginBottom: 2 }}>
+            <RediaccStack direction="horizontal" gap={4} style={{ width: '100%' }}>
               {primaryError?.severity && (
                 <SeverityPill $color={getSeverityColor(primaryError.severity)}>
                   {primaryError.severity}

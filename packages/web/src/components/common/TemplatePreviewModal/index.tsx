@@ -1,6 +1,6 @@
 import type { ComponentPropsWithoutRef } from 'react';
 import React, { useEffect, useState } from 'react';
-import { Col, List, Row } from 'antd';
+import { Col, List, Row, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -14,7 +14,7 @@ import {
   RediaccText,
 } from '@/components/ui';
 import { templateService } from '@/services/templateService';
-import { NoMarginTitle, TabLabel } from '@/styles/primitives';
+import { TabLabel } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import {
   AppstoreOutlined,
@@ -218,7 +218,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       case 'advanced':
         return 'error';
       default:
-        return 'default';
+        return 'neutral';
     }
   };
 
@@ -502,7 +502,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             getTemplateIcon()
           )}
           <div>
-            <NoMarginTitle level={4}>{modalTitle}</NoMarginTitle>
+            <Typography.Title level={4}>{modalTitle}</Typography.Title>
             {context === 'repository-creation' && (
               <RediaccTag variant="primary" data-testid="template-details-name-tag">
                 {effectiveTemplate.name}

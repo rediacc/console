@@ -7,7 +7,6 @@ export const RediaccStack = forwardRef<HTMLDivElement, RediaccStackProps>(
     {
       variant,
       direction,
-      gap,
       align = 'stretch',
       justify = 'start',
       wrap,
@@ -23,7 +22,6 @@ export const RediaccStack = forwardRef<HTMLDivElement, RediaccStackProps>(
 
     // Use explicit props if provided, otherwise fall back to variant defaults
     const resolvedDirection = direction ?? variantDefaults.direction;
-    const resolvedGap = gap ?? variantDefaults.gap;
     const resolvedWrap = wrap ?? variantDefaults.wrap ?? false;
 
     return (
@@ -31,7 +29,6 @@ export const RediaccStack = forwardRef<HTMLDivElement, RediaccStackProps>(
         ref={ref}
         as={as}
         $direction={resolvedDirection}
-        $gap={resolvedGap}
         $align={align}
         $justify={justify}
         $wrap={resolvedWrap}

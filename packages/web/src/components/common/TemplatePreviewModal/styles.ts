@@ -1,8 +1,15 @@
 import { Typography } from 'antd';
 import styled from 'styled-components';
-import { RediaccAlert, RediaccList, RediaccTabs, RediaccTag, RediaccText } from '@/components/ui';
+import {
+  RediaccAlert,
+  RediaccCard,
+  RediaccList,
+  RediaccTabs,
+  RediaccTag,
+  RediaccText,
+} from '@/components/ui';
 import { borderedCard } from '@/styles/mixins';
-import { BaseModal, ContentCard, FlexColumn, FlexRow, LoadingContainer } from '@/styles/primitives';
+import { BaseModal, FlexColumn, FlexRow, LoadingContainer } from '@/styles/primitives';
 
 const { Title } = Typography;
 
@@ -14,7 +21,6 @@ export const StyledModal = styled(BaseModal)`
   .ant-modal-body {
     /* 180px = modal header(56) + modal footer(56) + modal padding(68) */
     height: calc(90vh - 180px);
-    padding: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
 
@@ -22,14 +28,11 @@ export const TemplateAvatar = styled.img`
   width: ${({ theme }) => theme.dimensions.ICON_XXL}px;
   height: ${({ theme }) => theme.dimensions.ICON_XXL}px;
   object-fit: contain;
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-  box-shadow: ${({ theme }) => theme.shadows.CARD};
 `;
 
 export const TemplateIconWrapper = styled.span`
   display: inline-flex;
   font-size: ${({ theme }) => theme.dimensions.ICON_XXL}px;
-  color: ${({ theme }) => theme.colors.primary};
 `;
 
 // Use RediaccTag for consistent styling
@@ -37,14 +40,11 @@ export const DifficultyTag = styled(RediaccTag).attrs({
   size: 'md',
 })`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    margin-top: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 
 export const StyledTabs = styled(RediaccTabs)`
   .ant-tabs-nav {
-    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
 
@@ -54,12 +54,11 @@ export const OverviewScroll = styled.div`
   overflow: auto;
 `;
 
-export const DescriptionCard = styled(ContentCard)`
+export const DescriptionCard = styled(RediaccCard)`
   .ant-card-body {
     /* 420px = modal chrome(180) + tabs(48) + card header(40) + section spacing(152) */
     max-height: calc(90vh - 420px);
     overflow: auto;
-    padding: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
 
@@ -68,17 +67,14 @@ export const FeatureCard = DescriptionCard;
 // CardTitle removed - use <RediaccText variant="title"> directly
 
 export const MarkdownContent = styled.div`
-  color: ${({ theme }) => theme.colors.textPrimary};
   line-height: ${({ theme }) => theme.lineHeight.RELAXED};
 
   p {
-    margin-bottom: ${({ theme }) => theme.spacing.SM}px;
   }
 `;
 
 export const FeatureText = styled(RediaccText)`
   && {
-    color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
 
@@ -87,10 +83,9 @@ export const CenteredLoadingContainer = styled(LoadingContainer)`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const FilesLayout = styled(FlexRow).attrs({ $gap: 'MD' })`
+export const FilesLayout = styled(FlexRow).attrs({})`
   /* 340px = modal chrome(180) + tabs(48) + section header(60) + margins(52) */
   height: calc(90vh - 340px);
 `;
@@ -105,52 +100,43 @@ export const FilePreviewColumn = styled.div`
   height: 100%;
 `;
 
-export const FileListCard = styled(ContentCard)`
+export const FileListCard = styled(RediaccCard)`
   && {
     height: 100%;
     display: flex;
     flex-direction: column;
 
     .ant-card-body {
-      padding: 0;
       height: calc(100% - ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px);
     }
   }
 `;
 
 export const FileListItem = styled(RediaccList.Item)<{ $active?: boolean }>`
-  padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
   cursor: pointer;
-  background-color: ${({ theme, $active }) => ($active ? theme.colors.primaryBg : 'transparent')};
-  border-left: 3px solid ${({ theme, $active }) => ($active ? theme.colors.primary : 'transparent')};
-  transition: ${({ theme }) => theme.transitions.DEFAULT};
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.bgHover};
   }
 `;
 
-export const FileMeta = styled(FlexColumn).attrs({ $gap: 'XS' })``;
+export const FileMeta = styled(FlexColumn).attrs({})``;
 
 export const FileName = styled(RediaccText).attrs({
   weight: 'medium',
 })`
   && {
-    color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
 
-export const FilePreviewCard = styled(ContentCard)`
+export const FilePreviewCard = styled(RediaccCard)`
   && {
     height: 100%;
     display: flex;
     flex-direction: column;
 
     .ant-card-body {
-      padding: ${({ theme }) => theme.spacing.MD}px;
       display: flex;
       flex-direction: column;
-      gap: ${({ theme }) => theme.spacing.SM}px;
     }
   }
 `;
@@ -164,7 +150,7 @@ export const FilePath = styled(RediaccText)`
 export const FilePreviewBody = styled.div`
   flex: 1 1 auto;
   overflow: auto;
-  ${borderedCard('borderSecondary', 'MD')}
+  ${borderedCard()}
 `;
 
 export const SecurityScroll = styled.div`
@@ -172,36 +158,28 @@ export const SecurityScroll = styled.div`
   overflow: auto;
 `;
 
-export const SecurityCard = styled(ContentCard)`
+export const SecurityCard = styled(RediaccCard)`
   .ant-card-body {
-    padding: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
 
-export const AlertStack = styled(FlexColumn).attrs({ $gap: 'MD' })``;
+export const AlertStack = styled(FlexColumn).attrs({})``;
 
 export const RoundedAlert = styled(RediaccAlert)`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    padding: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
 
 export const Checklist = styled.ul`
-  margin-left: ${({ theme }) => theme.spacing.MD}px;
-  padding-left: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const ChecklistItem = styled.li`
-  margin-bottom: ${({ theme }) => theme.spacing.XS}px;
-  color: ${({ theme }) => theme.colors.textPrimary};
   line-height: ${({ theme }) => theme.lineHeight.RELAXED};
 `;
 
 export const BodyParagraph = styled(RediaccText)`
   && {
     display: block;
-    color: ${({ theme }) => theme.colors.textPrimary};
     line-height: ${({ theme }) => theme.lineHeight.RELAXED};
   }
 `;
@@ -210,17 +188,14 @@ export const BodyParagraph = styled(RediaccText)`
 
 export const SecurityTitle = styled(Title).attrs({ level: 5 })`
   && {
-    color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
 
-export const IconLabel = styled(FlexRow).attrs({ $gap: 'XS' })`
+export const IconLabel = styled(FlexRow).attrs({})`
   display: inline-flex;
-  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const SuccessIcon = styled(IconLabel)`
-  color: ${({ theme }) => theme.colors.success};
 `;
 
 export const AlertDescription = styled(RediaccText).attrs({

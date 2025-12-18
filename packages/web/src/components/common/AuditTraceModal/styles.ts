@@ -6,7 +6,6 @@ export const StyledModal = FadeInModal;
 // Summary section
 export const SummaryContainer = styled.div`
   width: 100%;
-  margin-bottom: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 export const SummaryRow = styled.div`
@@ -17,13 +16,11 @@ export const SummaryRow = styled.div`
 
 export const SummaryStats = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing.XL}px;
 `;
 
 export const StatItem = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0;
 `;
 
 export const StatValue = styled.span`

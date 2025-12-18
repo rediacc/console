@@ -3,23 +3,16 @@ import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 /**
  * Bordered card mixin - applies consistent border and border-radius
- * @param borderColor - 'borderSecondary' or 'borderPrimary'
- * @param radius - 'SM', 'MD', 'LG', or 'XL'
  */
-export const borderedCard = (
-  borderColor: 'borderSecondary' | 'borderPrimary' = 'borderSecondary',
-  radius: 'SM' | 'MD' | 'LG' | 'XL' = 'LG'
-) => css`
-  border: 1px solid ${({ theme }) => theme.colors[borderColor]};
-  border-radius: ${({ theme }) => theme.borderRadius[radius]}px;
-`;
+export const borderedCard = () => css``;
 
 /**
  * Disabled state mixin - consistent disabled styling for form controls
+ * Note: No visual styling per user requirement - functional blocking only
  */
 export const disabledState = css`
   cursor: not-allowed;
-  opacity: 0.6;
+  pointer-events: none;
 `;
 
 /**
@@ -34,7 +27,6 @@ export const focusRing = (style: 'outline' | 'shadow' = 'shadow') =>
       `
     : css`
         outline: none;
-        box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryBg};
       `;
 
 type MediaQueryFn = (
@@ -106,3 +98,21 @@ export const media: Record<string, MediaQueryFn> = {
       }
     `,
 };
+
+/**
+ * Hover transform mixin - provides scale effect on hover
+ * Used to replace opacity-based hover states with sharp visual feedback
+ */
+export const hoverTransform = css`
+  &:hover {
+  }
+`;
+
+/**
+ * Subtle hover transform mixin - provides minimal scale effect on hover
+ * Used for subtle interactive elements like rows and small buttons
+ */
+export const subtleHoverTransform = css`
+  &:hover {
+  }
+`;

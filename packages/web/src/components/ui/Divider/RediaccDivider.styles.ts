@@ -25,20 +25,16 @@ export const StyledRediaccDivider = styled(AntDivider).withConfig({
   $spacing: DividerSpacing;
 }>`
   && {
-    border-color: ${({ theme }) => theme.colors.borderSecondary};
-
     /* Horizontal divider margins */
-    ${({ $orientation, theme, $spacing }) =>
+    ${({ $orientation }) =>
       $orientation === 'horizontal' &&
       `
-      margin: ${resolveDividerSpacing(theme, $spacing)}px 0;
     `}
 
     /* Vertical divider margins */
-    ${({ $orientation, theme, $spacing }) =>
+    ${({ $orientation }) =>
       $orientation === 'vertical' &&
       `
-      margin: 0 ${resolveDividerSpacing(theme, $spacing)}px;
       height: auto;
       align-self: stretch;
     `}

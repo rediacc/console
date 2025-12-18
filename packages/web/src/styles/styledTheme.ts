@@ -1,4 +1,4 @@
-import { colorTokens } from '@/config/antdTheme';
+import { createColorTheme } from '@/styles/colorSystem';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 export interface StyledTheme {
@@ -7,9 +7,6 @@ export interface StyledTheme {
     primary: string;
     primaryHover: string;
     primaryBg: string;
-    secondary: string;
-    secondaryHover: string;
-    accent: string;
 
     // Status colors
     success: string;
@@ -47,10 +44,6 @@ export interface StyledTheme {
     borderSecondary: string;
     borderHover: string;
 
-    // Shadow colors
-    shadow: string;
-    shadowStrong: string;
-
     // Input colors
     inputBg: string;
     inputBorder: string;
@@ -85,12 +78,6 @@ export interface StyledTheme {
   // Modal max heights
   modalMaxHeight: typeof DESIGN_TOKENS.MODAL_MAX_HEIGHT;
 
-  // Shadows (includes theme-aware computed values)
-  shadows: typeof DESIGN_TOKENS.SHADOWS & {
-    panel: string;
-    controlHandle: string;
-  };
-
   // Overlays (theme-aware backdrop and content overlays)
   overlays: {
     backdrop: string;
@@ -108,25 +95,7 @@ export interface StyledTheme {
   transitions: typeof DESIGN_TOKENS.TRANSITIONS;
 }
 
-type ThemeMode = 'light' | 'dark';
-
-const feedbackSurfaces: Record<
-  ThemeMode,
-  { success: string; warning: string; error: string; info: string }
-> = {
-  light: {
-    success: colorTokens.light.bgSecondary,
-    warning: colorTokens.light.bgHover,
-    error: `${colorTokens.error}14`,
-    info: colorTokens.light.bgTertiary,
-  },
-  dark: {
-    success: colorTokens.dark.bgTertiary,
-    warning: colorTokens.dark.bgHover,
-    error: `${colorTokens.error}33`,
-    info: colorTokens.dark.bgSecondary,
-  },
-};
+export type ThemeMode = 'light' | 'dark';
 
 const sharedThemeValues = {
   spacing: DESIGN_TOKENS.SPACING,
@@ -144,63 +113,23 @@ const sharedThemeValues = {
 } as const;
 
 const createTheme = (mode: ThemeMode): StyledTheme => {
-  const palette = colorTokens[mode];
-  const feedback = feedbackSurfaces[mode];
+  const colors = createColorTheme(mode);
   const isLight = mode === 'light';
 
   return {
     colors: {
-      primary: colorTokens.primary,
-      primaryHover: colorTokens.primaryHover,
-      primaryBg: colorTokens.primaryBg,
-      secondary: colorTokens.secondary,
-      secondaryHover: colorTokens.secondaryHover,
-      accent: colorTokens.accent,
-      success: colorTokens.success,
-      warning: colorTokens.warning,
-      error: colorTokens.error,
-      info: colorTokens.info,
-      bgPrimary: palette.bgPrimary,
-      bgSecondary: palette.bgSecondary,
-      bgTertiary: palette.bgTertiary,
-      bgContainer: isLight ? palette.bgPrimary : palette.bgSecondary,
-      bgHover: palette.bgHover,
-      bgActive: palette.bgActive,
-      bgSelected: palette.bgSelected,
-      bgSuccess: feedback.success,
-      bgWarning: feedback.warning,
-      bgError: feedback.error,
-      bgInfo: feedback.info,
-      bgFillTertiary: isLight ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.04)',
-      bgFillQuaternary: isLight ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.02)',
-      textPrimary: palette.textPrimary,
-      textSecondary: palette.textSecondary,
-      textTertiary: palette.textTertiary,
-      textMuted: palette.textMuted,
-      textInverse: palette.textInverse,
-      textSelected: palette.textSelected,
-      borderPrimary: palette.borderPrimary,
-      borderSecondary: palette.borderSecondary,
-      borderHover: palette.borderHover,
-      shadow: palette.shadow,
-      shadowStrong: isLight
-        ? DESIGN_TOKENS.SHADOWS.SHADOW_STRONG_LIGHT
-        : DESIGN_TOKENS.SHADOWS.SHADOW_STRONG_DARK,
-      inputBg: isLight ? palette.bgPrimary : palette.bgSecondary,
-      inputBorder: palette.borderSecondary,
-      iconGrand: colorTokens.primary,
-      iconFork: colorTokens.secondary,
-      iconSystem: colorTokens.accent,
-      buttonPrimary: palette.buttonPrimary,
-      buttonPrimaryHover: palette.buttonPrimaryHover,
-      buttonPrimaryText: palette.buttonPrimaryText,
-    },
-    shadows: {
-      ...DESIGN_TOKENS.SHADOWS,
-      panel: isLight ? DESIGN_TOKENS.SHADOWS.PANEL_LEFT : DESIGN_TOKENS.SHADOWS.PANEL_LEFT_DARK,
-      controlHandle: isLight
-        ? DESIGN_TOKENS.SHADOWS.CONTROL_HANDLE
-        : DESIGN_TOKENS.SHADOWS.CONTROL_HANDLE_DARK,
+      ...colors,
+      // Explicitly include alpha variants for TypeScript
+      primaryBg: (colors as any).primaryBg,
+      // Additional computed colors not in base theme
+      bgContainer: colors.bgPrimary,
+      bgFillTertiary: 'transparent',
+      bgFillQuaternary: 'transparent',
+      inputBg: colors.bgPrimary,
+      inputBorder: colors.borderSecondary,
+      iconGrand: colors.primary,
+      iconFork: colors.textSecondary, // Was secondary (medium gray)
+      iconSystem: colors.textTertiary, // Was accent (light gray)
     },
     overlays: {
       backdrop: isLight

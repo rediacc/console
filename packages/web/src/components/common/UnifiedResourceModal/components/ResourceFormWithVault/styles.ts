@@ -4,7 +4,7 @@ import { FlexBetween } from '@/components/common/styled';
 import { RediaccAlert, RediaccSelect } from '@/components/ui';
 import { FlexColumn, FlexRow } from '@/styles/primitives';
 
-export const FormWrapper = styled(FlexColumn).attrs({ $gap: 'SM' })`
+export const FormWrapper = styled(FlexColumn).attrs({})`
   height: 100%;
 `;
 
@@ -17,21 +17,15 @@ export const VaultSection = styled.div`
 `;
 
 export const ImportExportRow = styled(FlexBetween)`
-  padding-top: ${({ theme }) => theme.spacing.MD}px;
-  border-top: 1px solid var(--color-border-secondary);
 `;
 
 export const DefaultsWrapper = styled.div`
-  border-top: 1px solid var(--color-border-secondary);
-  padding-top: ${({ theme }) => theme.spacing.MD}px;
-  margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const DefaultsAlert = styled(RediaccAlert)`
-  margin: 0;
 `;
 
-export const SizeInputGroup = styled(FlexRow).attrs({ $gap: 'SM' })`
+export const SizeInputGroup = styled(FlexRow).attrs({})`
   width: 100%;
 `;
 

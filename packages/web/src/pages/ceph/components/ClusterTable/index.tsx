@@ -116,7 +116,6 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
     return (
       <EmptyStatePanel
         description={t('clusters.noClusters')}
-        $marginTop="XXXL"
         action={
           <CreateClusterButton
             variant="primary"

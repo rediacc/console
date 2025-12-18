@@ -60,7 +60,6 @@ export const StyledRediaccEmpty = styled(AntEmpty).withConfig({
 
     /* Custom title styling (if used) */
     .ant-empty-footer {
-      margin-top: ${({ theme }) => theme.spacing.MD}px;
     }
   }
 `;
@@ -69,9 +68,7 @@ export const EmptyTitle = styled.div`
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: ${({ theme }) => theme.fontSize.MD}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
-  margin-bottom: ${({ theme }) => theme.spacing.XS}px;
 `;
 
 export const EmptyAction = styled.div`
-  margin-top: ${({ theme }) => theme.spacing.MD}px;
 `;

@@ -8,7 +8,6 @@ export const ListTitleRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const ListTitle = styled.span`
@@ -23,12 +22,10 @@ export const ListSubtitle = styled.span`
 `;
 
 export const BulletedList = styled.ul`
-  margin: ${({ theme }) => theme.spacing.SM}px 0;
   padding-left: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 export const InlineList = styled.ul`
-  margin: ${({ theme }) => theme.spacing.XS}px 0;
   padding-left: ${({ theme }) => theme.spacing.LG}px;
 `;
 
@@ -44,7 +41,6 @@ export const OrderedList = styled.ol`
 
 export const RequirementsList = styled(BulletedList)`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
-  margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const RegionsListWrapper = styled.div`

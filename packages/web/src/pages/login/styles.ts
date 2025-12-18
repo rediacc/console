@@ -2,13 +2,11 @@ import { Form } from 'antd';
 import styled from 'styled-components';
 import { RediaccButton, RediaccInput, RediaccPasswordInput } from '@/components/ui';
 import { focusRing } from '@/styles/mixins';
-import { AlertCard, FlexRow, fadeInAnimation } from '@/styles/primitives';
+import { AlertCard, FlexRow } from '@/styles/primitives';
 
 export const LoginContainer = styled.div`
   width: 100%;
   max-width: ${({ theme }) => theme.dimensions.CARD_WIDTH_LG}px;
-  margin: 0 auto;
-  padding: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 export const LogoContainer = styled.div`
@@ -16,7 +14,6 @@ export const LogoContainer = styled.div`
   justify-content: center;
   align-items: center;
   height: ${({ theme }) => theme.dimensions.HEADER_HEIGHT}px;
-  margin-top: ${({ theme }) => theme.spacing.MD}px;
 
   img {
     height: ${({ theme }) => theme.spacing.XL}px;
@@ -28,40 +25,30 @@ export const LogoContainer = styled.div`
 
 export const StyledAlert = styled(AlertCard).attrs({ $variant: 'error' })`
   && {
-    border-width: 2px;
-    box-shadow: ${({ theme }) => theme.shadows.ERROR_FIELD};
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
-    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   }
 `;
 
 export const FormLabel = styled.label`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
-  color: ${({ theme }) => theme.colors.textPrimary};
-  margin-bottom: ${({ theme }) => theme.spacing.SM}px;
   display: block;
 `;
 
 export const MasterPasswordLabel = styled(FormLabel)`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 
   .anticon {
-    color: ${({ theme }) => theme.colors.textTertiary};
   }
 `;
 
 export const MasterPasswordFormItem = styled.div`
-  animation: ${fadeInAnimation} 0.3s ease-out;
 `;
 
 export const AdvancedOptionsContainer = styled.div`
   text-align: center;
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-  margin-top: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const AdvancedOptionsButton = styled(RediaccButton).attrs(() => ({
@@ -69,20 +56,15 @@ export const AdvancedOptionsButton = styled(RediaccButton).attrs(() => ({
   size: 'sm',
 }))`
   && {
-    color: ${({ theme }) => theme.colors.textTertiary};
     height: auto;
-    padding: ${({ theme }) => theme.spacing.XS}px ${({ theme }) => theme.spacing.SM}px;
 
     &:hover {
-      background-color: ${({ theme }) => theme.colors.bgHover};
-      color: ${({ theme }) => theme.colors.textSecondary};
     }
   }
 `;
 
 export const RegisterContainer = styled.div`
   text-align: center;
-  margin-top: ${({ theme }) => theme.spacing.SM}px;
 
   .ant-typography {
     font-size: ${({ theme }) => theme.fontSize.SM}px;
@@ -90,47 +72,34 @@ export const RegisterContainer = styled.div`
 `;
 
 export const RegisterLink = styled.a`
-  color: ${({ theme }) => theme.colors.primary};
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   text-decoration: none;
-  border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-  padding: ${({ theme }) => `${theme.spacing.XS}px ${theme.spacing.SM}px`};
-  margin-left: ${({ theme }) => theme.spacing.XS}px;
-  transition: ${({ theme }) => theme.transitions.DEFAULT};
   cursor: pointer;
   display: inline-block;
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryBg};
-    color: ${({ theme }) => theme.colors.primary};
   }
 
   &:focus-visible {
     ${focusRing('outline')}
-    background-color: ${({ theme }) => theme.colors.primaryBg};
   }
 `;
 
 export const SelectorsContainer = styled.div`
   text-align: center;
-  margin-top: ${({ theme }) => theme.spacing.LG}px;
 
   > div:first-child {
-    margin-bottom: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 
 export const LargeGapFormItem = styled(Form.Item)`
-  margin-bottom: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 export const NoMarginFormItem = styled(Form.Item)`
-  margin-bottom: 0;
 `;
 
-export const TFAModalTitle = styled(FlexRow).attrs({ $gap: 'SM' })`
+export const TFAModalTitle = styled(FlexRow).attrs({})`
   .anticon {
-    color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
@@ -142,7 +111,7 @@ export const TFACodeInput = styled(RediaccInput)`
   }
 `;
 
-export const TFAButtonContainer = styled(FlexRow).attrs({ $justify: 'flex-end', $gap: 'SM' })`
+export const TFAButtonContainer = styled(FlexRow).attrs({ $justify: 'flex-end' })`
   width: 100%;
 `;
 

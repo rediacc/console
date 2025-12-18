@@ -1,35 +1,7 @@
 import { Alert as AntAlert } from 'antd';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { AlertSize, AlertSpacing, AlertVariant } from './RediaccAlert.types';
-
-type AlertTokenSet = { bg: string; border: string; color: string };
-
-type AlertTokenKeys = {
-  bg: keyof StyledTheme['colors'];
-  border: keyof StyledTheme['colors'];
-  color: keyof StyledTheme['colors'];
-};
-
-const ALERT_VARIANT_MAP: Record<AlertVariant, AlertTokenKeys> = {
-  success: { bg: 'bgSuccess', border: 'success', color: 'success' },
-  warning: { bg: 'bgWarning', border: 'warning', color: 'warning' },
-  error: { bg: 'bgError', border: 'error', color: 'error' },
-  neutral: { bg: 'bgSecondary', border: 'borderSecondary', color: 'textSecondary' },
-  info: { bg: 'bgInfo', border: 'info', color: 'info' },
-};
-
-export const resolveAlertVariantTokens = (
-  variant: AlertVariant = 'info',
-  theme: StyledTheme
-): AlertTokenSet => {
-  const keys = ALERT_VARIANT_MAP[variant] || ALERT_VARIANT_MAP.info;
-  return {
-    bg: theme.colors[keys.bg],
-    border: theme.colors[keys.border],
-    color: theme.colors[keys.color],
-  };
-};
 
 const ALERT_PADDING_MAP: Record<AlertSize, (theme: StyledTheme) => string> = {
   sm: (theme) => `${theme.spacing.SM}px ${theme.spacing.MD}px`,
@@ -73,39 +45,23 @@ export const StyledRediaccAlert = styled(AntAlert).withConfig({
   $spacing?: AlertSpacing;
 }>`
   && {
-    background-color: ${({ theme, $variant }) => resolveAlertVariantTokens($variant, theme).bg};
-    border: 1px solid ${({ theme, $variant }) => resolveAlertVariantTokens($variant, theme).border};
-    color: ${({ theme }) => theme.colors.textPrimary};
     padding: ${({ theme, $size }) => resolveAlertPadding(theme, $size)};
-
-    /* Spacing (margin-bottom) */
-    ${({ theme, $spacing }) => $spacing && css`margin-bottom: ${resolveAlertSpacing(theme, $spacing)}px;`}
-
-    /* Border radius */
-    border-radius: ${({ theme, $rounded = true, $banner }) =>
-      $banner ? '0' : ($rounded ? `${theme.borderRadius.LG}px` : '0')};
 
     /* Icon color */
     .ant-alert-icon {
-      color: ${({ theme, $variant }) => resolveAlertVariantTokens($variant, theme).color};
     }
 
     /* Message styling */
     .ant-alert-message {
-      color: ${({ theme }) => theme.colors.textPrimary};
     }
 
     /* Description styling */
     .ant-alert-description {
-      color: ${({ theme }) => theme.colors.textSecondary};
     }
 
     /* Close button */
     .ant-alert-close-icon {
-      color: ${({ theme }) => theme.colors.textTertiary};
-
       &:hover {
-        color: ${({ theme }) => theme.colors.textSecondary};
       }
     }
   }

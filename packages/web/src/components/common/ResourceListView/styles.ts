@@ -6,15 +6,10 @@ import { media } from '@/styles/mixins';
 
 export const ContainerCard = styled(RediaccCard)`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.XL}px;
-    border-color: ${({ theme }) => theme.colors.borderSecondary};
-    box-shadow: ${({ theme }) => theme.shadows.CARD};
-    background-color: ${({ theme }) => theme.colors.bgPrimary};
   }
 `;
 
 export const HeaderSection = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const HeaderRow = styled.div`
@@ -22,7 +17,6 @@ export const HeaderRow = styled.div`
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.MD}px;
 
   ${media.tablet`
     flex-direction: column;
@@ -35,7 +29,6 @@ export const ControlGroup = styled.div`
   flex: 1 1 auto;
   min-width: 0;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.MD}px;
 
   ${media.tablet`
     flex-direction: column;
@@ -60,7 +53,6 @@ export const SearchInput = styled(RediaccSearchInput)`
   && {
     width: ${({ theme }) => theme.dimensions.SEARCH_INPUT_WIDTH}px;
     min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
 
   ${media.tablet`
@@ -73,10 +65,8 @@ export const SearchInput = styled(RediaccSearchInput)`
 export const EmptyDescriptionStack = styled(RediaccStack).attrs({
   direction: 'vertical',
   align: 'center',
-  gap: 'md',
 })`
   text-align: center;
-  padding: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 // EmptyTitle removed - use <RediaccText variant="title"> directly
@@ -85,16 +75,13 @@ export const EmptyDescriptionStack = styled(RediaccStack).attrs({
 
 export const EmptyActions = styled(RediaccStack).attrs({
   direction: 'horizontal',
-  gap: 'sm',
 })`
   display: flex;
   justify-content: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 const actionButtonStyles = css`
   min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
 `;
 
 export const CreateButton = styled(RediaccButton)`

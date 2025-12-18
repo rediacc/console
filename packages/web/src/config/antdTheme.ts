@@ -1,109 +1,17 @@
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import {
+  colorTokens,
+  STATUS_COLORS,
+  createColorTheme,
+  createAlphaVariants,
+} from '@/styles/colorSystem';
 import type { ThemeConfig } from 'antd';
 
 /**
- * Brand Colors (theme-independent)
- * Grayscale palette with minimal red for errors only
+ * Export colorTokens for backward compatibility
+ * Now sourced from the unified colorSystem
  */
-const brandColors = {
-  primary: '#1a1a1a', // Dark gray
-  primaryHover: '#0a0a0a', // Darker gray
-  secondary: '#4a4a4a', // Medium gray
-  secondaryHover: '#3a3a3a', // Darker medium gray
-  accent: '#6a6a6a', // Light gray
-  success: '#4a4a4a', // Gray (no green)
-  warning: '#5a5a5a', // Gray (no orange)
-  error: '#dc3545', // Red (only exception)
-  info: '#6a6a6a', // Gray (no blue)
-};
-
-/**
- * Derived Colors (alpha variants)
- * All grayscale except error shadow
- */
-const derivedColors = {
-  primaryBg: 'rgba(26, 26, 26, 0.05)', // primary with low opacity
-  primaryBgHover: 'rgba(26, 26, 26, 0.08)', // primary with slightly higher opacity
-  primaryBgActive: 'rgba(26, 26, 26, 0.12)', // primary with medium opacity
-  primaryShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-
-  accentBg: 'rgba(106, 106, 106, 0.1)', // accent with low opacity
-  accentBgHover: 'rgba(106, 106, 106, 0.15)', // accent with medium opacity
-  accentBgActive: 'rgba(106, 106, 106, 0.2)', // accent with higher opacity
-  accentBgSelected: 'rgba(106, 106, 106, 0.2)',
-  accentBgStrong: 'rgba(106, 106, 106, 0.25)',
-  accentShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-
-  errorShadow: '0 2px 8px rgba(220, 53, 69, 0.15)', // Keep red for errors
-};
-
-/**
- * Theme-specific Colors
- */
-const themeColors = {
-  light: {
-    bgPrimary: '#ffffff',
-    bgSecondary: '#f8f9fa',
-    bgTertiary: '#e9ecef',
-    bgHover: '#f1f3f5',
-    bgActive: '#e9ecef',
-    bgSelected: '#e9ecef', // Subtle selected state for light theme
-    textPrimary: '#1a1a1a',
-    textSecondary: '#3d4852',
-    textTertiary: '#5a6570',
-    textMuted: '#9ca3af',
-    textInverse: '#ffffff',
-    textSelected: '#1a1a1a', // Dark text for selected states
-    borderPrimary: '#dee2e6',
-    borderSecondary: '#e9ecef',
-    borderHover: '#adb5bd',
-    shadow: 'rgba(0, 0, 0, 0.1)',
-    shadowSm: DESIGN_TOKENS.SHADOWS.ANT_SM_LIGHT as string,
-    shadowMd: DESIGN_TOKENS.SHADOWS.ANT_MD_LIGHT as string,
-    shadowLg: DESIGN_TOKENS.SHADOWS.ANT_LG_LIGHT as string,
-    tooltipBg: 'rgba(0, 0, 0, 0.85)',
-    // Primary button colors (dark on light background)
-    buttonPrimary: '#1a1a1a',
-    buttonPrimaryHover: '#0a0a0a',
-    buttonPrimaryText: '#ffffff',
-  },
-  dark: {
-    bgPrimary: '#0a0a0a',
-    bgSecondary: '#1a1a1a',
-    bgTertiary: '#2a2a2a',
-    bgHover: '#2d2d2d',
-    bgActive: '#3a3a3a',
-    bgSelected: '#4a4a4a', // Medium-light gray for selected states (not inverted)
-    textPrimary: '#fafafa',
-    textSecondary: '#e5e7eb',
-    textTertiary: '#d1d5db',
-    textMuted: '#9ca3af',
-    textInverse: '#1a1a1a',
-    textSelected: '#ffffff', // White text for selected states
-    borderPrimary: '#27272a',
-    borderSecondary: '#3f3f46',
-    borderHover: '#52525b',
-    shadow: 'rgba(0, 0, 0, 0.3)',
-    shadowSm: DESIGN_TOKENS.SHADOWS.ANT_SM_DARK as string,
-    shadowMd: DESIGN_TOKENS.SHADOWS.ANT_MD_DARK as string,
-    shadowLg: DESIGN_TOKENS.SHADOWS.ANT_LG_DARK as string,
-    tooltipBg: 'rgba(0, 0, 0, 0.95)',
-    // Primary button colors (light on dark background - inverted for contrast)
-    buttonPrimary: '#fafafa',
-    buttonPrimaryHover: '#ffffff',
-    buttonPrimaryText: '#1a1a1a',
-  },
-};
-
-/**
- * Export for GlobalStyles and styled-components
- */
-export const colorTokens = {
-  ...brandColors,
-  ...derivedColors,
-  light: themeColors.light,
-  dark: themeColors.dark,
-};
+export { colorTokens };
 
 /**
  * Shared Design Tokens (theme-independent)
@@ -146,29 +54,21 @@ const paddedControlTokens = {
 };
 
 const focusStateTokens = (color: string) => ({
-  activeShadow: `0 0 0 1px ${color}`,
   hoverBorderColor: color,
   activeBorderColor: color,
 });
 
-const createButtonTokens = (
-  theme: typeof themeColors.light,
-  primaryColor: string,
-  primaryShadow: string
-) => ({
+const createButtonTokens = (theme: ReturnType<typeof createColorTheme>, primaryColor: string) => ({
   borderRadius: RADIUS.MD,
   paddingContentHorizontal: 16,
   paddingContentVertical: 8,
-  primaryShadow,
-  dangerShadow: derivedColors.errorShadow,
-  defaultShadow: theme.shadowSm,
   defaultBorderColor: theme.borderPrimary,
   defaultColor: theme.textPrimary,
   defaultBg: theme.bgPrimary,
-  defaultHoverBg: theme.bgSecondary,
+  defaultHoverBg: theme.bgPrimary,
   defaultHoverBorderColor: primaryColor,
   defaultHoverColor: theme.textPrimary,
-  defaultActiveBg: theme.bgActive,
+  defaultActiveBg: theme.bgPrimary,
   defaultActiveBorderColor: primaryColor,
   defaultActiveColor: theme.textPrimary,
   primaryColor: theme.textInverse,
@@ -177,30 +77,29 @@ const createButtonTokens = (
   textTextActiveColor: theme.textPrimary,
   fontWeight: DESIGN_TOKENS.FONT_WEIGHT.SEMIBOLD,
   linkHoverBg: 'transparent',
-  textHoverBg: theme.bgHover,
+  textHoverBg: theme.bgPrimary,
 });
 
-const createDropdownTokens = (theme: typeof themeColors.light, hoverBg: string) => ({
+const createDropdownTokens = (theme: ReturnType<typeof createColorTheme>) => ({
   borderRadiusLG: RADIUS.LG,
-  controlItemBgHover: hoverBg,
-  controlItemBgActive: theme.bgSelected,
-  boxShadowSecondary: theme.shadowMd,
+  controlItemBgHover: theme.bgPrimary,
+  controlItemBgActive: theme.bgPrimary,
 });
 
-const createPaginationTokens = (theme: typeof themeColors.light) => ({
+const createPaginationTokens = (theme: ReturnType<typeof createColorTheme>) => ({
   borderRadius: RADIUS.MD,
   itemSize: 32,
   itemBg: theme.bgPrimary,
   itemLinkBg: theme.bgPrimary,
   itemInputBg: theme.bgPrimary,
-  itemActiveBg: theme.bgSelected,
-  itemActiveColor: theme.textSelected,
-  itemActiveColorHover: theme.textSelected,
-  itemActiveBgDisabled: theme.bgSecondary,
+  itemActiveBg: theme.bgPrimary,
+  itemActiveColor: theme.textPrimary,
+  itemActiveColorHover: theme.textPrimary,
+  itemActiveBgDisabled: theme.bgPrimary,
   itemActiveColorDisabled: theme.textTertiary,
 });
 
-const createTabsTokens = (theme: typeof themeColors.light) => ({
+const createTabsTokens = (theme: ReturnType<typeof createColorTheme>) => ({
   cardBg: theme.bgPrimary,
   cardGutter: DESIGN_TOKENS.SPACING.XS,
   horizontalMargin: `0 0 ${DESIGN_TOKENS.SPACING.MD}px 0`,
@@ -210,19 +109,14 @@ const createTabsTokens = (theme: typeof themeColors.light) => ({
   inkBarColor: theme.textPrimary,
 });
 
-const createMenuTokens = (
-  theme: typeof themeColors.light,
-  primaryBgHover: string,
-  primaryBgActive: string,
-  primaryColor: string
-) => ({
+const createMenuTokens = (theme: ReturnType<typeof createColorTheme>, primaryColor: string) => ({
   itemColor: theme.textPrimary,
   itemBg: 'transparent',
-  itemSelectedBg: theme.bgSelected,
-  itemSelectedColor: theme.textSelected,
-  itemHoverBg: primaryBgHover,
+  itemSelectedBg: theme.bgPrimary,
+  itemSelectedColor: theme.textPrimary,
+  itemHoverBg: theme.bgPrimary,
   itemHoverColor: primaryColor,
-  itemActiveBg: primaryBgActive,
+  itemActiveBg: theme.bgPrimary,
   itemDisabledColor: theme.textMuted,
   horizontalItemHoverBg: 'transparent',
   iconSize: 16,
@@ -234,12 +128,12 @@ const createMenuTokens = (
  * Component Configuration Factory
  */
 const createComponentConfig = (isDark: boolean) => {
-  const theme = isDark ? themeColors.dark : themeColors.light;
-  const primaryColor = isDark ? brandColors.accent : brandColors.primary;
-  const primaryBg = isDark ? derivedColors.accentBg : derivedColors.primaryBg;
-  const primaryBgHover = isDark ? derivedColors.accentBgHover : derivedColors.primaryBgHover;
-  const primaryBgActive = isDark ? derivedColors.accentBgActive : derivedColors.primaryBgActive;
-  const primaryShadow = isDark ? derivedColors.accentShadow : derivedColors.primaryShadow;
+  const theme = createColorTheme(isDark ? 'dark' : 'light');
+  const primaryColor = theme.primary;
+
+  // Get alpha variants (now theme-aware)
+  const alphas = createAlphaVariants(isDark ? 'dark' : 'light', 'primary');
+  const primaryBg = (alphas as any).primaryBg;
 
   return {
     Input: {
@@ -247,7 +141,6 @@ const createComponentConfig = (isDark: boolean) => {
       controlHeightLG: CONTROL_HEIGHT,
       colorBorder: theme.borderPrimary,
       colorBgContainer: theme.bgPrimary,
-      errorActiveShadow: `0 0 0 1px ${brandColors.error}`,
       ...focusStateTokens(primaryColor),
     },
     InputNumber: {
@@ -260,10 +153,10 @@ const createComponentConfig = (isDark: boolean) => {
       controlHeightSM: CONTROL_HEIGHT,
       colorBorder: theme.borderPrimary,
       colorBgContainer: theme.bgPrimary,
-      optionSelectedBg: theme.bgSelected,
-      optionSelectedColor: theme.textSelected,
+      optionSelectedBg: theme.bgPrimary,
+      optionSelectedColor: theme.textPrimary,
       optionSelectedFontWeight: DESIGN_TOKENS.FONT_WEIGHT.SEMIBOLD,
-      optionActiveBg: primaryBgHover,
+      optionActiveBg: theme.bgPrimary,
       optionPadding: `${DESIGN_TOKENS.SPACING.SM}px ${DESIGN_TOKENS.SPACING.SM_LG}px`,
       optionFontSize: DESIGN_TOKENS.FONT_SIZE.SM,
       optionLineHeight: `${DESIGN_TOKENS.FONT_SIZE.XL}px`,
@@ -275,31 +168,29 @@ const createComponentConfig = (isDark: boolean) => {
       activeOutlineColor: primaryColor,
       ...focusStateTokens(primaryColor),
     },
-    Button: createButtonTokens(theme, primaryColor, primaryShadow),
+    Button: createButtonTokens(theme, primaryColor),
     Card: {
       borderRadiusLG: RADIUS.LG,
-      boxShadowTertiary: theme.shadowSm,
       headerBg: 'transparent',
       headerFontSize: DESIGN_TOKENS.FONT_SIZE.MD,
       headerFontSizeSM: DESIGN_TOKENS.FONT_SIZE.SM,
     },
     Table: {
       borderRadius: RADIUS.MD,
-      headerBg: theme.bgSecondary,
+      headerBg: theme.bgPrimary,
       headerColor: theme.textPrimary,
-      rowHoverBg: primaryBgHover,
-      rowSelectedBg: theme.bgSelected,
-      rowSelectedHoverBg: theme.bgActive,
-      borderColor: theme.borderSecondary,
-      headerSplitColor: theme.borderSecondary,
-      footerBg: theme.bgSecondary,
+      rowHoverBg: theme.bgPrimary,
+      rowSelectedBg: theme.bgPrimary,
+      rowSelectedHoverBg: theme.bgPrimary,
+      borderColor: theme.borderPrimary,
+      headerSplitColor: theme.borderPrimary,
+      footerBg: theme.bgPrimary,
       footerColor: theme.textSecondary,
       cellPaddingBlock: 12,
       cellPaddingInline: 16,
     },
     Modal: {
       borderRadiusLG: RADIUS.XL,
-      boxShadow: theme.shadowLg,
       headerBg: theme.bgPrimary,
       contentBg: theme.bgPrimary,
       footerBg: theme.bgPrimary,
@@ -325,8 +216,8 @@ const createComponentConfig = (isDark: boolean) => {
       footerPaddingInline: 24,
     },
     Tabs: createTabsTokens(theme),
-    Menu: createMenuTokens(theme, primaryBgHover, primaryBgActive, primaryColor),
-    Dropdown: createDropdownTokens(theme, primaryBgHover),
+    Menu: createMenuTokens(theme, primaryColor),
+    Dropdown: createDropdownTokens(theme),
     Pagination: createPaginationTokens(theme),
     Switch: {
       trackHeight: 22,
@@ -347,12 +238,12 @@ const createComponentConfig = (isDark: boolean) => {
       ...baseControlTokens,
       ...focusStateTokens(primaryColor),
       cellActiveWithRangeBg: primaryBg,
-      cellHoverBg: primaryBgHover,
+      cellHoverBg: theme.bgPrimary,
     },
     Form: {
       labelFontSize: DESIGN_TOKENS.FONT_SIZE.SM,
       labelColor: theme.textPrimary,
-      labelRequiredMarkColor: brandColors.error,
+      labelRequiredMarkColor: STATUS_COLORS.error,
       labelHeight: DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT,
       verticalLabelPadding: `0 0 ${DESIGN_TOKENS.SPACING.SM}px`,
       verticalLabelMargin: '0',
@@ -370,8 +261,10 @@ const createComponentConfig = (isDark: boolean) => {
     },
     Tag: {
       borderRadiusSM: RADIUS.SM,
-      defaultBg: theme.bgSecondary,
+      defaultBg: theme.bgPrimary,
       defaultColor: theme.textPrimary,
+      borderRadiusLG: RADIUS.MD,
+      colorBorder: theme.borderPrimary,
     },
     Tooltip: {
       borderRadius: RADIUS.MD,
@@ -379,7 +272,6 @@ const createComponentConfig = (isDark: boolean) => {
     },
     Popover: {
       borderRadiusLG: RADIUS.LG,
-      boxShadowSecondary: theme.shadowMd,
     },
     Message: {
       contentBg: theme.bgPrimary,
@@ -415,7 +307,7 @@ const createComponentConfig = (isDark: boolean) => {
     },
     Progress: {
       defaultColor: primaryColor,
-      remainingColor: theme.bgTertiary,
+      remainingColor: theme.borderPrimary,
     },
     Timeline: {
       tailColor: theme.borderPrimary,
@@ -425,20 +317,20 @@ const createComponentConfig = (isDark: boolean) => {
       itemColor: theme.textSecondary,
       itemSelectedBg: theme.bgPrimary,
       itemSelectedColor: theme.textPrimary,
-      itemHoverBg: theme.bgHover,
+      itemHoverBg: theme.bgPrimary,
       itemHoverColor: theme.textPrimary,
-      itemActiveBg: theme.bgActive,
-      trackBg: theme.bgTertiary,
+      itemActiveBg: theme.bgPrimary,
+      trackBg: theme.bgPrimary,
       trackPadding: `${DESIGN_TOKENS.SPACING.XXS}px`,
       borderRadius: RADIUS.MD,
     },
     Layout: {
-      headerBg: theme.bgSecondary,
+      headerBg: theme.bgPrimary,
       headerColor: theme.textPrimary,
       headerHeight: 64,
       headerPadding: `0 ${DESIGN_TOKENS.SPACING.LG}px`,
       bodyBg: theme.bgPrimary,
-      siderBg: theme.bgSecondary,
+      siderBg: theme.bgPrimary,
     },
   };
 };
@@ -448,19 +340,19 @@ const createComponentConfig = (isDark: boolean) => {
  */
 export const lightTheme: ThemeConfig = {
   token: {
-    colorPrimary: brandColors.primary,
-    colorSuccess: brandColors.success,
-    colorWarning: brandColors.warning,
-    colorError: brandColors.error,
-    colorInfo: brandColors.info,
-    colorBgContainer: themeColors.light.bgPrimary,
-    colorBgElevated: themeColors.light.bgPrimary,
-    colorBgLayout: themeColors.light.bgSecondary,
-    colorText: themeColors.light.textPrimary,
-    colorTextSecondary: themeColors.light.textSecondary,
-    colorTextTertiary: themeColors.light.textTertiary,
-    colorBorder: themeColors.light.borderPrimary,
-    colorBorderSecondary: themeColors.light.borderSecondary,
+    colorPrimary: colorTokens.light.primary,
+    colorSuccess: STATUS_COLORS.success,
+    colorWarning: STATUS_COLORS.warning,
+    colorError: STATUS_COLORS.error,
+    colorInfo: STATUS_COLORS.info,
+    colorBgContainer: colorTokens.light.bgPrimary,
+    colorBgElevated: colorTokens.light.bgPrimary,
+    colorBgLayout: colorTokens.light.bgPrimary,
+    colorText: colorTokens.light.textPrimary,
+    colorTextSecondary: colorTokens.light.textSecondary,
+    colorTextTertiary: colorTokens.light.textTertiary,
+    colorBorder: colorTokens.light.borderPrimary,
+    colorBorderSecondary: colorTokens.light.borderSecondary,
     ...sharedTokens,
   },
   components: createComponentConfig(false),
@@ -471,19 +363,19 @@ export const lightTheme: ThemeConfig = {
  */
 export const darkTheme: ThemeConfig = {
   token: {
-    colorPrimary: brandColors.accent,
-    colorSuccess: brandColors.success,
-    colorWarning: brandColors.warning,
-    colorError: brandColors.error,
-    colorInfo: brandColors.info,
-    colorBgContainer: themeColors.dark.bgSecondary,
-    colorBgElevated: themeColors.dark.bgTertiary,
-    colorBgLayout: themeColors.dark.bgPrimary,
-    colorText: themeColors.dark.textPrimary,
-    colorTextSecondary: themeColors.dark.textSecondary,
-    colorTextTertiary: themeColors.dark.textTertiary,
-    colorBorder: themeColors.dark.borderPrimary,
-    colorBorderSecondary: themeColors.dark.borderSecondary,
+    colorPrimary: colorTokens.dark.primary,
+    colorSuccess: STATUS_COLORS.success,
+    colorWarning: STATUS_COLORS.warning,
+    colorError: STATUS_COLORS.error,
+    colorInfo: STATUS_COLORS.info,
+    colorBgContainer: colorTokens.dark.bgPrimary,
+    colorBgElevated: colorTokens.dark.bgPrimary,
+    colorBgLayout: colorTokens.dark.bgPrimary,
+    colorText: colorTokens.dark.textPrimary,
+    colorTextSecondary: colorTokens.dark.textSecondary,
+    colorTextTertiary: colorTokens.dark.textTertiary,
+    colorBorder: colorTokens.dark.borderPrimary,
+    colorBorderSecondary: colorTokens.dark.borderSecondary,
     ...sharedTokens,
   },
   components: createComponentConfig(true),

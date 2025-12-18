@@ -379,6 +379,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
 
       params: {
         repository: repositoryData?.repositoryGuid || repository.name,
+        repositoryName: repositoryData?.repositoryName || repository.name,
 
         container: container.id,
       },

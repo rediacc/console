@@ -22,6 +22,7 @@ import {
   RediaccInput,
   RediaccStack,
   RediaccTable,
+  RediaccTag,
   RediaccText,
   RediaccTooltip,
 } from '@/components/ui';
@@ -45,9 +46,6 @@ import { RepositoryActionsMenu } from './components/RepositoryActionsMenu';
 import { useRepositoryTableState } from './hooks/useRepositoryTableState';
 import {
   ConfirmationInput,
-  InfoTag,
-  InlineTag,
-  MachineTag,
   ModalContent,
   SmallText,
   TableStateContainer,
@@ -203,6 +201,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
     const params: Record<string, unknown> = {
       repository: RepoData.repositoryGuid,
+      repositoryName: RepoData.repositoryName,
       grand: RepoData.grandGuid || '',
     };
 
@@ -279,6 +278,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
           const params: Record<string, unknown> = {
             repository: context.repositoryGuid,
+            repositoryName: context.repositoryTag,
             grand: context.grandGuid,
           };
 
@@ -633,6 +633,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
           const params: Record<string, unknown> = {
             repository: context.repositoryGuid,
+            repositoryName: context.repositoryTag,
             grand: context.repositoryGuid,
           };
 
@@ -733,7 +734,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             functionName: 'push',
             params: {
               repository: RepoData.repositoryGuid,
+              repositoryName: RepoData.repositoryName,
               dest: newRepo.repositoryGuid,
+              destName: newRepo.repositoryName,
               destinationType: 'machine',
               to: machine.machineName,
               state: selectedRepository.mounted ? 'online' : 'offline',
@@ -809,7 +812,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
                 machines: machinesArray.join(','),
                 to: targetMachine,
                 dest: newRepo.repositoryGuid,
+                destName: newRepo.repositoryName,
                 repository: RepoData.repositoryGuid,
+                repositoryName: RepoData.repositoryName,
                 grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
                 state: selectedRepository.mounted ? 'online' : 'offline',
               },
@@ -873,7 +878,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
                 storages: storagesArray.join(','),
                 to: targetStorage,
                 dest: RepoData.repositoryGuid,
+                destName: RepoData.repositoryName,
                 repository: RepoData.repositoryGuid,
+                repositoryName: RepoData.repositoryName,
                 grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
                 state: selectedRepository.mounted ? 'online' : 'offline',
               },
@@ -1068,14 +1075,18 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
               </S.MachineTitle>
             </Space>
             <Space wrap size={8}>
-              <InfoTag data-testid="machine-repo-list-team-tag">{machine.teamName}</InfoTag>
-              <InfoTag data-testid="machine-repo-list-bridge-tag">{machine.bridgeName}</InfoTag>
+              <RediaccTag data-testid="machine-repo-list-team-tag">{machine.teamName}</RediaccTag>
+              <RediaccTag data-testid="machine-repo-list-bridge-tag">
+                {machine.bridgeName}
+              </RediaccTag>
               {machine.regionName && (
-                <InfoTag data-testid="machine-repo-list-region-tag">{machine.regionName}</InfoTag>
+                <RediaccTag data-testid="machine-repo-list-region-tag">
+                  {machine.regionName}
+                </RediaccTag>
               )}
-              <InfoTag data-testid="machine-repo-list-queue-tag">
+              <RediaccTag data-testid="machine-repo-list-queue-tag">
                 {machine.queueCount} {t('machines:queueItems')}
-              </InfoTag>
+              </RediaccTag>
             </Space>
           </Space>
         </S.MachineHeader>
@@ -1180,10 +1191,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             <RediaccStack direction="vertical" gap="sm" fullWidth>
               <Space>
                 <RediaccText>{t('resources:repositories.Repository')}:</RediaccText>
-                <InlineTag>{selectedRepository.name}</InlineTag>
+                <RediaccTag>{selectedRepository.name}</RediaccTag>
                 <RediaccText>•</RediaccText>
                 <RediaccText>{t('machines:machine')}:</RediaccText>
-                <MachineTag>{machine.machineName}</MachineTag>
+                <RediaccTag>{machine.machineName}</RediaccTag>
               </Space>
               {selectedFunction === 'push' &&
                 (() => {
@@ -1205,10 +1216,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
                             })}
                             :
                           </SmallText>
-                          <InlineTag>{parentRepo.repositoryName}</InlineTag>
+                          <RediaccTag>{parentRepo.repositoryName}</RediaccTag>
                           <SmallText color="secondary">→</SmallText>
                           <SmallText color="secondary">{t('common:current')}:</SmallText>
-                          <InlineTag>{selectedRepository.name}</InlineTag>
+                          <RediaccTag>{selectedRepository.name}</RediaccTag>
                         </Space>
                       );
                     }

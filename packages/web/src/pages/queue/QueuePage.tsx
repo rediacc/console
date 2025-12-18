@@ -328,7 +328,8 @@ const QueuePage: React.FC = () => {
               <RediaccTooltip title={t('queue:tabs.active.tooltip')}>
                 <TabLabel data-testid="queue-tab-active">
                   {t('queue:tabs.active.title')}
-                  <TabCount count={activeItems.length} $color={theme.colors.secondary} />
+                  <TabCount count={activeItems.length} $color={theme.colors.textSecondary} />{' '}
+                  {/* Was secondary */}
                 </TabLabel>
               </RediaccTooltip>
             ),
@@ -395,7 +396,7 @@ const QueuePage: React.FC = () => {
                   <TabCount
                     count={cancelledCount || cancelledItems.length}
                     showZero
-                    $color={theme.colors.accent}
+                    $color={theme.colors.textTertiary} /* Was accent */
                   />
                 </TabLabel>
               </RediaccTooltip>

@@ -23,7 +23,6 @@ export const SectionHeaderRow = PrimitiveSectionHeaderRow;
 export const PageWrapper = styled(PageContainer)`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XL}px;
 `;
 
 /**
@@ -33,9 +32,7 @@ export const PageWrapper = styled(PageContainer)`
 export const SectionStack = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.LG}px;
   width: 100%;
-  margin-bottom: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 /**
@@ -43,6 +40,5 @@ export const SectionStack = styled.div`
  */
 export const SectionHeading = styled(Title)`
   && {
-    margin: 0 0 ${({ theme }) => theme.spacing.LG}px;
   }
 `;

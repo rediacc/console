@@ -8,7 +8,7 @@ import type { RediaccTagProps, TagPreset, TagVariant } from './RediaccTag.types'
 const presetVariantMap: Record<TagPreset, TagVariant> = {
   team: 'success',
   machine: 'primary',
-  bridge: 'secondary',
+  bridge: 'neutral',
   region: 'neutral',
 };
 
@@ -47,7 +47,7 @@ const presetVariantMap: Record<TagPreset, TagVariant> = {
 export const RediaccTag = forwardRef<HTMLSpanElement, RediaccTagProps>(
   (
     {
-      variant = 'default',
+      variant = 'neutral',
       size = 'md',
       preset,
       borderless = false,

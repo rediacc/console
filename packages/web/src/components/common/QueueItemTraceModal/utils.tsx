@@ -40,7 +40,7 @@ export const getTimelineTimestamp = (
 export const getSimplifiedStatus = (
   queueDetails: GetTeamQueueItems_ResultSet1 | null
 ): SimplifiedStatus => {
-  if (!queueDetails) return { status: 'unknown', color: 'default', icon: null };
+  if (!queueDetails) return { status: 'unknown', color: 'neutral', icon: null };
   const status = normalizeToString(queueDetails, 'status', 'Status');
   const retryCount = normalizeToNumber(queueDetails, 0, 'retryCount', 'RetryCount');
   const lastFailureReason = normalizeToString(
@@ -72,7 +72,7 @@ export const getSimplifiedStatus = (
     case 'ASSIGNED':
       return { status: 'Assigned', color: 'primary', icon: <ClockCircleOutlined /> };
     default:
-      return { status: status || 'Pending', color: 'default', icon: <ClockCircleOutlined /> };
+      return { status: status || 'Pending', color: 'neutral', icon: <ClockCircleOutlined /> };
   }
 };
 
@@ -142,21 +142,21 @@ export const isStalePending = (queueDetails: GetTeamQueueItems_ResultSet1 | null
 // Helper function to get priority color and icon
 // Using grayscale system - only visual distinction through icons
 export const getPriorityInfo = (priority: number | undefined): PriorityInfo => {
-  if (!priority) return { color: 'default', icon: null, label: 'Normal' };
+  if (!priority) return { color: 'neutral', icon: null, label: 'Normal' };
 
   switch (priority) {
     case 1:
-      return { color: 'default', icon: <ThunderboltOutlined />, label: 'Highest' };
+      return { color: 'neutral', icon: <ThunderboltOutlined />, label: 'Highest' };
     case 2:
-      return { color: 'default', icon: <RocketOutlined />, label: 'High' };
+      return { color: 'neutral', icon: <RocketOutlined />, label: 'High' };
     case 3:
-      return { color: 'default', icon: null, label: 'Normal' };
+      return { color: 'neutral', icon: null, label: 'Normal' };
     case 4:
-      return { color: 'default', icon: null, label: 'Low' };
+      return { color: 'neutral', icon: null, label: 'Low' };
     case 5:
-      return { color: 'default', icon: null, label: 'Lowest' };
+      return { color: 'neutral', icon: null, label: 'Lowest' };
     default:
-      return { color: 'default', icon: null, label: 'Normal' };
+      return { color: 'neutral', icon: null, label: 'Normal' };
   }
 };
 

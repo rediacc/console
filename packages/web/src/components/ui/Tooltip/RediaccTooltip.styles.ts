@@ -55,8 +55,6 @@ export const getTooltipOverlayStyle = (
   return {
     backgroundColor: tokens.bg,
     color: tokens.color,
-    border: tokens.borderColor !== 'transparent' ? `1px solid ${tokens.borderColor}` : undefined,
-    borderRadius: theme.borderRadius.MD,
     fontSize: theme.fontSize.SM,
     padding: `${theme.spacing.XS}px ${theme.spacing.SM}px`,
   };

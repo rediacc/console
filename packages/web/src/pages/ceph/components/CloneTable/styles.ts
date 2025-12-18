@@ -5,24 +5,17 @@ import { TableCellText } from '@/components/ui/Table';
 import { ActionsRow, NameCell, TableWrapper } from '@/pages/ceph/styles/tableAliases';
 import { FlexColumn, IconActionButton, StyledIcon } from '@/styles/primitives';
 
-export const Container = styled(FlexColumn).attrs({ $gap: 'MD' })`
-  padding: ${({ theme }) =>
-    `${theme.spacing.MD}px ${theme.spacing.MD}px ${theme.spacing.MD}px ${theme.spacing.LG}px`};
-  background: ${({ theme }) => theme.colors.bgSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+export const Container = styled(FlexColumn).attrs({})`
 `;
 
 export const Title = styled.h5`
-  margin: 0;
   font-size: ${({ theme }) => theme.fontSize.LG}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 export { ActionsRow, TableWrapper, NameCell };
 
 export const ExpandButton = styled(IconActionButton)`
-  margin-right: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const CloneIcon = styled(StyledIcon).attrs(({ theme }) => ({
@@ -40,20 +33,14 @@ export const CloneName = styled(TableCellText)`
 
 export const MachineCountBadgeWrapper = styled(RediaccBadge)<{ $active?: boolean }>`
   .ant-badge-count {
-    background-color: ${({ $active, theme }) =>
-      $active ? theme.colors.primary : theme.colors.bgHover};
-    color: ${({ $active, theme }) => ($active ? theme.colors.textInverse : theme.colors.textSecondary)};
-    box-shadow: none;
     min-width: ${({ theme }) => theme.spacing.MD}px;
   }
 
   .anticon {
-    color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
 
 export const MachineListWrapper = styled.div`
-  padding: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export { ActionsRow as MachineListHeader };
@@ -63,7 +50,6 @@ export { ActionsRow as MachineListHeader };
 export const MachineTagGrid = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
 // MachineTag removed - use <RediaccTag preset="machine" compact> directly
@@ -75,10 +61,8 @@ export const MachineListButton = styled(RediaccButton)`
 `;
 
 export const EmptyState = styled(FlexColumn).attrs({
-  $gap: 'MD',
   $align: 'center',
 })`
-  padding: ${({ theme }) => `${theme.spacing.LG}px ${theme.spacing.MD}px`};
 `;
 
 export const AssignButton = styled(RediaccButton)`

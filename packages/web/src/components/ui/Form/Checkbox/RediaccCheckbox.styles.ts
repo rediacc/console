@@ -10,30 +10,16 @@ import { disabledState } from '@/styles/mixins';
 export const StyledRediaccCheckbox = styled(AntCheckbox)`
   && {
     font-size: ${({ theme }) => theme.fontSize.SM}px;
-    color: ${({ theme }) => theme.colors.textPrimary};
 
     /* Checkbox indicator styles */
     .ant-checkbox {
       .ant-checkbox-inner {
-        border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-        border-color: ${({ theme }) => theme.colors.borderPrimary};
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-
-      &:hover .ant-checkbox-inner {
-        border-color: ${({ theme }) => theme.colors.primary};
       }
     }
 
     /* Checked state */
     .ant-checkbox-checked {
       .ant-checkbox-inner {
-        background-color: ${({ theme }) => theme.colors.primary};
-        border-color: ${({ theme }) => theme.colors.primary};
-      }
-
-      &::after {
-        border-color: ${({ theme }) => theme.colors.primary};
       }
     }
 
@@ -41,7 +27,6 @@ export const StyledRediaccCheckbox = styled(AntCheckbox)`
     .ant-checkbox-indeterminate {
       .ant-checkbox-inner {
         &::after {
-          background-color: ${({ theme }) => theme.colors.primary};
         }
       }
     }
@@ -51,15 +36,11 @@ export const StyledRediaccCheckbox = styled(AntCheckbox)`
       ${disabledState}
 
       .ant-checkbox-disabled .ant-checkbox-inner {
-        background-color: ${({ theme }) => theme.colors.bgSecondary};
-        border-color: ${({ theme }) => theme.colors.borderSecondary};
       }
     }
 
     /* Focus state */
     .ant-checkbox-input:focus-visible + .ant-checkbox-inner {
-      border-color: ${({ theme }) => theme.colors.primary};
-      box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryBg};
     }
   }
 `;

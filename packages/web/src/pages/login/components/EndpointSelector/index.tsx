@@ -33,7 +33,6 @@ import {
 } from './styles';
 
 const FormActionsRow = styled(Form.Item)`
- margin-bottom: 0;
 `;
 
 interface EndpointHealth {

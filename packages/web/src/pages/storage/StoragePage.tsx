@@ -338,7 +338,9 @@ const StoragePage: React.FC = () => {
         key: 'teamName',
         width: COLUMN_WIDTHS.TAG,
         ellipsis: true,
-        render: (teamName: string) => <Tag color={theme.colors.secondary}>{teamName}</Tag>,
+        render: (teamName: string) => (
+          <Tag color={theme.colors.textSecondary /* Was secondary */}>{teamName}</Tag>
+        ),
       },
       ...(featureFlags.isEnabled('vaultVersionColumns')
         ? [
@@ -420,7 +422,7 @@ const StoragePage: React.FC = () => {
       openUnifiedModal,
       setCurrentResource,
       t,
-      theme.colors.secondary,
+      theme.colors.textSecondary, // Was secondary
     ]
   );
 

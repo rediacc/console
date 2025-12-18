@@ -1,7 +1,6 @@
 import React from 'react';
 import { Empty, Spin } from 'antd';
 import styled from 'styled-components';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const CenteredContainer = styled.div<{ $minHeight?: number }>`
   display: flex;
@@ -9,8 +8,6 @@ const CenteredContainer = styled.div<{ $minHeight?: number }>`
   justify-content: center;
   align-items: center;
   min-height: ${({ $minHeight }) => $minHeight || 200}px;
-  padding: ${DESIGN_TOKENS.SPACING.LG}px;
-  gap: ${DESIGN_TOKENS.SPACING.SM}px;
 `;
 
 const FullHeightContainer = styled.div`
@@ -20,12 +17,9 @@ const FullHeightContainer = styled.div`
   align-items: center;
   height: 100%;
   width: 100%;
-  gap: ${DESIGN_TOKENS.SPACING.SM}px;
 `;
 
 const LoadingText = styled.div`
-  margin-top: ${DESIGN_TOKENS.SPACING.SM}px;
-  color: var(--color-text-secondary);
   text-align: center;
 `;
 

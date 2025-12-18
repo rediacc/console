@@ -11,13 +11,11 @@ export const FilterLabel = styled(RediaccText)`
   && {
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-    color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
 
 export const PlaceholderLabel = styled(FilterLabel)`
   && {
-    color: transparent;
   }
 `;
 
@@ -33,22 +31,16 @@ export const ActionButtonFull = styled(RediaccButton)`
 
 export const LinkButton = styled(RediaccButton).attrs({ variant: 'link' })`
   && {
-    padding: 0;
     height: auto;
   }
 `;
 
 export const FilterHintIcon = styled(FilterOutlined)`
   font-size: ${({ theme }) => theme.fontSize.XS}px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  opacity: 0.7;
 `;
 
 export const ColumnFilterIcon = styled(FilterOutlined)<{ $active?: boolean }>`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
-  color: ${({ $active, theme }) =>
-    $active ? theme.colors.textPrimary : theme.colors.textTertiary};
-  transition: color ${({ theme }) => theme.transitions.FAST};
 `;
 
 // Use StyledIcon from primitives

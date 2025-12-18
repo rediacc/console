@@ -13,5 +13,4 @@ export const AssignmentTag = styled(RediaccTag)`
 
 export const TooltipText = styled.span`
   font-size: ${({ theme }) => theme.fontSize.XS}px;
-  color: ${({ theme }) => theme.colors.textSecondary};
 `;

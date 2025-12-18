@@ -7,14 +7,12 @@ const { Title } = Typography;
 export const TitleGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.MD}px;
   flex: 1 1 auto;
   min-width: 0;
 `;
 
 export const HeaderTitle = styled(Title)`
   && {
-    margin: 0;
   }
 `;
 

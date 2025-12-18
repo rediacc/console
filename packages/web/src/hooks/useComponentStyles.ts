@@ -59,12 +59,8 @@ export const useComponentStyles = () => {
         padding: spacing('PAGE_CONTAINER'),
         maxWidth: '100%',
       },
-      section: {
-        marginBottom: spacing('PAGE_SECTION_GAP'),
-      },
-      spacer: {
-        margin: spacing('MD'),
-      },
+      section: {},
+      spacer: {},
 
       // Flexbox utilities
       flexCenter: {
@@ -91,13 +87,6 @@ export const useComponentStyles = () => {
       },
 
       // Common spacing patterns
-      marginBottom: {
-        xs: { marginBottom: spacing('XS') },
-        sm: { marginBottom: spacing('SM') },
-        md: { marginBottom: spacing('MD') },
-        lg: { marginBottom: spacing('LG') },
-        xl: { marginBottom: spacing('XL') },
-      },
       padding: {
         xs: { padding: spacing('XS') },
         sm: { padding: spacing('SM') },
@@ -113,10 +102,7 @@ export const useComponentStyles = () => {
       },
       header: {
         height: DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT,
-        boxShadow:
-          theme === 'dark' ? DESIGN_TOKENS.SHADOWS.HEADER_DARK : DESIGN_TOKENS.SHADOWS.HEADER,
         background: 'var(--color-bg-primary)',
-        borderBottom: '1px solid var(--color-border-secondary)',
       },
 
       // Icon styles
@@ -130,30 +116,21 @@ export const useComponentStyles = () => {
       },
 
       // Error states
-      errorField: {
-        borderColor: 'var(--color-error)',
-        boxShadow: DESIGN_TOKENS.SHADOWS.ERROR_FIELD,
-      },
+      errorField: {},
       errorMessage: {
         ...createTypographyStyle('XS', 'REGULAR', 'NORMAL'),
         color: 'var(--color-error)',
-        marginTop: spacing('XS'),
       },
 
       // Loading states
+      // Note: Opacity removed - use Skeleton components instead
       loading: {
-        opacity: 0.6,
         pointerEvents: 'none' as const,
-        transition: DESIGN_TOKENS.TRANSITIONS.DEFAULT,
       },
 
       // Hover effects
       hoverEffect: {
-        transition: DESIGN_TOKENS.TRANSITIONS.HOVER,
-        '&:hover': {
-          transform: 'translateY(-1px)',
-          boxShadow: DESIGN_TOKENS.SHADOWS.MD,
-        },
+        '&:hover': {},
       },
 
       // Focus styles for accessibility
@@ -169,11 +146,9 @@ export const useComponentStyles = () => {
         width: '1px',
         height: '1px',
         padding: 0,
-        margin: '-1px',
         overflow: 'hidden',
         clip: 'rect(0, 0, 0, 0)',
         whiteSpace: 'nowrap' as const,
-        border: 0,
       },
     }),
     [theme]
@@ -188,14 +163,11 @@ export const useFormStyles = () => {
     () => ({
       ...baseStyles,
 
-      formGroup: {
-        marginBottom: spacing('LG'),
-      },
+      formGroup: {},
 
       formLabel: {
         ...createTypographyStyle('SM', 'MEDIUM', 'NORMAL'),
         color: 'var(--color-text-primary)',
-        marginBottom: spacing('XS'),
         display: 'block',
       },
 
@@ -203,7 +175,6 @@ export const useFormStyles = () => {
         ...baseStyles.input,
         '&:focus': {
           ...baseStyles.focusVisible,
-          borderColor: 'var(--color-primary)',
         },
       },
 
@@ -211,20 +182,16 @@ export const useFormStyles = () => {
         ...baseStyles.errorMessage,
         display: 'flex',
         alignItems: 'center',
-        gap: spacing('XS'),
       },
 
       formHelper: {
         ...createTypographyStyle('XS', 'REGULAR', 'NORMAL'),
         color: 'var(--color-text-secondary)',
-        marginTop: spacing('XS'),
       },
 
       fieldset: {
-        border: '1px solid var(--color-border-secondary)',
         borderRadius: borderRadius('LG'),
         padding: spacing('MD'),
-        marginBottom: spacing('LG'),
       },
 
       legend: {
@@ -247,7 +214,6 @@ export const useTableStyles = () => {
       tableContainer: {
         overflow: 'hidden',
         borderRadius: borderRadius('LG'),
-        border: '1px solid var(--color-border-secondary)',
       },
 
       tableHeader: {
@@ -265,10 +231,8 @@ export const useTableStyles = () => {
       tableActionButton: {
         ...createControlSurfaceStyle(DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT),
         borderRadius: borderRadius('MD'),
-        border: 'none',
         background: 'transparent',
         cursor: 'pointer',
-        transition: DESIGN_TOKENS.TRANSITIONS.BUTTON,
         '&:hover': {
           background: 'var(--color-fill-tertiary)',
         },
@@ -277,11 +241,10 @@ export const useTableStyles = () => {
       // Row state styles for custom row classNames
       tableRowInteractive: {
         cursor: 'pointer',
-        transition: DESIGN_TOKENS.TRANSITIONS.HOVER,
       },
 
       tableRowHover: {
-        backgroundColor: 'var(--color-bg-hover)',
+        backgroundColor: 'var(--color-bg-primary)',
       },
 
       tableRowSelected: {
@@ -293,11 +256,11 @@ export const useTableStyles = () => {
       },
 
       // Loading overlay styles
+      // Note: Opacity removed - use solid background
       tableLoadingOverlay: {
         position: 'absolute' as const,
         inset: 0,
         backgroundColor: 'var(--color-bg-primary)',
-        opacity: 0.8,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -321,7 +284,6 @@ export const useNavigationStyles = () => {
         alignItems: 'center',
         padding: `${spacing('SM')}px ${spacing('MD')}px`,
         borderRadius: borderRadius('MD'),
-        transition: DESIGN_TOKENS.TRANSITIONS.DEFAULT,
         cursor: 'pointer',
         textDecoration: 'none',
         color: 'var(--color-text-primary)',
@@ -338,20 +300,17 @@ export const useNavigationStyles = () => {
       },
 
       navIcon: {
-        marginRight: spacing('SM'),
         fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD,
       },
 
       breadcrumb: {
         display: 'flex',
         alignItems: 'center',
-        gap: spacing('XS'),
         fontSize: fontSize('SM'),
         color: 'var(--color-text-secondary)',
       },
 
       breadcrumbSeparator: {
-        margin: `0 ${spacing('XS')}px`,
         color: 'var(--color-text-tertiary)',
       },
     }),

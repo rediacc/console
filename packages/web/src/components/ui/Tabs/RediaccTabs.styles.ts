@@ -34,24 +34,18 @@ export const StyledRediaccTabs = styled(AntTabs).withConfig({
 }>`
   && {
     .ant-tabs-nav {
-      margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 
       ${({ $centered }) =>
         $centered &&
         css`
         justify-content: center;
       `}
-
-      &::before {
-        border-color: ${({ theme }) => theme.colors.borderSecondary};
-      }
     }
 
     .ant-tabs-tab {
       font-size: ${({ theme, $size }) => resolveTabFontSize(theme, $size)}px;
       padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
       color: ${({ theme }) => theme.colors.textSecondary};
-      transition: ${({ theme }) => theme.transitions.DEFAULT};
 
       &:hover {
         color: ${({ theme }) => theme.colors.textPrimary};
@@ -83,17 +77,15 @@ export const StyledRediaccTabs = styled(AntTabs).withConfig({
       }
 
       .ant-tabs-tab {
-        border-radius: ${theme.borderRadius.MD}px;
         background-color: transparent;
-        margin: 0 ${theme.spacing.XS}px;
 
         &:hover {
-          background-color: ${theme.colors.bgHover};
+          background-color: ${theme.colors.bgPrimary};
         }
       }
 
       .ant-tabs-tab-active {
-        background-color: ${theme.colors.bgActive};
+        background-color: ${theme.colors.bgPrimary};
       }
 
       .ant-tabs-ink-bar {
@@ -106,15 +98,11 @@ export const StyledRediaccTabs = styled(AntTabs).withConfig({
       $variant === 'card' &&
       css`
       .ant-tabs-tab {
-        background-color: ${theme.colors.bgSecondary};
-        border: 1px solid ${theme.colors.borderSecondary};
-        border-radius: ${theme.borderRadius.MD}px ${theme.borderRadius.MD}px 0 0;
-        margin-right: ${theme.spacing.XS}px;
+        background-color: ${theme.colors.bgPrimary};
       }
 
       .ant-tabs-tab-active {
         background-color: ${theme.colors.bgPrimary};
-        border-bottom-color: ${theme.colors.bgPrimary};
       }
     `}
   }

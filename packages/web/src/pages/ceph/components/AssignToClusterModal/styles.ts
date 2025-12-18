@@ -22,20 +22,18 @@ export const ContentStack = styled(ModalContentStack)`
 `;
 
 export const ClusterAlert = styled(AlertCard).attrs({ $variant: 'warning' })`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const MachineDetailsSection = styled(FlexColumn).attrs({ $gap: 'SM' })``;
+export const MachineDetailsSection = styled(FlexColumn).attrs({})``;
 
 export const DetailRow = styled(InlineStack).attrs({ $align: 'flex-start' })`
-  gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
-export const FieldGroup = styled(FlexColumn).attrs({ $gap: 'XS' })``;
+export const FieldGroup = styled(FlexColumn).attrs({})``;
 
 export const StyledSelect = RediaccSelect;
 
-export const LoadingWrapper = styled(FlexRow).attrs({ $gap: 'SM' })``;
+export const LoadingWrapper = styled(FlexRow).attrs({})``;
 
 export const MachineNameRow = styled(InlineStack)``;
 
@@ -54,6 +52,5 @@ export const AssignmentTag = styled(RediaccTag).attrs({
 })`
   && {
     font-size: ${({ theme }) => theme.fontSize.XS}px;
-    padding: 0 ${({ theme }) => theme.spacing.XS}px;
   }
 `;

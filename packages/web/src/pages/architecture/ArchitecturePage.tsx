@@ -15,6 +15,7 @@ import {
   RediaccTooltip,
 } from '@/components/ui';
 import { useTheme } from '@/context/ThemeContext';
+import { createThemePalette } from '@/styles/colorSystem';
 import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
 import {
   ApiOutlined,
@@ -90,6 +91,7 @@ const ArchitecturePage: React.FC = () => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { theme } = useTheme();
+  const themeColors = useMemo(() => createThemePalette(theme), [theme]);
   const architecturePalette = useMemo(() => getArchitecturePalette(theme), [theme]);
 
   // Available entity types for filtering
@@ -279,8 +281,7 @@ const ArchitecturePage: React.FC = () => {
         .selectAll<SVGLineElement, GraphLink>('line')
         .data(simulationLinks)
         .join('line')
-        .attr('stroke', architecturePalette.linkStroke)
-        .attr('stroke-opacity', 0.6)
+        .attr('stroke', themeColors.borderSecondary)
         .attr('stroke-width', 2)
         .attr('marker-end', 'url(#arrowhead)');
 
@@ -338,7 +339,6 @@ const ArchitecturePage: React.FC = () => {
         .style('font-size', '12px')
         .style('fill', architecturePalette.labelFill)
         .style('font-weight', '500')
-        .style('text-shadow', architecturePalette.labelShadow)
         .text((d) => d.name);
 
       // Add tooltips
@@ -528,7 +528,6 @@ const ArchitecturePage: React.FC = () => {
         .style('font-size', '12px')
         .style('fill', architecturePalette.labelFill)
         .style('font-weight', '500')
-        .style('text-shadow', architecturePalette.labelShadow)
         .text((d) => d.data.name);
 
       // Add tooltips
@@ -577,8 +576,7 @@ const ArchitecturePage: React.FC = () => {
         .attr('y1', (d) => d.source.y ?? 0)
         .attr('x2', (d) => d.target.x ?? 0)
         .attr('y2', (d) => d.target.y ?? 0)
-        .attr('stroke', architecturePalette.linkStroke)
-        .attr('stroke-opacity', 0.6)
+        .attr('stroke', themeColors.borderSecondary)
         .attr('stroke-width', 2);
 
       // Draw nodes
@@ -618,7 +616,6 @@ const ArchitecturePage: React.FC = () => {
         .style('font-size', '12px')
         .style('fill', architecturePalette.labelFill)
         .style('font-weight', '500')
-        .style('text-shadow', architecturePalette.labelShadow)
         .text((d) => d.name);
     }
 

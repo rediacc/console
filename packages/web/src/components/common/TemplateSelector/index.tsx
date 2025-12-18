@@ -306,7 +306,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   {t('resources:templates.startEmpty')}
                 </RediaccText>
 
-                <DefaultTag variant="default">{t('resources:templates.default')}</DefaultTag>
+                <DefaultTag variant="neutral">{t('resources:templates.default')}</DefaultTag>
               </RediaccStack>
             </TemplateCard>
           </Col>

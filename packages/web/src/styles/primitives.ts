@@ -1,5 +1,5 @@
-import { Row, Segmented, Typography } from 'antd';
-import styled, { css, keyframes } from 'styled-components';
+import { Segmented } from 'antd';
+import styled, { css } from 'styled-components';
 // Import Rediacc components directly to avoid circular dependencies
 // (barrel export @/components/ui includes card.tsx which imports from primitives)
 import { RediaccAlert } from '@/components/ui/Alert';
@@ -9,7 +9,6 @@ import { RediaccCard } from '@/components/ui/Card';
 import { RediaccEmpty } from '@/components/ui/Empty';
 // Import unified form components
 import {
-  RediaccCheckbox,
   RediaccDatePicker,
   RediaccInput,
   RediaccPasswordInput,
@@ -20,20 +19,42 @@ import { RediaccTag } from '@/components/ui/Tag';
 import { RediaccText } from '@/components/ui/Text';
 import type { StyledTheme } from '@/styles/styledTheme';
 import { RightOutlined } from '@/utils/optimizedIcons';
-// ============================================
-// SHARED ANIMATIONS
-// ============================================
 
-export const fadeInAnimation = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
+/**
+ * ============================================================
+ * HYBRID STYLING ARCHITECTURE - TIER 3 COMPONENTS
+ * ============================================================
+ *
+ * This file uses a hybrid approach where most components are in pure CSS
+ * in separate files, but 12 Tier 3 components remain in styled-components (JS)
+ * due to complex color resolution and theme logic that is cleaner and more
+ * maintainable in JavaScript.
+ *
+ * TIER 3 COMPONENTS (Remaining in styled-components):
+ *
+ * 1. StatusTag - resolveStatusTokens() with 6 variants
+ * 2. AlertCard - resolveAlertColors() with 5 variants + nested icon colors
+ * 3. StatValue - resolveStatVariantColor() variant-based
+ * 4. StatDivider - Part of Stat* family, simple but tightly coupled
+ * 5. BaseModal - Nested Ant Design selectors, specificity requirements
+ * 6. FadeInModal - Inherits from BaseModal
+ * 7. LargeModal - Inherits from FadeInModal
+ * 8. LargeInput - inputPrefixStyles + inputFocusStyles helpers
+ * 9. LargePasswordInput - Complex nested hover states
+ * 10. ExpandIcon - Dynamic $color prop with fallback
+ * 11. StatIcon - Dynamic $color prop with fallback
+ * 12. StyledIcon - Dynamic $color prop or inherit
+ *
+ * RATIONALE: JavaScript-based color resolution and conditional logic would
+ * require significant duplication or complex CSS variables if moved to pure CSS.
+ * The styled-components approach provides:
+ * - Clean color resolution functions
+ * - Readable conditional logic for props
+ * - Avoids CSS variable bloat
+ * - Single source of truth for variant definitions
+ * - Cleaner inheritance chains
+ * - Better TypeScript integration
+ */
 
 // ============================================
 // SHARED CSS HELPERS
@@ -50,7 +71,6 @@ export const scrollbarStyles = css`
 
   &::-webkit-scrollbar-thumb {
     background: ${({ theme }) => theme.colors.borderSecondary};
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
 
   &::-webkit-scrollbar-thumb:hover {
@@ -61,25 +81,18 @@ export const scrollbarStyles = css`
 export const inputFocusStyles = css`
   &:focus,
   &.ant-input-affix-wrapper-focused {
-    border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary};
     outline: none;
   }
 
   &.ant-input-status-error,
   &.ant-input-affix-wrapper-status-error {
-    border-color: ${({ theme }) => theme.colors.error};
-    box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.error};
   }
 `;
 
 export const inputPrefixStyles = css`
   .ant-input-prefix {
-    margin-left: ${({ theme }) => theme.spacing.SM_LG}px;
-    margin-right: ${({ theme }) => theme.spacing.SM}px;
     color: ${({ theme }) => theme.colors.textTertiary};
     font-size: ${({ theme }) => theme.fontSize.LG}px;
-    transition: color 0.2s ease;
 
     .anticon {
       display: flex;
@@ -89,7 +102,6 @@ export const inputPrefixStyles = css`
   }
 
   .ant-input-suffix {
-    margin-right: ${({ theme }) => theme.spacing.SM_LG}px;
   }
 
   &:hover .ant-input-prefix,
@@ -143,7 +155,7 @@ const STATUS_TOKEN_KEYS: Record<StatusVariant, StatusTokenKeys> = {
   warning: { bg: 'bgWarning', color: 'warning' },
   error: { bg: 'bgError', color: 'error' },
   processing: { bg: 'primaryBg', color: 'primary' },
-  neutral: { bg: 'bgSecondary', color: 'textSecondary', border: 'borderSecondary' },
+  neutral: { bg: 'bgPrimary', color: 'textSecondary', border: 'borderSecondary' },
   info: { bg: 'bgInfo', color: 'info' },
 };
 
@@ -201,24 +213,23 @@ export const PageCard = styled(RediaccCard).attrs({ className: 'page-card' })``;
 // TABLE PRIMITIVES
 // ============================================
 
-export const IconActionButton = styled(RediaccButton).attrs({ iconOnly: true })`
+export const IconActionButton = styled(RediaccButton).attrs({
+  iconOnly: true,
+  className: 'icon-action-button',
+})`
   && {
     width: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     min-width: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    border: none;
-    background: transparent;
-    box-shadow: none;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    transition: background ${({ theme }) => theme.transitions.FAST};
-    &:hover, &:focus {
-      background: var(--color-fill-tertiary);
-    }
   }
 `;
 
+/**
+ * ExpandIcon - TIER 3 - styled-components
+ * Reason: Dynamic $color prop with fallback to theme.colors.textTertiary
+ * Uses resolveDimensionValue() for size resolution. Clean prop-based API.
+ */
 export const ExpandIcon = styled(RightOutlined)<{
   $expanded?: boolean;
   $visible?: boolean;
@@ -227,8 +238,6 @@ export const ExpandIcon = styled(RightOutlined)<{
 }>`
   font-size: ${({ theme, $size }) => `${resolveDimensionValue(theme, $size)}px`};
   color: ${({ theme, $color }) => $color || theme.colors.textTertiary};
-  transition: transform ${({ theme }) => theme.transitions.FAST};
-  transform: ${({ $expanded }) => ($expanded ? 'rotate(90deg)' : 'rotate(0deg)')};
   visibility: ${({ $visible = true }) => ($visible ? 'visible' : 'hidden')};
   display: inline-flex;
   align-items: center;
@@ -252,10 +261,6 @@ export const FilterInput = styled(RediaccInput)`
   min-width: ${({ theme }) => theme.dimensions.FILTER_INPUT_WIDTH}px;
 `;
 
-export const FilterCheckbox = styled(RediaccCheckbox)`
-  margin-left: ${({ theme }) => theme.spacing.XS}px;
-`;
-
 // ============================================
 // STATS COMPONENTS
 // ============================================
@@ -277,6 +282,11 @@ const resolveStatVariantColor = (
   return colorKey ? theme.colors[colorKey] : theme.colors.textPrimary;
 };
 
+/**
+ * StatValue - TIER 3 - styled-components
+ * Reason: resolveStatVariantColor() maps variant to theme color with logic
+ * Cleaner than CSS variant classes + supports color prop override
+ */
 export const StatValue = styled(RediaccText).attrs(() => ({
   variant: 'caption',
   weight: 'semibold',
@@ -286,6 +296,11 @@ export const StatValue = styled(RediaccText).attrs(() => ({
   }
 `;
 
+/**
+ * StatDivider - TIER 3 - styled-components
+ * Reason: Part of Stat* family (StatValue, StatDivider, StatIcon). Semantic grouping.
+ * Tightly coupled with other stat components.
+ */
 export const StatDivider = styled.span`
   display: inline-block;
   width: 1px;
@@ -293,6 +308,11 @@ export const StatDivider = styled.span`
   background-color: ${({ theme }) => theme.colors.borderSecondary};
 `;
 
+/**
+ * StatIcon - TIER 3 - styled-components
+ * Reason: Part of Stat* family with dynamic $color prop and fallback
+ * Keeps related stat components together for maintainability
+ */
 export const StatIcon = styled.span<{ $color?: string }>`
   display: inline-flex;
   align-items: center;
@@ -303,7 +323,6 @@ export const StatIcon = styled.span<{ $color?: string }>`
 export const TabLabel = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
 export const TabCount = styled(RediaccBadge)<{ $color?: string }>`
@@ -316,30 +335,21 @@ export const TabCount = styled(RediaccBadge)<{ $color?: string }>`
 // EMPTY STATE COMPONENTS
 // ============================================
 
-export const EmptyStateWrapper = styled.div`
+export const EmptyStateWrapper = styled.div.attrs({
+  className: 'empty-state-wrapper',
+})`
   padding: ${({ theme }) => theme.spacing.XXL}px 0;
   text-align: center;
-  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const EmptyStatePanel = styled(RediaccEmpty)<{
   $align?: 'center' | 'flex-start';
-  $gap?: SpacingValue;
-  $marginTop?: SpacingValue;
-  $marginBottom?: SpacingValue;
 }>`
   && {
     display: flex;
     flex-direction: column;
-    gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'SM')}px;
     align-items: ${({ $align = 'center' }) => $align};
     text-align: ${({ $align = 'center' }) => ($align === 'center' ? 'center' : 'left')};
-    ${({ theme, $marginTop }) =>
-      $marginTop !== undefined ? `margin-top: ${resolveSpacingValue(theme, $marginTop)}px;` : ''}
-    ${({ theme, $marginBottom }) =>
-      $marginBottom !== undefined
-        ? `margin-bottom: ${resolveSpacingValue(theme, $marginBottom)}px;`
-        : ''}
   }
 `;
 
@@ -347,9 +357,16 @@ export const StyledEmpty = styled(RediaccEmpty)`
   padding: ${({ theme }) => theme.spacing.XXL}px 0;
 `;
 
-export const LoadingState = styled.div<{
+export const LoadingState = styled.div.attrs<{
   $paddingY?: SpacingValue;
-  $gap?: SpacingValue;
+  $align?: 'flex-start' | 'center';
+  $justify?: 'flex-start' | 'center';
+  $textAlign?: 'left' | 'center';
+  $muted?: boolean;
+}>(({ $muted = true }) => ({
+  className: $muted ? 'loading-state loading-state-muted' : 'loading-state',
+}))<{
+  $paddingY?: SpacingValue;
   $align?: 'flex-start' | 'center';
   $justify?: 'flex-start' | 'center';
   $textAlign?: 'left' | 'center';
@@ -361,55 +378,27 @@ export const LoadingState = styled.div<{
   justify-content: ${({ $justify = 'center' }) => $justify};
   text-align: ${({ $textAlign = 'center' }) => $textAlign};
   padding: ${({ theme, $paddingY }) => `${resolveSpacingValue(theme, $paddingY, 'XL')}px 0`};
-  gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'SM')}px;
-  color: ${({ theme, $muted = true }) =>
-    $muted ? theme.colors.textSecondary : theme.colors.textPrimary};
 `;
 
-export const SectionStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-  margin-bottom: ${({ theme }) => theme.spacing.PAGE_SECTION_GAP}px;
+export const SectionStack = styled.div.attrs({ className: 'section-stack' })`
 `;
-
-const InternalFlexColumn = styled.div<{ $gap?: SpacingValue; $align?: string; $justify?: string }>`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'MD')}px;
-  align-items: ${({ $align }) => $align || 'stretch'};
-  justify-content: ${({ $justify }) => $justify || 'flex-start'};
-`;
-
-export const NeutralStack = styled(InternalFlexColumn)``;
 
 export const SectionHeaderRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const ControlStack = styled.div`
-  display: flex;
-  flex: 1 1 auto;
-  min-width: 0;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-  align-items: center;
+export const ControlStack = styled.div.attrs({ className: 'control-stack' })`
 `;
 
-export const InputSlot = styled.div`
+export const InputSlot = styled.div.attrs({ className: 'input-slot' })`
   flex: 1 1 280px;
   min-width: ${({ theme }) => theme.dimensions.SEARCH_INPUT_WIDTH_SM}px;
 `;
 
-export const ActionBar = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  justify-content: flex-end;
+export const ActionBar = styled.div.attrs({ className: 'action-bar' })`
 `;
 
 export const CaptionText = styled(RediaccText).attrs<{ $muted?: boolean; $size?: number }>(
@@ -419,28 +408,34 @@ export const CaptionText = styled(RediaccText).attrs<{ $muted?: boolean; $size?:
   })
 )<{ $muted?: boolean; $size?: number }>`
   && {
-    margin: 0;
     ${({ $size }) => ($size !== undefined ? `font-size: ${$size}px;` : '')}
   }
 `;
 
-export const ContentSection = styled.div`
+export const ContentSection = styled.div.attrs({ className: 'content-section' })`
   min-height: ${({ theme }) => theme.dimensions.CONTENT_MIN_HEIGHT}px;
 `;
 
+/**
+ * StatusTag - TIER 3 - styled-components
+ * Reason: resolveStatusTokens() maps 6 variants (success, warning, error, processing, neutral, info)
+ * to theme colors. JavaScript logic cleaner than maintaining 6+ CSS classes with duplicate styles.
+ */
 export const StatusTag = styled(RediaccTag)<{ $variant?: StatusVariant }>`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    border-color: ${({ theme, $variant }) => resolveStatusTokens($variant, theme).border};
     color: ${({ theme, $variant }) => resolveStatusTokens($variant, theme).color};
     background-color: ${({ theme, $variant }) => resolveStatusTokens($variant, theme).bg};
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
     display: inline-flex;
     align-items: center;
-    gap: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 
+/**
+ * StyledIcon - TIER 3 - styled-components
+ * Reason: Dynamic $color prop with 'inherit' fallback. resolveIconSize() for size resolution.
+ * Flexible icon styling across codebase. TypeScript validation improves prop API.
+ */
 export const StyledIcon = styled.span<{ $size?: IconSizeValue; $color?: string; $rotate?: number }>`
   display: inline-flex;
   align-items: center;
@@ -448,18 +443,20 @@ export const StyledIcon = styled.span<{ $size?: IconSizeValue; $color?: string; 
   font-size: ${({ theme, $size }) => `${resolveIconSize(theme, $size)}px`};
   color: ${({ $color }) => $color || 'inherit'};
   line-height: 1;
-  ${({ $rotate }) => ($rotate ? `transform: rotate(${$rotate}deg);` : '')}
 `;
 
+/**
+ * BaseModal - TIER 3 - styled-components
+ * Reason: Complex nested Ant Design selectors (.ant-modal-content, .ant-modal-header, .ant-modal-title,
+ * .ant-modal-body, .ant-modal-footer). Each needs independent background and text color theming.
+ * Inheritance chain (BaseModal -> FadeInModal -> LargeModal) cleaner in styled-components.
+ */
 export const BaseModal = styled(RediaccModal)`
   .ant-modal-content {
     background-color: ${({ theme }) => theme.colors.bgPrimary};
-    border-radius: ${({ theme }) => theme.borderRadius.XL}px;
-    box-shadow: ${({ theme }) => theme.shadows.MODAL};
   }
 
   .ant-modal-header {
-    border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
     padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
     background-color: ${({ theme }) => theme.colors.bgPrimary};
   }
@@ -474,13 +471,11 @@ export const BaseModal = styled(RediaccModal)`
   }
 
   .ant-modal-footer {
-    border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
     padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
     background-color: ${({ theme }) => theme.colors.bgPrimary};
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: ${({ theme }) => theme.spacing.SM}px;
   }
 `;
 
@@ -488,52 +483,48 @@ export const ModalHeader = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
-export const ModalTitle = styled.div`
+export const ModalTitle = styled.div.attrs({
+  className: 'modal-title',
+})`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export const ModalSubtitle = styled.span`
-  color: ${({ theme }) => theme.colors.textSecondary};
+export const ModalSubtitle = styled.span.attrs({
+  className: 'modal-subtitle',
+})`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
 `;
 
 export const ModalBody = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.LG}px;
 `;
 
-export const ModalContentStack = styled.div<{ $gap?: SpacingValue }>`
+export const ModalContentStack = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'LG')}px;
   width: 100%;
 `;
 
 export const ModalFooterActions = styled.div<{
-  $gap?: SpacingValue;
   $align?: 'flex-end' | 'space-between';
 }>`
   display: flex;
   justify-content: ${({ $align = 'flex-end' }) => $align};
   align-items: center;
-  gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'SM')}px;
   width: 100%;
 `;
 
-export const ModalTitleRow = styled.div<{ $gap?: SpacingValue }>`
+export const ModalTitleRow = styled.div.attrs({
+  className: 'modal-title-row',
+})`
   display: flex;
   align-items: center;
-  gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'SM')}px;
   font-size: ${({ theme }) => theme.fontSize.LG}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 // ============================================
@@ -553,7 +544,7 @@ const ALERT_COLORS_MAP: Record<AlertVariant, AlertColorKeys> = {
   warning: { bg: 'bgWarning', border: 'warning', color: 'warning' },
   error: { bg: 'bgError', border: 'error', color: 'error' },
   info: { bg: 'bgInfo', border: 'info', color: 'info' },
-  neutral: { bg: 'bgSecondary', border: 'borderSecondary', color: 'textSecondary' },
+  neutral: { bg: 'bgPrimary', border: 'borderSecondary', color: 'textSecondary' },
 };
 
 const resolveAlertColors = (variant: AlertVariant | undefined, theme: StyledTheme) => {
@@ -565,10 +556,13 @@ const resolveAlertColors = (variant: AlertVariant | undefined, theme: StyledThem
   };
 };
 
+/**
+ * AlertCard - TIER 3 - styled-components
+ * Reason: resolveAlertColors() maps 5 variants (success, warning, error, info, neutral) to theme colors.
+ * Styles nested .ant-alert-icon with consistent color from variant.
+ */
 export const AlertCard = styled(RediaccAlert)<{ $variant?: AlertVariant }>`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    border: 1px solid ${({ theme, $variant }) => resolveAlertColors($variant, theme).border};
     background-color: ${({ theme, $variant }) => resolveAlertColors($variant, theme).bg};
     color: ${({ theme, $variant }) => resolveAlertColors($variant, theme).color};
     padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
@@ -583,15 +577,7 @@ export const AlertCard = styled(RediaccAlert)<{ $variant?: AlertVariant }>`
 // ADDITIONAL CARD VARIANTS
 // ============================================
 
-export const ContentCard = styled(RediaccCard)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    box-shadow: ${({ theme }) => theme.shadows.CARD};
-    border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  }
-`;
-
-export const FeatureCard = styled(ContentCard)`
+export const FeatureCard = styled(RediaccCard)`
   && {
     height: 100%;
   }
@@ -602,17 +588,7 @@ export const SelectableCard = styled(RediaccCard)<{
   $variant?: 'default' | 'dashed';
 }>`
   && {
-    border-color: ${({ theme, $selected }) => ($selected ? theme.colors.primary : theme.colors.borderSecondary)};
-    border-width: ${({ $selected }) => ($selected ? '2px' : '1px')};
-    border-style: ${({ $variant }) => ($variant === 'dashed' ? 'dashed' : 'solid')};
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     cursor: pointer;
-    transition: ${({ theme }) => theme.transitions.HOVER};
-
-    &:hover {
-      border-color: ${({ theme }) => theme.colors.primary};
-      box-shadow: ${({ theme }) => theme.shadows.SM};
-    }
   }
 `;
 
@@ -624,7 +600,6 @@ export const TitleText = styled(RediaccText).attrs({ weight: 'semibold', color: 
   $level?: 1 | 2 | 3 | 4 | 5;
 }>`
   && {
-    margin: 0;
     font-size: ${({ theme, $level = 4 }) => {
       // Map level to available font sizes
       const sizes: Record<number, number> = {
@@ -640,56 +615,34 @@ export const TitleText = styled(RediaccText).attrs({ weight: 'semibold', color: 
   }
 `;
 
-export const NoMarginTitle = styled(Typography.Title)`
-  && {
-    margin: 0;
-  }
-`;
-
 // ============================================
 // ADDITIONAL LAYOUT PATTERNS
 // ============================================
 
-export const FlexRow = styled.div<{
-  $gap?: SpacingValue;
+export const FlexRow = styled.div.attrs<{
+  $align?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
+  $justify?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around';
+  $wrap?: boolean;
+}>(({ $wrap }) => ({
+  className: 'flex-row',
+  'data-wrap': $wrap ? 'true' : undefined,
+}))<{
   $align?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
   $justify?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around';
   $wrap?: boolean;
 }>`
-  display: flex;
-  flex-direction: row;
   align-items: ${({ $align = 'center' }) => $align};
   justify-content: ${({ $justify = 'flex-start' }) => $justify};
-  gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'SM')}px;
-  ${({ $wrap }) => $wrap && 'flex-wrap: wrap;'}
 `;
 
-export const FlexColumn = styled.div<{
-  $gap?: SpacingValue;
+export const FlexColumn = styled.div.attrs({ className: 'flex-column' })<{
   $align?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
 }>`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  gap: ${({ theme, $gap }) => resolveSpacingValue(theme, $gap, 'MD')}px;
   align-items: ${({ $align = 'stretch' }) => $align};
 `;
 
-export const FlexStackXS = styled(FlexColumn).attrs({ $gap: 'XS' })``;
-export const FlexStackSM = styled(FlexColumn).attrs({ $gap: 'SM' })``;
-export const FlexStackMD = styled(FlexColumn).attrs({ $gap: 'MD' })``;
-export const FlexStackLG = styled(FlexColumn).attrs({ $gap: 'LG' })``;
-
 export const HeaderRow = styled(FlexRow).attrs({ $justify: 'space-between', $wrap: true })`
   width: 100%;
-`;
-
-export const CenteredContent = styled.div`
-  text-align: center;
-`;
-
-export const CenteredRow = styled(Row)`
-  text-align: center;
 `;
 
 // ============================================
@@ -703,10 +656,9 @@ export const ScrollContainer = styled.div<{ $maxHeight?: number }>`
   ${scrollbarStyles}
 `;
 
-export const ConsoleOutput = styled.div<{ $height?: number }>`
-  background-color: ${({ theme }) => theme.colors.bgSecondary};
-  border: 1px solid ${({ theme }) => theme.colors.borderPrimary};
-  border-radius: ${({ theme }) => theme.borderRadius.SM}px;
+export const ConsoleOutput = styled.div.attrs({
+  className: 'console-output',
+})<{ $height?: number }>`
   padding: ${({ theme }) => theme.spacing.SM}px;
   font-family: ${({ theme }) => theme.fontFamily.MONO};
   font-size: ${({ theme }) => theme.fontSize.XS}px;
@@ -723,12 +675,22 @@ export const ConsoleOutput = styled.div<{ $height?: number }>`
 // MODAL VARIANTS
 // ============================================
 
+/**
+ * FadeInModal - TIER 3 - styled-components
+ * Reason: Extends BaseModal. Inherits all base modal styles.
+ * Note: Animation removed as part of opacity removal initiative.
+ */
 export const FadeInModal = styled(BaseModal)`
   .ant-modal-content {
-    animation: ${fadeInAnimation} 0.3s ease-in-out;
   }
 `;
 
+/**
+ * LargeModal - TIER 3 - styled-components
+ * Reason: Three-level inheritance (BaseModal -> FadeInModal -> LargeModal).
+ * Adds dimension overrides while inheriting animation and base styles.
+ * Flattening would require duplicating all parent styles in CSS.
+ */
 export const LargeModal = styled(FadeInModal)`
   &.ant-modal {
     max-width: ${({ theme }) => theme.dimensions.MAX_CONTENT_WIDTH}px;
@@ -746,14 +708,12 @@ export const ModalTitleContainer = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   width: 100%;
-  gap: ${({ theme }) => theme.spacing.MD}px;
   padding-right: ${({ theme }) => theme.spacing.XL}px;
 `;
 
 export const ModalTitleLeft = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
   flex: 1;
   min-width: 0;
 `;
@@ -762,7 +722,6 @@ export const ModalTitleRight = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: ${({ theme }) => theme.spacing.XS}px;
   flex-shrink: 0;
 `;
 
@@ -770,12 +729,15 @@ export const ModalTitleRight = styled.div`
 // INPUT VARIANTS
 // ============================================
 
+/**
+ * LargeInput - TIER 3 - styled-components
+ * Reason: Composes inputPrefixStyles and inputFocusStyles helper mixins with dimension overrides.
+ * Clean composition pattern cleaner than duplicating styles in separate CSS files.
+ */
 export const LargeInput = styled(RediaccInput)`
   && {
     height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     font-size: ${({ theme }) => theme.fontSize.MD}px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
     &.ant-input-affix-wrapper {
       padding: 0;
@@ -791,12 +753,15 @@ export const LargeInput = styled(RediaccInput)`
   }
 `;
 
+/**
+ * LargePasswordInput - TIER 3 - styled-components
+ * Reason: Composes helper mixins with complex nested hover states (.ant-input-password-icon:hover).
+ * Multiple theme-aware color transitions difficult to manage in pure CSS.
+ */
 export const LargePasswordInput = styled(RediaccPasswordInput)`
   && {
     height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
     font-size: ${({ theme }) => theme.fontSize.MD}px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
 
     &.ant-input-affix-wrapper {
@@ -811,19 +776,16 @@ export const LargePasswordInput = styled(RediaccPasswordInput)`
     ${inputPrefixStyles}
 
     .ant-input-suffix {
-      margin-left: ${({ theme }) => theme.spacing.SM}px;
 
       .ant-input-password-icon {
         color: ${({ theme }) => theme.colors.textTertiary};
         font-size: ${({ theme }) => theme.fontSize.LG}px;
-        transition: ${({ theme }) => theme.transitions.DEFAULT};
         cursor: pointer;
         padding: ${({ theme }) => theme.spacing.XS}px;
-        border-radius: ${({ theme }) => theme.borderRadius.SM}px;
 
         &:hover {
           color: ${({ theme }) => theme.colors.textSecondary};
-          background-color: ${({ theme }) => theme.colors.bgHover};
+          background-color: ${({ theme }) => theme.colors.bgPrimary};
         }
       }
     }
@@ -841,11 +803,6 @@ export const LoadingContainer = styled.div`
   padding: ${({ theme }) => theme.spacing.XXXL}px 0;
 `;
 
-export const LoadingText = styled.div`
-  margin-top: ${({ theme }) => theme.spacing.MD}px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-
 // ============================================
 // MISC COMPONENTS
 // ============================================
@@ -854,24 +811,24 @@ export const ModeSegmented = styled(Segmented)`
   min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
 `;
 
-export const LastFetchedText = styled.span`
+export const LastFetchedText = styled.span.attrs({
+  className: 'last-fetched-text',
+})`
   font-size: ${({ theme }) => theme.fontSize.XS}px;
-  color: ${({ theme }) => theme.colors.textSecondary};
   white-space: nowrap;
 `;
 
-export const SectionMargin = styled.div<{ $top?: number; $bottom?: number }>`
-  ${({ $top }) => ($top !== undefined ? `margin-top: ${$top}px;` : '')}
-  ${({ $bottom }) => ($bottom !== undefined ? `margin-bottom: ${$bottom}px;` : '')}
+export const SectionMargin = styled.div.attrs({ className: 'section-margin' })<{
+  $top?: number;
+  $bottom?: number;
+}>`
+  ${({ $top }) => $top && `margin-top: ${$top}px;`}
+  ${({ $bottom }) => $bottom && `margin-bottom: ${$bottom}px;`}
 `;
 
-export const CenteredFooter = styled.div`
-  margin-top: ${({ theme }) => theme.spacing.MD}px;
-  text-align: center;
-`;
-
-export const InfoList = styled.ul<{ $top?: number; $bottom?: number }>`
+export const InfoList = styled.ul.attrs({ className: 'info-list' })<{
+  $top?: number;
+  $bottom?: number;
+}>`
   padding-left: ${({ theme }) => theme.spacing.LG}px;
-  ${({ $top }) => ($top !== undefined ? `margin-top: ${$top}px;` : '')}
-  ${({ $bottom }) => ($bottom !== undefined ? `margin-bottom: ${$bottom}px;` : '')}
 `;

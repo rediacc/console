@@ -26,6 +26,5 @@ export const InlineFormRow = styled.div`
   width: 100%;
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
   align-items: flex-start;
 `;

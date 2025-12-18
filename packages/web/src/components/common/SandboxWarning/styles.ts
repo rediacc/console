@@ -9,11 +9,6 @@ export const SandboxBanner = styled(RediaccAlert)`
     left: ${({ theme }) => theme.dimensions.SIDEBAR_WIDTH}px;
     right: 0;
     z-index: ${({ theme }) => theme.zIndex.NOTIFICATION};
-    border-radius: 0;
-    border: none;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-    background-color: ${({ theme }) => theme.colors.bgWarning};
-    color: ${({ theme }) => theme.colors.warning};
     min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
     display: flex;
     align-items: center;
@@ -23,7 +18,6 @@ export const SandboxBanner = styled(RediaccAlert)`
 
 export const BannerMessage = styled(InlineStack)`
   text-align: center;
-  padding: ${({ theme }) => `${theme.spacing.XS}px 0`};
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
 
   .anticon {

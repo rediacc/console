@@ -4,25 +4,15 @@ import { FlexRow, StyledIcon } from '@/styles/primitives';
 import { ReloadOutlined } from '@/utils/optimizedIcons';
 
 export const LoadingContent = styled(FlexRow).attrs({ $justify: 'center' })`
-  padding: ${({ theme }) => theme.spacing.LG}px 0;
 `;
 
 export const RefreshButton = styled.button`
-  border: none;
-  background: transparent;
-  padding: ${({ theme }) => theme.spacing.XS}px;
-  border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: ${({ theme }) => theme.colors.textSecondary};
   cursor: pointer;
-  transition: color ${({ theme }) => theme.transitions.FAST},
-    background ${({ theme }) => theme.transitions.FAST};
 
   &:hover {
-    color: ${({ theme }) => theme.colors.primary};
-    background: ${({ theme }) => theme.colors.bgHover};
   }
 `;
 
@@ -37,12 +27,9 @@ export const StatCard = styled(RediaccCard)`
 
 export const PercentageSuffix = styled.span`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  margin-left: ${({ theme }) => theme.spacing.XS}px;
 `;
 
 export const StyledRediaccCard = styled(RediaccCard)`
   && {
-    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   }
 `;

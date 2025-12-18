@@ -881,7 +881,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                         },
                       };
                       const sudoConfigValue = sudoConfig[sudoStatus] || {
-                        color: 'default',
+                        color: 'neutral',
                         text: t('vaultEditor.systemCompatibility.unknown'),
                       };
 
@@ -918,7 +918,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                               <RediaccTag
                                 variant={
                                   sudoConfigValue.color as
-                                    | 'default'
+                                    | 'neutral'
                                     | 'success'
                                     | 'error'
                                     | 'warning'

@@ -31,7 +31,7 @@ export const RediaccButton = forwardRef<HTMLButtonElement, RediaccButtonProps>(
   (
     {
       variant = 'primary',
-      iconOnly = false,
+      iconOnly,
       square = false,
       icon,
       loading = false,
@@ -54,8 +54,12 @@ export const RediaccButton = forwardRef<HTMLButtonElement, RediaccButtonProps>(
     // Handle block prop as fullWidth (backwards compatibility)
     const resolvedFullWidth = fullWidth || block;
 
-    // Handle square as alias for iconOnly
-    const resolvedIconOnly = iconOnly || square;
+    // Auto-detect icon-only when icon exists but no children (and not loading)
+    const autoIconOnly = Boolean(icon && !children && !loading);
+
+    // Explicit props take precedence over auto-detection
+    // Priority: iconOnly > square > autoIconOnly
+    const resolvedIconOnly = iconOnly ?? square ?? autoIconOnly;
 
     return (
       <StyledRediaccButton

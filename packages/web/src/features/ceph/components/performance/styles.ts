@@ -7,22 +7,16 @@ interface RowWrapperProps {
 
 export const RowWrapper = styled.div<RowWrapperProps>`
   cursor: ${({ $hasOnClick }) => ($hasOnClick ? 'pointer' : 'default')};
-  padding: 0 ${({ theme }) => theme.spacing.MD}px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  transition: background-color ${({ theme }) => theme.transitions.DEFAULT};
   display: flex;
   align-items: center;
   min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.bgHover};
+    background-color: ${({ theme }) => theme.colors.bgPrimary};
   }
 `;
 
 export const TableWrapper = styled.div`
-  border: ${({ theme }) => theme.dimensions.BORDER_WIDTH}px solid
-    ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   overflow: hidden;
   background: ${({ theme }) => theme.colors.bgContainer};
 
@@ -34,9 +28,7 @@ export const TableWrapper = styled.div`
 `;
 
 export const HeaderWrapper = styled.div`
-  padding: ${({ theme }) => theme.spacing.MD}px;
-  background: ${({ theme }) => theme.colors.bgSecondary};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  background: ${({ theme }) => theme.colors.bgPrimary};
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   position: sticky;
   top: 0;
@@ -91,11 +83,9 @@ export const LoadingRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const LoadingContainer = styled.div`
-  padding: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 // LazyAssignmentStatus styles
@@ -114,7 +104,6 @@ export const FlexCenterContainer = styled.div`
 `;
 
 export const LoadingMoreContainer = styled.div`
-  padding: ${({ theme }) => theme.spacing.SM}px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -124,12 +113,10 @@ export const StyledSkeletonInput = styled(Skeleton.Input)`
   && {
     width: ${({ theme }) => theme.dimensions.SKELETON_WIDTH}px;
     height: ${({ theme }) => theme.dimensions.SKELETON_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
 `;
 
 export const StyledSkeletonButton = styled(Skeleton.Button)`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
 `;

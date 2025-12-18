@@ -3,16 +3,10 @@ import { RediaccButton } from '@/components/ui';
 import { RediaccInput, RediaccSelect } from '@/components/ui/Form';
 import { FlexColumn } from '@/styles/primitives';
 
-export const Container = styled(FlexColumn).attrs({
-  $gap: 'SM',
-})`
-  padding: ${({ theme }) => theme.spacing.PAGE_CONTAINER}px 0;
+export const Container = styled(FlexColumn).attrs({})`
 `;
 
-export const ToolbarStack = styled(FlexColumn).attrs({
-  $gap: 'SM',
-})`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
+export const ToolbarStack = styled(FlexColumn).attrs({})`
 `;
 
 export const FilterInput = styled(RediaccInput)`
@@ -50,5 +44,4 @@ export const StatusText = styled.div`
 `;
 
 export const OptionLabel = styled.span`
-  padding-right: ${({ theme }) => theme.spacing.LG}px;
 `;

@@ -34,7 +34,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
     success: 'var(--color-success)',
     info: 'var(--color-info)',
     warning: 'var(--color-warning)',
-    accent: 'var(--color-accent)',
+    accent: 'var(--color-text-tertiary)', // Was var(--color-accent), now using text-tertiary
   };
 
   const stats = React.useMemo<MachineStats>(() => {

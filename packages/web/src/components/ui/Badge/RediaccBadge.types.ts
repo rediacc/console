@@ -1,13 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 
-export type BadgeVariant =
-  | 'default'
-  | 'primary'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'info'
-  | 'muted';
+export type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info';
 export type BadgeSize = 'sm' | 'md';
 
 export interface RediaccBadgeProps {

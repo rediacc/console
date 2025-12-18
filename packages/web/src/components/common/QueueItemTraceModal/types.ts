@@ -20,12 +20,12 @@ export interface ConsoleOutputProps {
 
 export interface SimplifiedStatus {
   status: string;
-  color: 'default' | 'success' | 'error' | 'warning' | 'primary';
+  color: 'neutral' | 'success' | 'error' | 'warning' | 'primary';
   icon: React.ReactNode;
 }
 
 export interface PriorityInfo {
-  color: 'default';
+  color: 'neutral';
   icon: React.ReactNode;
   label: string;
 }

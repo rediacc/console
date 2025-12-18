@@ -1,0 +1,583 @@
+/**
+ * Global Color & Background Definitions
+ *
+ * This file contains ALL color and background-color properties for the application.
+ * Component .ts files should contain ZERO color/background declarations.
+ *
+ * Architecture:
+ * - Uses [data-theme] prefix for specificity without !important
+ * - Leverages CSS inheritance to eliminate redundancies
+ * - All values reference CSS variables (var(--color-*)) for theme switching
+ * - Semantic state selectors via data attributes ([data-active="true"])
+ * - Child selectors removed where they inherit parent colors
+ *
+ * Organization:
+ * 1. Base Elements (html, body, root)
+ * 2. Layout Components (sidebar, header, content)
+ * 3. UI Components (modals, tables, cards, buttons, forms)
+ * 4. Common Components
+ * 5. State Variants (hover, active, selected, disabled)
+ *
+ * Optimization Notes:
+ * - Card headers inherit from card containers (removed redundant .ant-card-head)
+ * - Table cells inherit from table (kept only alternating/hover states)
+ * - Dropdown items inherit from dropdown container (removed redundant .ant-dropdown-menu-item base)
+ * - Consolidated adjacent selectors with identical rules
+ * - Grouped utility classes where possible
+ */
+
+/* ============================================
+   BASE ELEMENTS
+   ============================================ */
+
+html,
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+#root {
+  background-color: var(--color-bg-primary);
+}
+
+/* ============================================
+   LAYOUT COMPONENTS
+   ============================================ */
+
+/* Sidebar */
+[data-theme] .ant-layout-sider {
+  background-color: var(--color-bg-primary);
+}
+
+[data-theme] .sidebar-menu-item {
+  color: var(--color-text-primary);
+}
+
+[data-theme] .sidebar-menu-item[data-active='true'] {
+  color: var(--color-text-selected);
+  background-color: var(--overlay-nav-active);
+}
+
+/* Header and Content sections inherit primary background */
+[data-theme] .ant-layout-header {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+[data-theme] .ant-layout-content,
+[data-theme] .main-layout-content {
+  background-color: var(--color-bg-primary);
+}
+
+/* ============================================
+   UI COMPONENTS - MODALS
+   ============================================ */
+
+/* Modal - Set on container, header/body/footer inherit */
+[data-theme] .ant-modal-content {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+[data-theme] .ant-modal-mask {
+  background-color: #404040;
+}
+
+/* ============================================
+   UI COMPONENTS - TABLES
+   ============================================ */
+
+[data-theme] .ant-table {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+[data-theme] .ant-table-thead > tr > th {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+/* Table body cells inherit from .ant-table parent */
+
+[data-theme] .ant-table-tbody > tr.ant-table-row-selected > td {
+  background-color: var(--color-primary-bg);
+}
+
+[data-theme] .ant-table-tbody > tr:hover > td {
+  background-color: var(--color-bg-secondary);
+}
+
+/* ============================================
+   UI COMPONENTS - CARDS
+   ============================================ */
+
+[data-theme] .ant-card {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  /* .ant-card-head and children inherit these colors */
+}
+
+/* ============================================
+   UI COMPONENTS - BUTTONS
+   ============================================ */
+
+[data-theme] .ant-btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+[data-theme] .ant-btn-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+
+[data-theme] .ant-btn-default {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+[data-theme] .ant-btn-text {
+  color: var(--color-text-primary);
+}
+
+[data-theme] .ant-btn-link {
+  color: var(--color-primary);
+}
+
+[data-theme] .ant-btn-link:hover {
+  color: var(--color-primary-hover);
+}
+
+/* ============================================
+   UI COMPONENTS - FORMS
+   ============================================ */
+
+[data-theme] .ant-input,
+[data-theme] .ant-input-number,
+[data-theme] .ant-select-selector {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+[data-theme] .ant-input::placeholder,
+[data-theme] .ant-input-number-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+[data-theme] .ant-select-dropdown {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  /* .ant-select-item inherits color */
+}
+
+[data-theme] .ant-select-item-option-selected {
+  background-color: var(--color-primary-bg);
+}
+
+[data-theme] .ant-select-item:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+/* Checkbox and Radio */
+[data-theme] .ant-checkbox-inner,
+[data-theme] .ant-radio-inner {
+  background-color: var(--color-bg-primary);
+}
+
+[data-theme] .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: var(--color-primary);
+}
+
+[data-theme] .ant-radio-checked .ant-radio-inner {
+  border-color: var(--color-primary);
+}
+
+[data-theme] .ant-radio-inner::after {
+  background-color: var(--color-primary);
+}
+
+/* ============================================
+   UI COMPONENTS - ALERTS
+   ============================================ */
+
+[data-theme] .ant-alert-success {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+[data-theme] .ant-alert-info {
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+[data-theme] .ant-alert-warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+[data-theme] .ant-alert-error {
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+/* ============================================
+   UI COMPONENTS - TAGS
+   ============================================ */
+
+[data-theme] .ant-tag {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+/* ============================================
+   UI COMPONENTS - TABS
+   ============================================ */
+
+[data-theme] .ant-tabs-nav {
+  color: var(--color-text-primary);
+}
+
+[data-theme] .ant-tabs-tab {
+  color: var(--color-text-secondary);
+}
+
+[data-theme] .ant-tabs-tab-active {
+  color: var(--color-primary);
+}
+
+/* ============================================
+   UI COMPONENTS - MENU / DROPDOWN
+   ============================================ */
+
+[data-theme] .ant-menu {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  /* .ant-menu-item inherits color */
+}
+
+[data-theme] .ant-menu-item-selected {
+  background-color: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+[data-theme] .ant-dropdown-menu {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  /* .ant-dropdown-menu-item inherits color */
+}
+
+[data-theme] .ant-dropdown-menu-item:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+/* Popover - Remove transparency */
+[data-theme] .ant-popover-inner {
+  background-color: var(--color-bg-primary);
+}
+
+[data-theme] .ant-popover-arrow::before,
+[data-theme] .ant-popover-arrow::after {
+  background: var(--color-bg-primary);
+}
+
+/* Notification - Remove transparency */
+[data-theme] .ant-notification-notice {
+  background-color: var(--color-bg-primary);
+}
+
+[data-theme] .ant-notification-notice-message {
+  color: var(--color-text-primary);
+}
+
+[data-theme] .ant-notification-notice-description {
+  color: var(--color-text-secondary);
+}
+
+/* ============================================
+   UI COMPONENTS - SPIN / LOADING
+   ============================================ */
+
+[data-theme] .ant-spin-dot-item {
+  background-color: var(--color-primary);
+}
+
+[data-theme] .loading-container {
+  color: var(--color-text-secondary);
+}
+
+/* ============================================
+   COMMON COMPONENTS
+   ============================================ */
+
+/* Page Container and Card */
+[data-theme] .page-container,
+[data-theme] .page-card {
+  background-color: var(--color-bg-primary);
+}
+
+/* Centered State */
+[data-theme] .centered-state {
+  color: var(--color-text-primary);
+}
+
+/* Status Icons */
+[data-theme] .status-icon-success {
+  color: var(--color-success);
+}
+
+[data-theme] .status-icon-error {
+  color: var(--color-error);
+}
+
+[data-theme] .status-icon-warning {
+  color: var(--color-warning);
+}
+
+[data-theme] .status-icon-info {
+  color: var(--color-info);
+}
+
+[data-theme] .status-icon-pending {
+  color: var(--color-text-secondary);
+}
+
+/* ============================================
+   STATE VARIANTS
+   ============================================ */
+
+/* Hover States */
+[data-theme] .hoverable-row:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+/* Active States */
+[data-theme] [data-active='true'] {
+  background-color: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+/* Selected States */
+[data-theme] [data-selected='true'] {
+  background-color: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+/* Disabled States */
+[data-theme] [disabled],
+[data-theme] .ant-btn-disabled {
+  color: var(--color-text-tertiary);
+  background-color: var(--color-bg-tertiary);
+}
+
+/* ============================================
+   TEXT UTILITIES
+   ============================================ */
+
+[data-theme] .text-primary {
+  color: var(--color-text-primary);
+}
+
+[data-theme] .text-secondary,
+[data-theme] .text-muted {
+  color: var(--color-text-secondary);
+}
+
+[data-theme] .text-tertiary {
+  color: var(--color-text-tertiary);
+}
+
+[data-theme] .text-inverse {
+  color: var(--color-text-inverse);
+}
+
+[data-theme] .text-success {
+  color: var(--color-success);
+}
+
+[data-theme] .text-warning {
+  color: var(--color-warning);
+}
+
+[data-theme] .text-error {
+  color: var(--color-error);
+}
+
+[data-theme] .text-info {
+  color: var(--color-info);
+}
+
+[data-theme] .text-primary-color {
+  color: var(--color-primary);
+}
+
+/* ============================================
+   BACKGROUND UTILITIES
+   ============================================ */
+
+[data-theme] .bg-primary {
+  background-color: var(--color-bg-primary);
+}
+
+[data-theme] .bg-secondary {
+  background-color: var(--color-bg-secondary);
+}
+
+[data-theme] .bg-tertiary {
+  background-color: var(--color-bg-tertiary);
+}
+
+[data-theme] .bg-success {
+  background-color: var(--color-success-bg);
+}
+
+[data-theme] .bg-warning {
+  background-color: var(--color-warning-bg);
+}
+
+[data-theme] .bg-error {
+  background-color: var(--color-error-bg);
+}
+
+[data-theme] .bg-info {
+  background-color: var(--color-info-bg);
+}
+
+[data-theme] .bg-primary-variant {
+  background-color: var(--color-primary-bg);
+}
+
+[data-theme] .bg-container {
+  background-color: var(--color-bg-container);
+}
+
+[data-theme] .bg-transparent {
+  background-color: transparent;
+}
+
+[data-theme] .bg-fill-tertiary {
+  background-color: var(--color-fill-tertiary);
+}
+
+[data-theme] .bg-fill-quaternary {
+  background-color: var(--color-fill-quaternary);
+}
+
+/* ============================================
+   TIER 2 MIGRATED COMPONENTS
+   Simple color/background using theme variables
+   ============================================ */
+
+/* IconActionButton */
+[data-theme] .icon-action-button {
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+[data-theme] .icon-action-button:hover,
+[data-theme] .icon-action-button:focus {
+  background: var(--color-fill-tertiary);
+}
+
+/* LoadingState */
+[data-theme] .loading-state {
+  color: var(--color-text-primary);
+}
+
+[data-theme] .loading-state-muted,
+[data-theme] .loading-text,
+[data-theme] .last-fetched-text,
+[data-theme] .empty-state-wrapper,
+[data-theme] .modal-subtitle {
+  color: var(--color-text-secondary);
+}
+
+/* ModalTitle and variants */
+[data-theme] .modal-title,
+[data-theme] .modal-title-row {
+  color: var(--color-text-primary);
+}
+
+/* ConsoleOutput */
+[data-theme] .console-output {
+  background-color: var(--color-bg-primary);
+}
+
+/* ============================================
+   LAYOUT PRIMITIVES - TIER 1
+   Pure structural components with ZERO color/background dependencies
+   ============================================ */
+
+/* FlexRow - Flexible row layout */
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.flex-row[data-wrap='true'] {
+  flex-wrap: wrap;
+}
+
+/* FlexColumn - Flexible column layout */
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: stretch;
+}
+
+/* SectionStack - Vertical stack for sections */
+.section-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ControlStack - Horizontal control layout */
+.control-stack {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+}
+
+/* InputSlot - Flexible input container */
+.input-slot {
+  flex: 1 1 280px;
+  min-width: 180px;
+}
+
+/* CenteredContent - Center-aligned content */
+.centered-content {
+  text-align: center;
+}
+
+/* CenteredRow - Center-aligned row */
+.centered-row {
+  text-align: center;
+}
+
+/* CenteredFooter - Center-aligned footer */
+.centered-footer {
+  text-align: center;
+}
+
+/* ActionBar - Right-aligned action container */
+.action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* ContentSection - Minimum height content area */
+.content-section {
+  min-height: 400px;
+}
+
+/* SectionMargin - Spacing utility (no styles by default) */
+.section-margin {
+}
+
+/* InfoList - Indented list */
+.info-list {
+  padding-left: 24px;
+}

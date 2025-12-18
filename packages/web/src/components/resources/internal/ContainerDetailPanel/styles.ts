@@ -45,24 +45,20 @@ export {
 export const DividerLabel = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
 `;
 
 export const MetricsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(${({ theme }) => theme.dimensions.SEARCH_INPUT_WIDTH_SM}px, 1fr));
-  gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const MetricCard = styled(RediaccCard).attrs({ size: 'sm' })`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
 `;
 
 export const SectionStack = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;

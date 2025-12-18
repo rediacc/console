@@ -38,7 +38,7 @@ const VARIANT_TOKENS: Record<ButtonVariant, (theme: StyledTheme) => ButtonTokenS
     bg: theme.colors.bgPrimary,
     color: theme.colors.textPrimary,
     border: theme.colors.borderSecondary,
-    hoverBg: theme.colors.bgSecondary,
+    hoverBg: theme.colors.bgPrimary,
     hoverColor: theme.colors.textPrimary,
     hoverBorder: theme.colors.borderPrimary,
   }),
@@ -46,9 +46,9 @@ const VARIANT_TOKENS: Record<ButtonVariant, (theme: StyledTheme) => ButtonTokenS
     bg: 'transparent',
     color: theme.colors.textPrimary,
     border: 'transparent',
-    hoverBg: theme.colors.bgSecondary,
+    hoverBg: theme.colors.bgPrimary,
     hoverColor: theme.colors.textPrimary,
-    hoverBorder: 'transparent',
+    hoverBorder: theme.colors.borderPrimary,
   }),
   link: (theme) => ({
     bg: 'transparent',
@@ -62,7 +62,7 @@ const VARIANT_TOKENS: Record<ButtonVariant, (theme: StyledTheme) => ButtonTokenS
     bg: 'transparent',
     color: theme.colors.textPrimary,
     border: theme.colors.borderSecondary,
-    hoverBg: theme.colors.bgSecondary,
+    hoverBg: theme.colors.bgPrimary,
     hoverColor: theme.colors.textPrimary,
     hoverBorder: theme.colors.borderPrimary,
   }),
@@ -89,18 +89,10 @@ export const StyledRediaccButton = styled(AntButton)<{
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: ${({ theme }) => theme.spacing.XS}px;
     min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     line-height: ${({ theme }) => theme.lineHeight.TIGHT};
-    transition: ${({ theme }) => theme.transitions.BUTTON};
-
-    /* Variant-specific colors */
-    background-color: ${({ theme, $variant }) => resolveRediaccButtonVariantTokens($variant, theme).bg};
-    color: ${({ theme, $variant }) => resolveRediaccButtonVariantTokens($variant, theme).color};
-    border: 1px solid ${({ theme, $variant }) => resolveRediaccButtonVariantTokens($variant, theme).border};
 
     /* Icon-only mode - square button */
     ${({ $iconOnly, theme }) =>
@@ -129,28 +121,6 @@ export const StyledRediaccButton = styled(AntButton)<{
       $fullWidth &&
       css`
         width: 100%;
-      `}
-
-    /* Hover/focus states */
-    &:not(:disabled):hover,
-    &:not(:disabled):focus {
-      background-color: ${({ theme, $variant }) =>
-        resolveRediaccButtonVariantTokens($variant, theme).hoverBg};
-      color: ${({ theme, $variant }) => resolveRediaccButtonVariantTokens($variant, theme).hoverColor};
-      border-color: ${({ theme, $variant }) =>
-        resolveRediaccButtonVariantTokens($variant, theme).hoverBorder};
-    }
-
-    /* Solid button hover effects (not for text/link variants) */
-    ${({ $variant }) =>
-      $variant !== 'text' &&
-      $variant !== 'link' &&
-      css`
-        &:not(:disabled):hover,
-        &:not(:disabled):focus {
-          transform: translateY(-1px);
-          box-shadow: ${({ theme }) => theme.shadows.BUTTON_HOVER};
-        }
       `}
 
     /* Link variant underline on hover */

@@ -1,48 +1,23 @@
 import styled, { css } from 'styled-components';
-import type { StyledTheme } from '@/styles/styledTheme';
-import type {
-  StackAlign,
-  StackDirection,
-  StackGap,
-  StackJustify,
-  StackVariant,
-} from './RediaccStack.types';
+import type { StackAlign, StackDirection, StackJustify, StackVariant } from './RediaccStack.types';
 
-// Resolve variant to direction, gap, and wrap
-type VariantDefaults = { direction: StackDirection; gap: StackGap; wrap?: boolean };
+// Resolve variant to direction and wrap
+type VariantDefaults = { direction: StackDirection; wrap?: boolean };
 
 /**
  * Variant defaults map
  */
 const VARIANT_DEFAULTS_MAP: Record<StackVariant, VariantDefaults> = {
-  default: { direction: 'horizontal', gap: 'md' },
-  row: { direction: 'horizontal', gap: 'md' },
-  column: { direction: 'vertical', gap: 'md' },
-  'tight-row': { direction: 'horizontal', gap: 'xs' },
-  'spaced-column': { direction: 'vertical', gap: 'lg' },
-  'wrap-grid': { direction: 'horizontal', gap: 'sm', wrap: true },
+  default: { direction: 'horizontal' },
+  row: { direction: 'horizontal' },
+  column: { direction: 'vertical' },
+  'tight-row': { direction: 'horizontal' },
+  'spaced-column': { direction: 'vertical' },
+  'wrap-grid': { direction: 'horizontal', wrap: true },
 };
 
 export const resolveStackVariantDefaults = (variant: StackVariant = 'default'): VariantDefaults =>
   VARIANT_DEFAULTS_MAP[variant];
-
-/**
- * Gap to spacing map
- */
-const GAP_MAP: Record<StackGap, (theme: StyledTheme) => number> = {
-  none: () => 0,
-  xs: (theme) => theme.spacing.XS, // 4px
-  sm: (theme) => theme.spacing.SM, // 8px
-  md: (theme) => theme.spacing.MD, // 16px
-  lg: (theme) => theme.spacing.LG, // 24px
-  xl: (theme) => theme.spacing.XL, // 32px
-};
-
-// Resolve gap to pixels
-export const resolveStackGap = (theme: StyledTheme, gap: StackGap | number = 'md'): number => {
-  if (typeof gap === 'number') return gap;
-  return GAP_MAP[gap](theme);
-};
 
 /**
  * Align to CSS align-items map
@@ -74,7 +49,6 @@ const mapJustify = (justify: StackJustify = 'start'): string => JUSTIFY_MAP[just
 
 export const StyledRediaccStack = styled.div<{
   $direction: StackDirection;
-  $gap: StackGap | number;
   $align: StackAlign;
   $justify: StackJustify;
   $wrap?: boolean;
@@ -82,7 +56,6 @@ export const StyledRediaccStack = styled.div<{
 }>`
   display: flex;
   flex-direction: ${({ $direction }) => ($direction === 'vertical' ? 'column' : 'row')};
-  gap: ${({ theme, $gap }) => resolveStackGap(theme, $gap)}px;
   align-items: ${({ $align }) => mapAlign($align)};
   justify-content: ${({ $justify }) => mapJustify($justify)};
 

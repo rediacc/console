@@ -16,7 +16,7 @@ import {
   SettingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { Space, Tag } from 'antd';
+import { Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -33,7 +33,7 @@ import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccTable, RediaccTooltip } from '@/components/ui';
+import { RediaccTable, RediaccTag, RediaccTooltip } from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { useDialogState, useExpandableTable, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
@@ -277,9 +277,9 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           <ImageName>{text}</ImageName>
           {record.vaultContent && (
             <RediaccTooltip title={t('common.hasVault')}>
-              <Tag color="blue" data-testid={`rbd-vault-tag-${record.imageName}`}>
+              <RediaccTag variant="info" data-testid={`rbd-vault-tag-${record.imageName}`}>
                 {t('common.vault')}
-              </Tag>
+              </RediaccTag>
             </RediaccTooltip>
           )}
         </Space>
@@ -302,17 +302,17 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       sorter: createSorter<CephRbdImage>('machineName'),
       render: (machineName: string, record: CephRbdImage) =>
         machineName ? (
-          <Tag
+          <RediaccTag
             icon={<CloudServerOutlined />}
-            color="blue"
+            variant="info"
             data-testid={`rbd-machine-tag-${record.imageName}`}
           >
             {machineName}
-          </Tag>
+          </RediaccTag>
         ) : (
-          <Tag color="default" data-testid={`rbd-machine-none-${record.imageName}`}>
+          <RediaccTag variant="neutral" data-testid={`rbd-machine-none-${record.imageName}`}>
             {t('common.none')}
-          </Tag>
+          </RediaccTag>
         ),
     },
     createActionColumn<CephRbdImage>({

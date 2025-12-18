@@ -25,7 +25,6 @@ const FilterTagBar = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
 const ClearButton = styled(RediaccButton)`

@@ -5,7 +5,6 @@ const { Content } = Layout;
 
 export const AuthLayoutContainer = styled(Layout)`
   min-height: 100vh;
-  background: ${({ theme }) => theme.colors.bgSecondary};
 `;
 
 export const ControlsWrapper = styled.div`

@@ -29,8 +29,6 @@ export type SpacingSize = 'XS' | 'SM' | 'MD' | 'LG' | 'XL';
 // =============================================================================
 
 export interface CenteredStateProps {
-  /** Vertical padding size */
-  $padding?: SpacingSize;
   /** Show secondary text color */
   $muted?: boolean;
 }
@@ -46,8 +44,6 @@ export interface CenteredStateProps {
 export const CenteredState = styled.div<CenteredStateProps>`
   width: 100%;
   text-align: center;
-  padding: ${({ $padding = 'LG', theme }) => theme.spacing[$padding]}px 0;
-  ${({ $muted, theme }) => $muted && `color: ${theme.colors.textSecondary};`}
 `;
 
 // =============================================================================
@@ -73,15 +69,13 @@ export const StatRow = styled.div`
 export interface HeaderRowProps {
   /** Vertical alignment */
   $align?: 'flex-start' | 'center' | 'flex-end';
-  /** Gap between items */
-  $spacing?: SpacingSize;
 }
 
 /**
  * Header row with space-between layout
  *
  * @example
- * <HeaderRow $align="center" $spacing="MD">
+ * <HeaderRow $align="center">
  *   <Title>Page Title</Title>
  *   <ButtonGroup>...</ButtonGroup>
  * </HeaderRow>
@@ -91,7 +85,6 @@ export const HeaderRow = styled.div<HeaderRowProps>`
   align-items: ${({ $align = 'center' }) => $align};
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: ${({ $spacing = 'MD', theme }) => theme.spacing[$spacing]}px;
 `;
 
 /**
@@ -102,12 +95,9 @@ export const FlexBetween = styled.div`
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export interface ActionsRowProps {
-  /** Gap between buttons */
-  $spacing?: 'SM' | 'MD';
   /** Alignment */
   $justify?: 'flex-start' | 'flex-end' | 'center';
 }
@@ -117,18 +107,16 @@ export interface ActionsRowProps {
  */
 export const ActionsRow = styled.div<ActionsRowProps>`
   display: flex;
-  gap: ${({ $spacing = 'SM', theme }) => theme.spacing[$spacing]}px;
   flex-wrap: wrap;
   justify-content: ${({ $justify = 'flex-end' }) => $justify};
 `;
 
 /**
- * Action group for button groups (flex wrap with SM gap)
+ * Action group for button groups
  */
 export const ActionGroup = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.SM}px;
   align-items: center;
 `;
 
@@ -138,13 +126,9 @@ export const ActionGroup = styled.div`
 export const ActionsContainer = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export interface HeaderSectionProps {
-  /** Bottom margin */
-  $margin?: 'MD' | 'LG';
-}
+export interface HeaderSectionProps {}
 
 /**
  * Section header with title and controls
@@ -152,14 +136,11 @@ export interface HeaderSectionProps {
 export const HeaderSection = styled.div<HeaderSectionProps>`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-  margin-bottom: ${({ $margin = 'LG', theme }) => theme.spacing[$margin]}px;
 `;
 
 export const InlineStack = styled.div<{ $align?: 'flex-start' | 'center' | 'flex-end' }>`
   display: inline-flex;
   align-items: ${({ $align = 'center' }) => $align};
-  gap: ${({ theme }) => theme.spacing.SM}px;
   flex-wrap: wrap;
 `;
 
@@ -168,7 +149,7 @@ export const InlineStack = styled.div<{ $align?: 'flex-start' | 'center' | 'flex
 // =============================================================================
 
 export interface TableActionButtonProps {
-  /** Include gap for label */
+  /** Include label */
   $hasLabel?: boolean;
 }
 
@@ -186,14 +167,11 @@ export const TableActionButton = styled(RediaccButton).attrs<TableActionButtonPr
       $hasLabel
         ? `
       min-width: ${theme.dimensions.FORM_CONTROL_HEIGHT}px;
-      padding: 0 ${theme.spacing.SM}px;
-      gap: ${theme.spacing.XS}px;
     `
         : `
       width: ${theme.dimensions.FORM_CONTROL_HEIGHT}px;
     `}
     min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   }
 `;
 
@@ -205,21 +183,13 @@ export const TableActionButton = styled(RediaccButton).attrs<TableActionButtonPr
  * Horizontal divider line
  */
 export const Divider = styled.hr`
-  border: none;
   height: 1px;
   width: 100%;
-  background-color: ${({ theme }) => theme.colors.borderSecondary};
-  margin: ${({ theme }) => theme.spacing.MD}px 0;
 `;
 
 export const StatusDot = styled.span<{ $variant?: StatusVariant }>`
   width: ${({ theme }) => theme.spacing.SM}px;
   height: ${({ theme }) => theme.spacing.SM}px;
-  border-radius: ${({ theme }) => theme.borderRadius.FULL}px;
-  background-color: ${({ theme, $variant = 'info' }) => {
-    const colorKey = $variant in theme.colors ? ($variant as keyof typeof theme.colors) : 'info';
-    return theme.colors[colorKey];
-  }};
   flex-shrink: 0;
 `;
 
@@ -275,35 +245,6 @@ export const StatusIcon = styled.span<StatusIconProps>`
       return `${$size}px`;
     }
     return `${theme.dimensions[`ICON_${$size}`]}px`;
-  }};
-  color: ${({ theme, $status, $variant, $color }) => {
-    if ($color) {
-      return $color;
-    }
-
-    // Support both $status and $variant for backwards compatibility
-    const status = $status || $variant;
-
-    switch (status) {
-      case 'success':
-      case 'online':
-        return theme.colors.success;
-      case 'error':
-      case 'failed':
-        return theme.colors.error;
-      case 'warning':
-        return theme.colors.warning;
-      case 'info':
-      case 'testing':
-        return theme.colors.primary;
-      case 'offline':
-        return theme.colors.textTertiary;
-      case 'unknown':
-        return theme.colors.textTertiary;
-      case 'pending':
-      default:
-        return theme.colors.textSecondary;
-    }
   }};
 
   .anticon {

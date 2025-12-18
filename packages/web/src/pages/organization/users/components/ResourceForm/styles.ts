@@ -13,6 +13,4 @@ export const PasswordInput = styled(RediaccPasswordInput).attrs({ fullWidth: tru
 export const FieldSelect = styled(RediaccSelect).attrs({ fullWidth: true })``;
 
 export const FormActions = styled(Form.Item)`
-  margin-top: ${({ theme }) => theme.spacing.PAGE_CONTAINER}px;
-  margin-bottom: 0;
 `;

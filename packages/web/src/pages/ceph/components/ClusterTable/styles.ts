@@ -14,17 +14,14 @@ import { CloudServerOutlined, DesktopOutlined, TeamOutlined } from '@/utils/opti
 export const TableContainer = styled(UITableWrapper).attrs({ $variant: 'default' })`
   .cluster-row {
     cursor: pointer;
-    transition: background-color ${({ theme }) => theme.transitions.FAST};
   }
 
   .cluster-row:hover {
-    background: ${({ theme }) => theme.colors.bgHover};
   }
 `;
 
 export const CreateClusterButton = styled(RediaccButton)`
   && {
-    margin-top: ${({ theme }) => theme.spacing.SM}px;
   }
 `;
 
@@ -40,10 +37,6 @@ export const ClusterIcon = styled(StyledIcon).attrs(({ theme }) => ({
 
 export const MachineCountBadgeWrapper = styled(RediaccBadge)<{ $hasMachines: boolean }>`
   .ant-badge-count {
-    background: ${({ theme, $hasMachines }) =>
-      $hasMachines ? theme.colors.success : theme.colors.bgSecondary};
-    color: ${({ theme, $hasMachines }) =>
-      $hasMachines ? theme.colors.textInverse : theme.colors.textSecondary};
   }
 `;
 
@@ -55,14 +48,7 @@ export const MachineCountIcon = styled(StyledIcon).attrs(({ theme }) => ({
 
 export const ManageMachinesButton = styled(RediaccButton)`
   && {
-    padding: 0;
-    background: transparent;
-    border: none;
-    color: ${({ theme }) => theme.colors.primary};
-
     &:hover {
-      color: ${({ theme }) => theme.colors.primaryHover};
-      background: transparent;
     }
   }
 `;
@@ -70,15 +56,10 @@ export const ManageMachinesButton = styled(RediaccButton)`
 export { ActionsRow as MachineManageCell };
 
 export const ExpandedRowContainer = styled.div`
-  padding: ${({ theme }) => theme.spacing.MD}px;
-  background: ${({ theme }) => theme.colors.bgSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
 `;
 
 export const ExpandedRowTitle = styled.h4`
-  margin: 0 0 ${({ theme }) => theme.spacing.SM}px;
   font-size: ${({ theme }) => theme.fontSize.LG}px;
-  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 export {
@@ -96,5 +77,4 @@ export const MachineNameIcon = styled(StyledIcon).attrs(({ theme }) => ({
 // MachineBridgeTag removed - use <RediaccTag preset="bridge" compact borderless> directly
 
 export const AssignedDateText = styled.span`
-  color: ${({ theme }) => theme.colors.textSecondary};
 `;

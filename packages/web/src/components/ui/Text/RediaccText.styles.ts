@@ -170,13 +170,9 @@ export const StyledRediaccText = styled(AntText).withConfig({
   $as?: TextElement;
 }>`
   && {
-    /* Reset default margin */
-    margin: 0;
-
     /* Apply variant styling */
     font-size: ${({ theme, $variant }) => resolveTextVariantTokens($variant, theme).fontSize}px;
     font-weight: ${({ theme, $variant }) => resolveTextVariantTokens($variant, theme).fontWeight};
-    color: ${({ theme, $variant }) => resolveTextVariantTokens($variant, theme).color};
     line-height: ${({ theme, $variant }) => resolveTextVariantTokens($variant, theme).lineHeight};
     ${({ theme, $variant }) => {
       const fontFamily = resolveTextVariantTokens($variant, theme).fontFamily;
@@ -198,10 +194,9 @@ export const StyledRediaccText = styled(AntText).withConfig({
       `}
 
     /* Color override */
-    ${({ theme, $color }) =>
+    ${({ $color }) =>
       $color &&
       css`
-        color: ${resolveTextColor(theme, $color)};
       `}
 
     /* Text alignment */
@@ -217,10 +212,7 @@ export const StyledRediaccText = styled(AntText).withConfig({
       css`
         font-family: ${theme.fontFamily.MONO};
         font-size: ${theme.fontSize.SM}px;
-        background-color: ${theme.colors.bgSecondary};
         padding: ${theme.spacing.XS}px ${theme.spacing.SM}px;
-        border-radius: ${theme.borderRadius.SM}px;
-        border: 1px solid ${theme.colors.borderSecondary};
       `}
 
     /* Truncation - single line */

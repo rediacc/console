@@ -13,13 +13,11 @@ export const StyledModal = styled(BaseModal).attrs({
   .ant-modal-body {
     display: flex;
     flex-direction: column;
-    gap: ${({ theme }) => theme.spacing.LG}px;
   }
 
   .ant-modal-footer {
     display: flex;
     justify-content: flex-end;
-    gap: ${({ theme }) => theme.spacing.SM}px;
   }
 `;
 
@@ -34,7 +32,6 @@ export const TitleIcon = styled(StyledIcon).attrs(({ theme }) => ({
 export const FieldRow = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
 export const MachineIcon = styled(StyledIcon).attrs(({ theme }) => ({
@@ -47,9 +44,8 @@ export const StyledSelect = RediaccSelect;
 
 export const SelectOptionText = styled.span`
   font-size: ${({ theme }) => theme.fontSize.SM}px;
-  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 export const DisabledOptionText = styled(SelectOptionText)`
-  opacity: 0.6;
+  cursor: not-allowed;
 `;

@@ -1,6 +1,6 @@
 {
   "name": "@rediacc/cli",
-  "version": "0.3.3",
+  "version": "0.3.6",
   "type": "module",
   "description": "Rediacc CLI - Command line interface for Rediacc operations",
   "main": "dist/index.js",

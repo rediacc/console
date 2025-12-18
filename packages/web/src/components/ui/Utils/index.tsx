@@ -62,7 +62,6 @@ export const RightAlign = styled.div`
   display: flex;
   justify-content: flex-end;
   text-align: right;
-  gap: ${({ theme }) => theme.spacing.SM}px;
   flex-wrap: wrap;
 `;
 
@@ -72,7 +71,6 @@ export const CenteredState = styled.div`
   padding: ${({ theme }) => theme.spacing.XXXL}px 0;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
   align-items: center;
   justify-content: center;
   color: ${({ theme }) => theme.colors.textSecondary};
@@ -84,15 +82,12 @@ export const CenteredBlock = styled.div`
 
 export const ErrorWrapper = styled.div`
   max-width: ${({ theme }) => theme.dimensions.ERROR_WRAPPER_WIDTH}px;
-  margin: 0 auto;
   width: 100%;
 `;
 
 export const LoadingState = PrimitiveLoadingState;
 
 export const RegionsSection = styled.section`
-  margin-top: ${({ theme }) => theme.spacing.XXXL}px;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.LG}px;
 `;

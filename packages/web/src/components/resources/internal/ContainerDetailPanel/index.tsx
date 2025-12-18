@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
-import { Progress, Tag } from 'antd';
+import { Progress } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { IconWrapper, RediaccText } from '@/components/ui';
+import { IconWrapper, RediaccTag, RediaccText } from '@/components/ui';
 import {
   ApiOutlined,
   AppstoreOutlined,
@@ -129,7 +129,14 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
           ? `${hostBinding} → ${mapping.container_port}/${mapping.protocol}`
           : `${mapping.container_port}/${mapping.protocol}`;
 
-        return <Tag key={`${mapping.container_port}-${mapping.protocol}-${index}`}>{tagText}</Tag>;
+        return (
+          <RediaccTag
+            variant="neutral"
+            key={`${mapping.container_port}-${mapping.protocol}-${index}`}
+          >
+            {tagText}
+          </RediaccTag>
+        );
       });
     }
 
@@ -170,16 +177,20 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
           />
         </HeaderRow>
         <TagGroup>
-          <Tag
-            color={container.state === 'running' ? 'success' : 'default'}
+          <RediaccTag
+            variant={container.state === 'running' ? 'success' : 'neutral'}
             icon={container.state === 'running' ? <PlayCircleOutlined /> : <PauseCircleOutlined />}
             data-testid="container-detail-state-tag"
           >
             {container.state}
-          </Tag>
-          <Tag color="blue" icon={<FolderOutlined />} data-testid="container-detail-repo-tag">
+          </RediaccTag>
+          <RediaccTag
+            variant="info"
+            icon={<FolderOutlined />}
+            data-testid="container-detail-repo-tag"
+          >
             {t('resources:containers.repositoryLabel', 'Repository')}: {container.repository}
-          </Tag>
+          </RediaccTag>
         </TagGroup>
       </Header>
 
@@ -270,9 +281,9 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             <FieldRow>
               <FieldLabel>{t('resources:containers.networks')}:</FieldLabel>
               <FieldValue>
-                <Tag color="default" data-testid="container-detail-network-tag">
+                <RediaccTag variant="neutral" data-testid="container-detail-network-tag">
                   {container.networks}
-                </Tag>
+                </RediaccTag>
               </FieldValue>
             </FieldRow>
             <FieldRow>
@@ -282,9 +293,9 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             <FieldRow>
               <FieldLabel>{t('resources:containers.processes')}:</FieldLabel>
               <FieldValue>
-                <Tag data-testid="container-detail-pids">
+                <RediaccTag variant="neutral" data-testid="container-detail-pids">
                   {resourceUsage?.pids || 0} {t('resources:containers.pids')}
-                </Tag>
+                </RediaccTag>
               </FieldValue>
             </FieldRow>
           </FieldList>

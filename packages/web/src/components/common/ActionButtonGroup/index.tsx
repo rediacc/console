@@ -77,8 +77,6 @@ export interface ActionButtonGroupProps<T> {
   testIdPrefix?: string;
   /** Translation function */
   t?: TFunction;
-  /** Gap between buttons */
-  gap?: 'XS' | 'SM' | 'MD';
   /** Reserve space for hidden buttons to maintain consistent alignment across rows */
   reserveSpace?: boolean;
 }
@@ -87,10 +85,9 @@ export interface ActionButtonGroupProps<T> {
 // STYLED COMPONENTS
 // =============================================================================
 
-const Container = styled.div<{ $gap: 'XS' | 'SM' | 'MD' }>`
+const Container = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: ${({ $gap, theme }) => theme.spacing[$gap]}px;
 `;
 
 /**
@@ -150,7 +147,6 @@ export function ActionButtonGroup<T>({
   idField,
   testIdPrefix = '',
   t,
-  gap = 'SM',
   reserveSpace = false,
 }: ActionButtonGroupProps<T>): React.ReactElement {
   // Type-safe access to record ID field
@@ -167,7 +163,7 @@ export function ActionButtonGroup<T>({
     : buttons.filter((btn) => isButtonVisible(btn, record));
 
   return (
-    <Container $gap={gap}>
+    <Container>
       {buttonsToRender.map((config, index) => {
         const isVisible = isButtonVisible(config, record);
 

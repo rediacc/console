@@ -1,9 +1,9 @@
 import React from 'react';
-import { Col, Progress, Row, Tag } from 'antd';
+import { Col, Progress, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccTooltip } from '@/components/ui';
+import { RediaccTag, RediaccTooltip } from '@/components/ui';
 import { RediaccStatistic, RediaccText } from '@/components/ui';
 import {
   CloudServerOutlined,
@@ -47,7 +47,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
     available: styledTheme.colors.success,
     cluster: styledTheme.colors.info,
     image: styledTheme.colors.warning,
-    clone: styledTheme.colors.accent,
+    clone: styledTheme.colors.textTertiary, // Was accent (light gray)
   };
 
   const assignmentData = [
@@ -106,29 +106,29 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
           </TeamListHeader>
           <TeamTagGroup>
             <RediaccTooltip title={t('ceph:assignmentStatus.available')}>
-              <Tag data-testid={`ds-widget-team-tag-available-${teamKey}`} color="success">
+              <RediaccTag data-testid={`ds-widget-team-tag-available-${teamKey}`} variant="success">
                 {team.availableMachines} available
-              </Tag>
+              </RediaccTag>
             </RediaccTooltip>
             {team.clusterMachines > 0 && (
               <RediaccTooltip title={t('ceph:assignmentStatus.cluster')}>
-                <Tag data-testid={`ds-widget-team-tag-cluster-${teamKey}`} color="blue">
+                <RediaccTag data-testid={`ds-widget-team-tag-cluster-${teamKey}`} variant="info">
                   {team.clusterMachines} cluster
-                </Tag>
+                </RediaccTag>
               </RediaccTooltip>
             )}
             {team.imageMachines > 0 && (
               <RediaccTooltip title={t('ceph:assignmentStatus.image')}>
-                <Tag data-testid={`ds-widget-team-tag-image-${teamKey}`} color="default">
+                <RediaccTag data-testid={`ds-widget-team-tag-image-${teamKey}`} variant="neutral">
                   {team.imageMachines} image
-                </Tag>
+                </RediaccTag>
               </RediaccTooltip>
             )}
             {team.cloneMachines > 0 && (
               <RediaccTooltip title={t('ceph:assignmentStatus.clone')}>
-                <Tag data-testid={`ds-widget-team-tag-clone-${teamKey}`} color="warning">
+                <RediaccTag data-testid={`ds-widget-team-tag-clone-${teamKey}`} variant="warning">
                   {team.cloneMachines} clone
-                </Tag>
+                </RediaccTag>
               </RediaccTooltip>
             )}
           </TeamTagGroup>

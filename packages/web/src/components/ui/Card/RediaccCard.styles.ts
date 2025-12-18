@@ -29,20 +29,19 @@ export const resolveCardPadding = (theme: StyledTheme, size: CardSize = 'md'): n
 };
 
 // Token set for card variants
-type CardTokenSet = { bg: string; border: string; shadow: string };
+type CardTokenSet = { bg: string; border: string };
 
 type CardTokenKeys = {
   bg: keyof StyledTheme['colors'];
   border: keyof StyledTheme['colors'] | 'transparent';
-  shadow: keyof StyledTheme['shadows'] | 'none';
 };
 
 const CARD_VARIANT_MAP: Record<CardVariant, CardTokenKeys> = {
-  elevated: { bg: 'bgPrimary', border: 'transparent', shadow: 'CARD' },
-  bordered: { bg: 'bgPrimary', border: 'borderSecondary', shadow: 'none' },
-  section: { bg: 'bgSecondary', border: 'borderSecondary', shadow: 'none' },
-  selectable: { bg: 'bgPrimary', border: 'borderSecondary', shadow: 'none' },
-  default: { bg: 'bgPrimary', border: 'borderSecondary', shadow: 'none' },
+  elevated: { bg: 'bgPrimary', border: 'transparent' },
+  bordered: { bg: 'bgPrimary', border: 'borderSecondary' },
+  section: { bg: 'bgPrimary', border: 'borderPrimary' },
+  selectable: { bg: 'bgPrimary', border: 'borderSecondary' },
+  default: { bg: 'bgPrimary', border: 'borderSecondary' },
 };
 
 export const resolveCardVariantTokens = (
@@ -53,7 +52,6 @@ export const resolveCardVariantTokens = (
   return {
     bg: theme.colors[keys.bg],
     border: keys.border === 'transparent' ? 'transparent' : theme.colors[keys.border],
-    shadow: keys.shadow === 'none' ? 'none' : theme.shadows[keys.shadow],
   };
 };
 
@@ -68,15 +66,6 @@ export const StyledRediaccCard = styled(AntCard)<{
   $noPadding?: boolean;
 }>`
   && {
-    background-color: ${({ theme, $variant }) => resolveCardVariantTokens($variant, theme).bg};
-    border: 1px solid ${({ theme, $variant, $selected }) =>
-      $selected ? theme.colors.primary : resolveCardVariantTokens($variant, theme).border};
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    box-shadow: ${({ theme, $variant }) => resolveCardVariantTokens($variant, theme).shadow};
-
-    /* Spacing (margin-bottom) */
-    ${({ theme, $spacing }) => $spacing && css`margin-bottom: ${resolveCardSpacing(theme, $spacing)}px;`}
-
     /* Width */
     ${({ $fullWidth }) => $fullWidth && css`width: 100%;`}
 
@@ -90,24 +79,16 @@ export const StyledRediaccCard = styled(AntCard)<{
     }
 
     /* Selected state for selectable variant */
-    ${({ $selected, theme }) =>
+    ${({ $selected }) =>
       $selected &&
       css`
-      border-width: ${theme.dimensions.BORDER_WIDTH_THICK}px;
-      border-color: ${theme.colors.primary};
     `}
 
     /* Interactive hover effects */
-    ${({ $interactive, theme }) =>
+    ${({ $interactive }) =>
       $interactive &&
       css`
       cursor: pointer;
-      transition: ${theme.transitions.HOVER};
-
-      &:hover {
-        border-color: ${theme.colors.primary};
-        box-shadow: ${theme.shadows.SM};
-      }
     `}
   }
 `;

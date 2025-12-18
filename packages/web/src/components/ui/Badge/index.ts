@@ -1,3 +1,4 @@
 export { RediaccBadge } from './RediaccBadge';
-export { resolveBadgeColor, resolveBadgeFontSize, resolveBadgeSize } from './RediaccBadge.styles';
+export { resolveBadgeFontSize, resolveBadgeSize } from './RediaccBadge.styles';
+export { resolveBadgeColor } from '@/styles/variantMaps';
 export type { BadgeSize, BadgeVariant, RediaccBadgeProps } from './RediaccBadge.types';

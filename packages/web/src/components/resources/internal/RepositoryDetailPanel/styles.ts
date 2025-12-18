@@ -40,7 +40,6 @@ export {
 
 export const HeaderIcon = styled(FolderOutlined)`
   font-size: ${({ theme }) => theme.fontSize.DISPLAY}px;
-  color: var(--color-success);
 `;
 
 export const StyledTag = styled(RediaccTag).attrs<{ $variant: TagVariantKey }>(({ $variant }) => {
@@ -55,34 +54,26 @@ export const StyledTag = styled(RediaccTag).attrs<{ $variant: TagVariantKey }>((
   };
 })<{ $variant: TagVariantKey }>`
   && {
-    gap: ${({ theme }) => theme.spacing.XS}px;
   }
 `;
 
 export const SectionDivider = styled(BaseSectionDivider)`
   && {
-    margin: ${({ theme }) => `${theme.spacing.XL}px 0`};
   }
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const Section = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing.LG}px;
 `;
 
-type StackGap = 'XS' | 'SM' | 'MD' | 'LG' | 'XL';
-
-export const Stack = styled.div<{ $gap?: StackGap }>`
+export const Stack = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  gap: ${({ theme, $gap = 'SM' }) => theme.spacing[$gap]}px;
 `;
 
 export const SectionHeader = styled(BaseSectionHeader)`
-  margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const SectionTitle = styled(BaseSectionTitle)`
@@ -98,43 +89,25 @@ export const StatusTag = styled(RediaccTag).attrs<{ $tone?: StatusToneKey }>(
   })
 )<{ $tone?: StatusToneKey }>`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   }
 `;
 
 export const VolumeDescription = styled.div`
-  margin-top: ${({ theme }) => theme.spacing.SM}px;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const VolumeList = styled.ul`
-  margin: ${({ theme }) => `${theme.spacing.SM}px 0`};
-  padding-left: ${({ theme }) => theme.spacing.LG}px;
 `;
 
 export const ServicesList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.MD}px;
   width: 100%;
 `;
 
 export const ServiceCard = styled(RediaccCard)<{ $state: 'active' | 'failed' | 'other' }>`
   && {
-    border-left: ${({ theme }) => theme.spacing.XS}px solid
-      ${({ $state }) => {
-        switch ($state) {
-          case 'active':
-            return 'var(--color-success)';
-          case 'failed':
-            return 'var(--color-error)';
-          default:
-            return 'var(--color-border-secondary)';
-        }
-      }};
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
   }
 `;
 
@@ -147,13 +120,11 @@ export const ServiceHeader = styled.div`
 export const ServiceMetaGrid = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.MD}px;
 `;
 
 export const ServiceMetaItem = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
 export { SectionCard as PathsCard };
@@ -163,9 +134,7 @@ export { SectionCard as ActivityCard };
 export const ActivityMetrics = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const StyledRediaccEmpty = styled.div`
-  margin-top: ${({ theme }) => theme.spacing.XXL * 3.75}px;
 `;

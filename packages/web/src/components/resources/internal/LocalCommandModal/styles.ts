@@ -12,16 +12,13 @@ export const StyledModal = styled(BaseModal).attrs({
   .ant-modal-body {
     display: flex;
     flex-direction: column;
-    gap: ${({ theme }) => theme.spacing.LG}px;
   }
 `;
 
 export const SettingsForm = styled(Form)`
   && {
-    margin-bottom: 0;
 
     .ant-form-item {
-      margin-bottom: ${({ theme }) => theme.spacing.SM}px;
     }
   }
 `;
@@ -29,28 +26,22 @@ export const SettingsForm = styled(Form)`
 export const TabsWrapper = styled(RediaccTabs)`
   && {
     .ant-tabs-nav {
-      margin-bottom: ${({ theme }) => theme.spacing.MD}px;
     }
   }
 `;
 
-export const CommandPreview = styled(FlexColumn).attrs({ $gap: 'SM' })`
-  padding: ${({ theme }) => theme.spacing.LG}px;
-  background-color: ${({ theme }) => theme.colors.bgSecondary};
-  ${borderedCard('borderSecondary', 'XL')}
+export const CommandPreview = styled(FlexColumn).attrs({})`
+  ${borderedCard()}
 `;
 
 export const PreviewHeader = styled(FlexRow).attrs({ $justify: 'space-between' })`
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `;
 
-export const PreviewError = styled(FlexColumn).attrs({ $gap: 'XS' })`
-  padding: ${({ theme }) => theme.spacing.SM}px 0;
+export const PreviewError = styled(FlexColumn).attrs({})`
 `;
 
 export const CommandParagraph = styled(RediaccText).attrs({ as: 'p' })`
   && {
-    margin: 0;
     font-family: ${({ theme }) => theme.fontFamily.MONO};
     white-space: pre-wrap;
   }
@@ -60,7 +51,6 @@ export const PreviewMetaRow = styled.div`
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.XS}px;
 `;
 
 export const ActionsRow = CommonActionsRow;
@@ -70,9 +60,7 @@ export const BlockText = styled(RediaccText)`
 `;
 
 export const HelperTextWithMargin = styled(RediaccText)`
-  margin-left: ${({ theme }) => theme.spacing.SM}px;
 `;
 
 export const LoadingIndicatorWithMargin = styled.span`
-  margin-left: ${({ theme }) => theme.spacing.SM}px;
 `;

@@ -465,7 +465,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                     <TypeTag variant="warning">{t('nestedObjectEditor.Array')}</TypeTag>
                   )}
                   {typeof entry.value === 'boolean' && (
-                    <TypeTag variant={entry.value ? 'success' : 'default'}>
+                    <TypeTag variant={entry.value ? 'success' : 'neutral'}>
                       {entry.value ? t('nestedObjectEditor.True') : t('nestedObjectEditor.False')}
                     </TypeTag>
                   )}

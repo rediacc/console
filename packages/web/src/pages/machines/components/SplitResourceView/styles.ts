@@ -13,7 +13,6 @@ export const LeftPanel = styled.div<{ $width: string }>`
   height: 100%;
   overflow: auto;
   min-width: ${({ theme }) => theme.dimensions.SPLIT_PANEL_MIN_WIDTH}px;
-  transition: width 0.3s ease-in-out;
 `;
 
 export const Backdrop = styled.div<{ $visible: boolean; $rightOffset: number }>`
@@ -22,9 +21,8 @@ export const Backdrop = styled.div<{ $visible: boolean; $rightOffset: number }>`
   left: 0;
   right: ${({ $rightOffset }) => `${$rightOffset}px`};
   bottom: 0;
-  background-color: ${({ theme }) => theme.overlays.backdrop};
-  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
-  transition: opacity 250ms ease-in-out, right 0.3s ease-in-out;
+  display: ${({ $visible }) => ($visible ? 'block' : 'none')};
+  background-color: #404040;
   z-index: ${({ theme }) => theme.zIndex.MODAL};
   pointer-events: ${({ $visible }) => ($visible ? 'auto' : 'none')};
 `;
