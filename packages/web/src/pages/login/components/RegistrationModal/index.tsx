@@ -179,7 +179,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           values.companyName,
           values.email,
           passwordHash,
-          turnstileToken || undefined,
+          turnstileToken ?? undefined,
           i18n.language || 'en'
         );
 
@@ -342,7 +342,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
               if (!value || getFieldValue('password') === value) {
                 return Promise.resolve();
               }
-              return Promise.reject(new Error(t('auth:registration.passwordMismatch')));
+              throw new Error(t('auth:registration.passwordMismatch'));
             },
           }),
         ]}
@@ -363,17 +363,17 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           valuePropName="checked"
           rules={[
             {
-              validator: (_, value) =>
-                value
-                  ? Promise.resolve()
-                  : Promise.reject(
-                      new Error(
-                        t(
-                          'auth:registration.termsRequired',
-                          'You must accept the terms and conditions'
-                        )
-                      )
-                    ),
+              validator: (_, value) => {
+                if (value) {
+                  return Promise.resolve();
+                }
+                throw new Error(
+                  t(
+                    'auth:registration.termsRequired',
+                    'You must accept the terms and conditions'
+                  )
+                );
+              },
             },
           ]}
           $noMargin

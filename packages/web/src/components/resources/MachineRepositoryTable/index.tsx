@@ -417,12 +417,12 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
         if (!trimmedName) {
           showMessage('error', t('resources:repositories.emptyNameError'));
-          return Promise.reject();
+          throw new Error(t('resources:repositories.emptyNameError'));
         }
 
         if (trimmedName === Repository.name) {
           showMessage('info', t('resources:repositories.nameUnchanged'));
-          return Promise.reject();
+          throw new Error(t('resources:repositories.nameUnchanged'));
         }
 
         const existingRepo = teamRepositories.find((r) => r.repositoryName === trimmedName);
@@ -431,7 +431,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             'error',
             t('resources:repositories.nameAlreadyExists', { name: trimmedName })
           );
-          return Promise.reject();
+          throw new Error(t('resources:repositories.nameAlreadyExists', { name: trimmedName }));
         }
 
         try {
@@ -457,7 +457,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             t('resources:repositories.renameFailed')
           );
           showMessage('error', errorMessage);
-          return Promise.reject();
+          throw error;
         }
       },
     });
@@ -496,12 +496,12 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
         if (!trimmedTag) {
           showMessage('error', t('resources:repositories.emptyTagError'));
-          return Promise.reject();
+          throw new Error(t('resources:repositories.emptyTagError'));
         }
 
         if (trimmedTag === Repository.repositoryTag) {
           showMessage('info', t('resources:repositories.tagUnchanged'));
-          return Promise.reject();
+          throw new Error(t('resources:repositories.tagUnchanged'));
         }
 
         const existingTag = teamRepositories.find(
@@ -509,7 +509,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         );
         if (existingTag) {
           showMessage('error', t('resources:repositories.tagAlreadyExists', { tag: trimmedTag }));
-          return Promise.reject();
+          throw new Error(t('resources:repositories.tagAlreadyExists', { tag: trimmedTag }));
         }
 
         try {
@@ -537,7 +537,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             t('resources:repositories.renameTagFailed')
           );
           showMessage('error', errorMessage);
-          return Promise.reject();
+          throw error;
         }
       },
     });
@@ -620,7 +620,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       onOk: async () => {
         if (confirmationInput !== Repository.name) {
           showMessage('error', t('resources:repositories.deleteGrandConfirmationMismatch'));
-          return Promise.reject();
+          throw new Error(t('resources:repositories.deleteGrandConfirmationMismatch'));
         }
 
         try {
@@ -666,11 +666,11 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             }
           } else {
             showMessage('error', result.error || t('resources:repositories.deleteGrandFailed'));
-            return Promise.reject();
+            throw new Error(result.error || t('resources:repositories.deleteGrandFailed'));
           }
-        } catch {
+        } catch (error) {
           showMessage('error', t('resources:repositories.deleteGrandFailed'));
-          return Promise.reject();
+          throw error;
         }
       },
     });

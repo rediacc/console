@@ -120,7 +120,7 @@ const RepoContainersPage: React.FC = () => {
                 (repoGuidToFind
                   ? candidate.name === repoGuidToFind
                   : candidate.name === repositoryName)
-            ) || null
+            ) ?? null
           );
         }
       }

@@ -295,7 +295,7 @@ const TeamsPage: React.FC = () => {
                       placeholder={t('teams.manageMembers.selectUser', {
                         defaultValue: 'Select user',
                       })}
-                      value={selectedMemberEmail || undefined}
+                      value={selectedMemberEmail ?? undefined}
                       onChange={(value) => setSelectedMemberEmail((value as string) || '')}
                       filterOption={(input, option) =>
                         String(option?.label ?? '')

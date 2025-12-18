@@ -44,8 +44,8 @@ const authSlice = createSlice({
     ) => {
       state.isAuthenticated = true;
       state.user = action.payload.user;
-      state.company = action.payload.company || null;
-      state.vaultCompany = action.payload.vaultCompany || null;
+      state.company = action.payload.company ?? null;
+      state.vaultCompany = action.payload.vaultCompany ?? null;
       state.companyEncryptionEnabled = action.payload.companyEncryptionEnabled || false;
       // Token is now handled separately by tokenService for security
       // masterPassword is now handled separately by masterPasswordService for security

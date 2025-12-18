@@ -170,13 +170,11 @@ export const getJsonFieldProps = (
     try {
       const parsed = typeof value === 'string' ? JSON.parse(value) : value;
       if (isArray && !Array.isArray(parsed)) {
-        return Promise.reject(t('vaultEditor.mustBeArray'));
+        throw new Error(t('vaultEditor.mustBeArray'));
       }
       return Promise.resolve();
     } catch {
-      return Promise.reject(
-        t(isArray ? 'vaultEditor.mustBeValidJsonArray' : 'vaultEditor.mustBeValidJson')
-      );
+      throw new Error(t(isArray ? 'vaultEditor.mustBeValidJsonArray' : 'vaultEditor.mustBeValidJson'));
     }
   };
 

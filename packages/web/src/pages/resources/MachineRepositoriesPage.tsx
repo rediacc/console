@@ -87,7 +87,7 @@ const MachineReposPage: React.FC = () => {
 
   // State for machine data - can come from route state or API
   const routeState = location.state;
-  const [machine, setMachine] = useState<Machine | null>(routeState?.machine || null);
+  const [machine, setMachine] = useState<Machine | null>(routeState?.machine ?? null);
 
   // Use shared panel width hook (33% of window, min 300px, max 700px)
   const panelWidth = usePanelWidth();
@@ -407,7 +407,7 @@ const MachineReposPage: React.FC = () => {
                   onRepositoryClick={handleRepositoryClick}
                   onContainerClick={handleContainerClick}
                   onQueueItemCreated={(taskId, machineName) => {
-                    queueTrace.open(taskId, machineName || undefined);
+                    queueTrace.open(taskId, machineName ?? undefined);
                   }}
                 />
               )}
@@ -456,7 +456,7 @@ const MachineReposPage: React.FC = () => {
           teamName={fileBrowserModal.state.data.teamName}
           bridgeName={fileBrowserModal.state.data.bridgeName}
           onQueueItemCreated={(taskId: string) => {
-            queueTrace.open(taskId, fileBrowserModal.state.data?.machineName || undefined);
+            queueTrace.open(taskId, fileBrowserModal.state.data?.machineName ?? undefined);
             fileBrowserModal.close();
           }}
         />

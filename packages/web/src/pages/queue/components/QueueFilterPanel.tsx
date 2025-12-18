@@ -53,7 +53,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
       <FilterSelect
         $minWidth={150}
         placeholder={t('filters.teamPlaceholder')}
-        value={filters.teamName || undefined}
+        value={filters.teamName ?? undefined}
         onChange={(value) => {
           const nextValue = typeof value === 'string' ? value : '';
           onFilterChange('teamName', nextValue);
@@ -66,7 +66,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
       <FilterSelect
         $minWidth={150}
         placeholder={t('filters.machinePlaceholder')}
-        value={filters.machineName || undefined}
+        value={filters.machineName ?? undefined}
         onChange={(value) => onFilterChange('machineName', typeof value === 'string' ? value : '')}
         allowClear
         options={(dropdownData?.machines || []).map((machine) => ({
@@ -78,7 +78,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
       <FilterSelect
         $minWidth={130}
         placeholder={t('filters.regionPlaceholder')}
-        value={filters.regionName || undefined}
+        value={filters.regionName ?? undefined}
         onChange={(value) => onFilterChange('regionName', typeof value === 'string' ? value : '')}
         allowClear
         options={dropdownData?.regions || []}
@@ -87,7 +87,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
       <FilterSelect
         $minWidth={130}
         placeholder={t('filters.bridgePlaceholder')}
-        value={filters.bridgeName || undefined}
+        value={filters.bridgeName ?? undefined}
         onChange={(value) => onFilterChange('bridgeName', typeof value === 'string' ? value : '')}
         allowClear
         options={dropdownData?.bridges || []}

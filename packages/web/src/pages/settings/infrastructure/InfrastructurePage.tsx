@@ -107,7 +107,7 @@ const InfrastructurePage: React.FC = () => {
 
   const effectiveRegion = selectedRegion ?? regionsList[0]?.regionName ?? null;
 
-  const { data: bridges, isLoading: bridgesLoading } = useBridges(effectiveRegion || undefined);
+  const { data: bridges, isLoading: bridgesLoading } = useBridges(effectiveRegion ?? undefined);
   const bridgesList: Bridge[] = useMemo(() => bridges || [], [bridges]);
 
   const createRegionMutation = useCreateRegion();

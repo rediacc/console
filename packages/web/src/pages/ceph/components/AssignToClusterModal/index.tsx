@@ -54,7 +54,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
   }
 
   const [selectedCluster, setSelectedCluster] = useState<string | null>(
-    machine?.cephClusterName || null
+    machine?.cephClusterName ?? null
   );
 
   // Get unique teams from all machines for bulk mode
@@ -135,7 +135,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
   useEffect(() => {
     if (open && machine && !isBulkMode) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedCluster(machine.cephClusterName || null);
+      setSelectedCluster(machine.cephClusterName ?? null);
     } else if (open && isBulkMode) {
       setSelectedCluster(null);
     }

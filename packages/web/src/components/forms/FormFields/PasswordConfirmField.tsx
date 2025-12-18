@@ -64,7 +64,7 @@ export const PasswordConfirmField: React.FC<PasswordConfirmFieldProps> = ({
       if (!value || getFieldValue(passwordFieldName) === value) {
         return Promise.resolve();
       }
-      return Promise.reject(new Error(mismatchMessage));
+      throw new Error(mismatchMessage);
     },
   }));
 
