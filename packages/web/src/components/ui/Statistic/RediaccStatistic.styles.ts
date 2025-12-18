@@ -16,17 +16,20 @@ const VARIANT_COLOR_MAP: Record<StatisticVariant, keyof StyledTheme['colors']> =
 
 /** Get statistic value color based on variant */
 export const resolveStatisticColor = (
-  variant: StatisticVariant = 'default',
-  theme: StyledTheme
+  theme: StyledTheme,
+  variant: StatisticVariant = 'default'
 ): string => theme.colors[VARIANT_COLOR_MAP[variant]];
 
 export const StyledRediaccStatistic = styled(Statistic)<{
   $variant: StatisticVariant;
-  $critical: boolean;
+  $critical?: boolean;
   $color?: string;
 }>`
   .ant-statistic-content-value {
-    color: ${({ theme, $variant, $critical, $color }) =>
-      $color ? $color : $critical ? theme.colors.error : resolveStatisticColor($variant, theme)};
+    color: ${({ theme, $variant, $critical, $color }) => {
+      if ($color) return $color;
+      if ($critical) return theme.colors.error;
+      return resolveStatisticColor(theme, $variant);
+    }};
   }
 `;

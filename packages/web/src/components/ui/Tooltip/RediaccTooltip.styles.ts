@@ -26,9 +26,9 @@ const TOOLTIP_VARIANT_MAP: Record<TooltipVariant, TooltipTokenKeys> = {
  * Resolves color tokens for each tooltip variant
  */
 export const resolveTooltipVariantTokens = (
-  variant: TooltipVariant = 'default',
   theme: StyledTheme,
-  tooltipBg: string
+  tooltipBg: string,
+  variant: TooltipVariant = 'default'
 ): TooltipTokenSet => {
   const keys = TOOLTIP_VARIANT_MAP[variant] || TOOLTIP_VARIANT_MAP.default;
   return {
@@ -50,7 +50,7 @@ export const getTooltipOverlayStyle = (
   theme: StyledTheme,
   tooltipBg: string
 ): CSSProperties => {
-  const tokens = resolveTooltipVariantTokens(variant, theme, tooltipBg);
+  const tokens = resolveTooltipVariantTokens(theme, tooltipBg, variant);
 
   return {
     backgroundColor: tokens.bg,

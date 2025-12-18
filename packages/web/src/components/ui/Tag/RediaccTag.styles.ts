@@ -12,7 +12,7 @@ const TAG_FONT_SIZE_MAP: Record<TagSize, keyof StyledTheme['fontSize']> = {
 /**
  * Resolves font size for each tag size
  */
-export const resolveRediaccTagFontSize = (theme: StyledTheme, size: TagSize = 'md'): number => {
+export const resolveRediaccTagFontSize = (size: TagSize = 'md', theme: StyledTheme): number => {
   return theme.fontSize[TAG_FONT_SIZE_MAP[size] || TAG_FONT_SIZE_MAP.md];
 };
 
@@ -25,7 +25,7 @@ const TAG_PADDING_MAP: Record<TagSize, (theme: StyledTheme) => string> = {
 /**
  * Resolves padding for each tag size
  */
-export const resolveRediaccTagPadding = (theme: StyledTheme, size: TagSize = 'md'): string => {
+export const resolveRediaccTagPadding = (size: TagSize = 'md', theme: StyledTheme): string => {
   return (TAG_PADDING_MAP[size] || TAG_PADDING_MAP.md)(theme);
 };
 
@@ -38,7 +38,7 @@ const TAG_RADIUS_MAP: Record<TagSize, keyof StyledTheme['borderRadius']> = {
 /**
  * Resolves border radius for each tag size
  */
-export const resolveRediaccTagRadius = (theme: StyledTheme, size: TagSize = 'md'): number => {
+export const resolveRediaccTagRadius = (size: TagSize = 'md', theme: StyledTheme): number => {
   return theme.borderRadius[TAG_RADIUS_MAP[size] || TAG_RADIUS_MAP.md];
 };
 
@@ -56,9 +56,9 @@ export const StyledRediaccTag = styled(AntTag)<{
     display: inline-flex;
     align-items: center;
     padding: ${({ theme, $size, $compact }) =>
-      $compact ? `0 ${theme.spacing.XS}px` : resolveRediaccTagPadding(theme, $size)};
+      $compact ? `0 ${theme.spacing.XS}px` : resolveRediaccTagPadding($size, theme)};
     font-size: ${({ theme, $size, $compact }) =>
-      $compact ? theme.fontSize.XS : resolveRediaccTagFontSize(theme, $size)}px;
+      $compact ? theme.fontSize.XS : resolveRediaccTagFontSize($size, theme)}px;
     font-weight: ${({ theme, $emphasized }) =>
       $emphasized ? theme.fontWeight.SEMIBOLD : theme.fontWeight.MEDIUM};
     line-height: ${({ theme }) => theme.lineHeight.TIGHT};

@@ -8,7 +8,7 @@ const ALERT_PADDING_MAP: Record<AlertSize, (theme: StyledTheme) => string> = {
   md: (theme) => `${theme.spacing.MD}px ${theme.spacing.LG}px`,
 };
 
-export const resolveAlertPadding = (theme: StyledTheme, size: AlertSize = 'md'): string => {
+export const resolveAlertPadding = (size: AlertSize = 'md', theme: StyledTheme): string => {
   return (ALERT_PADDING_MAP[size] || ALERT_PADDING_MAP.md)(theme);
 };
 
@@ -28,7 +28,7 @@ const ALERT_SPACING_MAP: Record<AlertSpacing, keyof StyledTheme['spacing'] | 0> 
 };
 
 // Resolve spacing to margin-bottom pixels
-export const resolveAlertSpacing = (theme: StyledTheme, spacing?: AlertSpacing): number => {
+export const resolveAlertSpacing = (spacing: AlertSpacing | undefined, theme: StyledTheme): number => {
   if (!spacing) return 0;
   const value = ALERT_SPACING_MAP[spacing];
   return typeof value === 'number' ? value : theme.spacing[value];
@@ -45,7 +45,7 @@ export const StyledRediaccAlert = styled(AntAlert).withConfig({
   $spacing?: AlertSpacing;
 }>`
   && {
-    padding: ${({ theme, $size }) => resolveAlertPadding(theme, $size)};
+    padding: ${({ theme, $size }) => resolveAlertPadding($size, theme)};
 
     /* Icon color */
     .ant-alert-icon {

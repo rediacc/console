@@ -45,11 +45,8 @@ export const inputPrefixStyles = css`
  * Resolves variant-specific styles for inputs
  */
 const resolveVariantStyles = (variant: InputVariant = 'default') => {
-  switch (variant) {
-    case 'default':
-    default:
-      return css``;
-  }
+  if (variant === 'default') return css``;
+  return css``;
 };
 
 /**

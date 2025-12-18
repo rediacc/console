@@ -10,8 +10,8 @@ const BADGE_SIZE_MAP: Record<BadgeSize, number> = {
 };
 
 // Get badge size in pixels
-export const resolveBadgeSize = (size: BadgeSize = 'md'): number => {
-  return BADGE_SIZE_MAP[size] || BADGE_SIZE_MAP.md;
+export const resolveBadgeSize = (size?: BadgeSize): number => {
+  return BADGE_SIZE_MAP[size || 'md'] || BADGE_SIZE_MAP.md;
 };
 
 const BADGE_FONT_SIZE_MAP: Record<BadgeSize, (theme: StyledTheme) => number> = {
@@ -20,8 +20,8 @@ const BADGE_FONT_SIZE_MAP: Record<BadgeSize, (theme: StyledTheme) => number> = {
 };
 
 // Get badge font size
-export const resolveBadgeFontSize = (theme: StyledTheme, size: BadgeSize = 'md'): number => {
-  return (BADGE_FONT_SIZE_MAP[size] || BADGE_FONT_SIZE_MAP.md)(theme);
+export const resolveBadgeFontSize = (theme: StyledTheme, size?: BadgeSize): number => {
+  return (BADGE_FONT_SIZE_MAP[size || 'md'] || BADGE_FONT_SIZE_MAP.md)(theme);
 };
 
 export const StyledRediaccBadge = styled(AntBadge)<{

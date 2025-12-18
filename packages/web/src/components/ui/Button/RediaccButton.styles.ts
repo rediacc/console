@@ -72,8 +72,8 @@ const VARIANT_TOKENS: Record<ButtonVariant, (theme: StyledTheme) => ButtonTokenS
  * Resolves color tokens for each button variant
  */
 export const resolveRediaccButtonVariantTokens = (
-  variant: ButtonVariant = 'primary',
-  theme: StyledTheme
+  theme: StyledTheme,
+  variant: ButtonVariant = 'primary'
 ): ButtonTokenSet => VARIANT_TOKENS[variant](theme);
 
 /**

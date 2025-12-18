@@ -9,8 +9,8 @@ const PROGRESS_HEIGHT_MAP: Record<ProgressSize, number> = {
   lg: 12,
 };
 
-export const resolveProgressHeight = (size: ProgressSize = 'md'): number => {
-  return PROGRESS_HEIGHT_MAP[size] || PROGRESS_HEIGHT_MAP.md;
+export const resolveProgressHeight = (size?: ProgressSize): number => {
+  return PROGRESS_HEIGHT_MAP[size || 'md'] || PROGRESS_HEIGHT_MAP.md;
 };
 
 const CIRCLE_WIDTH_MAP: Record<ProgressSize, number> = {
@@ -19,8 +19,8 @@ const CIRCLE_WIDTH_MAP: Record<ProgressSize, number> = {
   lg: 120,
 };
 
-export const resolveCircleWidth = (size: ProgressSize = 'md'): number => {
-  return CIRCLE_WIDTH_MAP[size] || CIRCLE_WIDTH_MAP.md;
+export const resolveCircleWidth = (size?: ProgressSize): number => {
+  return CIRCLE_WIDTH_MAP[size || 'md'] || CIRCLE_WIDTH_MAP.md;
 };
 
 const PROGRESS_COLOR_MAP: Record<ProgressStatus, keyof StyledTheme['colors']> = {
@@ -31,10 +31,10 @@ const PROGRESS_COLOR_MAP: Record<ProgressStatus, keyof StyledTheme['colors']> = 
 };
 
 export const resolveProgressColor = (
-  status: ProgressStatus = 'normal',
-  theme: StyledTheme
+  theme: StyledTheme,
+  status?: ProgressStatus
 ): string => {
-  return theme.colors[PROGRESS_COLOR_MAP[status] || PROGRESS_COLOR_MAP.normal];
+  return theme.colors[PROGRESS_COLOR_MAP[status || 'normal'] || PROGRESS_COLOR_MAP.normal];
 };
 
 export const StyledRediaccProgress = styled(AntProgress)<{

@@ -24,7 +24,7 @@ const CARD_PADDING_MAP: Record<CardSize, keyof StyledTheme['spacing']> = {
 };
 
 // Resolve padding based on size
-export const resolveCardPadding = (theme: StyledTheme, size: CardSize = 'md'): number => {
+export const resolveCardPadding = (size: CardSize = 'md', theme: StyledTheme): number => {
   return theme.spacing[CARD_PADDING_MAP[size] || CARD_PADDING_MAP.md];
 };
 
@@ -45,8 +45,8 @@ const CARD_VARIANT_MAP: Record<CardVariant, CardTokenKeys> = {
 };
 
 export const resolveCardVariantTokens = (
-  variant: CardVariant = 'default',
-  theme: StyledTheme
+  theme: StyledTheme,
+  variant: CardVariant = 'default'
 ): CardTokenSet => {
   const keys = CARD_VARIANT_MAP[variant] || CARD_VARIANT_MAP.default;
   return {
@@ -75,7 +75,7 @@ export const StyledRediaccCard = styled(AntCard)<{
     /* Padding */
     .ant-card-body {
       padding: ${({ theme, $size, $noPadding }) =>
-        $noPadding ? '0' : `${resolveCardPadding(theme, $size)}px`};
+        $noPadding ? '0' : `${resolveCardPadding($size, theme)}px`};
     }
 
     /* Selected state for selectable variant */
