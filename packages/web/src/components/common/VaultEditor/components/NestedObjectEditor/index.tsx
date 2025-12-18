@@ -204,9 +204,15 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
         defaultValue = Object.keys(propDef.properties).reduce<NestedRecord>((acc, keyName) => {
           const schema = propDef.properties?.[keyName];
           if (schema) {
-            acc[keyName] =
-              schema.default ??
-              (schema.type === 'boolean' ? false : schema.type === 'number' ? 0 : '');
+            if (schema.default !== undefined) {
+              acc[keyName] = schema.default;
+            } else if (schema.type === 'boolean') {
+              acc[keyName] = false;
+            } else if (schema.type === 'number') {
+              acc[keyName] = 0;
+            } else {
+              acc[keyName] = '';
+            }
           }
           return acc;
         }, {});

@@ -126,10 +126,18 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
                     const newValue = parsedValue ? `${parsedValue}${unit}` : '';
                     controllerField.onChange(newValue);
                   }}
-                  options={units.map((unit) => ({
-                    value: unit === 'percentage' ? '%' : unit,
-                    label: unit === 'percentage' ? '%' : unit === 'G' ? 'GB' : 'TB',
-                  }))}
+                  options={units.map((unit) => {
+                    const value = unit === 'percentage' ? '%' : unit;
+                    let label: string;
+                    if (unit === 'percentage') {
+                      label = '%';
+                    } else if (unit === 'G') {
+                      label = 'GB';
+                    } else {
+                      label = 'TB';
+                    }
+                    return { value, label };
+                  })}
                   disabled={field.disabled}
                 />
               </SizeInputGroup>
@@ -147,8 +155,14 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
           render={({ field: controllerField }) => {
             // RediaccInput only supports: 'text' | 'email' | 'url' | 'tel' | 'password'
             // For other types like 'number', use 'text' as fallback
-            const inputType: 'text' | 'email' | 'url' | 'tel' | 'password' =
-              field.type === 'email' ? 'email' : field.type === 'password' ? 'password' : 'text';
+            let inputType: 'text' | 'email' | 'url' | 'tel' | 'password';
+            if (field.type === 'email') {
+              inputType = 'email';
+            } else if (field.type === 'password') {
+              inputType = 'password';
+            } else {
+              inputType = 'text';
+            }
 
             return (
               <RediaccInput

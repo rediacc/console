@@ -201,9 +201,11 @@ export const useSystemContainerColumns = () => {
     {
       ...systemStatusColumn,
       align: 'center',
-      sorter: createCustomSorter<Container>((c) =>
-        c.state === 'running' ? 0 : c.state === 'paused' ? 1 : 2
-      ),
+      sorter: createCustomSorter<Container>((c) => {
+        if (c.state === 'running') return 0;
+        if (c.state === 'paused') return 1;
+        return 2;
+      }),
       render: (state: string, record: Container, index) =>
         systemStatusColumn.render?.(
           state === 'exited' ? 'stopped' : state,

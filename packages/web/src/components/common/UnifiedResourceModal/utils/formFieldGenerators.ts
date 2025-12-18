@@ -257,10 +257,15 @@ export const getFormFields = ({
       creationContext === 'credentials-only';
 
     // Get machines for the selected team
+    let preselectedTeamName = '';
+    if (isTeamPreselected && teamFilter) {
+      preselectedTeamName = Array.isArray(teamFilter) ? teamFilter[0] : teamFilter;
+    }
+
     const selectedTeamName =
       getFormValue('teamName') ||
       existingData?.teamName ||
-      (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '');
+      preselectedTeamName;
     const machinesByTeamFull = dropdownData?.machinesByTeam ?? [];
     const teamMachines =
       machinesByTeamFull.find((team) => team.teamName === selectedTeamName)?.machines || [];

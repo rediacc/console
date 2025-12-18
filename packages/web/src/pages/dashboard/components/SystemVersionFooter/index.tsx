@@ -36,7 +36,16 @@ const SystemVersionFooter: React.FC = () => {
     fetchUiVersion();
   }, []);
 
-  const apiVersion = apiHealth?.version ? `v${apiHealth.version}` : apiLoading ? '...' : 'Unknown';
+  // Determine API version display
+  let apiVersion: string;
+  if (apiHealth?.version) {
+    apiVersion = `v${apiHealth.version}`;
+  } else if (apiLoading) {
+    apiVersion = '...';
+  } else {
+    apiVersion = 'Unknown';
+  }
+
   const environment = apiHealth?.environment || 'Unknown';
   const isProduction = environment === 'Production';
   const uptime = apiHealth?.uptime;

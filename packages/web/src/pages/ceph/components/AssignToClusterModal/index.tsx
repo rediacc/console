@@ -44,7 +44,14 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
 }) => {
   const { t } = useTranslation(['machines', 'ceph', 'common']);
   const isBulkMode = !!machines && machines.length > 0;
-  const targetMachines: Machine[] = isBulkMode && machines ? machines : machine ? [machine] : [];
+
+  // Determine target machines based on mode
+  let targetMachines: Machine[] = [];
+  if (isBulkMode && machines) {
+    targetMachines = machines;
+  } else if (machine) {
+    targetMachines = [machine];
+  }
 
   const [selectedCluster, setSelectedCluster] = useState<string | null>(
     machine?.cephClusterName || null

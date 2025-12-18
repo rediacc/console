@@ -106,10 +106,18 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
               typeof currentValue === 'number' ? `${currentValue}${unit}` : ''
             );
           }}
-          options={paramInfo.units.map((unit: string) => ({
-            value: unit === 'percentage' ? '%' : unit,
-            label: unit === 'percentage' ? '%' : unit === 'G' ? 'GB' : 'TB',
-          }))}
+          options={paramInfo.units.map((unit: string) => {
+            const value = unit === 'percentage' ? '%' : unit;
+            let label: string;
+            if (unit === 'percentage') {
+              label = '%';
+            } else if (unit === 'G') {
+              label = 'GB';
+            } else {
+              label = 'TB';
+            }
+            return { value, label };
+          })}
           data-testid={`function-modal-param-${paramName}-unit`}
         />
       </SizeInputGroup>

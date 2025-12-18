@@ -22,8 +22,14 @@ export const RediaccProgress = forwardRef<HTMLDivElement, RediaccProgressProps>(
     ref
   ) => {
     // Use size-based defaults if strokeWidth not provided
-    const resolvedStrokeWidth =
-      strokeWidth ?? (variant === 'line' ? resolveProgressHeight(size) : 6);
+    let resolvedStrokeWidth: number;
+    if (strokeWidth !== undefined) {
+      resolvedStrokeWidth = strokeWidth;
+    } else if (variant === 'line') {
+      resolvedStrokeWidth = resolveProgressHeight(size);
+    } else {
+      resolvedStrokeWidth = 6;
+    }
 
     // Use size-based width for circle
     const circleWidth = variant === 'circle' ? resolveCircleWidth(size) : undefined;

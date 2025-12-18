@@ -469,20 +469,25 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                     },
                     {
                       title: 'Completed',
-                      description:
-                        normalizeToString(traceData.queueDetails, 'status', 'Status') ===
-                        'COMPLETED'
-                          ? `Done${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED') : ''}`
-                          : normalizeToString(traceData.queueDetails, 'status', 'Status') ===
-                              'FAILED'
-                            ? `Failed${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED') : ''}`
-                            : normalizeToString(traceData.queueDetails, 'status', 'Status') ===
-                                'CANCELLED'
-                              ? `Cancelled${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED') : ''}`
-                              : normalizeToString(traceData.queueDetails, 'status', 'Status') ===
-                                  'CANCELLING'
-                                ? 'Cancelling'
-                                : '',
+                      description: (() => {
+                        const status = normalizeToString(traceData.queueDetails, 'status', 'Status');
+                        if (status === 'COMPLETED') {
+                          const timestamp = getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED');
+                          return `Done${timestamp ? ' - ' + timestamp : ''}`;
+                        }
+                        if (status === 'FAILED') {
+                          const timestamp = getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED');
+                          return `Failed${timestamp ? ' - ' + timestamp : ''}`;
+                        }
+                        if (status === 'CANCELLED') {
+                          const timestamp = getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED');
+                          return `Cancelled${timestamp ? ' - ' + timestamp : ''}`;
+                        }
+                        if (status === 'CANCELLING') {
+                          return 'Cancelling';
+                        }
+                        return '';
+                      })(),
                     },
                   ]}
                 />

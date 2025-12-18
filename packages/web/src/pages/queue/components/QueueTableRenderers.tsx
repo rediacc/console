@@ -90,7 +90,14 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
   if (!retryCount && retryCount !== 0) return <RediaccText color="secondary">-</RediaccText>;
 
   const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT;
-  const retryColor = retryCount === 0 ? 'green' : retryCount < maxRetries - 1 ? 'orange' : 'red';
+  let retryColor: string;
+  if (retryCount === 0) {
+    retryColor = 'green';
+  } else if (retryCount < maxRetries - 1) {
+    retryColor = 'orange';
+  } else {
+    retryColor = 'red';
+  }
   const icon =
     retryCount >= maxRetries - 1 && record.permanentlyFailed ? (
       <ExclamationCircleOutlined />

@@ -615,9 +615,11 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                     {service.name}
                   </FieldValue>
                   <StatusTag
-                    $tone={
-                      state === 'active' ? 'success' : state === 'failed' ? 'error' : 'neutral'
-                    }
+                    $tone={(() => {
+                      if (state === 'active') return 'success';
+                      if (state === 'failed') return 'error';
+                      return 'neutral';
+                    })()}
                     data-testid={`repo-detail-service-status-${repository.repositoryName}-${service.name}`}
                   >
                     {service.active_state}
