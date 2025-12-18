@@ -1,11 +1,9 @@
 import styled from 'styled-components';
 import { RediaccButton, RediaccText } from '@/components/ui';
-import { borderedCard } from '@/styles/mixins';
 import { BaseModal, ModalBody } from '@/styles/primitives';
 
 export const StyledModal = styled(BaseModal)`
   .ant-modal-content {
-    ${borderedCard()}
   }
 `;
 
@@ -22,7 +20,6 @@ export const CountdownCard = styled.div`
   background: ${({ theme }) => theme.colors.bgPrimary};
   padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
   text-align: center;
-  ${borderedCard()}
 `;
 
 export const CountdownText = styled(RediaccText)`

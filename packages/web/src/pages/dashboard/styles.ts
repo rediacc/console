@@ -10,7 +10,6 @@ import {
   StatRow,
 } from '@/components/common/styled';
 import { RediaccBadge, RediaccList, RediaccProgress, RediaccText } from '@/components/ui';
-import { borderedCard } from '@/styles/mixins';
 import {
   StatValue as BaseStatValue,
   FlexColumn,
@@ -23,7 +22,6 @@ import type { StyledTheme } from '@/styles/styledTheme';
 export { ContentStack, CenteredState, FlexBetween, InlineStack, StatRow, Divider };
 
 export const ResourceTile = styled.div`
-  ${borderedCard()}
   height: 100%;
 
   &:hover {
@@ -65,7 +63,6 @@ export const HorizontalScroll = styled.div`
 `;
 
 export const LicenseItem = styled.div`
-  ${borderedCard()}
   width: 100%;
 `;
 

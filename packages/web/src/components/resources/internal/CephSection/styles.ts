@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 import { ActionsRow, ContentStack } from '@/components/common/styled';
 import { RediaccAlert, RediaccButton, RediaccCard } from '@/components/ui';
-import { borderedCard } from '@/styles/mixins';
 
 export { ContentStack, ActionsRow };
 
@@ -17,13 +16,11 @@ export const SectionTitle = styled.span`
 
 export const SectionCard = styled(RediaccCard)`
   && {
-    ${borderedCard()}
   }
 `;
 
 export const AlertWrapper = styled(RediaccAlert)`
   && {
-    ${borderedCard()}
   }
 `;
 

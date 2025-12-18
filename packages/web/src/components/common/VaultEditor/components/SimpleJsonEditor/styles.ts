@@ -1,10 +1,8 @@
 import styled from 'styled-components';
-import { borderedCard } from '@/styles/mixins';
 
 export const EditorContainer = styled.div<{ $height: number | string }>`
   position: relative;
   height: ${({ $height }) => (typeof $height === 'number' ? `${$height}px` : $height)};
-  ${borderedCard()}
   overflow: hidden;
   font-family: ${({ theme }) => theme.fontFamily.MONO};
   font-size: ${({ theme }) => theme.fontSize.SM}px;

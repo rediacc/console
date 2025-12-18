@@ -2,7 +2,6 @@ import { Form } from 'antd';
 import styled from 'styled-components';
 import { ActionsRow as CommonActionsRow } from '@/components/common/styled';
 import { RediaccTabs, RediaccText } from '@/components/ui';
-import { borderedCard } from '@/styles/mixins';
 import { BaseModal, FlexColumn, FlexRow } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 
@@ -31,7 +30,6 @@ export const TabsWrapper = styled(RediaccTabs)`
 `;
 
 export const CommandPreview = styled(FlexColumn).attrs({})`
-  ${borderedCard()}
 `;
 
 export const PreviewHeader = styled(FlexRow).attrs({ $justify: 'space-between' })`

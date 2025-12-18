@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
 import { Table as AntTable } from 'antd';
 import styled, { css } from 'styled-components';
-import { borderedCard, media } from '@/styles/mixins';
+import { media } from '@/styles/mixins';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { StyledTableProps, TableSize, TableVariant } from './RediaccTable.types';
 import type { TableProps } from 'antd';
@@ -29,7 +29,6 @@ const SIZE_CONFIG: Record<TableSize, SizeConfig> = {
  * Table wrapper with bordered card styling and overflow handling
  */
 export const TableWrapper = styled.div<{ $variant?: TableVariant }>`
-  ${() => borderedCard()}
   overflow: hidden;
 `;
 

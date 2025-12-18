@@ -71,7 +71,6 @@ import { StatsPanel } from './components/StatsPanel';
 import { TimelineView } from './components/TimelineView';
 import { useTraceState } from './hooks/useTraceState';
 import {
-  CenteredMessage,
   CompatibilityStatusText,
   IssuesList,
   ItalicCaption,
@@ -409,7 +408,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
             <SpacedCardBottom data-testid="queue-trace-simple-overview">
               <RediaccStack variant="spaced-column" fullWidth>
                 {/* Status Summary */}
-                <CenteredMessage>
+                <div style={{ textAlign: 'center' }}>
                   <Space size="large">
                     <span
                       className={`queue-trace-status-icon ${simplifiedStatus.status === 'Processing' ? 'processing' : ''}`}
@@ -418,7 +417,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                     </span>
                     <Typography.Title level={3}>Task {simplifiedStatus.status}</Typography.Title>
                   </Space>
-                </CenteredMessage>
+                </div>
 
                 {/* Steps */}
                 <Steps

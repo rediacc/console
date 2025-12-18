@@ -2,11 +2,6 @@ import { css, RuleSet, Interpolation } from 'styled-components';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 /**
- * Bordered card mixin - applies consistent border and border-radius
- */
-export const borderedCard = () => css``;
-
-/**
  * Disabled state mixin - consistent disabled styling for form controls
  * Note: No visual styling per user requirement - functional blocking only
  */
@@ -98,21 +93,3 @@ export const media: Record<string, MediaQueryFn> = {
       }
     `,
 };
-
-/**
- * Hover transform mixin - provides scale effect on hover
- * Used to replace opacity-based hover states with sharp visual feedback
- */
-export const hoverTransform = css`
-  &:hover {
-  }
-`;
-
-/**
- * Subtle hover transform mixin - provides minimal scale effect on hover
- * Used for subtle interactive elements like rows and small buttons
- */
-export const subtleHoverTransform = css`
-  &:hover {
-  }
-`;

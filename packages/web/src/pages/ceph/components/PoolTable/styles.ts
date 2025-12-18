@@ -2,14 +2,12 @@ import styled from 'styled-components';
 import { RediaccCard } from '@/components/ui';
 import { TableWrapper as UITableWrapper } from '@/components/ui/Table';
 import { ActionsRow, ExpandIcon, NameCell, NameText } from '@/pages/ceph/styles/tableAliases';
-import { borderedCard } from '@/styles/mixins';
 import { StyledIcon } from '@/styles/primitives';
 import { CloudServerOutlined, DatabaseOutlined } from '@/utils/optimizedIcons';
 
 /** Card wrapper for cluster pool groupings with bordered styling */
 export const ClusterCard = styled(RediaccCard)`
   && {
-    ${borderedCard()}
   }
 `;
 

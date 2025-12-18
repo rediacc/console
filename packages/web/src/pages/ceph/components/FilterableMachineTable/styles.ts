@@ -1,11 +1,9 @@
 import styled from 'styled-components';
 import { RediaccBadge, RediaccTag } from '@/components/ui';
-import { borderedCard } from '@/styles/mixins';
 
 export const TableContainer = styled.div`
   width: 100%;
   overflow: hidden;
-  ${borderedCard()}
 
   .ant-table {
   }

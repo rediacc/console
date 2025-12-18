@@ -19,7 +19,6 @@ export const StyledModal = LargeModal;
 export const ModeSegmented = BaseModeSegmented;
 
 // Local styled components
-export const CenteredMessage = styled.div``;
 export const SectionMargin = BaseSectionMargin;
 export const SpacedCard = styled(RediaccCard).attrs({ spacing: 'default' })``;
 export const InfoList = BaseInfoList;

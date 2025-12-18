@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 import { ActionGroup, ContentStack as BaseContentStack } from '@/components/common/styled';
 import { RediaccButton, RediaccTag } from '@/components/ui';
-import { borderedCard } from '@/styles/mixins';
 import { DownloadOutlined, InfoCircleOutlined, UploadOutlined } from '@/utils/optimizedIcons';
 
 export const ContentStack = BaseContentStack;
@@ -10,7 +9,6 @@ export const VersionBanner = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  ${borderedCard()}
 `;
 
 // VersionLabel removed - use <RediaccText variant="label"> directly

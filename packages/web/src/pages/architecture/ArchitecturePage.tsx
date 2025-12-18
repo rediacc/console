@@ -35,7 +35,6 @@ import type { CompanyDataGraph, CompanyGraphNode } from '@rediacc/shared/types';
 import { getArchitecturePalette } from './architectureTheme';
 import {
   ActionGroup,
-  CenteredMessage,
   CenteredState,
   FilterActions,
   FilterLabel,
@@ -684,7 +683,7 @@ const ArchitecturePage: React.FC = () => {
         <LoadingWrapper loading centered minHeight={160}>
           <div />
         </LoadingWrapper>
-        <CenteredMessage>{t('messages.loading', { ns: 'common' })}</CenteredMessage>
+        <div style={{ textAlign: 'center' }}>{t('messages.loading', { ns: 'common' })}</div>
       </CenteredState>
     );
   }

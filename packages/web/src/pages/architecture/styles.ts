@@ -72,8 +72,5 @@ export const LegendIcon = styled.div<{ $color: string }>`
 
 export { CenteredState };
 
-export const CenteredMessage = styled.div`
-`;
-
 export const PageTitle = styled.div`
 `;

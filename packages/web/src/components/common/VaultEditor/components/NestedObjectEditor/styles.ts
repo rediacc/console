@@ -2,7 +2,7 @@ import { Collapse, Form } from 'antd';
 import styled from 'styled-components';
 import { ActionGroup, InlineStack } from '@/components/common/styled';
 import { RediaccButton, RediaccCard, RediaccInput, RediaccTag, RediaccText } from '@/components/ui';
-import { borderedCard, media } from '@/styles/mixins';
+import { media } from '@/styles/mixins';
 import { FlexColumn } from '@/styles/primitives';
 
 export const EditorContainer = styled.div`
@@ -10,7 +10,6 @@ export const EditorContainer = styled.div`
 `;
 
 export const SummaryCard = styled.div`
-  ${borderedCard()}
 `;
 
 // Removed: Use <RediaccText size="lg" weight="semibold" style={{ marginBottom: theme.spacing.XS }}>
@@ -39,7 +38,6 @@ export const EditorStack = styled(FlexColumn).attrs({})`
 
 export const AddEntryCard = styled(RediaccCard)`
   && {
-    ${borderedCard()}
   }
 `;
 

@@ -8,7 +8,6 @@ import {
   RediaccTag,
   RediaccText,
 } from '@/components/ui';
-import { borderedCard } from '@/styles/mixins';
 import { BaseModal, FlexColumn, FlexRow, LoadingContainer } from '@/styles/primitives';
 
 const { Title } = Typography;
@@ -150,7 +149,6 @@ export const FilePath = styled(RediaccText)`
 export const FilePreviewBody = styled.div`
   flex: 1 1 auto;
   overflow: auto;
-  ${borderedCard()}
 `;
 
 export const SecurityScroll = styled.div`
