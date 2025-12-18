@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { ContentStack } from '@/components/common/styled';
 import { RediaccAlert, RediaccTag, RediaccText } from '@/components/ui';
+import { RediaccCard } from '@/components/ui';
 import {
   RediaccInput,
   RediaccInputNumber,
@@ -9,7 +10,6 @@ import {
 } from '@/components/ui/Form';
 import { borderedCard, focusRing, media } from '@/styles/mixins';
 import { BaseModal, FlexColumn, FlexRow, scrollbarStyles } from '@/styles/primitives';
-import { RediaccCard } from '@/components/ui';
 import { InfoCircleOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons';
 
 export const StyledModal = styled(BaseModal)`

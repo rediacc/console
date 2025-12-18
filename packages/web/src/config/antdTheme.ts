@@ -1,10 +1,10 @@
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import {
   colorTokens,
   STATUS_COLORS,
   createColorTheme,
   createAlphaVariants,
 } from '@/styles/colorSystem';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import type { ThemeConfig } from 'antd';
 
 /**

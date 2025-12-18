@@ -1,8 +1,8 @@
 import { Badge as AntBadge } from 'antd';
 import styled from 'styled-components';
 import type { StyledTheme } from '@/styles/styledTheme';
-import type { BadgeSize, BadgeVariant } from './RediaccBadge.types';
 import { resolveBadgeColor } from '@/styles/variantMaps';
+import type { BadgeSize, BadgeVariant } from './RediaccBadge.types';
 
 const BADGE_SIZE_MAP: Record<BadgeSize, number> = {
   sm: 16,

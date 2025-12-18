@@ -8,7 +8,6 @@ import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ActionGroup, CenteredState } from '@/components/common/styled';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
 import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
 import { RediaccTag, RediaccTooltip } from '@/components/ui';
@@ -17,6 +16,7 @@ import { DETAIL_PANEL } from '@/constants/layout';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { useRepositoryCreation } from '@/hooks/useRepositoryCreation';
+import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
 import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
 import { Machine, PluginContainer, Repository } from '@/types';
 import {
