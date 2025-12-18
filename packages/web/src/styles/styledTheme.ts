@@ -120,7 +120,7 @@ const createTheme = (mode: ThemeMode): StyledTheme => {
     colors: {
       ...colors,
       // Explicitly include alpha variants for TypeScript
-      primaryBg: (colors as any).primaryBg,
+      primaryBg: (colors as Record<string, string>).primaryBg,
       // Additional computed colors not in base theme
       bgContainer: colors.bgPrimary,
       bgFillTertiary: 'transparent',

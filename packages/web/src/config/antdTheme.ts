@@ -133,7 +133,7 @@ const createComponentConfig = (isDark: boolean) => {
 
   // Get alpha variants (now theme-aware)
   const alphas = createAlphaVariants(isDark ? 'dark' : 'light', 'primary');
-  const primaryBg = (alphas as any).primaryBg;
+  const primaryBg = alphas.primaryBg;
 
   return {
     Input: {

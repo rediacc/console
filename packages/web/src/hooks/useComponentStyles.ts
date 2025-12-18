@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useTheme } from '@/context/ThemeContext';
 import {
   borderRadius,
   createButtonStyle,
@@ -15,8 +14,6 @@ import {
 } from '@/utils/styleConstants';
 
 export const useComponentStyles = () => {
-  const { theme } = useTheme();
-
   return useMemo(
     () => ({
       // Control surfaces
@@ -151,7 +148,7 @@ export const useComponentStyles = () => {
         whiteSpace: 'nowrap' as const,
       },
     }),
-    [theme]
+    []
   );
 };
 

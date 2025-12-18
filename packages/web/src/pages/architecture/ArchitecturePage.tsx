@@ -655,7 +655,7 @@ const ArchitecturePage: React.FC = () => {
       },
       viewMode === 'force' ? 1100 : 200
     );
-  }, [data, viewMode, isFullscreen, selectedEntityTypes, t, architecturePalette, getNodeColor]);
+  }, [data, viewMode, isFullscreen, selectedEntityTypes, t, architecturePalette, getNodeColor, themeColors.borderSecondary]);
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
