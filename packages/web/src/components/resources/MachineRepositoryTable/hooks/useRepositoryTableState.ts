@@ -53,7 +53,9 @@ export const useRepositoryTableState = ({
   const [groupedRepositories, setGroupedRepos] = useState<GroupedRepository[]>([]);
 
   useEffect(() => {
-    if (!repositoriesLoading && machine) {
+    if (repositoriesLoading || !machine) {
+      // Still loading or no machine
+    } else {
       if (machine.vaultStatus) {
         const parsed = parseVaultStatus(machine.vaultStatus);
 

@@ -413,7 +413,9 @@ class ProtocolUrlService {
 
           // Check if window was redirected (indicates protocol handler worked)
           setTimeout(() => {
-            if (!resolved) {
+            if (resolved) {
+              // Already resolved, no action needed
+            } else {
               try {
                 // If we can still access the window's location, protocol didn't work
                 const location = testWindow.location.href;

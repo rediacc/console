@@ -3,8 +3,7 @@ import { Card, Form, Modal, Result, Tabs, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
 import { useSelector } from 'react-redux';
-import type { EnableTwoFactorResponse } from '@/api/queries/twoFactor';
-import { useDisableTFA, useEnableTFA, useTFAStatus } from '@/api/queries/twoFactor';
+import { useDisableTFA, useEnableTFA, useTFAStatus, type EnableTwoFactorResponse } from '@/api/queries/twoFactor';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {
   RediaccAlert,

@@ -965,14 +965,14 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         tableData.push({
           ...group.grandTag,
           key: `repo-${group.name}-${group.grandTag.repositoryTag || 'latest'}`,
-        } as RepositoryTableRow);
+        });
       }
 
       group.forkTags.forEach((fork) => {
         tableData.push({
           ...fork,
           key: `repo-${fork.name}-${fork.repositoryTag || 'latest'}`,
-        } as RepositoryTableRow);
+        });
       });
     });
 
@@ -1016,7 +1016,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           loading
           centered
           minHeight={200}
-          tip={t('resources:repositories.fetchingRepos') as string}
+          tip={t('resources:repositories.fetchingRepos')}
         >
           <div />
         </LoadingWrapper>
@@ -1054,7 +1054,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             loading
             centered
             minHeight={120}
-            tip={t('common:general.refreshing') as string}
+            tip={t('common:general.refreshing')}
           >
             <div />
           </LoadingWrapper>

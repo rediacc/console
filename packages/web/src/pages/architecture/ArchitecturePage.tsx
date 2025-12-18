@@ -668,12 +668,12 @@ const ArchitecturePage: React.FC = () => {
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
 
-    if (!isFullscreen) {
-      containerRef.current.requestFullscreen?.();
-      setIsFullscreen(true);
-    } else {
+    if (isFullscreen) {
       document.exitFullscreen?.();
       setIsFullscreen(false);
+    } else {
+      containerRef.current.requestFullscreen?.();
+      setIsFullscreen(true);
     }
   };
 

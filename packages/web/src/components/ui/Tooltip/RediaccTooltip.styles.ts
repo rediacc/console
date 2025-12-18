@@ -32,12 +32,12 @@ export const resolveTooltipVariantTokens = (
 ): TooltipTokenSet => {
   const keys = TOOLTIP_VARIANT_MAP[variant] || TOOLTIP_VARIANT_MAP.default;
   return {
-    bg: keys.bg === 'tooltipBg' ? tooltipBg : theme.colors[keys.bg as keyof StyledTheme['colors']],
+    bg: keys.bg === 'tooltipBg' ? tooltipBg : theme.colors[keys.bg],
     color: theme.colors[keys.color],
     borderColor:
       keys.borderColor === 'transparent'
         ? 'transparent'
-        : theme.colors[keys.borderColor as keyof StyledTheme['colors']],
+        : theme.colors[keys.borderColor],
   };
 };
 

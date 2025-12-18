@@ -145,4 +145,7 @@ export const usePromoteRepositoryToGrand = () => {
   });
 };
 
-export type { GetTeamRepositories_ResultSet1, GetTeamRepositories_ResultSet1 as Repository };
+export type {
+  GetTeamRepositories_ResultSet1,
+  GetTeamRepositories_ResultSet1 as Repository,
+} from '@rediacc/shared/types';

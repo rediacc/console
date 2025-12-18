@@ -32,7 +32,7 @@ import {
   TeamOutlined,
 } from '@/utils/optimizedIcons';
 import type { DeployedRepo } from '@rediacc/shared/services/machine';
-import { buildMachineTableColumns } from './columns';
+import { buildMachineTableColumns, type MachineFunctionAction } from './columns';
 import {
   BulkActionsBar,
   BulkActionsSummary,
@@ -57,7 +57,6 @@ import {
   ViewToggleContainer,
   ViewToggleDivider,
 } from './styles';
-import type { MachineFunctionAction } from './columns';
 
 // Local type for group variants - maps to preset prop
 type GroupVariant = 'repository' | 'bridge' | 'team' | 'region' | 'status' | 'grand';

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Space } from 'antd';
+import { Alert, Space, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useRepositories } from '@/api/queries/repositories';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
@@ -37,7 +37,6 @@ import {
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import * as S from './styles';
-import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 interface PortMapping {
@@ -733,7 +732,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
           loading
           centered
           minHeight={200}
-          tip={t('resources:containers.fetchingContainers') as string}
+          tip={t('resources:containers.fetchingContainers')}
         >
           <div />
         </LoadingWrapper>

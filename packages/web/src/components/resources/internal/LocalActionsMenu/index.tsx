@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { LocalCommandModal } from '@/components/resources/internal/LocalCommandModal';
 import { PipInstallationModal } from '@/components/resources/internal/PipInstallationModal';
-import { RediaccDropdown, RediaccTooltip } from '@/components/ui';
-import { IconWrapper } from '@/components/ui';
+import { RediaccDropdown, RediaccTooltip, IconWrapper } from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
 import {

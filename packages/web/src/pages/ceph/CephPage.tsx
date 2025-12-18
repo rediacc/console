@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { CephCluster, CephPool } from '@/api/queries/ceph';
-import { useCephClusters, useCephPools } from '@/api/queries/ceph';
+import { useCephClusters, useCephPools, type CephCluster, type CephPool } from '@/api/queries/ceph';
 import {
   useCreateCephCluster,
   useCreateCephPool,

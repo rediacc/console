@@ -25,7 +25,7 @@ const getIconSize = (size: IconSize, theme: DefaultTheme) => {
   return `${theme.dimensions[sizeKey]}px`;
 };
 
-const ICON_COLOR_MAP: Record<IconTone, string | keyof DefaultTheme['colors']> = {
+const ICON_COLOR_MAP: Record<IconTone, string> = {
   primary: 'primary',
   inherit: 'currentColor',
   success: 'success',

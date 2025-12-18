@@ -1,5 +1,4 @@
-import type { Key } from 'react';
-import { useState } from 'react';
+import { useState, type Key } from 'react';
 import {
   CameraOutlined,
   CheckCircleOutlined,
@@ -16,7 +15,7 @@ import {
   SettingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { Space } from 'antd';
+import { Space, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -34,8 +33,7 @@ import { createActionColumn, createTruncatedColumn } from '@/components/common/c
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { RediaccTable, RediaccTag, RediaccTooltip } from '@/components/ui';
-import { useMessage } from '@/hooks';
-import { useDialogState, useExpandableTable, useQueueTraceModal } from '@/hooks';
+import { useDialogState, useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMachineReassignmentModal';
@@ -50,7 +48,6 @@ import {
   ImageName,
   TableContainer,
 } from './styles';
-import type { MenuProps } from 'antd';
 
 interface RbdImageTableProps {
   pool: CephPool;

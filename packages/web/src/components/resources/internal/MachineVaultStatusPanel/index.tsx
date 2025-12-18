@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Col, Progress, Row } from 'antd';
+import { Col, Progress, Row, type ListProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { CephSection } from '@/components/resources/internal/CephSection';
@@ -66,7 +66,6 @@ import {
   TimestampWrapper,
   TitleGroup,
 } from './styles';
-import type { ListProps } from 'antd';
 import type { TFunction } from 'i18next';
 
 interface MachineVaultStatusPanelProps {

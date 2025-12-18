@@ -193,9 +193,8 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
       // Encode base64 fields before saving
       const encodedData = { ...formData };
       Object.entries(entityDef?.fields || {}).forEach(([key, field]) => {
-        const typedField = field as FieldDefinition;
         if (
-          typedField.format === 'base64' &&
+          field.format === 'base64' &&
           encodedData[key] !== undefined &&
           typeof encodedData[key] === 'string'
         ) {
@@ -255,10 +254,9 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
           // Set form values for known fields
           const formData: VaultFormValues = {};
           Object.entries(entityDef.fields || {}).forEach(([key, field]) => {
-            const typedField = field as FieldDefinition;
             if (data[key] !== undefined) {
               // Decode base64 fields when importing
-              if (typedField.format === 'base64' && typeof data[key] === 'string') {
+              if (field.format === 'base64' && typeof data[key] === 'string') {
                 formData[key] = decodeBase64(data[key] as string);
               } else {
                 formData[key] = data[key];
@@ -286,9 +284,8 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
     // Encode base64 fields before exporting
     const encodedData: VaultFormValues = { ...formData };
     Object.entries(entityDef?.fields || {}).forEach(([key, field]) => {
-      const typedField = field as FieldDefinition;
       if (
-        typedField.format === 'base64' &&
+        field.format === 'base64' &&
         encodedData[key] !== undefined &&
         typeof encodedData[key] === 'string'
       ) {
@@ -696,7 +693,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                     entityType === 'REPOSITORY' && fieldName === 'credential' ? 24 : 12;
                   return (
                     <Col key={fieldName} xs={24} md={colSpan}>
-                      {renderField(fieldName, field as FieldDefinition, isRequired)}
+                      {renderField(fieldName, field, isRequired)}
                     </Col>
                   );
                 }
@@ -711,7 +708,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                     if (!field) return null;
                     return (
                       <Col key={fieldName} xs={24} md={12}>
-                        {renderField(fieldName, field as FieldDefinition, false)}
+                        {renderField(fieldName, field, false)}
                       </Col>
                     );
                   })}
@@ -1021,7 +1018,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                               {({ getFieldValue }) => {
                                 const sshKeyConfiguredValue = getFieldValue('ssh_key_configured');
                                 if (sshKeyConfiguredValue) {
-                                  return renderField(fieldName, field as FieldDefinition, false);
+                                  return renderField(fieldName, field, false);
                                 }
                                 return null;
                               }}
@@ -1032,7 +1029,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
 
                       return (
                         <Col key={fieldName} xs={24} lg={12}>
-                          {renderField(fieldName, field as FieldDefinition, false)}
+                          {renderField(fieldName, field, false)}
                         </Col>
                       );
                     })}
@@ -1073,7 +1070,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                       if (!field) return null;
                       return (
                         <div key={fieldName}>
-                          {renderField(fieldName, field as FieldDefinition, true, true)}
+                          {renderField(fieldName, field, true, true)}
                         </div>
                       );
                     })}
@@ -1094,7 +1091,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                       if (!field) return null;
                       return (
                         <div key={fieldName}>
-                          {renderField(fieldName, field as FieldDefinition, false, true)}
+                          {renderField(fieldName, field, false, true)}
                         </div>
                       );
                     })}

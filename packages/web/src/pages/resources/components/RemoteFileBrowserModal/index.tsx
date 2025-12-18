@@ -9,7 +9,7 @@ import {
   ReloadOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import { Alert, Breadcrumb, Button, Empty, Modal, Space } from 'antd';
+import { Alert, Breadcrumb, Button, Empty, Modal, Space, type TableProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
@@ -19,8 +19,7 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { createTruncatedColumn } from '@/components/common/columns';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccTable, RediaccTooltip } from '@/components/ui';
-import { RediaccInput, RediaccSelect, RediaccStack } from '@/components/ui';
+import { RediaccInput, RediaccSelect, RediaccStack, RediaccTable, RediaccTooltip } from '@/components/ui';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { createCustomSorter, createSorter } from '@/platform';
@@ -37,7 +36,6 @@ import {
   SourceSelect,
   TooltipGuidText,
 } from './styles';
-import type { TableProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table/interface';
 
 interface RemoteFile {
@@ -845,7 +843,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           loading={loading}
           centered
           minHeight={240}
-          tip={t('common:general.loading') as string}
+          tip={t('common:general.loading')}
         >
           {filteredFiles.length === 0 ? (
             <Empty

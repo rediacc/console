@@ -34,9 +34,14 @@ export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
 
   const RepoStatusColumn = createStatusColumn<RepositoryTableRow>({
     title: t('resources:repositories.status'),
-    dataIndex: 'status',
+    dataIndex: 'mounted',
     key: 'status',
     width: 80,
+    renderValue: (_value, record) => {
+      if (record.mounted && record.docker_running) return 'mounted-running';
+      if (record.mounted) return 'mounted';
+      return 'unmounted';
+    },
     statusMap: {
       'mounted-running': {
         color: 'success',

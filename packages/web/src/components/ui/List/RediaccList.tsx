@@ -1,8 +1,7 @@
 import { forwardRef } from 'react';
-import { List } from 'antd';
+import { List, type ListProps } from 'antd';
 import { StyledRediaccList } from './RediaccList.styles';
 import type { RediaccListProps, ListVariant, ListSize } from './RediaccList.types';
-import type { ListProps } from 'antd';
 
 // Styled props for the list component
 interface StyledListProps {

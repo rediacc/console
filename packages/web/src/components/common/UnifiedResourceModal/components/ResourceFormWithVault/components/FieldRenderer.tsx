@@ -1,4 +1,4 @@
-import { Control, Controller } from 'react-hook-form';
+import { Control, Controller, type FieldValues } from 'react-hook-form';
 import {
   SizeInputGroup,
   SizeNumberInput,
@@ -6,7 +6,6 @@ import {
 } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/styles';
 import type { FormFieldConfig } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/types';
 import { RediaccInput, RediaccPasswordInput, RediaccSelect } from '@/components/ui';
-import type { FieldValues } from 'react-hook-form';
 
 interface FieldRendererProps<T extends FieldValues> {
   field: FormFieldConfig<T>;

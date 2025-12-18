@@ -1,10 +1,9 @@
 import type { ComponentType } from 'react';
-import { Table as AntTable } from 'antd';
+import { Table as AntTable, type TableProps } from 'antd';
 import styled, { css } from 'styled-components';
 import { media } from '@/styles/mixins';
 import type { StyledTheme } from '@/styles/styledTheme';
 import type { StyledTableProps, TableSize, TableVariant } from './RediaccTable.types';
-import type { TableProps } from 'antd';
 
 // ============================================
 // SIZE CONFIGURATION

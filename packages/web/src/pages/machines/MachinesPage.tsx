@@ -32,8 +32,7 @@ import {
 import { useDialogState, useQueueTraceModal, useTeamSelection, useUnifiedModal } from '@/hooks';
 import { useQueueAction } from '@/hooks/useQueueAction';
 import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
-import type { ContainerData } from '@/pages/machines/components/SplitResourceView';
-import { SplitResourceView } from '@/pages/machines/components/SplitResourceView';
+import { SplitResourceView, type ContainerData } from '@/pages/machines/components/SplitResourceView';
 import { FUNCTION_DEFINITIONS } from '@/services/functionsService';
 import type { QueueActionParams } from '@/services/queueActionService';
 import { type Machine } from '@/types';

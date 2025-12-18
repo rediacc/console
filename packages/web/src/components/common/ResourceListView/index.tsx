@@ -1,5 +1,5 @@
 import type { Key, ReactNode } from 'react';
-import { Empty } from 'antd';
+import { Empty, type TableProps } from 'antd';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { RediaccButton, RediaccTable, RediaccText, RediaccTooltip } from '@/components/ui';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@/utils/optimizedIcons';
@@ -15,7 +15,6 @@ import {
   RefreshButton,
   SearchInput,
 } from './styles';
-import type { TableProps } from 'antd';
 
 export { COLUMN_RESPONSIVE, COLUMN_WIDTHS } from './columnConstants';
 

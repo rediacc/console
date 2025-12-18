@@ -12,8 +12,7 @@ import {
   createTruncatedColumn,
 } from '@/components/common/columns';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccTable, RediaccTooltip } from '@/components/ui';
-import { RediaccButton, RediaccStatistic, RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccStatistic, RediaccTable, RediaccText, RediaccTooltip } from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { createDateSorter } from '@/platform';
 import { selectUser } from '@/store/auth/authSelectors';

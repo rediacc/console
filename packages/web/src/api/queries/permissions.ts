@@ -2,15 +2,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
-import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 import type {
   CreatePermissionGroupParams,
   CreatePermissionInGroupParams,
   DeletePermissionFromGroupParams,
   DeletePermissionGroupParams,
-  Permission,
   UpdateUserAssignedPermissionsParams,
 } from '@rediacc/shared/types';
+import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 
 // Get all permission groups
 export const usePermissionGroups = () => {
@@ -113,8 +112,8 @@ export const useAssignUserToGroup = () => {
   });
 };
 
+export type { Permission } from '@rediacc/shared/types';
 export type {
   PermissionGroupWithParsedPermissions,
   PermissionGroupWithParsedPermissions as PermissionGroup,
-  Permission,
-};
+} from '@rediacc/shared/api';

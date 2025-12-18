@@ -370,7 +370,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       const defaults: ResourceFormValues = {};
 
       // Preserve teamName from existingData if available (e.g., when creating repository from machine)
-      if (!data.teamName) {
+      if (data.teamName) {
+        // Team name already set, no action needed
+      } else {
         if (existingData?.teamName) {
           defaults.teamName = existingData.teamName;
         } else {

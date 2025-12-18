@@ -142,4 +142,4 @@ export function getSeverityColor(severity: ErrorSeverity): string {
   return colorMap[level] || 'default';
 }
 
-export type { QueueHealthStatus, QueueStatus };
+export type { QueueHealthStatus, QueueStatus } from '../types';

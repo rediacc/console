@@ -1,9 +1,11 @@
-import type { ComponentPropsWithoutRef } from 'react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, type ComponentPropsWithoutRef } from 'react';
 import { Col, List, Row, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import ReactMarkdown from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import ReactMarkdown, { type Components as MarkdownComponents } from 'react-markdown';
+import {
+  Prism as SyntaxHighlighter,
+  type SyntaxHighlighterProps,
+} from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {
@@ -59,8 +61,6 @@ import {
   TemplateAvatar,
   TemplateIconWrapper,
 } from './styles';
-import type { Components as MarkdownComponents } from 'react-markdown';
-import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 
 interface TemplateFile {
   name: string;

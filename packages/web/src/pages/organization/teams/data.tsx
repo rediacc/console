@@ -1,4 +1,4 @@
-import { Badge, Popconfirm, Space } from 'antd';
+import { Badge, Popconfirm, Space, type TableProps } from 'antd';
 import type { Team } from '@/api/queries/teams';
 import {
   createCountColumn,
@@ -18,7 +18,6 @@ import {
   UserOutlined,
 } from '@/utils/optimizedIcons';
 import { StatsColumn } from './styles';
-import type { TableProps } from 'antd';
 import type { TFunction } from 'i18next';
 
 interface GetTeamColumnsParams {

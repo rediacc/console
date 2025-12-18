@@ -1,6 +1,6 @@
 import React from 'react';
 import { DeleteOutlined, EditOutlined, EyeOutlined, MoreOutlined } from '@ant-design/icons';
-import { Space } from 'antd';
+import { Space, type MenuProps, type TooltipProps } from 'antd';
 import { RediaccButton, RediaccDropdown, RediaccText, RediaccTooltip } from '@/components/ui';
 import i18n from '@/i18n/config';
 import {
@@ -9,7 +9,6 @@ import {
   type StatusConfig,
   VersionTag,
 } from './renderers';
-import type { MenuProps, TooltipProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 /**
@@ -25,7 +24,7 @@ type ColumnFactory<T> = (options?: {
   render?: (value: string, record: T) => React.ReactNode;
 }) => ColumnsType<T>[number];
 
-type ColumnDataIndex<T> = Extract<keyof T, string | number> | string;
+type ColumnDataIndex = string;
 
 /**
  * Team name column - used across machines, credentials, storage, etc.
@@ -282,7 +281,7 @@ export const createActionColumn = <T,>(
 
 export interface StatusColumnOptions<T> {
   title?: React.ReactNode;
-  dataIndex: ColumnDataIndex<T>;
+  dataIndex: ColumnDataIndex;
   key?: string;
   width?: number;
   statusMap: Record<string, StatusConfig>;
@@ -341,7 +340,7 @@ const toTimestamp = (value: unknown): number => {
 
 export interface DateColumnOptions<T> {
   title?: React.ReactNode;
-  dataIndex: ColumnDataIndex<T>;
+  dataIndex: ColumnDataIndex;
   key?: string;
   width?: number;
   format?: string;
@@ -387,7 +386,7 @@ export const createDateColumn = <T,>(options: DateColumnOptions<T>): ColumnsType
 
 export interface TruncatedColumnOptions<T> {
   title: React.ReactNode;
-  dataIndex: ColumnDataIndex<T>;
+  dataIndex: ColumnDataIndex;
   key?: string;
   width?: number;
   maxLength?: number;
@@ -441,7 +440,7 @@ export const createTruncatedColumn = <T,>(
 
 export interface CountColumnOptions<T> {
   title: React.ReactNode;
-  dataIndex: ColumnDataIndex<T>;
+  dataIndex: ColumnDataIndex;
   key?: string;
   width?: number;
   align?: 'left' | 'center' | 'right';
@@ -507,7 +506,7 @@ export const createCountColumn = <T,>(options: CountColumnOptions<T>): ColumnsTy
 
 export interface VersionColumnOptions<T> {
   title?: React.ReactNode;
-  dataIndex: ColumnDataIndex<T>;
+  dataIndex: ColumnDataIndex;
   key?: string;
   width?: number;
   align?: 'left' | 'center' | 'right';

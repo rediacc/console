@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApiHealth } from '@/api/queries/health';
-import { RediaccTooltip } from '@/components/ui';
-import { RediaccText } from '@/components/ui';
+import { RediaccText, RediaccTooltip } from '@/components/ui';
 import { versionService } from '@/services/versionService';
 import {
   ApiIcon,

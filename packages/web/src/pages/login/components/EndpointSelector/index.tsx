@@ -173,7 +173,9 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
         let selected = endpointService.getSelectedEndpoint();
 
         // Auto-select localhost when running locally ONLY if no endpoint is already selected
-        if (endpointService.isLocalhost() && !selected) {
+        if (selected) {
+          // Endpoint already selected, no action needed
+        } else if (endpointService.isLocalhost()) {
           // Find all localhost endpoints and select the first healthy one
           const localhostEndpoints = allEndpoints.filter((e) => e.type === 'localhost');
           const healthyLocalhostEndpoint = localhostEndpoints.find(
@@ -194,7 +196,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
               `[EndpointSelector] No healthy localhost found, using first: ${localhostEndpoints[0].url}`
             );
           }
-        } else if (!selected) {
+        } else {
           // For non-localhost domains, if no saved selection exists, check and auto-select dynamic endpoint
           const dynamicEndpoint = allEndpoints.find((e) => e.type === 'dynamic');
           if (dynamicEndpoint) {

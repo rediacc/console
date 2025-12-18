@@ -3,8 +3,7 @@ import { Col, Progress, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
 import { InlineStack } from '@/components/common/styled';
-import { RediaccTag, RediaccTooltip } from '@/components/ui';
-import { RediaccStatistic, RediaccText } from '@/components/ui';
+import { RediaccStatistic, RediaccTag, RediaccText, RediaccTooltip } from '@/components/ui';
 import {
   CloudServerOutlined,
   CopyOutlined,

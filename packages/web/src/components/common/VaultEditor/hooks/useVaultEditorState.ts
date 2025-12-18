@@ -9,7 +9,6 @@ import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { STORAGE_FIELDS_TO_KEEP, storageProviderConfig, vaultDefinitionConfig } from '../constants';
 import { decodeBase64, encodeBase64, formatValidationErrors, processExtraFields } from '../utils';
 import type {
-  FieldDefinition,
   ValidateErrorEntity,
   VaultEditorProps,
   VaultFormValues,
@@ -281,15 +280,14 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
       const formData: VaultFormValues = {};
       Object.entries(entityDef.fields || {}).forEach(([key, field]) => {
-        const typedField = field as FieldDefinition;
         if (initialData[key] !== undefined) {
-          if (typedField.format === 'base64' && typeof initialData[key] === 'string') {
+          if (field.format === 'base64' && typeof initialData[key] === 'string') {
             formData[key] = decodeBase64(initialData[key]);
           } else {
             formData[key] = initialData[key];
           }
-        } else if (typedField.default !== undefined) {
-          formData[key] = typedField.default;
+        } else if (field.default !== undefined) {
+          formData[key] = field.default;
         }
       });
 
@@ -300,15 +298,14 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
           ];
         if (provider && provider.fields) {
           Object.entries(provider.fields).forEach(([key, field]) => {
-            const typedField = field as FieldDefinition;
             if (initialData[key] !== undefined) {
-              if (typedField.format === 'base64' && typeof initialData[key] === 'string') {
+              if (field.format === 'base64' && typeof initialData[key] === 'string') {
                 formData[key] = decodeBase64(initialData[key]);
               } else {
                 formData[key] = initialData[key];
               }
-            } else if (typedField.default !== undefined) {
-              formData[key] = typedField.default;
+            } else if (field.default !== undefined) {
+              formData[key] = field.default;
             }
           });
         }
@@ -445,9 +442,8 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
       const encodedData: VaultFormValues = { ...formData };
       Object.entries(entityDef?.fields || {}).forEach(([key, field]) => {
-        const typedField = field as FieldDefinition;
         if (
-          typedField.format === 'base64' &&
+          field.format === 'base64' &&
           encodedData[key] !== undefined &&
           typeof encodedData[key] === 'string'
         ) {
@@ -457,9 +453,8 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
       if (entityType === 'STORAGE' && selectedProvider && providerFields?.fields) {
         Object.entries(providerFields.fields).forEach(([key, field]) => {
-          const typedField = field as FieldDefinition;
           if (
-            typedField.format === 'base64' &&
+            field.format === 'base64' &&
             encodedData[key] !== undefined &&
             typeof encodedData[key] === 'string'
           ) {

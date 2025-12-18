@@ -10,8 +10,7 @@ import logoWhite from '@/assets/logo_white.png';
 import InsecureConnectionWarning from '@/components/common/InsecureConnectionWarning';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
-import { RediaccTooltip } from '@/components/ui';
-import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
+import { RediaccButton, RediaccStack, RediaccText, RediaccTooltip } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTheme } from '@/context/ThemeContext';
 import EndpointSelector from '@/pages/login/components/EndpointSelector';
@@ -271,12 +270,12 @@ const LoginPage: React.FC = () => {
       if (powerModeEnabled) {
         // Power mode overrides everything
         setEndpointSelectorVisible(true);
-      } else if (!hasHealthyEndpoint) {
-        // Fallback: show when endpoint health fails
-        setEndpointSelectorVisible(true);
-      } else {
+      } else if (hasHealthyEndpoint) {
         // Hide when healthy and no power mode
         setEndpointSelectorVisible(false);
+      } else {
+        // Fallback: show when endpoint health fails
+        setEndpointSelectorVisible(true);
       }
     }
   };
