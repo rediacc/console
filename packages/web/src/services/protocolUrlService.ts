@@ -57,6 +57,172 @@ interface ProtocolWindow extends Window {
   signalProtocolLaunch?: () => void;
 }
 
+interface ProtocolStatusResult {
+  available: boolean;
+  method: 'iframe' | 'navigation' | 'unknown';
+  confidence: 'high' | 'medium' | 'low';
+  errorReason?: string;
+}
+
+/**
+ * Utility: Detect protocol handler using navigation-based approach
+ */
+function detectProtocolHandler(
+  testUrl: string,
+  timeout: number
+): Promise<ProtocolStatusResult> {
+  return new Promise((resolve) => {
+    const testWindow = window.open('', '_blank', 'width=1,height=1,left=-1000,top=-1000');
+
+    if (!testWindow) {
+      resolve({
+        available: false,
+        method: 'unknown',
+        confidence: 'low',
+        errorReason: 'Popup blocked',
+      });
+      return;
+    }
+
+    const cleanup = () => {
+      try {
+        testWindow.close();
+      } catch {
+        // Ignore close errors
+      }
+    };
+
+    try {
+      testWindow.location.href = testUrl;
+      waitForProtocolConfirmation(testWindow, timeout, cleanup)
+        .then(resolve)
+        .catch(() => {
+          cleanup();
+          resolve({
+            available: false,
+            method: 'navigation',
+            confidence: 'medium',
+            errorReason: 'Timeout - protocol handler may not be registered',
+          });
+        });
+    } catch (error) {
+      cleanup();
+      resolve({
+        available: false,
+        method: 'navigation',
+        confidence: 'low',
+        errorReason: `Navigation error: ${error}`,
+      });
+    }
+  });
+}
+
+/**
+ * Utility: Wait for protocol confirmation by checking window state
+ */
+function waitForProtocolConfirmation(
+  testWindow: Window,
+  timeout: number,
+  cleanup: () => void
+): Promise<ProtocolStatusResult> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => reject(new Error('Timeout')), timeout);
+
+    setTimeout(() => {
+      clearTimeout(timeoutId);
+      try {
+        const location = testWindow.location.href;
+        cleanup();
+
+        if (location === testWindow.location.href || location === 'about:blank') {
+          resolve({
+            available: false,
+            method: 'navigation',
+            confidence: 'high',
+            errorReason: 'Protocol handler not registered',
+          });
+        } else {
+          resolve({
+            available: true,
+            method: 'navigation',
+            confidence: 'high',
+          });
+        }
+      } catch {
+        cleanup();
+        resolve({
+          available: true,
+          method: 'navigation',
+          confidence: 'medium',
+        });
+      }
+    }, 1000);
+  });
+}
+
+/**
+ * Utility: Build protocol query parameters
+ */
+function buildProtocolParameters(
+  apiUrl: string,
+  queryParams?: Record<string, string | number | boolean>
+): URLSearchParams {
+  const searchParams = new URLSearchParams();
+  searchParams.append('apiUrl', apiUrl);
+
+  if (!queryParams) {
+    return searchParams;
+  }
+
+  for (const [key, value] of Object.entries(queryParams)) {
+    if (value === undefined || value === null) {
+      continue;
+    }
+
+    if (typeof value === 'boolean') {
+      searchParams.append(key, value ? 'yes' : 'no');
+    } else {
+      searchParams.append(key, String(value));
+    }
+  }
+
+  return searchParams;
+}
+
+/**
+ * Utility: Setup protocol listeners for URL opening
+ */
+function setupProtocolListeners(
+  onSuccess: () => void,
+  onTimeout: () => void,
+  timeoutMs: number
+): { cleanup: () => void } {
+  let handled = false;
+
+  const timeout = setTimeout(() => {
+    if (handled) return;
+    handled = true;
+    cleanup();
+    onTimeout();
+  }, timeoutMs);
+
+  const handleBlur = () => {
+    if (handled) return;
+    handled = true;
+    cleanup();
+    onSuccess();
+  };
+
+  window.addEventListener('blur', handleBlur);
+
+  const cleanup = () => {
+    clearTimeout(timeout);
+    window.removeEventListener('blur', handleBlur);
+  };
+
+  return { cleanup };
+}
+
 class ProtocolUrlService {
   private readonly PROTOCOL_SCHEME = 'rediacc';
 
@@ -75,7 +241,6 @@ class ProtocolUrlService {
     let apiUrl = await apiConnectionService.getApiUrl();
 
     // Convert relative API URL to absolute URL for CLI usage
-    // Production builds use '/api' which works in browsers but not in CLI
     if (apiUrl.startsWith('/')) {
       const protocol = window.location.protocol;
       const host = window.location.host;
@@ -106,27 +271,10 @@ class ProtocolUrlService {
     // Build base URL
     let url = `${this.PROTOCOL_SCHEME}://${pathParts.join('/')}`;
 
-    // Build query parameters
-    const searchParams = new URLSearchParams();
-
-    // Add API URL as the first query parameter (critical for domain matching)
-    searchParams.append('apiUrl', apiUrl);
-
-    // Add other query parameters if any
-    if (queryParams && Object.keys(queryParams).length > 0) {
-      Object.entries(queryParams).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          // Convert boolean to yes/no for consistency with CLI
-          if (typeof value === 'boolean') {
-            searchParams.append(key, value ? 'yes' : 'no');
-          } else {
-            searchParams.append(key, String(value));
-          }
-        }
-      });
-    }
-
+    // Build query parameters using utility
+    const searchParams = buildProtocolParameters(apiUrl, queryParams);
     const queryString = searchParams.toString();
+
     if (queryString) {
       url += `?${queryString}`;
     }
@@ -256,33 +404,17 @@ class ProtocolUrlService {
    */
   async openUrl(url: string): Promise<{ success: boolean; error?: ProtocolError }> {
     return new Promise((resolve) => {
-      let handled = false;
+      const onSuccess = () => resolve({ success: true });
+      const onTimeout = () =>
+        resolve({
+          success: false,
+          error: {
+            type: 'timeout',
+            message: 'Protocol handler did not respond',
+          },
+        });
 
-      // Set up a timeout - if nothing happens in 3 seconds, assume failure
-      const timeout = setTimeout(() => {
-        if (!handled) {
-          handled = true;
-          resolve({
-            success: false,
-            error: {
-              type: 'timeout',
-              message: 'Protocol handler did not respond',
-            },
-          });
-        }
-      }, 3000);
-
-      // Listen for blur event - might indicate protocol handler opened
-      const handleBlur = () => {
-        if (!handled) {
-          handled = true;
-          clearTimeout(timeout);
-          window.removeEventListener('blur', handleBlur);
-          resolve({ success: true });
-        }
-      };
-
-      window.addEventListener('blur', handleBlur);
+      const { cleanup } = setupProtocolListeners(onSuccess, onTimeout, 3000);
 
       try {
         // Signal that we're about to launch a protocol URL to prevent token wipe
@@ -292,12 +424,9 @@ class ProtocolUrlService {
         }
 
         // Use window.open with _self to replace current tab behavior
-        // This triggers the protocol handler without opening a new tab
         window.open(url, '_self');
       } catch (error) {
-        handled = true;
-        clearTimeout(timeout);
-        window.removeEventListener('blur', handleBlur);
+        cleanup();
         resolve({
           success: false,
           error: {
@@ -343,12 +472,7 @@ class ProtocolUrlService {
    * Check protocol registration status with enhanced detection
    * Returns detailed information about the protocol availability
    */
-  async checkProtocolStatus(): Promise<{
-    available: boolean;
-    method: 'iframe' | 'navigation' | 'unknown';
-    confidence: 'high' | 'medium' | 'low';
-    errorReason?: string;
-  }> {
+  async checkProtocolStatus(): Promise<ProtocolStatusResult> {
     // Method 1: Try iframe-based detection
     try {
       const iframeResult = await this.checkProtocolAvailable();
@@ -366,110 +490,7 @@ class ProtocolUrlService {
     // Method 2: Try navigation-based detection (more aggressive)
     try {
       const testUrl = `${this.PROTOCOL_SCHEME}://status-check/test/test/test`;
-
-      return new Promise<{
-        available: boolean;
-        method: 'iframe' | 'navigation' | 'unknown';
-        confidence: 'high' | 'medium' | 'low';
-        errorReason?: string;
-      }>((resolve) => {
-        let resolved = false;
-
-        // Create a hidden window/tab to test protocol
-        const testWindow = window.open('', '_blank', 'width=1,height=1,left=-1000,top=-1000');
-
-        if (!testWindow) {
-          resolve({
-            available: false,
-            method: 'unknown',
-            confidence: 'low',
-            errorReason: 'Popup blocked',
-          });
-          return;
-        }
-
-        // Set up timeout
-        const timeout: ReturnType<typeof setTimeout> = setTimeout(() => {
-          if (!resolved) {
-            resolved = true;
-            try {
-              testWindow.close();
-            } catch {
-              // Ignore close errors
-            }
-            resolve({
-              available: false,
-              method: 'navigation',
-              confidence: 'medium',
-              errorReason: 'Timeout - protocol handler may not be registered',
-            });
-          }
-        }, 3000);
-
-        // If the protocol handler is registered, the test window should handle the URL
-        // and we won't be able to access its location due to cross-origin restrictions
-        try {
-          testWindow.location.href = testUrl;
-
-          // Check if window was redirected (indicates protocol handler worked)
-          setTimeout(() => {
-            if (resolved) {
-              // Already resolved, no action needed
-            } else {
-              try {
-                // If we can still access the window's location, protocol didn't work
-                const location = testWindow.location.href;
-                resolved = true;
-                clearTimeout(timeout);
-                testWindow.close();
-
-                if (location === testUrl || location === 'about:blank') {
-                  resolve({
-                    available: false,
-                    method: 'navigation',
-                    confidence: 'high',
-                    errorReason: 'Protocol handler not registered',
-                  });
-                } else {
-                  resolve({
-                    available: true,
-                    method: 'navigation',
-                    confidence: 'high',
-                  });
-                }
-              } catch {
-                // Cross-origin error means protocol handler likely worked
-                resolved = true;
-                clearTimeout(timeout);
-                try {
-                  testWindow.close();
-                } catch {
-                  // Ignore close errors
-                }
-                resolve({
-                  available: true,
-                  method: 'navigation',
-                  confidence: 'medium',
-                });
-              }
-            }
-          }, 1000);
-        } catch (error) {
-          resolved = true;
-          clearTimeout(timeout);
-          try {
-            testWindow.close();
-          } catch {
-            // Ignore close errors
-          }
-          resolve({
-            available: false,
-            method: 'navigation',
-            confidence: 'low',
-            errorReason: `Navigation error: ${error}`,
-          });
-        }
-      });
+      return await detectProtocolHandler(testUrl, 3000);
     } catch (error) {
       return {
         available: false,
