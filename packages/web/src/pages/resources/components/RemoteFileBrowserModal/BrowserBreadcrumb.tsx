@@ -7,7 +7,10 @@ interface BrowserBreadcrumbProps {
   onNavigate: (path: string) => void;
 }
 
-export const BrowserBreadcrumb: React.FC<BrowserBreadcrumbProps> = ({ currentPath, onNavigate }) => {
+export const BrowserBreadcrumb: React.FC<BrowserBreadcrumbProps> = ({
+  currentPath,
+  onNavigate,
+}) => {
   const breadcrumbItems = useMemo(() => {
     const items = [
       {

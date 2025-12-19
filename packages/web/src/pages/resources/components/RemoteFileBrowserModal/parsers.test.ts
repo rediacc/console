@@ -142,7 +142,8 @@ describe('parsePlainTextFileList', () => {
 
 describe('parseFallbackFormats', () => {
   it('should parse malformed rclone JSON with individual objects', () => {
-    const textData = '{"Name":"file1.txt","Size":1024,"IsDir":false,"Path":"file1.txt"}{"Name":"file2.txt","Size":2048,"IsDir":false,"Path":"file2.txt"}';
+    const textData =
+      '{"Name":"file1.txt","Size":1024,"IsDir":false,"Path":"file1.txt"}{"Name":"file2.txt","Size":2048,"IsDir":false,"Path":"file2.txt"}';
 
     const result = parseFallbackFormats(textData, '');
 
@@ -160,7 +161,8 @@ describe('parseFallbackFormats', () => {
   });
 
   it('should skip invalid JSON objects', () => {
-    const textData = '{"Name":"valid.txt","Size":100,"IsDir":false,"Path":"valid.txt"}{"Invalid JSON}';
+    const textData =
+      '{"Name":"valid.txt","Size":100,"IsDir":false,"Path":"valid.txt"}{"Invalid JSON}';
 
     const result = parseFallbackFormats(textData, '');
 

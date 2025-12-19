@@ -6,16 +6,30 @@ export const handleForkFunction = async (
   functionData: FunctionData,
   context: FunctionExecutionContext
 ): Promise<void> => {
-  const { selectedRepository, teamRepositories, machine, executeAction, createRepositoryCredential, onQueueItemCreated, closeModal, t } = context;
+  const {
+    selectedRepository,
+    teamRepositories,
+    machine,
+    executeAction,
+    createRepositoryCredential,
+    onQueueItemCreated,
+    closeModal,
+    t,
+  } = context;
 
   if (!selectedRepository) return;
 
   const RepoData = teamRepositories.find(
-    (r) => r.repositoryName === selectedRepository.name && r.repositoryTag === selectedRepository.repositoryTag
+    (r) =>
+      r.repositoryName === selectedRepository.name &&
+      r.repositoryTag === selectedRepository.repositoryTag
   );
 
   if (!RepoData || !RepoData.vaultContent) {
-    showMessage('error', t('resources:repositories.noCredentialsFound', { name: selectedRepository.name }));
+    showMessage(
+      'error',
+      t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
+    );
     closeModal();
     return;
   }
@@ -64,9 +78,12 @@ export const handleForkFunction = async (
 
     if (result.success) {
       if (result.taskId) {
-        showMessage('success', t('resources:repositories.forkStarted', {
-          dest: `${selectedRepository.name}:${forkTag}`,
-        }));
+        showMessage(
+          'success',
+          t('resources:repositories.forkStarted', {
+            dest: `${selectedRepository.name}:${forkTag}`,
+          })
+        );
         if (onQueueItemCreated) onQueueItemCreated(result.taskId, machine.machineName);
       } else if (result.isQueued) {
         showMessage('info', t('resources:repositories.highestPriorityQueued'));

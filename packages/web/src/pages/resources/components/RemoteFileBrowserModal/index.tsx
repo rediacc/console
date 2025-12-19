@@ -20,13 +20,7 @@ import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { BrowserBreadcrumb } from './BrowserBreadcrumb';
 import { BrowserFileTable } from './BrowserFileTable';
-import {
-  FullWidthSelect,
-  LoadingPadding,
-  SearchInput,
-  SourceLabel,
-  SourceSelect,
-} from './styles';
+import { FullWidthSelect, LoadingPadding, SearchInput, SourceLabel, SourceSelect } from './styles';
 import { useBrowserQueueAction } from './useBrowserQueueAction';
 import { buildListQueueVault, buildPullQueueVault } from './vaultBuilder';
 import type { RemoteFile, RemoteFileBrowserModalProps, SourceOption } from './types';

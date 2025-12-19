@@ -24,14 +24,8 @@ export function buildPullQueueVault(params: {
   storageData?: Storage[];
   teamsData?: Team[];
 }): AdditionalVaultData {
-  const {
-    selectedSource,
-    machineName,
-    storageSources,
-    machinesData,
-    storageData,
-    teamsData,
-  } = params;
+  const { selectedSource, machineName, storageSources, machinesData, storageData, teamsData } =
+    params;
 
   const additionalVaultData: AdditionalVaultData = {};
 

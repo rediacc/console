@@ -51,6 +51,7 @@ describe('handleBackupFunction', () => {
     } as unknown as FunctionExecutionContext;
 
     mockFunctionData = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       function: { name: 'backup' } as any,
       params: { storages: ['storage-1', 'storage-2'] },
       priority: 4,

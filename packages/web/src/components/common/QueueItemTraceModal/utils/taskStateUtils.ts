@@ -5,7 +5,9 @@ import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
  * Determines if a task is in a terminal state (completed, cancelled, or permanently failed).
  * Terminal states are states from which a task will not transition to another state.
  */
-export const isTaskInTerminalState = (queueDetails: GetTeamQueueItems_ResultSet1 | Record<string, unknown>): boolean => {
+export const isTaskInTerminalState = (
+  queueDetails: GetTeamQueueItems_ResultSet1 | Record<string, unknown>
+): boolean => {
   const status = normalizeToString(queueDetails, 'status', 'Status');
   const retryCount = normalizeToNumber(queueDetails, 0, 'retryCount', 'RetryCount');
   const permanentlyFailed = normalizeToBoolean(

@@ -7,7 +7,13 @@ import {
   QuestionCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import { CompatibilityStatusText, FieldItem, IssueList, ListSection, RecommendationList } from '../styles';
+import {
+  CompatibilityStatusText,
+  FieldItem,
+  IssueList,
+  ListSection,
+  RecommendationList,
+} from '../styles';
 import type { VaultFormValues } from '../types';
 import type { FormInstance } from 'antd';
 
@@ -87,7 +93,9 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
   return (
     <Col xs={24} lg={12}>
       <FieldItem
-        label={<RediaccText weight="bold">{t('vaultEditor.systemCompatibility.title')}</RediaccText>}
+        label={
+          <RediaccText weight="bold">{t('vaultEditor.systemCompatibility.title')}</RediaccText>
+        }
         colon={false}
       >
         <RediaccStack direction="vertical" gap="sm" fullWidth>
@@ -100,7 +108,9 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
             </Descriptions.Item>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.btrfsAvailable')}>
               {kernelCompatibility.btrfs_available ? (
-                <RediaccTag variant="success">{t('vaultEditor.systemCompatibility.yes')}</RediaccTag>
+                <RediaccTag variant="success">
+                  {t('vaultEditor.systemCompatibility.yes')}
+                </RediaccTag>
               ) : (
                 <RediaccTag variant="warning">{t('vaultEditor.systemCompatibility.no')}</RediaccTag>
               )}

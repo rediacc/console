@@ -308,7 +308,11 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
               )}
 
               {entityType === 'MACHINE' && (
-                <VaultEditorSystemCompatibility form={form} osSetupCompleted={osSetupCompleted} t={t} />
+                <VaultEditorSystemCompatibility
+                  form={form}
+                  osSetupCompleted={osSetupCompleted}
+                  t={t}
+                />
               )}
             </>
           )}

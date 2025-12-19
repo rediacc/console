@@ -35,7 +35,10 @@ export interface FunctionExecutionContext {
     isQueued?: boolean;
     error?: string;
   }>;
-  createRepositoryCredential: (name: string, tag: string) => Promise<{
+  createRepositoryCredential: (
+    name: string,
+    tag: string
+  ) => Promise<{
     repositoryGuid: string;
     repositoryName: string;
     repositoryNetworkId?: number;

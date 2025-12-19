@@ -39,7 +39,8 @@ export class FileListParserFactory {
 
       fileList = parseFallbackFormats(dataToProcess, this.currentPath);
       if (fileList.length === 0) {
-        const textData = typeof dataToProcess === 'string' ? dataToProcess : JSON.stringify(dataToProcess);
+        const textData =
+          typeof dataToProcess === 'string' ? dataToProcess : JSON.stringify(dataToProcess);
         fileList = parsePlainTextFileList(textData, this.currentPath);
       }
     }

@@ -54,7 +54,10 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
     >
       <Row gutter={[16, 24]}>
         {resources
-          .filter((resource) => resource.resourceType === 'Machine' || resource.resourceType === 'Repository')
+          .filter(
+            (resource) =>
+              resource.resourceType === 'Machine' || resource.resourceType === 'Repository'
+          )
           .map((resource) => {
             const progressColor =
               resource.isLimitReached === 1 ? theme.colors.error : theme.colors.primary;

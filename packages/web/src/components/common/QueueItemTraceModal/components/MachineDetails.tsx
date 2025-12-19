@@ -2,7 +2,13 @@ import React from 'react';
 import { Card, Col, Collapse, Descriptions, Row, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
-import { CodeOutlined, RightOutlined, RetweetOutlined, TeamOutlined, UserOutlined } from '@/utils/optimizedIcons';
+import {
+  CodeOutlined,
+  RightOutlined,
+  RetweetOutlined,
+  TeamOutlined,
+  UserOutlined,
+} from '@/utils/optimizedIcons';
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { ConsoleOutput } from './ConsoleOutput';
 import { StatsPanel } from './StatsPanel';
@@ -43,16 +49,12 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
           <Card size="small" title={t('trace.taskInfo')} data-testid="queue-trace-task-info">
             <Descriptions column={1} size="small">
               <Descriptions.Item label="Task ID">
-                <RediaccText code>
-                  {queueDetails.taskId}
-                </RediaccText>
+                <RediaccText code>{queueDetails.taskId}</RediaccText>
               </Descriptions.Item>
               <Descriptions.Item label="Created By">
                 <Space>
                   <UserOutlined />
-                  <RediaccText>
-                    {queueDetails.createdBy || 'System'}
-                  </RediaccText>
+                  <RediaccText>{queueDetails.createdBy || 'System'}</RediaccText>
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Retry Status">
@@ -76,17 +78,11 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
               </Descriptions.Item>
               <Descriptions.Item label="Priority">
                 <Space>
-                  {
-                    getPriorityInfo(queueDetails.priority ?? undefined).icon
-                  }
+                  {getPriorityInfo(queueDetails.priority ?? undefined).icon}
                   <RediaccTag
-                    variant={
-                      getPriorityInfo(queueDetails.priority ?? undefined).color as 'neutral'
-                    }
+                    variant={getPriorityInfo(queueDetails.priority ?? undefined).color as 'neutral'}
                   >
-                    {
-                      getPriorityInfo(queueDetails.priority ?? undefined).label
-                    }
+                    {getPriorityInfo(queueDetails.priority ?? undefined).label}
                   </RediaccTag>
                 </Space>
               </Descriptions.Item>

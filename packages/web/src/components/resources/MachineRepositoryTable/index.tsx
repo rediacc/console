@@ -28,11 +28,7 @@ import {
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { useQueueAction } from '@/hooks/useQueueAction';
-import {
-  isFork as coreIsFork,
-  getGrandVaultForOperation,
-  preparePromotion,
-} from '@/platform';
+import { isFork as coreIsFork, getGrandVaultForOperation, preparePromotion } from '@/platform';
 import { useAppSelector } from '@/store/store';
 import { showMessage } from '@/utils/messages';
 import { DesktopOutlined } from '@/utils/optimizedIcons';
@@ -50,11 +46,7 @@ import { useConfirmForkDeletion } from './hooks/useConfirmForkDeletion';
 import { useConfirmRepositoryDeletion } from './hooks/useConfirmRepositoryDeletion';
 import { useQuickRepositoryAction } from './hooks/useQuickRepositoryAction';
 import { useRepositoryTableState } from './hooks/useRepositoryTableState';
-import {
-  ModalContent,
-  SmallText,
-  TableStateContainer,
-} from './styledComponents';
+import { ModalContent, SmallText, TableStateContainer } from './styledComponents';
 import * as S from './styles';
 import { getAxiosErrorMessage } from './utils';
 import type { FunctionExecutionContext, FunctionData } from './hooks/useFunctionExecution';
@@ -125,23 +117,31 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   const { systemContainerColumns } = useSystemContainerColumns();
 
   const { executeQuickAction } = useQuickRepositoryAction({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     teamRepositories: teamRepositories as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     machine: machine as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     executeAction: executeAction as any,
     onQueueItemCreated,
     t,
   });
 
   const { confirmForkDeletion } = useConfirmForkDeletion({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     teamRepositories: teamRepositories as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     machine: machine as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     confirm: confirm as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     executeAction: executeAction as any,
     onQueueItemCreated,
     t,
   });
 
   const { confirmDeletion: confirmRepositoryDeletion } = useConfirmRepositoryDeletion({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     teamRepositories: teamRepositories as any,
     modal,
     t,
@@ -153,7 +153,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           teamRepositories
         ) || '{}';
 
-      const repoData = teamRepositories.find(r => r.repositoryGuid === context.repositoryGuid);
+      const repoData = teamRepositories.find((r) => r.repositoryGuid === context.repositoryGuid);
 
       const params: Record<string, unknown> = {
         repository: context.repositoryGuid,
@@ -179,7 +179,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         if (result.taskId) {
           showMessage(
             'success',
-            t('resources:repositories.deleteGrandQueued', { name: repoData?.repositoryName || 'repository' })
+            t('resources:repositories.deleteGrandQueued', {
+              name: repoData?.repositoryName || 'repository',
+            })
           );
           if (onQueueItemCreated) {
             onQueueItemCreated(result.taskId, machine.machineName);
@@ -226,7 +228,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     if (!newRepo?.repositoryGuid) throw new Error('Could not find newly created Repository');
     return newRepo;
   };
-
 
   const handlePromoteToGrand = async (Repository: Repository) => {
     const context = preparePromotion(Repository.name, Repository.repositoryTag, teamRepositories);
@@ -449,18 +450,23 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     });
   };
 
-
   const handleFunctionSubmit = async (functionData: FunctionData) => {
     if (!selectedRepository) return;
 
     try {
       const context: FunctionExecutionContext = {
         selectedRepository,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         teamRepositories: teamRepositories as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         machine: machine as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         teamMachines: teamMachines as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         teamStorages: teamStorages as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         executeAction: executeAction as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         createRepositoryCredential: createRepositoryCredential as any,
         onQueueItemCreated,
         closeModal: closeModalAndReset,

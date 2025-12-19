@@ -51,6 +51,7 @@ describe('handleDeployFunction', () => {
     } as unknown as FunctionExecutionContext;
 
     mockFunctionData = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       function: { name: 'deploy' } as any,
       params: { tag: 'deploy-tag', machines: ['target-machine-1', 'target-machine-2'] },
       priority: 4,
@@ -92,7 +93,9 @@ describe('handleDeployFunction', () => {
   });
 
   it('should handle repository creation failure', async () => {
-    mockContext.createRepositoryCredential = vi.fn().mockRejectedValue(new Error('Creation failed'));
+    mockContext.createRepositoryCredential = vi
+      .fn()
+      .mockRejectedValue(new Error('Creation failed'));
 
     await handleDeployFunction(mockFunctionData, mockContext);
 

@@ -1,21 +1,40 @@
 import { showMessage } from '@/utils/messages';
-import { getGrandRepoVault, getRequiredTag, showMultiTargetSummary } from '../hooks/useFunctionExecution';
+import {
+  getGrandRepoVault,
+  getRequiredTag,
+  showMultiTargetSummary,
+} from '../hooks/useFunctionExecution';
 import type { FunctionExecutionContext, FunctionData } from '../hooks/useFunctionExecution';
 
 export const handleDeployFunction = async (
   functionData: FunctionData,
   context: FunctionExecutionContext
 ): Promise<void> => {
-  const { selectedRepository, teamRepositories, machine, teamMachines, executeAction, createRepositoryCredential, onQueueItemCreated, closeModal, t } = context;
+  const {
+    selectedRepository,
+    teamRepositories,
+    machine,
+    teamMachines,
+    executeAction,
+    createRepositoryCredential,
+    onQueueItemCreated,
+    closeModal,
+    t,
+  } = context;
 
   if (!selectedRepository) return;
 
   const RepoData = teamRepositories.find(
-    (r) => r.repositoryName === selectedRepository.name && r.repositoryTag === selectedRepository.repositoryTag
+    (r) =>
+      r.repositoryName === selectedRepository.name &&
+      r.repositoryTag === selectedRepository.repositoryTag
   );
 
   if (!RepoData || !RepoData.vaultContent) {
-    showMessage('error', t('resources:repositories.noCredentialsFound', { name: selectedRepository.name }));
+    showMessage(
+      'error',
+      t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
+    );
     closeModal();
     return;
   }
@@ -23,7 +42,12 @@ export const handleDeployFunction = async (
   const machinesArray = Array.isArray(functionData.params.machines)
     ? functionData.params.machines
     : [functionData.params.machines];
-  const deployTag = getRequiredTag(functionData.params, 'Tag is required for deploy', t, closeModal);
+  const deployTag = getRequiredTag(
+    functionData.params,
+    'Tag is required for deploy',
+    t,
+    closeModal
+  );
   if (!deployTag) return;
 
   let newRepo;
@@ -41,7 +65,10 @@ export const handleDeployFunction = async (
   for (const targetMachine of machinesArray) {
     const destinationMachine = teamMachines.find((m) => m.machineName === targetMachine);
     if (!destinationMachine) {
-      showMessage('error', t('resources:repositories.destinationMachineNotFound', { machine: targetMachine }));
+      showMessage(
+        'error',
+        t('resources:repositories.destinationMachineNotFound', { machine: targetMachine })
+      );
       continue;
     }
 
@@ -74,7 +101,10 @@ export const handleDeployFunction = async (
       });
       if (result.success && result.taskId) createdTaskIds.push(result.taskId);
     } catch {
-      showMessage('error', t('resources:repositories.failedToDeployTo', { machine: targetMachine }));
+      showMessage(
+        'error',
+        t('resources:repositories.failedToDeployTo', { machine: targetMachine })
+      );
     }
   }
 

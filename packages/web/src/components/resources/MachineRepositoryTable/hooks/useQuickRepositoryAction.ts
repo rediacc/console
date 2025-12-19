@@ -47,7 +47,10 @@ export const useQuickRepositoryAction = ({
     );
 
     if (!repoData?.vaultContent) {
-      showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }));
+      showMessage(
+        'error',
+        t('resources:repositories.noCredentialsFound', { name: repository.name })
+      );
       return;
     }
 

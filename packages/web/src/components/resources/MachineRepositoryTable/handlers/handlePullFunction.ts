@@ -6,16 +6,29 @@ export const handlePullFunction = async (
   functionData: FunctionData,
   context: FunctionExecutionContext
 ): Promise<void> => {
-  const { selectedRepository, teamRepositories, machine, executeAction, onQueueItemCreated, closeModal, t } = context;
+  const {
+    selectedRepository,
+    teamRepositories,
+    machine,
+    executeAction,
+    onQueueItemCreated,
+    closeModal,
+    t,
+  } = context;
 
   if (!selectedRepository) return;
 
   const RepoData = teamRepositories.find(
-    (r) => r.repositoryName === selectedRepository.name && r.repositoryTag === selectedRepository.repositoryTag
+    (r) =>
+      r.repositoryName === selectedRepository.name &&
+      r.repositoryTag === selectedRepository.repositoryTag
   );
 
   if (!RepoData || !RepoData.vaultContent) {
-    showMessage('error', t('resources:repositories.noCredentialsFound', { name: selectedRepository.name }));
+    showMessage(
+      'error',
+      t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
+    );
     closeModal();
     return;
   }

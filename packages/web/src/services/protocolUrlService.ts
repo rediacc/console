@@ -67,10 +67,7 @@ interface ProtocolStatusResult {
 /**
  * Utility: Detect protocol handler using navigation-based approach
  */
-function detectProtocolHandler(
-  testUrl: string,
-  timeout: number
-): Promise<ProtocolStatusResult> {
+function detectProtocolHandler(testUrl: string, timeout: number): Promise<ProtocolStatusResult> {
   return new Promise((resolve) => {
     const testWindow = window.open('', '_blank', 'width=1,height=1,left=-1000,top=-1000');
 

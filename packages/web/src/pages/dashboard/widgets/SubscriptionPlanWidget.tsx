@@ -2,7 +2,14 @@ import React from 'react';
 import { Col, Empty, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useTheme as useStyledTheme } from 'styled-components';
-import { RediaccCard, RediaccStack, RediaccStatistic, RediaccTag, RediaccText, RediaccTooltip } from '@/components/ui';
+import {
+  RediaccCard,
+  RediaccStack,
+  RediaccStatistic,
+  RediaccTag,
+  RediaccText,
+  RediaccTooltip,
+} from '@/components/ui';
 import { CrownOutlined } from '@/utils/optimizedIcons';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
 import {
@@ -56,9 +63,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                 <SectionLabelWrapper>
                   <RediaccText variant="label">CURRENT SUBSCRIPTION</RediaccText>
                 </SectionLabelWrapper>
-                <SectionTitleWrapper level={4}>
-                  {activeSubscription.planCode}
-                </SectionTitleWrapper>
+                <SectionTitleWrapper level={4}>{activeSubscription.planCode}</SectionTitleWrapper>
                 <Row gutter={[16, 16]}>
                   <Col span={12}>
                     <RediaccStatistic

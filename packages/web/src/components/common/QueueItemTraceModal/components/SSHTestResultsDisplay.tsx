@@ -9,7 +9,13 @@ import {
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 import { spacing } from '@/utils/styleConstants';
-import { SpacedCardBottom, CompatibilityStatusText, IssuesList, RecommendationsList, SectionMargin } from '../styles';
+import {
+  SpacedCardBottom,
+  CompatibilityStatusText,
+  IssuesList,
+  RecommendationsList,
+  SectionMargin,
+} from '../styles';
 import type { SSHTestResult } from '../utils/sshTestResultParser';
 
 interface SSHTestResultsDisplayProps {
@@ -124,16 +130,17 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
         }
         description={
           <>
-            {compatibility.compatibility_issues && compatibility.compatibility_issues.length > 0 && (
-              <SectionMargin $top={spacing('SM')}>
-                <RediaccText weight="bold">Known Issues:</RediaccText>
-                <IssuesList>
-                  {compatibility.compatibility_issues.map((issue: string, index: number) => (
-                    <li key={index}>{issue}</li>
-                  ))}
-                </IssuesList>
-              </SectionMargin>
-            )}
+            {compatibility.compatibility_issues &&
+              compatibility.compatibility_issues.length > 0 && (
+                <SectionMargin $top={spacing('SM')}>
+                  <RediaccText weight="bold">Known Issues:</RediaccText>
+                  <IssuesList>
+                    {compatibility.compatibility_issues.map((issue: string, index: number) => (
+                      <li key={index}>{issue}</li>
+                    ))}
+                  </IssuesList>
+                </SectionMargin>
+              )}
             {compatibility.recommendations && compatibility.recommendations.length > 0 && (
               <SectionMargin>
                 <RediaccText weight="bold">Recommendations:</RediaccText>

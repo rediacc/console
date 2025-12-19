@@ -10,7 +10,11 @@ import {
   ThunderboltOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import type { CompanyDashboardData, QueueMachineIssue, QueueTeamIssue } from '@rediacc/shared/types';
+import type {
+  CompanyDashboardData,
+  QueueMachineIssue,
+  QueueTeamIssue,
+} from '@rediacc/shared/types';
 import {
   BorderlessList,
   BorderlessListItem,

@@ -7,16 +7,30 @@ export const handleBackupFunction = async (
   functionData: FunctionData,
   context: FunctionExecutionContext
 ): Promise<void> => {
-  const { selectedRepository, teamRepositories, machine, teamStorages, executeAction, onQueueItemCreated, closeModal, t } = context;
+  const {
+    selectedRepository,
+    teamRepositories,
+    machine,
+    teamStorages,
+    executeAction,
+    onQueueItemCreated,
+    closeModal,
+    t,
+  } = context;
 
   if (!selectedRepository) return;
 
   const RepoData = teamRepositories.find(
-    (r) => r.repositoryName === selectedRepository.name && r.repositoryTag === selectedRepository.repositoryTag
+    (r) =>
+      r.repositoryName === selectedRepository.name &&
+      r.repositoryTag === selectedRepository.repositoryTag
   );
 
   if (!RepoData || !RepoData.vaultContent) {
-    showMessage('error', t('resources:repositories.noCredentialsFound', { name: selectedRepository.name }));
+    showMessage(
+      'error',
+      t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
+    );
     closeModal();
     return;
   }
@@ -36,7 +50,10 @@ export const handleBackupFunction = async (
   for (const targetStorage of storagesArray) {
     const destinationStorage = teamStorages.find((s) => s.storageName === targetStorage);
     if (!destinationStorage) {
-      showMessage('error', t('resources:repositories.destinationStorageNotFound', { storage: targetStorage }));
+      showMessage(
+        'error',
+        t('resources:repositories.destinationStorageNotFound', { storage: targetStorage })
+      );
       continue;
     }
 
@@ -69,7 +86,10 @@ export const handleBackupFunction = async (
       });
       if (result.success && result.taskId) createdTaskIds.push(result.taskId);
     } catch {
-      showMessage('error', t('resources:repositories.failedToBackupTo', { storage: targetStorage }));
+      showMessage(
+        'error',
+        t('resources:repositories.failedToBackupTo', { storage: targetStorage })
+      );
     }
   }
 

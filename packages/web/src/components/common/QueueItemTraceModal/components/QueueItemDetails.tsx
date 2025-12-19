@@ -1,7 +1,12 @@
 import React from 'react';
 import { Descriptions } from 'antd';
 import { RediaccTag, RediaccText } from '@/components/ui';
-import { normalizeToNumber, normalizeToString, formatTimestampAsIs, formatDurationFull } from '@/platform';
+import {
+  normalizeToNumber,
+  normalizeToString,
+  formatTimestampAsIs,
+  formatDurationFull,
+} from '@/platform';
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 
 interface QueueItemDetailsProps {
@@ -39,9 +44,7 @@ export const QueueItemDetails: React.FC<QueueItemDetailsProps> = ({
       <Descriptions.Item label="Status">
         <RediaccTag variant={getStatusVariant()}>{status}</RediaccTag>
       </Descriptions.Item>
-      <Descriptions.Item label="Priority">
-        {queueDetails.priorityLabel || '-'}
-      </Descriptions.Item>
+      <Descriptions.Item label="Priority">{queueDetails.priorityLabel || '-'}</Descriptions.Item>
       <Descriptions.Item label="Machine">
         <RediaccText>{queueDetails.machineName}</RediaccText>
       </Descriptions.Item>

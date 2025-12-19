@@ -12,7 +12,6 @@ import {
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import type { TaskStalenessLevel } from '../types';
 
-
 interface StaleTaskWarningProps {
   taskStaleness: TaskStalenessLevel;
   queueDetails: GetTeamQueueItems_ResultSet1 | null | undefined;

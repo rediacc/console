@@ -77,8 +77,7 @@ export function parseJsonFileList(
       isUnmapped: repoInfo?.isUnmapped || false,
       size: getNumberValue(file.size ?? file.Size ?? 0),
       isDirectory: isDirectoryFlag,
-      modTime:
-        file.date && file.time ? `${file.date} ${file.time}` : getStringValue(file.ModTime),
+      modTime: file.date && file.time ? `${file.date} ${file.time}` : getStringValue(file.ModTime),
       path:
         getStringValue(file.Path) ||
         (currentPath && fileName ? `${currentPath}/${fileName}` : fileName),

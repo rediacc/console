@@ -42,6 +42,7 @@ describe('handleForkFunction', () => {
     } as unknown as FunctionExecutionContext;
 
     mockFunctionData = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       function: { name: 'fork' } as any,
       params: { tag: 'fork-tag' },
       priority: 4,
@@ -76,7 +77,9 @@ describe('handleForkFunction', () => {
   });
 
   it('should handle repository creation failure', async () => {
-    mockContext.createRepositoryCredential = vi.fn().mockRejectedValue(new Error('Creation failed'));
+    mockContext.createRepositoryCredential = vi
+      .fn()
+      .mockRejectedValue(new Error('Creation failed'));
 
     await handleForkFunction(mockFunctionData, mockContext);
 

@@ -1,6 +1,8 @@
 import type { ExistingResourceData, ResourceType } from '../types';
 
-const tryExtractCredentialFromNested = (vaultData: Record<string, unknown>): Record<string, unknown> | null => {
+const tryExtractCredentialFromNested = (
+  vaultData: Record<string, unknown>
+): Record<string, unknown> | null => {
   if (!vaultData.repositoryVault) {
     return null;
   }
@@ -21,7 +23,9 @@ const tryExtractCredentialFromNested = (vaultData: Record<string, unknown>): Rec
   return null;
 };
 
-const tryExtractCredentialFromFields = (vaultData: Record<string, unknown>): Record<string, unknown> | null => {
+const tryExtractCredentialFromFields = (
+  vaultData: Record<string, unknown>
+): Record<string, unknown> | null => {
   for (const [, value] of Object.entries(vaultData)) {
     if (
       typeof value === 'string' &&
