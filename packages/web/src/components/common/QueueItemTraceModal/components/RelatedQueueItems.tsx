@@ -2,8 +2,8 @@ import React from 'react';
 import { Card, Col, Empty, Row, Space } from 'antd';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import type { QueuePositionEntry } from '@rediacc/shared/types';
 import { RediaccTag, RediaccText } from '@/components/ui';
+import type { QueuePositionEntry } from '@rediacc/shared/types';
 import { ScrollContainer, ScrollItem, MonospaceText } from '../styles';
 
 interface RelatedQueueItemsProps {

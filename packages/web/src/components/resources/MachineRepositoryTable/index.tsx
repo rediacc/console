@@ -633,23 +633,24 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         const team = teams?.find((t) => t.teamName === machine.teamName);
         if (!team?.vaultContent) return null;
 
+        let missingSSHKeys = false;
         try {
           const teamVault = JSON.parse(team.vaultContent);
-          const missingSSHKeys = !teamVault.SSH_PRIVATE_KEY || !teamVault.SSH_PUBLIC_KEY;
-
-          return missingSSHKeys ? (
-            <RediaccAlert
-              spacing="default"
-              variant="warning"
-              showIcon
-              closable
-              message={t('common:vaultEditor.missingSshKeysWarning')}
-              description={t('common:vaultEditor.missingSshKeysDescription')}
-            />
-          ) : null;
+          missingSSHKeys = !teamVault.SSH_PRIVATE_KEY || !teamVault.SSH_PUBLIC_KEY;
         } catch {
           return null;
         }
+
+        return missingSSHKeys ? (
+          <RediaccAlert
+            spacing="default"
+            variant="warning"
+            showIcon
+            closable
+            message={t('common:vaultEditor.missingSshKeysWarning')}
+            description={t('common:vaultEditor.missingSshKeysDescription')}
+          />
+        ) : null;
       })()}
 
       <S.TableStyleWrapper>

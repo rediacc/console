@@ -9,9 +9,9 @@ import {
   SyncOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import type { TaskStalenessLevel } from '../types';
 
-import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 
 interface StaleTaskWarningProps {
   taskStaleness: TaskStalenessLevel;

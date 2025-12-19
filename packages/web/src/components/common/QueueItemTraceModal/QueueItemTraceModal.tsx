@@ -1,9 +1,8 @@
 import React, { useEffect } from 'react';
+import { Badge, Collapse, Empty, Modal, Space } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
-import type { CollapseProps } from 'antd';
-import { Badge, Collapse, Empty, Modal, Space } from 'antd';
 import {
   useCancelQueueItem,
   useQueueItemTrace,
@@ -49,8 +48,9 @@ import {
   SectionMargin,
 } from './styles';
 import { getSimplifiedStatus, getTaskStaleness, isTaskStale } from './utils';
-import type { QueueItemTraceModalProps } from './types';
 import { isTaskInTerminalState } from './utils/taskStateUtils';
+import type { QueueItemTraceModalProps } from './types';
+import type { CollapseProps } from 'antd';
 
 dayjs.extend(relativeTime);
 
