@@ -3,7 +3,6 @@ import { Alert, Space, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
-import { type QueueFunction } from '@/api/queries/queue';
 import {
   useCreateRepository,
   usePromoteRepositoryToGrand,
@@ -30,11 +29,8 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { useQueueAction } from '@/hooks/useQueueAction';
 import {
-  canBackupToStorage,
   isFork as coreIsFork,
   getGrandVaultForOperation,
-  prepareForkDeletion,
-  prepareGrandDeletion,
   preparePromotion,
 } from '@/platform';
 import { useAppSelector } from '@/store/store';
@@ -43,15 +39,25 @@ import { DesktopOutlined } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { useRepositoryColumns, useSystemContainerColumns } from './columns';
 import { RepositoryActionsMenu } from './components/RepositoryActionsMenu';
+import {
+  handleForkFunction,
+  handleDeployFunction,
+  handleBackupFunction,
+  handlePullFunction,
+  handleCustomFunction,
+} from './handlers';
+import { useConfirmForkDeletion } from './hooks/useConfirmForkDeletion';
+import { useConfirmRepositoryDeletion } from './hooks/useConfirmRepositoryDeletion';
+import { useQuickRepositoryAction } from './hooks/useQuickRepositoryAction';
 import { useRepositoryTableState } from './hooks/useRepositoryTableState';
 import {
-  ConfirmationInput,
   ModalContent,
   SmallText,
   TableStateContainer,
 } from './styledComponents';
 import * as S from './styles';
 import { getAxiosErrorMessage } from './utils';
+import type { FunctionExecutionContext, FunctionData } from './hooks/useFunctionExecution';
 import type {
   Container,
   MachineRepositoryTableProps,
@@ -118,6 +124,77 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   const { repositoryStatusColumn, repositoryNameColumn } = useRepositoryColumns(teamRepositories);
   const { systemContainerColumns } = useSystemContainerColumns();
 
+  const { executeQuickAction } = useQuickRepositoryAction({
+    teamRepositories: teamRepositories as any,
+    machine: machine as any,
+    executeAction: executeAction as any,
+    onQueueItemCreated,
+    t,
+  });
+
+  const { confirmForkDeletion } = useConfirmForkDeletion({
+    teamRepositories: teamRepositories as any,
+    machine: machine as any,
+    confirm: confirm as any,
+    executeAction: executeAction as any,
+    onQueueItemCreated,
+    t,
+  });
+
+  const { confirmDeletion: confirmRepositoryDeletion } = useConfirmRepositoryDeletion({
+    teamRepositories: teamRepositories as any,
+    modal,
+    t,
+    onConfirm: async (context) => {
+      const grandRepoVault =
+        getGrandVaultForOperation(
+          context.repositoryGuid!,
+          context.repositoryGuid,
+          teamRepositories
+        ) || '{}';
+
+      const repoData = teamRepositories.find(r => r.repositoryGuid === context.repositoryGuid);
+
+      const params: Record<string, unknown> = {
+        repository: context.repositoryGuid,
+        repositoryName: context.repositoryTag,
+        grand: context.repositoryGuid,
+      };
+
+      const result = await executeAction({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        functionName: 'rm',
+        params,
+        priority: 4,
+        addedVia: 'machine-Repository-list-delete-grand',
+        machineVault: machine.vaultContent || '{}',
+        repositoryGuid: context.repositoryGuid,
+        vaultContent: grandRepoVault,
+        repositoryNetworkId: context.repositoryNetworkId,
+      });
+
+      if (result.success) {
+        if (result.taskId) {
+          showMessage(
+            'success',
+            t('resources:repositories.deleteGrandQueued', { name: repoData?.repositoryName || 'repository' })
+          );
+          if (onQueueItemCreated) {
+            onQueueItemCreated(result.taskId, machine.machineName);
+          }
+          showMessage('success', t('resources:repositories.deleteGrandSuccess'));
+        } else if (result.isQueued) {
+          showMessage('info', t('resources:repositories.highestPriorityQueued'));
+        }
+      } else {
+        showMessage('error', result.error || t('resources:repositories.deleteGrandFailed'));
+        throw new Error(result.error || t('resources:repositories.deleteGrandFailed'));
+      }
+    },
+  });
+
   const handleRefresh = () => {
     if (onActionComplete) {
       onActionComplete();
@@ -150,177 +227,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     return newRepo;
   };
 
-  const getRequiredTag = (params: Record<string, unknown>, errorMsg: string): string | null => {
-    const tag = typeof params.tag === 'string' ? params.tag.trim() : '';
-    if (!tag) {
-      showMessage('error', errorMsg);
-      closeModalAndReset();
-      return null;
-    }
-    return tag;
-  };
-
-  const showMultiTargetSummary = (
-    taskIds: string[],
-    total: number,
-    keys: { success: string; partial: string; allFailed: string }
-  ) => {
-    if (taskIds.length === total) {
-      showMessage('success', t(keys.success, { count: taskIds.length }));
-    } else if (taskIds.length > 0) {
-      showMessage('warning', t(keys.partial, { success: taskIds.length, total }));
-    } else {
-      showMessage('error', t(keys.allFailed));
-    }
-    if (onQueueItemCreated && taskIds[0]) {
-      onQueueItemCreated(taskIds[0], machine.machineName);
-    }
-  };
-
-  const handleQuickAction = async (
-    Repository: Repository,
-    functionName: string,
-    priority: number = 4,
-    option?: string
-  ) => {
-    const RepoData = teamRepositories.find(
-      (r) => r.repositoryName === Repository.name && r.repositoryTag === Repository.repositoryTag
-    );
-
-    if (!RepoData || !RepoData.vaultContent) {
-      showMessage(
-        'error',
-        t('resources:repositories.noCredentialsFound', { name: Repository.name })
-      );
-      return;
-    }
-
-    const grandRepoVault =
-      getGrandVaultForOperation(RepoData.repositoryGuid, RepoData.grandGuid, teamRepositories) ||
-      RepoData.vaultContent;
-
-    const params: Record<string, unknown> = {
-      repository: RepoData.repositoryGuid,
-      repositoryName: RepoData.repositoryName,
-      grand: RepoData.grandGuid || '',
-    };
-
-    if (option) {
-      params.option = option;
-    }
-
-    const result = await executeAction({
-      teamName: machine.teamName,
-      machineName: machine.machineName,
-      bridgeName: machine.bridgeName,
-      functionName,
-      params,
-      priority,
-      addedVia: 'machine-Repository-list-quick',
-      machineVault: machine.vaultContent || '{}',
-      repositoryGuid: RepoData.repositoryGuid,
-      vaultContent: grandRepoVault,
-      repositoryNetworkId: RepoData.repositoryNetworkId,
-      repositoryNetworkMode: RepoData.repositoryNetworkMode,
-      repositoryTag: RepoData.repositoryTag,
-    });
-
-    if (result.success) {
-      if (result.taskId) {
-        showMessage('success', t('resources:repositories.queueItemCreated'));
-        if (onQueueItemCreated) {
-          onQueueItemCreated(result.taskId, machine.machineName);
-        }
-      } else if (result.isQueued) {
-        showMessage('info', t('resources:repositories.highestPriorityQueued'));
-      }
-    } else {
-      showMessage('error', result.error || t('resources:repositories.failedToCreateQueueItem'));
-    }
-  };
-
-  const handleDeleteFork = async (Repository: Repository) => {
-    const context = prepareForkDeletion(
-      Repository.name,
-      Repository.repositoryTag,
-      teamRepositories
-    );
-
-    if (context.status === 'error') {
-      const errorKey =
-        context.errorCode === 'NOT_FOUND'
-          ? 'resources:repositories.RepoNotFound'
-          : 'resources:repositories.cannotDeleteGrandRepo';
-      showMessage('error', t(errorKey));
-      return;
-    }
-
-    const parentName = context.parentName || Repository.name;
-
-    confirm({
-      title: t('resources:repositories.deleteCloneConfirmTitle'),
-      content: t('resources:repositories.deleteCloneConfirmMessage', {
-        name: Repository.name,
-        tag: Repository.repositoryTag || 'latest',
-        parentName,
-      }),
-      okText: t('common:delete'),
-      okType: 'danger',
-      cancelText: t('common:cancel'),
-      onOk: async () => {
-        try {
-          const grandRepoVault =
-            getGrandVaultForOperation(
-              context.repositoryGuid!,
-              context.grandGuid,
-              teamRepositories
-            ) || '{}';
-
-          const params: Record<string, unknown> = {
-            repository: context.repositoryGuid,
-            repositoryName: context.repositoryTag,
-            grand: context.grandGuid,
-          };
-
-          const result = await executeAction({
-            teamName: machine.teamName,
-            machineName: machine.machineName,
-            bridgeName: machine.bridgeName,
-            functionName: 'rm',
-            params,
-            priority: 4,
-            addedVia: 'machine-Repository-list-delete-clone',
-            machineVault: machine.vaultContent || '{}',
-            repositoryGuid: context.repositoryGuid,
-            vaultContent: grandRepoVault,
-            repositoryNetworkId: context.repositoryNetworkId,
-          });
-
-          if (result.success) {
-            if (result.taskId) {
-              showMessage(
-                'success',
-                t('resources:repositories.deleteCloneQueued', {
-                  name: Repository.name,
-                  tag: Repository.repositoryTag || 'latest',
-                })
-              );
-              if (onQueueItemCreated) {
-                onQueueItemCreated(result.taskId, machine.machineName);
-              }
-              showMessage('success', t('resources:repositories.deleteForkSuccess'));
-            } else if (result.isQueued) {
-              showMessage('info', t('resources:repositories.highestPriorityQueued'));
-            }
-          } else {
-            showMessage('error', result.error || t('resources:repositories.deleteCloneFailed'));
-          }
-        } catch {
-          showMessage('error', t('resources:repositories.deleteCloneFailed'));
-        }
-      },
-    });
-  };
 
   const handlePromoteToGrand = async (Repository: Repository) => {
     const context = preparePromotion(Repository.name, Repository.repositoryTag, teamRepositories);
@@ -543,411 +449,47 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     });
   };
 
-  const handleDeleteGrandRepo = async (Repository: Repository) => {
-    const context = prepareGrandDeletion(
-      Repository.name,
-      Repository.repositoryTag,
-      teamRepositories
-    );
 
-    if (context.status === 'error') {
-      const errorKey =
-        context.errorCode === 'NOT_FOUND'
-          ? 'resources:repositories.RepoNotFound'
-          : 'resources:repositories.notAGrandRepo';
-      showMessage('error', t(errorKey));
-      return;
-    }
-
-    if (context.status === 'blocked') {
-      modal.error({
-        title: t('resources:repositories.cannotDeleteHasClones'),
-        content: (
-          <div>
-            <Typography.Paragraph>
-              {t('resources:repositories.hasActiveClonesMessage', {
-                name: Repository.name,
-                count: context.childClones.length,
-              })}
-            </Typography.Paragraph>
-            <RediaccText as="p" weight="bold">
-              {t('resources:repositories.clonesList')}
-            </RediaccText>
-            <ul>
-              {context.childClones.map((clone) => (
-                <li key={clone.repositoryGuid}>{clone.repositoryName}</li>
-              ))}
-            </ul>
-            <Typography.Paragraph>
-              {t('resources:repositories.deleteOptionsMessage')}
-            </Typography.Paragraph>
-          </div>
-        ),
-        okText: t('common:close'),
-      });
-      return;
-    }
-
-    let confirmationInput = '';
-
-    modal.confirm({
-      title: t('resources:repositories.deleteGrandConfirmTitle'),
-      content: (
-        <ModalContent>
-          <Alert
-            message={t('resources:repositories.deleteGrandWarning')}
-            description={t('resources:repositories.deleteGrandWarningDesc', {
-              name: Repository.name,
-            })}
-            type="warning"
-            showIcon
-          />
-          <RediaccText weight="bold">
-            {t('resources:repositories.deleteGrandConfirmPrompt', { name: Repository.name })}
-          </RediaccText>
-          <ConfirmationInput
-            type="text"
-            placeholder={Repository.name}
-            onChange={(e) => {
-              confirmationInput = e.target.value;
-            }}
-          />
-        </ModalContent>
-      ),
-      okText: t('common:delete'),
-      okType: 'danger',
-      cancelText: t('common:cancel'),
-      onOk: async () => {
-        if (confirmationInput !== Repository.name) {
-          showMessage('error', t('resources:repositories.deleteGrandConfirmationMismatch'));
-          throw new Error(t('resources:repositories.deleteGrandConfirmationMismatch'));
-        }
-
-        try {
-          const grandRepoVault =
-            getGrandVaultForOperation(
-              context.repositoryGuid!,
-              context.repositoryGuid,
-              teamRepositories
-            ) || '{}';
-
-          const params: Record<string, unknown> = {
-            repository: context.repositoryGuid,
-            repositoryName: context.repositoryTag,
-            grand: context.repositoryGuid,
-          };
-
-          const result = await executeAction({
-            teamName: machine.teamName,
-            machineName: machine.machineName,
-            bridgeName: machine.bridgeName,
-            functionName: 'rm',
-            params,
-            priority: 4,
-            addedVia: 'machine-Repository-list-delete-grand',
-            machineVault: machine.vaultContent || '{}',
-            repositoryGuid: context.repositoryGuid,
-            vaultContent: grandRepoVault,
-            repositoryNetworkId: context.repositoryNetworkId,
-          });
-
-          if (result.success) {
-            if (result.taskId) {
-              showMessage(
-                'success',
-                t('resources:repositories.deleteGrandQueued', { name: Repository.name })
-              );
-              if (onQueueItemCreated) {
-                onQueueItemCreated(result.taskId, machine.machineName);
-              }
-              showMessage('success', t('resources:repositories.deleteGrandSuccess'));
-            } else if (result.isQueued) {
-              showMessage('info', t('resources:repositories.highestPriorityQueued'));
-            }
-          } else {
-            showMessage('error', result.error || t('resources:repositories.deleteGrandFailed'));
-            throw new Error(result.error || t('resources:repositories.deleteGrandFailed'));
-          }
-        } catch (error) {
-          showMessage('error', t('resources:repositories.deleteGrandFailed'));
-          throw error;
-        }
-      },
-    });
-  };
-
-  const handleFunctionSubmit = async (functionData: {
-    function: QueueFunction;
-    params: Record<string, unknown>;
-    priority: number;
-    description: string;
-  }) => {
+  const handleFunctionSubmit = async (functionData: FunctionData) => {
     if (!selectedRepository) return;
 
     try {
-      const RepoData = teamRepositories.find(
-        (r) =>
-          r.repositoryName === selectedRepository.name &&
-          r.repositoryTag === selectedRepository.repositoryTag
-      );
+      const context: FunctionExecutionContext = {
+        selectedRepository,
+        teamRepositories: teamRepositories as any,
+        machine: machine as any,
+        teamMachines: teamMachines as any,
+        teamStorages: teamStorages as any,
+        executeAction: executeAction as any,
+        createRepositoryCredential: createRepositoryCredential as any,
+        onQueueItemCreated,
+        closeModal: closeModalAndReset,
+        t,
+      };
 
-      if (!RepoData || !RepoData.vaultContent) {
-        showMessage(
-          'error',
-          t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
-        );
-        functionModal.close();
-        setSelectedRepo(null);
+      const functionName = functionData.function.name;
+
+      if (functionName === 'fork') {
+        await handleForkFunction(functionData, context);
         return;
       }
 
-      let grandRepoVault = RepoData.vaultContent;
-      if (RepoData.grandGuid) {
-        const grandRepo = teamRepositories.find((r) => r.repositoryGuid === RepoData.grandGuid);
-        if (grandRepo && grandRepo.vaultContent) {
-          grandRepoVault = grandRepo.vaultContent;
-        }
-      }
-
-      const finalParams = { ...functionData.params };
-      const repositoryGuid = RepoData.repositoryGuid;
-      const vaultContent = grandRepoVault;
-
-      if (functionData.function.name === 'fork') {
-        const forkTag = getRequiredTag(functionData.params, 'Tag is required for fork');
-        if (!forkTag) return;
-
-        let newRepo;
-        try {
-          newRepo = await createRepositoryCredential(selectedRepository.name, forkTag);
-        } catch {
-          showMessage('error', t('resources:repositories.failedToCreateRepository'));
-          closeModalAndReset();
-          return;
-        }
-
-        try {
-          const result = await executeAction({
-            teamName: machine.teamName,
-            machineName: machine.machineName,
-            bridgeName: machine.bridgeName,
-            functionName: 'push',
-            params: {
-              repository: RepoData.repositoryGuid,
-              repositoryName: RepoData.repositoryName,
-              dest: newRepo.repositoryGuid,
-              destName: newRepo.repositoryName,
-              destinationType: 'machine',
-              to: machine.machineName,
-              state: selectedRepository.mounted ? 'online' : 'offline',
-              grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
-            },
-            priority: functionData.priority,
-            addedVia: 'machine-Repository-list-fork',
-            machineVault: machine.vaultContent || '{}',
-            repositoryGuid: RepoData.repositoryGuid,
-            vaultContent: grandRepoVault,
-            repositoryNetworkId: newRepo.repositoryNetworkId,
-            repositoryNetworkMode: newRepo.repositoryNetworkMode,
-            repositoryTag: newRepo.repositoryTag,
-          });
-
-          closeModalAndReset();
-
-          if (result.success) {
-            if (result.taskId) {
-              showMessage(
-                'success',
-                t('resources:repositories.forkStarted', {
-                  dest: `${selectedRepository.name}:${forkTag}`,
-                })
-              );
-              if (onQueueItemCreated) onQueueItemCreated(result.taskId, machine.machineName);
-            } else if (result.isQueued) {
-              showMessage('info', t('resources:repositories.highestPriorityQueued'));
-            }
-          } else {
-            throw new Error(result.error || 'Failed to fork Repository');
-          }
-        } catch {
-          showMessage('error', t('resources:repositories.failedToForkRepository'));
-        }
+      if (functionName === 'deploy' && functionData.params.machines) {
+        await handleDeployFunction(functionData, context);
         return;
       }
 
-      if (functionData.function.name === 'deploy' && functionData.params.machines) {
-        const machinesArray = Array.isArray(functionData.params.machines)
-          ? functionData.params.machines
-          : [functionData.params.machines];
-        const deployTag = getRequiredTag(functionData.params, 'Tag is required for deploy');
-        if (!deployTag) return;
-
-        let newRepo;
-        try {
-          newRepo = await createRepositoryCredential(selectedRepository.name, deployTag);
-        } catch {
-          showMessage('error', t('resources:repositories.failedToCreateRepository'));
-          closeModalAndReset();
-          return;
-        }
-
-        const createdTaskIds: string[] = [];
-        for (const targetMachine of machinesArray) {
-          const destinationMachine = teamMachines.find((m) => m.machineName === targetMachine);
-          if (!destinationMachine) {
-            showMessage(
-              'error',
-              t('resources:repositories.destinationMachineNotFound', { machine: targetMachine })
-            );
-            continue;
-          }
-          try {
-            const result = await executeAction({
-              teamName: machine.teamName,
-              machineName: machine.machineName,
-              bridgeName: machine.bridgeName,
-              functionName: 'deploy',
-              params: {
-                ...functionData.params,
-                machines: machinesArray.join(','),
-                to: targetMachine,
-                dest: newRepo.repositoryGuid,
-                destName: newRepo.repositoryName,
-                repository: RepoData.repositoryGuid,
-                repositoryName: RepoData.repositoryName,
-                grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
-                state: selectedRepository.mounted ? 'online' : 'offline',
-              },
-              priority: functionData.priority,
-              addedVia: 'machine-Repository-list',
-              machineVault: machine.vaultContent || '{}',
-              destinationMachineVault: destinationMachine.vaultContent || '{}',
-              repositoryGuid,
-              vaultContent,
-              repositoryNetworkId: newRepo.repositoryNetworkId,
-              repositoryNetworkMode: newRepo.repositoryNetworkMode,
-              repositoryTag: newRepo.repositoryTag,
-            });
-            if (result.success && result.taskId) createdTaskIds.push(result.taskId);
-          } catch {
-            showMessage(
-              'error',
-              t('resources:repositories.failedToDeployTo', { machine: targetMachine })
-            );
-          }
-        }
-
-        closeModalAndReset();
-        showMultiTargetSummary(createdTaskIds, machinesArray.length, {
-          success: 'resources:repositories.deploymentQueued',
-          partial: 'resources:repositories.deploymentPartialSuccess',
-          allFailed: 'resources:repositories.allDeploymentsFailed',
-        });
+      if (functionName === 'backup' && functionData.params.storages) {
+        await handleBackupFunction(functionData, context);
         return;
       }
 
-      if (functionData.function.name === 'backup' && functionData.params.storages) {
-        if (!canBackupToStorage(RepoData).canBackup) {
-          showMessage('error', t('resources:repositories.cannotBackupForkToStorage'));
-          closeModalAndReset();
-          return;
-        }
-
-        const storagesArray = Array.isArray(functionData.params.storages)
-          ? functionData.params.storages
-          : [functionData.params.storages];
-        const createdTaskIds: string[] = [];
-
-        for (const targetStorage of storagesArray) {
-          const destinationStorage = teamStorages.find((s) => s.storageName === targetStorage);
-          if (!destinationStorage) {
-            showMessage(
-              'error',
-              t('resources:repositories.destinationStorageNotFound', { storage: targetStorage })
-            );
-            continue;
-          }
-          try {
-            const result = await executeAction({
-              teamName: machine.teamName,
-              machineName: machine.machineName,
-              bridgeName: machine.bridgeName,
-              functionName: 'backup',
-              params: {
-                ...functionData.params,
-                storages: storagesArray.join(','),
-                to: targetStorage,
-                dest: RepoData.repositoryGuid,
-                destName: RepoData.repositoryName,
-                repository: RepoData.repositoryGuid,
-                repositoryName: RepoData.repositoryName,
-                grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
-                state: selectedRepository.mounted ? 'online' : 'offline',
-              },
-              priority: functionData.priority,
-              addedVia: 'machine-Repository-list',
-              machineVault: machine.vaultContent || '{}',
-              destinationStorageVault: destinationStorage.vaultContent || '{}',
-              repositoryGuid,
-              vaultContent,
-              repositoryNetworkId: RepoData.repositoryNetworkId,
-              repositoryNetworkMode: RepoData.repositoryNetworkMode,
-              repositoryTag: RepoData.repositoryTag,
-            });
-            if (result.success && result.taskId) createdTaskIds.push(result.taskId);
-          } catch {
-            showMessage(
-              'error',
-              t('resources:repositories.failedToBackupTo', { storage: targetStorage })
-            );
-          }
-        }
-
-        closeModalAndReset();
-        showMultiTargetSummary(createdTaskIds, storagesArray.length, {
-          success: 'resources:repositories.backupQueued',
-          partial: 'resources:repositories.backupPartialSuccess',
-          allFailed: 'resources:repositories.allBackupsFailed',
-        });
+      if (functionName === 'pull') {
+        await handlePullFunction(functionData, context);
         return;
       }
 
-      if (functionData.function.name === 'pull') {
-        finalParams.repository = RepoData.repositoryGuid;
-        finalParams.grand = RepoData.grandGuid || RepoData.repositoryGuid || '';
-      }
-
-      const result = await executeAction({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        functionName: functionData.function.name,
-        params: finalParams,
-        priority: functionData.priority,
-        addedVia: 'machine-Repository-list',
-        machineVault: machine.vaultContent || '{}',
-        repositoryGuid,
-        vaultContent,
-        repositoryNetworkId: RepoData.repositoryNetworkId,
-        repositoryNetworkMode: RepoData.repositoryNetworkMode,
-        repositoryTag: RepoData.repositoryTag,
-      });
-
-      functionModal.close();
-      setSelectedRepo(null);
-
-      if (result.success) {
-        if (result.taskId) {
-          showMessage('success', t('resources:repositories.queueItemCreated'));
-          if (onQueueItemCreated) {
-            onQueueItemCreated(result.taskId, machine.machineName);
-          }
-        } else if (result.isQueued) {
-          showMessage('info', t('resources:repositories.highestPriorityQueued'));
-        }
-      } else {
-        throw new Error(result.error || t('resources:repositories.failedToCreateQueueItem'));
-      }
+      await handleCustomFunction(functionData, context);
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -994,13 +536,13 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           userEmail={userEmail}
           containersData={containersData}
           isExecuting={isExecuting}
-          onQuickAction={handleQuickAction}
+          onQuickAction={executeQuickAction}
           onRunFunction={handleRunFunction}
           onPromoteToGrand={handlePromoteToGrand}
-          onDeleteFork={handleDeleteFork}
+          onDeleteFork={confirmForkDeletion}
           onRenameTag={handleRenameTag}
           onRenameRepository={handleRenameRepo}
-          onDeleteGrandRepository={handleDeleteGrandRepo}
+          onDeleteGrandRepository={confirmRepositoryDeletion}
           onRepositoryClick={onRepositoryClick}
           onCreateRepository={onCreateRepository}
           t={t}
