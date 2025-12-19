@@ -2,17 +2,17 @@ import type { AdditionalVaultData, SourceOption } from './types';
 
 interface Machine {
   machineName: string;
-  vaultContent?: string;
+  vaultContent?: string | null;
 }
 
 interface Storage {
   storageName: string;
-  vaultContent?: string;
+  vaultContent?: string | null;
 }
 
 interface Team {
   teamName: string;
-  vaultContent?: string;
+  vaultContent?: string | null;
 }
 
 export function buildPullQueueVault(params: {

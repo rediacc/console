@@ -1,10 +1,11 @@
 import React from 'react';
 import { RediaccAlert } from '@/components/ui';
 import { normalizeToNumber, normalizeToString } from '@/platform';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { CloseCircleOutlined, RetweetOutlined } from '@/utils/optimizedIcons';
 
 interface FailureReasonAlertProps {
-  queueDetails: Record<string, unknown> | null | undefined;
+  queueDetails: GetTeamQueueItems_ResultSet1 | null | undefined;
 }
 
 export const FailureReasonAlert: React.FC<FailureReasonAlertProps> = ({ queueDetails }) => {

@@ -10,7 +10,7 @@ interface UseQuickRepositoryActionParams {
     repositoryGuid: string;
     vaultContent?: string;
     grandGuid?: string;
-    repositoryNetworkId?: string;
+    repositoryNetworkId?: number;
     repositoryNetworkMode?: string;
   }>;
   machine: {

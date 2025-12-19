@@ -1,10 +1,11 @@
 import React from 'react';
 import { RediaccAlert } from '@/components/ui';
 import { WarningOutlined } from '@/utils/optimizedIcons';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { isStalePending } from '../utils';
 
 interface OldPendingWarningProps {
-  queueDetails: Record<string, unknown> | null | undefined;
+  queueDetails: GetTeamQueueItems_ResultSet1 | null | undefined;
 }
 
 export const OldPendingWarning: React.FC<OldPendingWarningProps> = ({ queueDetails }) => {

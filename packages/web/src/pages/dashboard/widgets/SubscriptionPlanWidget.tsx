@@ -41,7 +41,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
         <InlineStack>
           <CrownOutlined />
           <span>Subscription & Plan Details - {planLimits?.planCode ?? 'N/A'}</span>
-          {allActiveSubscriptions.length > 0 && (
+          {allActiveSubscriptions && allActiveSubscriptions.length > 0 && (
             <PlanCountBadge count={allActiveSubscriptions.length} />
           )}
         </InlineStack>
@@ -49,7 +49,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
       data-testid="dashboard-card-subscription-plans"
     >
       <Row gutter={[24, 24]}>
-        <Col xs={24} md={allActiveSubscriptions.length > 0 ? 12 : 24}>
+        <Col xs={24} md={allActiveSubscriptions && allActiveSubscriptions.length > 0 ? 12 : 24}>
           {activeSubscription ? (
             <RediaccStack direction="vertical" gap="md" fullWidth>
               <div>
@@ -84,7 +84,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
           )}
         </Col>
 
-        {allActiveSubscriptions.length > 0 && (
+        {allActiveSubscriptions && allActiveSubscriptions.length > 0 && (
           <Col xs={24} md={12}>
             <RediaccStack direction="vertical" gap="md" fullWidth>
               <div>

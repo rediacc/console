@@ -11,7 +11,7 @@ interface UseConfirmForkDeletionParams {
     repositoryGuid: string;
     grandGuid?: string;
     vaultContent?: string;
-    repositoryNetworkId?: string;
+    repositoryNetworkId?: number;
     parentGuid?: string;
   }>;
   machine: {

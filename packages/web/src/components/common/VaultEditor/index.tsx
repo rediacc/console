@@ -43,7 +43,6 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
     selectedProvider,
     testConnectionSuccess,
     osSetupCompleted,
-    formatJsonRef,
     setTestTaskId,
     isTestingConnection,
     setIsTestingConnection,

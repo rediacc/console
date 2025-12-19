@@ -16,11 +16,11 @@ interface UseConfirmRepositoryDeletionParams {
     repositoryGuid: string;
     grandGuid?: string;
     vaultContent?: string;
-    repositoryNetworkId?: string;
+    repositoryNetworkId?: number;
   }>;
   modal: HookAPI;
   t: TFunction;
-  onConfirm: (context: ReturnType<typeof prepareGrandDeletion> & { status: 'ready' }) => Promise<void>;
+  onConfirm: (context: ReturnType<typeof prepareGrandDeletion>) => Promise<void>;
 }
 
 export const useConfirmRepositoryDeletion = ({

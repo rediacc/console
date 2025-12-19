@@ -2,12 +2,13 @@ import React from 'react';
 import { Progress, Space, Steps, Typography } from 'antd';
 import { RediaccStack } from '@/components/ui';
 import { normalizeToString, formatTimestampAsIs } from '@/platform';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { SpacedCardBottom, NoteWrapper, ItalicCaption } from '../styles';
 import { getCurrentStep, getSimplifiedStatus, getTimelineTimestamp } from '../utils';
 import type { TraceLog } from '../types';
 
 interface QueueItemHeaderProps {
-  queueDetails: Record<string, unknown>;
+  queueDetails: GetTeamQueueItems_ResultSet1;
   traceLogs: TraceLog[];
   progressMessage: string | null;
   consoleProgress: number | null;
@@ -48,7 +49,7 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
             {
               title: 'Assigned',
               description: queueDetails.assignedTime
-                ? formatTimestampAsIs(queueDetails.assignedTime, 'time')
+                ? formatTimestampAsIs(queueDetails.assignedTime as string, 'time')
                 : 'Waiting',
             },
             {

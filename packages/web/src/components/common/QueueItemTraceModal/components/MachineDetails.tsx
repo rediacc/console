@@ -1,24 +1,23 @@
 import React from 'react';
 import { Card, Col, Collapse, Descriptions, Row, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { Theme } from '@/context/ThemeContext';
 import { RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
-import { normalizeToNumber } from '@/platform';
 import { CodeOutlined, RightOutlined, RetweetOutlined, TeamOutlined, UserOutlined } from '@/utils/optimizedIcons';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { ConsoleOutput } from './ConsoleOutput';
 import { StatsPanel } from './StatsPanel';
 import { getPriorityInfo } from '../utils';
 
 interface MachineDetailsProps {
-  queueDetails: Record<string, unknown>;
+  queueDetails: GetTeamQueueItems_ResultSet1;
   totalDurationSeconds: number;
   processingDurationSeconds: number;
   isTaskStale: boolean;
   isDetailedConsoleExpanded: boolean;
   setIsDetailedConsoleExpanded: (expanded: boolean) => void;
   accumulatedOutput: string;
-  theme: Theme;
-  consoleOutputRef: React.RefObject<HTMLPreElement>;
+  theme: 'light' | 'dark';
+  consoleOutputRef: React.RefObject<HTMLDivElement | null>;
   hasContent: boolean;
 }
 
@@ -45,14 +44,14 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
             <Descriptions column={1} size="small">
               <Descriptions.Item label="Task ID">
                 <RediaccText code>
-                  {normalizeToNumber(queueDetails, 0, 'taskId', 'TaskId') || queueDetails.taskId}
+                  {queueDetails.taskId}
                 </RediaccText>
               </Descriptions.Item>
               <Descriptions.Item label="Created By">
                 <Space>
                   <UserOutlined />
                   <RediaccText>
-                    {(queueDetails.createdBy as string) || 'System'}
+                    {queueDetails.createdBy || 'System'}
                   </RediaccText>
                 </Space>
               </Descriptions.Item>
@@ -61,14 +60,14 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
                   <RetweetOutlined />
                   <RediaccTag
                     variant={
-                      normalizeToNumber(queueDetails, 0, 'retryCount', 'RetryCount') === 0
+                      (queueDetails.retryCount ?? 0) === 0
                         ? 'success'
-                        : normalizeToNumber(queueDetails, 0, 'retryCount', 'RetryCount') < 2
+                        : (queueDetails.retryCount ?? 0) < 2
                           ? 'warning'
                           : 'error'
                     }
                   >
-                    {normalizeToNumber(queueDetails, 0, 'retryCount', 'RetryCount')} / 2 retries
+                    {queueDetails.retryCount ?? 0} / 2 retries
                   </RediaccTag>
                   {queueDetails.permanentlyFailed && (
                     <RediaccTag variant="error">Permanently Failed</RediaccTag>
@@ -78,21 +77,15 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
               <Descriptions.Item label="Priority">
                 <Space>
                   {
-                    getPriorityInfo(
-                      normalizeToNumber(queueDetails, 0, 'priority', 'Priority')
-                    ).icon
+                    getPriorityInfo(queueDetails.priority ?? undefined).icon
                   }
                   <RediaccTag
                     variant={
-                      getPriorityInfo(
-                        normalizeToNumber(queueDetails, 0, 'priority', 'Priority')
-                      ).color as 'neutral'
+                      getPriorityInfo(queueDetails.priority ?? undefined).color as 'neutral'
                     }
                   >
                     {
-                      getPriorityInfo(
-                        normalizeToNumber(queueDetails, 0, 'priority', 'Priority')
-                      ).label
+                      getPriorityInfo(queueDetails.priority ?? undefined).label
                     }
                   </RediaccTag>
                 </Space>
@@ -109,17 +102,17 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
               <Descriptions.Item label="Machine">
                 <Space>
                   <TeamOutlined />
-                  <RediaccText>{queueDetails.machineName as string}</RediaccText>
+                  <RediaccText>{queueDetails.machineName}</RediaccText>
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Team">
-                <RediaccText>{queueDetails.teamName as string}</RediaccText>
+                <RediaccText>{queueDetails.teamName}</RediaccText>
               </Descriptions.Item>
               <Descriptions.Item label="Bridge">
-                <RediaccText>{queueDetails.bridgeName as string}</RediaccText>
+                <RediaccText>{queueDetails.bridgeName}</RediaccText>
               </Descriptions.Item>
               <Descriptions.Item label="Region">
-                <RediaccText>{queueDetails.regionName as string}</RediaccText>
+                <RediaccText>{queueDetails.regionName}</RediaccText>
               </Descriptions.Item>
             </Descriptions>
           </Card>

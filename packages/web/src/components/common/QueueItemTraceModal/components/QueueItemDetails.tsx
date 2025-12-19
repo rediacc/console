@@ -2,9 +2,10 @@ import React from 'react';
 import { Descriptions } from 'antd';
 import { RediaccTag, RediaccText } from '@/components/ui';
 import { normalizeToNumber, normalizeToString, formatTimestampAsIs, formatDurationFull } from '@/platform';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 
 interface QueueItemDetailsProps {
-  queueDetails: Record<string, unknown>;
+  queueDetails: GetTeamQueueItems_ResultSet1;
   totalDurationSeconds: number;
   processingDurationSeconds: number;
 }
@@ -41,10 +42,18 @@ export const QueueItemDetails: React.FC<QueueItemDetailsProps> = ({
       <Descriptions.Item label="Priority">
         {queueDetails.priorityLabel || '-'}
       </Descriptions.Item>
-      <Descriptions.Item label="Machine">{queueDetails.machineName}</Descriptions.Item>
-      <Descriptions.Item label="Team">{queueDetails.teamName}</Descriptions.Item>
-      <Descriptions.Item label="Bridge">{queueDetails.bridgeName}</Descriptions.Item>
-      <Descriptions.Item label="Region">{queueDetails.regionName}</Descriptions.Item>
+      <Descriptions.Item label="Machine">
+        <RediaccText>{queueDetails.machineName}</RediaccText>
+      </Descriptions.Item>
+      <Descriptions.Item label="Team">
+        <RediaccText>{queueDetails.teamName}</RediaccText>
+      </Descriptions.Item>
+      <Descriptions.Item label="Bridge">
+        <RediaccText>{queueDetails.bridgeName}</RediaccText>
+      </Descriptions.Item>
+      <Descriptions.Item label="Region">
+        <RediaccText>{queueDetails.regionName}</RediaccText>
+      </Descriptions.Item>
       <Descriptions.Item label="Created">
         {formatTimestampAsIs(queueDetails.createdTime, 'datetime')}
       </Descriptions.Item>

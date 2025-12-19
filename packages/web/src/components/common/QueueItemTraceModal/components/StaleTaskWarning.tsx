@@ -9,11 +9,13 @@ import {
   SyncOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import type { TaskStaleness } from '../utils';
+import type { TaskStalenessLevel } from '../types';
+
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 
 interface StaleTaskWarningProps {
-  taskStaleness: TaskStaleness;
-  queueDetails: Record<string, unknown> | null | undefined;
+  taskStaleness: TaskStalenessLevel;
+  queueDetails: GetTeamQueueItems_ResultSet1 | null | undefined;
   isCancelling: boolean;
   onCancel: () => void;
 }

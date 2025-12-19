@@ -12,7 +12,7 @@ export interface FunctionExecutionContext {
     vaultContent?: string;
     grandGuid?: string;
     parentGuid?: string;
-    repositoryNetworkId?: string;
+    repositoryNetworkId?: number;
     repositoryNetworkMode?: string;
   }>;
   machine: {
@@ -38,7 +38,7 @@ export interface FunctionExecutionContext {
   createRepositoryCredential: (name: string, tag: string) => Promise<{
     repositoryGuid: string;
     repositoryName: string;
-    repositoryNetworkId?: string;
+    repositoryNetworkId?: number;
     repositoryNetworkMode?: string;
     repositoryTag: string;
   }>;
