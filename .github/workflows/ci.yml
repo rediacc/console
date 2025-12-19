@@ -222,6 +222,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build shared libraries
+        run: npm run build:packages
+
       - name: Run unit tests
         run: npm run test:run
 
