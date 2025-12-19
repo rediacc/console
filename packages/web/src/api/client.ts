@@ -79,11 +79,7 @@ class ApiClient implements SharedApiClient {
       }
 
       if (config.data && hasVaultFields(config.data)) {
-        try {
-          config.data = await encryptRequestData(config.data);
-        } catch (error) {
-          throw error;
-        }
+        config.data = await encryptRequestData(config.data);
       }
       return config;
     });
