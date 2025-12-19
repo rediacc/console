@@ -27,9 +27,9 @@ import {
   SourceLabel,
   SourceSelect,
 } from './styles';
-import type { RemoteFile, RemoteFileBrowserModalProps, SourceOption } from './types';
 import { useBrowserQueueAction } from './useBrowserQueueAction';
 import { buildListQueueVault, buildPullQueueVault } from './vaultBuilder';
+import type { RemoteFile, RemoteFileBrowserModalProps, SourceOption } from './types';
 
 export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   open,
