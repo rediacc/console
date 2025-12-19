@@ -35,9 +35,7 @@ export const resolveTooltipVariantTokens = (
     bg: keys.bg === 'tooltipBg' ? tooltipBg : theme.colors[keys.bg],
     color: theme.colors[keys.color],
     borderColor:
-      keys.borderColor === 'transparent'
-        ? 'transparent'
-        : theme.colors[keys.borderColor],
+      keys.borderColor === 'transparent' ? 'transparent' : theme.colors[keys.borderColor],
   };
 };
 

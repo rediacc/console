@@ -470,17 +470,30 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                     {
                       title: 'Completed',
                       description: (() => {
-                        const status = normalizeToString(traceData.queueDetails, 'status', 'Status');
+                        const status = normalizeToString(
+                          traceData.queueDetails,
+                          'status',
+                          'Status'
+                        );
                         if (status === 'COMPLETED') {
-                          const timestamp = getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED');
+                          const timestamp = getTimelineTimestamp(
+                            traceData.traceLogs,
+                            'QUEUE_ITEM_COMPLETED'
+                          );
                           return `Done${timestamp ? ' - ' + timestamp : ''}`;
                         }
                         if (status === 'FAILED') {
-                          const timestamp = getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED');
+                          const timestamp = getTimelineTimestamp(
+                            traceData.traceLogs,
+                            'QUEUE_ITEM_FAILED'
+                          );
                           return `Failed${timestamp ? ' - ' + timestamp : ''}`;
                         }
                         if (status === 'CANCELLED') {
-                          const timestamp = getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED');
+                          const timestamp = getTimelineTimestamp(
+                            traceData.traceLogs,
+                            'QUEUE_ITEM_CANCELLED'
+                          );
                           return `Cancelled${timestamp ? ' - ' + timestamp : ''}`;
                         }
                         if (status === 'CANCELLING') {

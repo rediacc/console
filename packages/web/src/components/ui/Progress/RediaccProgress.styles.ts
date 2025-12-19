@@ -30,10 +30,7 @@ const PROGRESS_COLOR_MAP: Record<ProgressStatus, keyof StyledTheme['colors']> = 
   normal: 'primary',
 };
 
-export const resolveProgressColor = (
-  theme: StyledTheme,
-  status?: ProgressStatus
-): string => {
+export const resolveProgressColor = (theme: StyledTheme, status?: ProgressStatus): string => {
   return theme.colors[PROGRESS_COLOR_MAP[status || 'normal'] || PROGRESS_COLOR_MAP.normal];
 };
 

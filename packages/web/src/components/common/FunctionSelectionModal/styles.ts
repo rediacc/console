@@ -1,11 +1,6 @@
 import styled from 'styled-components';
 import { ContentStack } from '@/components/common/styled';
-import {
-  RediaccAlert,
-  RediaccTag,
-  RediaccText,
-  RediaccCard,
-} from '@/components/ui';
+import { RediaccAlert, RediaccTag, RediaccText, RediaccCard } from '@/components/ui';
 import {
   RediaccInput,
   RediaccInputNumber,

@@ -10,7 +10,13 @@ import { ActionGroup, CenteredState } from '@/components/common/styled';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import { RediaccButton, RediaccCard, RediaccTag, RediaccText, RediaccTooltip } from '@/components/ui';
+import {
+  RediaccButton,
+  RediaccCard,
+  RediaccTag,
+  RediaccText,
+  RediaccTooltip,
+} from '@/components/ui';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import { usePanelWidth } from '@/hooks/usePanelWidth';

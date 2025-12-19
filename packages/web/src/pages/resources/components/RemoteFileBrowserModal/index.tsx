@@ -19,7 +19,13 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { createTruncatedColumn } from '@/components/common/columns';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccInput, RediaccSelect, RediaccStack, RediaccTable, RediaccTooltip } from '@/components/ui';
+import {
+  RediaccInput,
+  RediaccSelect,
+  RediaccStack,
+  RediaccTable,
+  RediaccTooltip,
+} from '@/components/ui';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { createCustomSorter, createSorter } from '@/platform';

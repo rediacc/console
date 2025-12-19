@@ -2,10 +2,7 @@ import React, { useEffect, useState, type ComponentPropsWithoutRef } from 'react
 import { Col, List, Row, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown, { type Components as MarkdownComponents } from 'react-markdown';
-import {
-  Prism as SyntaxHighlighter,
-  type SyntaxHighlighterProps,
-} from 'react-syntax-highlighter';
+import { Prism as SyntaxHighlighter, type SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {

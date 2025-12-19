@@ -174,7 +174,9 @@ export const getJsonFieldProps = (
       }
       return Promise.resolve();
     } catch {
-      throw new Error(t(isArray ? 'vaultEditor.mustBeValidJsonArray' : 'vaultEditor.mustBeValidJson'));
+      throw new Error(
+        t(isArray ? 'vaultEditor.mustBeValidJsonArray' : 'vaultEditor.mustBeValidJson')
+      );
     }
   };
 

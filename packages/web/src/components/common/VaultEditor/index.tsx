@@ -1068,11 +1068,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                       const field =
                         providerFields.fields[fieldName as keyof typeof providerFields.fields];
                       if (!field) return null;
-                      return (
-                        <div key={fieldName}>
-                          {renderField(fieldName, field, true, true)}
-                        </div>
-                      );
+                      return <div key={fieldName}>{renderField(fieldName, field, true, true)}</div>;
                     })}
                   </>
                 )}
@@ -1090,9 +1086,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                         providerFields.fields[fieldName as keyof typeof providerFields.fields];
                       if (!field) return null;
                       return (
-                        <div key={fieldName}>
-                          {renderField(fieldName, field, false, true)}
-                        </div>
+                        <div key={fieldName}>{renderField(fieldName, field, false, true)}</div>
                       );
                     })}
                   </>

@@ -28,7 +28,10 @@ const ALERT_SPACING_MAP: Record<AlertSpacing, keyof StyledTheme['spacing'] | 0> 
 };
 
 // Resolve spacing to margin-bottom pixels
-export const resolveAlertSpacing = (spacing: AlertSpacing | undefined, theme: StyledTheme): number => {
+export const resolveAlertSpacing = (
+  spacing: AlertSpacing | undefined,
+  theme: StyledTheme
+): number => {
   if (!spacing) return 0;
   const value = ALERT_SPACING_MAP[spacing];
   return typeof value === 'number' ? value : theme.spacing[value];

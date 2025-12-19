@@ -8,11 +8,7 @@ import { useMessage } from '@/hooks';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { STORAGE_FIELDS_TO_KEEP, storageProviderConfig, vaultDefinitionConfig } from '../constants';
 import { decodeBase64, encodeBase64, formatValidationErrors, processExtraFields } from '../utils';
-import type {
-  ValidateErrorEntity,
-  VaultEditorProps,
-  VaultFormValues,
-} from '../types';
+import type { ValidateErrorEntity, VaultEditorProps, VaultFormValues } from '../types';
 
 export const useVaultEditorState = (props: VaultEditorProps) => {
   const {

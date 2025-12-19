@@ -368,10 +368,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
                   return Promise.resolve();
                 }
                 throw new Error(
-                  t(
-                    'auth:registration.termsRequired',
-                    'You must accept the terms and conditions'
-                  )
+                  t('auth:registration.termsRequired', 'You must accept the terms and conditions')
                 );
               },
             },

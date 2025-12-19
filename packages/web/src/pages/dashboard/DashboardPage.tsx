@@ -6,7 +6,15 @@ import { useRecentAuditLogs } from '@/api/queries/audit';
 import { useDashboard } from '@/api/queries/dashboard';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccCard, RediaccStack, RediaccStatistic, RediaccTable, RediaccTag, RediaccText, RediaccTooltip } from '@/components/ui';
+import {
+  RediaccCard,
+  RediaccStack,
+  RediaccStatistic,
+  RediaccTable,
+  RediaccTag,
+  RediaccText,
+  RediaccTooltip,
+} from '@/components/ui';
 import CephDashboardWidget from '@/pages/dashboard/components/CephDashboardWidget';
 import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
 import { createSorter } from '@/platform';

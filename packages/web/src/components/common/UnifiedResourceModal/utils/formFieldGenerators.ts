@@ -263,9 +263,7 @@ export const getFormFields = ({
     }
 
     const selectedTeamName =
-      getFormValue('teamName') ||
-      existingData?.teamName ||
-      preselectedTeamName;
+      getFormValue('teamName') || existingData?.teamName || preselectedTeamName;
     const machinesByTeamFull = dropdownData?.machinesByTeam ?? [];
     const teamMachines =
       machinesByTeamFull.find((team) => team.teamName === selectedTeamName)?.machines || [];

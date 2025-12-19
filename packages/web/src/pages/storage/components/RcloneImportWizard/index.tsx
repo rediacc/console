@@ -4,7 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { useCreateStorage, useStorage } from '@/api/queries/storage';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccAlert, RediaccButton, RediaccCheckbox, RediaccTable, RediaccTooltip } from '@/components/ui';
+import {
+  RediaccAlert,
+  RediaccButton,
+  RediaccCheckbox,
+  RediaccTable,
+  RediaccTooltip,
+} from '@/components/ui';
 import { createSorter } from '@/platform';
 import {
   CheckCircleOutlined,

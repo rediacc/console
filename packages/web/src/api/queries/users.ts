@@ -3,6 +3,7 @@ import { api } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
 import { hashPassword } from '@/utils/auth';
+import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 import type {
   CreatePermissionGroupParams,
   DeleteUserRequestParams,
@@ -17,7 +18,6 @@ import type {
   UserRequest,
   UserVault,
 } from '@rediacc/shared/types';
-import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 
 // Get all users
 export const useUsers = () => {

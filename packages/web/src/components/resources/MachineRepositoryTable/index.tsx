@@ -1050,12 +1050,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     <S.Container data-testid="machine-repo-list">
       {isLoading && (
         <S.LoadingOverlay>
-          <LoadingWrapper
-            loading
-            centered
-            minHeight={120}
-            tip={t('common:general.refreshing')}
-          >
+          <LoadingWrapper loading centered minHeight={120} tip={t('common:general.refreshing')}>
             <div />
           </LoadingWrapper>
         </S.LoadingOverlay>
