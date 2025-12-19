@@ -16,12 +16,9 @@ import VaultEditorModal from '@/components/common/VaultEditorModal';
 import { RediaccButton, RediaccText } from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
-import { templateService } from '@/services/templateService';
 import { RootState } from '@/store/store';
-import type { Machine, Repository } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { AppstoreOutlined } from '@/utils/optimizedIcons';
-import type { GetCompanyTeams_ResultSet1 } from '@rediacc/shared/types';
 import {
   renderModalTitle,
   resolveTeamName,
@@ -31,6 +28,7 @@ import {
 } from './components/ModalHeaderRenderer';
 import { ResourceModalDialogs } from './components/ResourceModalDialogs';
 import { useBridgeSelection } from './hooks/useBridgeSelection';
+import { useResourceDefaults } from './hooks/useResourceDefaults';
 import { useResourceSchema } from './hooks/useResourceSchema';
 import { useTemplateSelection } from './hooks/useTemplateSelection';
 import {
@@ -43,19 +41,19 @@ import {
   UploadIcon,
 } from './styles';
 import { getFormFields } from './utils/formFieldGenerators';
+import { parseVaultData } from './utils/parseVaultData';
+import { transformFormData } from './utils/transformFormData';
+import type { ExistingResourceData, ResourceFormValues, ResourceType } from './types';
 
-export type ResourceType =
-  | 'machine'
-  | 'repository'
-  | 'storage'
-  | 'team'
-  | 'region'
-  | 'bridge'
-  | 'cluster'
-  | 'pool'
-  | 'image'
-  | 'snapshot'
-  | 'clone';
+type FunctionParamsMap = Record<string, string | number | string[] | undefined>;
+
+type FunctionSubmitPayload = {
+  function: QueueFunction;
+  params: FunctionParamsMap;
+  priority: number;
+  description: string;
+  selectedMachine?: string;
+};
 
 export interface UnifiedResourceModalProps {
   open: boolean;
@@ -75,34 +73,6 @@ export interface UnifiedResourceModalProps {
   preselectedFunction?: string;
   creationContext?: 'credentials-only' | 'normal';
 }
-
-type ResourceFormValues = Record<string, unknown>;
-
-type ExistingResourceData = Partial<Machine> &
-  Partial<Repository> &
-  Partial<GetCompanyTeams_ResultSet1> & {
-    prefilledMachine?: boolean;
-    clusters?: Array<{ clusterName: string }>;
-    pools?: Array<{ poolName: string; clusterName: string }>;
-    availableMachines?: Array<{
-      machineName: string;
-      bridgeName: string;
-      regionName: string;
-      status?: string;
-    }>;
-    images?: Array<{ imageName: string }>;
-    snapshots?: Array<{ snapshotName: string }>;
-  } & Record<string, unknown>;
-
-type FunctionParamsMap = Record<string, string | number | string[] | undefined>;
-
-type FunctionSubmitPayload = {
-  function: QueueFunction;
-  params: FunctionParamsMap;
-  priority: number;
-  description: string;
-  selectedMachine?: string;
-};
 
 const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   open,
@@ -201,60 +171,17 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     getFormValue,
   });
 
-  // Set default values when modal opens
-  useEffect(() => {
-    if (open && mode === 'create') {
-      // Reset form to default values first
-      form.reset(getDefaultValues());
-
-      // Reset template selection for repositories (unless preselected)
-      if (resourceType === 'repository') {
-        const preselected =
-          existingData &&
-          typeof (existingData as Record<string, unknown>).preselectedTemplate === 'string'
-            ? (existingData as Record<string, string>).preselectedTemplate || null
-            : null;
-        setSelectedTemplate(preselected);
-      }
-
-      // Set team if preselected or from existing data
-      if (existingData?.teamName) {
-        form.setValue('teamName', existingData.teamName);
-      } else if (teamFilter) {
-        if (Array.isArray(teamFilter) && teamFilter.length === 1) {
-          const [singleTeam] = teamFilter;
-          if (singleTeam) {
-            form.setValue('teamName', singleTeam);
-          }
-        } else if (!Array.isArray(teamFilter)) {
-          form.setValue('teamName', teamFilter);
-        }
-      }
-
-      // For repositories, set prefilled machine
-      if (resourceType === 'repository' && existingData?.machineName) {
-        form.setValue('machineName', existingData.machineName);
-      }
-
-      // For machines, set default region and bridge
-      // NOTE: Even when disableBridge is enabled and bridge field is hidden,
-      // we still auto-select the first bridge to satisfy backend requirements
-      if (resourceType === 'machine' && dropdownData?.regions && dropdownData.regions.length > 0) {
-        const firstRegion = dropdownData.regions[0].value;
-        form.setValue('regionName', firstRegion);
-
-        const regionBridges = dropdownData.bridgesByRegion?.find(
-          (region) => region.regionName === firstRegion
-        );
-
-        if (regionBridges?.bridges && regionBridges.bridges.length > 0) {
-          const firstBridge = regionBridges.bridges[0].value;
-          form.setValue('bridgeName', firstBridge);
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode, teamFilter, resourceType, form, dropdownData, existingData]);
+  // Set default values when modal opens using custom hook
+  useResourceDefaults({
+    open,
+    mode,
+    resourceType,
+    form,
+    dropdownData,
+    existingData,
+    teamFilter,
+    setSelectedTemplate,
+  });
 
   // Reset form values when modal opens in edit mode
   useEffect(() => {
@@ -354,7 +281,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       const vaultData: Record<string, unknown> = vaultString ? JSON.parse(vaultString) : {};
       const sshPassword = vaultData.ssh_password;
       const sshKeyConfigured = vaultData.ssh_key_configured;
-      // Only block if password exists AND SSH key is not configured
+
       if (typeof sshPassword === 'string' && sshPassword && !sshKeyConfigured) {
         message.error('machines:validation.sshPasswordNotAllowed');
         return;
@@ -365,70 +292,17 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       }
     }
 
-    if (uiMode === 'simple' && mode === 'create') {
-      // Only set defaults if not already provided
-      const defaults: ResourceFormValues = {};
+    // Transform form data using utility
+    const transformedData = await transformFormData(data, {
+      resourceType,
+      mode,
+      uiMode,
+      existingData,
+      selectedTemplate,
+      autoSetupEnabled,
+    });
 
-      // Preserve teamName from existingData if available (e.g., when creating repository from machine)
-      if (data.teamName) {
-        // Team name already set, no action needed
-      } else {
-        if (existingData?.teamName) {
-          defaults.teamName = existingData.teamName;
-        } else {
-          defaults.teamName = 'Private Team';
-        }
-      }
-
-      // Set machine-specific defaults
-      if (resourceType === 'machine') {
-        defaults.regionName = 'Default Region';
-        defaults.bridgeName = 'Global Bridges';
-      }
-
-      Object.assign(data, defaults);
-    }
-
-    // For repository creation from machine, ensure machine name is included
-    if (
-      resourceType === 'repository' &&
-      existingData?.machineName &&
-      existingData?.prefilledMachine
-    ) {
-      data.machineName = existingData.machineName;
-      // Also ensure teamName is preserved
-      if (existingData?.teamName && !data.teamName) {
-        data.teamName = existingData.teamName;
-      }
-    }
-
-    // Add template parameter for repository creation
-    if (resourceType === 'repository' && mode === 'create' && selectedTemplate) {
-      try {
-        // Fetch the template details by ID using templateService
-        data.tmpl = await templateService.getEncodedTemplateDataById(selectedTemplate);
-      } catch (error) {
-        console.error('Failed to load template:', error);
-        message.warning('resources:templates.failedToLoadTemplate');
-      }
-    }
-
-    // Always keep repository open after creation
-    if (resourceType === 'repository' && mode === 'create') {
-      data.keep_open = true;
-    }
-
-    // Add auto-setup flag for machine creation
-    if (mode === 'create' && resourceType === 'machine') {
-      data.autoSetup = autoSetupEnabled;
-    }
-
-    // For credential-only repository creation, ensure repositoryGuid is included
-    if (mode === 'create' && resourceType === 'repository' && existingData?.repositoryGuid) {
-      data.repositoryGuid = existingData.repositoryGuid;
-    }
-
-    await onSubmit(data);
+    await onSubmit(transformedData);
   };
 
   // Show functions button only for machines, repositories, and storage
@@ -620,64 +494,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           showDefaultsAlert={false}
           creationContext={creationContext}
           uiMode={uiMode}
-          initialVaultData={(() => {
-            if (existingData?.vaultContent) {
-              try {
-                let parsed = JSON.parse(existingData.vaultContent);
-                // Special handling for repositories - map the vault data correctly
-                if (resourceType === 'repository') {
-                  // The vault data might have the credential at root level or nested
-                  // We need to ensure it's in the format VaultEditor expects
-                  if (!parsed.credential && parsed.repositoryVault) {
-                    // If repositoryVault exists, it might contain the credential
-                    try {
-                      const innerVault =
-                        typeof parsed.repositoryVault === 'string'
-                          ? JSON.parse(parsed.repositoryVault)
-                          : parsed.repositoryVault;
-                      if (innerVault.credential) {
-                        parsed = { credential: innerVault.credential };
-                      }
-                    } catch (e) {
-                      console.error('[UnifiedResourceModal] Failed to parse inner vault:', e);
-                    }
-                  } else if (parsed.repositoryVault) {
-                    // Or it might be in repositoryVault
-                    try {
-                      const innerVault =
-                        typeof parsed.repositoryVault === 'string'
-                          ? JSON.parse(parsed.repositoryVault)
-                          : parsed.repositoryVault;
-                      if (innerVault.credential) {
-                        parsed = { credential: innerVault.credential };
-                      }
-                    } catch (e) {
-                      console.error('[UnifiedResourceModal] Failed to parse repository vault:', e);
-                    }
-                  }
-                  // If still no credential field but we have other fields, check if any could be the credential
-                  if (!parsed.credential) {
-                    // Check for any 32-character string that might be the credential
-                    for (const [, value] of Object.entries(parsed)) {
-                      if (
-                        typeof value === 'string' &&
-                        value.length === 32 &&
-                        /^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]+$/.test(value)
-                      ) {
-                        parsed = { credential: value };
-                        break;
-                      }
-                    }
-                  }
-                }
-                return parsed;
-              } catch (e) {
-                console.error('[UnifiedResourceModal] Failed to parse vault content:', e);
-                return {};
-              }
-            }
-            return {};
-          })()}
+          initialVaultData={parseVaultData(resourceType, existingData)}
           hideImportExport={true}
           isEditMode={mode === 'edit'}
           onImportExportRef={(handlers) => {
@@ -803,4 +620,4 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 };
 
 export default UnifiedResourceModal;
-export type { ExistingResourceData };
+export type { ExistingResourceData, ResourceType, ResourceFormValues };
