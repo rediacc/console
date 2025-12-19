@@ -91,3 +91,6 @@ export interface ActionButtonsProps {
   onClose: () => void;
   styles: ActionButtonStyles;
 }
+
+export type TraceLog = QueueTraceLog;
+export type TaskStaleness = TaskStalenessLevel;
