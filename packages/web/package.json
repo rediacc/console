@@ -9,7 +9,11 @@
     "preview": "vite preview",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
@@ -52,6 +56,8 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@types/d3": "^7.4.3",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
@@ -60,11 +66,14 @@
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",
     "@vitejs/plugin-react": "^5.1.2",
+    "@vitest/ui": "^4.0.16",
     "eslint": "^9.39.1",
+    "jsdom": "^27.3.0",
     "terser": "^5.44.0",
     "typescript": "^5.9.3",
     "vite": "^7.2.7",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^4.0.16"
   },
   "overrides": {
     "glob": "^10.3.10",
