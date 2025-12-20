@@ -42,6 +42,7 @@ import type { ColumnsType } from 'antd/es/table/interface';
 interface ConnectivityTestModalProps {
   open: boolean;
   onClose: () => void;
+  onTestsComplete?: () => void;
   machines: Machine[];
   teamFilter?: string | string[];
 }
@@ -60,6 +61,7 @@ interface TestResult {
 const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
   open,
   onClose,
+  onTestsComplete,
   machines,
 }) => {
   const { t } = useTranslation(['machines', 'common']);
@@ -173,6 +175,11 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     setProgress(100);
     setIsRunning(false);
     setCurrentMachineIndex(-1);
+
+    // Notify parent that tests completed
+    if (onTestsComplete) {
+      onTestsComplete();
+    }
 
     // Show summary
     const successCount = testResults.filter((r) => r.status === 'success').length;

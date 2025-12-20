@@ -5,12 +5,24 @@ import { RediaccCheckbox } from '@/components/ui/Form';
 import { StyledIcon } from '@/styles/primitives';
 import { DownloadOutlined, UploadOutlined } from '@/utils/optimizedIcons';
 
+export const FooterContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+`;
+
 export const FooterLeftActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 export const FooterRightActions = styled.div`
   display: flex;
   align-items: center;
+  gap: 8px;
 `;
 
 export const UploadIcon = styled(StyledIcon).attrs({

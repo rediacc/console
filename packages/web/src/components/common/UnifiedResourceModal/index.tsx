@@ -34,6 +34,7 @@ import { useTemplateSelection } from './hooks/useTemplateSelection';
 import {
   AutoSetupCheckbox,
   DownloadIcon,
+  FooterContainer,
   FooterLeftActions,
   FooterRightActions,
   SelectedTemplateTag,
@@ -392,95 +393,88 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         onCancel={onCancel}
         destroyOnClose
         footer={[
-          ...(mode === 'create' && uiMode === 'expert'
-            ? [
-                <FooterLeftActions key="left-buttons">
-                  <Space>
-                    <Upload
-                      data-testid="resource-modal-upload-json"
-                      accept=".json"
-                      showUploadList={false}
-                      beforeUpload={(file) => {
-                        if (importExportHandlers.current) {
-                          return importExportHandlers.current.handleImport(file);
-                        }
-                        return false;
-                      }}
-                    >
-                      <RediaccButton
-                        data-testid="resource-modal-import-button"
-                        icon={<UploadIcon />}
-                      >
-                        {t('common:vaultEditor.importJson')}
-                      </RediaccButton>
-                    </Upload>
+          <FooterContainer key="footer-container">
+            <FooterLeftActions>
+              {mode === 'create' && uiMode === 'expert' && (
+                <Space>
+                  <Upload
+                    data-testid="resource-modal-upload-json"
+                    accept=".json"
+                    showUploadList={false}
+                    beforeUpload={(file) => {
+                      if (importExportHandlers.current) {
+                        return importExportHandlers.current.handleImport(file);
+                      }
+                      return false;
+                    }}
+                  >
                     <RediaccButton
-                      data-testid="resource-modal-export-button"
-                      icon={<DownloadIcon />}
-                      onClick={() => {
-                        if (importExportHandlers.current) {
-                          importExportHandlers.current.handleExport();
-                        }
-                      }}
+                      data-testid="resource-modal-import-button"
+                      icon={<UploadIcon />}
                     >
-                      {t('common:vaultEditor.exportJson')}
+                      {t('common:vaultEditor.importJson')}
                     </RediaccButton>
-                  </Space>
-                </FooterLeftActions>,
-              ]
-            : []),
-          ...(mode === 'create' && resourceType === 'machine'
-            ? [
+                  </Upload>
+                  <RediaccButton
+                    data-testid="resource-modal-export-button"
+                    icon={<DownloadIcon />}
+                    onClick={() => {
+                      if (importExportHandlers.current) {
+                        importExportHandlers.current.handleExport();
+                      }
+                    }}
+                  >
+                    {t('common:vaultEditor.exportJson')}
+                  </RediaccButton>
+                </Space>
+              )}
+            </FooterLeftActions>
+            <FooterRightActions>
+              {mode === 'create' && resourceType === 'machine' && (
                 <AutoSetupCheckbox
-                  key="auto-setup"
                   data-testid="resource-modal-auto-setup-checkbox"
                   checked={autoSetupEnabled}
                   onChange={(e) => setAutoSetupEnabled(e.target.checked)}
                 >
                   {t('machines:autoSetupAfterCreation')}
-                </AutoSetupCheckbox>,
-              ]
-            : []),
-          <FooterRightActions key="right-buttons">
-            <RediaccButton
-              key="cancel"
-              data-testid="resource-modal-cancel-button"
-              onClick={onCancel}
-            >
-              {t('general.cancel')}
-            </RediaccButton>
-            {mode === 'create' && existingData && onUpdateVault && (
+                </AutoSetupCheckbox>
+              )}
               <RediaccButton
-                key="vault"
-                data-testid="resource-modal-vault-button"
-                onClick={() => vaultModal.open()}
+                data-testid="resource-modal-cancel-button"
+                onClick={onCancel}
               >
-                {t('general.vault')}
+                {t('general.cancel')}
               </RediaccButton>
-            )}
-            {showFunctions && (
+              {mode === 'create' && existingData && onUpdateVault && (
+                <RediaccButton
+                  data-testid="resource-modal-vault-button"
+                  onClick={() => vaultModal.open()}
+                >
+                  {t('general.vault')}
+                </RediaccButton>
+              )}
+              {showFunctions && (
+                <RediaccButton
+                  data-testid="resource-modal-functions-button"
+                  onClick={() => functionModal.open()}
+                >
+                  {t(`${resourceType}s.${resourceType}Functions`)}
+                </RediaccButton>
+              )}
               <RediaccButton
-                key="functions"
-                data-testid="resource-modal-functions-button"
-                onClick={() => functionModal.open()}
+                data-testid="resource-modal-ok-button"
+                loading={isSubmitting}
+                disabled={mode === 'create' && resourceType === 'machine' && !testConnectionSuccess}
+                onClick={() => {
+                  if (formRef.current) {
+                    formRef.current.submit();
+                  }
+                }}
               >
-                {t(`${resourceType}s.${resourceType}Functions`)}
+                {mode === 'create' ? t('general.create') : t('general.save')}
               </RediaccButton>
-            )}
-            <RediaccButton
-              key="submit"
-              data-testid="resource-modal-ok-button"
-              loading={isSubmitting}
-              disabled={mode === 'create' && resourceType === 'machine' && !testConnectionSuccess}
-              onClick={() => {
-                if (formRef.current) {
-                  formRef.current.submit();
-                }
-              }}
-            >
-              {mode === 'create' ? t('general.create') : t('general.save')}
-            </RediaccButton>
-          </FooterRightActions>,
+            </FooterRightActions>
+          </FooterContainer>,
         ]}
         className={ModalSize.Fullscreen}
       >

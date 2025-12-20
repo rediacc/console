@@ -110,6 +110,9 @@ const MachineReposPage: React.FC = () => {
   // Refresh key for forcing MachineRepositoryTable updates
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Auto-load state
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+
   // Queue trace modal state
   const queueTrace = useQueueTraceModal();
 
@@ -152,6 +155,15 @@ const MachineReposPage: React.FC = () => {
       }
     }
   }, [machines, machineName]);
+
+  // Auto-refresh data on mount (query existing data, no queue items)
+  useEffect(() => {
+    if (machine && !hasInitiallyLoaded) {
+      setHasInitiallyLoaded(true);
+      // Just refresh existing data from database
+      handleRefresh();
+    }
+  }, [machine, hasInitiallyLoaded]);
 
   const handleBackToMachines = () => {
     navigate('/machines');
@@ -482,6 +494,7 @@ const MachineReposPage: React.FC = () => {
       <ConnectivityTestModal
         data-testid="machine-repositories-connectivity-test-modal"
         open={connectivityTest.isOpen}
+        onTestsComplete={handleRefresh}
         onClose={() => {
           connectivityTest.close();
           handleRefresh();

@@ -79,6 +79,7 @@ const RepoContainersPage: React.FC = () => {
 
   const [selectedContainer, setSelectedContainer] = useState<PluginContainer | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
   const queueTrace = useQueueTraceModal();
   const connectivityTest = useDialogState();
 
@@ -140,6 +141,15 @@ const RepoContainersPage: React.FC = () => {
   useEffect(() => {
     setSplitWidth(panelWidth);
   }, [panelWidth]);
+
+  // Auto-refresh data on mount (query existing data, no queue items)
+  useEffect(() => {
+    if (actualMachine && !hasInitiallyLoaded) {
+      setHasInitiallyLoaded(true);
+      // Just refresh existing data from database
+      handleRefresh();
+    }
+  }, [actualMachine, hasInitiallyLoaded]);
 
   const actualPanelWidth = isPanelCollapsed ? DETAIL_PANEL.COLLAPSED_WIDTH : splitWidth;
 
@@ -390,6 +400,7 @@ const RepoContainersPage: React.FC = () => {
       <ConnectivityTestModal
         data-testid="repository-containers-connectivity-test-modal"
         open={connectivityTest.isOpen}
+        onTestsComplete={handleRefresh}
         onClose={() => {
           connectivityTest.close();
           handleRefresh();
