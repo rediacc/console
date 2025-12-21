@@ -520,7 +520,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       grand: 'grand',
     };
 
-
     const iconMap: Partial<Record<GroupByMode, React.ReactNode>> = {
       bridge: <CloudServerOutlined />,
       team: <TeamOutlined />,

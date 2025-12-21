@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, Dropdown, Empty, Flex, Grid, List, Space, Tag, Typography } from 'antd';
+import {
+  Badge,
+  Button,
+  Card,
+  Dropdown,
+  Empty,
+  Flex,
+  Grid,
+  List,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -100,95 +112,95 @@ const NotificationBell: React.FC = () => {
   const dropdownContent = (
     <Card styles={{ body: { padding: 0 } }} data-testid="notification-dropdown">
       <Flex vertical style={{ maxHeight: 400, minWidth: 320 }} className="notification-dropdown">
-      <Flex
-        align="center"
-        justify="space-between"
-        style={{ padding: '16px 24px', fontWeight: 600 }}
-      >
-        <Typography.Text strong>{t('notifications.title', 'Notifications')}</Typography.Text>
-        {notifications.length > 0 && (
-          <Space>
-            <Button
-              style={{ padding: '0 12px', fontSize: 12 }}
-              onClick={handleMarkAllAsRead}
-              disabled={unreadCount === 0}
-              data-testid="notification-mark-all-read"
-            >
-              {t('notifications.markAllRead', 'Mark all as read')}
-            </Button>
-            <Button
-              type="text"
-              danger
-              style={{ padding: '0 12px', fontSize: 12 }}
-              onClick={handleClearAll}
-              data-testid="notification-clear-all"
-            >
-              {t('notifications.clearAll', 'Clear all')}
-            </Button>
-          </Space>
-        )}
-      </Flex>
-
-      <Flex vertical style={{ maxHeight: 320, overflowY: 'auto' }}>
-        {notifications.length === 0 ? (
-          <Flex style={{ padding: '40px 0' }}>
-            <Empty description={t('notifications.empty', 'No notifications')} />
-          </Flex>
-        ) : (
-          <List
-            dataSource={notifications}
-            renderItem={(notification: Notification, index: number) => (
-              <Flex
-                key={notification.id}
-                style={{ padding: '16px 24px', cursor: 'pointer' }}
-                onClick={() => handleMarkAsRead(notification.id)}
-                data-testid={`notification-item-${index}`}
+        <Flex
+          align="center"
+          justify="space-between"
+          style={{ padding: '16px 24px', fontWeight: 600 }}
+        >
+          <Typography.Text strong>{t('notifications.title', 'Notifications')}</Typography.Text>
+          {notifications.length > 0 && (
+            <Space>
+              <Button
+                style={{ padding: '0 12px', fontSize: 12 }}
+                onClick={handleMarkAllAsRead}
+                disabled={unreadCount === 0}
+                data-testid="notification-mark-all-read"
               >
-                <List.Item.Meta
-                  title={
-                    <Flex style={{ justifyContent: 'space-between', width: '100%' }}>
-                      <Flex
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flex: 1 }}
-                      >
-                        <Typography.Text style={{ fontWeight: notification.read ? 400 : 600 }}>
-                          {notification.title}
-                        </Typography.Text>
-                        <Typography.Text>
-                          <Tag color={getTypeColor(notification.type)}>
-                            {t(`notifications.types.${notification.type}`).toUpperCase()}
-                          </Tag>
-                        </Typography.Text>
-                        {getIcon(notification.type)}
+                {t('notifications.markAllRead', 'Mark all as read')}
+              </Button>
+              <Button
+                type="text"
+                danger
+                style={{ padding: '0 12px', fontSize: 12 }}
+                onClick={handleClearAll}
+                data-testid="notification-clear-all"
+              >
+                {t('notifications.clearAll', 'Clear all')}
+              </Button>
+            </Space>
+          )}
+        </Flex>
+
+        <Flex vertical style={{ maxHeight: 320, overflowY: 'auto' }}>
+          {notifications.length === 0 ? (
+            <Flex style={{ padding: '40px 0' }}>
+              <Empty description={t('notifications.empty', 'No notifications')} />
+            </Flex>
+          ) : (
+            <List
+              dataSource={notifications}
+              renderItem={(notification: Notification, index: number) => (
+                <Flex
+                  key={notification.id}
+                  style={{ padding: '16px 24px', cursor: 'pointer' }}
+                  onClick={() => handleMarkAsRead(notification.id)}
+                  data-testid={`notification-item-${index}`}
+                >
+                  <List.Item.Meta
+                    title={
+                      <Flex style={{ justifyContent: 'space-between', width: '100%' }}>
+                        <Flex
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flex: 1 }}
+                        >
+                          <Typography.Text style={{ fontWeight: notification.read ? 400 : 600 }}>
+                            {notification.title}
+                          </Typography.Text>
+                          <Typography.Text>
+                            <Tag color={getTypeColor(notification.type)}>
+                              {t(`notifications.types.${notification.type}`).toUpperCase()}
+                            </Tag>
+                          </Typography.Text>
+                          {getIcon(notification.type)}
+                        </Flex>
+                        <Button
+                          type="text"
+                          icon={<CloseOutlined />}
+                          onClick={(e) => handleClear(notification.id, e)}
+                          data-testid={`notification-close-${index}`}
+                          aria-label="Close notification"
+                          style={{ flexShrink: 0 }}
+                        />
                       </Flex>
-                      <Button
-                        type="text"
-                        icon={<CloseOutlined />}
-                        onClick={(e) => handleClear(notification.id, e)}
-                        data-testid={`notification-close-${index}`}
-                        aria-label="Close notification"
-                        style={{ flexShrink: 0 }}
-                      />
-                    </Flex>
-                  }
-                  description={
-                    <Flex vertical>
-                      <Flex
-                        style={{ display: 'block', wordBreak: 'break-word' }}
-                        className="notification-message"
-                      >
-                        <Typography.Text type="secondary">{notification.message}</Typography.Text>
+                    }
+                    description={
+                      <Flex vertical>
+                        <Flex
+                          style={{ display: 'block', wordBreak: 'break-word' }}
+                          className="notification-message"
+                        >
+                          <Typography.Text type="secondary">{notification.message}</Typography.Text>
+                        </Flex>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          {dayjs(notification.timestamp).fromNow()}
+                        </Typography.Text>
                       </Flex>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        {dayjs(notification.timestamp).fromNow()}
-                      </Typography.Text>
-                    </Flex>
-                  }
-                />
-              </Flex>
-            )}
-          />
-        )}
-      </Flex>
+                    }
+                  />
+                </Flex>
+              )}
+            />
+          )}
+        </Flex>
       </Flex>
     </Card>
   );
