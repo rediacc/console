@@ -1,6 +1,6 @@
 import React from 'react';
 import { LockOutlined } from '@ant-design/icons';
-import { Alert, Typography } from 'antd';
+import { Alert, Flex, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { getSecurityContextInfo } from '@/utils/secureContext';
 
@@ -13,7 +13,7 @@ const InsecureConnectionWarning: React.FC<InsecureConnectionWarningProps> = ({ o
   const securityInfo = getSecurityContextInfo();
 
   return (
-    <div>
+    <Flex>
       <Alert
         type="error"
         showIcon
@@ -26,17 +26,17 @@ const InsecureConnectionWarning: React.FC<InsecureConnectionWarningProps> = ({ o
           </Typography.Text>
         }
         description={
-          <div style={{ fontSize: 14 }}>
-            <p>{t('login.insecureConnection.message')}</p>
-            <p style={{ fontSize: 12 }}>
-              <strong>{t('login.insecureConnection.howToFix')}:</strong>{' '}
+          <Flex vertical style={{ fontSize: 14 }}>
+            <Typography.Text>{t('login.insecureConnection.message')}</Typography.Text>
+            <Typography.Text style={{ fontSize: 12 }}>
+              <Typography.Text strong>{t('login.insecureConnection.howToFix')}:</Typography.Text>{' '}
               {securityInfo.suggestion || t('login.insecureConnection.resolution')}
-            </p>
-          </div>
+            </Typography.Text>
+          </Flex>
         }
         data-testid="insecure-connection-warning"
       />
-    </div>
+    </Flex>
   );
 };
 

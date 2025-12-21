@@ -129,21 +129,21 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
                 <Typography.Text strong>
                   {t('vaultEditor.systemCompatibility.compatibilityStatus')}:
                 </Typography.Text>
-                <span
+                <Typography.Text
                   style={{
                     textTransform: 'capitalize',
                     color: `var(--ant-color-${config.statusVariant})`,
                   }}
                 >
                   {t(`vaultEditor.systemCompatibility.${status}`)}
-                </span>
+                </Typography.Text>
               </Space>
             }
             description={
               <>
                 {kernelCompatibility.compatibility_issues &&
                   kernelCompatibility.compatibility_issues.length > 0 && (
-                    <div>
+                    <Flex vertical>
                       <Typography.Text strong>
                         {t('vaultEditor.systemCompatibility.knownIssues')}:
                       </Typography.Text>
@@ -154,11 +154,11 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
                           )
                         )}
                       </ul>
-                    </div>
+                    </Flex>
                   )}
                 {kernelCompatibility.recommendations &&
                   kernelCompatibility.recommendations.length > 0 && (
-                    <div>
+                    <Flex vertical>
                       <Typography.Text strong>
                         {t('vaultEditor.systemCompatibility.recommendations')}:
                       </Typography.Text>
@@ -167,7 +167,7 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
                           <li key={index}>{rec}</li>
                         ))}
                       </ul>
-                    </div>
+                    </Flex>
                   )}
               </>
             }

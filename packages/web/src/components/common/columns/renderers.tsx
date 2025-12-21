@@ -79,7 +79,7 @@ export const renderTruncatedId = (
 
   return (
     <Tooltip title={id}>
-      <span style={truncatedMonoTextStyle}>{display}</span>
+      <Typography.Text style={truncatedMonoTextStyle}>{display}</Typography.Text>
     </Tooltip>
   );
 };
@@ -154,7 +154,7 @@ export const createStatusRenderer = <T extends string>(
     const config = statusMap[status] || defaultConfig;
     return (
       <Tooltip title={config.label || status}>
-        <span style={statusIconWrapperStyle}>{config.icon}</span>
+        <Typography.Text style={statusIconWrapperStyle}>{config.icon}</Typography.Text>
       </Tooltip>
     );
   }

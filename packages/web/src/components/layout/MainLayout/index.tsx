@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Drawer, Dropdown, Layout } from 'antd';
+import { Button, Drawer, Dropdown, Flex, Layout } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -232,7 +232,7 @@ const MainLayout: React.FC = () => {
             }}
             data-testid="main-header"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Flex style={{ alignItems: 'center', gap: 12 }}>
               <Button
                 style={{ width: 40, height: 40, fontSize: 16 }}
                 type="text"
@@ -246,7 +246,7 @@ const MainLayout: React.FC = () => {
                 }
                 aria-pressed={collapsed}
               />
-              <div
+              <Flex
                 style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
                 onClick={() => {
                   trackUserAction('navigation', '/dashboard', {
@@ -262,9 +262,9 @@ const MainLayout: React.FC = () => {
                   alt="Rediacc Logo"
                   style={{ height: 32, width: 'auto', objectFit: 'contain' }}
                 />
-              </div>
-            </div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+              </Flex>
+            </Flex>
+            <Flex style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
               <NotificationBell />
               <Dropdown
                 trigger={['click']}
@@ -289,7 +289,7 @@ const MainLayout: React.FC = () => {
                   data-testid="user-menu-button"
                 />
               </Dropdown>
-            </div>
+            </Flex>
           </Layout.Header>
           <Layout.Content
             style={{
@@ -301,20 +301,23 @@ const MainLayout: React.FC = () => {
             data-testid="main-content"
           >
             {isTransitioning ? (
-              <div style={{ position: 'absolute', top: '50%', left: '50%', textAlign: 'center' }}>
-                <div style={{ fontSize: 32 }}>
+              <Flex
+                vertical
+                style={{ position: 'absolute', top: '50%', left: '50%', textAlign: 'center' }}
+              >
+                <Flex style={{ fontSize: 32 }}>
                   {uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}
-                </div>
-                <div style={{ fontSize: 16 }}>
+                </Flex>
+                <Flex style={{ fontSize: 16 }}>
                   {t('uiMode.switching', {
                     mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple'),
                   })}
-                </div>
-              </div>
+                </Flex>
+              </Flex>
             ) : (
-              <div>
+              <Flex>
                 <Outlet />
-              </div>
+              </Flex>
             )}
           </Layout.Content>
         </Layout>

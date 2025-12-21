@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Button, Card, Empty, Flex, Space, Table, Tag, Tooltip } from 'antd';
+import { Button, Card, Empty, Flex, Space, Table, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -266,9 +266,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     return (
       <Flex align="center" justify="space-between" wrap>
         <Space size="middle">
-          <span style={{ fontWeight: 600 }}>
+          <Typography.Text style={{ fontWeight: 600 }}>
             {t('machines:bulkActions.selected', { count: selectedRowKeys.length })}
-          </span>
+          </Typography.Text>
           <Tooltip title={t('common:actions.clearSelection')}>
             <Button
               onClick={() => setSelectedRowKeys([])}
@@ -319,7 +319,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
     // In expert/normal mode, show all grouping buttons
     return (
-      <div>
+      <Flex>
         <Space wrap size="small">
           <Tooltip title={t('machines:machine')}>
             <Button
@@ -332,7 +332,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             />
           </Tooltip>
 
-          <span style={{ width: 1, height: 24 }} />
+          <Typography.Text style={{ width: 1, height: 24 }} />
 
           <Tooltip title={t('machines:groupByBridge')}>
             <Button
@@ -402,7 +402,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             />
           </Tooltip>
         </Space>
-      </div>
+      </Flex>
     );
   };
 
@@ -501,12 +501,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const renderGroupedTableView = () => {
     if (Object.keys(groupedMachinesForTable).length === 0) {
       return (
-        <div>
+        <Flex>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={t('resources:repositories.noRepositories')}
           />
-        </div>
+        </Flex>
       );
     }
 
@@ -539,7 +539,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     };
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <Flex vertical>
         {Object.entries(groupedMachinesForTable).map(([groupKey, machines], groupIndex) => {
           const variant = variantMap[groupBy];
           const indicatorColor = indicatorColors[variant];
@@ -547,26 +547,27 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           return (
             <Card key={groupKey}>
               <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-                <div style={{ width: 8, height: 24, backgroundColor: indicatorColor }} />
+                <Flex style={{ width: 8, height: 24, backgroundColor: indicatorColor }} />
                 <Space size="small">
-                  <span style={{ fontSize: 16, fontWeight: 700 }}>#{groupIndex + 1}</span>
+                  <Typography.Text style={{ fontSize: 16, fontWeight: 700 }}>
+                    #{groupIndex + 1}
+                  </Typography.Text>
                   <Tag bordered={false} color={getTagColor(variant)} icon={iconMap[groupBy]}>
                     {groupKey}
                   </Tag>
-                  <span style={{ fontSize: 14 }}>
+                  <Typography.Text style={{ fontSize: 14 }}>
                     {machines.length}{' '}
                     {machines.length === 1 ? t('machines:machine') : t('machines:machines')}
-                  </span>
+                  </Typography.Text>
                 </Space>
               </Flex>
 
               {machines.map((machine) => (
-                <div
+                <Flex
                   key={machine.machineName}
+                  justify="space-between"
+                  align="center"
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
                     cursor: 'pointer',
                   }}
                   onClick={() =>
@@ -576,10 +577,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   }
                   data-testid={`grouped-machine-row-${machine.machineName}`}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <Flex align="center">
                     <DesktopOutlined style={{ fontSize: 20 }} />
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: 16, fontWeight: 600 }}>{machine.machineName}</span>
+                    <Flex vertical>
+                      <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>
+                        {machine.machineName}
+                      </Typography.Text>
                       <Space size="small">
                         <Tag bordered={false} color={getTagColor('team')}>
                           {machine.teamName}
@@ -595,8 +598,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                           </Tag>
                         )}
                       </Space>
-                    </div>
-                  </div>
+                    </Flex>
+                  </Flex>
 
                   <Tooltip title={t('machines:viewRepos')}>
                     <Button
@@ -612,12 +615,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       {t('machines:viewRepos')}
                     </Button>
                   </Tooltip>
-                </div>
+                </Flex>
               ))}
             </Card>
           );
         })}
-      </div>
+      </Flex>
     );
   };
 
@@ -627,10 +630,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       {renderBulkActionsToolbar()}
 
       {groupBy === 'machine' ? (
-        <div
-          ref={tableContainerRef}
-          style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-        >
+        <Flex vertical ref={tableContainerRef} style={{ flex: 1, overflow: 'hidden' }}>
           <Table
             columns={columns}
             dataSource={filteredMachines}
@@ -669,7 +669,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             })}
             sticky
           />
-        </div>
+        </Flex>
       ) : (
         renderGroupedTableView()
       )}

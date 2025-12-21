@@ -168,54 +168,54 @@ const RepoContainersPage: React.FC = () => {
   // Loading state
   if (machinesLoading || repositoriesLoading) {
     return (
-      <div>
+      <Flex vertical>
         <Card>
           <Flex vertical align="center" style={{ width: '100%' }}>
             <LoadingWrapper loading centered minHeight={160}>
-              <div />
+              <Flex />
             </LoadingWrapper>
             <Typography.Text type="secondary">{t('common:general.loading')}</Typography.Text>
           </Flex>
         </Card>
-      </div>
+      </Flex>
     );
   }
 
   // Error state - machine not found
   if (!actualMachine) {
     return (
-      <div>
+      <Flex vertical>
         <Card>
           <Flex vertical>
             <Alert
               message={t('machines:machineNotFound')}
               description={
-                <div style={{ maxWidth: 520 }}>
+                <Flex vertical style={{ maxWidth: 520 }}>
                   <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
                   <Button type="primary" onClick={handleBackToMachines}>
                     {t('machines:backToMachines')}
                   </Button>
-                </div>
+                </Flex>
               }
               type="error"
               showIcon
             />
           </Flex>
         </Card>
-      </div>
+      </Flex>
     );
   }
 
   // Error state - repository not found
   if (!actualRepository) {
     return (
-      <div>
+      <Flex vertical>
         <Card>
           <Flex vertical>
             <Alert
               message={t('machines:repoNotFound')}
               description={
-                <div style={{ maxWidth: 520 }}>
+                <Flex vertical style={{ maxWidth: 520 }}>
                   <p>
                     {t('machines:repoNotFoundDescription', {
                       repositoryName: repositoryName,
@@ -225,39 +225,41 @@ const RepoContainersPage: React.FC = () => {
                   <Button type="primary" onClick={handleBackToRepos}>
                     {t('machines:backToRepos')}
                   </Button>
-                </div>
+                </Flex>
               }
               type="error"
               showIcon
             />
           </Flex>
         </Card>
-      </div>
+      </Flex>
     );
   }
 
   const actualRepositoryName = actualRepository.name;
 
   return (
-    <div>
+    <Flex vertical>
       <Card>
         <Flex vertical>
-          <div>
+          <Flex vertical>
             <Breadcrumb
               items={[
                 {
-                  title: <span>{t('machines:machines')}</span>,
+                  title: <Typography.Text>{t('machines:machines')}</Typography.Text>,
                   onClick: () => navigate('/machines'),
                 },
                 {
-                  title: <span>{actualMachine.machineName}</span>,
+                  title: <Typography.Text>{actualMachine.machineName}</Typography.Text>,
                   onClick: () =>
                     navigate(`/machines/${machineName}/repositories`, {
                       state: { machine: actualMachine },
                     }),
                 },
                 {
-                  title: <span>{t('resources:repositories.repositories')}</span>,
+                  title: (
+                    <Typography.Text>{t('resources:repositories.repositories')}</Typography.Text>
+                  ),
                   onClick: () =>
                     navigate(`/machines/${machineName}/repositories`, {
                       state: { machine: actualMachine },
@@ -274,7 +276,7 @@ const RepoContainersPage: React.FC = () => {
             />
 
             <Flex align="center" justify="space-between" wrap>
-              <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+              <Flex vertical style={{ flex: '1 1 auto', minWidth: 0 }}>
                 <Flex align="center" gap={8} wrap>
                   <Tooltip title={t('machines:backToRepos')}>
                     <Button
@@ -288,9 +290,9 @@ const RepoContainersPage: React.FC = () => {
                   <Typography.Title level={4}>
                     <Space>
                       <InboxOutlined />
-                      <span>
+                      <Typography.Text>
                         {t('machines:repoContainers')}: {actualRepositoryName}
-                      </span>
+                      </Typography.Text>
                     </Space>
                   </Typography.Title>
                 </Flex>
@@ -310,7 +312,7 @@ const RepoContainersPage: React.FC = () => {
                     </Tag>
                   )}
                 </Flex>
-              </div>
+              </Flex>
 
               <Flex align="center" wrap>
                 <Tooltip title={t('machines:checkAndRefresh')}>
@@ -325,10 +327,11 @@ const RepoContainersPage: React.FC = () => {
                 </Tooltip>
               </Flex>
             </Flex>
-          </div>
+          </Flex>
 
           <Flex style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-            <div
+            <Flex
+              vertical
               style={{
                 width: selectedResource ? `calc(100% - ${actualPanelWidth}px)` : '100%',
                 height: '100%',
@@ -347,11 +350,11 @@ const RepoContainersPage: React.FC = () => {
                   queueTrace.open(taskId, machineName);
                 }}
               />
-            </div>
+            </Flex>
 
             {/* Backdrop must come BEFORE panel for correct z-index layering */}
             {selectedResource && !isPanelCollapsed && (
-              <div
+              <Flex
                 style={{
                   position: 'fixed',
                   top: 0,
@@ -413,7 +416,7 @@ const RepoContainersPage: React.FC = () => {
         machines={actualMachine ? [actualMachine] : []}
         teamFilter={actualMachine?.teamName ? [actualMachine.teamName] : undefined}
       />
-    </div>
+    </Flex>
   );
 };
 

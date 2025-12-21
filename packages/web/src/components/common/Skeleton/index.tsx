@@ -1,4 +1,6 @@
 import React from 'react';
+import { Flex } from 'antd';
+
 const baseStyle: React.CSSProperties = {
   background: 'var(--ant-color-border)',
   borderRadius: 4,
@@ -25,7 +27,7 @@ export interface SkeletonTextProps {
 
 export const SkeletonText: React.FC<SkeletonTextProps> = ({ width, height }) => {
   return (
-    <div
+    <Flex
       style={{
         ...baseStyle,
         width: width ?? '100%',
@@ -42,11 +44,11 @@ export interface SkeletonRowProps {
 
 export const SkeletonRow: React.FC<SkeletonRowProps> = ({ columns = 4 }) => {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', padding: '12px 0', width: '100%' }}>
+    <Flex align="center" style={{ padding: '12px 0', width: '100%' }}>
       {Array.from({ length: columns }).map((_, index) => (
-        <div key={index} style={{ ...baseStyle, height: 20, flex: 1 }} />
+        <Flex key={index} style={{ ...baseStyle, height: 20, flex: 1 }} />
       ))}
-    </div>
+    </Flex>
   );
 };
 
@@ -57,31 +59,30 @@ export interface SkeletonCardProps {
 
 export const SkeletonCard: React.FC<SkeletonCardProps> = ({ lines = 3 }) => {
   return (
-    <div
+    <Flex
+      vertical
       style={{
         backgroundColor: 'var(--ant-color-bg-container)',
         border: '1px solid var(--ant-color-border)',
         borderRadius: 6,
         padding: 24,
-        display: 'flex',
-        flexDirection: 'column',
       }}
     >
       {Array.from({ length: lines }).map((_, index) => (
         <SkeletonText key={index} width={index === lines - 1 ? '60%' : '100%'} height="16px" />
       ))}
-    </div>
+    </Flex>
   );
 };
 
 export const SkeletonButton: React.FC = () => {
-  return <div style={{ ...baseStyle, height: 40, width: 120, borderRadius: 6 }} />;
+  return <Flex style={{ ...baseStyle, height: 40, width: 120, borderRadius: 6 }} />;
 };
 
 export const SkeletonInput: React.FC = () => {
-  return <div style={{ ...baseStyle, height: 40, width: '100%' }} />;
+  return <Flex style={{ ...baseStyle, height: 40, width: '100%' }} />;
 };
 
 export const SkeletonBase = (props: React.HTMLAttributes<HTMLDivElement>) => (
-  <div style={{ ...baseStyle, ...props.style }} {...props} />
+  <Flex style={{ ...baseStyle, ...props.style }} {...props} />
 );

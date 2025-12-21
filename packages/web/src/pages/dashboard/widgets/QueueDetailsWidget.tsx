@@ -65,14 +65,14 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
       title={
         <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <RobotOutlined />
-          <span>Queue Details</span>
+          <Typography.Text>Queue Details</Typography.Text>
         </Flex>
       }
       data-testid="dashboard-card-queue-details"
     >
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={8}>
-          <div>
+          <Flex vertical>
             <Typography.Text strong>Today&apos;s Activity</Typography.Text>
             <Flex vertical gap={16} style={{ width: '100%' }}>
               <Flex align="center" justify="space-between">
@@ -117,13 +117,13 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                 </Typography.Text>
               </Flex>
             </Flex>
-          </div>
+          </Flex>
         </Col>
 
         <Col xs={24} lg={16}>
           <Flex vertical gap={16} style={{ width: '100%' }}>
             {teamIssues.length > 0 && (
-              <div>
+              <Flex vertical>
                 <Typography.Text strong>
                   <TeamOutlined /> Team Queue Status
                 </Typography.Text>
@@ -151,15 +151,15 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                     );
                   }}
                 />
-              </div>
+              </Flex>
             )}
 
             {machineIssues.length > 0 && (
-              <div>
+              <Flex vertical>
                 <Typography.Text strong>
                   <DesktopOutlined /> Machine Queue Status
                 </Typography.Text>
-                <div style={{ width: '100%', overflowX: 'auto' }}>
+                <Flex style={{ width: '100%', overflowX: 'auto' }}>
                   <Table<QueueMachineIssue>
                     size="small"
                     dataSource={machineIssues}
@@ -168,13 +168,13 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                     data-testid="dashboard-table-machine-issues"
                     rowKey={(record) => `${record.teamName}-${record.machineName}`}
                   />
-                </div>
-              </div>
+                </Flex>
+              </Flex>
             )}
 
             {featureAccess?.hasAdvancedAnalytics === 1 &&
               queueStats.highestPriorityPending !== null && (
-                <div>
+                <Flex vertical>
                   <Typography.Text strong>
                     <ThunderboltOutlined /> Priority Breakdown
                   </Typography.Text>
@@ -216,7 +216,7 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                       />
                     </Flex>
                   </Flex>
-                </div>
+                </Flex>
               )}
           </Flex>
         </Col>

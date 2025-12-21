@@ -128,7 +128,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     if (loadingAvailable) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
-          <div />
+          <Flex />
         </LoadingWrapper>
       );
     }
@@ -177,7 +177,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     if (loadingAssigned) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
-          <div />
+          <Flex />
         </LoadingWrapper>
       );
     }

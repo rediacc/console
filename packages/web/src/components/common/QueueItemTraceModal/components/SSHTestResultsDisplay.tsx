@@ -127,24 +127,24 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
           <>
             {compatibility.compatibility_issues &&
               compatibility.compatibility_issues.length > 0 && (
-                <div style={{ marginTop: spacing('SM') }}>
+                <Flex vertical style={{ marginTop: spacing('SM') }}>
                   <Typography.Text strong>Known Issues:</Typography.Text>
                   <ul>
                     {compatibility.compatibility_issues.map((issue: string, index: number) => (
                       <li key={index}>{issue}</li>
                     ))}
                   </ul>
-                </div>
+                </Flex>
               )}
             {compatibility.recommendations && compatibility.recommendations.length > 0 && (
-              <div style={{ marginTop: spacing('MD') }}>
+              <Flex vertical style={{ marginTop: spacing('MD') }}>
                 <Typography.Text strong>Recommendations:</Typography.Text>
                 <ul>
                   {compatibility.recommendations.map((rec: string, index: number) => (
                     <li key={index}>{rec}</li>
                   ))}
                 </ul>
-              </div>
+              </Flex>
             )}
           </>
         }
@@ -152,7 +152,7 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
       />
 
       {/* Raw JSON fallback */}
-      <div style={{ marginTop: spacing('MD') }}>
+      <Flex vertical style={{ marginTop: spacing('MD') }}>
         <Collapse
           items={[
             {
@@ -168,7 +168,7 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
             },
           ]}
         />
-      </div>
+      </Flex>
     </Flex>
   );
 };

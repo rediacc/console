@@ -263,53 +263,53 @@ const MachineReposPage: React.FC = () => {
   // Loading state
   if (machinesLoading && !machine) {
     return (
-      <div>
+      <Flex vertical>
         <Card>
           <Flex vertical align="center" style={{ width: '100%' }}>
             <LoadingWrapper loading centered minHeight={160}>
-              <div />
+              <Flex />
             </LoadingWrapper>
             <Typography.Text type="secondary">{t('common:general.loading')}</Typography.Text>
           </Flex>
         </Card>
-      </div>
+      </Flex>
     );
   }
 
   // Error state - machine not found
   if (machinesError || (!machinesLoading && !machine)) {
     return (
-      <div>
+      <Flex vertical>
         <Card>
           <Flex vertical>
             <Alert
               message={t('machines:machineNotFound')}
               description={
-                <div style={{ maxWidth: 520 }}>
+                <Flex vertical style={{ maxWidth: 520 }}>
                   <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
                   <Button type="primary" onClick={handleBackToMachines}>
                     {t('machines:backToMachines')}
                   </Button>
-                </div>
+                </Flex>
               }
               type="error"
               showIcon
             />
           </Flex>
         </Card>
-      </div>
+      </Flex>
     );
   }
 
   return (
-    <div>
+    <Flex vertical>
       <Card>
         <Flex vertical>
-          <div>
+          <Flex vertical>
             <Breadcrumb
               items={[
                 {
-                  title: <span>{t('machines:machines')}</span>,
+                  title: <Typography.Text>{t('machines:machines')}</Typography.Text>,
                   onClick: () => navigate('/machines'),
                 },
                 {
@@ -323,7 +323,7 @@ const MachineReposPage: React.FC = () => {
             />
 
             <Flex align="center" justify="space-between" wrap>
-              <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+              <Flex vertical style={{ flex: '1 1 auto', minWidth: 0 }}>
                 <Flex align="center" gap={8} wrap>
                   <Tooltip title={t('machines:backToMachines')}>
                     <Button
@@ -337,9 +337,9 @@ const MachineReposPage: React.FC = () => {
                   <Typography.Title level={4}>
                     <Space>
                       <DesktopOutlined />
-                      <span>
+                      <Typography.Text>
                         {t('machines:machine')}: {machine?.machineName}
-                      </span>
+                      </Typography.Text>
                     </Space>
                   </Typography.Title>
                 </Flex>
@@ -356,7 +356,7 @@ const MachineReposPage: React.FC = () => {
                     </Tag>
                   )}
                 </Flex>
-              </div>
+              </Flex>
 
               <Flex align="center" wrap>
                 <Tooltip title={t('machines:createRepository')}>
@@ -387,10 +387,11 @@ const MachineReposPage: React.FC = () => {
                 </Tooltip>
               </Flex>
             </Flex>
-          </div>
+          </Flex>
 
           <Flex style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-            <div
+            <Flex
+              vertical
               style={{
                 width: selectedResource ? `calc(100% - ${actualPanelWidth}px)` : '100%',
                 height: '100%',
@@ -411,10 +412,10 @@ const MachineReposPage: React.FC = () => {
                   }}
                 />
               )}
-            </div>
+            </Flex>
 
             {shouldRenderBackdrop && (
-              <div
+              <Flex
                 style={{
                   position: 'fixed',
                   top: 0,
@@ -493,7 +494,7 @@ const MachineReposPage: React.FC = () => {
         machines={machine ? [machine] : []}
         teamFilter={machine?.teamName ? [machine.teamName] : undefined}
       />
-    </div>
+    </Flex>
   );
 };
 

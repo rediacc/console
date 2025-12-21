@@ -668,7 +668,7 @@ const ArchitecturePage: React.FC = () => {
     return (
       <Flex vertical align="center" style={{ width: '100%' }}>
         <LoadingWrapper loading centered minHeight={160}>
-          <div />
+          <Flex />
         </LoadingWrapper>
         <Typography.Text>{t('messages.loading', { ns: 'common' })}</Typography.Text>
       </Flex>
@@ -677,7 +677,7 @@ const ArchitecturePage: React.FC = () => {
 
   if (error) {
     return (
-      <div>
+      <Flex>
         <Alert
           message={t('messages.error', { ns: 'common' })}
           description={error instanceof Error ? error.message : t('architecture.fetchError')}
@@ -694,15 +694,15 @@ const ArchitecturePage: React.FC = () => {
             </Tooltip>
           }
         />
-      </div>
+      </Flex>
     );
   }
 
   if (!data) {
     return (
-      <div>
+      <Flex>
         <Alert message={t('architecture.noData')} type="info" showIcon />
-      </div>
+      </Flex>
     );
   }
 
@@ -718,17 +718,17 @@ const ArchitecturePage: React.FC = () => {
   };
 
   return (
-    <div data-testid="architecture-page">
+    <Flex vertical data-testid="architecture-page">
       <Flex vertical gap={24} style={{ width: '100%' }}>
         {/* Header */}
         <Card>
           <Flex vertical gap={16} style={{ width: '100%' }}>
             <Flex align="center" justify="space-between" wrap>
-              <div>
+              <Flex>
                 <Typography.Title level={4} style={{ margin: 0 }}>
                   {t('architecture.title')}
                 </Typography.Title>
-              </div>
+              </Flex>
               <Flex align="center" wrap>
                 <Radio.Group
                   value={viewMode}
@@ -777,7 +777,7 @@ const ArchitecturePage: React.FC = () => {
                   {t('architecture.filterEntities', { ns: 'system' })}
                 </Typography.Text>
               </Flex>
-              <div style={{ width: '100%', minWidth: 320 }}>
+              <Flex style={{ width: '100%', minWidth: 320 }}>
                 <Select
                   mode="multiple"
                   allowClear
@@ -790,14 +790,14 @@ const ArchitecturePage: React.FC = () => {
                     value: type.value,
                     label: (
                       <Space>
-                        <span>{type.icon}</span>
-                        <span>{type.label}</span>
+                        <Typography.Text>{type.icon}</Typography.Text>
+                        <Typography.Text>{type.label}</Typography.Text>
                       </Space>
                     ),
                   }))}
                   data-testid="architecture-entity-filter"
                 />
-              </div>
+              </Flex>
               <Flex style={{ width: 'auto' }}>
                 <Tooltip title={t('architecture.selectAll', { ns: 'system' })}>
                   <Button
@@ -877,7 +877,7 @@ const ArchitecturePage: React.FC = () => {
 
         {/* Visualization */}
         <Card>
-          <div
+          <Flex
             ref={containerRef}
             data-testid="architecture-visualization-container"
             style={{ width: '100%', height: 360, overflow: 'hidden', position: 'relative' }}
@@ -894,18 +894,18 @@ const ArchitecturePage: React.FC = () => {
                 }}
               >
                 <LoadingWrapper loading centered minHeight={160}>
-                  <div />
+                  <Flex />
                 </LoadingWrapper>
                 <Typography.Text>{t('messages.loading', { ns: 'common' })}</Typography.Text>
               </Flex>
             )}
             <svg ref={svgRef} width="100%" height="100%" data-testid="architecture-svg" />
-          </div>
+          </Flex>
         </Card>
 
         {/* Legend */}
         <Card title={t('architecture.legend')}>
-          <div
+          <Flex
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
@@ -937,10 +937,10 @@ const ArchitecturePage: React.FC = () => {
                 <Typography.Text>{label}</Typography.Text>
               </Flex>
             ))}
-          </div>
+          </Flex>
         </Card>
       </Flex>
-    </div>
+    </Flex>
   );
 };
 

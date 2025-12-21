@@ -193,7 +193,9 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       width: 200,
       sorter: createSorter<AuditTraceRecord>('performedBy'),
       render: (user: string, _record: AuditTraceRecord, index: number) => (
-        <span data-testid={`audit-trace-performed-by-${index}`}>{user || t('audit.system')}</span>
+        <Typography.Text data-testid={`audit-trace-performed-by-${index}`}>
+          {user || t('audit.system')}
+        </Typography.Text>
       ),
     },
     {
@@ -235,7 +237,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           showTextBelow
           data-testid="audit-trace-loading"
         >
-          <div />
+          <Flex />
         </LoadingWrapper>
       ) : error ? (
         <Alert
@@ -249,7 +251,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
         <>
           {/* Summary Section */}
           {data.summary && (
-            <div style={{ width: '100%' }} data-testid="audit-trace-summary">
+            <Flex vertical style={{ width: '100%' }} data-testid="audit-trace-summary">
               <Flex align="center" justify="space-between" wrap>
                 <Flex gap={24} wrap>
                   <Flex vertical data-testid="audit-trace-total-records">
@@ -298,7 +300,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                   </Button>
                 </Dropdown>
               </Flex>
-            </div>
+            </Flex>
           )}
 
           {/* Records Table */}

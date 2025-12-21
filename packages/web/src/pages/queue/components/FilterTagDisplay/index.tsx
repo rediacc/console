@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Tag } from 'antd';
+import { Button, Flex, Tag } from 'antd';
 import type { Dayjs } from 'dayjs';
 
 type FilterTagValue = string | string[] | boolean | [Dayjs | null, Dayjs | null] | null;
@@ -19,8 +19,8 @@ export interface FilterTagDisplayProps {
   clearAllText?: string;
 }
 
-const FilterTagBar = (props: React.HTMLAttributes<HTMLDivElement>) => (
-  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }} {...props} />
+const FilterTagBar = (props: React.ComponentProps<typeof Flex>) => (
+  <Flex style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }} {...props} />
 );
 
 const ClearButton = (props: React.ComponentProps<typeof Button>) => (

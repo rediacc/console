@@ -76,17 +76,17 @@ const UploadStep: React.FC<UploadStepProps> = ({
   onBeforeUpload,
   onFileListChange,
 }) => (
-  <div>
+  <Flex vertical>
     <Alert
       message={t('resources:storage.import.instructions')}
       description={
-        <div>
+        <Flex vertical>
           <Paragraph>{t('resources:storage.import.instructionsDetail')}</Paragraph>
           <Paragraph>
             <Text code>rclone config file</Text>
           </Paragraph>
           <Paragraph>{t('resources:storage.import.uploadPrompt')}</Paragraph>
-        </div>
+        </Flex>
       }
       type="info"
       showIcon
@@ -109,7 +109,7 @@ const UploadStep: React.FC<UploadStepProps> = ({
     </Upload.Dragger>
 
     {parsingError && <Alert message={parsingError} type="error" showIcon />}
-  </div>
+  </Flex>
 );
 
 interface SelectionStepProps {
@@ -119,7 +119,7 @@ interface SelectionStepProps {
 }
 
 const SelectionStep: React.FC<SelectionStepProps> = ({ t, importStatuses, columns }) => (
-  <div>
+  <Flex vertical>
     <Alert
       message={t('resources:storage.import.selectStorages')}
       description={t('resources:storage.import.selectDescription')}
@@ -135,7 +135,7 @@ const SelectionStep: React.FC<SelectionStepProps> = ({ t, importStatuses, column
       size="small"
       data-testid="rclone-wizard-config-table"
     />
-  </div>
+  </Flex>
 );
 
 interface ResultStepProps {
@@ -146,7 +146,7 @@ interface ResultStepProps {
 }
 
 const ResultStep: React.FC<ResultStepProps> = ({ t, importStatuses, columns, isImporting }) => (
-  <div>
+  <Flex vertical>
     {isImporting ? (
       <Flex align="center" justify="center">
         <LoadingWrapper
@@ -155,7 +155,7 @@ const ResultStep: React.FC<ResultStepProps> = ({ t, importStatuses, columns, isI
           minHeight={160}
           tip={t('resources:storage.import.importing')}
         >
-          <div />
+          <Flex />
         </LoadingWrapper>
       </Flex>
     ) : (
@@ -177,7 +177,7 @@ const ResultStep: React.FC<ResultStepProps> = ({ t, importStatuses, columns, isI
         />
       </>
     )}
-  </div>
+  </Flex>
 );
 
 const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
@@ -512,7 +512,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
         return (
           <Space>
             <CloudOutlined />
-            <span style={{ fontWeight: 600 }}>{truncated}</span>
+            <Typography.Text style={{ fontWeight: 600 }}>{truncated}</Typography.Text>
             {record.exists && (
               <Tooltip title={t('resources:storage.import.alreadyExists')}>
                 <Tag color="warning">
@@ -622,7 +622,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
         )
       }
     >
-      <div>
+      <Flex vertical>
         <Steps
           current={currentStep}
           data-testid="rclone-wizard-steps"
@@ -632,7 +632,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
             { title: t('resources:storage.import.step3') },
           ]}
         />
-      </div>
+      </Flex>
 
       {renderStepContent()}
     </Modal>

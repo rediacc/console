@@ -53,9 +53,9 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       options.push({
         value: image.machineName,
         label: (
-          <span style={{ fontSize: 14, cursor: 'not-allowed' }}>
+          <Typography.Text style={{ fontSize: 14, cursor: 'not-allowed' }}>
             {image.machineName} ({t('common:current')})
-          </span>
+          </Typography.Text>
         ),
         disabled: true,
       });
@@ -65,7 +65,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
     availableMachines.forEach((machine) => {
       options.push({
         value: machine.machineName,
-        label: <span style={{ fontSize: 14 }}>{machine.machineName}</span>,
+        label: <Typography.Text style={{ fontSize: 14 }}>{machine.machineName}</Typography.Text>,
       });
     });
 
@@ -138,9 +138,9 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
             />
           )}
 
-          <div>
+          <Flex vertical>
             <Typography.Text>{t('ceph:images.selectNewMachine')}:</Typography.Text>
-            <div>
+            <Flex vertical>
               <LoadingWrapper loading={loadingMachines} centered minHeight={120}>
                 <>
                   <Select
@@ -152,9 +152,13 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                     style={{ width: '100%' }}
                     notFoundContent={
                       availableMachines.length === 0 ? (
-                        <span style={{ fontSize: 14 }}>{t('machines:noAvailableMachines')}</span>
+                        <Typography.Text style={{ fontSize: 14 }}>
+                          {t('machines:noAvailableMachines')}
+                        </Typography.Text>
                       ) : (
-                        <span style={{ fontSize: 14 }}>{t('common:noMatchingResults')}</span>
+                        <Typography.Text style={{ fontSize: 14 }}>
+                          {t('common:noMatchingResults')}
+                        </Typography.Text>
                       )
                     }
                     options={selectOptions}
@@ -166,8 +170,8 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                   </Typography.Text>
                 </>
               </LoadingWrapper>
-            </div>
-          </div>
+            </Flex>
+          </Flex>
 
           <Alert
             message={<Typography.Text type="warning">{t('common:important')}</Typography.Text>}

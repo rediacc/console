@@ -277,7 +277,7 @@ const InfrastructurePage: React.FC = () => {
             render: (count: number) => (
               <Space>
                 <ApiOutlined />
-                <span>{count}</span>
+                <Typography.Text>{count}</Typography.Text>
               </Space>
             ),
           } as ColumnsType<Region>[number],
@@ -379,7 +379,7 @@ const InfrastructurePage: React.FC = () => {
       render: (count: number) => (
         <Space>
           <DesktopOutlined />
-          <span>{count}</span>
+          <Typography.Text>{count}</Typography.Text>
         </Space>
       ),
     },
@@ -514,7 +514,7 @@ const InfrastructurePage: React.FC = () => {
 
   if (uiMode === 'simple') {
     return (
-      <div>
+      <Flex vertical>
         <Result
           status="403"
           title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
@@ -522,13 +522,13 @@ const InfrastructurePage: React.FC = () => {
             defaultValue: 'Switch to expert mode to manage infrastructure.',
           })}
         />
-      </div>
+      </Flex>
     );
   }
 
   if (!featureFlags.isEnabled('regionsInfrastructure')) {
     return (
-      <div>
+      <Flex vertical>
         <Result
           status="info"
           title={t('regionsInfrastructure.unavailableTitle', {
@@ -538,18 +538,18 @@ const InfrastructurePage: React.FC = () => {
             defaultValue: 'Enable the regionsInfrastructure feature flag to access this page.',
           })}
         />
-      </div>
+      </Flex>
     );
   }
 
   return (
-    <div>
-      <div>
+    <Flex vertical>
+      <Flex vertical>
         <Typography.Title level={3}>{tSystem('regionsInfrastructure.title')}</Typography.Title>
 
         <Row gutter={[24, 24]}>
           <Col span={24}>
-            <div>
+            <Flex vertical>
               <ResourceListView
                 title={
                   <Space direction="vertical" size={0}>
@@ -594,14 +594,14 @@ const InfrastructurePage: React.FC = () => {
                     .join(' '),
                 })}
               />
-            </div>
+            </Flex>
           </Col>
 
           {!featureFlags.isEnabled('disableBridge') && (
             <Col span={24}>
               <Card>
                 <Flex wrap align="center" justify="space-between" gap={8}>
-                  <div>
+                  <Flex vertical>
                     <Typography.Title level={4} style={{ margin: 0 }}>
                       {effectiveRegion
                         ? t('regions.bridgesInRegion', { region: effectiveRegion })
@@ -612,7 +612,7 @@ const InfrastructurePage: React.FC = () => {
                         {t('regions.selectRegionToView')}
                       </Typography.Text>
                     )}
-                  </div>
+                  </Flex>
                   {effectiveRegion && (
                     <Tooltip title={t('bridges.createBridge')}>
                       <Button
@@ -629,9 +629,9 @@ const InfrastructurePage: React.FC = () => {
                 </Flex>
 
                 {!effectiveRegion ? (
-                  <div>
+                  <Flex>
                     <Empty description={t('regions.selectRegionPrompt')} />
-                  </div>
+                  </Flex>
                 ) : (
                   <LoadingWrapper
                     loading={bridgesLoading}
@@ -658,7 +658,7 @@ const InfrastructurePage: React.FC = () => {
             </Col>
           )}
         </Row>
-      </div>
+      </Flex>
 
       {!featureFlags.isEnabled('disableBridge') && (
         <Modal
@@ -680,27 +680,27 @@ const InfrastructurePage: React.FC = () => {
 
             if (bridge.hasAccess === 0) {
               return (
-                <div style={{ maxWidth: 600, width: '100%' }}>
+                <Flex style={{ maxWidth: 600, width: '100%' }}>
                   <Alert
                     message={t('bridges.accessDenied')}
                     description={t('bridges.accessDeniedDescription')}
                     type="error"
                     showIcon
                   />
-                </div>
+                </Flex>
               );
             }
 
             if (!token) {
               return (
-                <div style={{ maxWidth: 600, width: '100%' }}>
+                <Flex style={{ maxWidth: 600, width: '100%' }}>
                   <Alert
                     message={t('bridges.noToken')}
                     description={t('bridges.noTokenDescription')}
                     type="info"
                     showIcon
                   />
-                </div>
+                </Flex>
               );
             }
 
@@ -713,7 +713,7 @@ const InfrastructurePage: React.FC = () => {
                   showIcon
                 />
 
-                <div>
+                <Flex vertical>
                   <Typography.Text strong>{t('bridges.tokenLabel')}</Typography.Text>
                   <Space.Compact style={{ width: '100%' }}>
                     <Input style={{ width: '100%' }} value={token} readOnly autoComplete="off" />
@@ -724,7 +724,7 @@ const InfrastructurePage: React.FC = () => {
                       {tokenCopied ? tCommon('actions.copied') : tCommon('actions.copy')}
                     </Button>
                   </Space.Compact>
-                </div>
+                </Flex>
 
                 <Alert
                   message={tCommon('general.important')}
@@ -826,7 +826,7 @@ const InfrastructurePage: React.FC = () => {
           )}
         </Modal>
       )}
-    </div>
+    </Flex>
   );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { App as AntApp, ConfigProvider } from 'antd';
+import { App as AntApp, ConfigProvider, Flex } from 'antd';
 import arEG from 'antd/locale/ar_EG';
 import deDE from 'antd/locale/de_DE';
 import enUS from 'antd/locale/en_US';
@@ -61,7 +61,7 @@ const AppProvidersContent: React.FC<AppProvidersContentProps> = ({
   const themeConfig = currentTheme === 'dark' ? darkTheme : lightTheme;
 
   return (
-    <div data-testid="app-providers-container">
+    <Flex data-testid="app-providers-container">
       <ConfigProvider
         key={language} // Force re-render when language changes
         locale={currentLocale}
@@ -69,6 +69,6 @@ const AppProvidersContent: React.FC<AppProvidersContentProps> = ({
       >
         <AntApp>{children}</AntApp>
       </ConfigProvider>
-    </div>
+    </Flex>
   );
 };

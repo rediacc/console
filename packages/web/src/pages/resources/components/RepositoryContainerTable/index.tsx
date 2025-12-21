@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Space, Table, Typography, type MenuProps } from 'antd';
+import { Alert, Flex, Space, Table, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useRepositories } from '@/api/queries/repositories';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
@@ -593,7 +593,9 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
       renderActions: (container) => {
         // Helper to create menu labels with consistent data-testid
         const createActionLabel = (actionKey: string, label: React.ReactNode) => (
-          <span data-testid={`container-action-${actionKey.replace(/_/g, '-')}`}>{label}</span>
+          <Typography.Text data-testid={`container-action-${actionKey.replace(/_/g, '-')}`}>
+            {label}
+          </Typography.Text>
         );
 
         const menuItems: MenuProps['items'] = [];
@@ -725,16 +727,16 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
 
   if (loading) {
     return (
-      <div data-testid="container-list-loading">
+      <Flex vertical data-testid="container-list-loading">
         <LoadingWrapper
           loading
           centered
           minHeight={200}
           tip={t('resources:containers.fetchingContainers')}
         >
-          <div />
+          <Flex />
         </LoadingWrapper>
-      </div>
+      </Flex>
     );
   }
 
@@ -751,12 +753,12 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
   }
 
   return (
-    <div data-testid="repository-container-list">
+    <Flex vertical data-testid="repository-container-list">
       {/* Regular Containers */}
 
       {containers.length > 0 ? (
-        <div data-testid="regular-containers-section">
-          <div>
+        <Flex vertical data-testid="regular-containers-section">
+          <Flex>
             <Table<Container>
               columns={containerColumns}
               dataSource={containers}
@@ -768,25 +770,25 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
               data-testid="regular-containers-table"
               onRow={(container) => buildRowHandlers(container)}
             />
-          </div>
-        </div>
+          </Flex>
+        </Flex>
       ) : (
-        <div data-testid="no-containers" style={{ textAlign: 'center' }}>
+        <Flex data-testid="no-containers" style={{ textAlign: 'center' }} justify="center">
           <Typography.Text type="secondary">
             {t('resources:containers.noContainers')}
           </Typography.Text>
-        </div>
+        </Flex>
       )}
 
       {/* Plugin Containers */}
 
       {featureFlags.isEnabled('plugins') && pluginContainers.length > 0 && (
-        <div data-testid="plugin-containers-section">
+        <Flex vertical data-testid="plugin-containers-section">
           <Typography.Title level={5}>
             {t('resources:containers.pluginContainers')}
           </Typography.Title>
 
-          <div>
+          <Flex>
             <Table<Container>
               columns={containerColumns}
               dataSource={pluginContainers}
@@ -798,9 +800,9 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
               data-testid="plugin-containers-table"
               onRow={(container) => buildRowHandlers(container)}
             />
-          </div>
-        </div>
+          </Flex>
+        </Flex>
       )}
-    </div>
+    </Flex>
   );
 };

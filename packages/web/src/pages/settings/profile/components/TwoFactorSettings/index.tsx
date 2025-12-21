@@ -188,10 +188,10 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
     <>
       <Modal
         title={
-          <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+          <Typography.Text style={{ display: 'inline-flex', alignItems: 'center' }}>
             <SafetyCertificateOutlined style={{ fontSize: 16 }} />
-            <span>{t('twoFactorAuth.title')}</span>
-          </span>
+            <Typography.Text>{t('twoFactorAuth.title')}</Typography.Text>
+          </Typography.Text>
         }
         open={open}
         onCancel={onCancel}
@@ -233,7 +233,7 @@ export default TwoFactorSettings;
 
 const LoadingState = () => (
   <LoadingWrapper loading centered minHeight={160} data-testid="tfa-settings-loading">
-    <div />
+    <Flex />
   </LoadingWrapper>
 );
 
@@ -273,9 +273,9 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
           style={{ textAlign: 'center', alignItems: 'center' }}
           data-testid="tfa-settings-qr-tab"
         >
-          <div style={{ display: 'inline-flex' }}>
+          <Flex style={{ display: 'inline-flex' }}>
             <QRCode value={otpUrl} size={200} data-testid="tfa-settings-qr-code" />
-          </div>
+          </Flex>
           <Typography.Text color="secondary" type="secondary">
             {t('twoFactorAuth.scanQRCode')}
           </Typography.Text>

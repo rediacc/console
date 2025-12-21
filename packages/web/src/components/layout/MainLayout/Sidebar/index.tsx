@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flex, Layout, Tooltip } from 'antd';
+import { Flex, Layout, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { MenuItem } from '@/components/layout/MainLayout/helpers';
@@ -82,7 +82,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       data-testid="main-sidebar"
     >
       <Flex vertical style={{ height: '100%', overflow: 'hidden', paddingTop: isDrawer ? 80 : 16 }}>
-        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 24 }}>
+        <Flex
+          vertical
+          style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 24 }}
+        >
           {menuItems.map((item) => {
             const visibleChildren = item.children || [];
             const hasChildren = visibleChildren.length > 0;
@@ -98,10 +101,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             const itemKey = item.key || item.label;
 
             const parentContent = (
-              <div
+              <Flex
                 key={itemKey}
                 style={{
-                  display: 'flex',
                   alignItems: 'center',
                   padding,
                   cursor: 'pointer',
@@ -112,7 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => handleParentClick(item, visibleChildren)}
                 data-testid={`sidebar-menu-${formatKeyForTestId(item.key)}`}
               >
-                <span
+                <Typography.Text
                   style={{
                     fontSize: 16,
                     display: 'inline-flex',
@@ -124,8 +126,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }}
                 >
                   {item.icon}
-                </span>
-                <span
+                </Typography.Text>
+                <Typography.Text
                   style={{
                     overflow: 'hidden',
                     whiteSpace: 'nowrap',
@@ -135,8 +137,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }}
                 >
                   {item.label}
-                </span>
-              </div>
+                </Typography.Text>
+              </Flex>
             );
 
             if (collapsed) {
@@ -145,7 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {visibleChildren.map((child) => {
                     const childActive = isChildActive(child.key);
                     return (
-                      <div
+                      <Flex
                         key={child.key}
                         style={{
                           padding: '12px 16px',
@@ -157,13 +159,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onClick={(event) => handleChildClick(child, event)}
                       >
                         {child.label}
-                      </div>
+                      </Flex>
                     );
                   })}
                 </Flex>
               ) : (
                 <Flex vertical style={{ padding: 12 }}>
-                  <div
+                  <Flex
                     style={{
                       padding: '12px 16px',
                       fontWeight: isParentActive ? 600 : 500,
@@ -173,7 +175,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }}
                   >
                     {item.label}
-                  </div>
+                  </Flex>
                 </Flex>
               );
 
@@ -190,10 +192,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }
 
             return (
-              <div key={itemKey}>
+              <Flex vertical key={itemKey}>
                 {parentContent}
                 {hasChildren && (
-                  <div
+                  <Flex
+                    vertical
                     style={{
                       padding: '8px 0',
                       overflow: 'hidden',
@@ -203,10 +206,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {visibleChildren.map((child) => {
                       const childActive = isChildActive(child.key);
                       return (
-                        <div
+                        <Flex
                           key={child.key}
                           style={{
-                            display: 'flex',
                             alignItems: 'center',
                             padding: '12px 24px',
                             fontSize: 14,
@@ -217,15 +219,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           data-testid={`sidebar-submenu-${formatKeyForTestId(child.key)}`}
                         >
                           {child.label}
-                        </div>
+                        </Flex>
                       );
                     })}
-                  </div>
+                  </Flex>
                 )}
-              </div>
+              </Flex>
             );
           })}
-        </div>
+        </Flex>
       </Flex>
     </Sider>
   );

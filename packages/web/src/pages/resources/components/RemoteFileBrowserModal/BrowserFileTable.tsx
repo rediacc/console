@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { FileOutlined, FolderOutlined } from '@ant-design/icons';
-import { Empty, Space, Table, Tooltip, type TableProps } from 'antd';
+import { Empty, Flex, Space, Table, Tooltip, Typography, type TableProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
@@ -57,13 +57,13 @@ export const BrowserFileTable: React.FC<BrowserFileTableProps> = ({
       ...nameColumn,
       render: (name: string, record: RemoteFile) => {
         const icon = record.isDirectory ? (
-          <span>
+          <Typography.Text>
             <FolderOutlined />
-          </span>
+          </Typography.Text>
         ) : (
-          <span>
+          <Typography.Text>
             <FileOutlined />
-          </span>
+          </Typography.Text>
         );
 
         const displayName = record.isDirectory ? (
@@ -74,7 +74,7 @@ export const BrowserFileTable: React.FC<BrowserFileTableProps> = ({
             {name}
           </a>
         ) : (
-          <span data-testid={`file-browser-file-${name}`}>{name}</span>
+          <Typography.Text data-testid={`file-browser-file-${name}`}>{name}</Typography.Text>
         );
 
         const content = (
@@ -86,12 +86,12 @@ export const BrowserFileTable: React.FC<BrowserFileTableProps> = ({
 
         if (record.originalGuid) {
           const tooltipContent = (
-            <div>
-              <div>{name}</div>
-              <div style={{ color: 'var(--ant-color-text-secondary)' }}>
+            <Flex vertical>
+              <Typography.Text>{name}</Typography.Text>
+              <Typography.Text style={{ color: 'var(--ant-color-text-secondary)' }}>
                 Original file: {record.originalGuid}
-              </div>
-            </div>
+              </Typography.Text>
+            </Flex>
           );
           return <Tooltip title={tooltipContent}>{content}</Tooltip>;
         }

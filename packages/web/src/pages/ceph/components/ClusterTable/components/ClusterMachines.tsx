@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Empty, Table, Tag } from 'antd';
+import { Empty, Flex, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CephCluster, CephClusterMachine, useCephClusterMachines } from '@/api/queries/ceph';
 import { createSorter, formatTimestampAsIs } from '@/platform';
@@ -21,10 +21,10 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
         key: 'machineName',
         sorter: createSorter<CephClusterMachine>('machineName'),
         render: (name: string) => (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <Flex align="center" gap={8}>
             <DesktopOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
-            <span style={{ fontWeight: 400 }}>{name}</span>
-          </span>
+            <Typography.Text style={{ fontWeight: 400 }}>{name}</Typography.Text>
+          </Flex>
         ),
       },
       {
@@ -43,7 +43,7 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
         dataIndex: 'assignedDate',
         key: 'assignedDate',
         render: (date: string | null) => (
-          <span>{date ? formatTimestampAsIs(date, 'datetime') : '-'}</span>
+          <Typography.Text>{date ? formatTimestampAsIs(date, 'datetime') : '-'}</Typography.Text>
         ),
       },
     ],
@@ -51,12 +51,14 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
   );
 
   return (
-    <div data-testid={`cluster-expanded-row-${cluster.clusterName}`}>
-      <h4 style={{ fontSize: 16 }}>{t('clusters.assignedMachines')}</h4>
+    <Flex vertical data-testid={`cluster-expanded-row-${cluster.clusterName}`}>
+      <Typography.Title level={4} style={{ fontSize: 16 }}>
+        {t('clusters.assignedMachines')}
+      </Typography.Title>
       {machines.length === 0 && !isLoading ? (
         <Empty description={t('clusters.noMachinesAssigned')} />
       ) : (
-        <div style={{ overflow: 'hidden' }}>
+        <Flex style={{ overflow: 'hidden' }}>
           <Table<CephClusterMachine>
             data-testid={`ds-cluster-machines-table-${cluster.clusterName}`}
             columns={machineColumns}
@@ -66,8 +68,8 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
             size="small"
             pagination={false}
           />
-        </div>
+        </Flex>
       )}
-    </div>
+    </Flex>
   );
 };

@@ -33,10 +33,10 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
           {t('functions:priority')}
           <Popover
             content={
-              <div style={{ maxWidth: 320 }}>
-                <div style={{ display: 'block' }}>
+              <Flex vertical style={{ maxWidth: 320 }}>
+                <Flex>
                   <Typography.Text strong>{t('functions:priorityPopoverLevels')}</Typography.Text>
-                </div>
+                </Flex>
                 {priorityLegendItems.map((item) => (
                   <Flex key={item.level} align="center" gap={8} wrap>
                     <Tag>
@@ -45,7 +45,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
                     <Typography.Text type="secondary">{item.description}</Typography.Text>
                   </Flex>
                 ))}
-              </div>
+              </Flex>
             }
             title={t('functions:priorityPopoverTitle')}
             trigger="click"
@@ -80,11 +80,11 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
         }}
         data-testid="function-modal-priority-slider"
       />
-      <div style={{ textAlign: 'center' }}>
+      <Flex style={{ textAlign: 'center' }} justify="center">
         <Tag icon={priority === 1 ? <ExclamationCircleOutlined /> : undefined}>
           {t('functions:currentPriority')}: {getPriorityLabel(priority)} ({priority})
         </Tag>
-      </div>
+      </Flex>
       {priority && (
         <Alert
           message={
@@ -100,12 +100,12 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
           }
           description={
             priority === 1 ? (
-              <>
-                <div>{t('functions:priorityHighestTimeoutWarning')}</div>
-                <div style={{ fontStyle: 'italic' }}>
+              <Flex vertical>
+                <Typography.Text>{t('functions:priorityHighestTimeoutWarning')}</Typography.Text>
+                <Typography.Text style={{ fontStyle: 'italic' }}>
                   {t('functions:priorityHighestDescription')}
-                </div>
-              </>
+                </Typography.Text>
+              </Flex>
             ) : priority === 2 ? (
               t('functions:priorityHighDescription')
             ) : priority === 3 ? (

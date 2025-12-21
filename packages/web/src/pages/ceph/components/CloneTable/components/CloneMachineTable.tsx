@@ -39,17 +39,20 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
 
   if (isLoading) {
     return (
-      <div style={{ width: '100%' }} data-testid={`clone-list-machines-loading-${clone.cloneName}`}>
+      <Flex
+        style={{ width: '100%' }}
+        data-testid={`clone-list-machines-loading-${clone.cloneName}`}
+      >
         <LoadingWrapper loading centered minHeight={120}>
-          <div />
+          <Flex />
         </LoadingWrapper>
-      </div>
+      </Flex>
     );
   }
 
   if (machines.length === 0) {
     return (
-      <div style={{ width: '100%' }}>
+      <Flex style={{ width: '100%' }}>
         <Flex vertical align="center" gap={12} style={{ width: '100%' }}>
           <Empty description={t('clones.noMachinesAssigned')} />
           <Button
@@ -61,12 +64,15 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
             {t('clones.assignMachines')}
           </Button>
         </Flex>
-      </div>
+      </Flex>
     );
   }
 
   return (
-    <div style={{ width: '100%' }} data-testid={`clone-list-machines-container-${clone.cloneName}`}>
+    <Flex
+      style={{ width: '100%' }}
+      data-testid={`clone-list-machines-container-${clone.cloneName}`}
+    >
       <Flex vertical gap={16} style={{ width: '100%' }}>
         <Flex align="center" gap={8} wrap>
           <TeamOutlined />
@@ -98,6 +104,6 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
           {t('clones.manageMachines')}
         </Button>
       </Flex>
-    </div>
+    </Flex>
   );
 };

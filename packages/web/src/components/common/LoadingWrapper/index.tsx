@@ -1,15 +1,14 @@
 import React from 'react';
-import { Empty, Spin } from 'antd';
+import { Empty, Flex, Spin } from 'antd';
 
 const CenteredContainer: React.FC<
   React.HTMLAttributes<HTMLDivElement> & { $minHeight?: number }
 > = ({ $minHeight, style, ...props }) => (
-  <div
+  <Flex
+    vertical
+    justify="center"
+    align="center"
     style={{
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
       minHeight: $minHeight ?? 200,
       ...style,
     }}
@@ -18,12 +17,11 @@ const CenteredContainer: React.FC<
 );
 
 const FullHeightContainer: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
-  <div
+  <Flex
+    vertical
+    justify="center"
+    align="center"
     style={{
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
       height: '100%',
       width: '100%',
     }}
@@ -32,7 +30,7 @@ const FullHeightContainer: React.FC<React.HTMLAttributes<HTMLDivElement>> = (pro
 );
 
 const LoadingText: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
-  <div style={{ textAlign: 'center' }} {...props} />
+  <Flex style={{ textAlign: 'center' }} {...props} />
 );
 
 export interface LoadingWrapperProps {

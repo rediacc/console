@@ -84,9 +84,9 @@ const AuditPage = () => {
     const IconComponent = config.icon;
 
     return (
-      <span style={{ color: config.color, display: 'inline-flex' }}>
+      <Typography.Text style={{ color: config.color, display: 'inline-flex' }}>
         <IconComponent />
-      </span>
+      </Typography.Text>
     );
   }, []);
 
@@ -167,20 +167,24 @@ const AuditPage = () => {
   const exportMenuItems = [
     {
       key: 'csv',
-      label: <span data-testid="audit-export-csv">{t('common:exportCSV')}</span>,
+      label: (
+        <Typography.Text data-testid="audit-export-csv">{t('common:exportCSV')}</Typography.Text>
+      ),
       icon: <FileExcelOutlined />,
       onClick: exportToCSV,
     },
     {
       key: 'json',
-      label: <span data-testid="audit-export-json">{t('common:exportJSON')}</span>,
+      label: (
+        <Typography.Text data-testid="audit-export-json">{t('common:exportJSON')}</Typography.Text>
+      ),
       icon: <FileTextOutlined />,
       onClick: exportToJSON,
     },
   ];
 
   return (
-    <div>
+    <Flex vertical>
       <Flex vertical gap={24} style={{ width: '100%' }}>
         {/* Filters */}
         <Card data-testid="audit-filter-card">
@@ -188,9 +192,9 @@ const AuditPage = () => {
             <Row gutter={[24, 16]}>
               <Col xs={24} sm={24} md={8}>
                 <Flex vertical gap={8} style={{ width: '100%' }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>
+                  <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>
                     {t('system:audit.filters.dateRange')}
-                  </span>
+                  </Typography.Text>
                   <RangePicker
                     data-testid="audit-filter-date"
                     value={filters.dateRange}
@@ -240,9 +244,9 @@ const AuditPage = () => {
               </Col>
               <Col xs={24} sm={12} md={6}>
                 <Flex vertical gap={8} style={{ width: '100%' }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>
+                  <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>
                     {t('system:audit.filters.entityType')}
-                  </span>
+                  </Typography.Text>
                   <Select
                     data-testid="audit-filter-entity"
                     placeholder={t('system:audit.filters.allEntities')}
@@ -258,9 +262,9 @@ const AuditPage = () => {
               </Col>
               <Col xs={24} sm={12} md={6}>
                 <Flex vertical gap={8} style={{ width: '100%' }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>
+                  <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>
                     {t('system:audit.filters.search')}
-                  </span>
+                  </Typography.Text>
                   <Input
                     data-testid="audit-filter-search"
                     placeholder={t('system:audit.filters.searchPlaceholder')}
@@ -274,9 +278,9 @@ const AuditPage = () => {
               </Col>
               <Col xs={24} sm={12} md={2}>
                 <Flex vertical gap={8} style={{ width: '100%' }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>
+                  <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>
                     {t('system:audit.filters.actions')}
-                  </span>
+                  </Typography.Text>
                   <Button
                     data-testid="audit-refresh-button"
                     icon={<ReloadOutlined />}
@@ -296,9 +300,9 @@ const AuditPage = () => {
               </Col>
               <Col xs={24} sm={12} md={2}>
                 <Flex vertical gap={8} style={{ width: '100%' }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>
+                  <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>
                     {t('system:audit.filters.export')}
-                  </span>
+                  </Typography.Text>
                   <Tooltip
                     title={
                       !filteredLogs || filteredLogs.length === 0
@@ -393,7 +397,7 @@ const AuditPage = () => {
           />
         </Card>
       </Flex>
-    </div>
+    </Flex>
   );
 };
 

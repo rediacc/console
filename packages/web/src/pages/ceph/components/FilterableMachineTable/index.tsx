@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table } from 'antd';
+import { Flex, Table } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable';
 import type { Machine } from '@/types';
@@ -53,15 +53,15 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
 
   const renderExpandedRow = React.useCallback(
     (machine: Machine) => (
-      <div>
+      <Flex>
         <MachineRepositoryTable machine={machine} refreshKey={refreshKeys[machine.machineName]} />
-      </div>
+      </Flex>
     ),
     [refreshKeys]
   );
 
   return (
-    <div style={{ width: '100%', overflow: 'hidden' }}>
+    <Flex style={{ width: '100%', overflow: 'hidden' }}>
       <Table<Machine>
         columns={columns}
         dataSource={machines}
@@ -86,7 +86,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
             }),
         }}
       />
-    </div>
+    </Flex>
   );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Dropdown, Select } from 'antd';
+import { Button, Dropdown, Flex, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { useTranslation } from 'react-i18next';
@@ -58,9 +58,9 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
     const menuItems = languages.map((lang) => ({
       key: lang.code,
       label: (
-        <span data-testid={`language-option-${lang.code}`}>
+        <Typography.Text data-testid={`language-option-${lang.code}`}>
           {lang.flag} {lang.name}
-        </span>
+        </Typography.Text>
       ),
       onClick: () => handleChange(lang.code),
     }));
@@ -85,9 +85,9 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
       options={languages.map((lang) => ({
         value: lang.code,
         label: (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <Flex style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             {lang.flag} {lang.name}
-          </span>
+          </Flex>
         ),
       }))}
       data-testid="language-selector"

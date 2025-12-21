@@ -263,12 +263,12 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
 
       <DetailPanelBody data-testid="repository-detail-content">
         {!repositoryData ? (
-          <div>
+          <Flex>
             <Empty
               description={t('resources:repositories.noRepoData')}
               data-testid="repository-detail-empty-state"
             />
-          </div>
+          </Flex>
         ) : (
           <>
             <RepoInfoSection repository={repository} panelData={repositoryData} t={t} />
@@ -298,7 +298,7 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
   const { repositoryData } = panelData;
 
   return (
-    <div data-testid="repository-detail-info-section">
+    <Flex vertical data-testid="repository-detail-info-section">
       <DetailPanelSectionHeader>
         <FolderOutlined />
         <DetailPanelSectionTitle level={5}>
@@ -399,7 +399,7 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
             )}
         </Flex>
       </DetailPanelSectionCard>
-    </div>
+    </Flex>
   );
 };
 
@@ -451,7 +451,7 @@ const StorageSection: React.FC<SectionProps> = ({ repository, panelData, t }) =>
     : 0;
 
   return (
-    <div>
+    <Flex vertical>
       <DetailPanelDivider data-testid="repository-detail-storage-divider">
         <InfoCircleOutlined />
         {t('resources:repositories.storageInfo')}
@@ -511,7 +511,7 @@ const StorageSection: React.FC<SectionProps> = ({ repository, panelData, t }) =>
           </Col>
         )}
       </Row>
-    </div>
+    </Flex>
   );
 };
 
@@ -519,7 +519,7 @@ const FilePathsSection: React.FC<SectionProps> = ({ repository, panelData, t }) 
   const { repositoryData } = panelData;
 
   return (
-    <div>
+    <Flex vertical>
       <DetailPanelDivider data-testid="repository-detail-file-paths-divider">
         <FolderOutlined />
         {t('resources:repositories.filePaths')}
@@ -554,7 +554,7 @@ const FilePathsSection: React.FC<SectionProps> = ({ repository, panelData, t }) 
           )}
         </Flex>
       </DetailPanelSectionCard>
-    </div>
+    </Flex>
   );
 };
 
@@ -562,7 +562,7 @@ const ActivitySection: React.FC<SectionProps> = ({ repository, panelData, t }) =
   const { repositoryData } = panelData;
 
   return (
-    <div>
+    <Flex vertical>
       <DetailPanelDivider data-testid="repository-detail-activity-divider">
         <FieldTimeOutlined />
         {t('resources:repositories.activity')}
@@ -589,18 +589,18 @@ const ActivitySection: React.FC<SectionProps> = ({ repository, panelData, t }) =
           )}
         </Flex>
       </DetailPanelSectionCard>
-    </div>
+    </Flex>
   );
 };
 
 const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) => (
-  <div>
+  <Flex vertical>
     <DetailPanelDivider data-testid="repository-detail-services-divider">
       <CodeOutlined />
       {t('resources:repositories.servicesSection')}
     </DetailPanelDivider>
 
-    <div data-testid="repository-detail-services-list">
+    <Flex vertical data-testid="repository-detail-services-list">
       {panelData.services.map((service, index) => {
         const state: 'active' | 'failed' | 'other' =
           service.active_state === 'active'
@@ -688,6 +688,6 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
           </Card>
         );
       })}
-    </div>
-  </div>
+    </Flex>
+  </Flex>
 );

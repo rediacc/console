@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { Button, Empty, Modal, Space, Table } from 'antd';
+import { Button, Empty, Flex, Modal, Space, Table } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CephCluster } from '@/api/queries/ceph';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
@@ -123,7 +123,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   return (
     <>
       {contextHolder}
-      <div style={{ overflow: 'hidden' }}>
+      <Flex style={{ overflow: 'hidden' }}>
         <Table<CephCluster>
           data-testid="ds-cluster-table"
           columns={columns}
@@ -159,7 +159,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
           })}
           rowClassName={() => 'cluster-row'}
         />
-      </div>
+      </Flex>
 
       <AuditTraceModal
         open={auditTrace.isOpen}

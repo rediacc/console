@@ -1,4 +1,4 @@
-import { Button, Flex, Tag } from 'antd';
+import { Button, Flex, Tag, Typography } from 'antd';
 import type { CephCluster } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
@@ -60,7 +60,7 @@ export const buildClusterColumns = ({
       render: (name: string, record: CephCluster, index) => {
         const isExpanded = expandedRowKeys.includes(record.clusterName);
         return (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <Flex align="center" gap={8}>
             <RightOutlined
               style={{
                 transform: isExpanded ? 'rotate(90deg)' : undefined,
@@ -68,10 +68,10 @@ export const buildClusterColumns = ({
               }}
             />
             <CloudServerOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
-            <span style={{ fontWeight: 400 }}>
+            <Typography.Text style={{ fontWeight: 400 }}>
               {clusterNameColumn.render?.(name, record, index) as React.ReactNode}
-            </span>
-          </span>
+            </Typography.Text>
+          </Flex>
         );
       },
     },

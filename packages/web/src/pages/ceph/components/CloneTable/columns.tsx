@@ -1,6 +1,6 @@
 import React from 'react';
 import { CloudUploadOutlined, CopyOutlined, EllipsisOutlined } from '@ant-design/icons';
-import { Tag, Tooltip } from 'antd';
+import { Flex, Tag, Tooltip, Typography } from 'antd';
 import { TFunction } from 'i18next';
 import type { CephRbdClone } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
@@ -26,12 +26,9 @@ export const buildCloneColumns = ({
     dataIndex: 'cloneName',
     key: 'cloneName',
     render: (text: string, record: CephRbdClone) => (
-      <span
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
-        data-testid={`clone-list-item-${record.cloneName}`}
-      >
+      <Flex align="center" gap={8} data-testid={`clone-list-item-${record.cloneName}`}>
         <CopyOutlined style={{ fontSize: 16, color: 'var(--ant-color-text-secondary)' }} />
-        <span style={{ fontWeight: 400 }}>{text}</span>
+        <Typography.Text style={{ fontWeight: 400 }}>{text}</Typography.Text>
         {record.vaultContent && (
           <Tooltip title={t('common.hasVault')}>
             <Tag data-testid={`clone-list-vault-tag-${record.cloneName}`} bordered={false}>
@@ -39,7 +36,7 @@ export const buildCloneColumns = ({
             </Tag>
           </Tooltip>
         )}
-      </span>
+      </Flex>
     ),
   },
   {

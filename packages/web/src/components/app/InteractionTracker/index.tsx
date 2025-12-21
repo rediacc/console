@@ -1,4 +1,5 @@
 import React, { ReactNode, useEffect, useRef } from 'react';
+import { Flex } from 'antd';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
 
 type TelemetryAttributes = Record<string, string | number | boolean>;
@@ -103,9 +104,9 @@ export const InteractionTracker: React.FC<InteractionTrackerProps> = ({ children
   }, [isInitialized, trackUserAction]);
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+    <Flex ref={containerRef} style={{ width: '100%', height: '100%' }}>
       {children}
-    </div>
+    </Flex>
   );
 };
 

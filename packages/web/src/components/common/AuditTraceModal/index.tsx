@@ -1,4 +1,5 @@
 import React, { lazy, Suspense } from 'react';
+import { Flex } from 'antd';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import type { AuditTraceModalProps } from './AuditTraceModal';
 
@@ -8,7 +9,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = (props) => (
   <Suspense
     fallback={
       <LoadingWrapper loading centered minHeight={200}>
-        <div />
+        <Flex />
       </LoadingWrapper>
     }
   >

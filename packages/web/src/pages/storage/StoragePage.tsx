@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { Button, Modal, Space, Tag, Tooltip, Typography, theme } from 'antd';
+import { Button, Flex, Modal, Space, Tag, Tooltip, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
@@ -57,8 +57,8 @@ interface StorageFunctionData {
   selectedMachine?: string;
 }
 
-const TeamSelectorWrapper = (props: React.HTMLAttributes<HTMLDivElement>) => (
-  <div style={{ width: '100%', maxWidth: 360 }} {...props} />
+const TeamSelectorWrapper = (props: React.ComponentProps<typeof Flex>) => (
+  <Flex style={{ width: '100%', maxWidth: 360 }} {...props} />
 );
 
 const StorageLocationIcon = (props: React.ComponentProps<typeof CloudOutlined>) => (
@@ -420,7 +420,7 @@ const StoragePage: React.FC = () => {
 
   return (
     <>
-      <div>
+      <Flex vertical>
         <Typography.Title level={3}>
           {t('storage.heading', { defaultValue: 'Storage' })}
         </Typography.Title>
@@ -515,7 +515,7 @@ const StoragePage: React.FC = () => {
             ) : undefined
           }
         />
-      </div>
+      </Flex>
 
       <UnifiedResourceModal
         data-testid="resources-storage-modal"

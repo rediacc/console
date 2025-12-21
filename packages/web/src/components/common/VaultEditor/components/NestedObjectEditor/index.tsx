@@ -371,9 +371,9 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   };
 
   return (
-    <div style={{ width: '100%' }}>
+    <Flex vertical style={{ width: '100%' }}>
       {(title || description || structureInfo.isUniform) && (
-        <div>
+        <Flex vertical>
           {title && <Typography.Text strong>{title}</Typography.Text>}
           {description && (
             <Typography.Text type="secondary">
@@ -393,7 +393,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               )}
             </Flex>
           )}
-        </div>
+        </Flex>
       )}
 
       <Flex vertical gap={16} style={{ width: '100%' }}>
@@ -407,7 +407,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
             }
           >
             <Flex align="center" wrap gap={8}>
-              <div style={{ flex: '1 1 60%', minWidth: 240, maxWidth: '100%' }}>
+              <Flex style={{ flex: '1 1 60%', minWidth: 240, maxWidth: '100%' }}>
                 <Input
                   style={{ width: '100%' }}
                   placeholder={t('nestedObjectEditor.Enter key name')}
@@ -417,7 +417,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                   autoComplete="off"
                   data-testid={dataTestId ? `${dataTestId}-new-key` : 'vault-editor-nested-new-key'}
                 />
-              </div>
+              </Flex>
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
@@ -520,6 +520,6 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
           </Card>
         )}
       </Flex>
-    </div>
+    </Flex>
   );
 };

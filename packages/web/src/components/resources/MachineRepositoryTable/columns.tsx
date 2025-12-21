@@ -76,7 +76,7 @@ export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
 
       return (
         <Space>
-          <span
+          <Typography.Text
             style={{
               display: 'inline-flex',
               fontSize: 20,
@@ -84,7 +84,7 @@ export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
             }}
           >
             {isGrand ? <StarOutlined /> : <CopyOutlined />}
-          </span>
+          </Typography.Text>
           <strong>{getRepositoryDisplayName(record)}</strong>
           {isGrand && <Tag>Grand</Tag>}
         </Space>
@@ -220,7 +220,7 @@ export const useSystemContainerColumns = () => {
       ...systemNameColumn,
       render: (name: string, record: Container, index) => (
         <Space>
-          <span
+          <Typography.Text
             style={{
               display: 'inline-flex',
               fontSize: 20,
@@ -228,7 +228,7 @@ export const useSystemContainerColumns = () => {
             }}
           >
             <CloudServerOutlined />
-          </span>
+          </Typography.Text>
           <strong>{systemNameColumn.render?.(name, record, index) as React.ReactNode}</strong>
         </Space>
       ),
@@ -280,14 +280,14 @@ export const useSystemContainerColumns = () => {
               {portMappings.map((mapping, index) => (
                 <Typography.Text key={index} style={{ fontSize: 12 }}>
                   {mapping.host_port ? (
-                    <span>
+                    <Typography.Text>
                       {mapping.host}:{mapping.host_port} → {mapping.container_port}/
                       {mapping.protocol}
-                    </span>
+                    </Typography.Text>
                   ) : (
-                    <span>
+                    <Typography.Text>
                       {mapping.container_port}/{mapping.protocol}
-                    </span>
+                    </Typography.Text>
                   )}
                 </Typography.Text>
               ))}

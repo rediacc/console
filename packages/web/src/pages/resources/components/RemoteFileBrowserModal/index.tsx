@@ -5,7 +5,7 @@ import {
   FolderOpenOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, Empty, Flex, Input, Modal, Select, Space, Tooltip } from 'antd';
+import { Alert, Button, Empty, Flex, Input, Modal, Select, Space, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
@@ -254,14 +254,14 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       ]}
     >
       <Flex vertical gap={16} style={{ width: '100%' }}>
-        <div data-testid="file-browser-source-container">
-          <div style={{ fontWeight: 500 }} data-testid="file-browser-source-label">
+        <Flex vertical data-testid="file-browser-source-container">
+          <Typography.Text style={{ fontWeight: 500 }} data-testid="file-browser-source-label">
             {t('resources:remoteFiles.sourceLabel')}
-          </div>
+          </Typography.Text>
           <Flex justify="space-between" style={{ width: '100%' }}>
             <Space>
-              <div style={{ width: 240 }}>
-                <div style={{ width: '100%' }}>
+              <Flex style={{ width: 240 }}>
+                <Flex style={{ width: '100%' }}>
                   <Select
                     placeholder={t('resources:remoteFiles.selectSource')}
                     value={selectedSource}
@@ -274,13 +274,13 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                     loading={isLoadingStorage || isLoadingMachines}
                     notFoundContent={
                       isLoadingStorage || isLoadingMachines ? (
-                        <div>
+                        <Flex>
                           <InlineLoadingIndicator
                             width="100%"
                             height={18}
                             data-testid="file-browser-source-loading"
                           />
-                        </div>
+                        </Flex>
                       ) : storageSources.length === 0 ? (
                         <Empty
                           image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -291,8 +291,8 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                     options={storageSources}
                     data-testid="file-browser-source-select"
                   />
-                </div>
-              </div>
+                </Flex>
+              </Flex>
               <Tooltip title={t('resources:remoteFiles.loadFiles')}>
                 <Button
                   icon={<FolderOpenOutlined />}
@@ -304,16 +304,16 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                 />
               </Tooltip>
             </Space>
-            <div style={{ width: 200 }}>
+            <Flex style={{ width: 200 }}>
               <Input
                 placeholder={t('common:actions.search')}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 data-testid="file-browser-search-input"
               />
-            </div>
+            </Flex>
           </Flex>
-        </div>
+        </Flex>
 
         <BrowserBreadcrumb currentPath={currentPath} onNavigate={handleNavigate} />
 

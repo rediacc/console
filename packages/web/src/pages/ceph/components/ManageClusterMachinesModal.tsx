@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Empty, Modal, Space, Table, Tabs, Tag } from 'antd';
+import { Button, Empty, Flex, Modal, Space, Table, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   CephClusterMachine,
@@ -208,28 +208,28 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     if (loadingAvailable) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
-          <div />
+          <Flex />
         </LoadingWrapper>
       );
     }
 
     return (
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <div>
-          <p>{t('machines:selectMachines')}</p>
+        <Flex vertical>
+          <Typography.Text>{t('machines:selectMachines')}</Typography.Text>
           <AvailableMachinesSelector
             machines={normalizedAvailableMachines}
             value={selectedMachines}
             onChange={setSelectedMachines}
           />
-        </div>
+        </Flex>
 
         {selectedMachines.length > 0 && (
-          <div>
+          <Flex>
             <Tag color="blue">
               {t('machines:bulkOperations.selectedCount', { count: selectedMachines.length })}
             </Tag>
-          </div>
+          </Flex>
         )}
       </Space>
     );
@@ -239,7 +239,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     if (loadingClusterMachines) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
-          <div />
+          <Flex />
         </LoadingWrapper>
       );
     }
@@ -258,7 +258,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     return (
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {selectedRemoveMachines.length > 0 && (
-          <div>
+          <Flex>
             <Tag color="warning">
               {t('machines:bulkOperations.selectedCount', { count: selectedRemoveMachines.length })}
             </Tag>
@@ -272,7 +272,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
             >
               {t('machines:removeFromCluster')}
             </Button>
-          </div>
+          </Flex>
         )}
 
         <Table<CephClusterMachine>
@@ -328,18 +328,18 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
           {
             key: 'assign',
             label: (
-              <span data-testid="ds-manage-machines-tab-assign">
+              <Typography.Text data-testid="ds-manage-machines-tab-assign">
                 {t('machines:assignToCluster')}
-              </span>
+              </Typography.Text>
             ),
             children: renderAssignTab(),
           },
           {
             key: 'manage',
             label: (
-              <span data-testid="ds-manage-machines-tab-manage">
+              <Typography.Text data-testid="ds-manage-machines-tab-manage">
                 {t('clusters.assignedMachines')}
-              </span>
+              </Typography.Text>
             ),
             children: renderManageTab(),
           },

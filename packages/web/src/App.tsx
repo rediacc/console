@@ -49,7 +49,7 @@ const PageLoader: React.FC = () => {
       style={{ padding: 48 }}
     >
       <LoadingWrapper loading centered minHeight={400}>
-        <div />
+        <Flex />
       </LoadingWrapper>
     </Flex>
   );

@@ -26,33 +26,39 @@ export const QueueStatisticsBar: React.FC<QueueStatisticsBarProps> = ({
   return (
     <Flex wrap="wrap" align="center" gap={8}>
       <Flex align="center" gap={4}>
-        <span style={{ display: 'inline-flex' }}>
+        <Typography.Text style={{ display: 'inline-flex' }}>
           <ThunderboltOutlined />
-        </span>
+        </Typography.Text>
         <Typography.Text type="secondary">{t('queue:statistics.total')}:</Typography.Text>
         <Typography.Text>{totalCount}</Typography.Text>
       </Flex>
-      <span style={{ width: 1, height: 16, background: 'var(--ant-color-border-secondary)' }} />
+      <Typography.Text
+        style={{ width: 1, height: 16, background: 'var(--ant-color-border-secondary)' }}
+      />
       <Flex align="center" gap={4}>
-        <span style={{ display: 'inline-flex', color: 'var(--ant-color-info)' }}>
+        <Typography.Text style={{ display: 'inline-flex', color: 'var(--ant-color-info)' }}>
           <PlayCircleOutlined />
-        </span>
+        </Typography.Text>
         <Typography.Text type="secondary">{t('queue:statistics.active')}:</Typography.Text>
         <Typography.Text style={{ color: 'var(--ant-color-info)' }}>{activeCount}</Typography.Text>
       </Flex>
-      <span style={{ width: 1, height: 16, background: 'var(--ant-color-border-secondary)' }} />
+      <Typography.Text
+        style={{ width: 1, height: 16, background: 'var(--ant-color-border-secondary)' }}
+      />
       <Flex align="center" gap={4}>
-        <span style={{ display: 'inline-flex', color: 'var(--ant-color-error)' }}>
+        <Typography.Text style={{ display: 'inline-flex', color: 'var(--ant-color-error)' }}>
           <ExclamationCircleOutlined />
-        </span>
+        </Typography.Text>
         <Typography.Text type="secondary">{t('queue:statistics.failed')}:</Typography.Text>
         <Typography.Text style={{ color: 'var(--ant-color-error)' }}>{failedCount}</Typography.Text>
       </Flex>
-      <span style={{ width: 1, height: 16, background: 'var(--ant-color-border-secondary)' }} />
+      <Typography.Text
+        style={{ width: 1, height: 16, background: 'var(--ant-color-border-secondary)' }}
+      />
       <Flex align="center" gap={4}>
-        <span style={{ display: 'inline-flex', color: 'var(--ant-color-warning)' }}>
+        <Typography.Text style={{ display: 'inline-flex', color: 'var(--ant-color-warning)' }}>
           <WarningOutlined />
-        </span>
+        </Typography.Text>
         <Typography.Text type="secondary">{t('queue:statistics.stale')}:</Typography.Text>
         <Typography.Text style={{ color: 'var(--ant-color-warning)' }}>
           {staleCount}

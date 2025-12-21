@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Col, Divider, Form, Row, theme } from 'antd';
+import { Col, Divider, Flex, Form, Row, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import VaultEditor from '@/components/common/VaultEditor';
 import { useMessage } from '@/hooks';
@@ -111,7 +111,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const wrapperCol = { span: 18 };
 
     return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Flex vertical style={{ height: '100%' }}>
         <Form
           data-testid="resource-modal-form"
           layout={formLayout}
@@ -155,7 +155,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
         <Divider style={{ margin: '16px 0' }}>{t('vaultEditor.vaultConfiguration')}</Divider>
 
-        <div style={{ flexShrink: 0 }} data-testid="resource-modal-vault-editor-section">
+        <Flex style={{ flexShrink: 0 }} data-testid="resource-modal-vault-editor-section">
           <VaultEditor
             entityType={entityType}
             initialData={initialVaultData}
@@ -173,7 +173,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
               onImportExportRef?.(handlers);
             }}
           />
-        </div>
+        </Flex>
 
         {afterVaultContent}
 
@@ -189,7 +189,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
         {showDefaultsAlert && defaultsContent && (
           <DefaultsBanner title={t('general.defaultsApplied')} content={defaultsContent} />
         )}
-      </div>
+      </Flex>
     );
   }
 );

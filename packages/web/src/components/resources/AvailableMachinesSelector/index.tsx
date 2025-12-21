@@ -68,14 +68,14 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
         disabled={isDisabled}
         data-testid={`available-machines-option-${machine.machineName}`}
       >
-        <div
+        <Flex
           data-testid={`available-machines-option-content-${machine.machineName}`}
-          style={{ display: 'flex', alignItems: 'center', width: '100%' }}
+          style={{ alignItems: 'center', width: '100%' }}
         >
-          <div style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 16 }}>
+          <Flex style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Typography.Text style={{ display: 'inline-flex', alignItems: 'center', fontSize: 16 }}>
               <CloudServerOutlined />
-            </span>
+            </Typography.Text>
             <Typography.Text
               style={{
                 fontWeight: 600,
@@ -100,7 +100,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                 {machine.bridgeName}
               </Tag>
             )}
-          </div>
+          </Flex>
           {showAssignmentStatus && (
             <Flex align="center">
               {isAssigned ? (
@@ -109,9 +109,9 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                     data-testid={`available-machines-cluster-tag-${machine.machineName}`}
                     color="processing"
                   >
-                    <span style={{ display: 'inline-flex', fontSize: 12 }}>
+                    <Typography.Text style={{ display: 'inline-flex', fontSize: 12 }}>
                       <WarningOutlined />
-                    </span>
+                    </Typography.Text>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       {t('machines:assignmentStatus.cluster')}: {machine.cephClusterName}
                     </Typography.Text>
@@ -121,9 +121,9 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                     data-testid={`available-machines-assigned-tag-${machine.machineName}`}
                     color="warning"
                   >
-                    <span style={{ display: 'inline-flex', fontSize: 12 }}>
+                    <Typography.Text style={{ display: 'inline-flex', fontSize: 12 }}>
                       <WarningOutlined />
-                    </span>
+                    </Typography.Text>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       {t('machines:assignmentStatus.assigned', 'Assigned')}
                     </Typography.Text>
@@ -134,9 +134,9 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                   data-testid={`available-machines-available-tag-${machine.machineName}`}
                   color="success"
                 >
-                  <span style={{ display: 'inline-flex', fontSize: 12 }}>
+                  <Typography.Text style={{ display: 'inline-flex', fontSize: 12 }}>
                     <CheckCircleOutlined />
-                  </span>
+                  </Typography.Text>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     {t('machines:assignmentStatus.available')}
                   </Typography.Text>
@@ -144,7 +144,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
               )}
             </Flex>
           )}
-        </div>
+        </Flex>
       </Select.Option>
     );
   };

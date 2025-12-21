@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Input, Select, Tag, Flex } from 'antd';
+import { Flex, Input, Select, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { SearchOutlined, TeamOutlined } from '@/utils/optimizedIcons';
 import type { GetCompanyTeams_ResultSet1 as Team } from '@rediacc/shared/types';
@@ -35,7 +35,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
           <Flex align="center" style={{ display: 'inline-flex' }}>
             <TeamOutlined />
           </Flex>
-          <span>{team.teamName}</span>
+          <Typography.Text>{team.teamName}</Typography.Text>
         </Flex>
       ),
       value: team.teamName,
@@ -73,7 +73,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       }}
       dropdownRender={(menu: React.ReactElement) => (
         <>
-          <div>
+          <Flex>
             <Input
               placeholder={t('teams.placeholders.searchTeams')}
               prefix={<SearchOutlined />}
@@ -83,8 +83,8 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
               autoComplete="off"
               data-testid="team-selector-search"
             />
-          </div>
-          <div>{menu}</div>
+          </Flex>
+          <Flex>{menu}</Flex>
         </>
       )}
       maxTagCount="responsive"

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Card, Col, Flex, Row, Statistic } from 'antd';
+import { Button, Card, Col, Flex, Row, Statistic, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
@@ -86,7 +86,11 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       accent: accentColors.success,
       testId: 'ds-machines-summary-available',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
-      suffix: <span style={{ fontSize: 14 }}>({getPercentage(stats.available)}%)</span>,
+      suffix: (
+        <Typography.Text style={{ fontSize: 14 }}>
+          ({getPercentage(stats.available)}%)
+        </Typography.Text>
+      ),
     },
     {
       key: 'clusters',
@@ -96,7 +100,11 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       accent: accentColors.info,
       testId: 'ds-machines-summary-clusters',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
-      suffix: <span style={{ fontSize: 14 }}>({getPercentage(stats.cluster)}%)</span>,
+      suffix: (
+        <Typography.Text style={{ fontSize: 14 }}>
+          ({getPercentage(stats.cluster)}%)
+        </Typography.Text>
+      ),
     },
     {
       key: 'images',
@@ -106,7 +114,9 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       accent: accentColors.warning,
       testId: 'ds-machines-summary-images',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
-      suffix: <span style={{ fontSize: 14 }}>({getPercentage(stats.image)}%)</span>,
+      suffix: (
+        <Typography.Text style={{ fontSize: 14 }}>({getPercentage(stats.image)}%)</Typography.Text>
+      ),
     },
     {
       key: 'clones',
@@ -116,7 +126,9 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       accent: accentColors.accent,
       testId: 'ds-machines-summary-clones',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
-      suffix: <span style={{ fontSize: 14 }}>({getPercentage(stats.clone)}%)</span>,
+      suffix: (
+        <Typography.Text style={{ fontSize: 14 }}>({getPercentage(stats.clone)}%)</Typography.Text>
+      ),
     },
   ];
 

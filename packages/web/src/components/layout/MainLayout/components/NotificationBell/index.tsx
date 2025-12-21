@@ -61,9 +61,9 @@ const NotificationBell: React.FC = () => {
     })();
 
     return (
-      <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Flex style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
         <IconComponent />
-      </div>
+      </Flex>
     );
   };
 
@@ -98,7 +98,8 @@ const NotificationBell: React.FC = () => {
   };
 
   const dropdownContent = (
-    <div
+    <Flex
+      vertical
       style={{ maxHeight: 400, minWidth: 320 }}
       className="notification-dropdown"
       data-testid="notification-dropdown"
@@ -132,16 +133,16 @@ const NotificationBell: React.FC = () => {
         )}
       </Flex>
 
-      <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+      <Flex vertical style={{ maxHeight: 320, overflowY: 'auto' }}>
         {notifications.length === 0 ? (
-          <div style={{ padding: '40px 0' }}>
+          <Flex style={{ padding: '40px 0' }}>
             <Empty description={t('notifications.empty', 'No notifications')} />
-          </div>
+          </Flex>
         ) : (
           <List
             dataSource={notifications}
             renderItem={(notification: Notification, index: number) => (
-              <div
+              <Flex
                 key={notification.id}
                 style={{ padding: '16px 24px', cursor: 'pointer' }}
                 onClick={() => handleMarkAsRead(notification.id)}
@@ -149,22 +150,20 @@ const NotificationBell: React.FC = () => {
               >
                 <List.Item.Meta
                   title={
-                    <div
-                      style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}
-                    >
-                      <div
+                    <Flex style={{ justifyContent: 'space-between', width: '100%' }}>
+                      <Flex
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flex: 1 }}
                       >
                         <Typography.Text style={{ fontWeight: notification.read ? 400 : 600 }}>
                           {notification.title}
                         </Typography.Text>
-                        <span>
+                        <Typography.Text>
                           <Tag color={getTypeColor(notification.type)}>
                             {t(`notifications.types.${notification.type}`).toUpperCase()}
                           </Tag>
-                        </span>
+                        </Typography.Text>
                         {getIcon(notification.type)}
-                      </div>
+                      </Flex>
                       <Button
                         type="text"
                         icon={<CloseOutlined />}
@@ -173,28 +172,28 @@ const NotificationBell: React.FC = () => {
                         aria-label="Close notification"
                         style={{ flexShrink: 0 }}
                       />
-                    </div>
+                    </Flex>
                   }
                   description={
-                    <div>
-                      <div
+                    <Flex vertical>
+                      <Flex
                         style={{ display: 'block', wordBreak: 'break-word' }}
                         className="notification-message"
                       >
                         <Typography.Text type="secondary">{notification.message}</Typography.Text>
-                      </div>
+                      </Flex>
                       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                         {dayjs(notification.timestamp).fromNow()}
                       </Typography.Text>
-                    </div>
+                    </Flex>
                   }
                 />
-              </div>
+              </Flex>
             )}
           />
         )}
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 
   return (

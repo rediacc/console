@@ -180,7 +180,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
       </DetailPanelHeader>
 
       <DetailPanelBody data-testid="container-detail-content">
-        <div>
+        <Flex vertical>
           <DetailPanelSectionHeader data-testid="container-detail-info-section">
             {isPlugin ? <ApiOutlined /> : <ContainerOutlined />}
             <DetailPanelSectionTitle>
@@ -218,7 +218,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
               </DetailPanelFieldRow>
             </DetailPanelFieldList>
           </DetailPanelSectionCard>
-        </div>
+        </Flex>
 
         <DetailPanelDivider>
           <Flex component="span" align="center" style={{ fontWeight: 600 }}>
@@ -227,7 +227,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
           </Flex>
         </DetailPanelDivider>
 
-        <div
+        <Flex
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
         >
           <Card size="small" data-testid="container-detail-cpu-card">
@@ -283,7 +283,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
               <HddOutlined /> {resourceUsage?.blockRead} / {resourceUsage?.blockWrite}
             </Typography.Text>
           </Card>
-        </div>
+        </Flex>
 
         <DetailPanelSectionCard data-testid="container-detail-runtime">
           <DetailPanelFieldList>
@@ -326,26 +326,26 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         </DetailPanelDivider>
 
         <DetailPanelSectionCard data-testid="container-detail-environment">
-          <div>
-            <div>
+          <Flex vertical>
+            <Flex vertical>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 {t('resources:containers.mounts')}:
               </Typography.Text>
               <DetailPanelFieldMonospaceValue data-testid="container-detail-mounts">
                 {container.mounts}
               </DetailPanelFieldMonospaceValue>
-            </div>
+            </Flex>
             {container.labels && (
-              <div>
+              <Flex vertical>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   {t('resources:containers.labels')}:
                 </Typography.Text>
                 <DetailPanelFieldMonospaceValue data-testid="container-detail-labels">
                   {container.labels}
                 </DetailPanelFieldMonospaceValue>
-              </div>
+              </Flex>
             )}
-          </div>
+          </Flex>
         </DetailPanelSectionCard>
       </DetailPanelBody>
     </DetailPanelSurface>

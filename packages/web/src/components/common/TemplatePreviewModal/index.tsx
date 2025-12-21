@@ -172,9 +172,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 
   // Use generic icon for all templates (backend provides proper names)
   const getTemplateIcon = () => (
-    <span style={{ display: 'inline-flex', fontSize: 32 }}>
+    <Typography.Text style={{ display: 'inline-flex', fontSize: 32 }}>
       <AppstoreOutlined />
-    </span>
+    </Typography.Text>
   );
 
   const getDifficultyColor = (difficulty?: string) => {
@@ -243,7 +243,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     context === 'marketplace' ? effectiveTemplate.name : t('resources:templates.templateDetails');
 
   const overviewContent = (
-    <div style={{ overflow: 'auto' }}>
+    <Flex style={{ overflow: 'auto' }}>
       <Row gutter={[24, 24]}>
         <Col xs={24} md={context === 'marketplace' ? 16 : 24}>
           <Card
@@ -256,9 +256,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             }
             data-testid={context === 'marketplace' ? undefined : 'template-details-readme-content'}
           >
-            <div style={{ lineHeight: 1.5 }}>
+            <Flex style={{ lineHeight: 1.5 }}>
               <ReactMarkdown>{templateDetails?.readme || effectiveTemplate.readme}</ReactMarkdown>
-            </div>
+            </Flex>
           </Card>
         </Col>
         {context === 'marketplace' && (
@@ -278,7 +278,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           </Col>
         )}
       </Row>
-    </div>
+    </Flex>
   );
 
   const filesContent = loading ? (
@@ -290,7 +290,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       data-testid={context === 'marketplace' ? undefined : 'template-details-loading'}
     >
       <LoadingWrapper loading centered minHeight={160}>
-        <div />
+        <Flex />
       </LoadingWrapper>
       <Typography.Text type="secondary">
         {context === 'marketplace'
@@ -300,7 +300,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     </Flex>
   ) : templateDetails && templateDetails.files.length > 0 ? (
     <Flex gap={16} wrap style={{ width: '100%' }}>
-      <div style={{ width: '32%' }}>
+      <Flex style={{ width: '32%' }}>
         <Card
           title={
             <Flex align="center" gap={8} style={{ display: 'inline-flex' }}>
@@ -312,7 +312,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           }
           data-testid={context === 'marketplace' ? undefined : 'template-details-files-content'}
         >
-          <div style={{ height: '100%' }}>
+          <Flex style={{ height: '100%' }}>
             <List
               dataSource={templateDetails.files}
               renderItem={(file, index) => (
@@ -333,10 +333,10 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                 </List.Item>
               )}
             />
-          </div>
+          </Flex>
         </Card>
-      </div>
-      <div style={{ flex: '1 1 auto' }}>
+      </Flex>
+      <Flex style={{ flex: '1 1 auto' }}>
         <Card
           title={
             <Flex gap={8} align="center" justify="space-between">
@@ -355,12 +355,12 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
               : `template-details-file-content-${selectedFileIndex}`
           }
         >
-          <div style={{ flex: '1 1 auto', overflow: 'auto' }}>
+          <Flex style={{ flex: '1 1 auto', overflow: 'auto' }}>
             {templateDetails.files[selectedFileIndex] &&
               renderFileContent(templateDetails.files[selectedFileIndex])}
-          </div>
+          </Flex>
         </Card>
-      </div>
+      </Flex>
     </Flex>
   ) : (
     <Alert
@@ -375,7 +375,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   );
 
   const securityContent = (
-    <div style={{ overflow: 'auto' }}>
+    <Flex style={{ overflow: 'auto' }}>
       <Card>
         <Flex vertical gap={16}>
           <Alert
@@ -414,7 +414,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           </Typography.Paragraph>
         </Flex>
       </Card>
-    </div>
+    </Flex>
   );
 
   const tabItems = [
@@ -471,7 +471,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           ) : (
             getTemplateIcon()
           )}
-          <div>
+          <Flex vertical>
             <Typography.Title level={4}>{modalTitle}</Typography.Title>
             {context === 'repository-creation' && (
               <Tag data-testid="template-details-name-tag" color="processing">
@@ -487,7 +487,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                 )}
               </Tag>
             )}
-          </div>
+          </Flex>
         </Flex>
       }
       open={open}

@@ -100,11 +100,11 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
 
   if (!companyData) {
     return (
-      <div>
+      <Flex>
         <Card>
           <Alert message="Loading company data..." type="info" showIcon />
         </Card>
-      </div>
+      </Flex>
     );
   }
 
@@ -196,7 +196,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
 
   if (!hasCephAccess) {
     return (
-      <div>
+      <Flex>
         <Card>
           <Alert
             message={t('accessDenied.title')}
@@ -219,7 +219,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             icon={<SettingOutlined />}
           />
         </Card>
-      </div>
+      </Flex>
     );
   }
 
@@ -311,13 +311,13 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   };
 
   return (
-    <div>
+    <Flex vertical>
       <Card>
-        <div>
+        <Flex vertical>
           <Flex align="center" justify="space-between" wrap>
             <Flex align="center" style={{ flex: '1 1 auto', minWidth: 0 }}>
               <Typography.Title level={4}>{t('title')}</Typography.Title>
-              <div style={{ flex: '1 1 auto', minWidth: 320, maxWidth: 520 }}>
+              <Flex style={{ flex: '1 1 auto', minWidth: 320, maxWidth: 520 }}>
                 <TeamSelector
                   teams={teams}
                   selectedTeams={selectedTeams}
@@ -326,11 +326,11 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
                   placeholder={t('selectTeamToView')}
                   data-testid="ds-team-selector"
                 />
-              </div>
+              </Flex>
             </Flex>
             {renderActions()}
           </Flex>
-        </div>
+        </Flex>
 
         {renderContent()}
       </Card>
@@ -412,7 +412,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
           />
         </>
       )}
-    </div>
+    </Flex>
   );
 };
 

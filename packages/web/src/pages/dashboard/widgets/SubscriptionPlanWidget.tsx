@@ -38,7 +38,9 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
       title={
         <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <CrownOutlined />
-          <span>Subscription & Plan Details - {planLimits?.planCode ?? 'N/A'}</span>
+          <Typography.Text>
+            Subscription & Plan Details - {planLimits?.planCode ?? 'N/A'}
+          </Typography.Text>
           {allActiveSubscriptions && allActiveSubscriptions.length > 0 && (
             <Badge count={allActiveSubscriptions.length} />
           )}
@@ -50,12 +52,12 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
         <Col xs={24} md={allActiveSubscriptions && allActiveSubscriptions.length > 0 ? 12 : 24}>
           {activeSubscription ? (
             <Flex vertical gap={16} style={{ width: '100%' }}>
-              <div>
-                <div style={{ letterSpacing: '0.08em', display: 'block' }}>
+              <Flex vertical>
+                <Flex style={{ letterSpacing: '0.08em', display: 'block' }}>
                   <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>
                     CURRENT SUBSCRIPTION
                   </Typography.Text>
-                </div>
+                </Flex>
                 <Typography.Title level={4}>{activeSubscription.planCode}</Typography.Title>
                 <Row gutter={[16, 16]}>
                   <Col span={12}>
@@ -78,7 +80,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                     />
                   </Col>
                 </Row>
-              </div>
+              </Flex>
             </Flex>
           ) : (
             <Empty description={t('dashboard.noSubscription')} />
@@ -88,15 +90,15 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
         {allActiveSubscriptions && allActiveSubscriptions.length > 0 && (
           <Col xs={24} md={12}>
             <Flex vertical gap={16} style={{ width: '100%' }}>
-              <div>
-                <div style={{ letterSpacing: '0.08em', display: 'block' }}>
+              <Flex vertical>
+                <Flex style={{ letterSpacing: '0.08em', display: 'block' }}>
                   <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>
                     ALL ACTIVE LICENSES
                   </Typography.Text>
-                </div>
+                </Flex>
                 <Typography.Title level={4}>{allActiveSubscriptions.length} Total</Typography.Title>
-              </div>
-              <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+              </Flex>
+              <Flex style={{ maxHeight: 320, overflowY: 'auto' }}>
                 <Flex vertical gap={8} style={{ width: '100%' }}>
                   {allActiveSubscriptions.map((sub, index) => {
                     const startDate = new Date(sub.startDate);
@@ -117,7 +119,8 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                         : token.colorPrimary;
 
                     return (
-                      <div
+                      <Flex
+                        vertical
                         key={`${sub.planCode}-${index}`}
                         data-testid={`dashboard-license-item-${index}`}
                       >
@@ -151,11 +154,11 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                             data-testid={`dashboard-progress-subscription-${sub.planCode}`}
                           />
                         </Tooltip>
-                      </div>
+                      </Flex>
                     );
                   })}
                 </Flex>
-              </div>
+              </Flex>
             </Flex>
           </Col>
         )}

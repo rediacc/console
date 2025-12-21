@@ -23,19 +23,19 @@ const DashboardPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div>
-        <div style={{ width: '100%', textAlign: 'center' }}>
+      <Flex>
+        <Flex style={{ width: '100%', textAlign: 'center' }}>
           <LoadingWrapper loading centered minHeight={200}>
-            <div />
+            <Flex />
           </LoadingWrapper>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
     );
   }
 
   if (error) {
     return (
-      <div>
+      <Flex>
         <Alert
           message="Error"
           description="Failed to load dashboard data. Please try again later."
@@ -44,15 +44,15 @@ const DashboardPage: React.FC = () => {
           icon={<AlertOutlined />}
           data-testid="dashboard-error-alert"
         />
-      </div>
+      </Flex>
     );
   }
 
   if (!dashboard) {
     return (
-      <div>
+      <Flex>
         <Empty description="No dashboard data available" />
-      </div>
+      </Flex>
     );
   }
 
@@ -72,7 +72,7 @@ const DashboardPage: React.FC = () => {
   const featureAccess = dashboard.featureAccess;
 
   return (
-    <div>
+    <Flex>
       <Flex vertical gap={24} style={{ width: '100%' }}>
         <DashboardAlertsWidget dashboard={dashboard} accountHealth={accountHealth} />
 
@@ -100,7 +100,7 @@ const DashboardPage: React.FC = () => {
 
         <SystemVersionFooter />
       </Flex>
-    </div>
+    </Flex>
   );
 };
 

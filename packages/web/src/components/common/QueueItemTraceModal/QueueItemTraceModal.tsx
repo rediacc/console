@@ -152,7 +152,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
         <Flex align="center" justify="space-between" wrap>
           <Flex align="center" gap={8}>
             <HistoryOutlined />
-            <span>{`Queue Item Trace - ${taskId || ''}`}</span>
+            <Typography.Text>{`Queue Item Trace - ${taskId || ''}`}</Typography.Text>
           </Flex>
           <Flex align="center" gap={8} wrap>
             <Segmented
@@ -192,13 +192,13 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
       }
     >
       {isTraceLoading ? (
-        <div className="queue-trace-loading">
+        <Flex className="queue-trace-loading">
           <LoadingWrapper loading centered minHeight={160}>
-            <div />
+            <Flex />
           </LoadingWrapper>
-        </div>
+        </Flex>
       ) : traceData ? (
-        <div>
+        <Flex vertical>
           <StaleTaskWarning
             taskStaleness={taskStaleness}
             queueDetails={traceData.queueDetails}
@@ -219,7 +219,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                 consoleProgress={consoleProgress}
               />
 
-              <div style={{ marginTop: spacing('MD') }}>
+              <Flex vertical style={{ marginTop: spacing('MD') }}>
                 <Collapse
                   data-testid="queue-trace-simple-console-collapse"
                   activeKey={isSimpleConsoleExpanded ? ['console'] : []}
@@ -230,7 +230,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                       key: 'console',
                       label: (
                         <Space>
-                          <span>Response (Console)</span>
+                          <Typography.Text>Response (Console)</Typography.Text>
                           {traceData?.queueDetails?.status === 'PROCESSING' && (
                             <Tag color="processing">Live Output</Tag>
                           )}
@@ -249,12 +249,12 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                     },
                   ]}
                 />
-              </div>
+              </Flex>
             </>
           )}
 
           {!simpleMode && (
-            <div style={{ marginTop: spacing('MD') }}>
+            <Flex vertical style={{ marginTop: spacing('MD') }}>
               <Collapse
                 data-testid="queue-trace-collapse"
                 className="queue-trace-collapse"
@@ -269,7 +269,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                           label: (
                             <Space>
                               <DashboardOutlined />
-                              <span>Task Overview</span>
+                              <Typography.Text>Task Overview</Typography.Text>
                               <Tag color={statusTagColor}>{simplifiedStatus.status}</Tag>
                               {isTaskStale(traceData.queueDetails) && (
                                 <Tag color="warning" icon={<WarningOutlined />}>
@@ -314,7 +314,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                           label: (
                             <Space>
                               <FileTextOutlined />
-                              <span>Queue Item Details</span>
+                              <Typography.Text>Queue Item Details</Typography.Text>
                               <Typography.Text type="secondary">(Result Set 1)</Typography.Text>
                             </Space>
                           ),
@@ -334,7 +334,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                           label: (
                             <Space>
                               <HistoryOutlined />
-                              <span>Processing Timeline</span>
+                              <Typography.Text>Processing Timeline</Typography.Text>
                               <Typography.Text type="secondary">
                                 (Result Set 4 - Audit Log)
                               </Typography.Text>
@@ -350,7 +350,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                           label: (
                             <Space>
                               <FileTextOutlined />
-                              <span>Vault Content</span>
+                              <Typography.Text>Vault Content</Typography.Text>
                               <Typography.Text type="secondary">
                                 (Result Sets 2 & 3)
                               </Typography.Text>
@@ -371,7 +371,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                           label: (
                             <Space>
                               <TeamOutlined />
-                              <span>Related Queue Items</span>
+                              <Typography.Text>Related Queue Items</Typography.Text>
                               <Typography.Text type="secondary">
                                 (Result Set 5 - Nearby Tasks)
                               </Typography.Text>
@@ -387,7 +387,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                           label: (
                             <Space>
                               <DashboardOutlined />
-                              <span>Performance Metrics</span>
+                              <Typography.Text>Performance Metrics</Typography.Text>
                               <Typography.Text type="secondary">
                                 (Result Set 6 - Machine Stats)
                               </Typography.Text>
@@ -399,9 +399,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                   ].filter(Boolean) as CollapseProps['items']
                 }
               />
-            </div>
+            </Flex>
           )}
-        </div>
+        </Flex>
       ) : (
         <Empty description="No trace data available" />
       )}

@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Alert, Form, Row } from 'antd';
+import { Alert, Flex, Form, Row } from 'antd';
 import { useMessage } from '@/hooks';
 import { useVaultEditorState } from './hooks/useVaultEditorState';
 import {
@@ -233,7 +233,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
   const fields = entityDef.fields || {};
 
   return (
-    <div>
+    <Flex vertical>
       {uiMode !== 'simple' && (
         <Alert message={t(`vaultEditor.${entityDef.descriptionKey}`)} type="info" showIcon />
       )}
@@ -331,7 +331,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
           />
         </Row>
       </Form>
-    </div>
+    </Flex>
   );
 };
 

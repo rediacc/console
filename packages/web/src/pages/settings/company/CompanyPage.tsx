@@ -296,7 +296,7 @@ const CompanyPage: React.FC = () => {
 
   if (uiMode === 'simple') {
     return (
-      <div>
+      <Flex vertical>
         <Result
           status="403"
           title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
@@ -304,12 +304,12 @@ const CompanyPage: React.FC = () => {
             defaultValue: 'Switch to expert mode to manage company settings.',
           })}
         />
-      </div>
+      </Flex>
     );
   }
 
   return (
-    <div>
+    <Flex vertical>
       <Flex vertical gap={24}>
         <Typography.Title level={3} style={{ margin: 0 }}>
           {t('company.title')}
@@ -726,7 +726,7 @@ const CompanyPage: React.FC = () => {
           )}
           subTitle={
             <Flex vertical gap={16} style={{ width: '100%' }}>
-              <div>
+              <Flex vertical>
                 <Typography.Paragraph>
                   {tSystem('dangerZone.updateMasterPassword.success.nextSteps')}
                 </Typography.Paragraph>
@@ -754,9 +754,9 @@ const CompanyPage: React.FC = () => {
                     )}
                   </li>
                 </ol>
-              </div>
+              </Flex>
 
-              <div style={{ textAlign: 'center' }}>
+              <Flex vertical style={{ textAlign: 'center' }} align="center">
                 <Typography.Title level={4}>
                   {tSystem('dangerZone.updateMasterPassword.success.redirecting')}
                 </Typography.Title>
@@ -766,7 +766,7 @@ const CompanyPage: React.FC = () => {
                 <Typography.Text type="secondary">
                   {tSystem('dangerZone.updateMasterPassword.success.seconds')}
                 </Typography.Text>
-              </div>
+              </Flex>
 
               <Button
                 block
@@ -868,7 +868,7 @@ const CompanyPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </Flex>
   );
 };
 

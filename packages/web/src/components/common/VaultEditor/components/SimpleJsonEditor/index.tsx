@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Flex, Typography } from 'antd';
 
 interface SimpleJsonEditorProps {
   value: string;
@@ -99,7 +100,8 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   };
 
   return (
-    <div
+    <Flex
+      vertical
       className={className}
       style={{
         position: 'relative',
@@ -133,7 +135,7 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
       />
 
       {error && (
-        <div
+        <Typography.Text
           style={{
             position: 'absolute',
             bottom: 0,
@@ -144,8 +146,8 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
           }}
         >
           JSON Error: {error}
-        </div>
+        </Typography.Text>
       )}
-    </div>
+    </Flex>
   );
 };

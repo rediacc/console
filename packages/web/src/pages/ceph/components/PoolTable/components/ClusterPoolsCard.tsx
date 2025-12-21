@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Flex, Table, Tag } from 'antd';
+import { Card, Flex, Table, Tag, Typography } from 'antd';
 import type { CephPool } from '@/api/queries/ceph';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
@@ -39,9 +39,9 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
       title={
         <Flex align="center" gap={8} wrap>
           <CloudServerOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
-          <span style={{ fontWeight: 600 }}>
+          <Typography.Text style={{ fontWeight: 600 }}>
             {t('pools.clusterPrefix')}: {clusterName}
-          </span>
+          </Typography.Text>
           {teamName && (
             <Tag bordered={false} color="processing">
               {teamName}
@@ -50,7 +50,7 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
         </Flex>
       }
     >
-      <div style={{ overflow: 'hidden' }}>
+      <Flex style={{ overflow: 'hidden' }}>
         <Table<CephPool>
           columns={columns}
           dataSource={pools}
@@ -78,7 +78,7 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
           })}
           rowClassName={() => 'pool-row'}
         />
-      </div>
+      </Flex>
     </Card>
   );
 };

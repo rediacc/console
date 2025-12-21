@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Alert, Button, Modal, Space, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Flex, Modal, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -142,7 +142,7 @@ const CredentialsPage: React.FC = () => {
         modal.error({
           title: t('repositories.cannotDeleteCredential'),
           content: (
-            <div>
+            <Flex vertical>
               <Typography.Text>
                 {forks.length > 0
                   ? t('repositories.credentialHasDeploymentsWithForks', {
@@ -155,7 +155,7 @@ const CredentialsPage: React.FC = () => {
               </Typography.Text>
 
               {forks.length > 0 && (
-                <div>
+                <Flex vertical>
                   <Typography.Text strong>{t('repositories.affectedForks')}</Typography.Text>
                   <ul style={{ paddingLeft: 24 }}>
                     {forks.map((fork) => (
@@ -165,10 +165,10 @@ const CredentialsPage: React.FC = () => {
                       </li>
                     ))}
                   </ul>
-                </div>
+                </Flex>
               )}
 
-              <div>
+              <Flex vertical>
                 <Typography.Text strong>{t('repositories.affectedMachines')}</Typography.Text>
                 <ul style={{ paddingLeft: 24 }}>
                   {affectedMachines.map((machine) => (
@@ -181,7 +181,7 @@ const CredentialsPage: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </Flex>
 
               <Alert
                 type="warning"
@@ -189,7 +189,7 @@ const CredentialsPage: React.FC = () => {
                 showIcon
                 icon={<WarningOutlined />}
               />
-            </div>
+            </Flex>
           ),
           okText: t('common:actions.close'),
         });
@@ -201,7 +201,7 @@ const CredentialsPage: React.FC = () => {
         modal.confirm({
           title: t('repositories.deleteRepository'),
           content: (
-            <div>
+            <Flex vertical>
               <Typography.Text>
                 {t('repositories.confirmDelete', { repositoryName: repository.repositoryName })}
               </Typography.Text>
@@ -221,7 +221,7 @@ const CredentialsPage: React.FC = () => {
                 showIcon
                 icon={<WarningOutlined />}
               />
-            </div>
+            </Flex>
           ),
           okText: t('common:actions.delete'),
           okType: 'danger',
@@ -583,13 +583,13 @@ const CredentialsPage: React.FC = () => {
 
   return (
     <>
-      <div>
-        <div>
+      <Flex vertical>
+        <Flex vertical>
           <Typography.Title level={3}>
             {t('credentials.heading', { defaultValue: 'Repository Credentials' })}
           </Typography.Title>
 
-          <div style={{ width: '100%', maxWidth: 360 }}>
+          <Flex style={{ width: '100%', maxWidth: 360 }}>
             <TeamSelector
               data-testid="resources-team-selector"
               teams={teams}
@@ -600,7 +600,7 @@ const CredentialsPage: React.FC = () => {
                 defaultValue: 'Select a team to view its resources',
               })}
             />
-          </div>
+          </Flex>
 
           <ResourceListView<Repository>
             title={
@@ -671,8 +671,8 @@ const CredentialsPage: React.FC = () => {
               ) : undefined
             }
           />
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       <UnifiedResourceModal
         data-testid="resources-repository-modal"

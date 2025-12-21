@@ -432,10 +432,10 @@ export const createTruncatedColumn = <T,>(
 
       const content = shouldTruncate ? (
         <Tooltip title={resolvedValue} placement={placement}>
-          <span>{displayText}</span>
+          <Typography.Text>{displayText}</Typography.Text>
         </Tooltip>
       ) : (
-        <span>{displayText}</span>
+        <Typography.Text>{displayText}</Typography.Text>
       );
 
       return options.renderWrapper ? options.renderWrapper(content, resolvedValue) : content;
@@ -493,7 +493,7 @@ export const createCountColumn = <T,>(options: CountColumnOptions<T>): ColumnsTy
           <Tooltip title={options.title}>
             <Space size="small">
               {options.icon}
-              <span>{count}</span>
+              <Typography.Text>{count}</Typography.Text>
             </Space>
           </Tooltip>
         );
@@ -502,7 +502,7 @@ export const createCountColumn = <T,>(options: CountColumnOptions<T>): ColumnsTy
       return (
         <Space size="small">
           {options.icon}
-          <span>{count}</span>
+          <Typography.Text>{count}</Typography.Text>
         </Space>
       );
     },

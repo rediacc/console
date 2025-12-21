@@ -20,7 +20,7 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ auditLogs, 
       title={
         <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <HistoryOutlined />
-          <span>Recent Activity</span>
+          <Typography.Text>Recent Activity</Typography.Text>
         </Flex>
       }
       extra={
@@ -37,7 +37,7 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ auditLogs, 
       {isLoading ? (
         <Flex vertical align="center" justify="center">
           <LoadingWrapper loading centered minHeight={120}>
-            <div />
+            <Flex />
           </LoadingWrapper>
         </Flex>
       ) : auditLogs && auditLogs.length > 0 ? (

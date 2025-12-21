@@ -45,21 +45,18 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
   const { isComment } = formattedCommands[0];
 
   return (
-    <div data-testid="pip-install-command-display">
+    <Flex vertical data-testid="pip-install-command-display">
       {description && (
-        <div>
+        <Flex>
           <Typography.Text type="secondary">{description}</Typography.Text>
-        </div>
+        </Flex>
       )}
-      <div
-        data-testid="pip-install-command-text"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-      >
-        <span style={{ fontFamily: 'monospace' }}>
+      <Flex data-testid="pip-install-command-text" align="center" justify="space-between">
+        <Typography.Text style={{ fontFamily: 'monospace' }}>
           <Typography.Text type={isComment ? 'secondary' : undefined} style={{ fontSize: 12 }}>
             {command}
           </Typography.Text>
-        </span>
+        </Typography.Text>
         {showCopy && (
           <Button
             icon={copied ? <CheckOutlined /> : <CopyOutlined />}
@@ -67,8 +64,8 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
             data-testid="pip-install-command-copy"
           />
         )}
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 };
 
@@ -125,7 +122,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         data-testid="pip-install-quick-alert"
       />
 
-      <div>
+      <Flex vertical>
         <Title level={5}>{t('resources:pipInstall.step1Install')}</Title>
         <CommandDisplay
           command={pipInstallationService.generateInstallCommand(installOptions)}
@@ -141,22 +138,22 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
             {t('resources:pipInstall.userInstallOnly')}
           </Checkbox>
         </Space>
-      </div>
+      </Flex>
 
-      <div>
+      <Flex vertical>
         <Title level={5}>{t('resources:pipInstall.step2Setup')}</Title>
         <CommandDisplay
           command={pipInstallationService.generateSetupCommand()}
           description={t('resources:pipInstall.setupCommandDesc')}
         />
-      </div>
+      </Flex>
 
-      <div>
+      <Flex vertical>
         <Title level={5}>{t('resources:pipInstall.step3Verify')}</Title>
         {installCommands.verify.map((cmd, index) => (
           <CommandDisplay key={index} command={cmd} />
         ))}
-      </div>
+      </Flex>
 
       <Alert
         message={

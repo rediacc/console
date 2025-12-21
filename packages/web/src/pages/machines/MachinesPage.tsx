@@ -446,13 +446,13 @@ const MachinesPage: React.FC = () => {
 
   return (
     <>
-      <div>
+      <Flex vertical>
         <Typography.Title level={3}>
           {t('machines:heading', { defaultValue: 'Machines' })}
         </Typography.Title>
         <Card>
           <Flex justify="space-between" align="center" wrap gap={12}>
-            <div style={{ flex: 1, minWidth: 260 }}>
+            <Flex style={{ flex: 1, minWidth: 260 }}>
               <TeamSelector
                 data-testid="machines-team-selector"
                 teams={teams}
@@ -461,7 +461,7 @@ const MachinesPage: React.FC = () => {
                 loading={teamsLoading}
                 placeholder={t('teams.selectTeamToView')}
               />
-            </div>
+            </Flex>
             {selectedTeams.length > 0 && (
               <Space size="small">
                 <Tooltip title={t('machines:createMachine')}>
@@ -487,7 +487,7 @@ const MachinesPage: React.FC = () => {
             )}
           </Flex>
 
-          <div style={{ marginTop: 16 }}>
+          <Flex vertical style={{ marginTop: 16 }}>
             {selectedTeams.length === 0 ? (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -533,9 +533,9 @@ const MachinesPage: React.FC = () => {
                 onTogglePanelCollapse={handleTogglePanelCollapse}
               />
             )}
-          </div>
+          </Flex>
         </Card>
-      </div>
+      </Flex>
 
       <UnifiedResourceModal
         data-testid="machines-machine-modal"

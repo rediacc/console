@@ -123,16 +123,16 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
         </Flex>
 
         {showValidationErrors && validationErrors.length > 0 && (
-          <div ref={validationErrorsRef} style={{ fontSize: 14 }}>
-            <div style={{ display: 'block' }}>
+          <Flex vertical ref={validationErrorsRef} style={{ fontSize: 14 }}>
+            <Flex style={{ display: 'block' }}>
               <Typography.Text strong>{t('vaultEditor.validationErrors')}</Typography.Text>
-            </div>
+            </Flex>
             <ul style={{ display: 'flex', flexDirection: 'column' }}>
               {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>
               ))}
             </ul>
-          </div>
+          </Flex>
         )}
 
         <VaultEditor
@@ -150,10 +150,9 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
         />
       </Flex>
 
-      <div>
-        <div
+      <Flex vertical>
+        <Flex
           style={{
-            display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
@@ -194,10 +193,10 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
           <Flex align="center" wrap>
             {hasChanges && (
               <>
-                <span style={{ display: 'flex', alignItems: 'center', fontSize: 12 }}>
+                <Typography.Text style={{ display: 'flex', alignItems: 'center', fontSize: 12 }}>
                   <InfoCircleOutlined style={{ fontSize: 12 }} />
                   {t('vaultEditor.unsavedChanges')}
-                </span>
+                </Typography.Text>
                 <Typography.Text type="secondary">
                   {VERSION_HINT_BULLET}{' '}
                   {t('vaultEditor.versionWillIncrement', { version: vaultVersion + 1 })}
@@ -225,8 +224,8 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               />
             </Tooltip>
           </Flex>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
     </Modal>
   );
 };

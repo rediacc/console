@@ -50,7 +50,7 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
               if (!field) return null;
 
               return (
-                <div key={fieldName}>
+                <Flex key={fieldName}>
                   <VaultFieldRenderer
                     fieldName={fieldName}
                     fieldDef={field}
@@ -62,7 +62,7 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
                     handleFormChange={handleFormChange}
                     t={t}
                   />
-                </div>
+                </Flex>
               );
             })}
           </>
@@ -70,14 +70,14 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
 
         {providerFields.optional && providerFields.optional.length > 0 && (
           <>
-            {providerFields.required && providerFields.required.length > 0 && <div />}
+            {providerFields.required && providerFields.required.length > 0 && <Flex />}
             {providerFields.optional.map((fieldName: string) => {
               if (!providerFields.fields || !(fieldName in providerFields.fields)) return null;
               const field = providerFields.fields[fieldName as keyof typeof providerFields.fields];
               if (!field) return null;
 
               return (
-                <div key={fieldName}>
+                <Flex key={fieldName}>
                   <VaultFieldRenderer
                     fieldName={fieldName}
                     fieldDef={field}
@@ -89,7 +89,7 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
                     handleFormChange={handleFormChange}
                     t={t}
                   />
-                </div>
+                </Flex>
               );
             })}
           </>
@@ -113,9 +113,9 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
                     { defaultValue: '' }
                   );
                   return tip ? (
-                    <div key={index}>
+                    <Flex key={index}>
                       <Typography.Text>- {tip}</Typography.Text>
-                    </div>
+                    </Flex>
                   ) : null;
                 })
                 .filter(Boolean)}

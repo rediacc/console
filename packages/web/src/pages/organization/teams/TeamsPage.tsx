@@ -164,7 +164,7 @@ const TeamsPage: React.FC = () => {
   });
 
   return (
-    <div>
+    <Flex vertical>
       <Typography.Title level={3}>{t('teams.heading', { defaultValue: 'Teams' })}</Typography.Title>
       <ResourceListView<Team>
         title={
@@ -349,7 +349,7 @@ const TeamsPage: React.FC = () => {
         entityIdentifier={auditTrace.entityIdentifier}
         entityName={auditTrace.entityName}
       />
-    </div>
+    </Flex>
   );
 };
 

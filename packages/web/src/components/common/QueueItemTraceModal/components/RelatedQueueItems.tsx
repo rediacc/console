@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Col, Empty, Row, Space, Tag, Typography } from 'antd';
+import { Card, Col, Empty, Flex, Row, Space, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import type { QueuePositionEntry } from '@rediacc/shared/types';
@@ -19,9 +19,9 @@ export const RelatedQueueItems: React.FC<RelatedQueueItemsProps> = ({ queuePosit
       <Row gutter={[16, 16]}>
         <Col span={12}>
           <Card size="small" title={t('trace.tasksBefore')}>
-            <div style={{ overflowY: 'auto' }}>
+            <Flex vertical style={{ overflowY: 'auto' }}>
               {tasksBefore.map((item, index) => (
-                <div key={index}>
+                <Flex key={index}>
                   <Space>
                     <Typography.Text code style={{ fontFamily: 'monospace' }}>
                       {item.taskId}
@@ -33,19 +33,19 @@ export const RelatedQueueItems: React.FC<RelatedQueueItemsProps> = ({ queuePosit
                       {dayjs(item.createdTime).fromNow()}
                     </Typography.Text>
                   </Space>
-                </div>
+                </Flex>
               ))}
               {tasksBefore.length === 0 && (
                 <Empty description={t('trace.noTasksAhead')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
               )}
-            </div>
+            </Flex>
           </Card>
         </Col>
         <Col span={12}>
           <Card size="small" title={t('trace.tasksAfter')}>
-            <div style={{ overflowY: 'auto' }}>
+            <Flex vertical style={{ overflowY: 'auto' }}>
               {tasksAfter.map((item, index) => (
-                <div key={index}>
+                <Flex key={index}>
                   <Space>
                     <Typography.Text code style={{ fontFamily: 'monospace' }}>
                       {item.taskId}
@@ -57,20 +57,20 @@ export const RelatedQueueItems: React.FC<RelatedQueueItemsProps> = ({ queuePosit
                       {dayjs(item.createdTime).fromNow()}
                     </Typography.Text>
                   </Space>
-                </div>
+                </Flex>
               ))}
               {tasksAfter.length === 0 && (
                 <Empty description="No tasks behind" image={Empty.PRESENTED_IMAGE_SIMPLE} />
               )}
-            </div>
+            </Flex>
           </Card>
         </Col>
       </Row>
-      <div>
+      <Flex>
         <Typography.Text type="secondary">
           Total: {tasksBefore.length} tasks ahead, {tasksAfter.length} tasks behind
         </Typography.Text>
-      </div>
+      </Flex>
     </>
   );
 };

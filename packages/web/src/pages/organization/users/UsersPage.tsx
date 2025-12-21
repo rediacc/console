@@ -270,21 +270,21 @@ const UsersPage: React.FC = () => {
   ];
 
   return (
-    <div>
+    <Flex vertical>
       <Flex vertical gap={16}>
         <Typography.Title level={3} style={{ margin: 0 }}>
           {t('users.heading', { defaultValue: 'Users' })}
         </Typography.Title>
         <ResourceListView
           title={
-            <div>
+            <Flex vertical>
               <Typography.Title level={4} style={{ margin: 0 }}>
                 {t('users.title', { defaultValue: 'Users' })}
               </Typography.Title>
               <Typography.Text type="secondary">
                 {t('users.subtitle', { defaultValue: 'Manage users and their permissions' })}
               </Typography.Text>
-            </div>
+            </Flex>
           }
           loading={usersLoading}
           data={users}
@@ -370,7 +370,7 @@ const UsersPage: React.FC = () => {
         entityIdentifier={auditTrace.entityIdentifier}
         entityName={auditTrace.entityName}
       />
-    </div>
+    </Flex>
   );
 };
 

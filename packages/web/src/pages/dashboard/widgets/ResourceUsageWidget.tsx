@@ -31,7 +31,7 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
       title={
         <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <ThunderboltOutlined />
-          <span>Resource Usage</span>
+          <Typography.Text>Resource Usage</Typography.Text>
         </Flex>
       }
       extra={
@@ -52,7 +52,7 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
               resource.isLimitReached === 1 ? token.colorError : token.colorPrimary;
             return (
               <Col key={resource.resourceType} xs={24} sm={12} md={8}>
-                <div>
+                <Flex vertical>
                   <Flex vertical gap={16} style={{ width: '100%' }}>
                     <Flex align="center" justify="space-between" style={{ width: '100%' }}>
                       <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
@@ -79,7 +79,7 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
                       </Typography.Text>
                     )}
                   </Flex>
-                </div>
+                </Flex>
               </Col>
             );
           })}

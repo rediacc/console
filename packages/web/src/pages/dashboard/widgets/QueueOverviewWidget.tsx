@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Card, Col, Empty, Flex, Row, Statistic } from 'antd';
+import { Alert, Card, Col, Empty, Flex, Row, Statistic, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { Link as RouterLink } from 'react-router-dom';
 import {
@@ -26,7 +26,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
         title={
           <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
             <RobotOutlined />
-            <span>Queue Overview</span>
+            <Typography.Text>Queue Overview</Typography.Text>
           </Flex>
         }
         data-testid="dashboard-card-queue-overview-empty"
@@ -41,7 +41,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
       title={
         <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <RobotOutlined />
-          <span>Queue Overview</span>
+          <Typography.Text>Queue Overview</Typography.Text>
         </Flex>
       }
       extra={

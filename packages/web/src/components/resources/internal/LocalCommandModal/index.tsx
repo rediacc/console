@@ -303,13 +303,13 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             {t('resources:localCommandBuilder.generatedCommand')}:
           </Typography.Text>
           {isGeneratingToken && (
-            <span>
+            <Typography.Text>
               <InlineLoadingIndicator
                 width={64}
                 height={12}
                 data-testid="local-command-token-loading"
               />
-            </span>
+            </Typography.Text>
           )}
         </Flex>
 
@@ -335,14 +335,14 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
           {getCommand()}
         </Typography.Paragraph>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+        <Flex justify="space-between" wrap>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t('resources:localCommandBuilder.apiUrl')}: {apiUrl}
           </Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             Token: Secure token will be generated on copy
           </Typography.Text>
-        </div>
+        </Flex>
       </Flex>
 
       <Flex align="center" wrap gap={8}>

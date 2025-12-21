@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Checkbox, Flex } from 'antd';
+import { Checkbox, Flex, Typography } from 'antd';
 import { List as ReactWindowList } from 'react-window';
 import * as InfiniteLoaderModule from 'react-window-infinite-loader';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
@@ -135,15 +135,15 @@ const MachineRow: React.FC<
     >
       <Flex align="center" style={{ width: '100%' }}>
         {selectable && (
-          <div style={{ width: 32, flexShrink: 0 }}>
+          <Flex style={{ width: 32, flexShrink: 0 }}>
             <Checkbox
               checked={isSelected}
               onClick={handleCheckboxChange}
               data-testid={`virtual-machine-checkbox-${machine.machineName}`}
             />
-          </div>
+          </Flex>
         )}
-        <div
+        <Typography.Text
           data-testid={`virtual-machine-name-${machine.machineName}`}
           style={{
             flex: 1,
@@ -155,8 +155,8 @@ const MachineRow: React.FC<
           }}
         >
           {machine.machineName}
-        </div>
-        <div
+        </Typography.Text>
+        <Typography.Text
           style={{
             width: 200,
             color: 'var(--ant-color-text-secondary)',
@@ -166,10 +166,10 @@ const MachineRow: React.FC<
           }}
         >
           {machine.teamName}
-        </div>
-        <div style={{ width: 160 }} data-testid={`virtual-machine-status-${machine.machineName}`}>
+        </Typography.Text>
+        <Flex style={{ width: 160 }} data-testid={`virtual-machine-status-${machine.machineName}`}>
           <MachineAssignmentStatusCell machine={machine} />
-        </div>
+        </Flex>
         {renderActions && (
           <Flex
             justify="flex-end"
@@ -378,7 +378,8 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   ]);
 
   return (
-    <div
+    <Flex
+      vertical
       style={{
         ...tableStyles.tableContainer,
         overflow: 'hidden',
@@ -398,8 +399,8 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
         data-testid="virtual-machine-header"
       >
         <Flex align="center" style={{ width: '100%' }}>
-          {selectable && <div style={{ width: 32, flexShrink: 0 }} />}
-          <div
+          {selectable && <Flex style={{ width: 32, flexShrink: 0 }} />}
+          <Typography.Text
             style={{
               flex: 1,
               minWidth: 200,
@@ -410,8 +411,8 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
             }}
           >
             Machine Name
-          </div>
-          <div
+          </Typography.Text>
+          <Typography.Text
             style={{
               width: 200,
               color: 'var(--ant-color-text-secondary)',
@@ -421,8 +422,8 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
             }}
           >
             Team
-          </div>
-          <div style={{ width: 160 }}>Assignment Status</div>
+          </Typography.Text>
+          <Typography.Text style={{ width: 160 }}>Assignment Status</Typography.Text>
           {renderActions && (
             <Flex justify="flex-end" style={{ width: 120 }}>
               Actions
@@ -430,7 +431,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
           )}
         </Flex>
       </Flex>
-      <div data-testid="virtual-machine-keyboard-navigation">{content}</div>
-    </div>
+      <Flex data-testid="virtual-machine-keyboard-navigation">{content}</Flex>
+    </Flex>
   );
 };

@@ -1,5 +1,5 @@
 import { CameraOutlined, CloudUploadOutlined, EllipsisOutlined } from '@ant-design/icons';
-import { Tag, Tooltip } from 'antd';
+import { Flex, Tag, Tooltip, Typography } from 'antd';
 import { TFunction } from 'i18next';
 import type { CephRbdSnapshot } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
@@ -25,12 +25,14 @@ export const buildSnapshotColumns = ({
     key: 'snapshotName',
     sorter: createSorter<CephRbdSnapshot>('snapshotName'),
     render: (text: string, record: CephRbdSnapshot) => (
-      <span
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+      <Flex
+        align="center"
+        gap={8}
+        style={{ display: 'inline-flex' }}
         data-testid={`snapshot-list-item-${record.snapshotName}`}
       >
         <CameraOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
-        <span style={{ fontWeight: 400 }}>{text}</span>
+        <Typography.Text style={{ fontWeight: 400 }}>{text}</Typography.Text>
         {record.vaultContent && (
           <Tooltip title={t('common.hasVault')}>
             <Tag
@@ -41,7 +43,7 @@ export const buildSnapshotColumns = ({
             </Tag>
           </Tooltip>
         )}
-      </span>
+      </Flex>
     ),
   },
   createTruncatedColumn<CephRbdSnapshot>({

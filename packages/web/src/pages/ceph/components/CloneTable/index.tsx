@@ -268,7 +268,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
           </Tooltip>
         </Flex>
 
-        <div style={{ overflow: 'hidden' }}>
+        <Flex style={{ overflow: 'hidden' }}>
           <Table<CephRbdClone>
             columns={columns}
             dataSource={clones}
@@ -291,7 +291,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
               ),
             }}
           />
-        </div>
+        </Flex>
       </Flex>
 
       <UnifiedResourceModal

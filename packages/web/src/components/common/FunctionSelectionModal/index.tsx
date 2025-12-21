@@ -290,14 +290,18 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                   autoComplete="off"
                   data-testid="function-modal-search"
                 />
-                <div>
+                <Flex vertical>
                   {Object.entries(functionsByCategory).map(([category, funcs]) => (
-                    <div key={category} data-testid={`function-modal-category-${category}`}>
-                      <div style={{ display: 'block' }}>
+                    <Flex
+                      vertical
+                      key={category}
+                      data-testid={`function-modal-category-${category}`}
+                    >
+                      <Flex>
                         <Typography.Text strong>
                           {categories[category]?.name || category}
                         </Typography.Text>
-                      </div>
+                      </Flex>
                       {funcs.map((func) => {
                         const isQuickTask =
                           QUICK_TASK_NAMES.includes(func.name) ||
@@ -329,9 +333,9 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           </Flex>
                         );
                       })}
-                    </div>
+                    </Flex>
                   ))}
-                </div>
+                </Flex>
               </Card>
             </Col>
           )}
@@ -345,7 +349,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                   <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }}>
                     {/* Show additional info for push function */}
                     {selectedFunction.name === 'push' && functionParams.dest && (
-                      <div
+                      <Flex
                         style={{
                           display: 'grid',
                           gridTemplateColumns:
@@ -358,12 +362,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           message="Push Operation Details"
                           description={
                             <Space direction="vertical" size="small">
-                              <div>
+                              <Flex>
                                 <Typography.Text strong>Destination Filename: </Typography.Text>
                                 <Typography.Text code>{functionParams.dest}</Typography.Text>
-                              </div>
+                              </Flex>
                               {additionalContext?.parentRepo && (
-                                <div>
+                                <Flex>
                                   <Typography.Text strong>Repository Lineage: </Typography.Text>
                                   <Space>
                                     <Tag color="processing">{additionalContext.parentRepo}</Tag>
@@ -372,22 +376,22 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                     <Typography.Text type="secondary">→</Typography.Text>
                                     <Tag color="default">{functionParams.dest}</Tag>
                                   </Space>
-                                </div>
+                                </Flex>
                               )}
                               {!additionalContext?.parentRepo && additionalContext?.sourceRepo && (
-                                <div>
+                                <Flex>
                                   <Typography.Text strong>Source Repository: </Typography.Text>
                                   <Tag color="success">{additionalContext.sourceRepo}</Tag>
                                   <Typography.Text type="secondary"> (Original)</Typography.Text>
-                                </div>
+                                </Flex>
                               )}
-                              <div>
+                              <Flex>
                                 <Typography.Text type="secondary">
                                   {functionParams.state === 'online'
                                     ? 'The repository will be pushed in online state (mounted).'
                                     : 'The repository will be pushed in offline state (unmounted).'}
                                 </Typography.Text>
-                              </div>
+                              </Flex>
                             </Space>
                           }
                         />
@@ -401,7 +405,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 <Typography.Text type="secondary">
                                   {t('functions:onlinePushWarningMessage')}
                                 </Typography.Text>
-                                <div>
+                                <Flex>
                                   <a
                                     href="https://docs.rediacc.com/concepts/repo-push-operations"
                                     target="_blank"
@@ -410,12 +414,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                   >
                                     {t('functions:onlinePushLearnMore')}
                                   </a>
-                                </div>
+                                </Flex>
                               </Space>
                             }
                           />
                         )}
-                      </div>
+                      </Flex>
                     )}
 
                     {/* Machine Selection */}
@@ -440,11 +444,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           label={
                             paramInfo.help ? (
                               <Space size={4}>
-                                <span>{paramInfo.label || paramName}</span>
+                                <Typography.Text>{paramInfo.label || paramName}</Typography.Text>
                                 {/* Help tooltip removed - handled in FunctionParameterField if needed */}
                               </Space>
                             ) : (
-                              <span>{paramInfo.label || paramName}</span>
+                              <Typography.Text>{paramInfo.label || paramName}</Typography.Text>
                             )
                           }
                           required={paramInfo.required}

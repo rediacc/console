@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Typography } from 'antd';
-import { Alert } from 'antd';
+import { Alert, Flex, Input, Typography } from 'antd';
 import { type TFunction } from 'i18next';
 import { prepareGrandDeletion } from '@/platform';
 import { showMessage } from '@/utils/messages';
@@ -49,7 +48,7 @@ export const useConfirmRepositoryDeletion = ({
       modal.error({
         title: t('resources:repositories.cannotDeleteHasClones'),
         content: (
-          <div>
+          <Flex vertical>
             <Typography.Paragraph>
               {t('resources:repositories.hasActiveClonesMessage', {
                 name: repository.name,
@@ -67,7 +66,7 @@ export const useConfirmRepositoryDeletion = ({
             <Typography.Paragraph>
               {t('resources:repositories.deleteOptionsMessage')}
             </Typography.Paragraph>
-          </div>
+          </Flex>
         ),
         okText: t('common:close'),
       });
@@ -79,7 +78,7 @@ export const useConfirmRepositoryDeletion = ({
     modal.confirm({
       title: t('resources:repositories.deleteGrandConfirmTitle'),
       content: (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <Flex vertical>
           <Alert
             message={t('resources:repositories.deleteGrandWarning')}
             description={t('resources:repositories.deleteGrandWarningDesc', {
@@ -91,7 +90,7 @@ export const useConfirmRepositoryDeletion = ({
           <Typography.Text strong>
             {t('resources:repositories.deleteGrandConfirmPrompt', { name: repository.name })}
           </Typography.Text>
-          <input
+          <Input
             type="text"
             placeholder={repository.name}
             style={{ width: '100%' }}
@@ -99,7 +98,7 @@ export const useConfirmRepositoryDeletion = ({
               confirmationInput = e.target.value;
             }}
           />
-        </div>
+        </Flex>
       ),
       okText: t('common:delete'),
       okType: 'danger',

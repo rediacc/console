@@ -26,7 +26,7 @@ const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth
         title={
           <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
             <SafetyCertificateOutlined />
-            <span>Account Health</span>
+            <Typography.Text>Account Health</Typography.Text>
           </Flex>
         }
       >
@@ -41,7 +41,7 @@ const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth
       title={
         <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <SafetyCertificateOutlined />
-          <span>Account Health</span>
+          <Typography.Text>Account Health</Typography.Text>
         </Flex>
       }
     >
@@ -59,21 +59,21 @@ const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth
         <Flex vertical gap={8} style={{ width: '100%' }}>
           <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
             {accountHealth.resourcesAtLimit > 0 ? (
-              <span style={{ color: 'var(--ant-color-warning)', display: 'inline-flex' }}>
+              <Flex style={{ color: 'var(--ant-color-warning)', display: 'inline-flex' }}>
                 <ExclamationCircleOutlined />
-              </span>
+              </Flex>
             ) : (
-              <span style={{ color: 'var(--ant-color-success)', display: 'inline-flex' }}>
+              <Flex style={{ color: 'var(--ant-color-success)', display: 'inline-flex' }}>
                 <CheckCircleOutlined />
-              </span>
+              </Flex>
             )}
             <Typography.Text>{accountHealth.resourcesAtLimit} resources at limit</Typography.Text>
           </Flex>
 
           <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-            <span style={{ color: 'var(--ant-color-text-secondary)', display: 'inline-flex' }}>
+            <Flex style={{ color: 'var(--ant-color-text-secondary)', display: 'inline-flex' }}>
               <ClockCircleOutlined />
-            </span>
+            </Flex>
             <Typography.Text>
               {accountHealth.resourcesNearLimit} resources near limit
             </Typography.Text>

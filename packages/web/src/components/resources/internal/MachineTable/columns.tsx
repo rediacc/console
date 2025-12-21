@@ -1,4 +1,4 @@
-import { Badge, Space, Tag } from 'antd';
+import { Badge, Space, Tag, Typography } from 'antd';
 import { TFunction } from 'i18next';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
@@ -166,7 +166,7 @@ export const buildMachineTableColumns = ({
           renderText: (regionName?: string | null) => regionName || '-',
           renderWrapper: (content, fullText) =>
             fullText === '-' ? (
-              <span>-</span>
+              <Typography.Text>-</Typography.Text>
             ) : (
               <Tag bordered={false} color={getTagColor('region')}>
                 {content}
@@ -263,7 +263,9 @@ export const buildMachineTableColumns = ({
                         .map((func) => ({
                           key: `function-${func?.name || 'unknown'}`,
                           label: (
-                            <span title={func?.description || ''}>{func?.name || 'Unknown'}</span>
+                            <Typography.Text title={func?.description || ''}>
+                              {func?.name || 'Unknown'}
+                            </Typography.Text>
                           ),
                           onClick: () => onFunctionsMachine?.(record, func?.name),
                         })),

@@ -82,14 +82,14 @@ const UserSessionsTab: React.FC = () => {
     width: 300,
     renderText: (agent: string | null | undefined) => agent ?? userAgentFallback,
     renderWrapper: (content, fullText) => (
-      <span
+      <Typography.Text
         style={{
           fontSize: 14,
           color: fullText === userAgentFallback ? 'var(--ant-color-text-secondary)' : undefined,
         }}
       >
         {content}
-      </span>
+      </Typography.Text>
     ),
   });
 
@@ -133,16 +133,16 @@ const UserSessionsTab: React.FC = () => {
     renderActions: (record) => (
       <Popconfirm
         title={
-          <span style={{ fontSize: 14, fontWeight: 500 }}>
+          <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
             {t('userSessions.confirmTerminate')}
-          </span>
+          </Typography.Text>
         }
         description={
-          <span style={{ fontSize: 14 }}>
+          <Typography.Text style={{ fontSize: 14 }}>
             {record.userEmail === user?.email
               ? t('userSessions.confirmTerminateSelf')
               : t('userSessions.confirmTerminateOther', { email: record.userEmail })}
-          </span>
+          </Typography.Text>
         }
         onConfirm={() => handleTerminateSession(record)}
         okText={t('common:yes')}
@@ -172,7 +172,7 @@ const UserSessionsTab: React.FC = () => {
       width: 200,
       render: (email: string) => (
         <Space size="small">
-          <span style={{ fontSize: 14 }}>{email}</span>
+          <Typography.Text style={{ fontSize: 14 }}>{email}</Typography.Text>
           {email === user?.email && (
             <Tag
               color="processing"
@@ -197,7 +197,7 @@ const UserSessionsTab: React.FC = () => {
 
         return (
           <Space size="small">
-            <span style={{ fontSize: 14 }}>{name}</span>
+            <Typography.Text style={{ fontSize: 14 }}>{name}</Typography.Text>
             {record.parentRequestId && (
               <Tooltip title={t('userSessions.forkToken')}>
                 <Tag
@@ -232,14 +232,14 @@ const UserSessionsTab: React.FC = () => {
       key: 'ipAddress',
       width: 140,
       render: (ip: string | null) => (
-        <span
+        <Typography.Text
           style={{
             fontSize: 14,
             color: !ip ? 'var(--ant-color-text-secondary)' : undefined,
           }}
         >
           {ip || t('userSessions.notAvailable')}
-        </span>
+        </Typography.Text>
       ),
     },
     userAgentColumn,
@@ -269,9 +269,9 @@ const UserSessionsTab: React.FC = () => {
           <Card data-testid="sessions-stat-total">
             <Statistic
               title={
-                <span style={{ fontSize: 14, fontWeight: 500 }}>
+                <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
                   {t('userSessions.totalSessions')}
-                </span>
+                </Typography.Text>
               }
               value={sessions.length}
             />
@@ -281,9 +281,9 @@ const UserSessionsTab: React.FC = () => {
           <Card data-testid="sessions-stat-active">
             <Statistic
               title={
-                <span style={{ fontSize: 14, fontWeight: 500 }}>
+                <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
                   {t('userSessions.activeSessions')}
-                </span>
+                </Typography.Text>
               }
               value={activeSessions.length}
             />
@@ -293,9 +293,9 @@ const UserSessionsTab: React.FC = () => {
           <Card data-testid="sessions-stat-unique-users">
             <Statistic
               title={
-                <span style={{ fontSize: 14, fontWeight: 500 }}>
+                <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
                   {t('userSessions.uniqueUsers')}
-                </span>
+                </Typography.Text>
               }
               value={new Set(sessions.map((session) => session.userEmail)).size}
             />
@@ -305,9 +305,9 @@ const UserSessionsTab: React.FC = () => {
           <Card data-testid="sessions-stat-average-duration">
             <Statistic
               title={
-                <span style={{ fontSize: 14, fontWeight: 500 }}>
+                <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
                   {t('userSessions.averageDuration')}
-                </span>
+                </Typography.Text>
               }
               value={
                 sessions.length > 0
@@ -322,7 +322,11 @@ const UserSessionsTab: React.FC = () => {
                     )
                   : 0
               }
-              suffix={<span style={{ fontSize: 12 }}>{t('userSessions.minutes')}</span>}
+              suffix={
+                <Typography.Text style={{ fontSize: 12 }}>
+                  {t('userSessions.minutes')}
+                </Typography.Text>
+              }
             />
           </Card>
         </Col>

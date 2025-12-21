@@ -306,7 +306,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
   return (
     <>
-      <div style={{ display: 'inline-block', width: '100%' }}>
+      <Flex style={{ display: 'inline-block', width: '100%' }}>
         <Select
           value={displayValue}
           onChange={handleEndpointChange}
@@ -336,18 +336,18 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                 {isChecking ? (
                   <LoadingOutlined style={{ fontSize: 12, color: 'var(--ant-color-warning)' }} />
                 ) : (
-                  <span
+                  <Typography.Text
                     style={{
                       fontSize: 12,
                       color: isHealthy ? 'var(--ant-color-success)' : 'var(--ant-color-error)',
                     }}
                   >
                     {HEALTH_INDICATOR_SYMBOL}
-                  </span>
+                  </Typography.Text>
                 )}
-                <span>
+                <Typography.Text>
                   {endpoint.icon && (
-                    <span
+                    <Typography.Text
                       style={{
                         fontSize: 16,
                         lineHeight: 1,
@@ -359,10 +359,10 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                       }}
                     >
                       {endpoint.icon}
-                    </span>
+                    </Typography.Text>
                   )}
                   {endpoint.name}
-                </span>
+                </Typography.Text>
               </Flex>
             );
 
@@ -382,7 +382,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                         style={{ fontSize: 12, color: 'var(--ant-color-warning)' }}
                       />
                     ) : (
-                      <span
+                      <Typography.Text
                         style={{
                           fontSize: 12,
                           color: isChecking
@@ -393,12 +393,12 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                         }}
                       >
                         {HEALTH_INDICATOR_SYMBOL}
-                      </span>
+                      </Typography.Text>
                     )}
 
-                    <span style={{ display: 'flex', opacity: isDisabled ? 0.5 : 1 }}>
+                    <Flex style={{ display: 'flex', opacity: isDisabled ? 0.5 : 1 }}>
                       {endpoint.icon && (
-                        <span
+                        <Typography.Text
                           style={{
                             fontSize: 16,
                             lineHeight: 1,
@@ -410,28 +410,31 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                           }}
                         >
                           {endpoint.icon}
-                        </span>
+                        </Typography.Text>
                       )}
-                      <p
+                      <Typography.Paragraph
                         style={{
                           fontSize: 12,
                           maxWidth: 120,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
+                          marginBottom: 0,
                         }}
                       >
                         {endpoint.name}
-                      </p>
-                    </span>
+                      </Typography.Paragraph>
+                    </Flex>
                   </Flex>
 
                   <Flex align="center" gap={8}>
                     {/* Version display */}
                     {health?.version && (
-                      <span style={{ fontSize: 12, color: 'var(--ant-color-text-tertiary)' }}>
+                      <Typography.Text
+                        style={{ fontSize: 12, color: 'var(--ant-color-text-tertiary)' }}
+                      >
                         v{health.version}
-                      </span>
+                      </Typography.Text>
                     )}
 
                     {/* Delete button for custom endpoints */}
@@ -453,9 +456,9 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             value="__add_custom__"
             data-testid="endpoint-option-add-custom"
           >
-            <span style={{ fontSize: 12 }}>
+            <Typography.Text style={{ fontSize: 12 }}>
               <PlusOutlined /> {t('endpointSelector.addCustom')}
-            </span>
+            </Typography.Text>
           </Select.Option>
         </Select>
 
@@ -471,13 +474,13 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           >
             {selectedEndpoint.url}
             {isCheckingHealth && (
-              <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <Flex style={{ display: 'inline-flex', alignItems: 'center' }}>
                 <LoadingOutlined style={{ fontSize: 12, color: 'var(--ant-color-warning)' }} />
-              </span>
+              </Flex>
             )}
           </Typography.Text>
         )}
-      </div>
+      </Flex>
 
       {/* Add Custom Endpoint Modal */}
       <Modal

@@ -159,7 +159,7 @@ const AccessPage: React.FC = () => {
       render: (count: number) => (
         <Space>
           <UserOutlined />
-          <span>{count}</span>
+          <Typography.Text>{count}</Typography.Text>
         </Space>
       ),
     },
@@ -171,7 +171,7 @@ const AccessPage: React.FC = () => {
       render: (count: number) => (
         <Space>
           <KeyOutlined />
-          <span>{count}</span>
+          <Typography.Text>{count}</Typography.Text>
         </Space>
       ),
     },
@@ -289,7 +289,7 @@ const AccessPage: React.FC = () => {
 
   if (uiMode === 'simple') {
     return (
-      <div>
+      <Flex vertical>
         <Result
           status="403"
           title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
@@ -297,12 +297,12 @@ const AccessPage: React.FC = () => {
             defaultValue: 'Switch to expert mode to manage access control.',
           })}
         />
-      </div>
+      </Flex>
     );
   }
 
   return (
-    <div>
+    <Flex vertical>
       <Typography.Title level={3} style={{ margin: 0 }}>
         {t('access.heading', { defaultValue: 'Access Control' })}
       </Typography.Title>
@@ -496,7 +496,7 @@ const AccessPage: React.FC = () => {
         entityIdentifier={auditTrace.entityIdentifier}
         entityName={auditTrace.entityName}
       />
-    </div>
+    </Flex>
   );
 };
 

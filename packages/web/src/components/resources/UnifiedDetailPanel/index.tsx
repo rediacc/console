@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Tooltip } from 'antd';
+import { Button, Flex, Tooltip, Typography } from 'antd';
 import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
 import { RepositoryDetailPanel } from '@/components/resources/internal/RepositoryDetailPanel';
@@ -139,7 +139,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   const actualWidth = isCollapsed ? collapsedWidth : splitWidth;
 
   return (
-    <div
+    <Flex
       style={{
         position: 'fixed',
         top: 0,
@@ -153,7 +153,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
       data-testid="unified-detail-panel"
     >
       {!isCollapsed && (
-        <div
+        <Flex
           onMouseDown={handleMouseDown}
           data-testid="unified-detail-resize-handle"
           style={{
@@ -166,18 +166,17 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
             zIndex: 10,
           }}
         >
-          <div style={{ position: 'absolute', left: 2, top: 0, bottom: 0, width: 2 }} />
-        </div>
+          <Flex style={{ position: 'absolute', left: 2, top: 0, bottom: 0, width: 2 }} />
+        </Flex>
       )}
 
       {isCollapsed ? (
-        <div
+        <Flex
+          vertical
+          align="center"
+          justify="flex-start"
           data-testid="unified-detail-collapsed"
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
             width: '100%',
           }}
         >
@@ -190,10 +189,10 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
               aria-label="Expand Panel"
             />
           </Tooltip>
-          <span style={{ fontSize: 16 }}>{getResourceIcon()}</span>
-        </div>
+          <Typography.Text style={{ fontSize: 16 }}>{getResourceIcon()}</Typography.Text>
+        </Flex>
       ) : (
-        <div
+        <Flex
           style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}
           data-testid="unified-detail-content"
         >
@@ -219,8 +218,8 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
               splitView
             />
           )}
-        </div>
+        </Flex>
       )}
-    </div>
+    </Flex>
   );
 };

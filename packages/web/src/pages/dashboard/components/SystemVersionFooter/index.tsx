@@ -58,7 +58,7 @@ const SystemVersionFooter: React.FC = () => {
         </Typography.Text>
       </Flex>
 
-      <span style={{ fontSize: 14 }}>|</span>
+      <Typography.Text style={{ fontSize: 14 }}>|</Typography.Text>
 
       <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
         <CloudServerOutlined style={{ color: 'var(--ant-color-text-tertiary)' }} />
@@ -83,7 +83,7 @@ const SystemVersionFooter: React.FC = () => {
 
       {uptime && (
         <>
-          <span style={{ fontSize: 14 }}>|</span>
+          <Typography.Text style={{ fontSize: 14 }}>|</Typography.Text>
           <Tooltip title="API Uptime">
             <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
               <ClockCircleOutlined style={{ color: 'var(--ant-color-text-tertiary)' }} />

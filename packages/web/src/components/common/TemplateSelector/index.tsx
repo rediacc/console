@@ -119,22 +119,22 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         tip={t('resources:templates.loading')}
         showTextBelow
       >
-        <div />
+        <Flex />
       </LoadingWrapper>
     );
   }
 
   if (error) {
     return (
-      <div style={{ textAlign: 'center' }}>
+      <Flex style={{ textAlign: 'center' }}>
         <Empty description={error} />
-      </div>
+      </Flex>
     );
   }
 
   return (
-    <div style={{ width: '100%' }}>
-      <div>
+    <Flex vertical style={{ width: '100%' }}>
+      <Flex vertical>
         <Flex vertical gap={16} style={{ width: '100%' }}>
           <Flex align="center" justify="space-between" wrap gap={12}>
             <Typography.Text type="secondary">
@@ -164,7 +164,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             data-testid="resource-modal-template-search-input"
           />
         </Flex>
-      </div>
+      </Flex>
 
       {searchQuery.trim() && (
         <Typography.Text type="secondary" style={{ display: 'block' }}>
@@ -177,7 +177,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       )}
 
       {searchQuery.trim() && filteredTemplates.length === 0 && (
-        <div>
+        <Flex>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={t('resources:templates.noResults', {
@@ -185,7 +185,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               query: searchQuery,
             })}
           />
-        </div>
+        </Flex>
       )}
 
       <Row gutter={GRID_GUTTER}>
@@ -221,19 +221,21 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 onClick={handleClick}
               >
                 {isSelected && (
-                  <span style={{ position: 'absolute', top: 12, right: 12, fontSize: 16 }}>
+                  <Typography.Text
+                    style={{ position: 'absolute', top: 12, right: 12, fontSize: 16 }}
+                  >
                     <CheckCircleOutlined />
-                  </span>
+                  </Typography.Text>
                 )}
 
                 <Flex vertical gap={8} style={{ width: '100%' }}>
-                  <div style={{ textAlign: 'center' }}>
+                  <Flex style={{ textAlign: 'center' }}>
                     <TemplateIconComponent />
-                  </div>
+                  </Flex>
 
                   <Typography.Text strong>{getTemplateTitle(template.name)}</Typography.Text>
 
-                  <span style={{ display: 'block' }}>
+                  <Typography.Text style={{ display: 'block' }}>
                     <Typography.Paragraph
                       type="secondary"
                       ellipsis={{ rows: 2 }}
@@ -241,7 +243,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                     >
                       {getTemplateDescription(template.readme)}
                     </Typography.Paragraph>
-                  </span>
+                  </Typography.Text>
 
                   <Button
                     type="link"
@@ -269,15 +271,15 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               onClick={() => onChange?.(null)}
             >
               {!value && (
-                <span style={{ position: 'absolute', top: 12, right: 12, fontSize: 16 }}>
+                <Typography.Text style={{ position: 'absolute', top: 12, right: 12, fontSize: 16 }}>
                   <CheckCircleOutlined />
-                </span>
+                </Typography.Text>
               )}
 
               <Flex vertical gap={8} style={{ width: '100%' }}>
-                <div style={{ textAlign: 'center' }}>
+                <Flex style={{ textAlign: 'center' }}>
                   <AppstoreOutlined />
-                </div>
+                </Flex>
 
                 <Typography.Text strong>{t('resources:templates.noTemplate')}</Typography.Text>
 
@@ -291,7 +293,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           </Col>
         )}
       </Row>
-    </div>
+    </Flex>
   );
 };
 

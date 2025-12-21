@@ -263,7 +263,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
           </Typography.Text>
           {clustersLoading ? (
             <LoadingWrapper loading centered minHeight={80}>
-              <div />
+              <Flex />
             </LoadingWrapper>
           ) : (
             <>

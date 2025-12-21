@@ -453,13 +453,13 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      <div style={{ width: '100%', maxWidth: 520 }}>
+      <Flex style={{ width: '100%', maxWidth: 520 }}>
         <Flex vertical gap={24} style={{ width: '100%' }}>
-          <div
+          <Flex
             style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 64 }}
           >
             <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Rediacc Logo" />
-          </div>
+          </Flex>
 
           {error && (
             <Alert
@@ -539,7 +539,7 @@ const LoginPage: React.FC = () => {
             {(vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
               vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
               (showAdvancedOptions && featureFlags.isEnabled('loginAdvancedOptions'))) && (
-              <div>
+              <Flex vertical>
                 <Form.Item
                   name="masterPassword"
                   label={
@@ -547,7 +547,7 @@ const LoginPage: React.FC = () => {
                       htmlFor="login-master-password-input"
                       style={{ display: 'flex', alignItems: 'center', gap: 8 }}
                     >
-                      <span>{t('auth:login.masterPassword')}</span>
+                      <Typography.Text>{t('auth:login.masterPassword')}</Typography.Text>
                       <Tooltip title={t('auth:login.masterPasswordTooltip')}>
                         <InfoCircleOutlined />
                       </Tooltip>
@@ -571,7 +571,7 @@ const LoginPage: React.FC = () => {
                     aria-describedby="master-password-error"
                   />
                 </Form.Item>
-              </div>
+              </Flex>
             )}
 
             {/* Show advanced options toggle when master password is not yet shown */}
@@ -581,7 +581,7 @@ const LoginPage: React.FC = () => {
                 vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
                 showAdvancedOptions
               ) && (
-                <div style={{ textAlign: 'center' }}>
+                <Flex style={{ textAlign: 'center' }} justify="center">
                   <Button
                     type="text"
                     size="small"
@@ -595,7 +595,7 @@ const LoginPage: React.FC = () => {
                   >
                     {t('auth:login.needMasterPassword')} →
                   </Button>
-                </div>
+                </Flex>
               )}
 
             <Form.Item>
@@ -620,7 +620,7 @@ const LoginPage: React.FC = () => {
             </Form.Item>
           </Form>
 
-          <div style={{ textAlign: 'center' }}>
+          <Flex style={{ textAlign: 'center' }} justify="center">
             <Typography.Text color="secondary" type="secondary">
               {t('auth:login.noAccount')}{' '}
               <a
@@ -639,29 +639,29 @@ const LoginPage: React.FC = () => {
                 {t('auth:login.register')}
               </a>
             </Typography.Text>
-          </div>
+          </Flex>
 
           {/* Endpoint selector and version display */}
-          <div style={{ textAlign: 'center' }}>
+          <Flex vertical style={{ textAlign: 'center' }} align="center">
             {/* Endpoint Selector - Power Mode Feature */}
             {endpointSelectorVisible && (
-              <div style={{ textAlign: 'center' }}>
+              <Flex style={{ textAlign: 'center' }} justify="center">
                 <EndpointSelector onHealthCheckComplete={handleHealthCheckComplete} />
-              </div>
+              </Flex>
             )}
 
             {/* Always-visible version display */}
             <VersionSelector />
-          </div>
+          </Flex>
         </Flex>
-      </div>
+      </Flex>
 
       {/* TFA Verification Modal */}
       <Modal
         title={
           <Flex align="center" gap={8}>
             <SafetyCertificateOutlined />
-            <span>{t('login.twoFactorAuth.title')}</span>
+            <Typography.Text>{t('login.twoFactorAuth.title')}</Typography.Text>
           </Flex>
         }
         open={showTFAModal}

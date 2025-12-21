@@ -1,4 +1,5 @@
 import React from 'react';
+import { Flex } from 'antd';
 
 export interface InlineLoadingIndicatorProps {
   width?: number | string;
@@ -26,7 +27,7 @@ const InlineLoadingIndicator: React.FC<InlineLoadingIndicatorProps> = ({
   const classes = ['skeleton-shimmer', className].filter(Boolean).join(' ');
 
   return (
-    <div
+    <Flex
       className={classes}
       style={{
         width: typeof width === 'number' ? `${width}px` : width,

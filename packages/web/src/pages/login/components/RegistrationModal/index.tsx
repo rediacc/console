@@ -387,7 +387,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
         {/* Cloudflare Turnstile - only render if enabled and not in CI mode */}
         {isCaptchaEnabled && !ciMode && (
-          <div style={{ flex: '0 0 auto' }}>
+          <Flex style={{ flex: '0 0 auto' }}>
             <Turnstile
               sitekey={turnstileSiteKey}
               onVerify={onTurnstileSuccess}
@@ -395,7 +395,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
               onError={onTurnstileError}
               theme="light"
             />
-          </div>
+          </Flex>
         )}
       </Flex>
 
@@ -465,20 +465,20 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   );
 
   const renderSuccess = () => (
-    <div style={{ textAlign: 'center' }} data-testid="registration-success-container">
-      <span
+    <Flex vertical style={{ textAlign: 'center' }} data-testid="registration-success-container">
+      <Flex
         style={{ display: 'inline-flex', fontSize: 40 }}
         data-testid="registration-success-icon"
       >
         <CheckCircleOutlined />
-      </span>
+      </Flex>
       <Typography.Title level={4} data-testid="registration-success-title">
         {t('auth:registration.successTitle')}
       </Typography.Title>
       <Typography.Text type="secondary" data-testid="registration-success-description">
         {t('auth:registration.successDescription')}
       </Typography.Text>
-    </div>
+    </Flex>
   );
 
   const renderContent = () => {

@@ -1,4 +1,5 @@
 import React, { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
+import { Flex } from 'antd';
 import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { createTelemetryConfig, telemetryService } from '@/services/telemetryService';
@@ -408,7 +409,7 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
 
   return (
     <TelemetryContext.Provider value={contextValue}>
-      <div style={{ display: 'contents' }}>{children}</div>
+      <Flex style={{ display: 'contents' }}>{children}</Flex>
     </TelemetryContext.Provider>
   );
 };

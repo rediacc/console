@@ -109,6 +109,27 @@ export default tseslint.config(
         'newlines-between': 'never',
         alphabetize: { order: 'asc', caseInsensitive: true },
       }],
+
+      // Ban styled-components to enforce Ant Design usage
+      'no-restricted-imports': ['error', {
+        paths: [
+          { name: 'styled-components', message: 'Use Ant Design components with inline styles or className instead.' },
+        ],
+        patterns: [
+          { group: ['styled-components/*'], message: 'Use Ant Design components instead.' },
+        ],
+      }],
+
+      // Ban raw HTML elements to enforce Ant Design component usage
+      'react/forbid-elements': ['error', {
+        forbid: [
+          { element: 'div', message: 'Use Flex, Card, or other antd layout components.' },
+          { element: 'span', message: 'Use Typography.Text.' },
+          { element: 'button', message: 'Use antd Button component.' },
+          { element: 'input', message: 'Use antd Input component.' },
+          { element: 'select', message: 'Use antd Select component.' },
+        ],
+      }],
     }
   }
 );

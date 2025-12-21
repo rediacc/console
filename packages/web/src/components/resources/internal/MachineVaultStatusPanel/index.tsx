@@ -284,7 +284,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
           </DetailPanelTagGroup>
 
           {machine.vaultStatusTime && (
-            <div>
+            <Flex>
               <Tooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
                 <Typography.Text
                   data-testid="vault-status-last-updated"
@@ -295,15 +295,15 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                   {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
                 </Typography.Text>
               </Tooltip>
-            </div>
+            </Flex>
           )}
         </DetailPanelHeader>
 
         <DetailPanelBody data-testid="vault-status-content">
           {!vaultData ? (
-            <div>
+            <Flex>
               <Empty description={t('machines:noVaultData')} data-testid="vault-status-empty" />
-            </div>
+            </Flex>
           ) : (
             <>
               {vaultData.system && (
@@ -326,7 +326,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
               )}
 
               {featureFlags.isEnabled('ceph') && machine && (
-                <div data-testid="vault-status-ceph">
+                <Flex data-testid="vault-status-ceph">
                   <CephSection
                     machine={machine}
                     onViewDetails={() =>
@@ -337,7 +337,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                       })
                     }
                   />
-                </div>
+                </Flex>
               )}
             </>
           )}
@@ -364,7 +364,7 @@ interface SystemInfoSectionProps extends SectionProps {
 }
 
 const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
-  <div>
+  <Flex vertical>
     <DetailPanelSectionHeader>
       <DesktopOutlined />
       <DetailPanelSectionTitle level={5} data-testid="vault-status-system-info-title">
@@ -412,7 +412,7 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
         </DetailPanelFieldRow>
       </Flex>
     </Card>
-  </div>
+  </Flex>
 );
 
 interface ResourceUsageSectionProps extends SectionProps {
@@ -425,7 +425,7 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
   const datastorePercent = parseInt(system.datastore.use_percent, 10) || 0;
 
   return (
-    <div>
+    <Flex vertical>
       <DetailPanelDivider orientationMargin="left">
         <InfoCircleOutlined />
         {t('resources:repositories.resourceUsage')}
@@ -494,7 +494,7 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
           </Card>
         </Col>
       </Row>
-    </div>
+    </Flex>
   );
 };
 
@@ -508,7 +508,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
   );
 
   return (
-    <div>
+    <Flex vertical>
       <DetailPanelDivider orientationMargin="left">
         <WifiOutlined />
         {t('resources:repositories.networkInfo')}
@@ -564,7 +564,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
               </Flex>
               <Flex vertical>
                 {iface.ipv4_addresses.length > 0 && (
-                  <div>
+                  <Flex vertical>
                     <DetailPanelFieldLabel>
                       {t('resources:repositories.ipAddresses')}:
                     </DetailPanelFieldLabel>
@@ -580,7 +580,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
                         </Tag>
                       ))}
                     </Flex>
-                  </div>
+                  </Flex>
                 )}
                 {iface.mac_address && iface.mac_address !== 'unknown' && (
                   <Flex justify="space-between" align="center">
@@ -601,7 +601,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
           )) as ListProps<unknown>['renderItem']
         }
       />
-    </div>
+    </Flex>
   );
 };
 
@@ -610,7 +610,7 @@ interface BlockDevicesSectionProps extends SectionProps {
 }
 
 const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t }) => (
-  <div>
+  <Flex vertical>
     <DetailPanelDivider orientationMargin="left">
       <HddOutlined />
       {t('resources:repositories.blockDevices')}
@@ -660,7 +660,7 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
               )}
 
               {device.partitions.length > 0 && (
-                <div>
+                <Flex vertical>
                   <DetailPanelFieldLabel>
                     {t('resources:repositories.partitions')}:
                   </DetailPanelFieldLabel>
@@ -680,14 +680,14 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
                       </Flex>
                     ))}
                   </Flex>
-                </div>
+                </Flex>
               )}
             </Flex>
           </Card>
         )) as ListProps<unknown>['renderItem']
       }
     />
-  </div>
+  </Flex>
 );
 
 interface SystemContainersSectionProps extends SectionProps {
@@ -695,7 +695,7 @@ interface SystemContainersSectionProps extends SectionProps {
 }
 
 const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ containers, t }) => (
-  <div>
+  <Flex vertical>
     <DetailPanelDivider orientationMargin="left">
       <ContainerOutlined />
       {t('resources:repositories.systemContainers')}
@@ -750,5 +750,5 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
         )) as ListProps<unknown>['renderItem']
       }
     />
-  </div>
+  </Flex>
 );

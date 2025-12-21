@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card, Col, Input, Row, Select, Space } from 'antd';
+import { Button, Card, Col, Flex, Input, Row, Select, Space, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useMachines } from '@/api/queries/machines';
@@ -131,11 +131,11 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
     if (!isExpertMode || selectedMachines.length === 0) return null;
 
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Flex align="center" justify="space-between">
         <Space>
-          <span style={{ fontWeight: 500 }}>
+          <Typography.Text style={{ fontWeight: 500 }}>
             {t('machines:bulkActions.selected', { count: selectedMachines.length })}
-          </span>
+          </Typography.Text>
           <Button
             onClick={() => setSelectedMachines([])}
             data-testid="ds-machines-clear-selection"
@@ -171,7 +171,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
             {t('machines:bulkActions.viewAssignmentStatus')}
           </Button>
         </Space>
-      </div>
+      </Flex>
     );
   };
 
@@ -213,7 +213,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
           </Col>
 
           <Col xs={24} lg={8}>
-            <div style={{ textAlign: 'right' }}>
+            <Flex style={{ textAlign: 'right' }}>
               <Space>
                 <Button
                   icon={<ExportOutlined />}
@@ -224,7 +224,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
                   {t('machines.actions.exportReport')}
                 </Button>
               </Space>
-            </div>
+            </Flex>
           </Col>
         </Row>
       </Card>

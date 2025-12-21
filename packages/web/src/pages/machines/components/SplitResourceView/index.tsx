@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Flex } from 'antd';
 import { MachineTable } from '@/components/resources/internal/MachineTable';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
 import { DETAIL_PANEL } from '@/constants/layout';
@@ -111,7 +112,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
     const leftPanelWidth = selectedResource ? `calc(100% - ${actualPanelWidth}px)` : '100%';
 
     return (
-      <div
+      <Flex
         data-testid="split-resource-view-container"
         style={{
           display: 'flex',
@@ -122,7 +123,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
         }}
       >
         {/* Left Panel - Machine Table */}
-        <div
+        <Flex
           data-testid="split-resource-view-left-panel"
           style={{ width: leftPanelWidth, height: '100%', overflow: 'auto', minWidth: 240 }}
         >
@@ -131,11 +132,11 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
             onRowClick={handleMachineSelect}
             selectedMachine={selectedResource as Machine}
           />
-        </div>
+        </Flex>
 
         {/* Backdrop - appears when panel is open, covers full viewport */}
         {shouldRenderBackdrop && (
-          <div
+          <Flex
             style={{
               position: 'fixed',
               top: 0,
@@ -172,7 +173,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
             collapsedWidth={DETAIL_PANEL.COLLAPSED_WIDTH}
           />
         )}
-      </div>
+      </Flex>
     );
   }
 

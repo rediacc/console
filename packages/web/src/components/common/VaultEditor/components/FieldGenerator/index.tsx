@@ -90,8 +90,10 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     options: ReadonlyArray<{ value: T; label: string; disabled?: boolean }>,
     onChange: (val: T) => void
   ) => (
-    <div>
-      <label style={{ fontWeight: 500, fontSize: 14, display: 'block' }}>{label}</label>
+    <Flex vertical>
+      <Typography.Text style={{ fontWeight: 500, fontSize: 14, display: 'block' }}>
+        {label}
+      </Typography.Text>
       <Radio.Group
         style={{ display: 'block' }}
         value={value}
@@ -110,7 +112,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
           </Radio.Button>
         ))}
       </Radio.Group>
-    </div>
+    </Flex>
   );
 
   const currentKeyType: 'rsa' | 'ed25519' = keyOptions.keyType ?? 'rsa';
@@ -131,10 +133,9 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   const renderGeneratedValues = () => (
     <Flex vertical style={{ width: '100%' }}>
       {Object.entries(generatedValues).map(([field, value]) => (
-        <div key={field} style={{ display: 'flex', flexDirection: 'column' }}>
-          <div
+        <Flex key={field} vertical>
+          <Flex
             style={{
-              display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               fontWeight: 500,
@@ -144,13 +145,17 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
             <Button
               icon={
                 copiedField === field ? (
-                  <span style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
+                  <Typography.Text
+                    style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}
+                  >
                     <CheckOutlined />
-                  </span>
+                  </Typography.Text>
                 ) : (
-                  <span style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
+                  <Typography.Text
+                    style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}
+                  >
                     <CopyOutlined />
-                  </span>
+                  </Typography.Text>
                 )
               }
               onClick={() => handleCopy(field, value)}
@@ -158,8 +163,8 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
             >
               {copiedField === field ? t('fieldGenerator.copied') : t('fieldGenerator.copy')}
             </Button>
-          </div>
-          <div
+          </Flex>
+          <Flex
             style={{
               wordBreak: 'break-all',
               maxHeight: 200,
@@ -169,14 +174,14 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
             }}
           >
             {value}
-          </div>
-        </div>
+          </Flex>
+        </Flex>
       ))}
     </Flex>
   );
 
   const popoverContent = (
-    <div style={{ width: 320, maxWidth: '100%' }}>
+    <Flex vertical style={{ width: 320, maxWidth: '100%' }}>
       {fieldType === 'ssh_keys' && !Object.keys(generatedValues).length && renderSSHKeyOptions()}
 
       {Object.keys(generatedValues).length > 0 && renderGeneratedValues()}
@@ -186,9 +191,11 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
           <Button
             type="primary"
             icon={
-              <span style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
+              <Typography.Text
+                style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}
+              >
                 <KeyOutlined />
-              </span>
+              </Typography.Text>
             }
             onClick={handleGenerate}
             loading={generating}
@@ -206,9 +213,11 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
             </Button>
             <Button
               icon={
-                <span style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
+                <Typography.Text
+                  style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}
+                >
                   <ReloadOutlined />
-                </span>
+                </Typography.Text>
               }
               onClick={handleGenerate}
               loading={generating}
@@ -222,7 +231,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
           </>
         )}
       </Flex>
-    </div>
+    </Flex>
   );
 
   return (
@@ -230,10 +239,10 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
       content={popoverContent}
       title={
         <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-          <span style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
+          <Typography.Text style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
             <KeyOutlined />
-          </span>
-          <span>{t(`fieldGenerator.title.${fieldType}`)}</span>
+          </Typography.Text>
+          <Typography.Text>{t(`fieldGenerator.title.${fieldType}`)}</Typography.Text>
         </Flex>
       }
       trigger="click"
@@ -245,9 +254,9 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
         <Button
           type="text"
           icon={
-            <span style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
+            <Typography.Text style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
               <KeyOutlined />
-            </span>
+            </Typography.Text>
           }
           aria-label={t('fieldGenerator.tooltip')}
           data-testid={props['data-testid'] || 'vault-editor-field-generator'}

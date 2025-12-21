@@ -1,5 +1,5 @@
 import React, { type ReactNode } from 'react';
-import { Alert } from 'antd';
+import { Alert, Flex } from 'antd';
 
 interface DefaultsBannerProps {
   title: string;
@@ -7,7 +7,7 @@ interface DefaultsBannerProps {
 }
 
 export const DefaultsBanner: React.FC<DefaultsBannerProps> = ({ title, content }) => (
-  <div>
+  <Flex>
     <Alert message={title} description={content} type="info" showIcon />
-  </div>
+  </Flex>
 );

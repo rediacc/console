@@ -242,7 +242,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             style={{ display: 'inline-flex' }}
             data-testid={`connectivity-machine-${name}`}
           >
-            <span
+            <Typography.Text
               style={{
                 display: 'inline-flex',
                 color:
@@ -256,7 +256,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
               }}
             >
               {renderIcon()}
-            </span>
+            </Typography.Text>
             <Typography.Text strong>{name}</Typography.Text>
           </Flex>
         );
@@ -267,9 +267,9 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     {
       ...statusColumn,
       render: (status: TestResult['status'], record, index) => (
-        <span data-testid={`connectivity-status-tag-${record.machineName}-${status}`}>
+        <Typography.Text data-testid={`connectivity-status-tag-${record.machineName}-${status}`}>
           {statusColumn.render?.(status, record, index) as React.ReactNode}
-        </span>
+        </Typography.Text>
       ),
     },
     {
@@ -305,7 +305,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       title={
         <Flex gap={8} align="center">
           <WifiOutlined />
-          <span>{t('machines:connectivityTest')}</span>
+          <Typography.Text>{t('machines:connectivityTest')}</Typography.Text>
         </Flex>
       }
       open={open}
@@ -335,7 +335,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
         </Flex>
       }
     >
-      <div style={{ width: '100%' }}>
+      <Flex style={{ width: '100%' }}>
         <Flex vertical gap={16} style={{ width: '100%' }}>
           {isRunning && (
             <Flex vertical data-testid="connectivity-progress-container">
@@ -358,7 +358,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             </Flex>
           )}
 
-          <div style={{ fontSize: 14 }}>
+          <Flex style={{ fontSize: 14 }}>
             <Alert
               message={t('machines:connectivityTestDescription')}
               type="info"
@@ -366,9 +366,9 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
               icon={<WifiOutlined />}
               data-testid="connectivity-info-alert"
             />
-          </div>
+          </Flex>
 
-          <div>
+          <Flex>
             <Table<TestResult>
               columns={columns}
               dataSource={testResults}
@@ -379,19 +379,19 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
               rowClassName={(record) => `status-${record.status}`}
               data-testid="connectivity-results-table"
             />
-          </div>
+          </Flex>
 
           {!isRunning && testResults.some((r) => r.status !== 'pending') && (
-            <div data-testid="connectivity-summary-statistics">
+            <Flex data-testid="connectivity-summary-statistics">
               <Flex align="center" wrap>
-                <div
+                <Flex
                   style={{ display: 'flex', alignItems: 'center', gap: 12 }}
                   data-testid="connectivity-total-machines"
                 >
                   <Typography.Text type="secondary">{t('machines:totalMachines')}:</Typography.Text>
                   <Typography.Text strong>{machines.length}</Typography.Text>
-                </div>
-                <div
+                </Flex>
+                <Flex
                   style={{ display: 'flex', alignItems: 'center', gap: 12 }}
                   data-testid="connectivity-connected-count"
                 >
@@ -399,8 +399,8 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
                   <Typography.Text strong type="success">
                     {testResults.filter((r) => r.status === 'success').length}
                   </Typography.Text>
-                </div>
-                <div
+                </Flex>
+                <Flex
                   style={{ display: 'flex', alignItems: 'center', gap: 12 }}
                   data-testid="connectivity-failed-count"
                 >
@@ -408,8 +408,8 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
                   <Typography.Text strong type="danger">
                     {testResults.filter((r) => r.status === 'failed').length}
                   </Typography.Text>
-                </div>
-                <div
+                </Flex>
+                <Flex
                   style={{ display: 'flex', alignItems: 'center', gap: 12 }}
                   data-testid="connectivity-average-response"
                 >
@@ -430,12 +430,12 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
                         : `${(avgDuration / 1000).toFixed(1)}s`;
                     })()}
                   </Typography.Text>
-                </div>
+                </Flex>
               </Flex>
-            </div>
+            </Flex>
           )}
         </Flex>
-      </div>
+      </Flex>
     </Modal>
   );
 };

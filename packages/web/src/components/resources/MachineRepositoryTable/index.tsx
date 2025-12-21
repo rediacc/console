@@ -288,7 +288,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     modal.confirm({
       title: t('resources:repositories.renameTitle'),
       content: (
-        <div>
+        <Flex vertical>
           <Typography.Paragraph>
             {t('resources:repositories.renameMessage', { name: Repository.name })}
           </Typography.Paragraph>
@@ -303,7 +303,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             }}
             autoFocus
           />
-        </div>
+        </Flex>
       ),
       okText: t('common:save'),
       cancelText: t('common:cancel'),
@@ -364,7 +364,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     modal.confirm({
       title: t('resources:repositories.renameTagTitle'),
       content: (
-        <div>
+        <Flex vertical>
           <Typography.Paragraph>
             {t('resources:repositories.renameTagMessage', {
               name: Repository.name,
@@ -382,7 +382,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             }}
             autoFocus
           />
-        </div>
+        </Flex>
       ),
       okText: t('common:save'),
       cancelText: t('common:cancel'),
@@ -547,22 +547,22 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
   if (loading) {
     return (
-      <div data-testid="machine-repo-list-loading">
+      <Flex data-testid="machine-repo-list-loading">
         <LoadingWrapper
           loading
           centered
           minHeight={200}
           tip={t('resources:repositories.fetchingRepos')}
         >
-          <div />
+          <Flex />
         </LoadingWrapper>
-      </div>
+      </Flex>
     );
   }
 
   if (error) {
     return (
-      <div data-testid="machine-repo-list-error">
+      <Flex data-testid="machine-repo-list-error">
         <Alert
           message={t('common:messages.error')}
           description={error}
@@ -578,12 +578,12 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             </Tooltip>
           }
         />
-      </div>
+      </Flex>
     );
   }
 
   return (
-    <div style={{ overflowX: 'auto', position: 'relative' }} data-testid="machine-repo-list">
+    <Flex style={{ overflowX: 'auto', position: 'relative' }} data-testid="machine-repo-list">
       {isLoading && (
         <Flex
           align="center"
@@ -595,18 +595,18 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           }}
         >
           <LoadingWrapper loading centered minHeight={120} tip={t('common:general.refreshing')}>
-            <div />
+            <Flex />
           </LoadingWrapper>
         </Flex>
       )}
 
       {hideSystemInfo && (
-        <div data-testid="machine-repo-list-machine-header">
+        <Flex data-testid="machine-repo-list-machine-header">
           <Space direction="vertical" size="small">
             <Space>
-              <span style={{ fontSize: 16 }}>
+              <Typography.Text style={{ fontSize: 16 }}>
                 <DesktopOutlined />
-              </span>
+              </Typography.Text>
               <Typography.Title level={4} data-testid="machine-repo-list-machine-name">
                 {machine.machineName}
               </Typography.Title>
@@ -622,7 +622,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
               </Tag>
             </Space>
           </Space>
-        </div>
+        </Flex>
       )}
 
       {(() => {
@@ -648,7 +648,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         ) : null;
       })()}
 
-      <div>
+      <Flex>
         <Table<RepositoryTableRow>
           columns={columns}
           dataSource={getTableDataSource()}
@@ -686,10 +686,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             },
           })}
         />
-      </div>
+      </Flex>
 
       {systemContainers.length > 0 && !hideSystemInfo && (
-        <div data-testid="machine-repo-list-system-containers">
+        <Flex vertical data-testid="machine-repo-list-system-containers">
           <Typography.Title level={5} data-testid="machine-repo-list-system-containers-title">
             {t('resources:repositories.systemContainers')}
           </Typography.Title>
@@ -702,7 +702,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             scroll={{ x: 'max-content' }}
             data-testid="machine-repo-list-system-containers-table"
           />
-        </div>
+        </Flex>
       )}
 
       <FunctionSelectionModal
@@ -825,6 +825,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       />
 
       {contextHolder}
-    </div>
+    </Flex>
   );
 };

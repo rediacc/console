@@ -1,5 +1,6 @@
 import React, { type ReactNode } from 'react';
 import { Alert, Button, Card, Divider, Flex, Typography } from 'antd';
+const { Text } = Typography;
 import { useTranslation } from 'react-i18next';
 import { useMachineAssignmentStatus } from '@/api/queries/ceph';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
@@ -66,7 +67,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
         data-testid="ds-section-loading"
       >
         <LoadingWrapper loading centered minHeight={120}>
-          <div />
+          <Flex />
         </LoadingWrapper>
       </Flex>
     );
@@ -77,27 +78,27 @@ export const CephSection: React.FC<CephSectionProps> = ({
   return (
     <>
       <Divider style={{ margin: '24px 0' }} data-testid="ds-section-divider">
-        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+        <Flex align="center" style={{ display: 'inline-flex' }}>
           <CloudServerOutlined />
-          <span style={{ fontSize: 16, fontWeight: 600 }}>{t('machineSection.title')}</span>
-        </div>
+          <Text style={{ fontSize: 16, fontWeight: 600 }}>{t('machineSection.title')}</Text>
+        </Flex>
       </Divider>
 
       <Card size="small" data-testid="ds-section-card">
         <Flex vertical gap={24} style={{ width: '100%' }}>
-          <div>
-            <div style={{ display: 'block' }} data-testid="ds-section-assignment-label">
+          <Flex vertical>
+            <Flex style={{ display: 'block' }} data-testid="ds-section-assignment-label">
               <Typography.Text type="secondary">
                 {t('assignment.currentAssignment')}
               </Typography.Text>
-            </div>
+            </Flex>
             <MachineAssignmentStatusBadge
               assignmentType={assignmentType}
               assignmentDetails={assignmentDetails}
               size="default"
               data-testid="ds-section-assignment-badge"
             />
-          </div>
+          </Flex>
 
           {showAssignmentAlert && assignmentDetails && (
             <Alert

@@ -5,7 +5,7 @@ import {
   CopyOutlined,
   FileImageOutlined,
 } from '@ant-design/icons';
-import { Tag, Tooltip } from 'antd';
+import { Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { MachineAssignmentType } from '@/types';
 
@@ -85,7 +85,9 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
 
     return assignmentDetails ? (
       <Tooltip title={assignmentDetails}>
-        <span data-testid="machine-status-badge-tooltip-wrapper">{content}</span>
+        <Typography.Text data-testid="machine-status-badge-tooltip-wrapper">
+          {content}
+        </Typography.Text>
       </Tooltip>
     ) : (
       content
@@ -95,10 +97,12 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
   return (
     <Tooltip
       title={
-        assignmentDetails ? <span style={{ fontSize: 12 }}>{assignmentDetails}</span> : undefined
+        assignmentDetails ? (
+          <Typography.Text style={{ fontSize: 12 }}>{assignmentDetails}</Typography.Text>
+        ) : undefined
       }
     >
-      <span data-testid="machine-status-badge-tooltip-wrapper">
+      <Typography.Text data-testid="machine-status-badge-tooltip-wrapper">
         <Tag
           color={config.color}
           icon={showIcon ? config.icon : undefined}
@@ -107,7 +111,7 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
         >
           {config.text}
         </Tag>
-      </span>
+      </Typography.Text>
     </Tooltip>
   );
 };

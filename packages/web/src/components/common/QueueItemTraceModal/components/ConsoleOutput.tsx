@@ -1,5 +1,5 @@
 import React from 'react';
-import { Empty } from 'antd';
+import { Empty, Flex } from 'antd';
 import type { ConsoleOutputProps } from '../types';
 
 export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
@@ -12,8 +12,8 @@ export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
   }
 
   return (
-    <div ref={consoleOutputRef} data-testid="queue-trace-console-output">
+    <Flex ref={consoleOutputRef} data-testid="queue-trace-console-output">
       {content}
-    </div>
+    </Flex>
   );
 };

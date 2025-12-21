@@ -32,10 +32,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   const { t } = useTranslation('common');
 
   return (
-    <div style={{ width: 280, padding: 16 }}>
+    <Flex vertical style={{ width: 280, padding: 16 }}>
       <Flex align="center" gap={12} wrap data-testid="user-info">
         <Avatar icon={<UserOutlined />} size={DESIGN_TOKENS.DIMENSIONS.ICON_XXL} />
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <Flex vertical style={{ flex: 1, minWidth: 0 }}>
           <Typography.Text strong style={{ display: 'block' }} data-testid="user-info-email">
             {user?.email}
           </Typography.Text>
@@ -57,12 +57,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               {companyData.activeSubscription.planCode ?? 'UNKNOWN'}
             </Tag>
           )}
-        </div>
+        </Flex>
       </Flex>
 
       <Divider style={{ margin: '12px 0' }} />
 
-      <div>
+      <Flex vertical>
         <Typography.Text type="secondary">
           {t('uiMode.label', { defaultValue: 'Interface Mode' })}
         </Typography.Text>
@@ -79,7 +79,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               label: (
                 <Space size={4}>
                   <SmileOutlined />
-                  <span>{t('uiMode.simple')}</span>
+                  <Typography.Text>{t('uiMode.simple')}</Typography.Text>
                 </Space>
               ),
               value: 'simple',
@@ -88,7 +88,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               label: (
                 <Space size={4}>
                   <SafetyCertificateOutlined />
-                  <span>{t('uiMode.expert')}</span>
+                  <Typography.Text>{t('uiMode.expert')}</Typography.Text>
                 </Space>
               ),
               value: 'expert',
@@ -96,30 +96,30 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           ]}
           data-testid="main-mode-toggle"
         />
-      </div>
+      </Flex>
 
       <Divider style={{ margin: '12px 0' }} />
 
       <Flex align="center" justify="space-between">
-        <div>
+        <Flex vertical>
           <Typography.Text strong style={{ display: 'block' }}>
             {t('appearance.label', { defaultValue: 'Appearance' })}
           </Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t('appearance.description', { defaultValue: 'Device theme' })}
           </Typography.Text>
-        </div>
+        </Flex>
         <ThemeToggle />
       </Flex>
 
       <Divider style={{ margin: '12px 0' }} />
 
-      <div>
+      <Flex vertical>
         <Typography.Text strong style={{ display: 'block' }}>
           {t('language.label', { defaultValue: 'Language' })}
         </Typography.Text>
         <LanguageSelector iconOnly={false} />
-      </div>
+      </Flex>
 
       <Divider style={{ margin: '12px 0' }} />
 
@@ -133,6 +133,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       >
         {t('navigation.logout')}
       </Button>
-    </div>
+    </Flex>
   );
 };

@@ -1,4 +1,4 @@
-import { Button, Space, Tooltip, Upload } from 'antd';
+import { Button, Flex, Space, Tooltip, Upload } from 'antd';
 import { DownloadOutlined, UploadOutlined } from '@/utils/optimizedIcons';
 import type { UploadFile } from 'antd/es/upload/interface';
 
@@ -15,7 +15,7 @@ export const ImportExportControls: React.FC<ImportExportControlsProps> = ({
   onImport,
   onExport,
 }) => (
-  <div>
+  <Flex>
     <Space>
       <Upload accept=".json" showUploadList={false} beforeUpload={onImport}>
         <Tooltip title={importLabel}>
@@ -26,5 +26,5 @@ export const ImportExportControls: React.FC<ImportExportControlsProps> = ({
         <Button icon={<DownloadOutlined />} onClick={onExport} aria-label={exportLabel} />
       </Tooltip>
     </Space>
-  </div>
+  </Flex>
 );

@@ -1,6 +1,6 @@
 import React, { Component, ReactNode } from 'react';
 import { BugOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Button, Result } from 'antd';
+import { Button, Flex, Result, Typography } from 'antd';
 import i18n from '@/i18n/config';
 import { telemetryService } from '@/services/telemetryService';
 
@@ -107,11 +107,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       // Default error UI
       return (
-        <div
+        <Flex
+          justify="center"
+          align="center"
           style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
             padding: 24,
             minHeight: 320,
           }}
@@ -120,8 +119,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             status="error"
             title={i18n.t('common:errorBoundary.title')}
             subTitle={
-              <div>
-                <p>{i18n.t('common:errorBoundary.description')}</p>
+              <Flex vertical>
+                <Typography.Text>{i18n.t('common:errorBoundary.description')}</Typography.Text>
                 {import.meta.env.DEV && this.state.error && (
                   <details
                     style={{
@@ -134,20 +133,21 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                     <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
                       {i18n.t('common:errorBoundary.errorDetails')}
                     </summary>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <strong>Error:</strong> {this.state.error.message}
+                    <Flex vertical gap={8}>
+                      <Typography.Text strong>Error:</Typography.Text> {this.state.error.message}
                       <br />
-                      <strong>Stack:</strong> {this.state.error.stack}
+                      <Typography.Text strong>Stack:</Typography.Text> {this.state.error.stack}
                       {this.state.errorInfo && (
                         <>
                           <br />
-                          <strong>Component Stack:</strong> {this.state.errorInfo.componentStack}
+                          <Typography.Text strong>Component Stack:</Typography.Text>{' '}
+                          {this.state.errorInfo.componentStack}
                         </>
                       )}
-                    </div>
+                    </Flex>
                   </details>
                 )}
-              </div>
+              </Flex>
             }
             extra={[
               <Button key="retry" onClick={this.handleRetry} icon={<BugOutlined />}>
@@ -163,7 +163,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               </Button>,
             ]}
           />
-        </div>
+        </Flex>
       );
     }
 

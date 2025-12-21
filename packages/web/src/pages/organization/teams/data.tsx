@@ -1,4 +1,4 @@
-import { Badge, Button, Popconfirm, Space, Tooltip, type TableProps } from 'antd';
+import { Badge, Button, Flex, Popconfirm, Space, Tooltip, Typography, type TableProps } from 'antd';
 import type { Team } from '@/api/queries/teams';
 import {
   createCountColumn,
@@ -100,7 +100,7 @@ export const getTeamColumns = ({
       width: 140,
       responsive: ['xs'],
       render: (_, record: Team) => (
-        <div style={{ width: '100%' }}>
+        <Flex style={{ width: '100%' }}>
           <Space direction="vertical" size={4}>
             <Tooltip title={`${record.memberCount} ${tSystem('tables.teams.members')}`}>
               <Space size="small">
@@ -112,7 +112,7 @@ export const getTeamColumns = ({
             <Tooltip title={`${record.machineCount} ${tSystem('tables.teams.machines')}`}>
               <Space size="small">
                 <DesktopOutlined />
-                <span>{record.machineCount}</span>
+                <Typography.Text>{record.machineCount}</Typography.Text>
               </Space>
             </Tooltip>
             <Tooltip
@@ -120,17 +120,17 @@ export const getTeamColumns = ({
             >
               <Space size="small">
                 <DatabaseOutlined />
-                <span>{record.repositoryCount || 0}</span>
+                <Typography.Text>{record.repositoryCount || 0}</Typography.Text>
               </Space>
             </Tooltip>
             <Tooltip title={`${record.storageCount || 0} ${tSystem('tables.teams.storage')}`}>
               <Space size="small">
                 <CloudServerOutlined />
-                <span>{record.storageCount || 0}</span>
+                <Typography.Text>{record.storageCount || 0}</Typography.Text>
               </Space>
             </Tooltip>
           </Space>
-        </div>
+        </Flex>
       ),
     },
     // Separate columns for desktop (show on sm and above)

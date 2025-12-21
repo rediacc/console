@@ -1,3 +1,4 @@
+import { Flex, Typography } from 'antd';
 import type { CephPool } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn, createVersionColumn } from '@/components/common/columns';
@@ -40,7 +41,7 @@ export const buildPoolColumns = ({
     render: (name: string, record: CephPool) => {
       const isExpanded = expandedRowKeys.includes(record.poolGuid || '');
       return (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        <Flex align="center" gap={8} style={{ display: 'inline-flex' }}>
           <RightOutlined
             style={{
               transform: isExpanded ? 'rotate(90deg)' : undefined,
@@ -48,8 +49,8 @@ export const buildPoolColumns = ({
             }}
           />
           <DatabaseOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
-          <span style={{ fontWeight: 400 }}>{name}</span>
-        </span>
+          <Typography.Text style={{ fontWeight: 400 }}>{name}</Typography.Text>
+        </Flex>
       );
     },
   },

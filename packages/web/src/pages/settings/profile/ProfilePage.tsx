@@ -97,8 +97,8 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div>
-      <div>
+    <Flex vertical>
+      <Flex vertical>
         <Typography.Title level={3}>{t('personal.title')}</Typography.Title>
 
         <Card>
@@ -145,7 +145,7 @@ const ProfilePage: React.FC = () => {
             </Flex>
           </Flex>
         </Card>
-      </div>
+      </Flex>
 
       <VaultEditorModal
         open={userVaultModal.isOpen}
@@ -240,18 +240,18 @@ const ProfilePage: React.FC = () => {
           />
 
           <Form.Item>
-            <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <Flex style={{ width: '100%' }} justify="flex-end" gap={8}>
               <Button onClick={closeChangePassword}>{tCommon('actions.cancel')}</Button>
               <Button htmlType="submit" loading={updateUserPasswordMutation.isPending}>
                 {t('personal.changePassword.submit', { defaultValue: 'Change Password' })}
               </Button>
-            </div>
+            </Flex>
           </Form.Item>
         </Form>
       </Modal>
 
       <TwoFactorSettings open={twoFactorModal.isOpen} onCancel={twoFactorModal.close} />
-    </div>
+    </Flex>
   );
 };
 

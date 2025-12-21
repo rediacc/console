@@ -16,7 +16,7 @@ import {
   SettingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { Button, Space, Table, Tag, Tooltip, type MenuProps } from 'antd';
+import { Button, Flex, Space, Table, Tag, Tooltip, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -149,16 +149,20 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   const getImageMenuItems = (image: CephRbdImage): MenuProps['items'] => [
     {
       key: 'edit',
-      label: <span data-testid={`rbd-edit-action-${image.imageName}`}>{t('images.edit')}</span>,
+      label: (
+        <Typography.Text data-testid={`rbd-edit-action-${image.imageName}`}>
+          {t('images.edit')}
+        </Typography.Text>
+      ),
       icon: <SettingOutlined />,
       onClick: () => handleEdit(image),
     },
     {
       key: 'reassignMachine',
       label: (
-        <span data-testid={`rbd-reassign-action-${image.imageName}`}>
+        <Typography.Text data-testid={`rbd-reassign-action-${image.imageName}`}>
           {t('images.reassignMachine')}
-        </span>
+        </Typography.Text>
       ),
       icon: <CloudServerOutlined />,
       onClick: () => handleReassignMachine(image),
@@ -167,70 +171,102 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     {
       key: 'snapshot',
       label: (
-        <span data-testid={`rbd-snapshot-action-${image.imageName}`}>
+        <Typography.Text data-testid={`rbd-snapshot-action-${image.imageName}`}>
           {t('images.createSnapshot')}
-        </span>
+        </Typography.Text>
       ),
       icon: <CameraOutlined />,
       onClick: () => handleRunFunction('ceph_rbd_snapshot_create', image),
     },
     {
       key: 'clone',
-      label: <span data-testid={`rbd-clone-action-${image.imageName}`}>{t('images.clone')}</span>,
+      label: (
+        <Typography.Text data-testid={`rbd-clone-action-${image.imageName}`}>
+          {t('images.clone')}
+        </Typography.Text>
+      ),
       icon: <CopyOutlined />,
       onClick: () => handleRunFunction('ceph_rbd_clone', image),
     },
     {
       key: 'resize',
-      label: <span data-testid={`rbd-resize-action-${image.imageName}`}>{t('images.resize')}</span>,
+      label: (
+        <Typography.Text data-testid={`rbd-resize-action-${image.imageName}`}>
+          {t('images.resize')}
+        </Typography.Text>
+      ),
       icon: <ExpandOutlined />,
       onClick: () => handleRunFunction('ceph_rbd_resize', image),
     },
     { type: 'divider' },
     {
       key: 'export',
-      label: <span data-testid={`rbd-export-action-${image.imageName}`}>{t('images.export')}</span>,
+      label: (
+        <Typography.Text data-testid={`rbd-export-action-${image.imageName}`}>
+          {t('images.export')}
+        </Typography.Text>
+      ),
       icon: <CloudUploadOutlined />,
       onClick: () => handleRunFunction('ceph_rbd_export', image),
     },
     {
       key: 'import',
-      label: <span data-testid={`rbd-import-action-${image.imageName}`}>{t('images.import')}</span>,
+      label: (
+        <Typography.Text data-testid={`rbd-import-action-${image.imageName}`}>
+          {t('images.import')}
+        </Typography.Text>
+      ),
       icon: <CloudDownloadOutlined />,
       onClick: () => handleRunFunction('ceph_rbd_import', image),
     },
     { type: 'divider' },
     {
       key: 'info',
-      label: <span data-testid={`rbd-info-action-${image.imageName}`}>{t('images.info')}</span>,
+      label: (
+        <Typography.Text data-testid={`rbd-info-action-${image.imageName}`}>
+          {t('images.info')}
+        </Typography.Text>
+      ),
       icon: <InfoCircleOutlined />,
       onClick: () => handleRunFunction('ceph_rbd_info', image),
     },
     {
       key: 'status',
-      label: <span data-testid={`rbd-status-action-${image.imageName}`}>{t('images.status')}</span>,
+      label: (
+        <Typography.Text data-testid={`rbd-status-action-${image.imageName}`}>
+          {t('images.status')}
+        </Typography.Text>
+      ),
       icon: <CheckCircleOutlined />,
       onClick: () => handleRunFunction('ceph_rbd_status', image),
     },
     { type: 'divider' },
     {
       key: 'map',
-      label: <span data-testid={`rbd-map-action-${image.imageName}`}>{t('images.map')}</span>,
+      label: (
+        <Typography.Text data-testid={`rbd-map-action-${image.imageName}`}>
+          {t('images.map')}
+        </Typography.Text>
+      ),
       icon: <DesktopOutlined />,
       onClick: () => handleRunFunction('ceph_rbd_map', image),
     },
     {
       key: 'unmap',
-      label: <span data-testid={`rbd-unmap-action-${image.imageName}`}>{t('images.unmap')}</span>,
+      label: (
+        <Typography.Text data-testid={`rbd-unmap-action-${image.imageName}`}>
+          {t('images.unmap')}
+        </Typography.Text>
+      ),
       icon: <DesktopOutlined />,
       onClick: () => handleRunFunction('ceph_rbd_unmap', image),
     },
     {
       key: 'showmapped',
       label: (
-        <span data-testid={`rbd-showmapped-action-${image.imageName}`}>
+        <Typography.Text data-testid={`rbd-showmapped-action-${image.imageName}`}>
           {t('images.showMapped')}
-        </span>
+        </Typography.Text>
       ),
       icon: <DesktopOutlined />,
       onClick: () => handleRunFunction('ceph_rbd_showmapped', image),
@@ -239,7 +275,9 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     {
       key: 'flatten',
       label: (
-        <span data-testid={`rbd-flatten-action-${image.imageName}`}>{t('images.flatten')}</span>
+        <Typography.Text data-testid={`rbd-flatten-action-${image.imageName}`}>
+          {t('images.flatten')}
+        </Typography.Text>
       ),
       icon: <SyncOutlined />,
       onClick: () => handleRunFunction('ceph_rbd_flatten', image),
@@ -247,7 +285,11 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     { type: 'divider' },
     {
       key: 'delete',
-      label: <span data-testid={`rbd-delete-action-${image.imageName}`}>{t('images.delete')}</span>,
+      label: (
+        <Typography.Text data-testid={`rbd-delete-action-${image.imageName}`}>
+          {t('images.delete')}
+        </Typography.Text>
+      ),
       icon: <DeleteOutlined />,
       danger: true,
       onClick: () => handleDelete(image),
@@ -263,7 +305,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       render: (text: string, record: CephRbdImage) => (
         <Space data-testid={`rbd-image-name-${record.imageName}`}>
           <FileImageOutlined style={{ fontSize: 16 }} />
-          <span>{text}</span>
+          <Typography.Text>{text}</Typography.Text>
           {record.vaultContent && (
             <Tooltip title={t('common.hasVault')}>
               <Tag data-testid={`rbd-vault-tag-${record.imageName}`} color="processing">
@@ -336,14 +378,14 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   ];
 
   const expandedRowRender = (record: CephRbdImage) => (
-    <div data-testid={`rbd-snapshot-list-${record.imageName}`}>
+    <Flex data-testid={`rbd-snapshot-list-${record.imageName}`}>
       <SnapshotTable image={record} pool={pool} teamFilter={teamFilter} />
-    </div>
+    </Flex>
   );
 
   return (
     <>
-      <div data-testid="rbd-image-list-container">
+      <Flex data-testid="rbd-image-list-container">
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -353,9 +395,9 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
         >
           {t('images.create')}
         </Button>
-      </div>
+      </Flex>
 
-      <div style={{ overflow: 'hidden' }}>
+      <Flex style={{ overflow: 'hidden' }}>
         <Table<CephRbdImage>
           columns={columns}
           dataSource={images}
@@ -378,7 +420,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
             ),
           }}
         />
-      </div>
+      </Flex>
 
       <UnifiedResourceModal
         open={modalState.open}

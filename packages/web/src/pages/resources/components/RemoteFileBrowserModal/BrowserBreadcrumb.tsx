@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { HomeOutlined, RightOutlined } from '@ant-design/icons';
-import { Breadcrumb } from 'antd';
+import { Breadcrumb, Typography } from 'antd';
 
 interface BrowserBreadcrumbProps {
   currentPath: string;
@@ -15,9 +15,9 @@ export const BrowserBreadcrumb: React.FC<BrowserBreadcrumbProps> = ({
     const items = [
       {
         title: (
-          <span data-testid="file-browser-breadcrumb-home">
+          <Typography.Text data-testid="file-browser-breadcrumb-home">
             <HomeOutlined />
-          </span>
+          </Typography.Text>
         ),
         onClick: () => onNavigate(''),
       },
@@ -28,7 +28,11 @@ export const BrowserBreadcrumb: React.FC<BrowserBreadcrumbProps> = ({
       parts.forEach((part, index) => {
         const path = parts.slice(0, index + 1).join('/');
         items.push({
-          title: <span data-testid={`file-browser-breadcrumb-${part}`}>{part}</span>,
+          title: (
+            <Typography.Text data-testid={`file-browser-breadcrumb-${part}`}>
+              {part}
+            </Typography.Text>
+          ),
           onClick: () => onNavigate(path),
         });
       });

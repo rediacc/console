@@ -1,4 +1,5 @@
 import React from 'react';
+import { Flex } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -38,7 +39,7 @@ export const getActionIcon = (action: string): React.ReactNode => {
     if (actionLower.includes(keyword)) {
       const { color, Icon } = config;
       return (
-        <span
+        <Flex
           style={{
             display: 'inline-flex',
             color:
@@ -56,14 +57,14 @@ export const getActionIcon = (action: string): React.ReactNode => {
           }}
         >
           <Icon />
-        </span>
+        </Flex>
       );
     }
   }
 
   const { color, Icon } = DEFAULT_ICON_CONFIG;
   return (
-    <span
+    <Flex
       style={{
         display: 'inline-flex',
         color:
@@ -81,6 +82,6 @@ export const getActionIcon = (action: string): React.ReactNode => {
       }}
     >
       <Icon />
-    </span>
+    </Flex>
   );
 };

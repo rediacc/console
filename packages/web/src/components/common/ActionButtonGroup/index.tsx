@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Dropdown, Tooltip } from 'antd';
+import { Button, Dropdown, Flex, Tooltip } from 'antd';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -93,11 +93,11 @@ export interface ActionButtonGroupProps<T> {
 // =============================================================================
 
 const Container: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
-  <div style={{ display: 'inline-flex', alignItems: 'center' }} {...props} />
+  <Flex style={{ display: 'inline-flex', alignItems: 'center' }} {...props} />
 );
 
 const ButtonPlaceholder: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
-  <div style={{ width: 40, minHeight: 40, flexShrink: 0 }} {...props} />
+  <Flex style={{ width: 40, minHeight: 40, flexShrink: 0 }} {...props} />
 );
 
 // =============================================================================

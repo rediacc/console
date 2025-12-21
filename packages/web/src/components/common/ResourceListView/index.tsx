@@ -86,8 +86,8 @@ function ResourceListView<T extends object = Record<string, unknown>>({
   return (
     <Card data-testid="resource-list-container">
       {shouldRenderControls && (
-        <div>
-          <Flex wrap justify="space-between" align="center">
+        <Flex>
+          <Flex wrap justify="space-between" align="center" style={{ width: '100%' }}>
             <Flex align="center" style={{ flex: '1 1 auto', minWidth: 0 }}>
               {title}
               {onSearch && (
@@ -111,7 +111,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
               </Flex>
             )}
           </Flex>
-        </div>
+        </Flex>
       )}
 
       <LoadingWrapper loading={loading} centered minHeight={240}>

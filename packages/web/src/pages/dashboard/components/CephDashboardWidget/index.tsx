@@ -87,7 +87,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
 
     return (
       <List.Item key={teamKey} data-testid={`ds-widget-team-item-${teamKey}`}>
-        <div style={{ width: '100%' }}>
+        <Flex vertical style={{ width: '100%' }}>
           <Flex align="center" justify="space-between">
             <Typography.Text strong>{team.teamName}</Typography.Text>
             <Typography.Text type="secondary" style={{ fontSize: 14 }}>
@@ -122,7 +122,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
               </Tooltip>
             )}
           </Flex>
-        </div>
+        </Flex>
       </List.Item>
     );
   };
@@ -132,10 +132,12 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
       data-testid="ds-widget-card"
       title={
         <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 16 }}>
+          <Flex align="center" style={{ display: 'inline-flex', fontSize: 16 }}>
             <CloudServerOutlined />
-          </span>
-          <span style={{ fontSize: 16, fontWeight: 600 }}>{t('ceph:dashboard.title')}</span>
+          </Flex>
+          <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>
+            {t('ceph:dashboard.title')}
+          </Typography.Text>
         </Flex>
       }
       extra={
@@ -154,12 +156,16 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
                 style={{ borderColor: item.color }}
               >
                 <Flex vertical align="center">
-                  <div style={{ fontSize: 24, color: item.color }}>{item.icon}</div>
+                  <Flex style={{ fontSize: 24, color: item.color }}>{item.icon}</Flex>
                   <Statistic
                     data-testid={`ds-widget-stat-value-${item.type}`}
                     title={item.label}
                     value={item.count}
-                    suffix={<span style={{ fontSize: 14 }}>({item.percentage}%)</span>}
+                    suffix={
+                      <Typography.Text style={{ fontSize: 14 }}>
+                        ({item.percentage}%)
+                      </Typography.Text>
+                    }
                     valueStyle={{ color: item.color }}
                   />
                 </Flex>
@@ -217,9 +223,9 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
         {stats.team_breakdown && stats.team_breakdown.length > 0 && (
           <Flex vertical gap={8} data-testid="ds-widget-team-breakdown">
             <Flex align="center" gap={8}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 16 }}>
+              <Flex align="center" style={{ display: 'inline-flex', fontSize: 16 }}>
                 <TeamOutlined />
-              </span>
+              </Flex>
               <Typography.Text strong>{t('ceph:dashboard.teamBreakdown')}</Typography.Text>
             </Flex>
             <List

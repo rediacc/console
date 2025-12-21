@@ -24,14 +24,14 @@ export const PriorityWithTooltip: React.FC<PriorityWithTooltipProps> = ({
   const { t } = useTranslation(['queue']);
 
   const tooltipContent = (
-    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 200 }}>
+    <Flex vertical style={{ minWidth: 200 }}>
       <Typography.Text style={{ display: 'block', fontWeight: 700 }}>
         {priorityLabel}
       </Typography.Text>
       <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
         {record.priority === 1 ? t('queue:priorityTooltipP1') : t('queue:priorityTooltipTier')}
       </Typography.Text>
-    </div>
+    </Flex>
   );
 
   return (
@@ -108,7 +108,7 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
       {allErrors.length > 0 && (
         <Tooltip
           title={
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 200 }}>
+            <Flex vertical style={{ minWidth: 200 }}>
               {allErrors.map((error: ParsedError, index: number) => (
                 <Typography.Text
                   key={`${error.message}-${index}`}
@@ -122,10 +122,10 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
                   Last retry: {formatTimestampAsIs(record.lastRetryAt, 'datetime')}
                 </Typography.Text>
               )}
-            </div>
+            </Flex>
           }
         >
-          <div style={{ width: '100%' }}>
+          <Flex vertical style={{ width: '100%' }}>
             {/* Show primary (highest severity) error */}
             <Flex gap={4} style={{ width: '100%' }}>
               {primaryError?.severity && (
@@ -162,7 +162,7 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
                 +{allErrors.length - 1} more {allErrors.length - 1 === 1 ? 'message' : 'messages'}
               </Typography.Text>
             )}
-          </div>
+          </Flex>
         </Tooltip>
       )}
 

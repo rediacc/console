@@ -1,5 +1,16 @@
 import React, { useCallback, useMemo } from 'react';
-import { Badge, Button, Dropdown, Flex, Modal, Space, Tabs, Tooltip, theme } from 'antd';
+import {
+  Badge,
+  Button,
+  Dropdown,
+  Flex,
+  Modal,
+  Space,
+  Tabs,
+  Tooltip,
+  Typography,
+  theme,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { QueueFilters, type QueueStatistics, useQueueItems } from '@/api/queries/queue';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -250,9 +261,9 @@ const QueuePage: React.FC = () => {
   });
 
   return (
-    <div data-testid="queue-page-container">
+    <Flex vertical data-testid="queue-page-container">
       {contextHolder}
-      <div data-testid="queue-filters-card">
+      <Flex vertical data-testid="queue-filters-card">
         <Flex vertical gap={8} style={{ width: '100%' }}>
           <QueueFilterPanel
             filters={filters}
@@ -305,7 +316,7 @@ const QueuePage: React.FC = () => {
             </Dropdown>
           </Space>
         </Flex>
-      </div>
+      </Flex>
 
       <Tabs
         activeKey={activeTab}
@@ -316,13 +327,13 @@ const QueuePage: React.FC = () => {
             key: 'active',
             label: (
               <Tooltip title={t('queue:tabs.active.tooltip')}>
-                <span
+                <Typography.Text
                   data-testid="queue-tab-active"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
                 >
                   {t('queue:tabs.active.title')}
                   <Badge count={activeItems.length} color={token.colorTextSecondary} />
-                </span>
+                </Typography.Text>
               </Tooltip>
             ),
             children: (
@@ -349,7 +360,7 @@ const QueuePage: React.FC = () => {
             key: 'completed',
             label: (
               <Tooltip title={t('queue:tabs.completed.tooltip')}>
-                <span
+                <Typography.Text
                   data-testid="queue-tab-completed"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
                 >
@@ -359,7 +370,7 @@ const QueuePage: React.FC = () => {
                     showZero
                     color={token.colorSuccess}
                   />
-                </span>
+                </Typography.Text>
               </Tooltip>
             ),
             children: (
@@ -386,7 +397,7 @@ const QueuePage: React.FC = () => {
             key: 'cancelled',
             label: (
               <Tooltip title={t('queue:tabs.cancelled.tooltip')}>
-                <span
+                <Typography.Text
                   data-testid="queue-tab-cancelled"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
                 >
@@ -396,7 +407,7 @@ const QueuePage: React.FC = () => {
                     showZero
                     color={token.colorTextTertiary}
                   />
-                </span>
+                </Typography.Text>
               </Tooltip>
             ),
             children: (
@@ -423,7 +434,7 @@ const QueuePage: React.FC = () => {
             key: 'failed',
             label: (
               <Tooltip title={t('queue:tabs.failed.tooltip')}>
-                <span
+                <Typography.Text
                   data-testid="queue-tab-failed"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
                 >
@@ -433,7 +444,7 @@ const QueuePage: React.FC = () => {
                     showZero
                     color={token.colorError}
                   />
-                </span>
+                </Typography.Text>
               </Tooltip>
             ),
             children: (
@@ -464,7 +475,7 @@ const QueuePage: React.FC = () => {
         open={queueTrace.state.open}
         onCancel={queueTrace.close}
       />
-    </div>
+    </Flex>
   );
 };
 
