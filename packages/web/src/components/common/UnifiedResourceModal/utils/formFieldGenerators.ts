@@ -181,9 +181,7 @@ export const getFormFields = ({
             value: machine.value,
             label: machine.label,
           })),
-          helperText: t('repositories.machineHelperText', {
-            defaultValue: 'Optional: Select a machine to provision storage',
-          }),
+          helperText: t('repositories.machineHelperText'),
         });
       }
 
@@ -196,9 +194,7 @@ export const getFormFields = ({
           required: false,
           type: 'size' as const,
           sizeUnits: ['G', 'T'],
-          helperText: t('repositories.sizeHelperText', {
-            defaultValue: 'Optional: Specify size if provisioning storage (e.g., 10G, 100G, 1T)',
-          }),
+          helperText: t('repositories.sizeHelperText'),
         });
       }
 
@@ -206,7 +202,7 @@ export const getFormFields = ({
       if (isCredentialOnlyMode) {
         simpleFields.push({
           name: 'repositoryGuid',
-          label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
+          label: t('repositories.guid'),
           type: 'text' as const,
           readOnly: !!(
             existingData?.repositoryGuid &&
@@ -215,13 +211,8 @@ export const getFormFields = ({
           ), // Only read-only if GUID exists
           required: true, // Make it required in credential-only mode
           helperText: existingData?.repositoryGuid
-            ? t('repositories.guidHelperText', {
-                defaultValue: 'This repository already exists on the machine.',
-              })
-            : t('repositories.guidHelperTextNew', {
-                defaultValue:
-                  'Enter the repository GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
-              }),
+            ? t('repositories.guidHelperTextExisting')
+            : t('repositories.guidHelperTextNew'),
         });
       }
     }
@@ -281,9 +272,7 @@ export const getFormFields = ({
           label: machine.label,
         })),
         disabled: !selectedTeamName || teamMachines.length === 0,
-        helperText: t('repositories.machineHelperText', {
-          defaultValue: 'Select a machine to provision storage',
-        }),
+        helperText: t('repositories.machineHelperTextRequired'),
       });
     }
 
@@ -296,9 +285,7 @@ export const getFormFields = ({
         required: true,
         type: 'size' as const,
         sizeUnits: ['G', 'T'],
-        helperText: t('repositories.sizeHelperText', {
-          defaultValue: 'Specify size for storage provisioning (e.g., 10G, 100G, 1T)',
-        }),
+        helperText: t('repositories.sizeHelperTextRequired'),
       });
     }
 
@@ -307,7 +294,7 @@ export const getFormFields = ({
       // In credential-only mode, show the GUID field
       fields.push({
         name: 'repositoryGuid',
-        label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
+        label: t('repositories.guid'),
         type: 'text' as const,
         readOnly: !!(
           existingData?.repositoryGuid &&
@@ -316,29 +303,18 @@ export const getFormFields = ({
         ), // Only read-only if GUID exists
         required: true, // Make it required in credential-only mode
         helperText: existingData?.repositoryGuid
-          ? t('repositories.guidHelperText', {
-              defaultValue: 'This repository already exists on the machine.',
-            })
-          : t('repositories.guidHelperTextNew', {
-              defaultValue:
-                'Enter the repository GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
-            }),
+          ? t('repositories.guidHelperTextExisting')
+          : t('repositories.guidHelperTextNew'),
       });
     } else if (isExpertMode) {
       // In expert mode (when creating new repo), show as optional editable field
       fields.push({
         name: 'repositoryGuid',
-        label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
-        placeholder: t('repositories.placeholders.enterGuid', {
-          defaultValue:
-            'Optional: Enter a specific GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)',
-        }),
+        label: t('repositories.guid'),
+        placeholder: t('repositories.placeholders.enterGuid'),
         required: false,
         type: 'text' as const,
-        helperText: t('repositories.guidHelperText', {
-          defaultValue:
-            'Optional: Specify a custom GUID for the repository. Leave empty to auto-generate.',
-        }),
+        helperText: t('repositories.guidHelperText'),
       });
     }
   } else if (resourceType === 'cluster') {

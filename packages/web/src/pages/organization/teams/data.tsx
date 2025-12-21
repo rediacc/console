@@ -95,7 +95,7 @@ export const getTeamColumns = ({
     teamNameColumn,
     // Combined Stats column for mobile (show only on xs, hide on sm)
     {
-      title: tSystem('tables.teams.stats', { defaultValue: 'Stats' }),
+      title: tSystem('tables.teams.stats'),
       key: 'stats',
       width: 140,
       responsive: ['xs'],
@@ -148,8 +148,7 @@ export const getTeamColumns = ({
         key: 'vaultVersion',
         width: 120,
         sorter: true,
-        formatVersion: (version: number) =>
-          tCommon('general.versionFormat', { defaultValue: 'v{{version}}', version }),
+        formatVersion: (version: number) => tCommon('general.versionFormat', { version }),
       })
     );
   }
@@ -188,9 +187,8 @@ export const getTeamColumns = ({
           />
         </Tooltip>
         <Popconfirm
-          title={tSystem('teams.delete.confirmTitle', { defaultValue: 'Delete Team' })}
+          title={tSystem('teams.delete.confirmTitle')}
           description={tSystem('teams.delete.confirmDescription', {
-            defaultValue: 'Are you sure you want to delete team "{{teamName}}"?',
             teamName: record.teamName,
           })}
           onConfirm={() => onDelete(record.teamName)}

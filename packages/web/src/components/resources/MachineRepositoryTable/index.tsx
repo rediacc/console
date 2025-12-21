@@ -738,10 +738,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
                       return (
                         <Space>
                           <Typography.Text style={{ fontSize: 12 }}>
-                            {t('resources:repositories.parentRepo', {
-                              defaultValue: 'Parent Repository',
-                            })}
-                            :
+                            {t('resources:repositories.parentRepo')}:
                           </Typography.Text>
                           <Tag>{parentRepo.repositoryName}</Tag>
                           <Typography.Text style={{ fontSize: 12 }}>→</Typography.Text>

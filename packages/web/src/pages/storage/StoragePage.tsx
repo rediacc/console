@@ -414,9 +414,7 @@ const StoragePage: React.FC = () => {
 
   const hasTeamSelection = selectedTeams.length > 0;
   const displayedStorages = hasTeamSelection ? storages : [];
-  const emptyDescription = hasTeamSelection
-    ? t('storage.noStorage', { defaultValue: 'No storage found in this team' })
-    : t('teams.selectTeamPrompt', { defaultValue: 'Select a team to view its resources' });
+  const emptyDescription = hasTeamSelection ? t('storage.noStorage') : t('teams.selectTeamPrompt');
 
   return (
     <>
@@ -428,23 +426,15 @@ const StoragePage: React.FC = () => {
             selectedTeams={selectedTeams}
             onChange={setSelectedTeams}
             loading={teamsLoading}
-            placeholder={t('teams.selectTeamToView', {
-              defaultValue: 'Select a team to view its resources',
-            })}
+            placeholder={t('teams.selectTeamToView')}
           />
         </TeamSelectorWrapper>
 
         <ResourceListView<GetTeamStorages_ResultSet1>
           title={
             <Space direction="vertical" size={0}>
-              <Typography.Text strong>
-                {t('storage.title', { defaultValue: 'Storage Locations' })}
-              </Typography.Text>
-              <Typography.Text>
-                {t('storage.subtitle', {
-                  defaultValue: 'Manage remote storage locations and rclone configurations',
-                })}
-              </Typography.Text>
+              <Typography.Text strong>{t('storage.title')}</Typography.Text>
+              <Typography.Text>{t('storage.subtitle')}</Typography.Text>
             </Space>
           }
           loading={storagesLoading}

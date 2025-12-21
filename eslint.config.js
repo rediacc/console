@@ -147,6 +147,10 @@ export default tseslint.config(
           selector: "Literal[value=/var\\(--ant-/]",
           message: 'Do not use CSS variables (var(--ant-*)). Remove color styling or use Ant Design component props.',
         },
+        {
+          selector: "CallExpression[callee.name=/^t$|^tSystem$|^tCommon$/] ObjectExpression Property[key.name='defaultValue']",
+          message: 'Do not use defaultValue in translation calls. Add the key to English translation JSON files instead.',
+        },
       ],
     }
   }

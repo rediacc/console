@@ -75,16 +75,16 @@ const UsersPage: React.FC = () => {
   }> = [
     {
       name: 'newUserEmail',
-      label: t('users.form.emailLabel', { defaultValue: 'Email' }),
+      label: t('users.form.emailLabel'),
       type: 'email' as const,
       placeholder: 'user@example.com',
       required: true,
     },
     {
       name: 'newUserPassword',
-      label: t('users.form.passwordLabel', { defaultValue: 'Password' }),
+      label: t('users.form.passwordLabel'),
       type: 'password' as const,
-      placeholder: t('users.form.passwordPlaceholder', { defaultValue: 'Enter password' }),
+      placeholder: t('users.form.passwordPlaceholder'),
       required: true,
     },
   ];
@@ -153,11 +153,11 @@ const UsersPage: React.FC = () => {
       render: (activated: boolean) =>
         activated ? (
           <Tag icon={<CheckCircleOutlined />} color="success">
-            {t('users.status.active', { defaultValue: 'Active' })}
+            {t('users.status.active')}
           </Tag>
         ) : (
           <Tag icon={<StopOutlined />} color="default">
-            {t('users.status.inactive', { defaultValue: 'Inactive' })}
+            {t('users.status.inactive')}
           </Tag>
         ),
     },
@@ -171,9 +171,7 @@ const UsersPage: React.FC = () => {
             {group}
           </Tag>
         ) : (
-          <Tag color="default">
-            {t('users.permissionGroups.none', { defaultValue: 'No Group' })}
-          </Tag>
+          <Tag color="default">{t('users.permissionGroups.none')}</Tag>
         ),
     },
     {
@@ -181,9 +179,7 @@ const UsersPage: React.FC = () => {
       dataIndex: 'lastActive',
       key: 'lastActive',
       render: (date: string) =>
-        date
-          ? new Date(date).toLocaleDateString()
-          : t('users.lastActive.never', { defaultValue: 'Never' }),
+        date ? new Date(date).toLocaleDateString() : t('users.lastActive.never'),
     },
     {
       title: tSystem('tables.users.actions'),
@@ -220,9 +216,8 @@ const UsersPage: React.FC = () => {
           </Tooltip>
           {record.activated && (
             <Popconfirm
-              title={tSystem('users.deactivate.confirmTitle', { defaultValue: 'Deactivate User' })}
+              title={tSystem('users.deactivate.confirmTitle')}
               description={tSystem('users.deactivate.confirmDescription', {
-                defaultValue: 'Are you sure you want to deactivate "{{email}}"?',
                 email: record.userEmail,
               })}
               onConfirm={() => handleDeactivateUser(record.userEmail)}
@@ -244,9 +239,8 @@ const UsersPage: React.FC = () => {
           )}
           {!record.activated && (
             <Popconfirm
-              title={tSystem('users.activate.confirmTitle', { defaultValue: 'Activate User' })}
+              title={tSystem('users.activate.confirmTitle')}
               description={tSystem('users.activate.confirmDescription', {
-                defaultValue: 'Are you sure you want to activate "{{email}}"?',
                 email: record.userEmail,
               })}
               onConfirm={() => handleReactivateUser(record.userEmail)}
@@ -276,18 +270,16 @@ const UsersPage: React.FC = () => {
           title={
             <Flex vertical>
               <Typography.Title level={4} style={{ margin: 0 }}>
-                {t('users.title', { defaultValue: 'Users' })}
+                {t('users.title')}
               </Typography.Title>
-              <Typography.Text>
-                {t('users.subtitle', { defaultValue: 'Manage users and their permissions' })}
-              </Typography.Text>
+              <Typography.Text>{t('users.subtitle')}</Typography.Text>
             </Flex>
           }
           loading={usersLoading}
           data={users}
           columns={userColumns}
           rowKey="userEmail"
-          searchPlaceholder={t('users.searchPlaceholder', { defaultValue: 'Search users...' })}
+          searchPlaceholder={t('users.searchPlaceholder')}
           data-testid="system-user-table"
           actions={
             <Tooltip title={tSystem('actions.createUser')}>
@@ -304,7 +296,7 @@ const UsersPage: React.FC = () => {
       </Flex>
 
       <Modal
-        title={t('users.modals.createTitle', { defaultValue: 'Create User' })}
+        title={t('users.modals.createTitle')}
         open={createUserModal.isOpen}
         onCancel={() => {
           createUserModal.close();
@@ -316,8 +308,8 @@ const UsersPage: React.FC = () => {
           form={userForm}
           fields={userFormFields}
           onSubmit={handleCreateUser}
-          submitText={tCommon('actions.create', { defaultValue: 'Create' })}
-          cancelText={tCommon('actions.cancel', { defaultValue: 'Cancel' })}
+          submitText={tCommon('actions.create')}
+          cancelText={tCommon('actions.cancel')}
           onCancel={() => {
             createUserModal.close();
             userForm.reset();
@@ -327,31 +319,27 @@ const UsersPage: React.FC = () => {
       </Modal>
 
       <Modal
-        title={`${t('users.modals.assignTitle', { defaultValue: 'Assign Permissions' })} - ${assignPermissionModal.state.data?.userEmail || ''}`}
+        title={`${t('users.modals.assignTitle')} - ${assignPermissionModal.state.data?.userEmail || ''}`}
         open={assignPermissionModal.isOpen}
         onCancel={() => {
           assignPermissionModal.close();
           setSelectedUserGroup('');
         }}
         onOk={handleAssignUserPermissions}
-        okText={tCommon('actions.assign', { defaultValue: 'Assign' })}
+        okText={tCommon('actions.assign')}
         confirmLoading={assignUserPermissionsMutation.isPending}
         okButtonProps={{ 'data-testid': 'modal-assign-permissions-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-assign-permissions-cancel' }}
       >
         <Form layout="vertical">
-          <Form.Item
-            label={t('users.modals.permissionGroupLabel', { defaultValue: 'Permission Group' })}
-          >
+          <Form.Item label={t('users.modals.permissionGroupLabel')}>
             <Select
               value={selectedUserGroup}
               onChange={(value) => setSelectedUserGroup((value as string) || '')}
-              placeholder={t('users.modals.permissionGroupPlaceholder', {
-                defaultValue: 'Select permission group',
-              })}
+              placeholder={t('users.modals.permissionGroupPlaceholder')}
               options={permissionGroups?.map((group: PermissionGroup) => ({
                 value: group.permissionGroupName,
-                label: `${group.permissionGroupName} (${group.userCount} ${t('users.modals.usersLabel', { defaultValue: 'users' })}, ${group.permissionCount} ${t('users.modals.permissionsLabel', { defaultValue: 'permissions' })})`,
+                label: `${group.permissionGroupName} (${group.userCount} ${t('users.modals.usersLabel')}, ${group.permissionCount} ${t('users.modals.permissionsLabel')})`,
               }))}
               allowClear
               data-testid="user-permission-group-select"

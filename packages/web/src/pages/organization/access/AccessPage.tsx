@@ -73,10 +73,7 @@ const AccessPage: React.FC = () => {
 
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) {
-      showMessage(
-        'error',
-        t('access.modals.groupNameRequired', { defaultValue: 'Please enter a group name' })
-      );
+      showMessage('error', t('access.modals.groupNameRequired'));
       return;
     }
 
@@ -218,9 +215,8 @@ const AccessPage: React.FC = () => {
             />
           </Tooltip>
           <Popconfirm
-            title={t('access.modals.deleteGroupTitle', { defaultValue: 'Delete Permission Group' })}
+            title={t('access.modals.deleteGroupTitle')}
             description={t('access.modals.deleteGroupDescription', {
-              defaultValue: 'Are you sure you want to delete group "{{group}}"?',
               group: record.permissionGroupName,
             })}
             onConfirm={() => handleDeleteGroup(record.permissionGroupName)}
@@ -249,23 +245,15 @@ const AccessPage: React.FC = () => {
     <ResourceListView
       title={
         <Space direction="vertical" size={0}>
-          <Typography.Text strong>
-            {t('access.permissions.title', { defaultValue: 'Permission Groups' })}
-          </Typography.Text>
-          <Typography.Text>
-            {t('access.permissions.subtitle', {
-              defaultValue: 'Manage permission groups and their assignments',
-            })}
-          </Typography.Text>
+          <Typography.Text strong>{t('access.permissions.title')}</Typography.Text>
+          <Typography.Text>{t('access.permissions.subtitle')}</Typography.Text>
         </Space>
       }
       loading={permissionsLoading}
       data={permissionGroups}
       columns={permissionColumns}
       rowKey="permissionGroupName"
-      searchPlaceholder={t('access.permissions.searchPlaceholder', {
-        defaultValue: 'Search permission groups...',
-      })}
+      searchPlaceholder={t('access.permissions.searchPlaceholder')}
       data-testid="system-permission-group-table"
       actions={
         <Tooltip title={tSystem('actions.createGroup')}>
@@ -292,10 +280,8 @@ const AccessPage: React.FC = () => {
       <Flex vertical>
         <Result
           status="403"
-          title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
-          subTitle={tSystem('accessControl.expertOnlyMessage', {
-            defaultValue: 'Switch to expert mode to manage access control.',
-          })}
+          title={tSystem('accessControl.expertOnlyTitle')}
+          subTitle={tSystem('accessControl.expertOnlyMessage')}
         />
       </Flex>
     );
@@ -310,12 +296,12 @@ const AccessPage: React.FC = () => {
           items={[
             {
               key: 'permissions',
-              label: t('access.tabs.permissions', { defaultValue: 'Permissions' }),
+              label: t('access.tabs.permissions'),
               children: permissionsContent,
             },
             {
               key: 'sessions',
-              label: t('access.tabs.sessions', { defaultValue: 'Sessions' }),
+              label: t('access.tabs.sessions'),
               children: sessionsContent,
             },
           ]}
@@ -323,7 +309,7 @@ const AccessPage: React.FC = () => {
       </Card>
 
       <Modal
-        title={t('access.modals.createGroupTitle', { defaultValue: 'Create Permission Group' })}
+        title={t('access.modals.createGroupTitle')}
         open={createModal.isOpen}
         onCancel={() => {
           createModal.close();
@@ -335,7 +321,7 @@ const AccessPage: React.FC = () => {
         cancelButtonProps={{ 'data-testid': 'modal-create-permission-group-cancel' }}
       >
         <Input
-          placeholder={t('access.modals.groupPlaceholder', { defaultValue: 'Enter group name' })}
+          placeholder={t('access.modals.groupPlaceholder')}
           value={newGroupName}
           onChange={(e) => setNewGroupName(e.target.value)}
           data-testid="system-permission-group-name-input"
@@ -345,9 +331,7 @@ const AccessPage: React.FC = () => {
       </Modal>
 
       <Modal
-        title={`${t('access.modals.managePermissionsTitle', { defaultValue: 'Manage Permissions' })} - ${
-          manageModal.state.data?.permissionGroupName || ''
-        }`}
+        title={`${t('access.modals.managePermissionsTitle')} - ${manageModal.state.data?.permissionGroupName || ''}`}
         open={manageModal.isOpen}
         onCancel={() => {
           manageModal.close();
@@ -360,17 +344,13 @@ const AccessPage: React.FC = () => {
           items={[
             {
               key: 'current',
-              label: t('access.modals.currentPermissionsTab', {
-                defaultValue: 'Current Permissions',
-              }),
+              label: t('access.modals.currentPermissionsTab'),
               children: (
                 <Card>
                   <List
                     dataSource={groupDetails?.permissions || []}
                     locale={{
-                      emptyText: t('access.modals.noPermissions', {
-                        defaultValue: 'No permissions assigned',
-                      }),
+                      emptyText: t('access.modals.noPermissions'),
                     }}
                     renderItem={(permission: string) => (
                       <List.Item
@@ -397,14 +377,12 @@ const AccessPage: React.FC = () => {
             },
             {
               key: 'add',
-              label: t('access.modals.addPermissionsTab', { defaultValue: 'Add Permissions' }),
+              label: t('access.modals.addPermissionsTab'),
               children: (
                 <Flex vertical gap={16}>
                   <Flex gap={12} align="center" wrap>
                     <Select
-                      placeholder={t('access.modals.permissionPlaceholder', {
-                        defaultValue: 'Select permission to add',
-                      })}
+                      placeholder={t('access.modals.permissionPlaceholder')}
                       value={selectedPermission}
                       onChange={(value) => setSelectedPermission((value as string) || '')}
                       showSearch
@@ -448,10 +426,9 @@ const AccessPage: React.FC = () => {
       </Modal>
 
       <Modal
-        title={`${t('access.modals.assignUserTitle', { defaultValue: 'Assign User' })} ${
+        title={`${t('access.modals.assignUserTitle')} ${
           assignModal.state.data
             ? t('access.modals.assignUserTo', {
-                defaultValue: 'to {{group}}',
                 group: assignModal.state.data.permissionGroupName,
               })
             : ''
@@ -467,7 +444,7 @@ const AccessPage: React.FC = () => {
         cancelButtonProps={{ 'data-testid': 'modal-assign-user-cancel' }}
       >
         <Select
-          placeholder={t('access.modals.userPlaceholder', { defaultValue: 'Select user' })}
+          placeholder={t('access.modals.userPlaceholder')}
           value={selectedUser}
           onChange={(value) => setSelectedUser((value as string) || '')}
           showSearch

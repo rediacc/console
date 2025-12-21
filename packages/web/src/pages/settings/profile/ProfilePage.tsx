@@ -61,14 +61,11 @@ const ProfilePage: React.FC = () => {
 
       let countdown = 3;
       const modal = Modal.success({
-        title: tSystem('personal.changePassword.successTitle', {
-          defaultValue: 'Password Changed Successfully',
-        }),
+        title: tSystem('personal.changePassword.successTitle'),
         content: tSystem('personal.changePassword.successContent', {
-          defaultValue: `Your password has been changed. You will be logged out in ${countdown} seconds...`,
           seconds: countdown,
         }),
-        okText: tCommon('actions.logoutNow', { defaultValue: 'Logout Now' }),
+        okText: tCommon('actions.logoutNow'),
         onOk: () => {
           dispatch(logout());
           navigate('/login');
@@ -79,7 +76,6 @@ const ProfilePage: React.FC = () => {
         countdown -= 1;
         modal.update({
           content: tSystem('personal.changePassword.successContent', {
-            defaultValue: `Your password has been changed. You will be logged out in ${countdown} seconds...`,
             seconds: countdown,
           }),
         });
@@ -157,7 +153,7 @@ const ProfilePage: React.FC = () => {
       />
 
       <Modal
-        title={t('personal.changePassword.title', { defaultValue: 'Change Password' })}
+        title={t('personal.changePassword.title')}
         open={isChangePasswordOpen}
         onCancel={closeChangePassword}
         footer={null}
@@ -170,31 +166,13 @@ const ProfilePage: React.FC = () => {
           autoComplete="off"
         >
           <Alert
-            message={t('personal.changePassword.requirementsTitle', {
-              defaultValue: 'Password Requirements',
-            })}
+            message={t('personal.changePassword.requirementsTitle')}
             description={
               <ul className="requirements-list">
-                <li>
-                  {t('personal.changePassword.requirement1', {
-                    defaultValue: 'At least 8 characters long',
-                  })}
-                </li>
-                <li>
-                  {t('personal.changePassword.requirement2', {
-                    defaultValue: 'Contains uppercase and lowercase letters',
-                  })}
-                </li>
-                <li>
-                  {t('personal.changePassword.requirement3', {
-                    defaultValue: 'Contains at least one number',
-                  })}
-                </li>
-                <li>
-                  {t('personal.changePassword.requirement4', {
-                    defaultValue: 'Contains at least one special character',
-                  })}
-                </li>
+                <li>{t('personal.changePassword.requirement1')}</li>
+                <li>{t('personal.changePassword.requirement2')}</li>
+                <li>{t('personal.changePassword.requirement3')}</li>
+                <li>{t('personal.changePassword.requirement4')}</li>
               </ul>
             }
             type="info"
@@ -203,45 +181,28 @@ const ProfilePage: React.FC = () => {
 
           <PasswordField
             name="newPassword"
-            label={t('personal.changePassword.newPasswordLabel', { defaultValue: 'New Password' })}
-            placeholder={t('personal.changePassword.newPasswordPlaceholder', {
-              defaultValue: 'Enter new password',
-            })}
+            label={t('personal.changePassword.newPasswordLabel')}
+            placeholder={t('personal.changePassword.newPasswordPlaceholder')}
             minLength={8}
-            requiredMessage={t('personal.changePassword.newPasswordRequired', {
-              defaultValue: 'Please enter your new password',
-            })}
-            minLengthMessage={t('personal.changePassword.newPasswordMin', {
-              defaultValue: 'Password must be at least 8 characters long',
-            })}
-            patternMessage={t('personal.changePassword.newPasswordPattern', {
-              defaultValue:
-                'Password must contain uppercase, lowercase, number and special character',
-            })}
+            requiredMessage={t('personal.changePassword.newPasswordRequired')}
+            minLengthMessage={t('personal.changePassword.newPasswordMin')}
+            patternMessage={t('personal.changePassword.newPasswordPattern')}
           />
 
           <PasswordConfirmField
             name="confirmPassword"
-            label={t('personal.changePassword.confirmPasswordLabel', {
-              defaultValue: 'Confirm New Password',
-            })}
+            label={t('personal.changePassword.confirmPasswordLabel')}
             passwordFieldName="newPassword"
-            placeholder={t('personal.changePassword.confirmPasswordPlaceholder', {
-              defaultValue: 'Confirm new password',
-            })}
-            requiredMessage={t('personal.changePassword.confirmPasswordRequired', {
-              defaultValue: 'Please confirm your new password',
-            })}
-            mismatchMessage={t('personal.changePassword.confirmPasswordMismatch', {
-              defaultValue: 'Passwords do not match',
-            })}
+            placeholder={t('personal.changePassword.confirmPasswordPlaceholder')}
+            requiredMessage={t('personal.changePassword.confirmPasswordRequired')}
+            mismatchMessage={t('personal.changePassword.confirmPasswordMismatch')}
           />
 
           <Form.Item>
             <Flex style={{ width: '100%' }} justify="flex-end" gap={8}>
               <Button onClick={closeChangePassword}>{tCommon('actions.cancel')}</Button>
               <Button htmlType="submit" loading={updateUserPasswordMutation.isPending}>
-                {t('personal.changePassword.submit', { defaultValue: 'Change Password' })}
+                {t('personal.changePassword.submit')}
               </Button>
             </Flex>
           </Form.Item>

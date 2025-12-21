@@ -138,9 +138,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           <Flex align="center" justify="space-between" wrap gap={12}>
             <Typography.Text>
               {multiple
-                ? t('resources:templates.selectMultiple', {
-                    defaultValue: 'Select templates (optional, multiple allowed)',
-                  })
+                ? t('resources:templates.selectMultiple')
                 : t('resources:templates.selectOptional')}
             </Typography.Text>
             {((multiple && Array.isArray(value) && value.length > 0) || (!multiple && value)) && (
@@ -154,9 +152,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           </Flex>
 
           <Input
-            placeholder={t('resources:templates.searchPlaceholder', {
-              defaultValue: 'Search templates by name or description...',
-            })}
+            placeholder={t('resources:templates.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             allowClear
@@ -168,7 +164,6 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       {searchQuery.trim() && (
         <Typography.Text style={{ display: 'block' }}>
           {t('resources:templates.showingResults', {
-            defaultValue: `Showing ${filteredTemplates.length} of ${templates.length} templates`,
             count: filteredTemplates.length,
             total: templates.length,
           })}
@@ -180,7 +175,6 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={t('resources:templates.noResults', {
-              defaultValue: `No templates found matching "${searchQuery}"`,
               query: searchQuery,
             })}
           />

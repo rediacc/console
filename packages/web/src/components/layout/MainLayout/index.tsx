@@ -234,9 +234,7 @@ const MainLayout: React.FC = () => {
               onClick={handleSidebarToggle}
               data-testid="sidebar-toggle-button"
               aria-label={
-                collapsed
-                  ? t('navigation.expandSidebar', { defaultValue: 'Expand sidebar' })
-                  : t('navigation.collapseSidebar', { defaultValue: 'Collapse sidebar' })
+                collapsed ? t('navigation.expandSidebar') : t('navigation.collapseSidebar')
               }
               aria-pressed={collapsed}
             />
@@ -279,7 +277,7 @@ const MainLayout: React.FC = () => {
                 style={{ width: 40, height: 40 }}
                 type="text"
                 icon={<UserOutlined />}
-                aria-label={t('navigation.userMenu', { defaultValue: 'Open user menu' })}
+                aria-label={t('navigation.userMenu')}
                 data-testid="user-menu-button"
               />
             </Dropdown>

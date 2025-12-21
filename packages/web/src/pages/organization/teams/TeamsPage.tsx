@@ -168,17 +168,15 @@ const TeamsPage: React.FC = () => {
       <ResourceListView<Team>
         title={
           <Space direction="vertical" size={0}>
-            <Typography.Text strong>{t('teams.title', { defaultValue: 'Teams' })}</Typography.Text>
-            <Typography.Text>
-              {t('teams.subtitle', { defaultValue: 'Manage teams and their members' })}
-            </Typography.Text>
+            <Typography.Text strong>{t('teams.title')}</Typography.Text>
+            <Typography.Text>{t('teams.subtitle')}</Typography.Text>
           </Space>
         }
         loading={teamsLoading}
         data={teams}
         columns={teamColumns}
         rowKey="teamName"
-        searchPlaceholder={t('teams.searchPlaceholder', { defaultValue: 'Search teams...' })}
+        searchPlaceholder={t('teams.searchPlaceholder')}
         data-testid="system-team-table"
         actions={
           <Tooltip title={tSystem('actions.createTeam')}>
@@ -194,10 +192,7 @@ const TeamsPage: React.FC = () => {
       />
 
       <Modal
-        title={t('teams.manageMembers.title', {
-          defaultValue: `Manage Team Members${manageTeamModal.state.data ? ` - ${manageTeamModal.state.data.teamName}` : ''}`,
-          teamName: manageTeamModal.state.data?.teamName,
-        })}
+        title={`${t('teams.manageMembers.title')}${manageTeamModal.state.data ? ` - ${manageTeamModal.state.data.teamName}` : ''}`}
         open={manageTeamModal.isOpen}
         onCancel={() => {
           manageTeamModal.close();
@@ -210,28 +205,22 @@ const TeamsPage: React.FC = () => {
           items={[
             {
               key: 'current',
-              label: t('teams.manageMembers.currentTab', { defaultValue: 'Current Members' }),
+              label: t('teams.manageMembers.currentTab'),
               children: (
                 <Card>
                   <List
                     dataSource={teamMembers}
                     loading={membersLoading}
                     locale={{
-                      emptyText: t('teams.manageMembers.empty', {
-                        defaultValue: 'No members in this team',
-                      }),
+                      emptyText: t('teams.manageMembers.empty'),
                     }}
                     renderItem={(member: TeamMember) => (
                       <List.Item
                         actions={[
                           <Popconfirm
                             key="remove"
-                            title={t('teams.manageMembers.removeTitle', {
-                              defaultValue: 'Remove Team Member',
-                            })}
+                            title={t('teams.manageMembers.removeTitle')}
                             description={t('teams.manageMembers.removeDescription', {
-                              defaultValue:
-                                'Are you sure you want to remove "{{email}}" from this team?',
                               email: member.userEmail,
                             })}
                             onConfirm={() => handleRemoveTeamMember(member.userEmail)}
@@ -257,17 +246,11 @@ const TeamsPage: React.FC = () => {
                           description={
                             <Space size="small">
                               {member.isMember && (
-                                <Tag color="success">
-                                  {t('teams.manageMembers.memberStatus', {
-                                    defaultValue: 'Member',
-                                  })}
-                                </Tag>
+                                <Tag color="success">{t('teams.manageMembers.memberStatus')}</Tag>
                               )}
                               {member.hasAccess && (
                                 <Tag color="processing">
-                                  {t('teams.manageMembers.accessStatus', {
-                                    defaultValue: 'Has Access',
-                                  })}
+                                  {t('teams.manageMembers.accessStatus')}
                                 </Tag>
                               )}
                             </Space>
@@ -281,15 +264,13 @@ const TeamsPage: React.FC = () => {
             },
             {
               key: 'add',
-              label: t('teams.manageMembers.addTab', { defaultValue: 'Add Member' }),
+              label: t('teams.manageMembers.addTab'),
               children: (
                 <Flex vertical gap={16}>
                   <Flex gap={12} align="center" wrap>
                     <Select
                       showSearch
-                      placeholder={t('teams.manageMembers.selectUser', {
-                        defaultValue: 'Select user',
-                      })}
+                      placeholder={t('teams.manageMembers.selectUser')}
                       value={selectedMemberEmail ?? undefined}
                       onChange={(value) => setSelectedMemberEmail((value as string) || '')}
                       style={{ flex: 1, minWidth: 260 }}

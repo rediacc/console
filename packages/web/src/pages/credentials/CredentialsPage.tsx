@@ -575,8 +575,8 @@ const CredentialsPage: React.FC = () => {
   const hasTeamSelection = selectedTeams.length > 0;
   const displayedRepositories = hasTeamSelection ? originalRepositories : [];
   const emptyDescription = hasTeamSelection
-    ? t('repositories.noRepositories', { defaultValue: 'No repositories found in this team' })
-    : t('teams.selectTeamPrompt', { defaultValue: 'Select a team to view its resources' });
+    ? t('repositories.noRepositories')
+    : t('teams.selectTeamPrompt');
 
   return (
     <>
@@ -589,23 +589,15 @@ const CredentialsPage: React.FC = () => {
               selectedTeams={selectedTeams}
               onChange={setSelectedTeams}
               loading={teamsLoading}
-              placeholder={t('teams.selectTeamToView', {
-                defaultValue: 'Select a team to view its resources',
-              })}
+              placeholder={t('teams.selectTeamToView')}
             />
           </Flex>
 
           <ResourceListView<Repository>
             title={
               <Space direction="vertical" size={0}>
-                <Typography.Text strong>
-                  {t('credentials.title', { defaultValue: 'Credentials' })}
-                </Typography.Text>
-                <Typography.Text>
-                  {t('credentials.subtitle', {
-                    defaultValue: 'Manage repository credentials and deployments',
-                  })}
-                </Typography.Text>
+                <Typography.Text strong>{t('credentials.title')}</Typography.Text>
+                <Typography.Text>{t('credentials.subtitle')}</Typography.Text>
               </Space>
             }
             loading={repositoriesLoading}

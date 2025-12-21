@@ -517,10 +517,8 @@ const InfrastructurePage: React.FC = () => {
       <Flex vertical>
         <Result
           status="403"
-          title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
-          subTitle={tSystem('accessControl.expertOnlyMessage', {
-            defaultValue: 'Switch to expert mode to manage infrastructure.',
-          })}
+          title={tSystem('accessControl.expertOnlyTitle')}
+          subTitle={tSystem('accessControl.expertOnlyMessage')}
         />
       </Flex>
     );
@@ -531,12 +529,8 @@ const InfrastructurePage: React.FC = () => {
       <Flex vertical>
         <Result
           status="info"
-          title={t('regionsInfrastructure.unavailableTitle', {
-            defaultValue: 'Regions & Infrastructure Disabled',
-          })}
-          subTitle={t('regionsInfrastructure.unavailableDescription', {
-            defaultValue: 'Enable the regionsInfrastructure feature flag to access this page.',
-          })}
+          title={t('regionsInfrastructure.unavailableTitle')}
+          subTitle={t('regionsInfrastructure.unavailableDescription')}
         />
       </Flex>
     );

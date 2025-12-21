@@ -36,6 +36,12 @@
     "expertOnlyTitle": "Expert Mode Required",
     "expertOnlyMessage": "Switch to expert mode to view this page."
   },
+  "personal": {
+    "changePassword": {
+      "successTitle": "Password Changed Successfully",
+      "successContent": "Your password has been changed. You will be logged out in {{seconds}} seconds..."
+    }
+  },
   "audit": {
     "columns": {
       "action": "Action",
@@ -255,6 +261,7 @@
       "machines": "Machines",
       "members": "Members",
       "repositories": "Repositories",
+      "stats": "Stats",
       "storage": "Storage",
       "teamName": "Team Name",
       "vaultVersion": "Vault Version"
@@ -265,6 +272,12 @@
       "lastActive": "Last Active",
       "permissionGroup": "Permission Group",
       "status": "Status"
+    }
+  },
+  "teams": {
+    "delete": {
+      "confirmTitle": "Delete Team",
+      "confirmDescription": "Are you sure you want to delete team \"{{teamName}}\"?"
     }
   },
   "users": {

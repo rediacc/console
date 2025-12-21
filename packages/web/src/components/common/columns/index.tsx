@@ -211,7 +211,7 @@ export interface ActionColumnOptions<T> {
 export const createActionColumn = <T,>(
   options: ActionColumnOptions<T>
 ): ColumnsType<T>[number] => ({
-  title: options.title || i18n.t('common:actionsColumn', { defaultValue: 'Actions' }),
+  title: options.title || i18n.t('common:actionsColumn'),
   key: 'actions',
   width: options.width || 120,
   fixed: options.fixed,
@@ -315,7 +315,7 @@ export const createStatusColumn = <T,>(options: StatusColumnOptions<T>): Columns
   }
 
   return {
-    title: options.title || i18n.t('common:statusColumn', { defaultValue: 'Status' }),
+    title: options.title || i18n.t('common:statusColumn'),
     dataIndex,
     key: options.key || dataKey || 'status',
     width: options.width ?? 100,
@@ -356,7 +356,7 @@ export interface DateColumnOptions<T> {
 export const createDateColumn = <T,>(options: DateColumnOptions<T>): ColumnsType<T>[number] => {
   const dataIndex = options.dataIndex;
   const dataKey = typeof dataIndex === 'string' ? dataIndex : String(dataIndex);
-  const fallbackTitle = i18n.t('common:dateColumn', { defaultValue: 'Date' });
+  const fallbackTitle = i18n.t('common:dateColumn');
 
   let sorter: ColumnsType<T>[number]['sorter'] | undefined;
   if (options.sorter === true || options.sorter === undefined) {
@@ -524,7 +524,7 @@ export const createVersionColumn = <T,>(
 ): ColumnsType<T>[number] => {
   const dataIndex = options.dataIndex;
   const dataKey = typeof dataIndex === 'string' ? dataIndex : String(dataIndex);
-  const fallbackTitle = i18n.t('common:general.vaultVersion', { defaultValue: 'Version' });
+  const fallbackTitle = i18n.t('common:general.vaultVersion');
 
   let sorter: ColumnsType<T>[number]['sorter'] | undefined;
   if (options.sorter === true || options.sorter === undefined) {
@@ -557,7 +557,7 @@ export const createVersionColumn = <T,>(
 
       const formattedVersion = options.formatVersion
         ? options.formatVersion(value)
-        : i18n.t('common:general.versionFormat', { defaultValue: 'v{{version}}', version: value });
+        : i18n.t('common:general.versionFormat', { version: value });
 
       return <Tag>{formattedVersion}</Tag>;
     },

@@ -299,10 +299,8 @@ const CompanyPage: React.FC = () => {
       <Flex vertical>
         <Result
           status="403"
-          title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
-          subTitle={tSystem('accessControl.expertOnlyMessage', {
-            defaultValue: 'Switch to expert mode to manage company settings.',
-          })}
+          title={tSystem('accessControl.expertOnlyTitle')}
+          subTitle={tSystem('accessControl.expertOnlyMessage')}
         />
       </Flex>
     );

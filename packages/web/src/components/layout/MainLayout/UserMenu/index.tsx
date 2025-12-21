@@ -62,9 +62,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         <Divider style={{ margin: '12px 0' }} />
 
         <Flex vertical>
-          <Typography.Text type="secondary">
-            {t('uiMode.label', { defaultValue: 'Interface Mode' })}
-          </Typography.Text>
+          <Typography.Text type="secondary">{t('uiMode.label')}</Typography.Text>
           <Segmented
             block
             value={uiMode}
@@ -101,7 +99,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
         <Flex vertical>
           <Typography.Text strong style={{ display: 'block' }}>
-            {t('language.label', { defaultValue: 'Language' })}
+            {t('language.label')}
           </Typography.Text>
           <LanguageSelector iconOnly={false} />
         </Flex>

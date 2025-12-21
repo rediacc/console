@@ -32,6 +32,8 @@ export const VaultFieldRenderer: React.FC<VaultFieldRendererProps> = ({
   let fieldDescription: string | undefined;
   let fieldPlaceholder: string | undefined;
 
+  // Dynamic translation keys with runtime variables require defaultValue fallbacks
+  /* eslint-disable no-restricted-syntax */
   if (entityType === 'STORAGE' && isProviderField && selectedProvider) {
     fieldLabel = t(
       `storageProviders:storageProviders.${selectedProvider}.fields.${fieldName}.label`,
@@ -50,6 +52,7 @@ export const VaultFieldRenderer: React.FC<VaultFieldRendererProps> = ({
     fieldLabel = t(`vaultEditor.fields.${entityType}.${fieldName}.label`, {
       defaultValue: fieldName,
     });
+    /* eslint-enable no-restricted-syntax */
     fieldDescription = t(`vaultEditor.fields.${entityType}.${fieldName}.description`);
     fieldPlaceholder = field.example;
   }

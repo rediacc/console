@@ -32,6 +32,7 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
         size="default"
         data-testid="vault-editor-panel-provider"
       >
+        {/* eslint-disable no-restricted-syntax -- Dynamic keys with runtime variables */}
         <Alert
           message={providerFields.name}
           description={t(`storageProviders:storageProviders.${selectedProvider}.helpText`, {
@@ -98,9 +99,7 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
         <Divider>
           <Space>
             <BulbOutlined />
-            <Typography.Text strong>
-              {t('storageProviders:common.tips', { defaultValue: 'Tips' })}
-            </Typography.Text>
+            <Typography.Text strong>{t('storageProviders:common.tips')}</Typography.Text>
           </Space>
         </Divider>
         <Alert
@@ -125,6 +124,7 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
           showIcon
           icon={<InfoCircleOutlined />}
         />
+        {/* eslint-enable no-restricted-syntax */}
       </Card>
     </Col>
   );
