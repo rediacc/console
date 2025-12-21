@@ -147,6 +147,7 @@ const MainLayout: React.FC = () => {
         layout="side"
         fixSiderbar
         fixedHeader
+        contentWidth="Fluid"
         siderWidth={SIDEBAR_EXPANDED_WIDTH}
         breakpoint="lg"
         collapsed={collapsed}
