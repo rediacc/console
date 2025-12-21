@@ -211,10 +211,9 @@ const MainLayout: React.FC = () => {
         </Drawer>
 
         <Layout>
-          <Layout.Header
+          <Flex
             style={{
               padding: '0 24px',
-              display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               position: 'fixed',
@@ -285,7 +284,7 @@ const MainLayout: React.FC = () => {
                 />
               </Dropdown>
             </Flex>
-          </Layout.Header>
+          </Flex>
           <Layout.Content
             style={{
               paddingTop: contentPaddingTop,
