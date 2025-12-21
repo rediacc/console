@@ -13,3 +13,18 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* Fix ProLayout to fill available width in flex containers */
+.ant-pro-layout {
+  width: 100%;
+}
+
+/* Fix vertical Flex containers to stretch horizontally */
+.ant-flex-vertical {
+  width: 100%;
+}
+
+/* Center sidebar logo */
+.ant-pro-layout .ant-pro-sider-logo {
+  justify-content: center;
+}

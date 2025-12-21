@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
 import {
-  Badge,
   Card,
   Col,
   Empty,
@@ -9,50 +8,32 @@ import {
   Progress,
   Row,
   Tag,
-  Tooltip,
   Typography,
   type ListProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { CephSection } from '@/components/resources/internal/CephSection';
 import {
   DetailPanelBody,
-  DetailPanelCollapseButton,
   DetailPanelDivider,
   DetailPanelFieldLabel,
   DetailPanelFieldMonospaceValue,
   DetailPanelFieldRow,
   DetailPanelFieldStrongValue,
   DetailPanelFieldValue,
-  DetailPanelHeader,
-  DetailPanelHeaderRow,
   DetailPanelSectionHeader,
   DetailPanelSectionTitle,
   DetailPanelSurface,
-  DetailPanelTagGroup,
-  DetailPanelTitle,
-  DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
-import { featureFlags } from '@/config/featureFlags';
 import { useTraceModal } from '@/hooks/useDialogState';
-import {
-  calculateResourcePercent,
-  formatTimestampAsIs,
-  getLocalizedRelativeTime,
-} from '@/platform';
+import { calculateResourcePercent } from '@/platform';
 import type { Machine } from '@/types';
 import {
-  ApiOutlined,
-  AppstoreOutlined,
-  CloudServerOutlined,
   CodeOutlined,
   CompassOutlined,
   ContainerOutlined,
   DatabaseOutlined,
   DesktopOutlined,
-  DoubleRightOutlined,
-  GlobalOutlined,
   HddOutlined,
   InfoCircleOutlined,
   WifiOutlined,
@@ -167,7 +148,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
   onClose,
   splitView = false,
 }) => {
-  const { t } = useTranslation(['machines', 'resources', 'common', 'ceph']);
+  const { t } = useTranslation(['machines', 'resources', 'common']);
   const auditTrace = useTraceModal();
 
   const vaultData = useMemo<VaultData | null>(() => {
@@ -207,94 +188,9 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
     return null;
   }
 
-  const getTagColor = (variant: 'team' | 'bridge' | 'region' | 'queue' | 'version') =>
-    variant === 'team'
-      ? 'success'
-      : variant === 'bridge'
-        ? 'processing'
-        : variant === 'region'
-          ? 'default'
-          : variant === 'queue'
-            ? 'success'
-            : 'default';
-
-  const handleClose = () => {
-    auditTrace.close();
-    onClose();
-  };
-
   return (
     <>
       <DetailPanelSurface $splitView={splitView} $visible={visible}>
-        <DetailPanelHeader data-testid="vault-status-header">
-          <DetailPanelHeaderRow>
-            <DetailPanelTitleGroup>
-              <CloudServerOutlined style={{ fontSize: 24 }} />
-              <DetailPanelTitle level={4} data-testid="vault-status-machine-name">
-                {machine.machineName}
-              </DetailPanelTitle>
-            </DetailPanelTitleGroup>
-            <DetailPanelCollapseButton
-              icon={<DoubleRightOutlined />}
-              onClick={handleClose}
-              data-testid="vault-status-collapse"
-              aria-label="Collapse panel"
-            />
-          </DetailPanelHeaderRow>
-
-          <DetailPanelTagGroup>
-            <Tag
-              bordered={false}
-              color={getTagColor('team')}
-              icon={<AppstoreOutlined />}
-              data-testid="vault-status-team-tag"
-            >
-              {t('common:general.team')}: {machine.teamName}
-            </Tag>
-            <Tag
-              bordered={false}
-              color={getTagColor('bridge')}
-              icon={<ApiOutlined />}
-              data-testid="vault-status-bridge-tag"
-            >
-              {t('machines:bridge')}: {machine.bridgeName}
-            </Tag>
-            {machine.regionName && (
-              <Tag
-                bordered={false}
-                color={getTagColor('region')}
-                icon={<GlobalOutlined />}
-                data-testid="vault-status-region-tag"
-              >
-                {t('machines:region')}: {machine.regionName}
-              </Tag>
-            )}
-            <Badge count={machine.queueCount ?? undefined} data-testid="vault-status-queue-badge">
-              <Tag bordered={false} color={getTagColor('queue')}>
-                {t('machines:queueItems')}
-              </Tag>
-            </Badge>
-            <Tag
-              bordered={false}
-              color={getTagColor('version')}
-              data-testid="vault-status-version-tag"
-            >
-              {t('machines:vaultVersion')}: {machine.vaultVersion}
-            </Tag>
-          </DetailPanelTagGroup>
-
-          {machine.vaultStatusTime && (
-            <Flex>
-              <Tooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
-                <Typography.Text data-testid="vault-status-last-updated" style={{ fontSize: 12 }}>
-                  {t('machines:lastUpdated')}:{' '}
-                  {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
-                </Typography.Text>
-              </Tooltip>
-            </Flex>
-          )}
-        </DetailPanelHeader>
-
         <DetailPanelBody data-testid="vault-status-content">
           {!vaultData ? (
             <Flex>
@@ -321,20 +217,6 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                 <SystemContainersSection containers={vaultData.system_containers} t={t} />
               )}
 
-              {featureFlags.isEnabled('ceph') && machine && (
-                <Flex data-testid="vault-status-ceph">
-                  <CephSection
-                    machine={machine}
-                    onViewDetails={() =>
-                      auditTrace.open({
-                        entityType: 'Machine',
-                        entityIdentifier: machine.machineName,
-                        entityName: machine.machineName,
-                      })
-                    }
-                  />
-                </Flex>
-              )}
             </>
           )}
         </DetailPanelBody>
@@ -428,7 +310,7 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
       </DetailPanelDivider>
 
       <Row gutter={[16, 16]}>
-        <Col span={24} lg={8}>
+        <Col span={24}>
           <Card size="small" data-testid="vault-status-memory-card">
             <Flex justify="space-between" align="center">
               <DatabaseOutlined />
@@ -446,7 +328,7 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
           </Card>
         </Col>
 
-        <Col span={24} lg={8}>
+        <Col span={24}>
           <Card size="small" data-testid="vault-status-disk-card">
             <Flex justify="space-between" align="center">
               <HddOutlined />
@@ -464,7 +346,7 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
           </Card>
         </Col>
 
-        <Col span={24} lg={8}>
+        <Col span={24}>
           <Card size="small" data-testid="vault-status-datastore-card">
             <Flex justify="space-between" align="center">
               <DatabaseOutlined />

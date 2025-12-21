@@ -4,30 +4,21 @@ import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import {
   DetailPanelBody,
-  DetailPanelCollapseButton,
   DetailPanelDivider,
   DetailPanelFieldLabel,
   DetailPanelFieldMonospaceValue,
   DetailPanelFieldRow,
   DetailPanelFieldValue,
-  DetailPanelHeader,
-  DetailPanelHeaderRow,
   DetailPanelSectionCard,
   DetailPanelSectionHeader,
   DetailPanelSectionTitle,
   DetailPanelSurface,
-  DetailPanelTagGroup,
-  DetailPanelTitle,
-  DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import type { Machine } from '@/types';
 import {
-  AppstoreOutlined,
   CheckCircleOutlined,
-  CloudServerOutlined,
   CodeOutlined,
   DatabaseOutlined,
-  DoubleRightOutlined,
   FieldTimeOutlined,
   FolderOutlined,
   InfoCircleOutlined,
@@ -91,9 +82,6 @@ interface RepositoryPanelData {
   systemData?: Record<string, unknown>;
   services: ServiceData[];
 }
-
-const getTagColor = (variant: 'team' | 'machine' | 'version') =>
-  variant === 'team' ? 'success' : variant === 'machine' ? 'processing' : 'default';
 
 const getStatusColor = (tone?: 'success' | 'warning' | 'error' | 'info' | 'neutral') =>
   tone === 'neutral' ? 'default' : tone === 'info' ? 'processing' : tone;
@@ -213,54 +201,6 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
       $visible={visible}
       data-testid="repository-detail-panel"
     >
-      <DetailPanelHeader>
-        <DetailPanelHeaderRow>
-          <DetailPanelTitleGroup>
-            <FolderOutlined style={{ fontSize: 28 }} />
-            <DetailPanelTitle
-              level={4}
-              data-testid={`repo-detail-title-${repository.repositoryName}`}
-            >
-              {repository.repositoryName}
-            </DetailPanelTitle>
-          </DetailPanelTitleGroup>
-          <DetailPanelCollapseButton
-            icon={<DoubleRightOutlined />}
-            onClick={onClose}
-            data-testid="repository-detail-collapse"
-            aria-label="Collapse panel"
-          />
-        </DetailPanelHeaderRow>
-
-        <DetailPanelTagGroup>
-          <Tag
-            bordered={false}
-            color={getTagColor('team')}
-            icon={<AppstoreOutlined />}
-            data-testid={`repo-detail-team-tag-${repository.repositoryName}`}
-          >
-            {t('common:general.team')}: {repository.teamName}
-          </Tag>
-          {repositoryData && (
-            <Tag
-              bordered={false}
-              color={getTagColor('machine')}
-              icon={<CloudServerOutlined />}
-              data-testid={`repo-detail-machine-tag-${repository.repositoryName}`}
-            >
-              {t('machines:machine')}: {repositoryData.machine.machineName}
-            </Tag>
-          )}
-          <Tag
-            bordered={false}
-            color={getTagColor('version')}
-            data-testid={`repo-detail-vault-version-tag-${repository.repositoryName}`}
-          >
-            {t('resources:repositories.vaultVersion')}: {repository.vaultVersion}
-          </Tag>
-        </DetailPanelTagGroup>
-      </DetailPanelHeader>
-
       <DetailPanelBody data-testid="repository-detail-content">
         {!repositoryData ? (
           <Flex>

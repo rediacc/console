@@ -455,7 +455,11 @@ const LoginPage: React.FC = () => {
           <Flex
             style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 64 }}
           >
-            <img src={logoBlack} alt="Rediacc Logo" />
+            <img
+              src={logoBlack}
+              alt="Rediacc Logo"
+              style={{ height: 40, width: 'auto', objectFit: 'contain' }}
+            />
           </Flex>
 
           {error && (

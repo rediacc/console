@@ -34,7 +34,7 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   const currentLocale: AntdLocale = antdLocales[i18n.language] || enUS;
 
   return (
-    <Flex data-testid="app-providers-container">
+    <Flex vertical data-testid="app-providers-container">
       <ConfigProvider key={i18n.language} locale={currentLocale}>
         <AntApp>{children}</AntApp>
       </ConfigProvider>

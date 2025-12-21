@@ -3,7 +3,6 @@ import { Card, Flex, Progress, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   DetailPanelBody,
-  DetailPanelCollapseButton,
   DetailPanelDivider,
   DetailPanelFieldLabel,
   DetailPanelFieldList,
@@ -11,26 +10,17 @@ import {
   DetailPanelFieldRow,
   DetailPanelFieldStrongValue,
   DetailPanelFieldValue,
-  DetailPanelHeader,
-  DetailPanelHeaderRow,
   DetailPanelSectionCard,
   DetailPanelSectionHeader,
   DetailPanelSectionTitle,
   DetailPanelSurface,
-  DetailPanelTagGroup,
-  DetailPanelTitle,
-  DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import {
   ApiOutlined,
-  AppstoreOutlined,
   CloudServerOutlined,
   ContainerOutlined,
-  DoubleRightOutlined,
   FolderOutlined,
   HddOutlined,
-  PauseCircleOutlined,
-  PlayCircleOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
 
@@ -110,7 +100,6 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
   }
 
   const isPlugin = container.name?.startsWith('plugin-');
-  const pluginName = isPlugin ? container.name.replace('plugin-', '') : null;
   const cpuWarning = (resourceUsage?.cpu || 0) > 80;
   const memoryWarning = (resourceUsage?.memoryPercent || 0) > 90;
 
@@ -150,35 +139,6 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
       className="container-detail-panel"
       data-testid="container-detail-panel"
     >
-      <DetailPanelHeader data-testid="container-detail-header">
-        <DetailPanelHeaderRow>
-          <DetailPanelTitleGroup>
-            {isPlugin ? <ApiOutlined /> : <AppstoreOutlined />}
-            <DetailPanelTitle data-testid="container-detail-title">
-              {isPlugin ? pluginName : container.name}
-            </DetailPanelTitle>
-          </DetailPanelTitleGroup>
-          <DetailPanelCollapseButton
-            icon={<DoubleRightOutlined />}
-            onClick={onClose}
-            data-testid="container-detail-collapse"
-            aria-label="Collapse Panel"
-          />
-        </DetailPanelHeaderRow>
-        <DetailPanelTagGroup>
-          <Tag
-            color={container.state === 'running' ? 'success' : 'default'}
-            icon={container.state === 'running' ? <PlayCircleOutlined /> : <PauseCircleOutlined />}
-            data-testid="container-detail-state-tag"
-          >
-            {container.state}
-          </Tag>
-          <Tag color="processing" icon={<FolderOutlined />} data-testid="container-detail-repo-tag">
-            {t('resources:containers.repositoryLabel', 'Repository')}: {container.repository}
-          </Tag>
-        </DetailPanelTagGroup>
-      </DetailPanelHeader>
-
       <DetailPanelBody data-testid="container-detail-content">
         <Flex vertical>
           <DetailPanelSectionHeader data-testid="container-detail-info-section">

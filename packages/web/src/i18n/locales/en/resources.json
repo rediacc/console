@@ -303,6 +303,7 @@
     "credentialExists": "Credential exists",
     "datastore": "Datastore",
     "datastoreUsage": "Datastore Usage",
+    "disk": "Disk",
     "defaultGateway": "Default Gateway",
     "defaultInterface": "Default Interface",
     "deleteFork": "delete fork",
