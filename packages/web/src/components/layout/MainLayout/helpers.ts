@@ -1,6 +1,7 @@
 import { featureFlags } from '@/config/featureFlags';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
 import type { MenuConfig } from './types';
+import type { RouteItem } from './routes';
 
 export type MenuItem = {
   key: string;
@@ -107,4 +108,53 @@ export const flattenMenuRoutes = (items: MenuItem[]): string[] => {
 
   flatten(items);
   return routes;
+};
+
+/**
+ * Filters ProLayout route items based on UI mode, plan, and feature flags
+ */
+export const filterRouteItems = (
+  routes: RouteItem[],
+  uiMode: 'simple' | 'expert',
+  companyData?: CompanyData
+): RouteItem[] => {
+  const currentPlan = companyData?.companyInfo?.Plan || 'FREE';
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  const filterContext: FilterContext = { uiMode, currentPlan, isLocalhost };
+
+  const filterRecursive = (items: RouteItem[]): RouteItem[] => {
+    return items
+      .filter((item) => shouldShowMenuItem(item, filterContext))
+      .map((item) => ({
+        ...item,
+        routes: item.routes ? filterRecursive(item.routes) : undefined,
+      }))
+      .filter((item) => !item.routes || item.routes.length > 0);
+  };
+
+  return filterRecursive(routes);
+};
+
+/**
+ * Flattens ProLayout route items to get all paths
+ */
+export const flattenRoutePaths = (routes: RouteItem[]): string[] => {
+  const paths: string[] = [];
+
+  const flatten = (items: RouteItem[]) => {
+    items.forEach((item) => {
+      if (item.path) {
+        paths.push(item.path);
+      }
+      if (item.routes) {
+        flatten(item.routes);
+      }
+    });
+  };
+
+  flatten(routes);
+  return paths;
 };

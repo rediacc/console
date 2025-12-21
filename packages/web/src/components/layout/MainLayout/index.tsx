@@ -1,46 +1,37 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import type { MenuDataItem } from '@ant-design/pro-components';
+import { ProLayout } from '@ant-design/pro-components';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Drawer, Dropdown, Flex } from 'antd';
+import { Button, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '@/api/client';
 import { useCompanyInfo } from '@/api/queries/dashboard';
 import logoBlack from '@/assets/logo_black.png';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
-import NotificationBell from '@/components/layout/MainLayout/components/NotificationBell';
 import { featureFlags } from '@/config/featureFlags';
 import { useMessage } from '@/hooks';
 import { masterPasswordService } from '@/services/masterPasswordService';
-import { selectCompany, selectUser } from '@/store/auth/authSelectors';
+import { selectCompany } from '@/store/auth/authSelectors';
 import { logout, updateCompany } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { toggleUiMode } from '@/store/ui/uiSlice';
 import { clearAuthData, getAuthData, saveAuthData } from '@/utils/auth';
-import {
-  MenuOutlined,
-  SafetyCertificateOutlined,
-  SmileOutlined,
-  UserOutlined,
-} from '@/utils/optimizedIcons';
-import { LAYOUT } from '@/utils/styleConstants';
-import { buildMenuItems, flattenMenuRoutes } from './helpers';
-import { getMenuItems } from './menuItems';
-import { Sidebar } from './Sidebar';
-import { SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_EXPANDED_WIDTH } from './types';
-import { UserMenu } from './UserMenu';
+import { MenuOutlined, SafetyCertificateOutlined, SmileOutlined } from '@/utils/optimizedIcons';
+import { HeaderActions } from './HeaderActions';
+import { filterRouteItems, flattenRoutePaths } from './helpers';
+import { getRoutes, RouteItem } from './routes';
+import { SIDEBAR_EXPANDED_WIDTH } from './types';
 
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [expandedParentKeys, setExpandedParentKeys] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
-  const user = useSelector(selectUser);
   const company = useSelector(selectCompany);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const { t } = useTranslation('common');
@@ -48,6 +39,7 @@ const MainLayout: React.FC = () => {
   const { data: companyData } = useCompanyInfo();
   const { trackUserAction } = useTelemetry();
 
+  // Update company data when it changes
   useEffect(() => {
     const updateCompanyData = async () => {
       const normalizedCompanyName = companyData?.companyInfo?.companyName;
@@ -62,6 +54,7 @@ const MainLayout: React.FC = () => {
     updateCompanyData();
   }, [companyData, company, dispatch]);
 
+  // Keyboard shortcut for power mode
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'E') {
@@ -83,10 +76,15 @@ const MainLayout: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [message]);
 
-  const allMenuItems = useMemo(() => getMenuItems(t), [t]);
-  const menuItems = useMemo(
-    () => buildMenuItems(allMenuItems, uiMode, companyData),
-    [allMenuItems, uiMode, companyData]
+  // Get routes configuration
+  const routes = useMemo(() => getRoutes(t), [t]);
+
+  // Filter menu based on uiMode, plan, feature flags
+  const menuDataRender = useCallback(
+    (menuData: MenuDataItem[]) => {
+      return filterRouteItems(menuData as RouteItem[], uiMode, companyData) as MenuDataItem[];
+    },
+    [uiMode, companyData]
   );
 
   const handleModeToggle = () => {
@@ -99,17 +97,18 @@ const MainLayout: React.FC = () => {
       current_page: location.pathname,
     });
 
+    // Check if current page is visible in new mode
     const currentPath = location.pathname;
-    const nextMenuItems = buildMenuItems(allMenuItems, newMode, companyData);
-    const visibleRoutes = flattenMenuRoutes(nextMenuItems);
-    const isCurrentPageVisibleInNewMode = visibleRoutes.some((route) =>
-      currentPath.startsWith(route)
+    const nextRoutes = filterRouteItems(routes.routes, newMode, companyData);
+    const visiblePaths = flattenRoutePaths(nextRoutes);
+    const isCurrentPageVisibleInNewMode = visiblePaths.some((path) =>
+      currentPath.startsWith(path)
     );
 
     if (!isCurrentPageVisibleInNewMode) {
-      const firstVisibleRoute = visibleRoutes[0];
-      if (firstVisibleRoute) {
-        navigate(firstVisibleRoute);
+      const firstVisiblePath = visiblePaths[0];
+      if (firstVisiblePath) {
+        navigate(firstVisiblePath);
       }
     }
     setIsTransitioning(false);
@@ -133,105 +132,84 @@ const MainLayout: React.FC = () => {
     navigate('/login');
   };
 
-  const handleSidebarToggle = () => {
-    // Toggle drawer on mobile, collapse sidebar on desktop
-    const isMobile = window.innerWidth <= 768;
-    if (isMobile) {
-      setMobileMenuOpen((prev) => !prev);
-      trackUserAction('ui_interaction', 'mobile_menu_toggle', {
-        current_page: location.pathname,
-      });
-    } else {
-      const action = collapsed ? 'sidebar_expand' : 'sidebar_collapse';
-      trackUserAction('ui_interaction', action, {
-        current_page: location.pathname,
-      });
-      setCollapsed((prev) => !prev);
-    }
+  const handleCollapse = (value: boolean) => {
+    const action = value ? 'sidebar_collapse' : 'sidebar_expand';
+    trackUserAction('ui_interaction', action, {
+      current_page: location.pathname,
+    });
+    setCollapsed(value);
   };
-
-  const handleMobileMenuClose = () => {
-    setMobileMenuOpen(false);
-  };
-
-  const handleNavigate = (route: string, metadata: Record<string, unknown>) => {
-    trackUserAction('navigation', route, metadata as Record<string, string | number | boolean>);
-  };
-
-  useEffect(() => {
-    const activeParents = menuItems
-      .filter((item) => item.children)
-      .filter((item) => item.children?.some((child) => location.pathname.startsWith(child.key)))
-      .map((item) => item.key);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setExpandedParentKeys(activeParents);
-  }, [location.pathname, menuItems]);
-
-  const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH;
-  const contentPaddingTop = LAYOUT.HEADER_HEIGHT + 16;
 
   return (
     <>
       <SandboxWarning />
-      <Flex vertical style={{ minHeight: '100vh' }}>
-        {/* Desktop Sidebar */}
-        <Sidebar
-          collapsed={collapsed}
-          sidebarWidth={sidebarWidth}
-          menuItems={menuItems}
-          expandedParentKeys={expandedParentKeys}
-          uiMode={uiMode}
-          onNavigate={handleNavigate}
-        />
-
-        {/* Mobile Drawer */}
-        <Drawer
-          title={null}
-          placement="left"
-          onClose={handleMobileMenuClose}
-          open={mobileMenuOpen}
-          width={280}
-          styles={{
-            body: { padding: 0 },
-            header: { display: 'none' },
-          }}
-        >
-          <Sidebar
-            collapsed={false}
-            sidebarWidth={280}
-            menuItems={menuItems}
-            expandedParentKeys={expandedParentKeys}
-            uiMode={uiMode}
-            isDrawer={true}
-            onNavigate={(route, metadata) => {
-              handleNavigate(route, metadata);
-              handleMobileMenuClose();
-            }}
-          />
-        </Drawer>
-
-        {/* Header */}
-        <Flex
-          style={{
-            padding: '0 24px',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: LAYOUT.HEADER_HEIGHT,
-            width: '100%',
-            zIndex: 1001,
-          }}
-          data-testid="main-header"
-        >
-          <Flex style={{ alignItems: 'center', gap: 12 }}>
+      <ProLayout
+        layout="side"
+        fixSiderbar
+        fixedHeader
+        siderWidth={SIDEBAR_EXPANDED_WIDTH}
+        breakpoint="lg"
+        collapsed={collapsed}
+        onCollapse={handleCollapse}
+        collapsedButtonRender={false}
+        // Branding
+        logo={logoBlack}
+        title={false}
+        onMenuHeaderClick={() => {
+          trackUserAction('navigation', '/dashboard', {
+            trigger: 'logo_click',
+            from_page: location.pathname,
+          });
+          navigate('/dashboard');
+        }}
+        // Menu
+        route={routes}
+        location={location}
+        menuDataRender={menuDataRender}
+        menuItemRender={(item, dom) => {
+          if (!item.path) return dom;
+          return (
+            <Link
+              to={item.path}
+              onClick={() => {
+                trackUserAction('navigation', item.path!, {
+                  menu_item: item.name as string,
+                  ui_mode: uiMode,
+                  sidebar_collapsed: collapsed,
+                  from_page: location.pathname,
+                });
+              }}
+            >
+              {dom}
+            </Link>
+          );
+        }}
+        subMenuItemRender={(item, dom) => {
+          if (!item.path || item.routes) return dom;
+          return (
+            <Link
+              to={item.path}
+              onClick={() => {
+                trackUserAction('navigation', item.path!, {
+                  menu_item: item.name as string,
+                  ui_mode: uiMode,
+                  sidebar_collapsed: collapsed,
+                  from_page: location.pathname,
+                });
+              }}
+            >
+              {dom}
+            </Link>
+          );
+        }}
+        // Header
+        headerTitleRender={() => (
+          <Flex align="center" gap={12}>
             <Button
-              style={{ width: 40, height: 40, fontSize: 16 }}
               type="text"
               icon={<MenuOutlined />}
-              onClick={handleSidebarToggle}
+              onClick={() => handleCollapse(!collapsed)}
+              style={{ width: 40, height: 40, fontSize: 16 }}
               data-testid="sidebar-toggle-button"
               aria-label={
                 collapsed ? t('navigation.expandSidebar') : t('navigation.collapseSidebar')
@@ -256,67 +234,42 @@ const MainLayout: React.FC = () => {
               />
             </Flex>
           </Flex>
-          <Flex style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-            <NotificationBell />
-            <Dropdown
-              trigger={['click']}
-              placement="bottomRight"
-              dropdownRender={() => (
-                <UserMenu
-                  user={user}
-                  company={company}
-                  companyData={companyData}
-                  uiMode={uiMode}
-                  onModeToggle={handleModeToggle}
-                  onLogout={handleLogout}
-                />
-              )}
-              overlayStyle={{ minWidth: 300 }}
-            >
-              <Button
-                style={{ width: 40, height: 40 }}
-                type="text"
-                icon={<UserOutlined />}
-                aria-label={t('navigation.userMenu')}
-                data-testid="user-menu-button"
-              />
-            </Dropdown>
+        )}
+        actionsRender={() => (
+          <HeaderActions onModeToggle={handleModeToggle} onLogout={handleLogout} />
+        )}
+        // Content
+        contentStyle={{ padding: 24 }}
+        token={{
+          header: {
+            heightLayoutHeader: 64,
+          },
+          sider: {
+            colorMenuBackground: '#fff',
+          },
+        }}
+      >
+        {isTransitioning ? (
+          <Flex
+            vertical
+            align="center"
+            justify="center"
+            style={{ minHeight: 240 }}
+            data-testid="main-content"
+          >
+            <Flex style={{ fontSize: 32 }}>
+              {uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}
+            </Flex>
+            <Flex style={{ fontSize: 16 }}>
+              {t('uiMode.switching', {
+                mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple'),
+              })}
+            </Flex>
           </Flex>
-        </Flex>
-
-        {/* Content */}
-        <Flex
-          vertical
-          style={{
-            paddingTop: contentPaddingTop,
-            marginLeft: sidebarWidth,
-            minHeight: 240,
-            position: 'relative',
-            flex: 1,
-          }}
-          data-testid="main-content"
-        >
-          {isTransitioning ? (
-            <Flex
-              vertical
-              style={{ position: 'absolute', top: '50%', left: '50%', textAlign: 'center' }}
-            >
-              <Flex style={{ fontSize: 32 }}>
-                {uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}
-              </Flex>
-              <Flex style={{ fontSize: 16 }}>
-                {t('uiMode.switching', {
-                  mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple'),
-                })}
-              </Flex>
-            </Flex>
-          ) : (
-            <Flex>
-              <Outlet />
-            </Flex>
-          )}
-        </Flex>
-      </Flex>
+        ) : (
+          <Outlet />
+        )}
+      </ProLayout>
     </>
   );
 };
