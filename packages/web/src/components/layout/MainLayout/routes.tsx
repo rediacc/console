@@ -1,4 +1,3 @@
-import type { TFunction } from 'i18next';
 import {
   CloudOutlined,
   CloudServerOutlined,
@@ -12,6 +11,7 @@ import {
   TeamOutlined,
   ThunderboltOutlined,
 } from '@/utils/optimizedIcons';
+import type { TFunction } from 'i18next';
 
 export type RouteItem = {
   path?: string;

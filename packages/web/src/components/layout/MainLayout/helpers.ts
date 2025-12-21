@@ -1,7 +1,7 @@
 import { featureFlags } from '@/config/featureFlags';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
-import type { MenuConfig } from './types';
 import type { RouteItem } from './routes';
+import type { MenuConfig } from './types';
 
 export type MenuItem = {
   key: string;
