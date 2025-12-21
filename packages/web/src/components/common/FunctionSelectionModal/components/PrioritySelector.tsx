@@ -42,7 +42,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
                     <Tag>
                       P{item.level} ({item.label})
                     </Tag>
-                    <Typography.Text type="secondary">{item.description}</Typography.Text>
+                    <Typography.Text>{item.description}</Typography.Text>
                   </Flex>
                 ))}
               </Flex>

@@ -88,7 +88,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
         <Flex vertical gap={24} style={{ width: '100%' }}>
           <Flex vertical>
             <Flex style={{ display: 'block' }} data-testid="ds-section-assignment-label">
-              <Typography.Text type="secondary">
+              <Typography.Text>
                 {t('assignment.currentAssignment')}
               </Typography.Text>
             </Flex>
@@ -102,7 +102,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
 
           {showAssignmentAlert && assignmentDetails && (
             <Alert
-              message={<Typography.Text type="secondary">{assignmentDetails}</Typography.Text>}
+              message={<Typography.Text>{assignmentDetails}</Typography.Text>}
               type="info"
               showIcon
               icon={getAssignmentIcon(assignmentType)}
@@ -117,7 +117,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
                 onClick={onViewDetails}
                 data-testid="ds-section-history-button"
               >
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                <Typography.Text style={{ fontSize: 12 }}>
                   {t('assignment.history')}
                 </Typography.Text>
               </Button>
@@ -130,7 +130,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
                 onClick={onManageAssignment}
                 data-testid="ds-section-manage-button"
               >
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                <Typography.Text style={{ fontSize: 12 }}>
                   {t('machineSection.manageAssignment')}
                 </Typography.Text>
               </Button>
@@ -140,7 +140,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
           {assignmentType !== 'AVAILABLE' && (
             <Alert
               message={
-                <Typography.Text type="secondary">{t('warnings.exclusivity')}</Typography.Text>
+                <Typography.Text>{t('warnings.exclusivity')}</Typography.Text>
               }
               type="warning"
               showIcon

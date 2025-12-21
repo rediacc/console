@@ -120,7 +120,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
             description={
               <Flex vertical align="center">
                 <Typography.Text strong>{resolvedEmptyDescription}</Typography.Text>
-                <Typography.Text type="secondary">
+                <Typography.Text>
                   {onCreateNew
                     ? `Get started by creating your first ${singularResourceType}`
                     : `No ${resourceType} found. Try adjusting your search criteria.`}

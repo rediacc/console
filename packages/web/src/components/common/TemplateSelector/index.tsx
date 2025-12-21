@@ -136,7 +136,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       <Flex vertical>
         <Flex vertical gap={16} style={{ width: '100%' }}>
           <Flex align="center" justify="space-between" wrap gap={12}>
-            <Typography.Text type="secondary">
+            <Typography.Text>
               {multiple
                 ? t('resources:templates.selectMultiple', {
                     defaultValue: 'Select templates (optional, multiple allowed)',
@@ -166,7 +166,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       </Flex>
 
       {searchQuery.trim() && (
-        <Typography.Text type="secondary" style={{ display: 'block' }}>
+        <Typography.Text style={{ display: 'block' }}>
           {t('resources:templates.showingResults', {
             defaultValue: `Showing ${filteredTemplates.length} of ${templates.length} templates`,
             count: filteredTemplates.length,
@@ -236,7 +236,6 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
                   <Typography.Text style={{ display: 'block' }}>
                     <Typography.Paragraph
-                      type="secondary"
                       ellipsis={{ rows: 2 }}
                       style={{ margin: 0 }}
                     >
@@ -282,7 +281,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
                 <Typography.Text strong>{t('resources:templates.noTemplate')}</Typography.Text>
 
-                <Typography.Text type="secondary">
+                <Typography.Text>
                   {t('resources:templates.startEmpty')}
                 </Typography.Text>
 

@@ -62,7 +62,7 @@ const TeamSelectorWrapper = (props: React.ComponentProps<typeof Flex>) => (
 );
 
 const StorageLocationIcon = (props: React.ComponentProps<typeof CloudOutlined>) => (
-  <CloudOutlined style={{ color: 'var(--ant-color-primary)' }} {...props} />
+  <CloudOutlined {...props} />
 );
 
 const StoragePage: React.FC = () => {
@@ -440,7 +440,7 @@ const StoragePage: React.FC = () => {
               <Typography.Text strong>
                 {t('storage.title', { defaultValue: 'Storage Locations' })}
               </Typography.Text>
-              <Typography.Text type="secondary">
+              <Typography.Text>
                 {t('storage.subtitle', {
                   defaultValue: 'Manage remote storage locations and rclone configurations',
                 })}

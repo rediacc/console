@@ -552,7 +552,7 @@ const InfrastructurePage: React.FC = () => {
                 title={
                   <Space direction="vertical" size={0}>
                     <Typography.Text strong>{t('regions.title')}</Typography.Text>
-                    <Typography.Text type="secondary">
+                    <Typography.Text>
                       {t('regions.selectRegionPrompt')}
                     </Typography.Text>
                   </Space>
@@ -606,7 +606,7 @@ const InfrastructurePage: React.FC = () => {
                         : t('bridges.title')}
                     </Typography.Title>
                     {!effectiveRegion && (
-                      <Typography.Text type="secondary">
+                      <Typography.Text>
                         {t('regions.selectRegionToView')}
                       </Typography.Text>
                     )}

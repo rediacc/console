@@ -420,7 +420,7 @@ export const createTruncatedColumn = <T,>(
       const resolvedValue = options.renderText ? options.renderText(value, record) : value;
       if (!resolvedValue) {
         return (
-          <Typography.Text color="secondary" type="secondary">
+          <Typography.Text>
             -
           </Typography.Text>
         );
@@ -557,7 +557,7 @@ export const createVersionColumn = <T,>(
 
       if (value === null || value === undefined) {
         return (
-          <Typography.Text color="secondary" type="secondary">
+          <Typography.Text>
             -
           </Typography.Text>
         );

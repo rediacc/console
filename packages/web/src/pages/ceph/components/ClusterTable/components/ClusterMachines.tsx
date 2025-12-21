@@ -22,7 +22,7 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
         sorter: createSorter<CephClusterMachine>('machineName'),
         render: (name: string) => (
           <Flex align="center" gap={8}>
-            <DesktopOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
+            <DesktopOutlined style={{ fontSize: 16 }} />
             <Typography.Text style={{ fontWeight: 400 }}>{name}</Typography.Text>
           </Flex>
         ),

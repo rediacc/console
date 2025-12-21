@@ -60,15 +60,15 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ auditLogs, 
                       <Typography.Text strong>{log.action.replace(/_/g, ' ')}</Typography.Text>
                       <Tag bordered={false}>{log.entity}</Tag>
                     </Flex>
-                    <Typography.Text type="secondary" style={{ fontSize: 14 }}>
+                    <Typography.Text style={{ fontSize: 14 }}>
                       {formatTimestamp(log.timestamp)}
                     </Typography.Text>
                   </Flex>
-                  <Typography.Text type="secondary" style={{ fontSize: 14 }}>
+                  <Typography.Text style={{ fontSize: 14 }}>
                     {log.entityName} {log.actionByUser && `• ${log.actionByUser}`}
                   </Typography.Text>
                   {log.details && log.details.trim() && (
-                    <Typography.Text type="secondary" style={{ fontSize: 14 }}>
+                    <Typography.Text style={{ fontSize: 14 }}>
                       {log.details.length > DESCRIPTION_TRUNCATE_LENGTH
                         ? `${log.details.substring(0, DESCRIPTION_TRUNCATE_LENGTH)}...`
                         : log.details}

@@ -292,7 +292,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       <LoadingWrapper loading centered minHeight={160}>
         <Flex />
       </LoadingWrapper>
-      <Typography.Text type="secondary">
+      <Typography.Text>
         {context === 'marketplace'
           ? t('marketplace:loadingFiles')
           : t('resources:templates.loadingDetails')}
@@ -385,7 +385,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
               </Typography.Text>
             }
             description={
-              <Typography.Text type="secondary">
+              <Typography.Text>
                 {context === 'marketplace'
                   ? t('marketplace:securityReviewDesc')
                   : 'Please review the template files for security considerations before deployment.'}

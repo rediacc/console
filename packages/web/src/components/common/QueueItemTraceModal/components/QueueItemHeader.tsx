@@ -106,7 +106,6 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
           status !== 'CANCELLED' && (
             <Flex justify="center">
               <Typography.Text
-                type="secondary"
                 style={{ fontStyle: 'italic', textAlign: 'center', fontSize: 12 }}
               >
                 {progressMessage}

@@ -67,7 +67,7 @@ export const buildClusterColumns = ({
                 transition: 'transform 0.2s ease',
               }}
             />
-            <CloudServerOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
+            <CloudServerOutlined style={{ fontSize: 16 }} />
             <Typography.Text style={{ fontWeight: 400 }}>
               {clusterNameColumn.render?.(name, record, index) as React.ReactNode}
             </Typography.Text>

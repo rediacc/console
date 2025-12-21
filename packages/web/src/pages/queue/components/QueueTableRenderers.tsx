@@ -28,7 +28,7 @@ export const PriorityWithTooltip: React.FC<PriorityWithTooltipProps> = ({
       <Typography.Text style={{ display: 'block', fontWeight: 700 }}>
         {priorityLabel}
       </Typography.Text>
-      <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+      <Typography.Text style={{ display: 'block', fontSize: 12 }}>
         {record.priority === 1 ? t('queue:priorityTooltipP1') : t('queue:priorityTooltipTier')}
       </Typography.Text>
     </Flex>
@@ -36,7 +36,7 @@ export const PriorityWithTooltip: React.FC<PriorityWithTooltipProps> = ({
 
   return (
     renderPriority(priorityLabel, record.priority, tooltipContent) || (
-      <Typography.Text type="secondary">-</Typography.Text>
+      <Typography.Text>-</Typography.Text>
     )
   );
 };
@@ -79,7 +79,7 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
 }) => {
   if (!retryCount && retryCount !== 0) {
     return (
-      <Typography.Text type="secondary" style={{ color: 'var(--ant-color-text-secondary)' }}>
+      <Typography.Text>
         -
       </Typography.Text>
     );
@@ -143,7 +143,6 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   fontSize: 14,
-                  color: 'var(--ant-color-text-tertiary)',
                 }}
               >
                 {primaryError?.message}
@@ -155,7 +154,6 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
                 style={{
                   fontStyle: 'italic',
                   fontSize: 12,
-                  color: 'var(--ant-color-text-tertiary)',
                 }}
               >
                 +{allErrors.length - 1} more {allErrors.length - 1 === 1 ? 'message' : 'messages'}

@@ -377,7 +377,7 @@ const AuditPage = () => {
                 <Empty
                   description={
                     <Space direction="vertical" align="center">
-                      <Typography.Text color="secondary" type="secondary">
+                      <Typography.Text>
                         {isError
                           ? t('system:audit.errors.unableToLoad')
                           : filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0

@@ -236,11 +236,11 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
               <Flex vertical gap={8}>
                 <Flex align="flex-start" wrap gap={8}>
                   <Typography.Text strong>{t('machines:machine')}:</Typography.Text>
-                  <Typography.Text type="secondary">{machine.machineName}</Typography.Text>
+                  <Typography.Text>{machine.machineName}</Typography.Text>
                 </Flex>
                 <Flex align="flex-start" wrap gap={8}>
                   <Typography.Text strong>{t('machines:team')}:</Typography.Text>
-                  <Typography.Text type="secondary">{machine.teamName}</Typography.Text>
+                  <Typography.Text>{machine.teamName}</Typography.Text>
                 </Flex>
               </Flex>
 
@@ -278,7 +278,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
                 data-testid="ds-assign-cluster-select"
               />
               {!isBulkMode && (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                <Typography.Text style={{ fontSize: 12 }}>
                   {t('machines:clusterAssignmentHelp')}
                 </Typography.Text>
               )}

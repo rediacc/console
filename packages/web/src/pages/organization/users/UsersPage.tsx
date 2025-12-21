@@ -278,7 +278,7 @@ const UsersPage: React.FC = () => {
               <Typography.Title level={4} style={{ margin: 0 }}>
                 {t('users.title', { defaultValue: 'Users' })}
               </Typography.Title>
-              <Typography.Text type="secondary">
+              <Typography.Text>
                 {t('users.subtitle', { defaultValue: 'Manage users and their permissions' })}
               </Typography.Text>
             </Flex>

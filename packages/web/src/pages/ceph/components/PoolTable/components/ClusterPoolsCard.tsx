@@ -38,7 +38,7 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
       key={clusterName}
       title={
         <Flex align="center" gap={8} wrap>
-          <CloudServerOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
+          <CloudServerOutlined style={{ fontSize: 16 }} />
           <Typography.Text style={{ fontWeight: 600 }}>
             {t('pools.clusterPrefix')}: {clusterName}
           </Typography.Text>

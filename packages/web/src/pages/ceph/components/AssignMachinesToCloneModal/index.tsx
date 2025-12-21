@@ -163,7 +163,6 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           />
           <Typography.Text
             data-testid="assign-clone-selected-count"
-            type="secondary"
             style={{ fontSize: 12 }}
           >
             {t('machines:bulkOperations.selectedCount', { count: selectedMachines.length })}
@@ -236,7 +235,6 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
 
         <Typography.Text
           data-testid="assign-clone-remove-selected-count"
-          type="secondary"
           style={{ fontSize: 12 }}
         >
           {t('machines:bulkOperations.selectedCount', { count: removingMachines.length })}

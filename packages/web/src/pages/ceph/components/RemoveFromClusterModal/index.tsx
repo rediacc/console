@@ -94,7 +94,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     renderWrapper: (content) => (
       <Flex align="center" gap={8}>
         <CloudServerOutlined />
-        <Typography.Text type="secondary" strong style={{ fontSize: 12 }}>
+        <Typography.Text strong style={{ fontSize: 12 }}>
           {content}
         </Typography.Text>
       </Flex>
@@ -108,7 +108,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     renderText: (cluster?: string | null) => cluster || noneLabel,
     renderWrapper: (content, fullText) =>
       fullText === noneLabel ? (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Typography.Text style={{ fontSize: 12 }}>
           {fullText}
         </Typography.Text>
       ) : (

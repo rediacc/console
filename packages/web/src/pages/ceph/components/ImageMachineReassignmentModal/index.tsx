@@ -94,7 +94,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
     <Modal
       title={
         <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-          <FileImageOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
+          <FileImageOutlined style={{ fontSize: 16 }} />
           {t('ceph:images.reassignMachine')}
         </Flex>
       }
@@ -118,12 +118,12 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
         <Flex vertical gap={24} style={{ width: '100%' }}>
           <Flex align="flex-start" wrap gap={8}>
             <Typography.Text strong>{t('ceph:images.image')}:</Typography.Text>
-            <Typography.Text type="secondary">{image.imageName}</Typography.Text>
+            <Typography.Text>{image.imageName}</Typography.Text>
           </Flex>
 
           <Flex align="flex-start" wrap gap={8}>
             <Typography.Text strong>{t('ceph:pools.pool')}:</Typography.Text>
-            <Typography.Text type="secondary">{poolName}</Typography.Text>
+            <Typography.Text>{poolName}</Typography.Text>
           </Flex>
 
           {image.machineName && (
@@ -131,7 +131,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
               message={t('machines:currentMachineAssignment', { machine: image.machineName })}
               type="info"
               icon={
-                <CloudServerOutlined style={{ fontSize: 14, color: 'var(--ant-color-primary)' }} />
+                <CloudServerOutlined style={{ fontSize: 14 }} />
               }
               data-testid="image-reassign-current-machine-info"
               showIcon
@@ -165,7 +165,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                     data-testid="image-reassign-machine-select"
                   />
 
-                  <Typography.Text type="secondary">
+                  <Typography.Text>
                     {t('ceph:images.reassignmentInfo')}
                   </Typography.Text>
                 </>

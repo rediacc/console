@@ -88,7 +88,7 @@ export const BrowserFileTable: React.FC<BrowserFileTableProps> = ({
           const tooltipContent = (
             <Flex vertical>
               <Typography.Text>{name}</Typography.Text>
-              <Typography.Text style={{ color: 'var(--ant-color-text-secondary)' }}>
+              <Typography.Text>
                 Original file: {record.originalGuid}
               </Typography.Text>
             </Flex>

@@ -98,7 +98,7 @@ export const SessionExpiredDialog: React.FC = () => {
           Your session has expired for security reasons. You have been automatically logged out.
         </Typography.Text>
 
-        <Typography.Text type="secondary">
+        <Typography.Text>
           You can stay on this page or continue to the login screen to sign in again.
         </Typography.Text>
 

@@ -128,7 +128,7 @@ export const getQueueColumns = ({
     key: 'createdBy',
     width: 150,
     render: (createdBy: string | undefined) =>
-      createdBy || <Typography.Text type="secondary">-</Typography.Text>,
+      createdBy || <Typography.Text>-</Typography.Text>,
   },
   {
     title: t('queue:columns.created'),

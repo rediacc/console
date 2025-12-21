@@ -247,7 +247,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
           <Flex vertical>
             <Typography.Text>{title || t('functions:selectFunction')}</Typography.Text>
             {subtitle && (
-              <Typography.Text style={{ color: 'var(--ant-color-text-secondary)', fontSize: 12 }}>
+              <Typography.Text style={{ fontSize: 12 }}>
                 {subtitle}
               </Typography.Text>
             )}
@@ -329,7 +329,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 <Tag color="warning">⚡ {t('functions:quickTaskBadge')}</Tag>
                               )}
                             </Flex>
-                            <Typography.Text type="secondary">{func.description}</Typography.Text>
+                            <Typography.Text>{func.description}</Typography.Text>
                           </Flex>
                         );
                       })}
@@ -371,9 +371,9 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                   <Typography.Text strong>Repository Lineage: </Typography.Text>
                                   <Space>
                                     <Tag color="processing">{additionalContext.parentRepo}</Tag>
-                                    <Typography.Text type="secondary">→</Typography.Text>
+                                    <Typography.Text>→</Typography.Text>
                                     <Tag color="success">{additionalContext.sourceRepo}</Tag>
-                                    <Typography.Text type="secondary">→</Typography.Text>
+                                    <Typography.Text>→</Typography.Text>
                                     <Tag color="default">{functionParams.dest}</Tag>
                                   </Space>
                                 </Flex>
@@ -382,11 +382,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 <Flex>
                                   <Typography.Text strong>Source Repository: </Typography.Text>
                                   <Tag color="success">{additionalContext.sourceRepo}</Tag>
-                                  <Typography.Text type="secondary"> (Original)</Typography.Text>
+                                  <Typography.Text> (Original)</Typography.Text>
                                 </Flex>
                               )}
                               <Flex>
-                                <Typography.Text type="secondary">
+                                <Typography.Text>
                                   {functionParams.state === 'online'
                                     ? 'The repository will be pushed in online state (mounted).'
                                     : 'The repository will be pushed in offline state (unmounted).'}
@@ -402,7 +402,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             message={t('functions:onlinePushWarningTitle')}
                             description={
                               <Space direction="vertical" size="small">
-                                <Typography.Text type="secondary">
+                                <Typography.Text>
                                   {t('functions:onlinePushWarningMessage')}
                                 </Typography.Text>
                                 <Flex>

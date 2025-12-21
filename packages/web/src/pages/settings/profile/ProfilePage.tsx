@@ -108,7 +108,7 @@ const ProfilePage: React.FC = () => {
               </Typography.Title>
             </Flex>
 
-            <Typography.Text type="secondary">{t('personal.description')}</Typography.Text>
+            <Typography.Text>{t('personal.description')}</Typography.Text>
 
             <Flex wrap gap={8} align="center">
               {featureFlags.isEnabled('personalVaultConfiguration') && (

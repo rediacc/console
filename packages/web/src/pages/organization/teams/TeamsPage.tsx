@@ -169,7 +169,7 @@ const TeamsPage: React.FC = () => {
         title={
           <Space direction="vertical" size={0}>
             <Typography.Text strong>{t('teams.title', { defaultValue: 'Teams' })}</Typography.Text>
-            <Typography.Text type="secondary">
+            <Typography.Text>
               {t('teams.subtitle', { defaultValue: 'Manage teams and their members' })}
             </Typography.Text>
           </Space>

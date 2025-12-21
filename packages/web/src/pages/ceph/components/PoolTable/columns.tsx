@@ -48,7 +48,7 @@ export const buildPoolColumns = ({
               transition: 'transform 0.2s ease',
             }}
           />
-          <DatabaseOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
+          <DatabaseOutlined style={{ fontSize: 16 }} />
           <Typography.Text style={{ fontWeight: 400 }}>{name}</Typography.Text>
         </Flex>
       );

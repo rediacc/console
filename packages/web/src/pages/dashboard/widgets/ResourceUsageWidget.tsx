@@ -35,7 +35,7 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
         </Flex>
       }
       extra={
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Typography.Text style={{ fontSize: 12 }}>
           Monitor your resource consumption against plan limits
         </Typography.Text>
       }
@@ -60,7 +60,6 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
                         <Typography.Text strong>{resource.resourceType}s</Typography.Text>
                       </Flex>
                       <Typography.Text
-                        type="secondary"
                         style={{ display: 'inline-block', fontWeight: 500, fontSize: 14 }}
                       >
                         {resource.currentUsage} /{' '}

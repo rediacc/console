@@ -181,7 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   key={itemKey}
                   title={tooltipContent}
                   placement="right"
-                  overlayInnerStyle={{ padding: 0, background: 'var(--ant-color-bg-container)' }}
+                  overlayInnerStyle={{ padding: 0 }}
                 >
                   {parentContent}
                 </Tooltip>

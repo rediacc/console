@@ -205,7 +205,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       onCancel={onClose}
       footer={null}
     >
-      <Typography.Text type="secondary" style={{ display: 'block' }}>
+      <Typography.Text style={{ display: 'block' }}>
         {t('resources:localCommandBuilder.description', { machine, repository })}
       </Typography.Text>
 
@@ -224,7 +224,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         <Form.Item>
           <Checkbox checked={useDocker} onChange={handleDockerChange}>
             {t('resources:localCommandBuilder.useDocker')}
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text style={{ fontSize: 12 }}>
               {t('resources:localCommandBuilder.useDockerHelp')}
             </Typography.Text>
           </Checkbox>
@@ -234,7 +234,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
           <Form.Item>
             <Checkbox checked={useNetworkHost} onChange={handleNetworkHostChange}>
               {t('resources:localCommandBuilder.useNetworkHost')}
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text style={{ fontSize: 12 }}>
                 {t('resources:localCommandBuilder.useNetworkHostHelp')}
               </Typography.Text>
             </Checkbox>
@@ -253,7 +253,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             children: (
               <Form layout="vertical">
                 <Form.Item help={t('resources:localCommandBuilder.vscodeHelp')}>
-                  <Typography.Text color="secondary" type="secondary">
+                  <Typography.Text>
                     {t('resources:localCommandBuilder.vscodeDescription')}
                   </Typography.Text>
                 </Form.Item>
@@ -287,7 +287,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             children: (
               <Form layout="vertical">
                 <Form.Item help={t('resources:localCommandBuilder.desktopHelp')}>
-                  <Typography.Text color="secondary" type="secondary">
+                  <Typography.Text>
                     {t('resources:localCommandBuilder.desktopDescription')}
                   </Typography.Text>
                 </Form.Item>
@@ -318,7 +318,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             <Typography.Text color="danger" type="danger">
               Token generation failed: {tokenError}
             </Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text style={{ fontSize: 12 }}>
               Copy will attempt without secure token. You may need to login manually.
             </Typography.Text>
           </Flex>
@@ -336,10 +336,10 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         </Typography.Paragraph>
 
         <Flex justify="space-between" wrap>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text style={{ fontSize: 12 }}>
             {t('resources:localCommandBuilder.apiUrl')}: {apiUrl}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text style={{ fontSize: 12 }}>
             Token: Secure token will be generated on copy
           </Typography.Text>
         </Flex>

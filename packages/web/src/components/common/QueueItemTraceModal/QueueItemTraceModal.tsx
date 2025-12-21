@@ -162,7 +162,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
               ]}
             />
             {lastTraceFetchTime && (
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text style={{ fontSize: 12 }}>
                 Last fetched: {lastTraceFetchTime.format('HH:mm:ss')}
               </Typography.Text>
             )}
@@ -311,7 +311,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <FileTextOutlined />
                               <Typography.Text>Queue Item Details</Typography.Text>
-                              <Typography.Text type="secondary">(Result Set 1)</Typography.Text>
+                              <Typography.Text>(Result Set 1)</Typography.Text>
                             </Space>
                           ),
                           children: (
@@ -331,7 +331,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <HistoryOutlined />
                               <Typography.Text>Processing Timeline</Typography.Text>
-                              <Typography.Text type="secondary">
+                              <Typography.Text>
                                 (Result Set 4 - Audit Log)
                               </Typography.Text>
                             </Space>
@@ -347,7 +347,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <FileTextOutlined />
                               <Typography.Text>Vault Content</Typography.Text>
-                              <Typography.Text type="secondary">
+                              <Typography.Text>
                                 (Result Sets 2 & 3)
                               </Typography.Text>
                             </Space>
@@ -368,7 +368,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <TeamOutlined />
                               <Typography.Text>Related Queue Items</Typography.Text>
-                              <Typography.Text type="secondary">
+                              <Typography.Text>
                                 (Result Set 5 - Nearby Tasks)
                               </Typography.Text>
                             </Space>
@@ -384,7 +384,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <DashboardOutlined />
                               <Typography.Text>Performance Metrics</Typography.Text>
-                              <Typography.Text type="secondary">
+                              <Typography.Text>
                                 (Result Set 6 - Machine Stats)
                               </Typography.Text>
                             </Space>

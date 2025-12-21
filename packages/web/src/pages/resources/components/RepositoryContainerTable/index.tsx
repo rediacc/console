@@ -535,7 +535,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
           {stateColumn.render?.(state, record, index) as React.ReactNode}
 
           {record.status && (
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text style={{ fontSize: 12 }}>
               {record.status}
             </Typography.Text>
           )}
@@ -558,19 +558,19 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
 
       render: (_: unknown, record: Container) => {
         if (!record.port_mappings || record.port_mappings.length === 0) {
-          return <Typography.Text type="secondary">-</Typography.Text>;
+          return <Typography.Text>-</Typography.Text>;
         }
 
         return (
           <Space direction="vertical" size={4}>
             {record.port_mappings.slice(0, 2).map((pm, idx) => (
-              <Typography.Text key={idx} type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text key={idx} style={{ fontSize: 12 }}>
                 {pm.host_port}:{pm.container_port}/{pm.protocol}
               </Typography.Text>
             ))}
 
             {record.port_mappings.length > 2 && (
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text style={{ fontSize: 12 }}>
                 +{record.port_mappings.length - 2} more
               </Typography.Text>
             )}
@@ -767,7 +767,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         </Flex>
       ) : (
         <Flex data-testid="no-containers" style={{ textAlign: 'center' }} justify="center">
-          <Typography.Text type="secondary">
+          <Typography.Text>
             {t('resources:containers.noContainers')}
           </Typography.Text>
         </Flex>

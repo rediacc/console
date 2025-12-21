@@ -295,7 +295,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
   // Show loading state
   if (loading) {
     return (
-      <Typography.Text style={{ fontSize: 12 }} type="secondary">
+      <Typography.Text style={{ fontSize: 12 }}>
         {t('endpointSelector.loading')}
       </Typography.Text>
     );
@@ -431,7 +431,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                     {/* Version display */}
                     {health?.version && (
                       <Typography.Text
-                        style={{ fontSize: 12, color: 'var(--ant-color-text-tertiary)' }}
+                        style={{ fontSize: 12 }}
                       >
                         v{health.version}
                       </Typography.Text>
@@ -467,7 +467,6 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           <Typography.Text
             style={{
               fontSize: 12,
-              color: 'var(--ant-color-text-tertiary)',
               textAlign: 'center',
               display: 'block',
             }}

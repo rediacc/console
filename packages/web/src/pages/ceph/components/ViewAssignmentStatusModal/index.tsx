@@ -69,7 +69,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     renderText: (cluster?: string | null) => cluster || noneLabel,
     renderWrapper: (content, fullText) =>
       fullText === noneLabel ? (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Typography.Text style={{ fontSize: 12 }}>
           {fullText}
         </Typography.Text>
       ) : (
@@ -121,7 +121,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     >
       <Flex align="center" gap={16} wrap style={{ marginBottom: 16 }}>
         <Flex align="center" gap={8}>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text style={{ fontSize: 12 }}>
             {t('common:total')}:
           </Typography.Text>
           <Typography.Text strong>{totalMachines}</Typography.Text>

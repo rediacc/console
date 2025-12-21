@@ -475,7 +475,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       <Typography.Title level={4} data-testid="registration-success-title">
         {t('auth:registration.successTitle')}
       </Typography.Title>
-      <Typography.Text type="secondary" data-testid="registration-success-description">
+      <Typography.Text data-testid="registration-success-description">
         {t('auth:registration.successDescription')}
       </Typography.Text>
     </Flex>

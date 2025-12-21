@@ -288,7 +288,6 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
               <Tooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
                 <Typography.Text
                   data-testid="vault-status-last-updated"
-                  type="secondary"
                   style={{ fontSize: 12 }}
                 >
                   {t('machines:lastUpdated')}:{' '}
@@ -441,10 +440,10 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               </Typography.Title>
             </Flex>
             <Progress percent={Math.round(memoryPercent)} />
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text style={{ fontSize: 12 }}>
               {t('resources:repositories.used')}: {system.memory.used} / {system.memory.total}
             </Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text style={{ fontSize: 12 }}>
               {t('resources:repositories.available')}: {system.memory.available}
             </Typography.Text>
           </Card>
@@ -459,10 +458,10 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               </Typography.Title>
             </Flex>
             <Progress percent={diskPercent} />
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text style={{ fontSize: 12 }}>
               {t('resources:repositories.used')}: {system.disk.used} / {system.disk.total}
             </Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text style={{ fontSize: 12 }}>
               {t('resources:repositories.available')}: {system.disk.available}
             </Typography.Text>
           </Card>
@@ -485,10 +484,10 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               </DetailPanelFieldRow>
             )}
             <Progress percent={datastorePercent} />
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text style={{ fontSize: 12 }}>
               {t('resources:repositories.used')}: {system.datastore.used} / {system.datastore.total}
             </Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text style={{ fontSize: 12 }}>
               {t('resources:repositories.available')}: {system.datastore.available}
             </Typography.Text>
           </Card>
@@ -672,7 +671,7 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
                         style={{ fontSize: 12 }}
                       >
                         <CodeOutlined />
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text style={{ fontSize: 12 }}>
                           {part.name}: {part.size_human}
                           {part.filesystem && ` (${part.filesystem})`}
                           {part.mountpoint && ` • ${part.mountpoint}`}
@@ -727,7 +726,7 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
 
             <Flex vertical>
               {container.image && (
-                <Typography.Text ellipsis type="secondary" style={{ fontSize: 12 }}>
+                <Typography.Text ellipsis style={{ fontSize: 12 }}>
                   {container.image}
                 </Typography.Text>
               )}

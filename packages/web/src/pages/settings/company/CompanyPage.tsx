@@ -759,7 +759,7 @@ const CompanyPage: React.FC = () => {
                 <Typography.Title level={1} type="danger">
                   {countdown}
                 </Typography.Title>
-                <Typography.Text type="secondary">
+                <Typography.Text>
                   {tSystem('dangerZone.updateMasterPassword.success.seconds')}
                 </Typography.Text>
               </Flex>
@@ -822,7 +822,7 @@ const CompanyPage: React.FC = () => {
                     <Typography.Text strong>
                       {tSystem('dangerZone.importData.modal.modeSkip')}
                     </Typography.Text>
-                    <Typography.Text type="secondary">
+                    <Typography.Text>
                       {tSystem('dangerZone.importData.modal.modeSkipDesc')}
                     </Typography.Text>
                   </Space>
@@ -832,7 +832,7 @@ const CompanyPage: React.FC = () => {
                     <Typography.Text strong>
                       {tSystem('dangerZone.importData.modal.modeOverride')}
                     </Typography.Text>
-                    <Typography.Text type="secondary">
+                    <Typography.Text>
                       {tSystem('dangerZone.importData.modal.modeOverrideDesc')}
                     </Typography.Text>
                   </Space>

@@ -174,7 +174,7 @@ const CredentialsPage: React.FC = () => {
                   {affectedMachines.map((machine) => (
                     <li key={machine.machineName}>
                       <Typography.Text strong>{machine.machineName}</Typography.Text>
-                      <Typography.Text color="secondary" type="secondary">
+                      <Typography.Text>
                         {' '}
                         ({machine.repositoryNames.join(', ')})
                       </Typography.Text>
@@ -498,7 +498,7 @@ const CredentialsPage: React.FC = () => {
         ellipsis: true,
         render: (text: string) => (
           <Space>
-            <InboxOutlined style={{ color: 'var(--ant-color-primary)' }} />
+            <InboxOutlined />
             <strong>{text}</strong>
           </Space>
         ),
@@ -604,7 +604,7 @@ const CredentialsPage: React.FC = () => {
                 <Typography.Text strong>
                   {t('credentials.title', { defaultValue: 'Credentials' })}
                 </Typography.Text>
-                <Typography.Text type="secondary">
+                <Typography.Text>
                   {t('credentials.subtitle', {
                     defaultValue: 'Manage repository credentials and deployments',
                   })}

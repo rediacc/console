@@ -31,7 +31,7 @@ export const buildSnapshotColumns = ({
         style={{ display: 'inline-flex' }}
         data-testid={`snapshot-list-item-${record.snapshotName}`}
       >
-        <CameraOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
+        <CameraOutlined style={{ fontSize: 16 }} />
         <Typography.Text style={{ fontWeight: 400 }}>{text}</Typography.Text>
         {record.vaultContent && (
           <Tooltip title={t('common.hasVault')}>

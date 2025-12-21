@@ -79,7 +79,6 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
             <Typography.Text
               style={{
                 fontWeight: 600,
-                color: isDisabled ? 'var(--ant-color-text-secondary)' : undefined,
               }}
             >
               {machine.machineName}
@@ -112,7 +111,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                     <Typography.Text style={{ display: 'inline-flex', fontSize: 12 }}>
                       <WarningOutlined />
                     </Typography.Text>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    <Typography.Text style={{ fontSize: 12 }}>
                       {t('machines:assignmentStatus.cluster')}: {machine.cephClusterName}
                     </Typography.Text>
                   </Tag>
@@ -124,7 +123,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                     <Typography.Text style={{ display: 'inline-flex', fontSize: 12 }}>
                       <WarningOutlined />
                     </Typography.Text>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    <Typography.Text style={{ fontSize: 12 }}>
                       {t('machines:assignmentStatus.assigned', 'Assigned')}
                     </Typography.Text>
                   </Tag>
@@ -137,7 +136,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                   <Typography.Text style={{ display: 'inline-flex', fontSize: 12 }}>
                     <CheckCircleOutlined />
                   </Typography.Text>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  <Typography.Text style={{ fontSize: 12 }}>
                     {t('machines:assignmentStatus.available')}
                   </Typography.Text>
                 </Tag>
@@ -166,7 +165,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
         machines.length === 0 ? (
           <Empty
             description={
-              <Typography.Text type="secondary">
+              <Typography.Text>
                 {t('machines:noAvailableMachines')}
               </Typography.Text>
             }
@@ -174,7 +173,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
         ) : (
           <Empty
             description={
-              <Typography.Text type="secondary">{t('common:noMatchingResults')}</Typography.Text>
+              <Typography.Text>{t('common:noMatchingResults')}</Typography.Text>
             }
           />
         )

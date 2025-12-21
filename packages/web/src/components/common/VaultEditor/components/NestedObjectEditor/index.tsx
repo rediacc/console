@@ -259,7 +259,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               <Col span={18}>
                 <Form.Item
                   label={
-                    <Typography.Text type="secondary">
+                    <Typography.Text>
                       {t('nestedObjectEditor.Image')}
                     </Typography.Text>
                   }
@@ -284,7 +284,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               <Col span={6}>
                 <Form.Item
                   label={
-                    <Typography.Text type="secondary">
+                    <Typography.Text>
                       {t('nestedObjectEditor.Active')}
                     </Typography.Text>
                   }
@@ -376,7 +376,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
         <Flex vertical>
           {title && <Typography.Text strong>{title}</Typography.Text>}
           {description && (
-            <Typography.Text type="secondary">
+            <Typography.Text>
               <InfoCircleOutlined /> {description}
             </Typography.Text>
           )}
@@ -384,7 +384,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
             <Flex wrap gap={8}>
               <Tag color="success">{t('nestedObjectEditor.Uniform Structure')}</Tag>
               {structureInfo.keys && (
-                <Typography.Text type="secondary" style={{ fontFamily: 'monospace' }}>
+                <Typography.Text style={{ fontFamily: 'monospace' }}>
                   {t('nestedObjectEditor.Fields')}: {structureInfo.keys.join(', ')}
                 </Typography.Text>
               )}

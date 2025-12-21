@@ -621,7 +621,7 @@ const LoginPage: React.FC = () => {
           </Form>
 
           <Flex style={{ textAlign: 'center' }} justify="center">
-            <Typography.Text color="secondary" type="secondary">
+            <Typography.Text>
               {t('auth:login.noAccount')}{' '}
               <a
                 onClick={() => setShowRegistration(true)}

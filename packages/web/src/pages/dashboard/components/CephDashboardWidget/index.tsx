@@ -90,7 +90,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
         <Flex vertical style={{ width: '100%' }}>
           <Flex align="center" justify="space-between">
             <Typography.Text strong>{team.teamName}</Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 14 }}>
+            <Typography.Text style={{ fontSize: 14 }}>
               {team.totalMachines} machines
             </Typography.Text>
           </Flex>
@@ -141,7 +141,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
         </Flex>
       }
       extra={
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Typography.Text style={{ fontSize: 12 }}>
           {t('ceph:dashboard.subtitle', { total: stats.total_machines })}
         </Typography.Text>
       }
@@ -210,7 +210,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
                 }}
                 format={(percent) => `${percent}% ${t('common:utilized')}`}
               />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text style={{ fontSize: 12 }}>
                 {t('ceph:dashboard.utilizationDetails', {
                   used: stats.total_machines - stats.truly_available_machines,
                   total: stats.total_machines,

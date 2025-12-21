@@ -78,11 +78,11 @@ export const createFunctionSubtitle = (
 
   return (
     <Space size="small">
-      <Typography.Text type="secondary">{t('machines:team')}:</Typography.Text>
+      <Typography.Text>{t('machines:team')}:</Typography.Text>
       <Typography.Text strong>{teamLabel}</Typography.Text>
       {['machine', 'repository', 'storage'].includes(resourceType) && resourceName && (
         <>
-          <Typography.Text type="secondary">
+          <Typography.Text>
             {t(
               resourceType === 'machine'
                 ? 'machines:machine'
@@ -205,7 +205,7 @@ export const renderModalTitle = (props: ModalHeaderRendererProps): React.ReactNo
           {baseTitle}
         </Typography.Text>
         {subtitle && (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text style={{ fontSize: 12 }}>
             {props.t('general.team')}: {subtitle}
           </Typography.Text>
         )}

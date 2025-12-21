@@ -206,7 +206,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       render: (timestamp: string, record: AuditTraceRecord, index: number) => (
         <Space direction="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
           <AntText>{formatTimestampAsIs(timestamp, 'datetime')}</AntText>
-          <Typography.Text type="secondary">{record.timeAgo}</Typography.Text>
+          <Typography.Text>{record.timeAgo}</Typography.Text>
         </Space>
       ),
     },

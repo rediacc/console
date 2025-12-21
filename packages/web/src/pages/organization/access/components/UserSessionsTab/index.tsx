@@ -372,7 +372,7 @@ const UserSessionsTab: React.FC = () => {
             pageSize: 10,
             showSizeChanger: true,
             showTotal: (total) => (
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text style={{ fontSize: 12 }}>
                 {t('userSessions.totalCount', { count: total })}
               </Typography.Text>
             ),

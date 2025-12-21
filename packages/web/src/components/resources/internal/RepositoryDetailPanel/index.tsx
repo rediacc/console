@@ -503,7 +503,7 @@ const StorageSection: React.FC<SectionProps> = ({ repository, panelData, t }) =>
                   status={diskPercent > 90 ? 'exception' : 'normal'}
                   data-testid={`repo-detail-disk-usage-progress-${repository.repositoryName}`}
                 />
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                <Typography.Text style={{ fontSize: 12 }}>
                   {t('resources:repositories.available')}: {repositoryData.disk_space.available}
                 </Typography.Text>
               </Flex>
@@ -643,40 +643,40 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                   <Flex wrap>
                     {service.memory_human && (
                       <Flex vertical>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text style={{ fontSize: 12 }}>
                           Memory
                         </Typography.Text>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text style={{ fontSize: 12 }}>
                           {service.memory_human}
                         </Typography.Text>
                       </Flex>
                     )}
                     {service.main_pid && (
                       <Flex vertical>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text style={{ fontSize: 12 }}>
                           PID
                         </Typography.Text>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text style={{ fontSize: 12 }}>
                           {service.main_pid}
                         </Typography.Text>
                       </Flex>
                     )}
                     {service.uptime_human && (
                       <Flex vertical>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text style={{ fontSize: 12 }}>
                           Uptime
                         </Typography.Text>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text style={{ fontSize: 12 }}>
                           {service.uptime_human}
                         </Typography.Text>
                       </Flex>
                     )}
                     {service.restarts !== undefined && (
                       <Flex vertical>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text style={{ fontSize: 12 }}>
                           Restarts
                         </Typography.Text>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text style={{ fontSize: 12 }}>
                           {service.restarts}
                         </Typography.Text>
                       </Flex>

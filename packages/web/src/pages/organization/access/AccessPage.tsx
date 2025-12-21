@@ -252,7 +252,7 @@ const AccessPage: React.FC = () => {
           <Typography.Text strong>
             {t('access.permissions.title', { defaultValue: 'Permission Groups' })}
           </Typography.Text>
-          <Typography.Text type="secondary">
+          <Typography.Text>
             {t('access.permissions.subtitle', {
               defaultValue: 'Manage permission groups and their assignments',
             })}

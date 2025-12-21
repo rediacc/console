@@ -195,7 +195,7 @@ const MainLayout: React.FC = () => {
           open={mobileMenuOpen}
           width={280}
           styles={{
-            body: { padding: 0, backgroundColor: 'var(--ant-color-bg-container)' },
+            body: { padding: 0 },
             header: { display: 'none' },
           }}
         >

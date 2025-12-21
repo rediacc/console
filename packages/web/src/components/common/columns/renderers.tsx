@@ -46,7 +46,7 @@ export const renderTimestampElement = (
 ): React.ReactNode => {
   if (!timestamp) {
     return (
-      <Typography.Text color="secondary" type="secondary">
+      <Typography.Text>
         -
       </Typography.Text>
     );
@@ -68,7 +68,7 @@ export const renderTruncatedId = (
 ): React.ReactNode => {
   if (!id) {
     return (
-      <Typography.Text color="secondary" type="secondary">
+      <Typography.Text>
         -
       </Typography.Text>
     );
@@ -96,7 +96,7 @@ export const renderCopyableId = (
 ): React.ReactNode => {
   if (!id) {
     return (
-      <Typography.Text color="secondary" type="secondary">
+      <Typography.Text>
         -
       </Typography.Text>
     );
@@ -121,7 +121,7 @@ export const renderVersionTag = (
 ): React.ReactNode => {
   if (version === null || version === undefined) {
     return (
-      <Typography.Text color="secondary" type="secondary">
+      <Typography.Text>
         -
       </Typography.Text>
     );
@@ -200,7 +200,7 @@ export const renderBoolean = (
 ): React.ReactNode => {
   if (value === null || value === undefined) {
     return (
-      <Typography.Text color="secondary" type="secondary">
+      <Typography.Text>
         -
       </Typography.Text>
     );

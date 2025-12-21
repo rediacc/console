@@ -54,7 +54,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
             <Flex vertical gap={16} style={{ width: '100%' }}>
               <Flex vertical>
                 <Flex style={{ letterSpacing: '0.08em', display: 'block' }}>
-                  <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>
+                  <Typography.Text style={{ fontSize: 12, fontWeight: 600 }}>
                     CURRENT SUBSCRIPTION
                   </Typography.Text>
                 </Flex>
@@ -92,7 +92,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
             <Flex vertical gap={16} style={{ width: '100%' }}>
               <Flex vertical>
                 <Flex style={{ letterSpacing: '0.08em', display: 'block' }}>
-                  <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>
+                  <Typography.Text style={{ fontSize: 12, fontWeight: 600 }}>
                     ALL ACTIVE LICENSES
                   </Typography.Text>
                 </Flex>
@@ -131,7 +131,6 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                             {sub.isTrial === 1 && <Tag color="processing">Trial</Tag>}
                           </Flex>
                           <Typography.Text
-                            type="secondary"
                             style={{
                               fontSize: 14,
                               color:

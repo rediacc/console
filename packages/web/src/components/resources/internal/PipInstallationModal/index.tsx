@@ -48,7 +48,7 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
     <Flex vertical data-testid="pip-install-command-display">
       {description && (
         <Flex>
-          <Typography.Text type="secondary">{description}</Typography.Text>
+          <Typography.Text>{description}</Typography.Text>
         </Flex>
       )}
       <Flex data-testid="pip-install-command-text" align="center" justify="space-between">

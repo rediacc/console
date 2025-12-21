@@ -112,12 +112,12 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       <Flex vertical gap={24} style={{ width: '100%' }}>
         <Flex align="center" justify="space-between">
           <Space size="small">
-            <Typography.Text type="secondary" strong>
+            <Typography.Text strong>
               {t('vaultEditor.vaultVersion')}
             </Typography.Text>
             <Tag color="processing">{vaultVersion}</Tag>
           </Space>
-          <Typography.Text type="secondary">
+          <Typography.Text>
             {t('vaultEditor.versionAutoIncrement')}
           </Typography.Text>
         </Flex>
@@ -197,7 +197,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                   <InfoCircleOutlined style={{ fontSize: 12 }} />
                   {t('vaultEditor.unsavedChanges')}
                 </Typography.Text>
-                <Typography.Text type="secondary">
+                <Typography.Text>
                   {VERSION_HINT_BULLET}{' '}
                   {t('vaultEditor.versionWillIncrement', { version: vaultVersion + 1 })}
                 </Typography.Text>

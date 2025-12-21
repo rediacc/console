@@ -246,7 +246,7 @@ const MachineReposPage: React.FC = () => {
             <LoadingWrapper loading centered minHeight={160}>
               <Flex />
             </LoadingWrapper>
-            <Typography.Text type="secondary">{t('common:general.loading')}</Typography.Text>
+            <Typography.Text>{t('common:general.loading')}</Typography.Text>
           </Flex>
         </Card>
       </Flex>

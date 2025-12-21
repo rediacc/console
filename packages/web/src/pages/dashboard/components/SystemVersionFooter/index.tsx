@@ -45,12 +45,11 @@ const SystemVersionFooter: React.FC = () => {
   return (
     <Flex align="center" justify="center" wrap data-testid="system-version-footer">
       <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-        <DesktopOutlined style={{ color: 'var(--ant-color-text-tertiary)' }} />
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <DesktopOutlined />
+        <Typography.Text style={{ fontSize: 12 }}>
           Console
         </Typography.Text>
         <Typography.Text
-          type="secondary"
           style={{ fontSize: 12, fontWeight: 500 }}
           data-testid="ui-version"
         >
@@ -61,12 +60,11 @@ const SystemVersionFooter: React.FC = () => {
       <Typography.Text style={{ fontSize: 14 }}>|</Typography.Text>
 
       <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-        <CloudServerOutlined style={{ color: 'var(--ant-color-text-tertiary)' }} />
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <CloudServerOutlined />
+        <Typography.Text style={{ fontSize: 12 }}>
           API
         </Typography.Text>
         <Typography.Text
-          type="secondary"
           style={{ fontSize: 12, fontWeight: 500 }}
           data-testid="api-version"
         >
@@ -86,8 +84,8 @@ const SystemVersionFooter: React.FC = () => {
           <Typography.Text style={{ fontSize: 14 }}>|</Typography.Text>
           <Tooltip title="API Uptime">
             <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-              <ClockCircleOutlined style={{ color: 'var(--ant-color-text-tertiary)' }} />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }} data-testid="api-uptime">
+              <ClockCircleOutlined />
+              <Typography.Text style={{ fontSize: 12 }} data-testid="api-uptime">
                 {formatUptime(uptime)}
               </Typography.Text>
             </Flex>
