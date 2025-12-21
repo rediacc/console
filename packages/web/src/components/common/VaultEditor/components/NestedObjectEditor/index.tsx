@@ -258,11 +258,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
             <Row gutter={16}>
               <Col span={18}>
                 <Form.Item
-                  label={
-                    <Typography.Text>
-                      {t('nestedObjectEditor.Image')}
-                    </Typography.Text>
-                  }
+                  label={<Typography.Text>{t('nestedObjectEditor.Image')}</Typography.Text>}
                 >
                   <Input
                     value={imageValue}
@@ -283,11 +279,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               </Col>
               <Col span={6}>
                 <Form.Item
-                  label={
-                    <Typography.Text>
-                      {t('nestedObjectEditor.Active')}
-                    </Typography.Text>
-                  }
+                  label={<Typography.Text>{t('nestedObjectEditor.Active')}</Typography.Text>}
                 >
                   <Switch
                     checked={activeValue}

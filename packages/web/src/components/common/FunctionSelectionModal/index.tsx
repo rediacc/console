@@ -246,11 +246,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
         title={
           <Flex vertical>
             <Typography.Text>{title || t('functions:selectFunction')}</Typography.Text>
-            {subtitle && (
-              <Typography.Text style={{ fontSize: 12 }}>
-                {subtitle}
-              </Typography.Text>
-            )}
+            {subtitle && <Typography.Text style={{ fontSize: 12 }}>{subtitle}</Typography.Text>}
           </Flex>
         }
         open={open}

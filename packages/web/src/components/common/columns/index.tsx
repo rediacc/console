@@ -419,11 +419,7 @@ export const createTruncatedColumn = <T,>(
     render: (value: string | null | undefined, record: T) => {
       const resolvedValue = options.renderText ? options.renderText(value, record) : value;
       if (!resolvedValue) {
-        return (
-          <Typography.Text>
-            -
-          </Typography.Text>
-        );
+        return <Typography.Text>-</Typography.Text>;
       }
       const shouldTruncate = resolvedValue.length > maxLength;
       const displayText = shouldTruncate
@@ -556,11 +552,7 @@ export const createVersionColumn = <T,>(
       }
 
       if (value === null || value === undefined) {
-        return (
-          <Typography.Text>
-            -
-          </Typography.Text>
-        );
+        return <Typography.Text>-</Typography.Text>;
       }
 
       const formattedVersion = options.formatVersion

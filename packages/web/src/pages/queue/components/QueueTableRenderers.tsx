@@ -78,11 +78,7 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
   record,
 }) => {
   if (!retryCount && retryCount !== 0) {
-    return (
-      <Typography.Text>
-        -
-      </Typography.Text>
-    );
+    return <Typography.Text>-</Typography.Text>;
   }
 
   let retryColor: string;

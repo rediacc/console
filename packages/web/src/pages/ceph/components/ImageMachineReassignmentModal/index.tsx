@@ -130,9 +130,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
             <Alert
               message={t('machines:currentMachineAssignment', { machine: image.machineName })}
               type="info"
-              icon={
-                <CloudServerOutlined style={{ fontSize: 14 }} />
-              }
+              icon={<CloudServerOutlined style={{ fontSize: 14 }} />}
               data-testid="image-reassign-current-machine-info"
               showIcon
             />
@@ -165,9 +163,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                     data-testid="image-reassign-machine-select"
                   />
 
-                  <Typography.Text>
-                    {t('ceph:images.reassignmentInfo')}
-                  </Typography.Text>
+                  <Typography.Text>{t('ceph:images.reassignmentInfo')}</Typography.Text>
                 </>
               </LoadingWrapper>
             </Flex>

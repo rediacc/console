@@ -235,10 +235,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   <Typography.Text strong>{getTemplateTitle(template.name)}</Typography.Text>
 
                   <Typography.Text style={{ display: 'block' }}>
-                    <Typography.Paragraph
-                      ellipsis={{ rows: 2 }}
-                      style={{ margin: 0 }}
-                    >
+                    <Typography.Paragraph ellipsis={{ rows: 2 }} style={{ margin: 0 }}>
                       {getTemplateDescription(template.readme)}
                     </Typography.Paragraph>
                   </Typography.Text>
@@ -281,9 +278,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
                 <Typography.Text strong>{t('resources:templates.noTemplate')}</Typography.Text>
 
-                <Typography.Text>
-                  {t('resources:templates.startEmpty')}
-                </Typography.Text>
+                <Typography.Text>{t('resources:templates.startEmpty')}</Typography.Text>
 
                 <Tag color="default">{t('resources:templates.default')}</Tag>
               </Flex>

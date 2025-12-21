@@ -29,9 +29,7 @@ export const RelatedQueueItems: React.FC<RelatedQueueItemsProps> = ({ queuePosit
                     <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'}>
                       {item.status}
                     </Tag>
-                    <Typography.Text>
-                      {dayjs(item.createdTime).fromNow()}
-                    </Typography.Text>
+                    <Typography.Text>{dayjs(item.createdTime).fromNow()}</Typography.Text>
                   </Space>
                 </Flex>
               ))}
@@ -53,9 +51,7 @@ export const RelatedQueueItems: React.FC<RelatedQueueItemsProps> = ({ queuePosit
                     <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'}>
                       {item.status}
                     </Tag>
-                    <Typography.Text>
-                      {dayjs(item.createdTime).fromNow()}
-                    </Typography.Text>
+                    <Typography.Text>{dayjs(item.createdTime).fromNow()}</Typography.Text>
                   </Space>
                 </Flex>
               ))}

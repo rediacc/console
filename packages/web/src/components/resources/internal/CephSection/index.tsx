@@ -88,9 +88,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
         <Flex vertical gap={24} style={{ width: '100%' }}>
           <Flex vertical>
             <Flex style={{ display: 'block' }} data-testid="ds-section-assignment-label">
-              <Typography.Text>
-                {t('assignment.currentAssignment')}
-              </Typography.Text>
+              <Typography.Text>{t('assignment.currentAssignment')}</Typography.Text>
             </Flex>
             <MachineAssignmentStatusBadge
               assignmentType={assignmentType}
@@ -139,9 +137,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
 
           {assignmentType !== 'AVAILABLE' && (
             <Alert
-              message={
-                <Typography.Text>{t('warnings.exclusivity')}</Typography.Text>
-              }
+              message={<Typography.Text>{t('warnings.exclusivity')}</Typography.Text>}
               type="warning"
               showIcon
               icon={<CloudServerOutlined />}

@@ -46,13 +46,8 @@ const SystemVersionFooter: React.FC = () => {
     <Flex align="center" justify="center" wrap data-testid="system-version-footer">
       <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
         <DesktopOutlined />
-        <Typography.Text style={{ fontSize: 12 }}>
-          Console
-        </Typography.Text>
-        <Typography.Text
-          style={{ fontSize: 12, fontWeight: 500 }}
-          data-testid="ui-version"
-        >
+        <Typography.Text style={{ fontSize: 12 }}>Console</Typography.Text>
+        <Typography.Text style={{ fontSize: 12, fontWeight: 500 }} data-testid="ui-version">
           {uiVersion}
         </Typography.Text>
       </Flex>
@@ -61,13 +56,8 @@ const SystemVersionFooter: React.FC = () => {
 
       <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
         <CloudServerOutlined />
-        <Typography.Text style={{ fontSize: 12 }}>
-          API
-        </Typography.Text>
-        <Typography.Text
-          style={{ fontSize: 12, fontWeight: 500 }}
-          data-testid="api-version"
-        >
+        <Typography.Text style={{ fontSize: 12 }}>API</Typography.Text>
+        <Typography.Text style={{ fontSize: 12, fontWeight: 500 }} data-testid="api-version">
           {apiVersion}
         </Typography.Text>
         <Tag

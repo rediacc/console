@@ -643,9 +643,7 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                   <Flex wrap>
                     {service.memory_human && (
                       <Flex vertical>
-                        <Typography.Text style={{ fontSize: 12 }}>
-                          Memory
-                        </Typography.Text>
+                        <Typography.Text style={{ fontSize: 12 }}>Memory</Typography.Text>
                         <Typography.Text style={{ fontSize: 12 }}>
                           {service.memory_human}
                         </Typography.Text>
@@ -653,9 +651,7 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                     )}
                     {service.main_pid && (
                       <Flex vertical>
-                        <Typography.Text style={{ fontSize: 12 }}>
-                          PID
-                        </Typography.Text>
+                        <Typography.Text style={{ fontSize: 12 }}>PID</Typography.Text>
                         <Typography.Text style={{ fontSize: 12 }}>
                           {service.main_pid}
                         </Typography.Text>
@@ -663,9 +659,7 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                     )}
                     {service.uptime_human && (
                       <Flex vertical>
-                        <Typography.Text style={{ fontSize: 12 }}>
-                          Uptime
-                        </Typography.Text>
+                        <Typography.Text style={{ fontSize: 12 }}>Uptime</Typography.Text>
                         <Typography.Text style={{ fontSize: 12 }}>
                           {service.uptime_human}
                         </Typography.Text>
@@ -673,9 +667,7 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                     )}
                     {service.restarts !== undefined && (
                       <Flex vertical>
-                        <Typography.Text style={{ fontSize: 12 }}>
-                          Restarts
-                        </Typography.Text>
+                        <Typography.Text style={{ fontSize: 12 }}>Restarts</Typography.Text>
                         <Typography.Text style={{ fontSize: 12 }}>
                           {service.restarts}
                         </Typography.Text>

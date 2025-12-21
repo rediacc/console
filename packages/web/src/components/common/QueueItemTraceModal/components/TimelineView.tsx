@@ -30,13 +30,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ traceLogs }) => {
               <Typography.Text strong>
                 {action.replace('QUEUE_ITEM_', '').replace(/_/g, ' ')}
               </Typography.Text>
-              <Typography.Text>
-                {formatTimestampAsIs(timestamp, 'datetime')}
-              </Typography.Text>
+              <Typography.Text>{formatTimestampAsIs(timestamp, 'datetime')}</Typography.Text>
               {details && <Typography.Text>{details}</Typography.Text>}
-              {actionByUser && (
-                <Typography.Text>By: {actionByUser}</Typography.Text>
-              )}
+              {actionByUser && <Typography.Text>By: {actionByUser}</Typography.Text>}
             </Space>
           ),
         };

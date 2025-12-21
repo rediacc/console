@@ -76,17 +76,13 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
             <Typography.Text strong>Today&apos;s Activity</Typography.Text>
             <Flex vertical gap={16} style={{ width: '100%' }}>
               <Flex align="center" justify="space-between">
-                <Typography.Text style={{ fontSize: 12 }}>
-                  Created
-                </Typography.Text>
+                <Typography.Text style={{ fontSize: 12 }}>Created</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-created-today">
                   {queueStats.createdToday || 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
-                <Typography.Text style={{ fontSize: 12 }}>
-                  Completed
-                </Typography.Text>
+                <Typography.Text style={{ fontSize: 12 }}>Completed</Typography.Text>
                 <Typography.Text
                   style={{ color: 'var(--ant-color-success)' }}
                   data-testid="dashboard-stat-completed-today"
@@ -95,9 +91,7 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
-                <Typography.Text style={{ fontSize: 12 }}>
-                  Cancelled
-                </Typography.Text>
+                <Typography.Text style={{ fontSize: 12 }}>Cancelled</Typography.Text>
                 <Typography.Text
                   style={{ color: 'var(--ant-color-error)' }}
                   data-testid="dashboard-stat-cancelled-today"
@@ -106,9 +100,7 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
-                <Typography.Text style={{ fontSize: 12 }}>
-                  Failed
-                </Typography.Text>
+                <Typography.Text style={{ fontSize: 12 }}>Failed</Typography.Text>
                 <Typography.Text
                   style={{ color: 'var(--ant-color-error)' }}
                   data-testid="dashboard-stat-failed-today"

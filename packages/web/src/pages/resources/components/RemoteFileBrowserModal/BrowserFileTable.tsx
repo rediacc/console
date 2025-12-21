@@ -88,9 +88,7 @@ export const BrowserFileTable: React.FC<BrowserFileTableProps> = ({
           const tooltipContent = (
             <Flex vertical>
               <Typography.Text>{name}</Typography.Text>
-              <Typography.Text>
-                Original file: {record.originalGuid}
-              </Typography.Text>
+              <Typography.Text>Original file: {record.originalGuid}</Typography.Text>
             </Flex>
           );
           return <Tooltip title={tooltipContent}>{content}</Tooltip>;

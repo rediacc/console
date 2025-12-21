@@ -174,10 +174,7 @@ const CredentialsPage: React.FC = () => {
                   {affectedMachines.map((machine) => (
                     <li key={machine.machineName}>
                       <Typography.Text strong>{machine.machineName}</Typography.Text>
-                      <Typography.Text>
-                        {' '}
-                        ({machine.repositoryNames.join(', ')})
-                      </Typography.Text>
+                      <Typography.Text> ({machine.repositoryNames.join(', ')})</Typography.Text>
                     </li>
                   ))}
                 </ul>

@@ -161,10 +161,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             }))}
             data-testid="assign-clone-machine-select"
           />
-          <Typography.Text
-            data-testid="assign-clone-selected-count"
-            style={{ fontSize: 12 }}
-          >
+          <Typography.Text data-testid="assign-clone-selected-count" style={{ fontSize: 12 }}>
             {t('machines:bulkOperations.selectedCount', { count: selectedMachines.length })}
           </Typography.Text>
         </Flex>
@@ -233,10 +230,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           data-testid="assign-clone-machines-table"
         />
 
-        <Typography.Text
-          data-testid="assign-clone-remove-selected-count"
-          style={{ fontSize: 12 }}
-        >
+        <Typography.Text data-testid="assign-clone-remove-selected-count" style={{ fontSize: 12 }}>
           {t('machines:bulkOperations.selectedCount', { count: removingMachines.length })}
         </Typography.Text>
       </Flex>

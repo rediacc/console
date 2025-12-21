@@ -164,18 +164,10 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
       notFoundContent={
         machines.length === 0 ? (
           <Empty
-            description={
-              <Typography.Text>
-                {t('machines:noAvailableMachines')}
-              </Typography.Text>
-            }
+            description={<Typography.Text>{t('machines:noAvailableMachines')}</Typography.Text>}
           />
         ) : (
-          <Empty
-            description={
-              <Typography.Text>{t('common:noMatchingResults')}</Typography.Text>
-            }
-          />
+          <Empty description={<Typography.Text>{t('common:noMatchingResults')}</Typography.Text>} />
         )
       }
     >

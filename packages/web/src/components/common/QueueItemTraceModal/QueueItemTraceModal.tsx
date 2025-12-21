@@ -331,9 +331,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <HistoryOutlined />
                               <Typography.Text>Processing Timeline</Typography.Text>
-                              <Typography.Text>
-                                (Result Set 4 - Audit Log)
-                              </Typography.Text>
+                              <Typography.Text>(Result Set 4 - Audit Log)</Typography.Text>
                             </Space>
                           ),
                           children: <TimelineView traceLogs={traceData.traceLogs} />,
@@ -347,9 +345,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <FileTextOutlined />
                               <Typography.Text>Vault Content</Typography.Text>
-                              <Typography.Text>
-                                (Result Sets 2 & 3)
-                              </Typography.Text>
+                              <Typography.Text>(Result Sets 2 & 3)</Typography.Text>
                             </Space>
                           ),
                           children: (
@@ -368,9 +364,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <TeamOutlined />
                               <Typography.Text>Related Queue Items</Typography.Text>
-                              <Typography.Text>
-                                (Result Set 5 - Nearby Tasks)
-                              </Typography.Text>
+                              <Typography.Text>(Result Set 5 - Nearby Tasks)</Typography.Text>
                             </Space>
                           ),
                           children: <RelatedQueueItems queuePosition={traceData.queuePosition} />,
@@ -384,9 +378,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <DashboardOutlined />
                               <Typography.Text>Performance Metrics</Typography.Text>
-                              <Typography.Text>
-                                (Result Set 6 - Machine Stats)
-                              </Typography.Text>
+                              <Typography.Text>(Result Set 6 - Machine Stats)</Typography.Text>
                             </Space>
                           ),
                           children: <PerformanceMetrics machineStats={traceData.machineStats} />,

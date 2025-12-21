@@ -122,9 +122,7 @@ export const buildAuditColumns = ({
     maxLength: 48,
     renderText: (value) => value || '',
     renderWrapper: (content) => (
-      <Typography.Text style={{ fontSize: 12 }}>
-        {content}
-      </Typography.Text>
+      <Typography.Text style={{ fontSize: 12 }}>{content}</Typography.Text>
     ),
   });
 

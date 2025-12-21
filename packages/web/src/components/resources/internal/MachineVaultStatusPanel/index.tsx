@@ -286,10 +286,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
           {machine.vaultStatusTime && (
             <Flex>
               <Tooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
-                <Typography.Text
-                  data-testid="vault-status-last-updated"
-                  style={{ fontSize: 12 }}
-                >
+                <Typography.Text data-testid="vault-status-last-updated" style={{ fontSize: 12 }}>
                   {t('machines:lastUpdated')}:{' '}
                   {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
                 </Typography.Text>

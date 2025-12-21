@@ -535,9 +535,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
           {stateColumn.render?.(state, record, index) as React.ReactNode}
 
           {record.status && (
-            <Typography.Text style={{ fontSize: 12 }}>
-              {record.status}
-            </Typography.Text>
+            <Typography.Text style={{ fontSize: 12 }}>{record.status}</Typography.Text>
           )}
         </Space>
       ),
@@ -767,9 +765,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         </Flex>
       ) : (
         <Flex data-testid="no-containers" style={{ textAlign: 'center' }} justify="center">
-          <Typography.Text>
-            {t('resources:containers.noContainers')}
-          </Typography.Text>
+          <Typography.Text>{t('resources:containers.noContainers')}</Typography.Text>
         </Flex>
       )}
 

@@ -112,14 +112,10 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       <Flex vertical gap={24} style={{ width: '100%' }}>
         <Flex align="center" justify="space-between">
           <Space size="small">
-            <Typography.Text strong>
-              {t('vaultEditor.vaultVersion')}
-            </Typography.Text>
+            <Typography.Text strong>{t('vaultEditor.vaultVersion')}</Typography.Text>
             <Tag color="processing">{vaultVersion}</Tag>
           </Space>
-          <Typography.Text>
-            {t('vaultEditor.versionAutoIncrement')}
-          </Typography.Text>
+          <Typography.Text>{t('vaultEditor.versionAutoIncrement')}</Typography.Text>
         </Flex>
 
         {showValidationErrors && validationErrors.length > 0 && (

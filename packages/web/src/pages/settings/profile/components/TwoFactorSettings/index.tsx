@@ -275,9 +275,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
           <Flex style={{ display: 'inline-flex' }}>
             <QRCode value={otpUrl} size={200} data-testid="tfa-settings-qr-code" />
           </Flex>
-          <Typography.Text>
-            {t('twoFactorAuth.scanQRCode')}
-          </Typography.Text>
+          <Typography.Text>{t('twoFactorAuth.scanQRCode')}</Typography.Text>
         </Flex>
       ),
     },
@@ -316,9 +314,7 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
   return (
     <Flex vertical gap={24} style={{ width: '100%' }}>
       <Flex vertical align="center" style={{ textAlign: 'center', alignItems: 'center' }}>
-        <SafetyCertificateOutlined
-          style={{ fontSize: 32 }}
-        />
+        <SafetyCertificateOutlined style={{ fontSize: 32 }} />
         <Title level={4}>{t('twoFactorAuth.verification.title')}</Title>
         <Paragraph color="secondary">{t('twoFactorAuth.verification.subtitle')}</Paragraph>
       </Flex>

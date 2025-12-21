@@ -744,9 +744,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
                             :
                           </Typography.Text>
                           <Tag>{parentRepo.repositoryName}</Tag>
-                          <Typography.Text style={{ fontSize: 12 }}>
-                            →
-                          </Typography.Text>
+                          <Typography.Text style={{ fontSize: 12 }}>→</Typography.Text>
                           <Typography.Text style={{ fontSize: 12 }}>
                             {t('common:current')}:
                           </Typography.Text>

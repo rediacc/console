@@ -295,9 +295,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
   // Show loading state
   if (loading) {
     return (
-      <Typography.Text style={{ fontSize: 12 }}>
-        {t('endpointSelector.loading')}
-      </Typography.Text>
+      <Typography.Text style={{ fontSize: 12 }}>{t('endpointSelector.loading')}</Typography.Text>
     );
   }
 
@@ -430,11 +428,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                   <Flex align="center" gap={8}>
                     {/* Version display */}
                     {health?.version && (
-                      <Typography.Text
-                        style={{ fontSize: 12 }}
-                      >
-                        v{health.version}
-                      </Typography.Text>
+                      <Typography.Text style={{ fontSize: 12 }}>v{health.version}</Typography.Text>
                     )}
 
                     {/* Delete button for custom endpoints */}

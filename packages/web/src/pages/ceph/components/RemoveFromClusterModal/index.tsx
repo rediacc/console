@@ -108,9 +108,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     renderText: (cluster?: string | null) => cluster || noneLabel,
     renderWrapper: (content, fullText) =>
       fullText === noneLabel ? (
-        <Typography.Text style={{ fontSize: 12 }}>
-          {fullText}
-        </Typography.Text>
+        <Typography.Text style={{ fontSize: 12 }}>{fullText}</Typography.Text>
       ) : (
         <Tag bordered={false} color="processing" style={{ fontSize: 12 }}>
           {content}

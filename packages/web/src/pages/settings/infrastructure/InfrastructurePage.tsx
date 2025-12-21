@@ -552,9 +552,7 @@ const InfrastructurePage: React.FC = () => {
                 title={
                   <Space direction="vertical" size={0}>
                     <Typography.Text strong>{t('regions.title')}</Typography.Text>
-                    <Typography.Text>
-                      {t('regions.selectRegionPrompt')}
-                    </Typography.Text>
+                    <Typography.Text>{t('regions.selectRegionPrompt')}</Typography.Text>
                   </Space>
                 }
                 loading={regionsLoading}
@@ -606,9 +604,7 @@ const InfrastructurePage: React.FC = () => {
                         : t('bridges.title')}
                     </Typography.Title>
                     {!effectiveRegion && (
-                      <Typography.Text>
-                        {t('regions.selectRegionToView')}
-                      </Typography.Text>
+                      <Typography.Text>{t('regions.selectRegionToView')}</Typography.Text>
                     )}
                   </Flex>
                   {effectiveRegion && (

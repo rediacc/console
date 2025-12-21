@@ -22,9 +22,7 @@ const VersionSelector: React.FC = () => {
   }, []);
 
   return (
-    <Typography.Text style={{ fontSize: 12 }}>
-      {loading ? '...' : displayVersion}
-    </Typography.Text>
+    <Typography.Text style={{ fontSize: 12 }}>{loading ? '...' : displayVersion}</Typography.Text>
   );
 };
 
