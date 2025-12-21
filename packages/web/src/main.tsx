@@ -1,3 +1,4 @@
+import '@ant-design/v5-patch-for-react-19';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ReactDOM from 'react-dom/client';
