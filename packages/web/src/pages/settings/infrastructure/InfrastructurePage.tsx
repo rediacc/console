@@ -545,8 +545,6 @@ const InfrastructurePage: React.FC = () => {
   return (
     <Flex vertical>
       <Flex vertical>
-        <Typography.Title level={3}>{tSystem('regionsInfrastructure.title')}</Typography.Title>
-
         <Row gutter={[24, 24]}>
           <Col span={24}>
             <Flex vertical>

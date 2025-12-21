@@ -303,9 +303,6 @@ const AccessPage: React.FC = () => {
 
   return (
     <Flex vertical>
-      <Typography.Title level={3} style={{ margin: 0 }}>
-        {t('access.heading', { defaultValue: 'Access Control' })}
-      </Typography.Title>
       <Card>
         <Tabs
           activeKey={activeTab}

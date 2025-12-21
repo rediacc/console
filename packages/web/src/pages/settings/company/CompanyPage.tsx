@@ -311,10 +311,6 @@ const CompanyPage: React.FC = () => {
   return (
     <Flex vertical>
       <Flex vertical gap={24}>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          {t('company.title')}
-        </Typography.Title>
-
         <Card>
           <Flex align="flex-start" justify="space-between" gap={16} wrap>
             <Flex vertical gap={8} style={{ flex: 1, minWidth: 240 }}>
