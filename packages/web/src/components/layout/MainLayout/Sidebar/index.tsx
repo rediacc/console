@@ -1,12 +1,10 @@
 import React, { useMemo } from 'react';
-import { Layout, Menu, type MenuProps, Typography } from 'antd';
+import { Flex, Menu, type MenuProps, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { MenuItem } from '@/components/layout/MainLayout/helpers';
 import { SIDEBAR_COLLAPSED_WIDTH } from '@/components/layout/MainLayout/types';
 import { formatKeyForTestId } from '@/utils/testIdHelpers';
-
-const { Sider } = Layout;
 
 type SidebarProps = {
   collapsed: boolean;
@@ -123,17 +121,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     navigate(key);
   };
 
+  const currentWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : sidebarWidth;
+
   return (
-    <Sider
-      trigger={null}
-      collapsible
-      collapsed={collapsed}
-      collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
-      width={sidebarWidth}
+    <Flex
+      vertical
       style={{
         position: isDrawer ? 'static' : 'fixed',
         left: 0,
         top: isDrawer ? 0 : 64,
+        width: currentWidth,
         height: isDrawer ? '100%' : 'calc(100vh - 64px)',
         overflow: 'hidden',
         zIndex: 1000,
@@ -143,7 +140,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       data-testid="main-sidebar"
     >
       <Menu
-        theme="dark"
         mode="inline"
         selectedKeys={selectedKeys}
         openKeys={collapsed ? [] : expandedParentKeys}
@@ -156,6 +152,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           borderRight: 0,
         }}
       />
-    </Sider>
+    </Flex>
   );
 };

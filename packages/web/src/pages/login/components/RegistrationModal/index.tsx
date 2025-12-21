@@ -393,7 +393,6 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
               onVerify={onTurnstileSuccess}
               onExpire={onTurnstileExpire}
               onError={onTurnstileError}
-              theme="light"
             />
           </Flex>
         )}
