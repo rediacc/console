@@ -33,8 +33,6 @@ import { Sidebar } from './Sidebar';
 import { SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_EXPANDED_WIDTH } from './types';
 import { UserMenu } from './UserMenu';
 
-const HEADER_HEIGHT = LAYOUT.HEADER_HEIGHT;
-
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -173,7 +171,7 @@ const MainLayout: React.FC = () => {
   }, [location.pathname, menuItems]);
 
   const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH;
-  const contentPaddingTop = HEADER_HEIGHT + 16;
+  const contentPaddingTop = LAYOUT.HEADER_HEIGHT + 16;
 
   return (
     <>
@@ -226,7 +224,7 @@ const MainLayout: React.FC = () => {
               top: 0,
               left: 0,
               right: 0,
-              height: HEADER_HEIGHT,
+              height: LAYOUT.HEADER_HEIGHT,
               width: '100%',
               zIndex: 1001,
             }}

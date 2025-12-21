@@ -130,6 +130,13 @@ export default tseslint.config(
           { element: 'select', message: 'Use antd Select component.' },
         ],
       }],
+
+      // Ban local aliases of constants - use CONSTANT.PROPERTY directly
+      // This catches patterns like: const X = CONSTANT.Y (not computed access like MAP[key])
+      'no-restricted-syntax': ['error', {
+        selector: "VariableDeclarator[init.type='MemberExpression'][init.computed=false][init.object.name=/^[A-Z][A-Z_0-9]*$/]",
+        message: 'Do not create local aliases from constants. Use the original property access directly (e.g., LAYOUT.HEADER_HEIGHT instead of const X = LAYOUT.X).',
+      }],
     }
   }
 );

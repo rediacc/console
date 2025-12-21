@@ -85,17 +85,16 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
     );
   }
 
-  const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT;
   let retryColor: string;
   if (retryCount === 0) {
     retryColor = 'green';
-  } else if (retryCount < maxRetries - 1) {
+  } else if (retryCount < STALE_TASK_CONSTANTS.MAX_RETRY_COUNT - 1) {
     retryColor = 'orange';
   } else {
     retryColor = 'red';
   }
   const icon =
-    retryCount >= maxRetries - 1 && record.permanentlyFailed ? (
+    retryCount >= STALE_TASK_CONSTANTS.MAX_RETRY_COUNT - 1 && record.permanentlyFailed ? (
       <ExclamationCircleOutlined />
     ) : undefined;
 
@@ -168,7 +167,7 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
 
       {/* Retry count badge */}
       <Tag color={retryColor} icon={icon}>
-        {retryCount}/{maxRetries} retries
+        {retryCount}/{STALE_TASK_CONSTANTS.MAX_RETRY_COUNT} retries
       </Tag>
     </Flex>
   );
