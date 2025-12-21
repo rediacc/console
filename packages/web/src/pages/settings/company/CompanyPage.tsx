@@ -363,19 +363,19 @@ const CompanyPage: React.FC = () => {
                 </Col>
                 <Col xs={24} lg={8}>
                   <Flex justify="flex-end">
-                      <Popconfirm
-                        title={tSystem('dangerZone.blockUserRequests.confirmBlock.title')}
-                        description={
-                          <Space direction="vertical" size="small">
-                            <Typography.Text>
-                              {tSystem('dangerZone.blockUserRequests.confirmBlock.description')}
-                            </Typography.Text>
-                            <ul>
-                              <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect1')}</li>
-                              <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect2')}</li>
-                              <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect3')}</li>
-                            </ul>
-                            <Typography.Text strong>
+                    <Popconfirm
+                      title={tSystem('dangerZone.blockUserRequests.confirmBlock.title')}
+                      description={
+                        <Space direction="vertical" size="small">
+                          <Typography.Text>
+                            {tSystem('dangerZone.blockUserRequests.confirmBlock.description')}
+                          </Typography.Text>
+                          <ul>
+                            <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect1')}</li>
+                            <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect2')}</li>
+                            <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect3')}</li>
+                          </ul>
+                          <Typography.Text strong>
                             {tSystem('dangerZone.blockUserRequests.confirmBlock.confirm')}
                           </Typography.Text>
                         </Space>
@@ -396,7 +396,9 @@ const CompanyPage: React.FC = () => {
                     </Popconfirm>
                     <Popconfirm
                       title={tSystem('dangerZone.blockUserRequests.confirmUnblock.title')}
-                      description={tSystem('dangerZone.blockUserRequests.confirmUnblock.description')}
+                      description={tSystem(
+                        'dangerZone.blockUserRequests.confirmUnblock.description'
+                      )}
                       onConfirm={() => blockUserRequestsMutation.mutate(false)}
                       okText={tSystem('dangerZone.blockUserRequests.confirmUnblock.okText')}
                       cancelText={tCommon('general.cancel')}

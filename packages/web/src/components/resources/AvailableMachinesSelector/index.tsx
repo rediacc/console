@@ -1,10 +1,9 @@
 import React from 'react';
-import { Empty, Select, Tag, Typography } from 'antd';
+import { Empty, Flex, Select, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAvailableMachinesForClone } from '@/api/queries/ceph';
 import type { Machine } from '@/types';
 import { CheckCircleOutlined, CloudServerOutlined, WarningOutlined } from '@/utils/optimizedIcons';
-import { Flex } from 'antd';
 import type { DefaultOptionType } from 'antd/es/select';
 
 interface AvailableMachinesSelectorProps {
@@ -167,7 +166,9 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
         machines.length === 0 ? (
           <Empty
             description={
-              <Typography.Text type="secondary">{t('machines:noAvailableMachines')}</Typography.Text>
+              <Typography.Text type="secondary">
+                {t('machines:noAvailableMachines')}
+              </Typography.Text>
             }
           />
         ) : (

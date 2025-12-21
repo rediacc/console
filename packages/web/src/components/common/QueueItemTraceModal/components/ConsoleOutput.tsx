@@ -4,7 +4,6 @@ import type { ConsoleOutputProps } from '../types';
 
 export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
   content,
-  theme,
   consoleOutputRef,
   isEmpty,
 }) => {
@@ -13,10 +12,7 @@ export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
   }
 
   return (
-    <div
-      ref={consoleOutputRef}
-      data-testid="queue-trace-console-output"
-    >
+    <div ref={consoleOutputRef} data-testid="queue-trace-console-output">
       {content}
     </div>
   );

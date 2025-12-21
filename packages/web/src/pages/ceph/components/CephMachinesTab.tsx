@@ -131,9 +131,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
     if (!isExpertMode || selectedMachines.length === 0) return null;
 
     return (
-      <div
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-      >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Space>
           <span style={{ fontWeight: 500 }}>
             {t('machines:bulkActions.selected', { count: selectedMachines.length })}

@@ -49,7 +49,9 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
               prefix={<SyncOutlined spin />}
               suffix="tasks"
             />
-            <Typography.Text color="secondary" type="secondary">Currently being processed on this machine</Typography.Text>
+            <Typography.Text color="secondary" type="secondary">
+              Currently being processed on this machine
+            </Typography.Text>
           </Card>
         </Col>
         <Col span={8}>
@@ -84,13 +86,19 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
         description={
           <Space direction="vertical">
             {isHighQueue && (
-              <Typography.Text>High queue depth detected. Tasks may experience delays.</Typography.Text>
+              <Typography.Text>
+                High queue depth detected. Tasks may experience delays.
+              </Typography.Text>
             )}
             {isAtCapacity && (
-              <Typography.Text>Machine at full capacity. New tasks will wait in queue.</Typography.Text>
+              <Typography.Text>
+                Machine at full capacity. New tasks will wait in queue.
+              </Typography.Text>
             )}
             {isIdle && (
-              <Typography.Text>Machine is idle and ready to process tasks immediately.</Typography.Text>
+              <Typography.Text>
+                Machine is idle and ready to process tasks immediately.
+              </Typography.Text>
             )}
           </Space>
         }

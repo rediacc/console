@@ -70,9 +70,7 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
 
         {providerFields.optional && providerFields.optional.length > 0 && (
           <>
-            {providerFields.required && providerFields.required.length > 0 && (
-              <div />
-            )}
+            {providerFields.required && providerFields.required.length > 0 && <div />}
             {providerFields.optional.map((fieldName: string) => {
               if (!providerFields.fields || !(fieldName in providerFields.fields)) return null;
               const field = providerFields.fields[fieldName as keyof typeof providerFields.fields];

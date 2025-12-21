@@ -1,12 +1,12 @@
-import { Flex, Modal, Table, Tag, Typography } from 'antd';
 import React from 'react';
+import { Flex, Modal, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { createTruncatedColumn } from '@/components/common/columns';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
 import type { Machine } from '@/types';
-import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import { ModalSize } from '@/types/modal';
+import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import { InfoCircleOutlined } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 

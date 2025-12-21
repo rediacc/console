@@ -1,8 +1,8 @@
-import { Tag, Tooltip, Typography, Flex } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { ClockCircleOutlined, CloudServerOutlined, DesktopOutlined } from '@ant-design/icons';
+import { Tag, Tooltip, Typography, Flex } from 'antd';
 import { useApiHealth } from '@/api/queries/health';
 import { versionService } from '@/services/versionService';
-import { ClockCircleOutlined, CloudServerOutlined, DesktopOutlined } from '@ant-design/icons';
 
 const formatUptime = (uptime: { days: number; hours: number; minutes: number }): string => {
   const parts: string[] = [];

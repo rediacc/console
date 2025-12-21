@@ -194,7 +194,13 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
 
           {onRefresh && (
             <Button
-              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 48, minHeight: 40 }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: 48,
+                minHeight: 40,
+              }}
               icon={<ReloadOutlined />}
               data-testid="filterable-machine-refresh"
               onClick={onRefresh}

@@ -288,23 +288,23 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       dataIndex: 'machineName',
       key: 'machineName',
       width: 200,
-        sorter: createSorter<CephRbdImage>('machineName'),
-        render: (machineName: string, record: CephRbdImage) =>
-          machineName ? (
-            <Tag
-              icon={<CloudServerOutlined />}
-              bordered={false}
-              color="processing"
-              data-testid={`rbd-machine-tag-${record.imageName}`}
-            >
-              {machineName}
-            </Tag>
-          ) : (
-            <Tag data-testid={`rbd-machine-none-${record.imageName}`} bordered={false}>
-              {t('common.none')}
-            </Tag>
-          ),
-      },
+      sorter: createSorter<CephRbdImage>('machineName'),
+      render: (machineName: string, record: CephRbdImage) =>
+        machineName ? (
+          <Tag
+            icon={<CloudServerOutlined />}
+            bordered={false}
+            color="processing"
+            data-testid={`rbd-machine-tag-${record.imageName}`}
+          >
+            {machineName}
+          </Tag>
+        ) : (
+          <Tag data-testid={`rbd-machine-none-${record.imageName}`} bordered={false}>
+            {t('common.none')}
+          </Tag>
+        ),
+    },
     createActionColumn<CephRbdImage>({
       width: 150,
       renderActions: (record) => (

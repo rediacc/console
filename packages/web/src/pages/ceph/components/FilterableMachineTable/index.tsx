@@ -1,5 +1,5 @@
-import { Table } from 'antd';
 import React from 'react';
+import { Table } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable';
 import type { Machine } from '@/types';

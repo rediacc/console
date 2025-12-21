@@ -560,7 +560,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 </Space>
               </Flex>
 
-              {machines.map((machine, index) => (
+              {machines.map((machine) => (
                 <div
                   key={machine.machineName}
                   style={{

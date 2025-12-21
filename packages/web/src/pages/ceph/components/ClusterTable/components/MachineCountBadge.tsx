@@ -14,9 +14,7 @@ export const MachineCountBadge: React.FC<MachineCountBadgeProps> = ({ cluster })
     <Badge
       count={machines.length}
       showZero
-      color={
-        machines.length > 0 ? 'var(--ant-color-success)' : 'var(--ant-color-text-tertiary)'
-      }
+      color={machines.length > 0 ? 'var(--ant-color-success)' : 'var(--ant-color-text-tertiary)'}
     >
       <CloudServerOutlined />
     </Badge>

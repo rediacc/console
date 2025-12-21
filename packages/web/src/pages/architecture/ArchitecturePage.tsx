@@ -1,5 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Button, Card, Col, Flex, Radio, Row, Select, Space, Statistic, Tooltip, Typography, theme as antdTheme } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Flex,
+  Radio,
+  Row,
+  Select,
+  Space,
+  Statistic,
+  Tooltip,
+  Typography,
+  theme as antdTheme,
+} from 'antd';
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { useCompanyArchitecture } from '@/api/queries/architecture';
@@ -907,11 +921,7 @@ const ArchitecturePage: React.FC = () => {
               repository: t('architecture.nodeRepository'),
               storage: t('architecture.nodeStorage'),
             }).map(([type, label]) => (
-              <Flex
-                key={type}
-                align="center"
-                data-testid={`architecture-legend-${type}`}
-              >
+              <Flex key={type} align="center" data-testid={`architecture-legend-${type}`}>
                 <Flex
                   align="center"
                   justify="center"

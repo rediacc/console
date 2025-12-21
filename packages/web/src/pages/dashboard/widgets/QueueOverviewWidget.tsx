@@ -1,6 +1,7 @@
 import React from 'react';
 import { Alert, Card, Col, Empty, Flex, Row, Statistic } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -11,7 +12,6 @@ import {
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
-import { Link as RouterLink } from 'react-router-dom';
 
 interface QueueOverviewWidgetProps {
   queueStats?: CompanyDashboardData['queueStats'];

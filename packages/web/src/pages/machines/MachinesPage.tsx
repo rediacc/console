@@ -14,6 +14,7 @@ import { QueueFunction } from '@/api/queries/queue';
 import { Repository, useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { useDialogState, useQueueTraceModal, useTeamSelection, useUnifiedModal } from '@/hooks';
 import { useQueueAction } from '@/hooks/useQueueAction';
@@ -29,7 +30,6 @@ import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import type { MachineFormValues as BaseMachineFormValues } from '@rediacc/shared/types';
-import TeamSelector from '@/components/common/TeamSelector';
 
 // Extend shared type with UI-specific field for auto-setup option
 type MachineFormValues = BaseMachineFormValues & { autoSetup?: boolean };
@@ -447,94 +447,94 @@ const MachinesPage: React.FC = () => {
   return (
     <>
       <div>
-          <Typography.Title level={3}>
-            {t('machines:heading', { defaultValue: 'Machines' })}
-          </Typography.Title>
-          <Card>
-            <Flex justify="space-between" align="center" wrap gap={12}>
-              <div style={{ flex: 1, minWidth: 260 }}>
-                <TeamSelector
-                  data-testid="machines-team-selector"
-                  teams={teams}
-                  selectedTeams={selectedTeams}
-                  onChange={setSelectedTeams}
-                  loading={teamsLoading}
-                  placeholder={t('teams.selectTeamToView')}
-                />
-              </div>
-              {selectedTeams.length > 0 && (
-                <Space size="small">
-                  <Tooltip title={t('machines:createMachine')}>
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      data-testid="machines-create-machine-button"
-                      onClick={() => openUnifiedModal('create')}
-                      aria-label={t('machines:createMachine')}
-                    />
-                  </Tooltip>
-                  <Tooltip title={t('machines:checkAndRefresh')}>
-                    <Button
-                      type="text"
-                      icon={<ReloadOutlined />}
-                      data-testid="machines-test-and-refresh-button"
-                      onClick={() => connectivityTest.open()}
-                      disabled={machines.length === 0}
-                      aria-label={t('machines:checkAndRefresh')}
-                    />
-                  </Tooltip>
-                </Space>
-              )}
-            </Flex>
-
-            <div style={{ marginTop: 16 }}>
-              {selectedTeams.length === 0 ? (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={t('teams.selectTeamPrompt')}
-                  style={{ padding: '24px 0' }}
-                />
-              ) : (
-                <SplitResourceView
-                  type="machine"
-                  teamFilter={selectedTeams}
-                  showFilters
-                  showActions
-                  onCreateMachine={() => openUnifiedModal('create')}
-                  onEditMachine={(machine) =>
-                    openUnifiedModal('edit', machine as Machine & Record<string, unknown>)
-                  }
-                  onVaultMachine={(machine) =>
-                    openUnifiedModal('vault', machine as Machine & Record<string, unknown>)
-                  }
-                  onFunctionsMachine={(machine, functionName) => {
-                    // WARNING: Do not change this pattern!
-                    // - Specific functions (functionName defined): Queue directly with defaults, NO modal
-                    // - "Advanced" (functionName undefined): Open modal with function list
-                    // This split behavior is intentional - users expect quick actions for specific
-                    // functions and full configuration only when clicking "Advanced".
-                    if (functionName) {
-                      handleDirectFunctionQueue(machine, functionName);
-                    } else {
-                      openUnifiedModal('create', machine as Machine & Record<string, unknown>);
-                    }
-                  }}
-                  onDeleteMachine={handleDeleteMachine}
-                  enabled={selectedTeams.length > 0}
-                  refreshKeys={refreshKeys}
-                  onQueueItemCreated={(taskId, machineName) => {
-                    openQueueTrace(taskId, machineName);
-                  }}
-                  selectedResource={
-                    selectedMachine || selectedRepositoryFromMachine || selectedContainerFromMachine
-                  }
-                  onResourceSelect={handleResourceSelection}
-                  isPanelCollapsed={isPanelCollapsed}
-                  onTogglePanelCollapse={handleTogglePanelCollapse}
-                />
-              )}
+        <Typography.Title level={3}>
+          {t('machines:heading', { defaultValue: 'Machines' })}
+        </Typography.Title>
+        <Card>
+          <Flex justify="space-between" align="center" wrap gap={12}>
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <TeamSelector
+                data-testid="machines-team-selector"
+                teams={teams}
+                selectedTeams={selectedTeams}
+                onChange={setSelectedTeams}
+                loading={teamsLoading}
+                placeholder={t('teams.selectTeamToView')}
+              />
             </div>
-          </Card>
+            {selectedTeams.length > 0 && (
+              <Space size="small">
+                <Tooltip title={t('machines:createMachine')}>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    data-testid="machines-create-machine-button"
+                    onClick={() => openUnifiedModal('create')}
+                    aria-label={t('machines:createMachine')}
+                  />
+                </Tooltip>
+                <Tooltip title={t('machines:checkAndRefresh')}>
+                  <Button
+                    type="text"
+                    icon={<ReloadOutlined />}
+                    data-testid="machines-test-and-refresh-button"
+                    onClick={() => connectivityTest.open()}
+                    disabled={machines.length === 0}
+                    aria-label={t('machines:checkAndRefresh')}
+                  />
+                </Tooltip>
+              </Space>
+            )}
+          </Flex>
+
+          <div style={{ marginTop: 16 }}>
+            {selectedTeams.length === 0 ? (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={t('teams.selectTeamPrompt')}
+                style={{ padding: '24px 0' }}
+              />
+            ) : (
+              <SplitResourceView
+                type="machine"
+                teamFilter={selectedTeams}
+                showFilters
+                showActions
+                onCreateMachine={() => openUnifiedModal('create')}
+                onEditMachine={(machine) =>
+                  openUnifiedModal('edit', machine as Machine & Record<string, unknown>)
+                }
+                onVaultMachine={(machine) =>
+                  openUnifiedModal('vault', machine as Machine & Record<string, unknown>)
+                }
+                onFunctionsMachine={(machine, functionName) => {
+                  // WARNING: Do not change this pattern!
+                  // - Specific functions (functionName defined): Queue directly with defaults, NO modal
+                  // - "Advanced" (functionName undefined): Open modal with function list
+                  // This split behavior is intentional - users expect quick actions for specific
+                  // functions and full configuration only when clicking "Advanced".
+                  if (functionName) {
+                    handleDirectFunctionQueue(machine, functionName);
+                  } else {
+                    openUnifiedModal('create', machine as Machine & Record<string, unknown>);
+                  }
+                }}
+                onDeleteMachine={handleDeleteMachine}
+                enabled={selectedTeams.length > 0}
+                refreshKeys={refreshKeys}
+                onQueueItemCreated={(taskId, machineName) => {
+                  openQueueTrace(taskId, machineName);
+                }}
+                selectedResource={
+                  selectedMachine || selectedRepositoryFromMachine || selectedContainerFromMachine
+                }
+                onResourceSelect={handleResourceSelection}
+                isPanelCollapsed={isPanelCollapsed}
+                onTogglePanelCollapse={handleTogglePanelCollapse}
+              />
+            )}
+          </div>
+        </Card>
       </div>
 
       <UnifiedResourceModal

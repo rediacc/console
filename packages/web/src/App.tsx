@@ -41,7 +41,13 @@ const InfrastructurePage = lazy(() => import('@/pages/settings/infrastructure/In
 // Loading component
 const PageLoader: React.FC = () => {
   return (
-    <Flex data-testid="page-loader" align="center" justify="center" vertical style={{ padding: 48 }}>
+    <Flex
+      data-testid="page-loader"
+      align="center"
+      justify="center"
+      vertical
+      style={{ padding: 48 }}
+    >
       <LoadingWrapper loading centered minHeight={400}>
         <div />
       </LoadingWrapper>

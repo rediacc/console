@@ -1,5 +1,15 @@
 import type { Key, ReactNode } from 'react';
-import { Button, Card, Empty, Flex, Input, Table, Tooltip, Typography, type TableProps } from 'antd';
+import {
+  Button,
+  Card,
+  Empty,
+  Flex,
+  Input,
+  Table,
+  Tooltip,
+  Typography,
+  type TableProps,
+} from 'antd';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@/utils/optimizedIcons';
 

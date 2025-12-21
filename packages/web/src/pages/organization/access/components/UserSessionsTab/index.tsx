@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { Button, Card, Col, Flex, Input, Popconfirm, Row, Space, Statistic, Table, Tag, Tooltip, Typography } from 'antd';
+import {
+  Button,
+  Card,
+  Col,
+  Flex,
+  Input,
+  Popconfirm,
+  Row,
+  Space,
+  Statistic,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
@@ -118,7 +132,11 @@ const UserSessionsTab: React.FC = () => {
     fixed: 'end',
     renderActions: (record) => (
       <Popconfirm
-        title={<span style={{ fontSize: 14, fontWeight: 500 }}>{t('userSessions.confirmTerminate')}</span>}
+        title={
+          <span style={{ fontSize: 14, fontWeight: 500 }}>
+            {t('userSessions.confirmTerminate')}
+          </span>
+        }
         description={
           <span style={{ fontSize: 14 }}>
             {record.userEmail === user?.email
@@ -250,7 +268,11 @@ const UserSessionsTab: React.FC = () => {
         <Col span={6}>
           <Card data-testid="sessions-stat-total">
             <Statistic
-              title={<span style={{ fontSize: 14, fontWeight: 500 }}>{t('userSessions.totalSessions')}</span>}
+              title={
+                <span style={{ fontSize: 14, fontWeight: 500 }}>
+                  {t('userSessions.totalSessions')}
+                </span>
+              }
               value={sessions.length}
             />
           </Card>
@@ -258,7 +280,11 @@ const UserSessionsTab: React.FC = () => {
         <Col span={6}>
           <Card data-testid="sessions-stat-active">
             <Statistic
-              title={<span style={{ fontSize: 14, fontWeight: 500 }}>{t('userSessions.activeSessions')}</span>}
+              title={
+                <span style={{ fontSize: 14, fontWeight: 500 }}>
+                  {t('userSessions.activeSessions')}
+                </span>
+              }
               value={activeSessions.length}
             />
           </Card>
@@ -266,7 +292,11 @@ const UserSessionsTab: React.FC = () => {
         <Col span={6}>
           <Card data-testid="sessions-stat-unique-users">
             <Statistic
-              title={<span style={{ fontSize: 14, fontWeight: 500 }}>{t('userSessions.uniqueUsers')}</span>}
+              title={
+                <span style={{ fontSize: 14, fontWeight: 500 }}>
+                  {t('userSessions.uniqueUsers')}
+                </span>
+              }
               value={new Set(sessions.map((session) => session.userEmail)).size}
             />
           </Card>
@@ -274,7 +304,11 @@ const UserSessionsTab: React.FC = () => {
         <Col span={6}>
           <Card data-testid="sessions-stat-average-duration">
             <Statistic
-              title={<span style={{ fontSize: 14, fontWeight: 500 }}>{t('userSessions.averageDuration')}</span>}
+              title={
+                <span style={{ fontSize: 14, fontWeight: 500 }}>
+                  {t('userSessions.averageDuration')}
+                </span>
+              }
               value={
                 sessions.length > 0
                   ? Math.round(
@@ -298,7 +332,9 @@ const UserSessionsTab: React.FC = () => {
         title={
           <Flex justify="space-between" align="center">
             <Space size={8}>
-              <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>{t('userSessions.title')}</Typography.Text>
+              <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>
+                {t('userSessions.title')}
+              </Typography.Text>
               <Tooltip title={t('common:actions.refresh')}>
                 <Button
                   style={{ minWidth: 40, minHeight: 40, fontSize: 16 }}

@@ -300,11 +300,7 @@ const QueuePage: React.FC = () => {
               }}
             >
               <Tooltip title={t('common:export')}>
-                <Button
-                  type="text"
-                  icon={<ExportOutlined />}
-                  data-testid="queue-export-dropdown"
-                />
+                <Button type="text" icon={<ExportOutlined />} data-testid="queue-export-dropdown" />
               </Tooltip>
             </Dropdown>
           </Space>

@@ -1,5 +1,16 @@
 import React, { useEffect } from 'react';
-import { Badge, Collapse, Empty, Flex, Modal, Segmented, Space, Tag, Tooltip, Typography } from 'antd';
+import {
+  Badge,
+  Collapse,
+  Empty,
+  Flex,
+  Modal,
+  Segmented,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +20,6 @@ import {
   useRetryFailedQueueItem,
 } from '@/api/queries/queue';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { useTheme } from '@/context/ThemeContext';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { normalizeToString } from '@/platform';
 import { ModalSize } from '@/types/modal';
@@ -60,7 +70,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   } = useQueueItemTrace(taskId, open);
   const { mutate: retryFailedItem, isPending: isRetrying } = useRetryFailedQueueItem();
   const { mutate: cancelQueueItem, isPending: isCancelling } = useCancelQueueItem();
-  const { theme } = useTheme();
 
   const {
     lastTraceFetchTime,
@@ -233,7 +242,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             .replace(/\\r\\n/g, '\n')
                             .replace(/\\n/g, '\n')
                             .replace(/\\r/g, '\r')}
-                          theme={theme}
                           consoleOutputRef={consoleOutputRef}
                           isEmpty={!traceData?.responseVaultContent?.hasContent}
                         />
@@ -262,9 +270,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <DashboardOutlined />
                               <span>Task Overview</span>
-                              <Tag color={statusTagColor}>
-                                {simplifiedStatus.status}
-                              </Tag>
+                              <Tag color={statusTagColor}>{simplifiedStatus.status}</Tag>
                               {isTaskStale(traceData.queueDetails) && (
                                 <Tag color="warning" icon={<WarningOutlined />}>
                                   Stale
@@ -295,7 +301,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                               isDetailedConsoleExpanded={isDetailedConsoleExpanded}
                               setIsDetailedConsoleExpanded={setIsDetailedConsoleExpanded}
                               accumulatedOutput={accumulatedOutput}
-                              theme={theme}
                               consoleOutputRef={consoleOutputRef}
                               hasContent={!!traceData.responseVaultContent?.hasContent}
                             />
@@ -310,9 +315,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <FileTextOutlined />
                               <span>Queue Item Details</span>
-                              <Typography.Text type="secondary">
-                                (Result Set 1)
-                              </Typography.Text>
+                              <Typography.Text type="secondary">(Result Set 1)</Typography.Text>
                             </Space>
                           ),
                           children: (

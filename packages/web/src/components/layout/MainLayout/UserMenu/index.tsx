@@ -49,7 +49,11 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             </Typography.Text>
           )}
           {companyData?.activeSubscription && (
-            <Tag color="processing" style={{ fontSize: 12, fontWeight: 600 }} data-testid="user-info-plan">
+            <Tag
+              color="processing"
+              style={{ fontSize: 12, fontWeight: 600 }}
+              data-testid="user-info-plan"
+            >
               {companyData.activeSubscription.planCode ?? 'UNKNOWN'}
             </Tag>
           )}

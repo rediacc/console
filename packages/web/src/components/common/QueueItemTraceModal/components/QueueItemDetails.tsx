@@ -38,7 +38,9 @@ export const QueueItemDetails: React.FC<QueueItemDetailsProps> = ({
   return (
     <Descriptions column={2} size="small">
       <Descriptions.Item label="Task ID">
-        <Typography.Text code>{normalizeToString(queueDetails, 'taskId', 'TaskId')}</Typography.Text>
+        <Typography.Text code>
+          {normalizeToString(queueDetails, 'taskId', 'TaskId')}
+        </Typography.Text>
       </Descriptions.Item>
       <Descriptions.Item label="Status">
         <Tag color={getStatusColor()}>{status}</Tag>

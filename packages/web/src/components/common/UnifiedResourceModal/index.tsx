@@ -399,7 +399,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                   >
                     <Button
                       data-testid="resource-modal-import-button"
-                    icon={<UploadOutlined style={{ fontSize: 12 }} />}
+                      icon={<UploadOutlined style={{ fontSize: 12 }} />}
                     >
                       {t('common:vaultEditor.importJson')}
                     </Button>
@@ -428,17 +428,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                   {t('machines:autoSetupAfterCreation')}
                 </Checkbox>
               )}
-              <Button
-                data-testid="resource-modal-cancel-button"
-                onClick={onCancel}
-              >
+              <Button data-testid="resource-modal-cancel-button" onClick={onCancel}>
                 {t('general.cancel')}
               </Button>
               {mode === 'create' && existingData && onUpdateVault && (
-                <Button
-                  data-testid="resource-modal-vault-button"
-                  onClick={() => vaultModal.open()}
-                >
+                <Button data-testid="resource-modal-vault-button" onClick={() => vaultModal.open()}>
                   {t('general.vault')}
                 </Button>
               )}

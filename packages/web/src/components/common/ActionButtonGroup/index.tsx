@@ -1,5 +1,15 @@
-import { Button, Dropdown, Tooltip } from 'antd';
 import React from 'react';
+import { Button, Dropdown, Tooltip } from 'antd';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  FunctionOutlined,
+  HistoryOutlined,
+  LockOutlined,
+} from '@/utils/optimizedIcons';
+import type { MenuProps } from 'antd';
+import type { TFunction } from 'i18next';
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -189,7 +199,11 @@ export function ActionButtonGroup<T>({
         const buttonElement = (
           <Button
             type={
-              config.variant === 'primary' ? 'primary' : config.variant === 'link' ? 'link' : 'default'
+              config.variant === 'primary'
+                ? 'primary'
+                : config.variant === 'link'
+                  ? 'link'
+                  : 'default'
             }
             icon={config.icon}
             danger={config.danger}
@@ -235,20 +249,6 @@ export function ActionButtonGroup<T>({
 // =============================================================================
 // PRESET FACTORIES
 // =============================================================================
-
-import {
-  DeleteOutlined,
-  EditOutlined,
-  EyeOutlined,
-  FunctionOutlined,
-  HistoryOutlined,
-  LockOutlined,
-} from '@/utils/optimizedIcons';
-import type { MenuProps } from 'antd';
-import type { TFunction } from 'i18next';
-/**
- * Common icon imports for presets
- */
 
 /**
  * Preset button configurations for common patterns

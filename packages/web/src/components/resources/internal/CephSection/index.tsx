@@ -1,5 +1,5 @@
-import { Alert, Button, Card, Divider, Flex, Typography } from 'antd';
 import React, { type ReactNode } from 'react';
+import { Alert, Button, Card, Divider, Flex, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachineAssignmentStatus } from '@/api/queries/ceph';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
@@ -59,7 +59,12 @@ export const CephSection: React.FC<CephSectionProps> = ({
 
   if (isLoading) {
     return (
-      <Flex align="center" justify="center" style={{ paddingBlock: 20 }} data-testid="ds-section-loading">
+      <Flex
+        align="center"
+        justify="center"
+        style={{ paddingBlock: 20 }}
+        data-testid="ds-section-loading"
+      >
         <LoadingWrapper loading centered minHeight={120}>
           <div />
         </LoadingWrapper>
@@ -82,7 +87,9 @@ export const CephSection: React.FC<CephSectionProps> = ({
         <Flex vertical gap={24} style={{ width: '100%' }}>
           <div>
             <div style={{ display: 'block' }} data-testid="ds-section-assignment-label">
-              <Typography.Text type="secondary">{t('assignment.currentAssignment')}</Typography.Text>
+              <Typography.Text type="secondary">
+                {t('assignment.currentAssignment')}
+              </Typography.Text>
             </div>
             <MachineAssignmentStatusBadge
               assignmentType={assignmentType}
@@ -97,9 +104,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
               message={<Typography.Text type="secondary">{assignmentDetails}</Typography.Text>}
               type="info"
               showIcon
-              icon={
-                getAssignmentIcon(assignmentType)
-              }
+              icon={getAssignmentIcon(assignmentType)}
               data-testid="ds-section-assignment-alert"
             />
           )}
@@ -107,9 +112,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
           <Flex align="center" wrap>
             {onViewDetails && (
               <Button
-                icon={
-                  <HistoryOutlined />
-                }
+                icon={<HistoryOutlined />}
                 onClick={onViewDetails}
                 data-testid="ds-section-history-button"
               >
@@ -122,9 +125,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
             {onManageAssignment && assignmentType !== 'AVAILABLE' && (
               <Button
                 type="primary"
-                icon={
-                  <RightOutlined />
-                }
+                icon={<RightOutlined />}
                 onClick={onManageAssignment}
                 data-testid="ds-section-manage-button"
               >
@@ -137,12 +138,12 @@ export const CephSection: React.FC<CephSectionProps> = ({
 
           {assignmentType !== 'AVAILABLE' && (
             <Alert
-              message={<Typography.Text type="secondary">{t('warnings.exclusivity')}</Typography.Text>}
+              message={
+                <Typography.Text type="secondary">{t('warnings.exclusivity')}</Typography.Text>
+              }
               type="warning"
               showIcon
-              icon={
-                <CloudServerOutlined />
-              }
+              icon={<CloudServerOutlined />}
               data-testid="ds-section-exclusivity-warning"
             />
           )}

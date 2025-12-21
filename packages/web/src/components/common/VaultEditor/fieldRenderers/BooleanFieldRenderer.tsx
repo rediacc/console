@@ -1,5 +1,5 @@
-import { Switch } from 'antd';
 import React from 'react';
+import { Switch } from 'antd';
 import { FieldFormItem } from '../components/FieldFormItem';
 import type { FieldRendererProps } from './types';
 

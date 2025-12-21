@@ -100,17 +100,13 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
             </Descriptions.Item>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.btrfsAvailable')}>
               {kernelCompatibility.btrfs_available ? (
-                <Tag color="success">
-                  {t('vaultEditor.systemCompatibility.yes')}
-                </Tag>
+                <Tag color="success">{t('vaultEditor.systemCompatibility.yes')}</Tag>
               ) : (
                 <Tag color="warning">{t('vaultEditor.systemCompatibility.no')}</Tag>
               )}
             </Descriptions.Item>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.sudoAvailable')}>
-              <Tag
-                color={sudoConfigValue.color === 'neutral' ? 'default' : sudoConfigValue.color}
-              >
+              <Tag color={sudoConfigValue.color === 'neutral' ? 'default' : sudoConfigValue.color}>
                 {sudoConfigValue.text}
               </Tag>
             </Descriptions.Item>

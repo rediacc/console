@@ -1,5 +1,5 @@
-import { Alert, Button, Flex, Modal, Progress, Table, Tag, Tooltip, Typography } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { Alert, Button, Flex, Modal, Progress, Table, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import type { QueueItemCompletionResult } from '@/services/helloService';
@@ -384,24 +384,38 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           {!isRunning && testResults.some((r) => r.status !== 'pending') && (
             <div data-testid="connectivity-summary-statistics">
               <Flex align="center" wrap>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} data-testid="connectivity-total-machines">
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+                  data-testid="connectivity-total-machines"
+                >
                   <Typography.Text type="secondary">{t('machines:totalMachines')}:</Typography.Text>
                   <Typography.Text strong>{machines.length}</Typography.Text>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} data-testid="connectivity-connected-count">
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+                  data-testid="connectivity-connected-count"
+                >
                   <Typography.Text type="secondary">{t('machines:connected')}:</Typography.Text>
                   <Typography.Text strong type="success">
                     {testResults.filter((r) => r.status === 'success').length}
                   </Typography.Text>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} data-testid="connectivity-failed-count">
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+                  data-testid="connectivity-failed-count"
+                >
                   <Typography.Text type="secondary">{t('machines:failed')}:</Typography.Text>
                   <Typography.Text strong type="danger">
                     {testResults.filter((r) => r.status === 'failed').length}
                   </Typography.Text>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} data-testid="connectivity-average-response">
-                  <Typography.Text type="secondary">{t('machines:averageResponse')}:</Typography.Text>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+                  data-testid="connectivity-average-response"
+                >
+                  <Typography.Text type="secondary">
+                    {t('machines:averageResponse')}:
+                  </Typography.Text>
                   <Typography.Text strong>
                     {(() => {
                       const successfulTests = testResults.filter(

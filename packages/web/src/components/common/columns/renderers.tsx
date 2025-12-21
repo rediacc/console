@@ -1,5 +1,5 @@
-import { Tag, Tooltip, Typography } from 'antd';
 import React from 'react';
+import { Tag, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 /**
  * Styled truncated text for monospace display
@@ -45,7 +45,11 @@ export const renderTimestampElement = (
   format: string = 'YYYY-MM-DD HH:mm:ss'
 ): React.ReactNode => {
   if (!timestamp) {
-    return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
+    return (
+      <Typography.Text color="secondary" type="secondary">
+        -
+      </Typography.Text>
+    );
   }
   return dayjs(timestamp).format(format);
 };
@@ -63,7 +67,11 @@ export const renderTruncatedId = (
   showEllipsis: boolean = true
 ): React.ReactNode => {
   if (!id) {
-    return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
+    return (
+      <Typography.Text color="secondary" type="secondary">
+        -
+      </Typography.Text>
+    );
   }
 
   const truncated = id.substring(0, length);
@@ -87,7 +95,11 @@ export const renderCopyableId = (
   length: number = 8
 ): React.ReactNode => {
   if (!id) {
-    return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
+    return (
+      <Typography.Text color="secondary" type="secondary">
+        -
+      </Typography.Text>
+    );
   }
 
   return (
@@ -108,7 +120,11 @@ export const renderVersionTag = (
   formatFn?: (version: number) => string
 ): React.ReactNode => {
   if (version === null || version === undefined) {
-    return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
+    return (
+      <Typography.Text color="secondary" type="secondary">
+        -
+      </Typography.Text>
+    );
   }
 
   const label = formatFn ? formatFn(version) : `v${version}`;
@@ -183,11 +199,11 @@ export const renderBoolean = (
   noText: string = 'No'
 ): React.ReactNode => {
   if (value === null || value === undefined) {
-    return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
+    return (
+      <Typography.Text color="secondary" type="secondary">
+        -
+      </Typography.Text>
+    );
   }
-  return value ? (
-    <Tag color="success">{yesText}</Tag>
-  ) : (
-    <Tag>{noText}</Tag>
-  );
+  return value ? <Tag color="success">{yesText}</Tag> : <Tag>{noText}</Tag>;
 };

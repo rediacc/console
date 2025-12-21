@@ -1,5 +1,24 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Button, Card, Checkbox, Col, Empty, Flex, Form, Input, Modal, Popconfirm, Result, Row, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  Col,
+  Empty,
+  Flex,
+  Form,
+  Input,
+  Modal,
+  Popconfirm,
+  Result,
+  Row,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
@@ -535,7 +554,9 @@ const InfrastructurePage: React.FC = () => {
                 title={
                   <Space direction="vertical" size={0}>
                     <Typography.Text strong>{t('regions.title')}</Typography.Text>
-                    <Typography.Text type="secondary">{t('regions.selectRegionPrompt')}</Typography.Text>
+                    <Typography.Text type="secondary">
+                      {t('regions.selectRegionPrompt')}
+                    </Typography.Text>
                   </Space>
                 }
                 loading={regionsLoading}

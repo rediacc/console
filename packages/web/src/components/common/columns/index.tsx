@@ -1,12 +1,17 @@
 import React from 'react';
 import { DeleteOutlined, EditOutlined, EyeOutlined, MoreOutlined } from '@ant-design/icons';
-import { Button, Dropdown, Space, Tag, Tooltip, Typography, type MenuProps, type TooltipProps } from 'antd';
-import i18n from '@/i18n/config';
 import {
-  createStatusRenderer,
-  renderTimestampElement,
-  type StatusConfig,
-} from './renderers';
+  Button,
+  Dropdown,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+  type MenuProps,
+  type TooltipProps,
+} from 'antd';
+import i18n from '@/i18n/config';
+import { createStatusRenderer, renderTimestampElement, type StatusConfig } from './renderers';
 import type { ColumnsType } from 'antd/es/table';
 
 /**
@@ -269,9 +274,7 @@ export const createActionColumn = <T,>(
 
     return (
       <Dropdown menu={menu} trigger={['click']}>
-        <Button icon={options.buttonIcon || <MoreOutlined />}>
-          {options.buttonLabel}
-        </Button>
+        <Button icon={options.buttonIcon || <MoreOutlined />}>{options.buttonLabel}</Button>
       </Dropdown>
     );
   },
@@ -416,7 +419,11 @@ export const createTruncatedColumn = <T,>(
     render: (value: string | null | undefined, record: T) => {
       const resolvedValue = options.renderText ? options.renderText(value, record) : value;
       if (!resolvedValue) {
-        return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
+        return (
+          <Typography.Text color="secondary" type="secondary">
+            -
+          </Typography.Text>
+        );
       }
       const shouldTruncate = resolvedValue.length > maxLength;
       const displayText = shouldTruncate
@@ -549,7 +556,11 @@ export const createVersionColumn = <T,>(
       }
 
       if (value === null || value === undefined) {
-        return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
+        return (
+          <Typography.Text color="secondary" type="secondary">
+            -
+          </Typography.Text>
+        );
       }
 
       const formattedVersion = options.formatVersion

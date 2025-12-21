@@ -123,11 +123,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
       <Form.Item wrapperCol={{ offset: labelCol.span, span: wrapperCol.span }}>
         <Flex justify="flex-end" style={{ width: '100%' }}>
           {onCancel && (
-            <Button
-              onClick={onCancel}
-              disabled={loading}
-              data-testid="resource-form-cancel-button"
-            >
+            <Button onClick={onCancel} disabled={loading} data-testid="resource-form-cancel-button">
               {cancelText}
             </Button>
           )}

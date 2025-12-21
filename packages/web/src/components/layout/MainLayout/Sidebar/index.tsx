@@ -1,5 +1,5 @@
-import { Flex, Layout, Tooltip } from 'antd';
 import React from 'react';
+import { Flex, Layout, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { MenuItem } from '@/components/layout/MainLayout/helpers';
@@ -81,10 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       aria-label={t('navigation.mainNavigation')}
       data-testid="main-sidebar"
     >
-      <Flex
-        vertical
-        style={{ height: '100%', overflow: 'hidden', paddingTop: isDrawer ? 80 : 16 }}
-      >
+      <Flex vertical style={{ height: '100%', overflow: 'hidden', paddingTop: isDrawer ? 80 : 16 }}>
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 24 }}>
           {menuItems.map((item) => {
             const visibleChildren = item.children || [];

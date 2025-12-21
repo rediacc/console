@@ -121,7 +121,8 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
     return (
       <Select
         value={
-          getStringParam(paramName) || (typeof paramInfo.default === 'string' ? paramInfo.default : '')
+          getStringParam(paramName) ||
+          (typeof paramInfo.default === 'string' ? paramInfo.default : '')
         }
         onChange={(value: string) => {
           const previousValue = functionParams[paramName];

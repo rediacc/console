@@ -39,9 +39,7 @@ const machineIssueColumns: ColumnsType<QueueMachineIssue> = [
     width: 200,
     render: (_: unknown, record: QueueMachineIssue) => (
       <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-        {(record.staleItems || 0) > 0 && (
-          <Tag color="warning">{record.staleItems} stale</Tag>
-        )}
+        {(record.staleItems || 0) > 0 && <Tag color="warning">{record.staleItems} stale</Tag>}
         <Tag color="processing">{record.pendingItems || 0} pending</Tag>
         <Tag color="processing">{record.activeItems || 0} active</Tag>
       </Flex>
@@ -145,12 +143,8 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                                 <WarningOutlined /> {teamIssue.staleItems} stale
                               </Tag>
                             )}
-                            <Tag color="processing">
-                              {teamIssue.pendingItems || 0} pending
-                            </Tag>
-                            <Tag color="processing">
-                              {teamIssue.activeItems || 0} active
-                            </Tag>
+                            <Tag color="processing">{teamIssue.pendingItems || 0} pending</Tag>
+                            <Tag color="processing">{teamIssue.activeItems || 0} active</Tag>
                           </Flex>
                         </Flex>
                       </List.Item>

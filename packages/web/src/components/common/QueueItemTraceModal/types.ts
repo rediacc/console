@@ -13,7 +13,6 @@ export interface QueueItemTraceModalProps extends BaseModalProps {
 
 export interface ConsoleOutputProps {
   content: string;
-  theme: string;
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
   isEmpty?: boolean;
 }

@@ -75,7 +75,11 @@ export const DetailPanelFieldRow = (props: React.ComponentProps<typeof Flex>) =>
 export const DetailPanelFieldLabel: React.FC<
   React.ComponentProps<typeof Text> & { $minWidth?: number }
 > = ({ $minWidth = 160, style, ...props }) => (
-  <Text type="secondary" style={{ minWidth: $minWidth, flexShrink: 0, letterSpacing: '0.01em', ...style }} {...props} />
+  <Text
+    type="secondary"
+    style={{ minWidth: $minWidth, flexShrink: 0, letterSpacing: '0.01em', ...style }}
+    {...props}
+  />
 );
 
 export const DetailPanelFieldValue = (props: React.ComponentProps<typeof Text>) => (

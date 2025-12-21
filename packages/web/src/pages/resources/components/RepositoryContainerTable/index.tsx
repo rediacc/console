@@ -772,7 +772,9 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         </div>
       ) : (
         <div data-testid="no-containers" style={{ textAlign: 'center' }}>
-          <Typography.Text type="secondary">{t('resources:containers.noContainers')}</Typography.Text>
+          <Typography.Text type="secondary">
+            {t('resources:containers.noContainers')}
+          </Typography.Text>
         </div>
       )}
 

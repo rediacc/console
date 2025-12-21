@@ -466,7 +466,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   const renderSuccess = () => (
     <div style={{ textAlign: 'center' }} data-testid="registration-success-container">
-      <span style={{ display: 'inline-flex', fontSize: 40 }} data-testid="registration-success-icon">
+      <span
+        style={{ display: 'inline-flex', fontSize: 40 }}
+        data-testid="registration-success-icon"
+      >
         <CheckCircleOutlined />
       </span>
       <Typography.Title level={4} data-testid="registration-success-title">

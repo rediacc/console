@@ -10,7 +10,6 @@ import { Endpoint, endpointService } from '@/services/endpointService';
 import { showMessage } from '@/utils/messages';
 import { ApiOutlined, DeleteOutlined, LoadingOutlined, PlusOutlined } from '@/utils/optimizedIcons';
 
-
 interface EndpointHealth {
   isHealthy: boolean;
   version?: string;
@@ -379,7 +378,9 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                   <Flex align="center" gap={8}>
                     {/* Health indicator */}
                     {isChecking ? (
-                      <LoadingOutlined style={{ fontSize: 12, color: 'var(--ant-color-warning)' }} />
+                      <LoadingOutlined
+                        style={{ fontSize: 12, color: 'var(--ant-color-warning)' }}
+                      />
                     ) : (
                       <span
                         style={{
@@ -470,9 +471,9 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           >
             {selectedEndpoint.url}
             {isCheckingHealth && (
-              <Flex inline align="center">
+              <span style={{ display: 'inline-flex', alignItems: 'center' }}>
                 <LoadingOutlined style={{ fontSize: 12, color: 'var(--ant-color-warning)' }} />
-              </Flex>
+              </span>
             )}
           </Typography.Text>
         )}
@@ -531,11 +532,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
               >
                 Cancel
               </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                data-testid="custom-endpoint-submit-button"
-              >
+              <Button type="primary" htmlType="submit" data-testid="custom-endpoint-submit-button">
                 Add Endpoint
               </Button>
             </Flex>

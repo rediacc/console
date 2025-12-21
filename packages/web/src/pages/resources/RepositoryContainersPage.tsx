@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Breadcrumb, Button, Card, Flex, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -125,6 +125,12 @@ const RepoContainersPage: React.FC = () => {
     setSplitWidth(panelWidth);
   }, [panelWidth]);
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshKey((prev) => prev + 1);
+    // Refetch machines to get updated vaultStatus with container data
+    await refetchMachines();
+  }, [refetchMachines]);
+
   // Auto-refresh data on mount (query existing data, no queue items)
   useEffect(() => {
     if (actualMachine && !hasInitiallyLoaded) {
@@ -132,7 +138,7 @@ const RepoContainersPage: React.FC = () => {
       // Just refresh existing data from database
       handleRefresh();
     }
-  }, [actualMachine, hasInitiallyLoaded]);
+  }, [actualMachine, hasInitiallyLoaded, handleRefresh]);
 
   const actualPanelWidth = isPanelCollapsed ? DETAIL_PANEL.COLLAPSED_WIDTH : splitWidth;
 
@@ -157,12 +163,6 @@ const RepoContainersPage: React.FC = () => {
   ) => {
     setSelectedContainer(container as PluginContainer);
     setIsPanelCollapsed(false);
-  };
-
-  const handleRefresh = async () => {
-    setRefreshKey((prev) => prev + 1);
-    // Refetch machines to get updated vaultStatus with container data
-    await refetchMachines();
   };
 
   // Loading state
@@ -244,150 +244,150 @@ const RepoContainersPage: React.FC = () => {
         <Flex vertical>
           <div>
             <Breadcrumb
-            items={[
-              {
-                title: <span>{t('machines:machines')}</span>,
-                onClick: () => navigate('/machines'),
-              },
-              {
-                title: <span>{actualMachine.machineName}</span>,
-                onClick: () =>
-                  navigate(`/machines/${machineName}/repositories`, {
-                    state: { machine: actualMachine },
-                  }),
-              },
-              {
-                title: <span>{t('resources:repositories.repositories')}</span>,
-                onClick: () =>
-                  navigate(`/machines/${machineName}/repositories`, {
-                    state: { machine: actualMachine },
-                  }),
-              },
-              {
-                title: actualRepositoryName,
-              },
-              {
-                title: t('resources:containers.containers'),
-              },
-            ]}
-            data-testid="repository-containers-breadcrumb"
-          />
+              items={[
+                {
+                  title: <span>{t('machines:machines')}</span>,
+                  onClick: () => navigate('/machines'),
+                },
+                {
+                  title: <span>{actualMachine.machineName}</span>,
+                  onClick: () =>
+                    navigate(`/machines/${machineName}/repositories`, {
+                      state: { machine: actualMachine },
+                    }),
+                },
+                {
+                  title: <span>{t('resources:repositories.repositories')}</span>,
+                  onClick: () =>
+                    navigate(`/machines/${machineName}/repositories`, {
+                      state: { machine: actualMachine },
+                    }),
+                },
+                {
+                  title: actualRepositoryName,
+                },
+                {
+                  title: t('resources:containers.containers'),
+                },
+              ]}
+              data-testid="repository-containers-breadcrumb"
+            />
 
-          <Flex align="center" justify="space-between" wrap>
-            <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-              <Flex align="center" gap={8} wrap>
-                <Tooltip title={t('machines:backToRepos')}>
+            <Flex align="center" justify="space-between" wrap>
+              <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                <Flex align="center" gap={8} wrap>
+                  <Tooltip title={t('machines:backToRepos')}>
+                    <Button
+                      type="text"
+                      icon={<DoubleLeftOutlined />}
+                      onClick={handleBackToRepos}
+                      aria-label={t('machines:backToRepos')}
+                      data-testid="repository-containers-back-button"
+                    />
+                  </Tooltip>
+                  <Typography.Title level={4}>
+                    <Space>
+                      <InboxOutlined />
+                      <span>
+                        {t('machines:repoContainers')}: {actualRepositoryName}
+                      </span>
+                    </Space>
+                  </Typography.Title>
+                </Flex>
+                <Flex align="center" wrap>
+                  <Tag color="default">
+                    {t('machines:machine')}: {actualMachine.machineName}
+                  </Tag>
+                  <Tag color="success">
+                    {t('machines:team')}: {actualMachine.teamName}
+                  </Tag>
+                  <Tag color="processing">
+                    {t('machines:bridge')}: {actualMachine.bridgeName}
+                  </Tag>
+                  {actualMachine.regionName && (
+                    <Tag color="processing">
+                      {t('machines:region')}: {actualMachine.regionName}
+                    </Tag>
+                  )}
+                </Flex>
+              </div>
+
+              <Flex align="center" wrap>
+                <Tooltip title={t('machines:checkAndRefresh')}>
                   <Button
                     type="text"
-                    icon={<DoubleLeftOutlined />}
-                    onClick={handleBackToRepos}
-                    aria-label={t('machines:backToRepos')}
-                    data-testid="repository-containers-back-button"
+                    icon={<ReloadOutlined />}
+                    onClick={() => connectivityTest.open()}
+                    disabled={!actualMachine}
+                    data-testid="repository-containers-test-and-refresh-button"
+                    aria-label={t('machines:checkAndRefresh')}
                   />
                 </Tooltip>
-                <Typography.Title level={4}>
-                  <Space>
-                    <InboxOutlined />
-                    <span>
-                      {t('machines:repoContainers')}: {actualRepositoryName}
-                    </span>
-                  </Space>
-                </Typography.Title>
               </Flex>
-              <Flex align="center" wrap>
-                <Tag color="default">
-                  {t('machines:machine')}: {actualMachine.machineName}
-                </Tag>
-                <Tag color="success">
-                  {t('machines:team')}: {actualMachine.teamName}
-                </Tag>
-                <Tag color="processing">
-                  {t('machines:bridge')}: {actualMachine.bridgeName}
-                </Tag>
-                {actualMachine.regionName && (
-                  <Tag color="processing">
-                    {t('machines:region')}: {actualMachine.regionName}
-                  </Tag>
-                )}
-              </Flex>
-            </div>
-
-            <Flex align="center" wrap>
-              <Tooltip title={t('machines:checkAndRefresh')}>
-                <Button
-                  type="text"
-                  icon={<ReloadOutlined />}
-                  onClick={() => connectivityTest.open()}
-                  disabled={!actualMachine}
-                  data-testid="repository-containers-test-and-refresh-button"
-                  aria-label={t('machines:checkAndRefresh')}
-                />
-              </Tooltip>
             </Flex>
-          </Flex>
-        </div>
-
-        <Flex style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-          <div
-            style={{
-              width: selectedResource ? `calc(100% - ${actualPanelWidth}px)` : '100%',
-              height: '100%',
-              overflow: 'auto',
-              minWidth: 240,
-            }}
-          >
-            <RepositoryContainerTable
-              machine={actualMachine}
-              repository={actualRepository}
-              key={`${actualMachine.machineName}-${actualRepositoryName}-${refreshKey}`}
-              refreshKey={refreshKey}
-              onContainerClick={handleContainerClick}
-              highlightedContainer={selectedContainer}
-              onQueueItemCreated={(taskId, machineName) => {
-                queueTrace.open(taskId, machineName);
-              }}
-            />
           </div>
 
-          {/* Backdrop must come BEFORE panel for correct z-index layering */}
-          {selectedResource && !isPanelCollapsed && (
+          <Flex style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
             <div
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: actualPanelWidth,
-                bottom: 0,
-                backgroundColor: '#404040',
-                display: 'block',
-                zIndex: 1000,
-                pointerEvents: 'auto',
+                width: selectedResource ? `calc(100% - ${actualPanelWidth}px)` : '100%',
+                height: '100%',
+                overflow: 'auto',
+                minWidth: 240,
               }}
-              onClick={() => {
-                setSelectedContainer(null);
-                setIsPanelCollapsed(true);
-              }}
-              data-testid="repository-containers-backdrop"
-            />
-          )}
+            >
+              <RepositoryContainerTable
+                machine={actualMachine}
+                repository={actualRepository}
+                key={`${actualMachine.machineName}-${actualRepositoryName}-${refreshKey}`}
+                refreshKey={refreshKey}
+                onContainerClick={handleContainerClick}
+                highlightedContainer={selectedContainer}
+                onQueueItemCreated={(taskId, machineName) => {
+                  queueTrace.open(taskId, machineName);
+                }}
+              />
+            </div>
 
-          {selectedResource && (
-            <UnifiedDetailPanel
-              type={selectedResource.type}
-              data={selectedResource.data}
-              visible={true}
-              onClose={() => {
-                setSelectedContainer(null);
-                setIsPanelCollapsed(true);
-              }}
-              splitWidth={splitWidth}
-              onSplitWidthChange={setSplitWidth}
-              isCollapsed={isPanelCollapsed}
-              onToggleCollapse={() => setIsPanelCollapsed(!isPanelCollapsed)}
-              collapsedWidth={DETAIL_PANEL.COLLAPSED_WIDTH}
-            />
-          )}
-        </Flex>
+            {/* Backdrop must come BEFORE panel for correct z-index layering */}
+            {selectedResource && !isPanelCollapsed && (
+              <div
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: actualPanelWidth,
+                  bottom: 0,
+                  backgroundColor: '#404040',
+                  display: 'block',
+                  zIndex: 1000,
+                  pointerEvents: 'auto',
+                }}
+                onClick={() => {
+                  setSelectedContainer(null);
+                  setIsPanelCollapsed(true);
+                }}
+                data-testid="repository-containers-backdrop"
+              />
+            )}
+
+            {selectedResource && (
+              <UnifiedDetailPanel
+                type={selectedResource.type}
+                data={selectedResource.data}
+                visible={true}
+                onClose={() => {
+                  setSelectedContainer(null);
+                  setIsPanelCollapsed(true);
+                }}
+                splitWidth={splitWidth}
+                onSplitWidthChange={setSplitWidth}
+                isCollapsed={isPanelCollapsed}
+                onToggleCollapse={() => setIsPanelCollapsed(!isPanelCollapsed)}
+                collapsedWidth={DETAIL_PANEL.COLLAPSED_WIDTH}
+              />
+            )}
+          </Flex>
         </Flex>
       </Card>
 

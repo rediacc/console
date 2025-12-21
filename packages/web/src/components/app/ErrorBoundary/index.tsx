@@ -107,7 +107,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       // Default error UI
       return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 24, minHeight: 320 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 24,
+            minHeight: 320,
+          }}
+        >
           <Result
             status="error"
             title={i18n.t('common:errorBoundary.title')}

@@ -9,6 +9,7 @@ import {
   CopyOutlined,
   DesktopOutlined,
   HddOutlined,
+  ReloadOutlined,
 } from '@/utils/optimizedIcons';
 import { MachineAvailabilitySummaryProps, MachineStats } from './types';
 

@@ -74,7 +74,9 @@ const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth
             <span style={{ color: 'var(--ant-color-text-secondary)', display: 'inline-flex' }}>
               <ClockCircleOutlined />
             </span>
-            <Typography.Text>{accountHealth.resourcesNearLimit} resources near limit</Typography.Text>
+            <Typography.Text>
+              {accountHealth.resourcesNearLimit} resources near limit
+            </Typography.Text>
           </Flex>
         </Flex>
 

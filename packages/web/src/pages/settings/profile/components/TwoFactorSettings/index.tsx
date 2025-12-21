@@ -1,5 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Card, Flex, Form, Input, Modal, Result, Space, Tabs, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Flex,
+  Form,
+  Input,
+  Modal,
+  Result,
+  Space,
+  Tabs,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
 import { useSelector } from 'react-redux';
@@ -255,7 +267,12 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
       key: 'qrcode',
       label: t('twoFactorAuth.setupMethods.qrCode'),
       children: (
-        <Flex vertical align="center" style={{ textAlign: 'center', alignItems: 'center' }} data-testid="tfa-settings-qr-tab">
+        <Flex
+          vertical
+          align="center"
+          style={{ textAlign: 'center', alignItems: 'center' }}
+          data-testid="tfa-settings-qr-tab"
+        >
           <div style={{ display: 'inline-flex' }}>
             <QRCode value={otpUrl} size={200} data-testid="tfa-settings-qr-code" />
           </div>
@@ -300,7 +317,9 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
   return (
     <Flex vertical gap={24} style={{ width: '100%' }}>
       <Flex vertical align="center" style={{ textAlign: 'center', alignItems: 'center' }}>
-        <SafetyCertificateOutlined style={{ fontSize: 32, color: 'var(--ant-color-text-tertiary)' }} />
+        <SafetyCertificateOutlined
+          style={{ fontSize: 32, color: 'var(--ant-color-text-tertiary)' }}
+        />
         <Title level={4}>{t('twoFactorAuth.verification.title')}</Title>
         <Paragraph color="secondary">{t('twoFactorAuth.verification.subtitle')}</Paragraph>
       </Flex>

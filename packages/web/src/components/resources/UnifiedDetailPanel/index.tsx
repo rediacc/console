@@ -1,5 +1,5 @@
-import { Button, Tooltip } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
+import { Button, Tooltip } from 'antd';
 import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
 import { RepositoryDetailPanel } from '@/components/resources/internal/RepositoryDetailPanel';
@@ -193,7 +193,10 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
           <span style={{ fontSize: 16 }}>{getResourceIcon()}</span>
         </div>
       ) : (
-        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }} data-testid="unified-detail-content">
+        <div
+          style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}
+          data-testid="unified-detail-content"
+        >
           {actualType === 'machine' ? (
             <MachineVaultStatusPanel
               machine={currentData as Machine}

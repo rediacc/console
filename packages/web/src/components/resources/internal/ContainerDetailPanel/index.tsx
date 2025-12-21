@@ -2,18 +2,6 @@ import React, { useMemo } from 'react';
 import { Card, Flex, Progress, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  ApiOutlined,
-  AppstoreOutlined,
-  CloudServerOutlined,
-  ContainerOutlined,
-  DoubleRightOutlined,
-  FolderOutlined,
-  HddOutlined,
-  PauseCircleOutlined,
-  PlayCircleOutlined,
-  WifiOutlined,
-} from '@/utils/optimizedIcons';
-import {
   DetailPanelBody,
   DetailPanelCollapseButton,
   DetailPanelDivider,
@@ -33,6 +21,18 @@ import {
   DetailPanelTitle,
   DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
+import {
+  ApiOutlined,
+  AppstoreOutlined,
+  CloudServerOutlined,
+  ContainerOutlined,
+  DoubleRightOutlined,
+  FolderOutlined,
+  HddOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
+  WifiOutlined,
+} from '@/utils/optimizedIcons';
 
 interface ContainerData {
   id: string;
@@ -125,10 +125,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
           : `${mapping.container_port}/${mapping.protocol}`;
 
         return (
-          <Tag
-            key={`${mapping.container_port}-${mapping.protocol}-${index}`}
-            color="default"
-          >
+          <Tag key={`${mapping.container_port}-${mapping.protocol}-${index}`} color="default">
             {tagText}
           </Tag>
         );
@@ -176,11 +173,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
           >
             {container.state}
           </Tag>
-          <Tag
-            color="processing"
-            icon={<FolderOutlined />}
-            data-testid="container-detail-repo-tag"
-          >
+          <Tag color="processing" icon={<FolderOutlined />} data-testid="container-detail-repo-tag">
             {t('resources:containers.repositoryLabel', 'Repository')}: {container.repository}
           </Tag>
         </DetailPanelTagGroup>
@@ -190,28 +183,38 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         <div>
           <DetailPanelSectionHeader data-testid="container-detail-info-section">
             {isPlugin ? <ApiOutlined /> : <ContainerOutlined />}
-            <DetailPanelSectionTitle>{t('resources:containers.containerInfo')}</DetailPanelSectionTitle>
+            <DetailPanelSectionTitle>
+              {t('resources:containers.containerInfo')}
+            </DetailPanelSectionTitle>
           </DetailPanelSectionHeader>
 
           <DetailPanelSectionCard data-testid="container-detail-basic-info">
             <DetailPanelFieldList>
               <DetailPanelFieldRow>
-                <DetailPanelFieldLabel>{t('resources:containers.containerID')}:</DetailPanelFieldLabel>
+                <DetailPanelFieldLabel>
+                  {t('resources:containers.containerID')}:
+                </DetailPanelFieldLabel>
                 <DetailPanelFieldMonospaceValue copyable data-testid="container-detail-id">
                   {container.id}
                 </DetailPanelFieldMonospaceValue>
               </DetailPanelFieldRow>
               <DetailPanelFieldRow>
                 <DetailPanelFieldLabel>{t('resources:containers.image')}:</DetailPanelFieldLabel>
-                <DetailPanelFieldValue data-testid="container-detail-image">{container.image}</DetailPanelFieldValue>
+                <DetailPanelFieldValue data-testid="container-detail-image">
+                  {container.image}
+                </DetailPanelFieldValue>
               </DetailPanelFieldRow>
               <DetailPanelFieldRow>
                 <DetailPanelFieldLabel>{t('resources:containers.status')}:</DetailPanelFieldLabel>
-                <DetailPanelFieldValue data-testid="container-detail-status">{container.status}</DetailPanelFieldValue>
+                <DetailPanelFieldValue data-testid="container-detail-status">
+                  {container.status}
+                </DetailPanelFieldValue>
               </DetailPanelFieldRow>
               <DetailPanelFieldRow>
                 <DetailPanelFieldLabel>{t('resources:containers.created')}:</DetailPanelFieldLabel>
-                <DetailPanelFieldValue data-testid="container-detail-created">{container.created}</DetailPanelFieldValue>
+                <DetailPanelFieldValue data-testid="container-detail-created">
+                  {container.created}
+                </DetailPanelFieldValue>
               </DetailPanelFieldRow>
             </DetailPanelFieldList>
           </DetailPanelSectionCard>
@@ -224,7 +227,9 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
           </Flex>
         </DetailPanelDivider>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+        <div
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
+        >
           <Card size="small" data-testid="container-detail-cpu-card">
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {t('resources:containers.cpuUsage')}
@@ -298,7 +303,9 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             </DetailPanelFieldRow>
             <DetailPanelFieldRow>
               <DetailPanelFieldLabel>{t('resources:containers.size')}:</DetailPanelFieldLabel>
-              <DetailPanelFieldValue data-testid="container-detail-size">{container.size}</DetailPanelFieldValue>
+              <DetailPanelFieldValue data-testid="container-detail-size">
+                {container.size}
+              </DetailPanelFieldValue>
             </DetailPanelFieldRow>
             <DetailPanelFieldRow>
               <DetailPanelFieldLabel>{t('resources:containers.processes')}:</DetailPanelFieldLabel>

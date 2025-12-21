@@ -1,5 +1,5 @@
-import { Flex, Tag, Tooltip, Typography } from 'antd';
 import React from 'react';
+import { Flex, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   formatTimestampAsIs,

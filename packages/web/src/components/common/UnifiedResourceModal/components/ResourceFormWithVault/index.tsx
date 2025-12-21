@@ -153,9 +153,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
         {beforeVaultContent}
 
-        <Divider style={{ margin: '16px 0' }}>
-          {t('vaultEditor.vaultConfiguration')}
-        </Divider>
+        <Divider style={{ margin: '16px 0' }}>{t('vaultEditor.vaultConfiguration')}</Divider>
 
         <div style={{ flexShrink: 0 }} data-testid="resource-modal-vault-editor-section">
           <VaultEditor

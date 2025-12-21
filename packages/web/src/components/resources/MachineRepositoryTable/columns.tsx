@@ -220,9 +220,15 @@ export const useSystemContainerColumns = () => {
       ...systemNameColumn,
       render: (name: string, record: Container, index) => (
         <Space>
-          <StatusIcon $color={token.colorInfo} $size="LG">
+          <span
+            style={{
+              display: 'inline-flex',
+              fontSize: 20,
+              color: token.colorInfo,
+            }}
+          >
             <CloudServerOutlined />
-          </StatusIcon>
+          </span>
           <strong>{systemNameColumn.render?.(name, record, index) as React.ReactNode}</strong>
         </Space>
       ),

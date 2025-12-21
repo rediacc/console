@@ -293,10 +293,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                   placement="bottomRight"
                   data-testid="audit-trace-export-dropdown"
                 >
-                  <Button
-                    icon={<DownloadOutlined />}
-                    data-testid="audit-trace-export-button"
-                  >
+                  <Button icon={<DownloadOutlined />} data-testid="audit-trace-export-button">
                     {t('audit.export')}
                   </Button>
                 </Dropdown>

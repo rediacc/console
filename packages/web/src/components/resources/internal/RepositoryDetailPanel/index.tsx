@@ -2,22 +2,6 @@
 import { Alert, Card, Col, Empty, Flex, Progress, Row, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
-import type { Machine } from '@/types';
-import {
-  AppstoreOutlined,
-  CheckCircleOutlined,
-  CloudServerOutlined,
-  CodeOutlined,
-  DatabaseOutlined,
-  DoubleRightOutlined,
-  FieldTimeOutlined,
-  FolderOutlined,
-  InfoCircleOutlined,
-  StopOutlined,
-  WarningOutlined,
-} from '@/utils/optimizedIcons';
-import { abbreviatePath } from '@/utils/pathUtils';
-import type { GetTeamRepositories_ResultSet1 as Repository } from '@rediacc/shared/types';
 import {
   DetailPanelBody,
   DetailPanelCollapseButton,
@@ -36,6 +20,22 @@ import {
   DetailPanelTitle,
   DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
+import type { Machine } from '@/types';
+import {
+  AppstoreOutlined,
+  CheckCircleOutlined,
+  CloudServerOutlined,
+  CodeOutlined,
+  DatabaseOutlined,
+  DoubleRightOutlined,
+  FieldTimeOutlined,
+  FolderOutlined,
+  InfoCircleOutlined,
+  StopOutlined,
+  WarningOutlined,
+} from '@/utils/optimizedIcons';
+import { abbreviatePath } from '@/utils/pathUtils';
+import type { GetTeamRepositories_ResultSet1 as Repository } from '@rediacc/shared/types';
 import type { TFunction } from 'i18next';
 
 interface RepositoryDetailPanelProps {
@@ -208,12 +208,19 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
   if (!repository || !visible) return null;
 
   return (
-    <DetailPanelSurface $splitView={splitView} $visible={visible} data-testid="repository-detail-panel">
+    <DetailPanelSurface
+      $splitView={splitView}
+      $visible={visible}
+      data-testid="repository-detail-panel"
+    >
       <DetailPanelHeader>
         <DetailPanelHeaderRow>
           <DetailPanelTitleGroup>
             <FolderOutlined style={{ fontSize: 28 }} />
-            <DetailPanelTitle level={4} data-testid={`repo-detail-title-${repository.repositoryName}`}>
+            <DetailPanelTitle
+              level={4}
+              data-testid={`repo-detail-title-${repository.repositoryName}`}
+            >
               {repository.repositoryName}
             </DetailPanelTitle>
           </DetailPanelTitleGroup>
@@ -291,16 +298,20 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
   const { repositoryData } = panelData;
 
   return (
-      <div data-testid="repository-detail-info-section">
+    <div data-testid="repository-detail-info-section">
       <DetailPanelSectionHeader>
         <FolderOutlined />
-        <DetailPanelSectionTitle level={5}>{t('resources:repositories.repoInfo')}</DetailPanelSectionTitle>
+        <DetailPanelSectionTitle level={5}>
+          {t('resources:repositories.repoInfo')}
+        </DetailPanelSectionTitle>
       </DetailPanelSectionHeader>
 
       <DetailPanelSectionCard size="small" data-testid="repository-detail-info-card">
         <Flex vertical style={{ width: '100%' }}>
           <DetailPanelFieldRow>
-            <DetailPanelFieldLabel>{t('resources:repositories.repositoryGuid')}:</DetailPanelFieldLabel>
+            <DetailPanelFieldLabel>
+              {t('resources:repositories.repositoryGuid')}:
+            </DetailPanelFieldLabel>
             <DetailPanelFieldMonospaceValue
               copyable
               data-testid={`repo-detail-guid-${repository.repositoryName}`}
@@ -345,7 +356,9 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
 
           {repositoryData.has_rediaccfile && (
             <DetailPanelFieldRow>
-              <DetailPanelFieldLabel>{t('resources:repositories.rediaccfile')}:</DetailPanelFieldLabel>
+              <DetailPanelFieldLabel>
+                {t('resources:repositories.rediaccfile')}:
+              </DetailPanelFieldLabel>
               <Tag
                 bordered={false}
                 color={getStatusColor('info')}
@@ -409,7 +422,9 @@ const ExternalVolumeWarning: React.FC<SectionProps> = ({ repository, panelData }
       message="External Docker Volumes Detected"
       description={
         <Flex vertical>
-          <DetailPanelFieldValue>The following volumes are stored outside the repository:</DetailPanelFieldValue>
+          <DetailPanelFieldValue>
+            The following volumes are stored outside the repository:
+          </DetailPanelFieldValue>
           <ul>
             {repositoryData.external_volume_names.map((vol) => (
               <li key={vol}>
@@ -419,7 +434,8 @@ const ExternalVolumeWarning: React.FC<SectionProps> = ({ repository, panelData }
           </ul>
           <DetailPanelFieldValue color="secondary">
             <strong>Warning:</strong> If this repository is cloned, these volumes will be orphaned.
-            Use bind mounts to <DetailPanelFieldValue code>$REPOSITORY_PATH</DetailPanelFieldValue> instead.
+            Use bind mounts to <DetailPanelFieldValue code>$REPOSITORY_PATH</DetailPanelFieldValue>{' '}
+            instead.
           </DetailPanelFieldValue>
         </Flex>
       }
@@ -449,11 +465,15 @@ const StorageSection: React.FC<SectionProps> = ({ repository, panelData, t }) =>
           >
             <Flex vertical style={{ width: '100%' }}>
               <DetailPanelFieldRow>
-                <DetailPanelFieldLabel>{t('resources:repositories.imageSize')}:</DetailPanelFieldLabel>
+                <DetailPanelFieldLabel>
+                  {t('resources:repositories.imageSize')}:
+                </DetailPanelFieldLabel>
                 <DetailPanelFieldValue>{repositoryData.size_human}</DetailPanelFieldValue>
               </DetailPanelFieldRow>
               <DetailPanelFieldRow>
-                <DetailPanelFieldLabel>{t('resources:repositories.lastModified')}:</DetailPanelFieldLabel>
+                <DetailPanelFieldLabel>
+                  {t('resources:repositories.lastModified')}:
+                </DetailPanelFieldLabel>
                 <DetailPanelFieldValue>{repositoryData.modified_human}</DetailPanelFieldValue>
               </DetailPanelFieldRow>
             </Flex>
@@ -505,7 +525,10 @@ const FilePathsSection: React.FC<SectionProps> = ({ repository, panelData, t }) 
         {t('resources:repositories.filePaths')}
       </DetailPanelDivider>
 
-      <DetailPanelSectionCard size="small" data-testid={`repo-detail-file-paths-card-${repository.repositoryName}`}>
+      <DetailPanelSectionCard
+        size="small"
+        data-testid={`repo-detail-file-paths-card-${repository.repositoryName}`}
+      >
         <Flex vertical style={{ width: '100%' }}>
           <DetailPanelFieldRow>
             <DetailPanelFieldLabel>{t('resources:repositories.imagePath')}:</DetailPanelFieldLabel>
@@ -518,7 +541,9 @@ const FilePathsSection: React.FC<SectionProps> = ({ repository, panelData, t }) 
           </DetailPanelFieldRow>
           {repositoryData.mount_path && (
             <DetailPanelFieldRow>
-              <DetailPanelFieldLabel>{t('resources:repositories.mountPath')}:</DetailPanelFieldLabel>
+              <DetailPanelFieldLabel>
+                {t('resources:repositories.mountPath')}:
+              </DetailPanelFieldLabel>
               <DetailPanelFieldMonospaceValue
                 copyable={{ text: repositoryData.mount_path }}
                 data-testid={`repo-detail-mount-path-${repository.repositoryName}`}
@@ -538,10 +563,10 @@ const ActivitySection: React.FC<SectionProps> = ({ repository, panelData, t }) =
 
   return (
     <div>
-    <DetailPanelDivider data-testid="repository-detail-activity-divider">
-      <FieldTimeOutlined />
-      {t('resources:repositories.activity')}
-    </DetailPanelDivider>
+      <DetailPanelDivider data-testid="repository-detail-activity-divider">
+        <FieldTimeOutlined />
+        {t('resources:repositories.activity')}
+      </DetailPanelDivider>
 
       <DetailPanelSectionCard
         size="small"
@@ -550,7 +575,9 @@ const ActivitySection: React.FC<SectionProps> = ({ repository, panelData, t }) =
         <Flex vertical>
           {repositoryData.docker_running && (
             <DetailPanelFieldRow>
-              <DetailPanelFieldLabel>{t('resources:repositories.containers')}:</DetailPanelFieldLabel>
+              <DetailPanelFieldLabel>
+                {t('resources:repositories.containers')}:
+              </DetailPanelFieldLabel>
               <DetailPanelFieldValue>{repositoryData.container_count}</DetailPanelFieldValue>
             </DetailPanelFieldRow>
           )}
@@ -591,12 +618,17 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
             <Row gutter={[16, 8]}>
               <Col span={24}>
                 <Flex justify="space-between" align="center">
-                  <DetailPanelFieldValue strong data-testid={`repo-detail-service-name-${repository.repositoryName}-${service.name}`}>
+                  <DetailPanelFieldValue
+                    strong
+                    data-testid={`repo-detail-service-name-${repository.repositoryName}-${service.name}`}
+                  >
                     {service.name}
                   </DetailPanelFieldValue>
                   <Tag
                     bordered={false}
-                    color={getStatusColor(state === 'active' ? 'success' : state === 'failed' ? 'error' : 'neutral')}
+                    color={getStatusColor(
+                      state === 'active' ? 'success' : state === 'failed' ? 'error' : 'neutral'
+                    )}
                     data-testid={`repo-detail-service-status-${repository.repositoryName}-${service.name}`}
                   >
                     {service.active_state}
@@ -611,26 +643,42 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                   <Flex wrap>
                     {service.memory_human && (
                       <Flex vertical>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>Memory</Typography.Text>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{service.memory_human}</Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          Memory
+                        </Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          {service.memory_human}
+                        </Typography.Text>
                       </Flex>
                     )}
                     {service.main_pid && (
                       <Flex vertical>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>PID</Typography.Text>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{service.main_pid}</Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          PID
+                        </Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          {service.main_pid}
+                        </Typography.Text>
                       </Flex>
                     )}
                     {service.uptime_human && (
                       <Flex vertical>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>Uptime</Typography.Text>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{service.uptime_human}</Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          Uptime
+                        </Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          {service.uptime_human}
+                        </Typography.Text>
                       </Flex>
                     )}
                     {service.restarts !== undefined && (
                       <Flex vertical>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>Restarts</Typography.Text>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{service.restarts}</Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          Restarts
+                        </Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          {service.restarts}
+                        </Typography.Text>
                       </Flex>
                     )}
                   </Flex>

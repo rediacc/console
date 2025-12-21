@@ -1,7 +1,11 @@
 import React from 'react';
 import { Alert, Form, Flex, Popover, Slider, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { ExclamationCircleOutlined, QuestionCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
+import {
+  ExclamationCircleOutlined,
+  QuestionCircleOutlined,
+  WarningOutlined,
+} from '@/utils/optimizedIcons';
 
 interface PrioritySelectorProps {
   priority: number;
@@ -35,7 +39,9 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
                 </div>
                 {priorityLegendItems.map((item) => (
                   <Flex key={item.level} align="center" gap={8} wrap>
-                    <Tag>P{item.level} ({item.label})</Tag>
+                    <Tag>
+                      P{item.level} ({item.label})
+                    </Tag>
                     <Typography.Text type="secondary">{item.description}</Typography.Text>
                   </Flex>
                 ))}

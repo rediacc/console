@@ -1,5 +1,5 @@
-import { Button, Card, Flex, Modal, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
+import { Button, Card, Flex, Modal, Typography } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { hideSessionExpiredDialog, setStayLoggedOutMode } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
@@ -88,11 +88,7 @@ export const SessionExpiredDialog: React.FC = () => {
         >
           Continue to Login
         </Button>,
-        <Button
-          key="stay"
-          onClick={handleStayLoggedOut}
-          data-testid="session-expired-stay-button"
-        >
+        <Button key="stay" onClick={handleStayLoggedOut} data-testid="session-expired-stay-button">
           Stay Logged Out
         </Button>,
       ]}

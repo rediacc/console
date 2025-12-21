@@ -1,5 +1,5 @@
-import { Form, Input, InputNumber } from 'antd';
 import React from 'react';
+import { Form, Input, InputNumber } from 'antd';
 import { FieldFormItem } from '../components/FieldFormItem';
 import FieldGenerator from '../components/FieldGenerator';
 import { FieldLabel } from '../components/FieldLabel';

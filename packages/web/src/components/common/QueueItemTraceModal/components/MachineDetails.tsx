@@ -21,7 +21,6 @@ interface MachineDetailsProps {
   isDetailedConsoleExpanded: boolean;
   setIsDetailedConsoleExpanded: (expanded: boolean) => void;
   accumulatedOutput: string;
-  theme: 'light' | 'dark';
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
   hasContent: boolean;
 }
@@ -34,7 +33,6 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
   isDetailedConsoleExpanded,
   setIsDetailedConsoleExpanded,
   accumulatedOutput,
-  theme,
   consoleOutputRef,
   hasContent,
 }) => {
@@ -70,9 +68,7 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
                   >
                     {queueDetails.retryCount ?? 0} / 2 retries
                   </Tag>
-                  {queueDetails.permanentlyFailed && (
-                    <Tag color="error">Permanently Failed</Tag>
-                  )}
+                  {queueDetails.permanentlyFailed && <Tag color="error">Permanently Failed</Tag>}
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Priority">
@@ -146,7 +142,6 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
                     .replace(/\\r\\n/g, '\n')
                     .replace(/\\n/g, '\n')
                     .replace(/\\r/g, '\r')}
-                  theme={theme}
                   consoleOutputRef={consoleOutputRef}
                   isEmpty={!hasContent}
                 />

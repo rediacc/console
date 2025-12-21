@@ -1,5 +1,5 @@
-import { Tag, Tooltip } from 'antd';
 import { CameraOutlined, CloudUploadOutlined, EllipsisOutlined } from '@ant-design/icons';
+import { Tag, Tooltip } from 'antd';
 import { TFunction } from 'i18next';
 import type { CephRbdSnapshot } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';

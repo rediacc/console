@@ -613,13 +613,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             </Space>
             <Space wrap size={8}>
               <Tag data-testid="machine-repo-list-team-tag">{machine.teamName}</Tag>
-              <Tag data-testid="machine-repo-list-bridge-tag">
-                {machine.bridgeName}
-              </Tag>
+              <Tag data-testid="machine-repo-list-bridge-tag">{machine.bridgeName}</Tag>
               {machine.regionName && (
-                <Tag data-testid="machine-repo-list-region-tag">
-                  {machine.regionName}
-                </Tag>
+                <Tag data-testid="machine-repo-list-region-tag">{machine.regionName}</Tag>
               )}
               <Tag data-testid="machine-repo-list-queue-tag">
                 {machine.queueCount} {t('machines:queueItems')}
@@ -719,8 +715,8 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         onSubmit={handleFunctionSubmit}
         title={t('machines:runFunction')}
         data-testid="machine-repo-list-function-modal"
-          subtitle={
-            selectedRepository && (
+        subtitle={
+          selectedRepository && (
             <Flex vertical gap={8} style={{ width: '100%' }}>
               <Space>
                 <Typography.Text>{t('resources:repositories.Repository')}:</Typography.Text>

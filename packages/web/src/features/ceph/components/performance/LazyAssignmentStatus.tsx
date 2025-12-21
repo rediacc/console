@@ -82,7 +82,13 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
       <div
         ref={containerRef}
         data-testid="lazy-status-loading-container"
-        style={{ height: 20, width: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{
+          height: 20,
+          width: 120,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
         <Skeleton.Input
           active

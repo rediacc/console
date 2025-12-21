@@ -1,5 +1,20 @@
 import React, { startTransition, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Button, Card, Col, Empty, Flex, Form, Input, Modal, Row, Select, Space, Tag, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Empty,
+  Flex,
+  Form,
+  Input,
+  Modal,
+  Row,
+  Select,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import type { QueueFunction } from '@/api/queries/queue';
@@ -277,10 +292,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                 />
                 <div>
                   {Object.entries(functionsByCategory).map(([category, funcs]) => (
-                    <div
-                      key={category}
-                      data-testid={`function-modal-category-${category}`}
-                    >
+                    <div key={category} data-testid={`function-modal-category-${category}`}>
                       <div style={{ display: 'block' }}>
                         <Typography.Text strong>
                           {categories[category]?.name || category}
@@ -327,10 +339,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
           <Col span={preselectedFunction ? 24 : 14}>
             {selectedFunction ? (
               <Flex vertical gap={24} style={{ width: '100%' }}>
-                <Card
-                  title={`${t('functions:configure')}: ${selectedFunction.name}`}
-                  size="small"
-                >
+                <Card title={`${t('functions:configure')}: ${selectedFunction.name}`} size="small">
                   <Paragraph>{selectedFunction.description}</Paragraph>
 
                   <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }}>
@@ -369,10 +378,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 <div>
                                   <Typography.Text strong>Source Repository: </Typography.Text>
                                   <Tag color="success">{additionalContext.sourceRepo}</Tag>
-                                  <Typography.Text type="secondary">
-                                    {' '}
-                                    (Original)
-                                  </Typography.Text>
+                                  <Typography.Text type="secondary"> (Original)</Typography.Text>
                                 </div>
                               )}
                               <div>

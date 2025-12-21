@@ -216,11 +216,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
             >
               {t('fieldGenerator.regenerate')}
             </Button>
-            <Button
-              type="primary"
-              onClick={handleApply}
-              data-testid="vault-editor-apply-generated"
-            >
+            <Button type="primary" onClick={handleApply} data-testid="vault-editor-apply-generated">
               {t('fieldGenerator.apply')}
             </Button>
           </>

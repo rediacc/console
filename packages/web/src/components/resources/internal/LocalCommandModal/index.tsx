@@ -1,5 +1,3 @@
-import type { RadioChangeEvent } from 'antd/es/radio';
-import type { CheckboxChangeEvent } from 'antd/es/checkbox';
 import React, { useEffect, useState } from 'react';
 import { Button, Checkbox, Flex, Form, Input, Modal, Radio, Tabs, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +5,7 @@ import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import { useMessage } from '@/hooks';
 import { createFreshForkToken } from '@/services/forkTokenService';
 import type { PluginContainer } from '@/types';
+import { ModalSize } from '@/types/modal';
 import {
   AppleOutlined,
   CodeOutlined,
@@ -15,7 +14,8 @@ import {
   FileTextOutlined,
   WindowsOutlined,
 } from '@/utils/optimizedIcons';
-import { ModalSize } from '@/types/modal';
+import type { CheckboxChangeEvent } from 'antd/es/checkbox';
+import type { RadioChangeEvent } from 'antd/es/radio';
 
 type CommandTab = 'vscode' | 'terminal' | 'desktop';
 type OperatingSystem = 'unix' | 'windows';
@@ -298,20 +298,20 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       />
 
       <Flex vertical gap={12} style={{ width: '100%' }}>
-          <Flex align="center" justify="space-between" wrap>
-            <Typography.Text strong>
-              {t('resources:localCommandBuilder.generatedCommand')}:
-            </Typography.Text>
-            {isGeneratingToken && (
-              <span>
-                <InlineLoadingIndicator
-                  width={64}
-                  height={12}
-                  data-testid="local-command-token-loading"
-                />
-              </span>
-            )}
-          </Flex>
+        <Flex align="center" justify="space-between" wrap>
+          <Typography.Text strong>
+            {t('resources:localCommandBuilder.generatedCommand')}:
+          </Typography.Text>
+          {isGeneratingToken && (
+            <span>
+              <InlineLoadingIndicator
+                width={64}
+                height={12}
+                data-testid="local-command-token-loading"
+              />
+            </span>
+          )}
+        </Flex>
 
         {tokenError && (
           <Flex vertical gap={4}>

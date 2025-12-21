@@ -326,9 +326,7 @@ const StoragePage: React.FC = () => {
         key: 'teamName',
         width: COLUMN_WIDTHS.TAG,
         ellipsis: true,
-        render: (teamName: string) => (
-          <Tag color={token.colorTextSecondary}>{teamName}</Tag>
-        ),
+        render: (teamName: string) => <Tag color={token.colorTextSecondary}>{teamName}</Tag>,
       },
       ...(featureFlags.isEnabled('vaultVersionColumns')
         ? [
@@ -423,100 +421,100 @@ const StoragePage: React.FC = () => {
   return (
     <>
       <div>
-          <Typography.Title level={3}>
-            {t('storage.heading', { defaultValue: 'Storage' })}
-          </Typography.Title>
+        <Typography.Title level={3}>
+          {t('storage.heading', { defaultValue: 'Storage' })}
+        </Typography.Title>
 
-          <TeamSelectorWrapper>
-            <TeamSelector
-              data-testid="resources-team-selector"
-              teams={teams}
-              selectedTeams={selectedTeams}
-              onChange={setSelectedTeams}
-              loading={teamsLoading}
-              placeholder={t('teams.selectTeamToView', {
-                defaultValue: 'Select a team to view its resources',
-              })}
-            />
-          </TeamSelectorWrapper>
-
-          <ResourceListView<GetTeamStorages_ResultSet1>
-            title={
-              <Space direction="vertical" size={0}>
-                <Typography.Text strong>
-                  {t('storage.title', { defaultValue: 'Storage Locations' })}
-                </Typography.Text>
-                <Typography.Text type="secondary">
-                  {t('storage.subtitle', {
-                    defaultValue: 'Manage remote storage locations and rclone configurations',
-                  })}
-                </Typography.Text>
-              </Space>
-            }
-            loading={storagesLoading}
-            data={displayedStorages}
-            columns={storageColumns}
-            rowKey="storageName"
-            data-testid="resources-storage-table"
-            resourceType="storage locations"
-            emptyDescription={emptyDescription}
-            pagination={
-              hasTeamSelection
-                ? {
-                    current: storagePage,
-                    pageSize: storagePageSize,
-                    total: displayedStorages.length,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
-                    showTotal: (total: number, range: [number, number]) =>
-                      `${t('common:general.showingRecords', {
-                        start: range[0],
-                        end: range[1],
-                        total,
-                      })}`,
-                    onChange: (page: number, size: number) => {
-                      setStoragePage(page);
-                      if (size && size !== storagePageSize) {
-                        setStoragePageSize(size);
-                        setStoragePage(1);
-                      }
-                    },
-                    position: ['bottomRight'],
-                  }
-                : false
-            }
-            actions={
-              hasTeamSelection ? (
-                <>
-                  <Tooltip title={t('storage.createStorage')}>
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      data-testid="resources-create-storage-button"
-                      onClick={() => openUnifiedModal('create')}
-                      aria-label={t('storage.createStorage')}
-                    />
-                  </Tooltip>
-                  <Tooltip title={t('resources:storage.import.button')}>
-                    <Button
-                      icon={<ImportOutlined />}
-                      data-testid="resources-import-button"
-                      onClick={() => rcloneImportWizard.open()}
-                      aria-label={t('resources:storage.import.button')}
-                    />
-                  </Tooltip>
-                  <Tooltip title={t('common:actions.refresh')}>
-                    <Button
-                      icon={<ReloadOutlined />}
-                      data-testid="resources-refresh-button"
-                      onClick={() => refetchStorage()}
-                      aria-label={t('common:actions.refresh')}
-                    />
-                  </Tooltip>
-                </>
-              ) : undefined
-            }
+        <TeamSelectorWrapper>
+          <TeamSelector
+            data-testid="resources-team-selector"
+            teams={teams}
+            selectedTeams={selectedTeams}
+            onChange={setSelectedTeams}
+            loading={teamsLoading}
+            placeholder={t('teams.selectTeamToView', {
+              defaultValue: 'Select a team to view its resources',
+            })}
           />
+        </TeamSelectorWrapper>
+
+        <ResourceListView<GetTeamStorages_ResultSet1>
+          title={
+            <Space direction="vertical" size={0}>
+              <Typography.Text strong>
+                {t('storage.title', { defaultValue: 'Storage Locations' })}
+              </Typography.Text>
+              <Typography.Text type="secondary">
+                {t('storage.subtitle', {
+                  defaultValue: 'Manage remote storage locations and rclone configurations',
+                })}
+              </Typography.Text>
+            </Space>
+          }
+          loading={storagesLoading}
+          data={displayedStorages}
+          columns={storageColumns}
+          rowKey="storageName"
+          data-testid="resources-storage-table"
+          resourceType="storage locations"
+          emptyDescription={emptyDescription}
+          pagination={
+            hasTeamSelection
+              ? {
+                  current: storagePage,
+                  pageSize: storagePageSize,
+                  total: displayedStorages.length,
+                  showSizeChanger: true,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  showTotal: (total: number, range: [number, number]) =>
+                    `${t('common:general.showingRecords', {
+                      start: range[0],
+                      end: range[1],
+                      total,
+                    })}`,
+                  onChange: (page: number, size: number) => {
+                    setStoragePage(page);
+                    if (size && size !== storagePageSize) {
+                      setStoragePageSize(size);
+                      setStoragePage(1);
+                    }
+                  },
+                  position: ['bottomRight'],
+                }
+              : false
+          }
+          actions={
+            hasTeamSelection ? (
+              <>
+                <Tooltip title={t('storage.createStorage')}>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    data-testid="resources-create-storage-button"
+                    onClick={() => openUnifiedModal('create')}
+                    aria-label={t('storage.createStorage')}
+                  />
+                </Tooltip>
+                <Tooltip title={t('resources:storage.import.button')}>
+                  <Button
+                    icon={<ImportOutlined />}
+                    data-testid="resources-import-button"
+                    onClick={() => rcloneImportWizard.open()}
+                    aria-label={t('resources:storage.import.button')}
+                  />
+                </Tooltip>
+                <Tooltip title={t('common:actions.refresh')}>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    data-testid="resources-refresh-button"
+                    onClick={() => refetchStorage()}
+                    aria-label={t('common:actions.refresh')}
+                  />
+                </Tooltip>
+              </>
+            ) : undefined
+          }
+        />
       </div>
 
       <UnifiedResourceModal

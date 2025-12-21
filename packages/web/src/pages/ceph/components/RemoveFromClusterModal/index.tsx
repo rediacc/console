@@ -1,12 +1,12 @@
-import { Alert, Flex, Modal, Table, Tag, Typography } from 'antd';
 import React, { useState } from 'react';
+import { Alert, Flex, Modal, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useUpdateMachineClusterAssignment } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
 import type { Machine } from '@/types';
+import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
-import { ModalSize } from '@/types/modal';
 import { WarningOutlined } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 

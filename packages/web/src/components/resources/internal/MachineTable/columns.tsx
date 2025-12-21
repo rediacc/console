@@ -16,6 +16,7 @@ import {
   CheckCircleOutlined,
   CloudServerOutlined,
   DeleteOutlined,
+  DesktopOutlined,
   DisconnectOutlined,
   EditOutlined,
   EyeOutlined,

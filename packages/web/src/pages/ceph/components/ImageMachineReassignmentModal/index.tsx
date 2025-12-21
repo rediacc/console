@@ -1,5 +1,5 @@
-import { Alert, Flex, Modal, Select, Typography } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Flex, Modal, Select, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type AvailableMachine,
@@ -117,16 +117,12 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       {image && (
         <Flex vertical gap={24} style={{ width: '100%' }}>
           <Flex align="flex-start" wrap gap={8}>
-            <Typography.Text strong>
-              {t('ceph:images.image')}:
-            </Typography.Text>
+            <Typography.Text strong>{t('ceph:images.image')}:</Typography.Text>
             <Typography.Text type="secondary">{image.imageName}</Typography.Text>
           </Flex>
 
           <Flex align="flex-start" wrap gap={8}>
-            <Typography.Text strong>
-              {t('ceph:pools.pool')}:
-            </Typography.Text>
+            <Typography.Text strong>{t('ceph:pools.pool')}:</Typography.Text>
             <Typography.Text type="secondary">{poolName}</Typography.Text>
           </Flex>
 
@@ -134,16 +130,16 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
             <Alert
               message={t('machines:currentMachineAssignment', { machine: image.machineName })}
               type="info"
-              icon={<CloudServerOutlined style={{ fontSize: 14, color: 'var(--ant-color-primary)' }} />}
+              icon={
+                <CloudServerOutlined style={{ fontSize: 14, color: 'var(--ant-color-primary)' }} />
+              }
               data-testid="image-reassign-current-machine-info"
               showIcon
             />
           )}
 
           <div>
-            <Typography.Text>
-              {t('ceph:images.selectNewMachine')}:
-            </Typography.Text>
+            <Typography.Text>{t('ceph:images.selectNewMachine')}:</Typography.Text>
             <div>
               <LoadingWrapper loading={loadingMachines} centered minHeight={120}>
                 <>
@@ -165,7 +161,9 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                     data-testid="image-reassign-machine-select"
                   />
 
-                  <Typography.Text type="secondary">{t('ceph:images.reassignmentInfo')}</Typography.Text>
+                  <Typography.Text type="secondary">
+                    {t('ceph:images.reassignmentInfo')}
+                  </Typography.Text>
                 </>
               </LoadingWrapper>
             </div>

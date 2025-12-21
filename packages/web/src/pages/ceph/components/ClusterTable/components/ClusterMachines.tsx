@@ -2,8 +2,8 @@ import React, { useMemo } from 'react';
 import { Empty, Table, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CephCluster, CephClusterMachine, useCephClusterMachines } from '@/api/queries/ceph';
-import { DesktopOutlined } from '@/utils/optimizedIcons';
 import { createSorter, formatTimestampAsIs } from '@/platform';
+import { DesktopOutlined } from '@/utils/optimizedIcons';
 
 interface ClusterMachinesProps {
   cluster: CephCluster;

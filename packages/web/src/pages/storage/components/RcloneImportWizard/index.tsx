@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { Alert, Button, Checkbox, Flex, Modal, Space, Steps, Table, Tag, Tooltip, Typography, Upload } from 'antd';
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Flex,
+  Modal,
+  Space,
+  Steps,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+  Upload,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useCreateStorage, useStorage } from '@/api/queries/storage';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
@@ -586,10 +599,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
           </Button>
         ) : currentStep === 1 ? (
           <>
-            <Button
-              onClick={() => setCurrentStep(0)}
-              data-testid="rclone-wizard-back-button"
-            >
+            <Button onClick={() => setCurrentStep(0)} data-testid="rclone-wizard-back-button">
               {t('common:actions.back')}
             </Button>
             <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">
@@ -606,11 +616,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
             </Button>
           </>
         ) : (
-          <Button
-            type="primary"
-            onClick={handleClose}
-            data-testid="rclone-wizard-close-button"
-          >
+          <Button type="primary" onClick={handleClose} data-testid="rclone-wizard-close-button">
             {t('common:actions.close')}
           </Button>
         )

@@ -71,10 +71,7 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
         <Flex align="center" gap={8} wrap>
           <TeamOutlined />
           <Typography.Text strong>{t('clones.assignedMachines')}:</Typography.Text>
-          <Tag
-            data-testid={`clone-list-machine-count-${clone.cloneName}`}
-            bordered={false}
-          >
+          <Tag data-testid={`clone-list-machine-count-${clone.cloneName}`} bordered={false}>
             {machines.length} {t('machines:machines')}
           </Tag>
         </Flex>

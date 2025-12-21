@@ -98,8 +98,16 @@ const NotificationBell: React.FC = () => {
   };
 
   const dropdownContent = (
-    <div style={{ maxHeight: 400, minWidth: 320 }} className="notification-dropdown" data-testid="notification-dropdown">
-      <Flex align="center" justify="space-between" style={{ padding: '16px 24px', fontWeight: 600 }}>
+    <div
+      style={{ maxHeight: 400, minWidth: 320 }}
+      className="notification-dropdown"
+      data-testid="notification-dropdown"
+    >
+      <Flex
+        align="center"
+        justify="space-between"
+        style={{ padding: '16px 24px', fontWeight: 600 }}
+      >
         <Typography.Text strong>{t('notifications.title', 'Notifications')}</Typography.Text>
         {notifications.length > 0 && (
           <Space>
@@ -141,8 +149,12 @@ const NotificationBell: React.FC = () => {
               >
                 <List.Item.Meta
                   title={
-                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                    <div
+                      style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}
+                    >
+                      <div
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flex: 1 }}
+                      >
                         <Typography.Text style={{ fontWeight: notification.read ? 400 : 600 }}>
                           {notification.title}
                         </Typography.Text>
@@ -165,7 +177,10 @@ const NotificationBell: React.FC = () => {
                   }
                   description={
                     <div>
-                      <div style={{ display: 'block', wordBreak: 'break-word' }} className="notification-message">
+                      <div
+                        style={{ display: 'block', wordBreak: 'break-word' }}
+                        className="notification-message"
+                      >
                         <Typography.Text type="secondary">{notification.message}</Typography.Text>
                       </div>
                       <Typography.Text type="secondary" style={{ fontSize: 12 }}>

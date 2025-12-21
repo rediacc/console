@@ -1,4 +1,3 @@
-import { Button, Flex, Table, Tooltip, Typography } from 'antd';
 import { useCallback, useMemo, useState } from 'react';
 import {
   CloudUploadOutlined,
@@ -11,6 +10,7 @@ import {
   SyncOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
+import { Button, Flex, Table, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,

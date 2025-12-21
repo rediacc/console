@@ -1,8 +1,39 @@
 import React, { useEffect, useMemo } from 'react';
-import { Badge, Card, Col, Empty, Flex, List, Progress, Row, Tag, Tooltip, Typography, type ListProps } from 'antd';
+import {
+  Badge,
+  Card,
+  Col,
+  Empty,
+  Flex,
+  List,
+  Progress,
+  Row,
+  Tag,
+  Tooltip,
+  Typography,
+  type ListProps,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { CephSection } from '@/components/resources/internal/CephSection';
+import {
+  DetailPanelBody,
+  DetailPanelCollapseButton,
+  DetailPanelDivider,
+  DetailPanelFieldLabel,
+  DetailPanelFieldMonospaceValue,
+  DetailPanelFieldRow,
+  DetailPanelFieldStrongValue,
+  DetailPanelFieldValue,
+  DetailPanelHeader,
+  DetailPanelHeaderRow,
+  DetailPanelSectionHeader,
+  DetailPanelSectionTitle,
+  DetailPanelSurface,
+  DetailPanelTagGroup,
+  DetailPanelTitle,
+  DetailPanelTitleGroup,
+} from '@/components/resources/internal/detailPanelPrimitives';
 import { featureFlags } from '@/config/featureFlags';
 import { useTraceModal } from '@/hooks/useDialogState';
 import {
@@ -28,24 +59,6 @@ import {
 } from '@/utils/optimizedIcons';
 import { abbreviatePath } from '@/utils/pathUtils';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
-import {
-  DetailPanelBody,
-  DetailPanelCollapseButton,
-  DetailPanelDivider,
-  DetailPanelFieldLabel,
-  DetailPanelFieldMonospaceValue,
-  DetailPanelFieldRow,
-  DetailPanelFieldStrongValue,
-  DetailPanelFieldValue,
-  DetailPanelHeader,
-  DetailPanelHeaderRow,
-  DetailPanelSectionHeader,
-  DetailPanelSectionTitle,
-  DetailPanelSurface,
-  DetailPanelTagGroup,
-  DetailPanelTitle,
-  DetailPanelTitleGroup,
-} from '@/components/resources/internal/detailPanelPrimitives';
 import type { TFunction } from 'i18next';
 
 interface MachineVaultStatusPanelProps {
@@ -230,10 +243,20 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
           </DetailPanelHeaderRow>
 
           <DetailPanelTagGroup>
-            <Tag bordered={false} color={getTagColor('team')} icon={<AppstoreOutlined />} data-testid="vault-status-team-tag">
+            <Tag
+              bordered={false}
+              color={getTagColor('team')}
+              icon={<AppstoreOutlined />}
+              data-testid="vault-status-team-tag"
+            >
               {t('common:general.team')}: {machine.teamName}
             </Tag>
-            <Tag bordered={false} color={getTagColor('bridge')} icon={<ApiOutlined />} data-testid="vault-status-bridge-tag">
+            <Tag
+              bordered={false}
+              color={getTagColor('bridge')}
+              icon={<ApiOutlined />}
+              data-testid="vault-status-bridge-tag"
+            >
               {t('machines:bridge')}: {machine.bridgeName}
             </Tag>
             {machine.regionName && (
@@ -247,16 +270,22 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
               </Tag>
             )}
             <Badge count={machine.queueCount ?? undefined} data-testid="vault-status-queue-badge">
-              <Tag bordered={false} color={getTagColor('queue')}>{t('machines:queueItems')}</Tag>
+              <Tag bordered={false} color={getTagColor('queue')}>
+                {t('machines:queueItems')}
+              </Tag>
             </Badge>
-            <Tag bordered={false} color={getTagColor('version')} data-testid="vault-status-version-tag">
+            <Tag
+              bordered={false}
+              color={getTagColor('version')}
+              data-testid="vault-status-version-tag"
+            >
               {t('machines:vaultVersion')}: {machine.vaultVersion}
             </Tag>
           </DetailPanelTagGroup>
 
-            {machine.vaultStatusTime && (
-              <div>
-                <Tooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
+          {machine.vaultStatusTime && (
+            <div>
+              <Tooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
                 <Typography.Text
                   data-testid="vault-status-last-updated"
                   type="secondary"
@@ -265,18 +294,15 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                   {t('machines:lastUpdated')}:{' '}
                   {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
                 </Typography.Text>
-                </Tooltip>
-              </div>
+              </Tooltip>
+            </div>
           )}
         </DetailPanelHeader>
 
         <DetailPanelBody data-testid="vault-status-content">
           {!vaultData ? (
             <div>
-              <Empty
-                description={t('machines:noVaultData')}
-                data-testid="vault-status-empty"
-              />
+              <Empty description={t('machines:noVaultData')} data-testid="vault-status-empty" />
             </div>
           ) : (
             <>
@@ -350,19 +376,27 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
       <Flex vertical gap={8} style={{ width: '100%' }}>
         <DetailPanelFieldRow>
           <DetailPanelFieldLabel>{t('resources:repositories.hostname')}:</DetailPanelFieldLabel>
-          <DetailPanelFieldValue data-testid="vault-status-hostname">{system.hostname}</DetailPanelFieldValue>
+          <DetailPanelFieldValue data-testid="vault-status-hostname">
+            {system.hostname}
+          </DetailPanelFieldValue>
         </DetailPanelFieldRow>
         <DetailPanelFieldRow>
           <DetailPanelFieldLabel>{t('resources:repositories.uptime')}:</DetailPanelFieldLabel>
-          <DetailPanelFieldValue data-testid="vault-status-uptime">{system.uptime}</DetailPanelFieldValue>
+          <DetailPanelFieldValue data-testid="vault-status-uptime">
+            {system.uptime}
+          </DetailPanelFieldValue>
         </DetailPanelFieldRow>
         <DetailPanelFieldRow>
           <DetailPanelFieldLabel>{t('resources:repositories.osName')}:</DetailPanelFieldLabel>
-          <DetailPanelFieldValue data-testid="vault-status-os-name">{system.os_name}</DetailPanelFieldValue>
+          <DetailPanelFieldValue data-testid="vault-status-os-name">
+            {system.os_name}
+          </DetailPanelFieldValue>
         </DetailPanelFieldRow>
         <DetailPanelFieldRow>
           <DetailPanelFieldLabel>{t('resources:repositories.kernel')}:</DetailPanelFieldLabel>
-          <DetailPanelFieldValue data-testid="vault-status-kernel">{system.kernel}</DetailPanelFieldValue>
+          <DetailPanelFieldValue data-testid="vault-status-kernel">
+            {system.kernel}
+          </DetailPanelFieldValue>
         </DetailPanelFieldRow>
         <DetailPanelFieldRow>
           <DetailPanelFieldLabel>{t('resources:repositories.cpu')}:</DetailPanelFieldLabel>
@@ -484,12 +518,18 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
         <Card size="small" data-testid="vault-status-gateway-card">
           <Flex vertical gap={8} style={{ width: '100%' }}>
             <DetailPanelFieldRow>
-              <DetailPanelFieldLabel>{t('resources:repositories.defaultGateway')}:</DetailPanelFieldLabel>
-              <DetailPanelFieldValue data-testid="vault-status-gateway">{network.default_gateway}</DetailPanelFieldValue>
+              <DetailPanelFieldLabel>
+                {t('resources:repositories.defaultGateway')}:
+              </DetailPanelFieldLabel>
+              <DetailPanelFieldValue data-testid="vault-status-gateway">
+                {network.default_gateway}
+              </DetailPanelFieldValue>
             </DetailPanelFieldRow>
             {network.default_interface && (
               <DetailPanelFieldRow>
-                <DetailPanelFieldLabel>{t('resources:repositories.defaultInterface')}:</DetailPanelFieldLabel>
+                <DetailPanelFieldLabel>
+                  {t('resources:repositories.defaultInterface')}:
+                </DetailPanelFieldLabel>
                 <DetailPanelFieldValue data-testid="vault-status-interface">
                   {network.default_interface}
                 </DetailPanelFieldValue>
@@ -508,7 +548,9 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
               <Flex justify="space-between" align="center">
                 <DetailPanelTitleGroup>
                   <CompassOutlined />
-                  <DetailPanelFieldStrongValue data-testid={`vault-status-network-name-${iface.name}`}>
+                  <DetailPanelFieldStrongValue
+                    data-testid={`vault-status-network-name-${iface.name}`}
+                  >
                     {iface.name}
                   </DetailPanelFieldStrongValue>
                 </DetailPanelTitleGroup>
@@ -523,10 +565,17 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
               <Flex vertical>
                 {iface.ipv4_addresses.length > 0 && (
                   <div>
-                    <DetailPanelFieldLabel>{t('resources:repositories.ipAddresses')}:</DetailPanelFieldLabel>
+                    <DetailPanelFieldLabel>
+                      {t('resources:repositories.ipAddresses')}:
+                    </DetailPanelFieldLabel>
                     <Flex>
                       {iface.ipv4_addresses.map((ip: string) => (
-                        <Tag key={ip} color="processing" bordered={false} data-testid={`vault-status-ip-${ip}`}>
+                        <Tag
+                          key={ip}
+                          color="processing"
+                          bordered={false}
+                          data-testid={`vault-status-ip-${ip}`}
+                        >
                           {ip}
                         </Tag>
                       ))}
@@ -535,7 +584,9 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
                 )}
                 {iface.mac_address && iface.mac_address !== 'unknown' && (
                   <Flex justify="space-between" align="center">
-                    <DetailPanelFieldLabel>{t('resources:repositories.macAddress')}:</DetailPanelFieldLabel>
+                    <DetailPanelFieldLabel>
+                      {t('resources:repositories.macAddress')}:
+                    </DetailPanelFieldLabel>
                     <DetailPanelFieldValue>{iface.mac_address}</DetailPanelFieldValue>
                   </Flex>
                 )}
@@ -574,15 +625,25 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
             <Flex justify="space-between" align="center">
               <DetailPanelTitleGroup>
                 <HddOutlined />
-                <DetailPanelFieldStrongValue data-testid={`vault-status-device-path-${device.name}`}>
+                <DetailPanelFieldStrongValue
+                  data-testid={`vault-status-device-path-${device.name}`}
+                >
                   {device.path}
                 </DetailPanelFieldStrongValue>
               </DetailPanelTitleGroup>
               <Flex>
-                <Tag bordered={false} color="default" data-testid={`vault-status-device-type-${device.name}`}>
+                <Tag
+                  bordered={false}
+                  color="default"
+                  data-testid={`vault-status-device-type-${device.name}`}
+                >
                   {device.type}
                 </Tag>
-                <Tag bordered={false} color="processing" data-testid={`vault-status-device-size-${device.name}`}>
+                <Tag
+                  bordered={false}
+                  color="processing"
+                  data-testid={`vault-status-device-size-${device.name}`}
+                >
                   {device.size_human}
                 </Tag>
               </Flex>
@@ -591,14 +652,18 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
             <Flex vertical>
               {device.model && device.model !== 'Unknown' && (
                 <Flex justify="space-between" align="center">
-                  <DetailPanelFieldLabel>{t('resources:repositories.model')}:</DetailPanelFieldLabel>
+                  <DetailPanelFieldLabel>
+                    {t('resources:repositories.model')}:
+                  </DetailPanelFieldLabel>
                   <DetailPanelFieldValue>{device.model}</DetailPanelFieldValue>
                 </Flex>
               )}
 
               {device.partitions.length > 0 && (
                 <div>
-                  <DetailPanelFieldLabel>{t('resources:repositories.partitions')}:</DetailPanelFieldLabel>
+                  <DetailPanelFieldLabel>
+                    {t('resources:repositories.partitions')}:
+                  </DetailPanelFieldLabel>
                   <Flex vertical>
                     {device.partitions.map((part: BlockDevicePartition) => (
                       <Flex
@@ -645,7 +710,9 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
             <Flex justify="space-between" align="center">
               <DetailPanelTitleGroup>
                 <ContainerOutlined />
-                <DetailPanelFieldStrongValue data-testid={`vault-status-container-name-${container.id}`}>
+                <DetailPanelFieldStrongValue
+                  data-testid={`vault-status-container-name-${container.id}`}
+                >
                   {container.name}
                 </DetailPanelFieldStrongValue>
               </DetailPanelTitleGroup>
@@ -672,7 +739,9 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
               )}
               {container.memory_usage && (
                 <Flex justify="space-between" align="center">
-                  <DetailPanelFieldLabel>{t('resources:repositories.memory')}:</DetailPanelFieldLabel>
+                  <DetailPanelFieldLabel>
+                    {t('resources:repositories.memory')}:
+                  </DetailPanelFieldLabel>
                   <DetailPanelFieldValue>{container.memory_usage}</DetailPanelFieldValue>
                 </Flex>
               )}

@@ -241,9 +241,7 @@ const ProfilePage: React.FC = () => {
 
           <Form.Item>
             <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <Button onClick={closeChangePassword}>
-                {tCommon('actions.cancel')}
-              </Button>
+              <Button onClick={closeChangePassword}>{tCommon('actions.cancel')}</Button>
               <Button htmlType="submit" loading={updateUserPasswordMutation.isPending}>
                 {t('personal.changePassword.submit', { defaultValue: 'Change Password' })}
               </Button>

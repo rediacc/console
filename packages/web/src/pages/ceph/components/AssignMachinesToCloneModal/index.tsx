@@ -14,9 +14,9 @@ import {
 } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';
-import { ModalSize } from '@/types/modal';
 import type { ColumnsType } from 'antd/es/table';
 import type { TableRowSelection } from 'antd/es/table/interface';
 

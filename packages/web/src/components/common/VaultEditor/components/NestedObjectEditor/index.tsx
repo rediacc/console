@@ -1,5 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Col, Collapse, Empty, Flex, Form, Input, Popconfirm, Row, Switch, Tag, Typography } from 'antd';
+import {
+  Button,
+  Card,
+  Col,
+  Collapse,
+  Empty,
+  Flex,
+  Form,
+  Input,
+  Popconfirm,
+  Row,
+  Switch,
+  Tag,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
 import {
@@ -244,7 +258,11 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
             <Row gutter={16}>
               <Col span={18}>
                 <Form.Item
-                  label={<Typography.Text type="secondary">{t('nestedObjectEditor.Image')}</Typography.Text>}
+                  label={
+                    <Typography.Text type="secondary">
+                      {t('nestedObjectEditor.Image')}
+                    </Typography.Text>
+                  }
                 >
                   <Input
                     value={imageValue}
@@ -266,7 +284,9 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               <Col span={6}>
                 <Form.Item
                   label={
-                    <Typography.Text type="secondary">{t('nestedObjectEditor.Active')}</Typography.Text>
+                    <Typography.Text type="secondary">
+                      {t('nestedObjectEditor.Active')}
+                    </Typography.Text>
                   }
                 >
                   <Switch
@@ -369,9 +389,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                 </Typography.Text>
               )}
               {structureInfo.hasImagePattern && (
-                <Tag color="processing">
-                  {t('nestedObjectEditor.Container Images Detected')}
-                </Tag>
+                <Tag color="processing">{t('nestedObjectEditor.Container Images Detected')}</Tag>
               )}
             </Flex>
           )}

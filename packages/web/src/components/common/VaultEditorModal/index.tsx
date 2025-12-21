@@ -5,7 +5,13 @@ import VaultEditor from '@/components/common/VaultEditor';
 import { useMessage } from '@/hooks';
 import type { BaseModalProps } from '@/types';
 import { ModalSize } from '@/types/modal';
-import { CloseOutlined, DownloadOutlined, InfoCircleOutlined, SaveOutlined, UploadOutlined } from '@/utils/optimizedIcons';
+import {
+  CloseOutlined,
+  DownloadOutlined,
+  InfoCircleOutlined,
+  SaveOutlined,
+  UploadOutlined,
+} from '@/utils/optimizedIcons';
 import type { RcFile } from 'antd/es/upload';
 
 interface VaultEditorModalProps extends BaseModalProps {
@@ -111,15 +117,15 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
             </Typography.Text>
             <Tag color="processing">{vaultVersion}</Tag>
           </Space>
-          <Typography.Text type="secondary">{t('vaultEditor.versionAutoIncrement')}</Typography.Text>
+          <Typography.Text type="secondary">
+            {t('vaultEditor.versionAutoIncrement')}
+          </Typography.Text>
         </Flex>
 
         {showValidationErrors && validationErrors.length > 0 && (
           <div ref={validationErrorsRef} style={{ fontSize: 14 }}>
             <div style={{ display: 'block' }}>
-              <Typography.Text strong>
-                {t('vaultEditor.validationErrors')}
-              </Typography.Text>
+              <Typography.Text strong>{t('vaultEditor.validationErrors')}</Typography.Text>
             </div>
             <ul style={{ display: 'flex', flexDirection: 'column' }}>
               {validationErrors.map((error, index) => (
@@ -145,7 +151,14 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       </Flex>
 
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
           <Flex align="center" wrap>
             <Upload
               accept=".json"
@@ -158,7 +171,10 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               }}
               data-testid="vault-modal-file-upload"
             >
-              <Button icon={<UploadOutlined style={{ fontSize: 12 }} />} data-testid="vault-modal-import-button">
+              <Button
+                icon={<UploadOutlined style={{ fontSize: 12 }} />}
+                data-testid="vault-modal-import-button"
+              >
                 {t('vaultEditor.importJson')}
               </Button>
             </Upload>

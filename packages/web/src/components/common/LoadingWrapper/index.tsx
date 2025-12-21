@@ -19,7 +19,14 @@ const CenteredContainer: React.FC<
 
 const FullHeightContainer: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
   <div
-    style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%' }}
+    style={{
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100%',
+      width: '100%',
+    }}
     {...props}
   />
 );

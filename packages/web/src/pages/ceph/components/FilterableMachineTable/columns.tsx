@@ -1,8 +1,8 @@
+import { Badge, Tag } from 'antd';
 import { createTruncatedColumn } from '@/components/common/columns';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
 import { createSorter } from '@/platform';
 import type { Machine } from '@/types';
-import { Badge, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table/interface';
 import type { TFunction } from 'i18next';
 

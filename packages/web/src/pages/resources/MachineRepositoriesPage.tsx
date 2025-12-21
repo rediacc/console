@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+﻿import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Breadcrumb, Button, Card, Flex, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -133,6 +133,12 @@ const MachineReposPage: React.FC = () => {
     }
   }, [machines, machineName]);
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshKey((prev) => prev + 1);
+    // Refetch both repositories AND machines to get updated vaultStatus
+    await Promise.all([refetchRepos(), refetchMachines()]);
+  }, [refetchRepos, refetchMachines]);
+
   // Auto-refresh data on mount (query existing data, no queue items)
   useEffect(() => {
     if (machine && !hasInitiallyLoaded) {
@@ -140,16 +146,10 @@ const MachineReposPage: React.FC = () => {
       // Just refresh existing data from database
       handleRefresh();
     }
-  }, [machine, hasInitiallyLoaded]);
+  }, [machine, hasInitiallyLoaded, handleRefresh]);
 
   const handleBackToMachines = () => {
     navigate('/machines');
-  };
-
-  const handleRefresh = async () => {
-    setRefreshKey((prev) => prev + 1);
-    // Refetch both repositories AND machines to get updated vaultStatus
-    await Promise.all([refetchRepos(), refetchMachines()]);
   };
 
   const handleCreateRepo = () => {

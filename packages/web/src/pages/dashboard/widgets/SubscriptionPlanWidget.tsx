@@ -1,5 +1,18 @@
 import React from 'react';
-import { Badge, Card, Col, Empty, Flex, Progress, Row, Statistic, Tag, Tooltip, Typography, theme } from 'antd';
+import {
+  Badge,
+  Card,
+  Col,
+  Empty,
+  Flex,
+  Progress,
+  Row,
+  Statistic,
+  Tag,
+  Tooltip,
+  Typography,
+  theme,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CrownOutlined } from '@/utils/optimizedIcons';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
@@ -81,9 +94,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                     ALL ACTIVE LICENSES
                   </Typography.Text>
                 </div>
-                <Typography.Title level={4}>
-                  {allActiveSubscriptions.length} Total
-                </Typography.Title>
+                <Typography.Title level={4}>{allActiveSubscriptions.length} Total</Typography.Title>
               </div>
               <div style={{ maxHeight: 320, overflowY: 'auto' }}>
                 <Flex vertical gap={8} style={{ width: '100%' }}>
@@ -153,16 +164,10 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
       {planLimits ? (
         <Row gutter={[24, 24]}>
           <Col xs={24} md={6}>
-            <Statistic
-              title={t('dashboard.maxActiveJobs')}
-              value={planLimits.maxActiveJobs}
-            />
+            <Statistic title={t('dashboard.maxActiveJobs')} value={planLimits.maxActiveJobs} />
           </Col>
           <Col xs={24} md={6}>
-            <Statistic
-              title={t('dashboard.maxReservedJobs')}
-              value={planLimits.maxReservedJobs}
-            />
+            <Statistic title={t('dashboard.maxReservedJobs')} value={planLimits.maxReservedJobs} />
           </Col>
           <Col xs={24} md={6}>
             <Statistic

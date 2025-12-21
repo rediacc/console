@@ -1,5 +1,18 @@
 import React, { useEffect, useState, type ComponentPropsWithoutRef } from 'react';
-import { Alert, Button, Card, Col, Divider, Flex, List, Modal, Row, Tabs, Tag, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Divider,
+  Flex,
+  List,
+  Modal,
+  Row,
+  Tabs,
+  Tag,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown, { type Components as MarkdownComponents } from 'react-markdown';
 import { Prism as SyntaxHighlighter, type SyntaxHighlighterProps } from 'react-syntax-highlighter';
@@ -250,9 +263,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         </Col>
         {context === 'marketplace' && (
           <Col xs={24} md={8}>
-            <Card
-              title={<Typography.Text strong>{t('marketplace:features')}</Typography.Text>}
-            >
+            <Card title={<Typography.Text strong>{t('marketplace:features')}</Typography.Text>}>
               <Flex vertical gap={8} style={{ width: '100%' }}>
                 {effectiveTemplate.tags?.map((tag) => (
                   <Flex key={tag} gap={8} align="center" style={{ width: '100%' }}>

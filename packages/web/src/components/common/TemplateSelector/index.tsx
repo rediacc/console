@@ -231,9 +231,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                     <TemplateIconComponent />
                   </div>
 
-                  <Typography.Text strong>
-                    {getTemplateTitle(template.name)}
-                  </Typography.Text>
+                  <Typography.Text strong>{getTemplateTitle(template.name)}</Typography.Text>
 
                   <span style={{ display: 'block' }}>
                     <Typography.Paragraph
@@ -281,9 +279,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   <AppstoreOutlined />
                 </div>
 
-                <Typography.Text strong>
-                  {t('resources:templates.noTemplate')}
-                </Typography.Text>
+                <Typography.Text strong>{t('resources:templates.noTemplate')}</Typography.Text>
 
                 <Typography.Text type="secondary">
                   {t('resources:templates.startEmpty')}

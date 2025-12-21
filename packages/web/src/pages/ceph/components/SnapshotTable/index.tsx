@@ -1,4 +1,3 @@
-import { Button, Flex, Table, Tooltip, Typography } from 'antd';
 import { useCallback, useMemo, useState, type Key } from 'react';
 import {
   CopyOutlined,
@@ -9,6 +8,7 @@ import {
   SecurityScanOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
+import { Button, Flex, Table, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,

@@ -235,11 +235,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
   return (
     <div>
       {uiMode !== 'simple' && (
-        <Alert
-          message={t(`vaultEditor.${entityDef.descriptionKey}`)}
-          type="info"
-          showIcon
-        />
+        <Alert message={t(`vaultEditor.${entityDef.descriptionKey}`)} type="info" showIcon />
       )}
 
       {/* Warning for TEAM vault without SSH keys */}
