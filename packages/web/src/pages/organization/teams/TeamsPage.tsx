@@ -165,7 +165,6 @@ const TeamsPage: React.FC = () => {
 
   return (
     <Flex vertical>
-      <Typography.Title level={3}>{t('teams.heading', { defaultValue: 'Teams' })}</Typography.Title>
       <ResourceListView<Team>
         title={
           <Space direction="vertical" size={0}>

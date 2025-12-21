@@ -272,9 +272,6 @@ const UsersPage: React.FC = () => {
   return (
     <Flex vertical>
       <Flex vertical gap={16}>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          {t('users.heading', { defaultValue: 'Users' })}
-        </Typography.Title>
         <ResourceListView
           title={
             <Flex vertical>

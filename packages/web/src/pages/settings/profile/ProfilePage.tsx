@@ -99,8 +99,6 @@ const ProfilePage: React.FC = () => {
   return (
     <Flex vertical>
       <Flex vertical>
-        <Typography.Title level={3}>{t('personal.title')}</Typography.Title>
-
         <Card>
           <Flex vertical gap={16}>
             <Flex align="center" gap={8}>

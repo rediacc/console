@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Empty, Flex, Modal, Space, Tooltip, Typography } from 'antd';
+import { Button, Card, Empty, Flex, Modal, Space, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -447,9 +447,6 @@ const MachinesPage: React.FC = () => {
   return (
     <>
       <Flex vertical>
-        <Typography.Title level={3}>
-          {t('machines:heading', { defaultValue: 'Machines' })}
-        </Typography.Title>
         <Card>
           <Flex justify="space-between" align="center" wrap gap={12}>
             <Flex style={{ flex: 1, minWidth: 260 }}>

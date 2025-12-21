@@ -585,10 +585,6 @@ const CredentialsPage: React.FC = () => {
     <>
       <Flex vertical>
         <Flex vertical>
-          <Typography.Title level={3}>
-            {t('credentials.heading', { defaultValue: 'Repository Credentials' })}
-          </Typography.Title>
-
           <Flex style={{ width: '100%', maxWidth: 360 }}>
             <TeamSelector
               data-testid="resources-team-selector"

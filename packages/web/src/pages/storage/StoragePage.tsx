@@ -421,10 +421,6 @@ const StoragePage: React.FC = () => {
   return (
     <>
       <Flex vertical>
-        <Typography.Title level={3}>
-          {t('storage.heading', { defaultValue: 'Storage' })}
-        </Typography.Title>
-
         <TeamSelectorWrapper>
           <TeamSelector
             data-testid="resources-team-selector"

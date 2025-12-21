@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Button, Card, Empty, Flex, Tooltip, Typography } from 'antd';
+import { Alert, Button, Card, Empty, Flex, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useCephClusters, useCephPools, type CephCluster, type CephPool } from '@/api/queries/ceph';
 import {
@@ -316,7 +316,6 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
         <Flex vertical>
           <Flex align="center" justify="space-between" wrap>
             <Flex align="center" style={{ flex: '1 1 auto', minWidth: 0 }}>
-              <Typography.Title level={4}>{t('title')}</Typography.Title>
               <Flex style={{ flex: '1 1 auto', minWidth: 320, maxWidth: 520 }}>
                 <TeamSelector
                   teams={teams}
