@@ -72,11 +72,6 @@ export interface ResponseViewerProps {
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export interface ActionButtonStyles {
-  buttonPrimary?: React.CSSProperties;
-  buttonSecondary?: React.CSSProperties;
-}
-
 export interface ActionButtonsProps {
   queueDetails: GetTeamQueueItems_ResultSet1 | null | undefined;
   taskId: string | null;
@@ -88,7 +83,6 @@ export interface ActionButtonsProps {
   onRetry: () => void;
   onRefresh: () => void;
   onClose: () => void;
-  styles: ActionButtonStyles;
 }
 
 export type TraceLog = QueueTraceLog;

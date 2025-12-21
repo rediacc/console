@@ -12,7 +12,7 @@
 
 /**
  * Modal size enum with CSS class names
- * Simplified to 3 core sizes plus fullscreen (uses DESIGN_TOKENS.DIMENSIONS)
+ * Simplified to 3 core sizes plus fullscreen
  */
 export enum ModalSize {
   /** Small modal (560px) - ideal for confirmations, simple forms */

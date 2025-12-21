@@ -4,7 +4,6 @@ import { List as ReactWindowList } from 'react-window';
 import * as InfiniteLoaderModule from 'react-window-infinite-loader';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
-import { useTableStyles } from '@/hooks/useComponentStyles';
 import { useMachineSelection } from '@/store/ceph/hooks';
 import { Machine } from '@/types';
 
@@ -105,7 +104,6 @@ const MachineRow: React.FC<
 > = ({ machine, style, selectable, onRowClick, renderActions }) => {
   const { isMachineSelected, toggleSelection } = useMachineSelection();
   const isSelected = isMachineSelected(machine.machineName);
-  const tableStyles = useTableStyles();
 
   const handleCheckboxChange = useCallback(
     (e: React.MouseEvent) => {
@@ -128,7 +126,6 @@ const MachineRow: React.FC<
         cursor: onRowClick ? 'pointer' : 'default',
         minHeight: 40,
         ...style,
-        ...tableStyles.tableCell,
       }}
       onClick={handleRowClick}
       data-testid={`virtual-machine-row-${machine.machineName}`}
@@ -200,7 +197,6 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
     listRef.current = instance;
   }, []);
   const { selectedMachines } = useMachineSelection();
-  const tableStyles = useTableStyles();
 
   // Create items list with potential placeholders for infinite loading
   const itemCount = hasMore ? machines.length + 1 : machines.length;
@@ -381,7 +377,6 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
     <Flex
       vertical
       style={{
-        ...tableStyles.tableContainer,
         overflow: 'hidden',
       }}
       onKeyDown={handleKeyDown}
@@ -390,7 +385,6 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
     >
       <Flex
         style={{
-          ...tableStyles.tableHeader,
           fontWeight: 500,
           position: 'sticky',
           top: 0,

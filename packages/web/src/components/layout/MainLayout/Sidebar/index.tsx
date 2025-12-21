@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { MenuItem } from '@/components/layout/MainLayout/helpers';
 import { SIDEBAR_COLLAPSED_WIDTH } from '@/components/layout/MainLayout/types';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { formatKeyForTestId } from '@/utils/testIdHelpers';
 const { Sider } = Layout;
 
@@ -95,9 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             const isExpanded = hasChildren
               ? expandedParentKeys.includes(item.key) || isParentActive
               : false;
-            const padding = collapsed
-              ? `${DESIGN_TOKENS.SPACING.SM_MD}px ${DESIGN_TOKENS.SPACING.SM_LG}px`
-              : `${DESIGN_TOKENS.SPACING.SM_MD}px ${DESIGN_TOKENS.SPACING.MD_LG}px`;
+            const padding = collapsed ? '10px 12px' : '10px 18px';
             const itemKey = item.key || item.label;
 
             const parentContent = (

@@ -11,7 +11,6 @@ import {
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
 import { featureFlags } from '@/config/featureFlags';
-import { useTableStyles } from '@/hooks/useComponentStyles';
 import { useQueueAction } from '@/hooks/useQueueAction';
 import {
   createArrayLengthSorter,
@@ -33,7 +32,6 @@ import {
   ReloadOutlined,
   StopOutlined,
 } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -173,8 +171,6 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions']);
 
   const userEmail = useAppSelector((state) => state.auth.user?.email || '');
-
-  const tableStyles = useTableStyles();
 
   const [loading, setLoading] = useState(false);
 
@@ -586,8 +582,6 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     createActionColumn<Container>({
       title: t('common:table.actions'),
 
-      width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
-
       fixed: 'end',
 
       renderActions: (container) => {
@@ -766,7 +760,6 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
               size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
-              style={tableStyles.tableContainer}
               data-testid="regular-containers-table"
               onRow={(container) => buildRowHandlers(container)}
             />
@@ -796,7 +789,6 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
               size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
-              style={tableStyles.tableContainer}
               data-testid="plugin-containers-table"
               onRow={(container) => buildRowHandlers(container)}
             />

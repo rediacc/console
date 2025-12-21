@@ -7,7 +7,6 @@ import {
   ExclamationCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import { spacing } from '@/utils/styleConstants';
 import type { SSHTestResult } from '../utils/sshTestResultParser';
 
 interface SSHTestResultsDisplayProps {
@@ -127,7 +126,7 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
           <>
             {compatibility.compatibility_issues &&
               compatibility.compatibility_issues.length > 0 && (
-                <Flex vertical style={{ marginTop: spacing('SM') }}>
+                <Flex vertical style={{ marginTop: 8 }}>
                   <Typography.Text strong>Known Issues:</Typography.Text>
                   <ul>
                     {compatibility.compatibility_issues.map((issue: string, index: number) => (
@@ -137,7 +136,7 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
                 </Flex>
               )}
             {compatibility.recommendations && compatibility.recommendations.length > 0 && (
-              <Flex vertical style={{ marginTop: spacing('MD') }}>
+              <Flex vertical style={{ marginTop: 16 }}>
                 <Typography.Text strong>Recommendations:</Typography.Text>
                 <ul>
                   {compatibility.recommendations.map((rec: string, index: number) => (
@@ -152,7 +151,7 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
       />
 
       {/* Raw JSON fallback */}
-      <Flex vertical style={{ marginTop: spacing('MD') }}>
+      <Flex vertical style={{ marginTop: 16 }}>
         <Collapse
           items={[
             {

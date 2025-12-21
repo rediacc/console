@@ -34,7 +34,6 @@ import {
   SafetyCertificateOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import type { FormInstance } from 'antd/es/form';
 import type { TFunction } from 'i18next';
 
@@ -398,7 +397,7 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
     <Flex vertical align="center" style={{ textAlign: 'center', alignItems: 'center' }}>
       <SafetyCertificateOutlined
         style={{
-          fontSize: DESIGN_TOKENS.FONT_SIZE.DISPLAY,
+          fontSize: 64,
           color: isEnabled ? 'var(--ant-color-success)' : 'var(--ant-color-text-tertiary)',
         }}
       />

@@ -22,7 +22,6 @@ import { isFork as coreIsFork, getGrandVaultForOperation, preparePromotion } fro
 import { useAppSelector } from '@/store/store';
 import { showMessage } from '@/utils/messages';
 import { DesktopOutlined } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { useRepositoryColumns, useSystemContainerColumns } from './columns';
 import { RepositoryActionsMenu } from './components/RepositoryActionsMenu';
 import {
@@ -520,7 +519,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     repositoryNameColumn,
     createActionColumn<RepositoryTableRow>({
       title: t('common:table.actions'),
-      width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
       fixed: 'end',
       renderActions: (record) => (
         <RepositoryActionsMenu

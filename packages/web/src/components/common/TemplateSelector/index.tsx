@@ -12,7 +12,6 @@ import {
   GlobalOutlined,
   InfoCircleOutlined,
 } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 interface Template {
   id?: string;
@@ -27,7 +26,7 @@ interface TemplateSelectorProps {
   multiple?: boolean;
 }
 
-const GRID_GUTTER: [number, number] = [DESIGN_TOKENS.SPACING.MD, DESIGN_TOKENS.SPACING.MD];
+const GRID_GUTTER: [number, number] = [16, 16];
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   value,

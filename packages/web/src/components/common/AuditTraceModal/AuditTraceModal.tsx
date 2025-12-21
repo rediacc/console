@@ -24,7 +24,6 @@ import {
   PlusCircleOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const { Text: AntText } = Typography;
 
@@ -223,7 +222,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       }
       open={open}
       onCancel={onCancel}
-      width={DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_XL}
+      width={1024}
       footer={null}
       destroyOnClose
       data-testid="audit-trace-modal"

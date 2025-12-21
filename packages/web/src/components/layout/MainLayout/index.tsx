@@ -26,14 +26,14 @@ import {
   SmileOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { LAYOUT } from '@/utils/styleConstants';
 import { buildMenuItems, flattenMenuRoutes } from './helpers';
 import { getMenuItems } from './menuItems';
 import { Sidebar } from './Sidebar';
 import { SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_EXPANDED_WIDTH } from './types';
 import { UserMenu } from './UserMenu';
 
-const HEADER_HEIGHT = 64;
+const HEADER_HEIGHT = LAYOUT.HEADER_HEIGHT;
 
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -173,7 +173,7 @@ const MainLayout: React.FC = () => {
   }, [location.pathname, menuItems]);
 
   const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH;
-  const contentPaddingTop = HEADER_HEIGHT + DESIGN_TOKENS.SPACING.PAGE_SECTION_GAP;
+  const contentPaddingTop = HEADER_HEIGHT + 16;
 
   return (
     <>

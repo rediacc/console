@@ -24,7 +24,6 @@ import {
   HistoryOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import type { ColumnsType } from 'antd/es/table/interface';
 
 type ExecutePingForMachineAndWait = ReturnType<
@@ -230,7 +229,6 @@ export const buildMachineTableColumns = ({
     baseColumns.push(
       createActionColumn<Machine>({
         title: t('common:table.actions'),
-        width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
         renderActions: (record) => (
           <ActionButtonGroup
             buttons={[

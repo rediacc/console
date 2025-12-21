@@ -3,7 +3,6 @@ import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { Alert, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { configService } from '@/services/configService';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const SandboxWarning: React.FC = () => {
   const { t } = useTranslation('common');
@@ -21,7 +20,7 @@ const SandboxWarning: React.FC = () => {
   useEffect(() => {
     // Add padding to body when warning is visible
     if (isVisible) {
-      document.body.style.paddingTop = `${DESIGN_TOKENS.SPACING.XXL}px`;
+      document.body.style.paddingTop = '40px';
     }
     return () => {
       document.body.style.paddingTop = '';

@@ -9,7 +9,6 @@ import {
   SmileOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
 
 type UserMenuProps = {
@@ -34,7 +33,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   return (
     <Flex vertical style={{ width: 280, padding: 16 }}>
       <Flex align="center" gap={12} wrap data-testid="user-info">
-        <Avatar icon={<UserOutlined />} size={DESIGN_TOKENS.DIMENSIONS.ICON_XXL} />
+        <Avatar icon={<UserOutlined />} size={48} />
         <Flex vertical style={{ flex: 1, minWidth: 0 }}>
           <Typography.Text strong style={{ display: 'block' }} data-testid="user-info-email">
             {user?.email}

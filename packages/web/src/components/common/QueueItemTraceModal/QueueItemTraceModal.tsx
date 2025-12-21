@@ -20,7 +20,6 @@ import {
   useRetryFailedQueueItem,
 } from '@/api/queries/queue';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { normalizeToString } from '@/platform';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
@@ -32,7 +31,6 @@ import {
   TeamOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import { spacing } from '@/utils/styleConstants';
 import {
   ActionButtons,
   ConsoleOutput,
@@ -62,7 +60,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   onTaskStatusChange,
 }) => {
   const { t } = useTranslation(['queue', 'common']);
-  const styles = useComponentStyles();
   const {
     data: traceData,
     isLoading: isTraceLoading,
@@ -187,7 +184,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
           onRetry={handleRetryFailedItem}
           onRefresh={handleRefreshTrace}
           onClose={handleClose}
-          styles={styles}
         />
       }
     >
@@ -219,7 +215,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                 consoleProgress={consoleProgress}
               />
 
-              <Flex vertical style={{ marginTop: spacing('MD') }}>
+              <Flex vertical style={{ marginTop: 16 }}>
                 <Collapse
                   data-testid="queue-trace-simple-console-collapse"
                   activeKey={isSimpleConsoleExpanded ? ['console'] : []}
@@ -254,7 +250,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
           )}
 
           {!simpleMode && (
-            <Flex vertical style={{ marginTop: spacing('MD') }}>
+            <Flex vertical style={{ marginTop: 16 }}>
               <Collapse
                 data-testid="queue-trace-collapse"
                 className="queue-trace-collapse"

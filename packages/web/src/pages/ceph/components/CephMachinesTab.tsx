@@ -3,7 +3,6 @@ import { Button, Card, Col, Flex, Input, Row, Select, Space, Typography } from '
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useMachines } from '@/api/queries/machines';
-import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { useDialogState } from '@/hooks/useDialogState';
 import { AssignToClusterModal } from '@/pages/ceph/components/AssignToClusterModal';
 import { RemoveFromClusterModal } from '@/pages/ceph/components/RemoveFromClusterModal';
@@ -28,7 +27,6 @@ type AssignmentFilter = 'all' | 'available' | 'cluster' | 'image' | 'clone';
 
 export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) => {
   const { t } = useTranslation(['ceph', 'machines', 'common']);
-  const componentStyles = useComponentStyles();
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const isExpertMode = uiMode === 'expert';
 
@@ -136,11 +134,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
           <Typography.Text style={{ fontWeight: 500 }}>
             {t('machines:bulkActions.selected', { count: selectedMachines.length })}
           </Typography.Text>
-          <Button
-            onClick={() => setSelectedMachines([])}
-            data-testid="ds-machines-clear-selection"
-            style={componentStyles.controlSurface}
-          >
+          <Button onClick={() => setSelectedMachines([])} data-testid="ds-machines-clear-selection">
             {t('common:actions.clearSelection')}
           </Button>
         </Space>
@@ -150,7 +144,6 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
             icon={<CloudServerOutlined />}
             onClick={() => setBulkAssignClusterModal(true)}
             data-testid="ds-machines-bulk-assign-cluster"
-            style={componentStyles.controlSurface}
           >
             {t('machines:bulkActions.assignToCluster')}
           </Button>
@@ -158,7 +151,6 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
             icon={<CloudServerOutlined />}
             onClick={() => setRemoveFromClusterModal(true)}
             data-testid="ds-machines-bulk-remove-cluster"
-            style={componentStyles.controlSurface}
           >
             {t('machines:bulkActions.removeFromCluster')}
           </Button>
@@ -166,7 +158,6 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
             icon={<InfoCircleOutlined />}
             onClick={() => setViewAssignmentStatusModal(true)}
             data-testid="ds-machines-bulk-view-status"
-            style={componentStyles.controlSurface}
           >
             {t('machines:bulkActions.viewAssignmentStatus')}
           </Button>
@@ -181,7 +172,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
       <MachineAvailabilitySummary teamFilter={teamFilter} onRefresh={handleRefresh} />
 
       {/* Filters and Actions */}
-      <Card style={componentStyles.card}>
+      <Card>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} lg={8}>
             <Input.Search
@@ -190,7 +181,6 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
               allowClear
               data-testid="ds-machines-search"
-              style={componentStyles.input}
             />
           </Col>
 
@@ -201,7 +191,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
               onChange={(value) => setAssignmentFilter(value as AssignmentFilter)}
               suffixIcon={<FilterOutlined />}
               data-testid="ds-machines-filter-assignment"
-              style={{ ...componentStyles.input, width: '100%' }}
+              style={{ width: '100%' }}
               options={[
                 { value: 'all', label: t('machines.filters.allStatuses') },
                 { value: 'available', label: t('assignment.available') },
@@ -219,7 +209,6 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
                   icon={<ExportOutlined />}
                   onClick={handleExport}
                   data-testid="ds-machines-export-button"
-                  style={componentStyles.controlSurface}
                 >
                   {t('machines.actions.exportReport')}
                 </Button>
@@ -233,7 +222,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
       {renderBulkActionsToolbar()}
 
       {/* Machine Table */}
-      <Card style={componentStyles.card}>
+      <Card>
         <FilterableMachineTable
           machines={filteredMachines}
           loading={isLoading}

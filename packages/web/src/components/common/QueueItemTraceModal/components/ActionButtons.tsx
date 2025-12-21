@@ -14,7 +14,6 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onRetry,
   onRefresh,
   onClose,
-  styles,
 }) => {
   const status = queueDetails ? normalizeToString(queueDetails, 'status', 'Status') : '';
   const retryCount = queueDetails
@@ -48,7 +47,6 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         style={{
           fontWeight: taskStaleness === 'critical' ? 600 : 500,
           fontSize: taskStaleness === 'critical' ? 14 : 12,
-          ...styles.buttonPrimary,
         }}
       >
         {taskStaleness === 'critical'
@@ -67,7 +65,6 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         icon={<RetweetOutlined />}
         onClick={onRetry}
         loading={isRetrying}
-        style={styles.buttonPrimary}
       >
         Retry Again
       </Button>
@@ -78,16 +75,10 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       icon={<ReloadOutlined />}
       onClick={onRefresh}
       loading={isTraceLoading}
-      style={styles.buttonSecondary}
     >
       Refresh
     </Button>,
-    <Button
-      key="close"
-      data-testid="queue-trace-close-button"
-      onClick={onClose}
-      style={styles.buttonSecondary}
-    >
+    <Button key="close" data-testid="queue-trace-close-button" onClick={onClose}>
       Close
     </Button>,
   ].filter(Boolean);
