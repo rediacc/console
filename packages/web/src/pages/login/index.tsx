@@ -6,12 +6,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '@/api/client';
 import { useVerifyTFA } from '@/api/queries/twoFactor';
 import logoBlack from '@/assets/logo_black.png';
-import logoWhite from '@/assets/logo_white.png';
 import InsecureConnectionWarning from '@/components/common/InsecureConnectionWarning';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
 import { featureFlags } from '@/config/featureFlags';
-import { useTheme } from '@/context/ThemeContext';
 import EndpointSelector from '@/pages/login/components/EndpointSelector';
 import RegistrationModal from '@/pages/login/components/RegistrationModal';
 import VersionSelector from '@/pages/login/components/VersionSelector';
@@ -137,7 +135,6 @@ const LoginPage: React.FC = () => {
   const dispatch = useDispatch();
   const [form] = Form.useForm<LoginForm>();
   const [twoFAForm] = Form.useForm();
-  const { theme } = useTheme();
   const { t, i18n } = useTranslation(['auth', 'common']);
   const verifyTFAMutation = useVerifyTFA();
   const { trackUserAction } = useTelemetry();
@@ -458,7 +455,7 @@ const LoginPage: React.FC = () => {
           <Flex
             style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 64 }}
           >
-            <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Rediacc Logo" />
+            <img src={logoBlack} alt="Rediacc Logo" />
           </Flex>
 
           {error && (

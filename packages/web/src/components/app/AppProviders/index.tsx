@@ -10,8 +10,6 @@ import ruRU from 'antd/locale/ru_RU';
 import trTR from 'antd/locale/tr_TR';
 import zhCN from 'antd/locale/zh_CN';
 import { useTranslation } from 'react-i18next';
-import { darkTheme, lightTheme } from '@/config/antdTheme';
-import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 
 type AntdLocale = typeof enUS;
 
@@ -36,37 +34,8 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   const currentLocale: AntdLocale = antdLocales[i18n.language] || enUS;
 
   return (
-    <ThemeProvider>
-      <AppProvidersContent currentLocale={currentLocale} language={i18n.language}>
-        {children}
-      </AppProvidersContent>
-    </ThemeProvider>
-  );
-};
-
-interface AppProvidersContentProps {
-  children: React.ReactNode;
-  currentLocale: AntdLocale;
-  language: string;
-}
-
-const AppProvidersContent: React.FC<AppProvidersContentProps> = ({
-  children,
-  currentLocale,
-  language,
-}) => {
-  const { theme: currentTheme } = useTheme();
-
-  // Select theme configuration based on current theme
-  const themeConfig = currentTheme === 'dark' ? darkTheme : lightTheme;
-
-  return (
     <Flex data-testid="app-providers-container">
-      <ConfigProvider
-        key={language} // Force re-render when language changes
-        locale={currentLocale}
-        theme={themeConfig}
-      >
+      <ConfigProvider key={i18n.language} locale={currentLocale}>
         <AntApp>{children}</AntApp>
       </ConfigProvider>
     </Flex>

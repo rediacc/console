@@ -1,8 +1,7 @@
 import React from 'react';
-import { Flex, Layout, Space } from 'antd';
+import { Flex, Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
 import LanguageSelector from '@/components/common/LanguageSelector';
-import { ThemeToggle } from '@/components/common/ThemeToggle';
 
 const AuthLayout: React.FC = () => {
   return (
@@ -11,10 +10,7 @@ const AuthLayout: React.FC = () => {
         style={{ position: 'absolute', top: 24, right: 24, zIndex: 1000 }}
         data-testid="auth-layout-controls-wrapper"
       >
-        <Space size="small">
-          <LanguageSelector iconOnly={true} />
-          <ThemeToggle data-testid="auth-layout-theme-toggle" />
-        </Space>
+        <LanguageSelector iconOnly={true} />
       </Flex>
       <Layout.Content
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}

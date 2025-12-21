@@ -7,12 +7,10 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '@/api/client';
 import { useCompanyInfo } from '@/api/queries/dashboard';
 import logoBlack from '@/assets/logo_black.png';
-import logoWhite from '@/assets/logo_white.png';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
 import NotificationBell from '@/components/layout/MainLayout/components/NotificationBell';
 import { featureFlags } from '@/config/featureFlags';
-import { useTheme } from '@/context/ThemeContext';
 import { useMessage } from '@/hooks';
 import { masterPasswordService } from '@/services/masterPasswordService';
 import { selectCompany, selectUser } from '@/store/auth/authSelectors';
@@ -45,7 +43,6 @@ const MainLayout: React.FC = () => {
   const user = useSelector(selectUser);
   const company = useSelector(selectCompany);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
-  const { theme } = useTheme();
   const { t } = useTranslation('common');
   const message = useMessage();
   const { data: companyData } = useCompanyInfo();
@@ -256,7 +253,7 @@ const MainLayout: React.FC = () => {
                 data-testid="main-logo-home"
               >
                 <img
-                  src={theme === 'dark' ? logoWhite : logoBlack}
+                  src={logoBlack}
                   alt="Rediacc Logo"
                   style={{ height: 32, width: 'auto', objectFit: 'contain' }}
                 />

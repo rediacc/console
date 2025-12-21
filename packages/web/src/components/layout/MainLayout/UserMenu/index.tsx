@@ -2,7 +2,6 @@ import React from 'react';
 import { Avatar, Button, Divider, Flex, Segmented, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '@/components/common/LanguageSelector';
-import { ThemeToggle } from '@/components/common/ThemeToggle';
 import {
   LogoutOutlined,
   SafetyCertificateOutlined,
@@ -95,20 +94,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           ]}
           data-testid="main-mode-toggle"
         />
-      </Flex>
-
-      <Divider style={{ margin: '12px 0' }} />
-
-      <Flex align="center" justify="space-between">
-        <Flex vertical>
-          <Typography.Text strong style={{ display: 'block' }}>
-            {t('appearance.label', { defaultValue: 'Appearance' })}
-          </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('appearance.description', { defaultValue: 'Device theme' })}
-          </Typography.Text>
-        </Flex>
-        <ThemeToggle />
       </Flex>
 
       <Divider style={{ margin: '12px 0' }} />

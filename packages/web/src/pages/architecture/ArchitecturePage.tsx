@@ -18,7 +18,6 @@ import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { useCompanyArchitecture } from '@/api/queries/architecture';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { useTheme } from '@/context/ThemeContext';
 import {
   ApiOutlined,
   CheckOutlined,
@@ -74,7 +73,6 @@ const ArchitecturePage: React.FC = () => {
   const [isVisualizationLoading, setIsVisualizationLoading] = useState(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const { theme } = useTheme();
   const { token } = antdTheme.useToken();
 
   // Use Ant Design tokens for all colors
@@ -94,7 +92,7 @@ const ArchitecturePage: React.FC = () => {
   const nodeFallback = token.colorFillSecondary;
   const nodeBorder = token.colorBorder;
   const linkStroke = token.colorBorderSecondary;
-  const labelFill = theme === 'dark' ? token.colorTextSecondary : token.colorText;
+  const labelFill = token.colorText;
 
   // Available entity types for filtering
   const entityTypes = [

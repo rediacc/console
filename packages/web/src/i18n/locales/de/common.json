@@ -178,12 +178,6 @@
     "actions": "Aktionen",
     "showingRecords": "Es werden Datensätze {{start}}–{{end}} von {{total}} angezeigt"
   },
-  "theme": {
-    "dark": "Dunkel",
-    "light": "Licht",
-    "switchToDark": "Wechseln Sie in den Dunkelmodus",
-    "switchToLight": "Wechseln Sie in den Lichtmodus"
-  },
   "thisMonth": "Diesen Monat",
   "today": "Heute",
   "total": "Gesamt",
