@@ -1,5 +1,16 @@
 ﻿import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Breadcrumb, Button, Card, Flex, Space, Tag, Tooltip, Typography } from 'antd';
+import {
+  Alert,
+  Breadcrumb,
+  Button,
+  Card,
+  Drawer,
+  Flex,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -7,9 +18,9 @@ import { useRepositories } from '@/api/queries/repositories';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
+import { RepositoryDetailPanel } from '@/components/resources/internal/RepositoryDetailPanel';
 import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable';
-import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import { DETAIL_PANEL } from '@/constants/layout';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { useRepositoryCreation } from '@/hooks/useRepositoryCreation';
@@ -79,10 +90,6 @@ const MachineReposPage: React.FC = () => {
   const [selectedResource, setSelectedResource] = useState<
     Repository | ContainerData | PluginContainer | null
   >(null);
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
-  const [splitWidth, setSplitWidth] = useState(panelWidth);
-  const [backdropVisible, setBackdropVisible] = useState(false);
-  const [shouldRenderBackdrop, setShouldRenderBackdrop] = useState(false);
 
   // Refresh key for forcing MachineRepositoryTable updates
   const [refreshKey, setRefreshKey] = useState(0);
@@ -212,7 +219,6 @@ const MachineReposPage: React.FC = () => {
     );
 
     setSelectedResource(actualRepository || mappedRepo);
-    setIsPanelCollapsed(false);
   };
 
   const handleContainerClick = (
@@ -222,43 +228,11 @@ const MachineReposPage: React.FC = () => {
       | { id: string; name: string; state: string; [key: string]: unknown }
   ) => {
     setSelectedResource(container as PluginContainer | ContainerData);
-    setIsPanelCollapsed(false);
   };
 
   const handlePanelClose = () => {
     setSelectedResource(null);
-    // Panel closes completely, no need to set collapsed state
   };
-
-  const handleTogglePanelCollapse = () => {
-    setIsPanelCollapsed(!isPanelCollapsed);
-  };
-
-  // Update splitWidth when window resizes (to keep within bounds)
-  useEffect(() => {
-    setSplitWidth(panelWidth);
-  }, [panelWidth]);
-
-  // Manage backdrop fade in/out
-  useEffect(() => {
-    if (selectedResource) {
-      // Mount backdrop and trigger fade-in
-      setShouldRenderBackdrop(true);
-      requestAnimationFrame(() => {
-        setBackdropVisible(true);
-      });
-    } else {
-      // Trigger fade-out
-      setBackdropVisible(false);
-      // Unmount backdrop after fade-out animation completes
-      const timer = setTimeout(() => {
-        setShouldRenderBackdrop(false);
-      }, 250); // Match transition duration
-      return () => clearTimeout(timer);
-    }
-  }, [selectedResource]);
-
-  const actualPanelWidth = isPanelCollapsed ? DETAIL_PANEL.COLLAPSED_WIDTH : splitWidth;
 
   // Loading state
   if (machinesLoading && !machine) {
@@ -393,7 +367,7 @@ const MachineReposPage: React.FC = () => {
             <Flex
               vertical
               style={{
-                width: selectedResource ? `calc(100% - ${actualPanelWidth}px)` : '100%',
+                width: '100%',
                 height: '100%',
                 overflow: 'auto',
                 minWidth: 240,
@@ -414,37 +388,31 @@ const MachineReposPage: React.FC = () => {
               )}
             </Flex>
 
-            {shouldRenderBackdrop && (
-              <Flex
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: actualPanelWidth,
-                  bottom: 0,
-                  backgroundColor: '#404040',
-                  display: backdropVisible ? 'block' : 'none',
-                  zIndex: 1000,
-                  pointerEvents: backdropVisible ? 'auto' : 'none',
-                }}
-                onClick={handlePanelClose}
-                data-testid="machine-repositories-backdrop"
-              />
-            )}
-
-            {selectedResource && (
-              <UnifiedDetailPanel
-                type={'repositoryName' in selectedResource ? 'repository' : 'container'}
-                data={selectedResource}
-                visible={true}
-                onClose={handlePanelClose}
-                splitWidth={splitWidth}
-                onSplitWidthChange={setSplitWidth}
-                isCollapsed={isPanelCollapsed}
-                onToggleCollapse={handleTogglePanelCollapse}
-                collapsedWidth={DETAIL_PANEL.COLLAPSED_WIDTH}
-              />
-            )}
+            <Drawer
+              open={!!selectedResource}
+              onClose={handlePanelClose}
+              width={panelWidth}
+              placement="right"
+              mask={true}
+              data-testid="machine-repositories-drawer"
+            >
+              {selectedResource &&
+                ('repositoryName' in selectedResource ? (
+                  <RepositoryDetailPanel
+                    repository={selectedResource as Repository}
+                    visible={true}
+                    onClose={handlePanelClose}
+                    splitView
+                  />
+                ) : (
+                  <ContainerDetailPanel
+                    container={selectedResource as unknown as ContainerData}
+                    visible={true}
+                    onClose={handlePanelClose}
+                    splitView
+                  />
+                ))}
+            </Drawer>
           </Flex>
         </Flex>
       </Card>

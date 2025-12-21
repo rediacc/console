@@ -1,16 +1,27 @@
 ﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Breadcrumb, Button, Card, Flex, Space, Tag, Tooltip, Typography } from 'antd';
+import {
+  Alert,
+  Breadcrumb,
+  Button,
+  Card,
+  Drawer,
+  Flex,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import { DETAIL_PANEL } from '@/constants/layout';
+import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
 import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
+import { ContainerData } from '@/pages/machines/components/SplitResourceView';
 import { RepositoryContainerTable } from '@/pages/resources/components/RepositoryContainerTable';
 import { Machine, PluginContainer } from '@/types';
 import { DoubleLeftOutlined, InboxOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
@@ -117,13 +128,6 @@ const RepoContainersPage: React.FC = () => {
 
   // Panel width management
   const panelWidth = usePanelWidth();
-  const [splitWidth, setSplitWidth] = useState(panelWidth);
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
-
-  // Update splitWidth when window resizes
-  useEffect(() => {
-    setSplitWidth(panelWidth);
-  }, [panelWidth]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshKey((prev) => prev + 1);
@@ -140,13 +144,6 @@ const RepoContainersPage: React.FC = () => {
     }
   }, [actualMachine, hasInitiallyLoaded, handleRefresh]);
 
-  const actualPanelWidth = isPanelCollapsed ? DETAIL_PANEL.COLLAPSED_WIDTH : splitWidth;
-
-  // Determine selected resource for detail panel
-  const selectedResource = selectedContainer
-    ? { type: 'container' as const, data: selectedContainer }
-    : null;
-
   // Navigation handlers
   const handleBackToRepos = () => {
     navigate(`/machines/${machineName}/repositories`, {
@@ -162,7 +159,10 @@ const RepoContainersPage: React.FC = () => {
     container: PluginContainer | { id: string; name: string; state: string; [key: string]: unknown }
   ) => {
     setSelectedContainer(container as PluginContainer);
-    setIsPanelCollapsed(false);
+  };
+
+  const handlePanelClose = () => {
+    setSelectedContainer(null);
   };
 
   // Loading state
@@ -333,7 +333,7 @@ const RepoContainersPage: React.FC = () => {
             <Flex
               vertical
               style={{
-                width: selectedResource ? `calc(100% - ${actualPanelWidth}px)` : '100%',
+                width: '100%',
                 height: '100%',
                 overflow: 'auto',
                 minWidth: 240,
@@ -352,44 +352,23 @@ const RepoContainersPage: React.FC = () => {
               />
             </Flex>
 
-            {/* Backdrop must come BEFORE panel for correct z-index layering */}
-            {selectedResource && !isPanelCollapsed && (
-              <Flex
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: actualPanelWidth,
-                  bottom: 0,
-                  backgroundColor: '#404040',
-                  display: 'block',
-                  zIndex: 1000,
-                  pointerEvents: 'auto',
-                }}
-                onClick={() => {
-                  setSelectedContainer(null);
-                  setIsPanelCollapsed(true);
-                }}
-                data-testid="repository-containers-backdrop"
-              />
-            )}
-
-            {selectedResource && (
-              <UnifiedDetailPanel
-                type={selectedResource.type}
-                data={selectedResource.data}
-                visible={true}
-                onClose={() => {
-                  setSelectedContainer(null);
-                  setIsPanelCollapsed(true);
-                }}
-                splitWidth={splitWidth}
-                onSplitWidthChange={setSplitWidth}
-                isCollapsed={isPanelCollapsed}
-                onToggleCollapse={() => setIsPanelCollapsed(!isPanelCollapsed)}
-                collapsedWidth={DETAIL_PANEL.COLLAPSED_WIDTH}
-              />
-            )}
+            <Drawer
+              open={!!selectedContainer}
+              onClose={handlePanelClose}
+              width={panelWidth}
+              placement="right"
+              mask={true}
+              data-testid="repository-containers-drawer"
+            >
+              {selectedContainer && (
+                <ContainerDetailPanel
+                  container={selectedContainer as unknown as ContainerData}
+                  visible={true}
+                  onClose={handlePanelClose}
+                  splitView
+                />
+              )}
+            </Drawer>
           </Flex>
         </Flex>
       </Card>

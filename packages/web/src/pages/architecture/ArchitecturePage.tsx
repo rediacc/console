@@ -34,7 +34,6 @@ import {
   UserOutlined,
 } from '@/utils/optimizedIcons';
 import type { CompanyDataGraph, CompanyGraphNode } from '@rediacc/shared/types';
-import { getArchitecturePalette } from './architectureTheme';
 
 interface GraphNode extends CompanyGraphNode, d3.SimulationNodeDatum {
   memberCount?: number;
@@ -77,8 +76,25 @@ const ArchitecturePage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { theme } = useTheme();
   const { token } = antdTheme.useToken();
-  const borderColor = token.colorBorderSecondary ?? token.colorBorder;
-  const architecturePalette = useMemo(() => getArchitecturePalette(theme), [theme]);
+
+  // Use Ant Design tokens for all colors
+  const nodeColors = useMemo(
+    () => ({
+      company: token.colorFillSecondary,
+      user: token.colorFillTertiary,
+      team: token.colorFillQuaternary,
+      region: token.colorBgLayout,
+      bridge: token.colorBgContainer,
+      machine: token.colorBorderSecondary,
+      repository: token.colorBorder,
+      storage: token.colorTextQuaternary,
+    }),
+    [token]
+  );
+  const nodeFallback = token.colorFillSecondary;
+  const nodeBorder = token.colorBorder;
+  const linkStroke = token.colorBorderSecondary;
+  const labelFill = theme === 'dark' ? token.colorTextSecondary : token.colorText;
 
   // Available entity types for filtering
   const entityTypes = [
@@ -168,8 +184,8 @@ const ArchitecturePage: React.FC = () => {
 
   // Get color for node type
   const getNodeColor = useCallback(
-    (nodeType: string) => architecturePalette.nodes[nodeType] || architecturePalette.nodeFallback,
-    [architecturePalette]
+    (nodeType: string) => nodeColors[nodeType as keyof typeof nodeColors] || nodeFallback,
+    [nodeColors, nodeFallback]
   );
 
   // Render D3 visualization
@@ -198,7 +214,7 @@ const ArchitecturePage: React.FC = () => {
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .style('font-size', '16px')
-        .style('fill', architecturePalette.labelFill)
+        .style('fill', labelFill)
         .text(t('architecture.noEntitiesSelected', { ns: 'system' }));
 
       return;
@@ -234,7 +250,7 @@ const ArchitecturePage: React.FC = () => {
       .attr('markerHeight', 8)
       .append('path')
       .attr('d', 'M 0,-5 L 10,0 L 0,5')
-      .attr('fill', architecturePalette.linkStroke);
+      .attr('fill', linkStroke);
 
     if (viewMode === 'force') {
       // Force-directed layout
@@ -267,7 +283,7 @@ const ArchitecturePage: React.FC = () => {
         .selectAll<SVGLineElement, GraphLink>('line')
         .data(simulationLinks)
         .join('line')
-        .attr('stroke', borderColor)
+        .attr('stroke', linkStroke)
         .attr('stroke-width', 2)
         .attr('marker-end', 'url(#arrowhead)');
 
@@ -298,7 +314,7 @@ const ArchitecturePage: React.FC = () => {
         .append('circle')
         .attr('r', 20)
         .attr('fill', (d) => getNodeColor(d.nodeType))
-        .attr('stroke', architecturePalette.nodeBorder)
+        .attr('stroke', nodeBorder)
         .attr('stroke-width', 2)
         .style('cursor', 'pointer')
         .style('transition', 'all 0.2s ease')
@@ -323,7 +339,7 @@ const ArchitecturePage: React.FC = () => {
         .attr('dy', 35)
         .attr('text-anchor', 'middle')
         .style('font-size', '12px')
-        .style('fill', architecturePalette.labelFill)
+        .style('fill', labelFill)
         .style('font-weight', '500')
         .text((d) => d.name);
 
@@ -463,7 +479,7 @@ const ArchitecturePage: React.FC = () => {
         .join('path')
         .attr('d', (d) => linkGenerator(d) ?? '')
         .attr('fill', 'none')
-        .attr('stroke', architecturePalette.linkStroke)
+        .attr('stroke', linkStroke)
         .attr('stroke-width', 2);
 
       // Draw nodes
@@ -478,11 +494,9 @@ const ArchitecturePage: React.FC = () => {
         .append('circle')
         .attr('r', 20)
         .attr('fill', (d) =>
-          d.data.nodeType === 'placeholder'
-            ? architecturePalette.nodeFallback
-            : getNodeColor(d.data.nodeType)
+          d.data.nodeType === 'placeholder' ? nodeFallback : getNodeColor(d.data.nodeType)
         )
-        .attr('stroke', architecturePalette.nodeBorder)
+        .attr('stroke', nodeBorder)
         .attr('stroke-width', 2)
         .style('cursor', (d) => (d.data.nodeType === 'placeholder' ? 'default' : 'pointer'))
         .style('transition', 'all 0.2s ease')
@@ -512,7 +526,7 @@ const ArchitecturePage: React.FC = () => {
         .attr('dy', 35)
         .attr('text-anchor', 'middle')
         .style('font-size', '12px')
-        .style('fill', architecturePalette.labelFill)
+        .style('fill', labelFill)
         .style('font-weight', '500')
         .text((d) => d.data.name);
 
@@ -562,7 +576,7 @@ const ArchitecturePage: React.FC = () => {
         .attr('y1', (d) => d.source.y ?? 0)
         .attr('x2', (d) => d.target.x ?? 0)
         .attr('y2', (d) => d.target.y ?? 0)
-        .attr('stroke', borderColor)
+        .attr('stroke', linkStroke)
         .attr('stroke-width', 2);
 
       // Draw nodes
@@ -577,7 +591,7 @@ const ArchitecturePage: React.FC = () => {
         .append('circle')
         .attr('r', 20)
         .attr('fill', (d) => getNodeColor(d.nodeType))
-        .attr('stroke', architecturePalette.nodeBorder)
+        .attr('stroke', nodeBorder)
         .attr('stroke-width', 2)
         .style('cursor', 'pointer')
         .style('transition', 'all 0.2s ease')
@@ -600,7 +614,7 @@ const ArchitecturePage: React.FC = () => {
         .attr('dy', 35)
         .attr('text-anchor', 'middle')
         .style('font-size', '12px')
-        .style('fill', architecturePalette.labelFill)
+        .style('fill', labelFill)
         .style('font-weight', '500')
         .text((d) => d.name);
     }
@@ -647,9 +661,12 @@ const ArchitecturePage: React.FC = () => {
     isFullscreen,
     selectedEntityTypes,
     t,
-    architecturePalette,
+    nodeColors,
+    nodeFallback,
+    nodeBorder,
+    linkStroke,
+    labelFill,
     getNodeColor,
-    borderColor,
   ]);
 
   const toggleFullscreen = () => {
