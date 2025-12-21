@@ -130,15 +130,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                             <Badge count={sub.quantity} />
                             {sub.isTrial === 1 && <Tag color="processing">Trial</Tag>}
                           </Flex>
-                          <Typography.Text
-                            style={{
-                              fontSize: 14,
-                              color:
-                                sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD
-                                  ? 'var(--ant-color-error)'
-                                  : undefined,
-                            }}
-                          >
+                          <Typography.Text style={{ fontSize: 14 }}>
                             {sub.daysRemaining} {sub.daysRemaining === 1 ? 'day' : 'days'} remaining
                           </Typography.Text>
                         </Flex>

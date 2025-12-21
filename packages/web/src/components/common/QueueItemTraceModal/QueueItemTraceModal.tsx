@@ -293,7 +293,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                               queueDetails={traceData.queueDetails}
                               totalDurationSeconds={totalDurationSeconds}
                               processingDurationSeconds={processingDurationSeconds}
-                              isTaskStale={isTaskStale(traceData.queueDetails)}
                               isDetailedConsoleExpanded={isDetailedConsoleExpanded}
                               setIsDetailedConsoleExpanded={setIsDetailedConsoleExpanded}
                               accumulatedOutput={accumulatedOutput}

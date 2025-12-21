@@ -394,7 +394,6 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
       <SafetyCertificateOutlined
         style={{
           fontSize: 64,
-          color: isEnabled ? 'var(--ant-color-success)' : 'var(--ant-color-text-tertiary)',
         }}
       />
       <Title level={4}>

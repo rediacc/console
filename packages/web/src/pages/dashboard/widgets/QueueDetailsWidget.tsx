@@ -83,28 +83,19 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
               </Flex>
               <Flex align="center" justify="space-between">
                 <Typography.Text style={{ fontSize: 12 }}>Completed</Typography.Text>
-                <Typography.Text
-                  style={{ color: 'var(--ant-color-success)' }}
-                  data-testid="dashboard-stat-completed-today"
-                >
+                <Typography.Text data-testid="dashboard-stat-completed-today">
                   {queueStats.completedToday || 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
                 <Typography.Text style={{ fontSize: 12 }}>Cancelled</Typography.Text>
-                <Typography.Text
-                  style={{ color: 'var(--ant-color-error)' }}
-                  data-testid="dashboard-stat-cancelled-today"
-                >
+                <Typography.Text data-testid="dashboard-stat-cancelled-today">
                   {queueStats.cancelledToday || 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
                 <Typography.Text style={{ fontSize: 12 }}>Failed</Typography.Text>
-                <Typography.Text
-                  style={{ color: 'var(--ant-color-error)' }}
-                  data-testid="dashboard-stat-failed-today"
-                >
+                <Typography.Text data-testid="dashboard-stat-failed-today">
                   {queueStats.failedToday || 0}
                 </Typography.Text>
               </Flex>

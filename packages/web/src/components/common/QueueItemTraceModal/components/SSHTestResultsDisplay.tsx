@@ -23,22 +23,18 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
     compatible: {
       type: 'success' as const,
       icon: <CheckCircleOutlined />,
-      color: 'var(--ant-color-success)',
     },
     warning: {
       type: 'warning' as const,
       icon: <WarningOutlined />,
-      color: 'var(--ant-color-warning)',
     },
     incompatible: {
       type: 'error' as const,
       icon: <ExclamationCircleOutlined />,
-      color: 'var(--ant-color-error)',
     },
     unknown: {
       type: 'info' as const,
       icon: <ExclamationCircleOutlined />,
-      color: 'var(--ant-color-info)',
     },
   };
 
@@ -114,7 +110,6 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
             <Typography.Text strong>Compatibility Status:</Typography.Text>
             <Typography.Text
               style={{
-                color: config.color,
                 textTransform: 'capitalize',
               }}
             >

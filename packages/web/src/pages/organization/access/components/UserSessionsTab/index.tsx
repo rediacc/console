@@ -81,11 +81,10 @@ const UserSessionsTab: React.FC = () => {
     key: 'userAgent',
     width: 300,
     renderText: (agent: string | null | undefined) => agent ?? userAgentFallback,
-    renderWrapper: (content, fullText) => (
+    renderWrapper: (content) => (
       <Typography.Text
         style={{
           fontSize: 14,
-          color: fullText === userAgentFallback ? 'var(--ant-color-text-secondary)' : undefined,
         }}
       >
         {content}
@@ -235,7 +234,6 @@ const UserSessionsTab: React.FC = () => {
         <Typography.Text
           style={{
             fontSize: 14,
-            color: !ip ? 'var(--ant-color-text-secondary)' : undefined,
           }}
         >
           {ip || t('userSessions.notAvailable')}

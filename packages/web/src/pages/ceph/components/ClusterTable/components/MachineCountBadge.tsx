@@ -11,11 +11,7 @@ export const MachineCountBadge: React.FC<MachineCountBadgeProps> = ({ cluster })
   const { data: machines = [] } = useCephClusterMachines(cluster.clusterName, true);
 
   return (
-    <Badge
-      count={machines.length}
-      showZero
-      color={machines.length > 0 ? 'var(--ant-color-success)' : 'var(--ant-color-text-tertiary)'}
-    >
+    <Badge count={machines.length} showZero>
       <CloudServerOutlined />
     </Badge>
   );

@@ -20,15 +20,6 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
   const { t } = useTranslation(['ceph', 'machines']);
   const { data: machines = [], isLoading, refetch } = useMachines(teamFilter);
 
-  // Get accent colors from CSS variables
-  const accentColors = {
-    primary: 'var(--ant-color-primary)',
-    success: 'var(--ant-color-success)',
-    info: 'var(--ant-color-info)',
-    warning: 'var(--ant-color-warning)',
-    accent: 'var(--ant-color-text-tertiary)',
-  };
-
   const stats = React.useMemo<MachineStats>(() => {
     const result: MachineStats = {
       total: machines.length,
@@ -73,7 +64,6 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       label: t('machines.summary.total'),
       value: stats.total,
       icon: <DesktopOutlined />,
-      accent: accentColors.primary,
       testId: 'ds-machines-summary-total',
       col: { xs: 24, sm: 12, md: 8, lg: 4 },
       suffix: null,
@@ -83,7 +73,6 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       label: t('machines.summary.available'),
       value: stats.available,
       icon: <CheckCircleOutlined />,
-      accent: accentColors.success,
       testId: 'ds-machines-summary-available',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
       suffix: (
@@ -97,7 +86,6 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       label: t('machines.summary.assignedToClusters'),
       value: stats.cluster,
       icon: <CloudServerOutlined />,
-      accent: accentColors.info,
       testId: 'ds-machines-summary-clusters',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
       suffix: (
@@ -111,7 +99,6 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       label: t('machines.summary.assignedToImages'),
       value: stats.image,
       icon: <HddOutlined />,
-      accent: accentColors.warning,
       testId: 'ds-machines-summary-images',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
       suffix: (
@@ -123,7 +110,6 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       label: t('machines.summary.assignedToClones'),
       value: stats.clone,
       icon: <CopyOutlined />,
-      accent: accentColors.accent,
       testId: 'ds-machines-summary-clones',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
       suffix: (
@@ -155,7 +141,6 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
                 value={item.value}
                 prefix={item.icon}
                 suffix={item.suffix}
-                valueStyle={{ color: item.accent }}
               />
             </Card>
           </Col>

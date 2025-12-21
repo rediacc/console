@@ -59,11 +59,11 @@ const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth
         <Flex vertical gap={8} style={{ width: '100%' }}>
           <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
             {accountHealth.resourcesAtLimit > 0 ? (
-              <Flex style={{ color: 'var(--ant-color-warning)', display: 'inline-flex' }}>
+              <Flex style={{ display: 'inline-flex' }}>
                 <ExclamationCircleOutlined />
               </Flex>
             ) : (
-              <Flex style={{ color: 'var(--ant-color-success)', display: 'inline-flex' }}>
+              <Flex style={{ display: 'inline-flex' }}>
                 <CheckCircleOutlined />
               </Flex>
             )}
@@ -71,7 +71,7 @@ const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth
           </Flex>
 
           <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-            <Flex style={{ color: 'var(--ant-color-text-secondary)', display: 'inline-flex' }}>
+            <Flex style={{ display: 'inline-flex' }}>
               <ClockCircleOutlined />
             </Flex>
             <Typography.Text>

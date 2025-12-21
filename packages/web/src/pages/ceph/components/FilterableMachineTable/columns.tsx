@@ -55,12 +55,6 @@ export const buildMachineTableColumns = (
     width: 100,
     align: 'center',
     sorter: createSorter<Machine>('queueCount'),
-    render: (count: number = 0) => (
-      <Badge
-        count={count}
-        showZero
-        color={count > 0 ? 'var(--ant-color-success)' : 'var(--ant-color-text-tertiary)'}
-      />
-    ),
+    render: (count: number = 0) => <Badge count={count} showZero />,
   },
 ];

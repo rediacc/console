@@ -110,13 +110,19 @@ export default tseslint.config(
         alphabetize: { order: 'asc', caseInsensitive: true },
       }],
 
-      // Ban styled-components to enforce Ant Design usage
+      // Ban styled-components and Layout to enforce Ant Design best practices
       'no-restricted-imports': ['error', {
         paths: [
           { name: 'styled-components', message: 'Use Ant Design components with inline styles or className instead.' },
+          {
+            name: 'antd',
+            importNames: ['Layout'],
+            message: 'Layout has default grey/dark backgrounds. Use Flex component instead.',
+          },
         ],
         patterns: [
           { group: ['styled-components/*'], message: 'Use Ant Design components instead.' },
+          { group: ['antd/es/layout', 'antd/es/layout/*', 'antd/lib/layout', 'antd/lib/layout/*'], message: 'Layout has default grey/dark backgrounds. Use Flex component instead.' },
         ],
       }],
 
@@ -131,12 +137,17 @@ export default tseslint.config(
         ],
       }],
 
-      // Ban local aliases of constants - use CONSTANT.PROPERTY directly
-      // This catches patterns like: const X = CONSTANT.Y (not computed access like MAP[key])
-      'no-restricted-syntax': ['error', {
-        selector: "VariableDeclarator[init.type='MemberExpression'][init.computed=false][init.object.name=/^[A-Z][A-Z_0-9]*$/]",
-        message: 'Do not create local aliases from constants. Use the original property access directly (e.g., LAYOUT.HEADER_HEIGHT instead of const X = LAYOUT.X).',
-      }],
+      // Ban local aliases of constants and CSS variables
+      'no-restricted-syntax': ['error',
+        {
+          selector: "VariableDeclarator[init.type='MemberExpression'][init.computed=false][init.object.name=/^[A-Z][A-Z_0-9]*$/]",
+          message: 'Do not create local aliases from constants. Use the original property access directly (e.g., LAYOUT.HEADER_HEIGHT instead of const X = LAYOUT.X).',
+        },
+        {
+          selector: "Literal[value=/var\\(--ant-/]",
+          message: 'Do not use CSS variables (var(--ant-*)). Remove color styling or use Ant Design component props.',
+        },
+      ],
     }
   }
 );

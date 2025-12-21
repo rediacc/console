@@ -84,7 +84,7 @@ const AuditPage = () => {
     const IconComponent = config.icon;
 
     return (
-      <Typography.Text style={{ color: config.color, display: 'inline-flex' }}>
+      <Typography.Text style={{ display: 'inline-flex' }}>
         <IconComponent />
       </Typography.Text>
     );

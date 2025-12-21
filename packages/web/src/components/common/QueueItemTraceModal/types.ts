@@ -63,7 +63,6 @@ export interface StatsPanelProps {
   queueDetails: GetTeamQueueItems_ResultSet1;
   totalDurationSeconds: number;
   processingDurationSeconds: number;
-  isTaskStale: boolean;
 }
 
 export interface ResponseViewerProps {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Button, Dropdown, Empty, Flex, Grid, List, Space, Tag, Typography } from 'antd';
+import { Badge, Button, Card, Dropdown, Empty, Flex, Grid, List, Space, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -98,12 +98,8 @@ const NotificationBell: React.FC = () => {
   };
 
   const dropdownContent = (
-    <Flex
-      vertical
-      style={{ maxHeight: 400, minWidth: 320 }}
-      className="notification-dropdown"
-      data-testid="notification-dropdown"
-    >
+    <Card styles={{ body: { padding: 0 } }} data-testid="notification-dropdown">
+      <Flex vertical style={{ maxHeight: 400, minWidth: 320 }} className="notification-dropdown">
       <Flex
         align="center"
         justify="space-between"
@@ -193,7 +189,8 @@ const NotificationBell: React.FC = () => {
           />
         )}
       </Flex>
-    </Flex>
+      </Flex>
+    </Card>
   );
 
   return (

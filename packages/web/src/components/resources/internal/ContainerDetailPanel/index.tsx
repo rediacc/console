@@ -238,7 +238,6 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
               strong
               style={{
                 fontSize: 18,
-                color: cpuWarning ? 'var(--ant-color-error)' : 'var(--ant-color-primary)',
               }}
             >
               {resourceUsage?.cpu?.toFixed(2) ?? '0'}%
@@ -257,7 +256,6 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
               strong
               style={{
                 fontSize: 18,
-                color: memoryWarning ? 'var(--ant-color-error)' : 'var(--ant-color-primary)',
               }}
             >
               {resourceUsage ? `${resourceUsage.memoryUsed} / ${resourceUsage.memoryTotal}` : '-'}

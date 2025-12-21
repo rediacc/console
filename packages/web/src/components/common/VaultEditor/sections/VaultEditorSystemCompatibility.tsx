@@ -34,28 +34,23 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
     {
       type: 'success' | 'warning' | 'error' | 'info';
       icon: JSX.Element;
-      statusVariant: 'success' | 'warning' | 'error' | 'info';
     }
   > = {
     compatible: {
       type: 'success',
       icon: <CheckCircleOutlined />,
-      statusVariant: 'success',
     },
     warning: {
       type: 'warning',
       icon: <WarningOutlined />,
-      statusVariant: 'warning',
     },
     incompatible: {
       type: 'error',
       icon: <ExclamationCircleOutlined />,
-      statusVariant: 'error',
     },
     unknown: {
       type: 'info',
       icon: <QuestionCircleOutlined />,
-      statusVariant: 'info',
     },
   };
 
@@ -132,7 +127,6 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
                 <Typography.Text
                   style={{
                     textTransform: 'capitalize',
-                    color: `var(--ant-color-${config.statusVariant})`,
                   }}
                 >
                   {t(`vaultEditor.systemCompatibility.${status}`)}

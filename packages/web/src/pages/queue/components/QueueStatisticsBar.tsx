@@ -34,29 +34,27 @@ export const QueueStatisticsBar: React.FC<QueueStatisticsBarProps> = ({
       </Flex>
       <Divider type="vertical" />
       <Flex align="center" gap={4}>
-        <Typography.Text style={{ display: 'inline-flex', color: 'var(--ant-color-info)' }}>
+        <Typography.Text style={{ display: 'inline-flex' }}>
           <PlayCircleOutlined />
         </Typography.Text>
         <Typography.Text>{t('queue:statistics.active')}:</Typography.Text>
-        <Typography.Text style={{ color: 'var(--ant-color-info)' }}>{activeCount}</Typography.Text>
+        <Typography.Text>{activeCount}</Typography.Text>
       </Flex>
       <Divider type="vertical" />
       <Flex align="center" gap={4}>
-        <Typography.Text style={{ display: 'inline-flex', color: 'var(--ant-color-error)' }}>
+        <Typography.Text style={{ display: 'inline-flex' }}>
           <ExclamationCircleOutlined />
         </Typography.Text>
         <Typography.Text>{t('queue:statistics.failed')}:</Typography.Text>
-        <Typography.Text style={{ color: 'var(--ant-color-error)' }}>{failedCount}</Typography.Text>
+        <Typography.Text>{failedCount}</Typography.Text>
       </Flex>
       <Divider type="vertical" />
       <Flex align="center" gap={4}>
-        <Typography.Text style={{ display: 'inline-flex', color: 'var(--ant-color-warning)' }}>
+        <Typography.Text style={{ display: 'inline-flex' }}>
           <WarningOutlined />
         </Typography.Text>
         <Typography.Text>{t('queue:statistics.stale')}:</Typography.Text>
-        <Typography.Text style={{ color: 'var(--ant-color-warning)' }}>
-          {staleCount}
-        </Typography.Text>
+        <Typography.Text>{staleCount}</Typography.Text>
       </Flex>
     </Flex>
   );

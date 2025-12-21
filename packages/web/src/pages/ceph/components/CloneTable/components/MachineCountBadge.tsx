@@ -31,7 +31,6 @@ export const MachineCountBadge: React.FC<MachineCountBadgeProps> = ({
     <Badge
       count={machines.length}
       showZero
-      color={machines.length > 0 ? 'var(--ant-color-success)' : 'var(--ant-color-text-tertiary)'}
       data-testid={`clone-list-machine-badge-${clone.cloneName}`}
     >
       <CloudServerOutlined />

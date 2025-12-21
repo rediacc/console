@@ -321,8 +321,6 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           {/* Predefined and custom endpoints */}
           {endpoints.map((endpoint) => {
             const health = healthStatus[endpoint.id];
-            // Default to unhealthy until proven otherwise (pessimistic approach)
-            const isHealthy = health?.isHealthy ?? false;
             const isChecking = health?.checking;
             // Disable if not checked yet or unhealthy (except localhost which is always enabled)
             const isDisabled =
@@ -332,12 +330,11 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             const labelContent = (
               <Flex align="center" gap={8}>
                 {isChecking ? (
-                  <LoadingOutlined style={{ fontSize: 12, color: 'var(--ant-color-warning)' }} />
+                  <LoadingOutlined style={{ fontSize: 12 }} />
                 ) : (
                   <Typography.Text
                     style={{
                       fontSize: 12,
-                      color: isHealthy ? 'var(--ant-color-success)' : 'var(--ant-color-error)',
                     }}
                   >
                     {HEALTH_INDICATOR_SYMBOL}
@@ -376,18 +373,11 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                   <Flex align="center" gap={8}>
                     {/* Health indicator */}
                     {isChecking ? (
-                      <LoadingOutlined
-                        style={{ fontSize: 12, color: 'var(--ant-color-warning)' }}
-                      />
+                      <LoadingOutlined style={{ fontSize: 12 }} />
                     ) : (
                       <Typography.Text
                         style={{
                           fontSize: 12,
-                          color: isChecking
-                            ? 'var(--ant-color-warning)'
-                            : isHealthy
-                              ? 'var(--ant-color-success)'
-                              : 'var(--ant-color-error)',
                         }}
                       >
                         {HEALTH_INDICATOR_SYMBOL}
@@ -468,7 +458,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             {selectedEndpoint.url}
             {isCheckingHealth && (
               <Flex style={{ display: 'inline-flex', alignItems: 'center' }}>
-                <LoadingOutlined style={{ fontSize: 12, color: 'var(--ant-color-warning)' }} />
+                <LoadingOutlined style={{ fontSize: 12 }} />
               </Flex>
             )}
           </Typography.Text>

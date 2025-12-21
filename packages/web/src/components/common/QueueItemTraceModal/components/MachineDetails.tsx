@@ -17,7 +17,6 @@ interface MachineDetailsProps {
   queueDetails: GetTeamQueueItems_ResultSet1;
   totalDurationSeconds: number;
   processingDurationSeconds: number;
-  isTaskStale: boolean;
   isDetailedConsoleExpanded: boolean;
   setIsDetailedConsoleExpanded: (expanded: boolean) => void;
   accumulatedOutput: string;
@@ -29,7 +28,6 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
   queueDetails,
   totalDurationSeconds,
   processingDurationSeconds,
-  isTaskStale,
   isDetailedConsoleExpanded,
   setIsDetailedConsoleExpanded,
   accumulatedOutput,
@@ -110,7 +108,6 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
             queueDetails={queueDetails}
             totalDurationSeconds={totalDurationSeconds}
             processingDurationSeconds={processingDurationSeconds}
-            isTaskStale={isTaskStale}
           />
         </Flex>
       </Col>

@@ -156,7 +156,6 @@ const MachineRow: React.FC<
         <Typography.Text
           style={{
             width: 200,
-            color: 'var(--ant-color-text-secondary)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -409,7 +408,6 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
           <Typography.Text
             style={{
               width: 200,
-              color: 'var(--ant-color-text-secondary)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',

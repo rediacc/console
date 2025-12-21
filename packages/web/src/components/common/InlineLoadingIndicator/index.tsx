@@ -33,7 +33,6 @@ const InlineLoadingIndicator: React.FC<InlineLoadingIndicatorProps> = ({
         width: typeof width === 'number' ? `${width}px` : width,
         height: typeof height === 'number' ? `${height}px` : height,
         borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
-        backgroundColor: 'var(--ant-color-fill-tertiary)',
         ...style,
       }}
       data-testid={dataTestId}

@@ -520,14 +520,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       grand: 'grand',
     };
 
-    const indicatorColors: Record<GroupVariant, string> = {
-      team: 'var(--ant-color-success)',
-      bridge: 'var(--ant-color-primary)',
-      region: 'var(--ant-color-info)',
-      repository: 'var(--ant-color-text-tertiary)',
-      status: 'var(--ant-color-warning)',
-      grand: 'var(--ant-color-text-tertiary)',
-    };
 
     const iconMap: Partial<Record<GroupByMode, React.ReactNode>> = {
       bridge: <CloudServerOutlined />,
@@ -542,12 +534,10 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       <Flex vertical>
         {Object.entries(groupedMachinesForTable).map(([groupKey, machines], groupIndex) => {
           const variant = variantMap[groupBy];
-          const indicatorColor = indicatorColors[variant];
 
           return (
             <Card key={groupKey}>
               <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-                <Flex style={{ width: 8, height: 24, backgroundColor: indicatorColor }} />
                 <Space size="small">
                   <Typography.Text style={{ fontSize: 16, fontWeight: 700 }}>
                     #{groupIndex + 1}

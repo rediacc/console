@@ -9,7 +9,6 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
   queueDetails,
   totalDurationSeconds,
   processingDurationSeconds,
-  isTaskStale,
 }) => {
   const { t } = useTranslation(['queue', 'common']);
 
@@ -49,7 +48,6 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
           }
           suffix={queueDetails.assignedTime ? 'min' : ''}
           prefix={<HourglassOutlined />}
-          valueStyle={isTaskStale ? { color: 'var(--ant-color-error)' } : undefined}
         />
       </Col>
     </Row>

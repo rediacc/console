@@ -2,7 +2,6 @@ import React from 'react';
 import { Flex } from 'antd';
 
 const baseStyle: React.CSSProperties = {
-  background: 'var(--ant-color-border)',
   borderRadius: 4,
 };
 
@@ -62,8 +61,6 @@ export const SkeletonCard: React.FC<SkeletonCardProps> = ({ lines = 3 }) => {
     <Flex
       vertical
       style={{
-        backgroundColor: 'var(--ant-color-bg-container)',
-        border: '1px solid var(--ant-color-border)',
         borderRadius: 6,
         padding: 24,
       }}

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Drawer, Dropdown, Flex, Layout } from 'antd';
+import { Button, Drawer, Dropdown, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -173,7 +173,7 @@ const MainLayout: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      <Layout style={{ minHeight: '100vh' }}>
+      <Flex vertical style={{ minHeight: '100vh' }}>
         {/* Desktop Sidebar */}
         <Sidebar
           collapsed={collapsed}
@@ -210,112 +210,115 @@ const MainLayout: React.FC = () => {
           />
         </Drawer>
 
-        <Layout>
-          <Flex
-            style={{
-              padding: '0 24px',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: LAYOUT.HEADER_HEIGHT,
-              width: '100%',
-              zIndex: 1001,
-            }}
-            data-testid="main-header"
-          >
-            <Flex style={{ alignItems: 'center', gap: 12 }}>
-              <Button
-                style={{ width: 40, height: 40, fontSize: 16 }}
-                type="text"
-                icon={<MenuOutlined />}
-                onClick={handleSidebarToggle}
-                data-testid="sidebar-toggle-button"
-                aria-label={
-                  collapsed
-                    ? t('navigation.expandSidebar', { defaultValue: 'Expand sidebar' })
-                    : t('navigation.collapseSidebar', { defaultValue: 'Collapse sidebar' })
-                }
-                aria-pressed={collapsed}
+        {/* Header */}
+        <Flex
+          style={{
+            padding: '0 24px',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: LAYOUT.HEADER_HEIGHT,
+            width: '100%',
+            zIndex: 1001,
+          }}
+          data-testid="main-header"
+        >
+          <Flex style={{ alignItems: 'center', gap: 12 }}>
+            <Button
+              style={{ width: 40, height: 40, fontSize: 16 }}
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={handleSidebarToggle}
+              data-testid="sidebar-toggle-button"
+              aria-label={
+                collapsed
+                  ? t('navigation.expandSidebar', { defaultValue: 'Expand sidebar' })
+                  : t('navigation.collapseSidebar', { defaultValue: 'Collapse sidebar' })
+              }
+              aria-pressed={collapsed}
+            />
+            <Flex
+              style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => {
+                trackUserAction('navigation', '/dashboard', {
+                  trigger: 'logo_click',
+                  from_page: location.pathname,
+                });
+                navigate('/dashboard');
+              }}
+              data-testid="main-logo-home"
+            >
+              <img
+                src={logoBlack}
+                alt="Rediacc Logo"
+                style={{ height: 32, width: 'auto', objectFit: 'contain' }}
               />
-              <Flex
-                style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
-                onClick={() => {
-                  trackUserAction('navigation', '/dashboard', {
-                    trigger: 'logo_click',
-                    from_page: location.pathname,
-                  });
-                  navigate('/dashboard');
-                }}
-                data-testid="main-logo-home"
-              >
-                <img
-                  src={logoBlack}
-                  alt="Rediacc Logo"
-                  style={{ height: 32, width: 'auto', objectFit: 'contain' }}
-                />
-              </Flex>
-            </Flex>
-            <Flex style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-              <NotificationBell />
-              <Dropdown
-                trigger={['click']}
-                placement="bottomRight"
-                dropdownRender={() => (
-                  <UserMenu
-                    user={user}
-                    company={company}
-                    companyData={companyData}
-                    uiMode={uiMode}
-                    onModeToggle={handleModeToggle}
-                    onLogout={handleLogout}
-                  />
-                )}
-                overlayStyle={{ minWidth: 300 }}
-              >
-                <Button
-                  style={{ width: 40, height: 40 }}
-                  type="text"
-                  icon={<UserOutlined />}
-                  aria-label={t('navigation.userMenu', { defaultValue: 'Open user menu' })}
-                  data-testid="user-menu-button"
-                />
-              </Dropdown>
             </Flex>
           </Flex>
-          <Layout.Content
-            style={{
-              paddingTop: contentPaddingTop,
-              marginLeft: sidebarWidth,
-              minHeight: 240,
-              position: 'relative',
-            }}
-            data-testid="main-content"
-          >
-            {isTransitioning ? (
-              <Flex
-                vertical
-                style={{ position: 'absolute', top: '50%', left: '50%', textAlign: 'center' }}
-              >
-                <Flex style={{ fontSize: 32 }}>
-                  {uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}
-                </Flex>
-                <Flex style={{ fontSize: 16 }}>
-                  {t('uiMode.switching', {
-                    mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple'),
-                  })}
-                </Flex>
+          <Flex style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+            <NotificationBell />
+            <Dropdown
+              trigger={['click']}
+              placement="bottomRight"
+              dropdownRender={() => (
+                <UserMenu
+                  user={user}
+                  company={company}
+                  companyData={companyData}
+                  uiMode={uiMode}
+                  onModeToggle={handleModeToggle}
+                  onLogout={handleLogout}
+                />
+              )}
+              overlayStyle={{ minWidth: 300 }}
+            >
+              <Button
+                style={{ width: 40, height: 40 }}
+                type="text"
+                icon={<UserOutlined />}
+                aria-label={t('navigation.userMenu', { defaultValue: 'Open user menu' })}
+                data-testid="user-menu-button"
+              />
+            </Dropdown>
+          </Flex>
+        </Flex>
+
+        {/* Content */}
+        <Flex
+          vertical
+          style={{
+            paddingTop: contentPaddingTop,
+            marginLeft: sidebarWidth,
+            minHeight: 240,
+            position: 'relative',
+            flex: 1,
+          }}
+          data-testid="main-content"
+        >
+          {isTransitioning ? (
+            <Flex
+              vertical
+              style={{ position: 'absolute', top: '50%', left: '50%', textAlign: 'center' }}
+            >
+              <Flex style={{ fontSize: 32 }}>
+                {uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}
               </Flex>
-            ) : (
-              <Flex>
-                <Outlet />
+              <Flex style={{ fontSize: 16 }}>
+                {t('uiMode.switching', {
+                  mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple'),
+                })}
               </Flex>
-            )}
-          </Layout.Content>
-        </Layout>
-      </Layout>
+            </Flex>
+          ) : (
+            <Flex>
+              <Outlet />
+            </Flex>
+          )}
+        </Flex>
+      </Flex>
     </>
   );
 };

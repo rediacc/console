@@ -30,9 +30,6 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
               value={machineStats.currentQueueDepth}
               prefix={<HourglassOutlined />}
               suffix="tasks"
-              valueStyle={{
-                color: isHighQueue ? 'var(--ant-color-error)' : 'var(--ant-color-text)',
-              }}
             />
             <Progress
               percent={Math.min(100, (machineStats.currentQueueDepth / 100) * 100)}
@@ -60,9 +57,6 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
               title={t('trace.processingCapacity')}
               value={`${machineStats.activeProcessingCount}/${machineStats.maxConcurrentTasks || 'N/A'}`}
               prefix={<DashboardOutlined />}
-              valueStyle={{
-                color: isAtCapacity ? 'var(--ant-color-error)' : 'var(--ant-color-text)',
-              }}
             />
             <Progress
               percent={

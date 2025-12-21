@@ -64,11 +64,10 @@ export const buildAuditColumns = ({
       value: action,
     })) || [];
   actionColumn.onFilter = (value, record) => record.action === value;
-  actionColumn.filterIcon = (filtered: boolean) => (
+  actionColumn.filterIcon = (_filtered: boolean) => (
     <FilterOutlined
       style={{
         fontSize: 14,
-        color: filtered ? 'var(--ant-color-primary)' : 'var(--ant-color-text-tertiary)',
       }}
     />
   );
@@ -95,11 +94,10 @@ export const buildAuditColumns = ({
       value: name,
     })) || [];
   entityNameColumn.onFilter = (value, record) => record.entityName === value;
-  entityNameColumn.filterIcon = (filtered: boolean) => (
+  entityNameColumn.filterIcon = (_filtered: boolean) => (
     <FilterOutlined
       style={{
         fontSize: 14,
-        color: filtered ? 'var(--ant-color-primary)' : 'var(--ant-color-text-tertiary)',
       }}
     />
   );
@@ -146,11 +144,10 @@ export const buildAuditColumns = ({
           value: entity,
         })) || [],
       onFilter: (value, record) => record.entity === value,
-      filterIcon: (filtered: boolean) => (
+      filterIcon: (_filtered: boolean) => (
         <FilterOutlined
           style={{
             fontSize: 14,
-            color: filtered ? 'var(--ant-color-primary)' : 'var(--ant-color-text-tertiary)',
           }}
         />
       ),
@@ -168,11 +165,10 @@ export const buildAuditColumns = ({
       width: 200,
       filters: userColumnFilters,
       onFilter: (value, record) => record.actionByUser === value,
-      filterIcon: (filtered: boolean) => (
+      filterIcon: (_filtered: boolean) => (
         <FilterOutlined
           style={{
             fontSize: 14,
-            color: filtered ? 'var(--ant-color-primary)' : 'var(--ant-color-text-tertiary)',
           }}
         />
       ),

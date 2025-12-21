@@ -212,10 +212,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           )}
         </Flex>
 
-        <Typography.Text
-          style={{ fontSize: 14, color: 'var(--ant-color-text-secondary)' }}
-          data-testid="filterable-machine-status"
-        >
+        <Typography.Text style={{ fontSize: 14 }} data-testid="filterable-machine-status">
           Showing {displayedMachines.length} of {filteredMachines.length} machines
           {hasMore && ' (scroll to load more)'}
         </Typography.Text>

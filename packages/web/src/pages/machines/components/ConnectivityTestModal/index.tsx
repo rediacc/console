@@ -245,14 +245,6 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             <Typography.Text
               style={{
                 display: 'inline-flex',
-                color:
-                  record.status === 'success'
-                    ? 'var(--ant-color-success)'
-                    : record.status === 'failed'
-                      ? 'var(--ant-color-error)'
-                      : record.status === 'testing'
-                        ? 'var(--ant-color-info)'
-                        : 'var(--ant-color-text-secondary)',
               }}
             >
               {renderIcon()}

@@ -7,7 +7,6 @@ import dayjs from 'dayjs';
 const truncatedMonoTextStyle: React.CSSProperties = {
   fontFamily: 'monospace',
   fontSize: 12,
-  color: 'var(--ant-color-text-secondary)',
 };
 
 /**

@@ -13,23 +13,22 @@ import {
 } from '@ant-design/icons';
 
 /**
- * Configuration for action icon and color mapping
+ * Configuration for action icon mapping
  */
 export interface ActionConfig {
   keywords: string[];
   icon: ElementType;
-  color: string;
 }
 
 /**
  * Default action icon mapping configuration
  */
 export const ACTION_ICON_MAP: ActionConfig[] = [
-  { keywords: ['create'], icon: CheckCircleOutlined, color: 'var(--ant-color-success)' },
-  { keywords: ['delete'], icon: CloseCircleOutlined, color: 'var(--ant-color-error)' },
-  { keywords: ['update', 'modify'], icon: EditOutlined, color: 'var(--ant-color-warning)' },
-  { keywords: ['login', 'auth'], icon: LoginOutlined, color: 'var(--ant-color-primary)' },
-  { keywords: ['export', 'import'], icon: SwapOutlined, color: 'var(--ant-color-info)' },
+  { keywords: ['create'], icon: CheckCircleOutlined },
+  { keywords: ['delete'], icon: CloseCircleOutlined },
+  { keywords: ['update', 'modify'], icon: EditOutlined },
+  { keywords: ['login', 'auth'], icon: LoginOutlined },
+  { keywords: ['export', 'import'], icon: SwapOutlined },
 ];
 
 /**
@@ -37,7 +36,6 @@ export const ACTION_ICON_MAP: ActionConfig[] = [
  */
 export const DEFAULT_ACTION_CONFIG: Omit<ActionConfig, 'keywords'> = {
   icon: InfoCircleOutlined,
-  color: 'var(--ant-color-text-secondary)',
 };
 
 /**
@@ -72,11 +70,11 @@ export function getActionTagColor(action: string): string {
 }
 
 /**
- * Get action icon component and color
+ * Get action icon component
  * @param action - The action string
- * @returns Object with icon component and color
+ * @returns Object with icon component
  */
-export function getActionIconAndColor(action: string): { icon: ElementType; color: string } {
+export function getActionIcon(action: string): { icon: ElementType } {
   const config = findActionConfig(action);
-  return { icon: config.icon, color: config.color };
+  return { icon: config.icon };
 }
