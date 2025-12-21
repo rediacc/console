@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Form } from 'antd';
+import { Form, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from 'styled-components';
 import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue';
 import { useTeams } from '@/api/queries/teams';
 import { useMessage } from '@/hooks';
@@ -27,7 +26,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
   const { t } = useTranslation(['common', 'storageProviders']);
   const message = useMessage();
-  const theme = useTheme();
+  const { token } = theme.useToken();
   const [form] = Form.useForm();
   const [extraFields, setExtraFields] = useState<VaultFormValues>({});
   const [importedData, setImportedData] = useState<VaultFormValues>(initialData);
@@ -43,7 +42,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false);
   const [osSetupCompleted, setOsSetupCompleted] = useState<boolean | null>(null);
   const formatJsonRef = useRef<(() => void) | null>(null);
-  const formGutter: [number, number] = [theme.spacing.SM, theme.spacing.SM];
+  const formGutter: [number, number] = [token.marginSM ?? 12, token.marginSM ?? 12];
 
   const { buildQueueVault } = useQueueVaultBuilder();
   const { mutate: createQueueItem, isPending: isCreatingQueueItem } = useCreateQueueItem();

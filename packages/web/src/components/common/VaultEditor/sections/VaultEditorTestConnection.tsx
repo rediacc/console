@@ -1,9 +1,7 @@
 import React from 'react';
-import { Col } from 'antd';
-import { RediaccStack } from '@/components/ui';
+import { Alert, Button, Col, Flex, Form } from 'antd';
 import { InfoCircleOutlined, WifiOutlined } from '@/utils/optimizedIcons';
 import { FieldLabel } from '../components/FieldLabel';
-import { FieldItem, TestConnectionAlert, TestConnectionButton } from '../styles';
 import type { VaultFormValues } from '../types';
 import type { FormInstance } from 'antd';
 
@@ -27,7 +25,7 @@ export const VaultEditorTestConnection: React.FC<VaultEditorTestConnectionProps>
 }) => {
   return (
     <Col xs={24}>
-      <FieldItem
+      <Form.Item
         label={
           <FieldLabel
             label={t('vaultEditor.testConnection.label')}
@@ -35,27 +33,28 @@ export const VaultEditorTestConnection: React.FC<VaultEditorTestConnectionProps>
           />
         }
       >
-        <RediaccStack direction="vertical" gap="sm" fullWidth>
+        <Flex vertical gap={8} style={{ width: '100%' }}>
           {!testConnectionSuccess && (
-            <TestConnectionAlert
+            <Alert
               message={t('vaultEditor.testConnection.required')}
-              variant="info"
+              type="info"
               showIcon
               icon={<InfoCircleOutlined />}
               data-testid="vault-editor-connection-required-alert"
             />
           )}
-          <TestConnectionButton
-            variant="primary"
+          <Button
+            style={{ width: '100%' }}
+            type="primary"
             icon={<WifiOutlined />}
             loading={isCreatingQueueItem || isTestingConnection}
             data-testid="vault-editor-test-connection"
             onClick={onTestConnection}
           >
             {t('vaultEditor.testConnection.button')}
-          </TestConnectionButton>
-        </RediaccStack>
-      </FieldItem>
+          </Button>
+        </Flex>
+      </Form.Item>
     </Col>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Drawer, Layout } from 'antd';
+import { Button, Drawer, Dropdown, Layout } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -11,7 +11,6 @@ import logoWhite from '@/assets/logo_white.png';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
 import NotificationBell from '@/components/layout/MainLayout/components/NotificationBell';
-import { RediaccDropdown } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTheme } from '@/context/ThemeContext';
 import { useMessage } from '@/hooks';
@@ -31,24 +30,10 @@ import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { buildMenuItems, flattenMenuRoutes } from './helpers';
 import { getMenuItems } from './menuItems';
 import { Sidebar } from './Sidebar';
-import {
-  ContentWrapper,
-  HEADER_HEIGHT,
-  HeaderLeft,
-  HeaderRight,
-  Logo,
-  LogoWrapper,
-  MainLayoutContainer,
-  MenuToggleButton,
-  StyledContent,
-  StyledHeader,
-  TransitionIcon,
-  TransitionOverlay,
-  TransitionText,
-  UserMenuButton,
-} from './styles';
 import { SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_EXPANDED_WIDTH } from './types';
 import { UserMenu } from './UserMenu';
+
+const HEADER_HEIGHT = 64;
 
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -193,7 +178,7 @@ const MainLayout: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      <MainLayoutContainer>
+      <Layout style={{ minHeight: '100vh' }}>
         {/* Desktop Sidebar */}
         <Sidebar
           collapsed={collapsed}
@@ -212,7 +197,7 @@ const MainLayout: React.FC = () => {
           open={mobileMenuOpen}
           width={280}
           styles={{
-            body: { padding: 0, backgroundColor: 'var(--color-bg-primary)' },
+            body: { padding: 0, backgroundColor: 'var(--ant-color-bg-container)' },
             header: { display: 'none' },
           }}
         >
@@ -231,11 +216,26 @@ const MainLayout: React.FC = () => {
         </Drawer>
 
         <Layout>
-          <StyledHeader $isDark={theme === 'dark'} data-testid="main-header">
-            <HeaderLeft>
-              <MenuToggleButton
-                variant="ghost"
-                iconOnly
+          <Layout.Header
+            style={{
+              padding: '0 24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: HEADER_HEIGHT,
+              width: '100%',
+              zIndex: 1001,
+            }}
+            data-testid="main-header"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Button
+                style={{ width: 40, height: 40, fontSize: 16 }}
+                type="text"
                 icon={<MenuOutlined />}
                 onClick={handleSidebarToggle}
                 data-testid="sidebar-toggle-button"
@@ -246,7 +246,8 @@ const MainLayout: React.FC = () => {
                 }
                 aria-pressed={collapsed}
               />
-              <LogoWrapper
+              <div
+                style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
                 onClick={() => {
                   trackUserAction('navigation', '/dashboard', {
                     trigger: 'logo_click',
@@ -256,15 +257,19 @@ const MainLayout: React.FC = () => {
                 }}
                 data-testid="main-logo-home"
               >
-                <Logo src={theme === 'dark' ? logoWhite : logoBlack} alt="Rediacc Logo" />
-              </LogoWrapper>
-            </HeaderLeft>
-            <HeaderRight>
+                <img
+                  src={theme === 'dark' ? logoWhite : logoBlack}
+                  alt="Rediacc Logo"
+                  style={{ height: 32, width: 'auto', objectFit: 'contain' }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
               <NotificationBell />
-              <RediaccDropdown
+              <Dropdown
                 trigger={['click']}
                 placement="bottomRight"
-                popupRender={() => (
+                dropdownRender={() => (
                   <UserMenu
                     user={user}
                     company={company}
@@ -276,40 +281,44 @@ const MainLayout: React.FC = () => {
                 )}
                 overlayStyle={{ minWidth: 300 }}
               >
-                <UserMenuButton
-                  variant="primary"
-                  iconOnly
+                <Button
+                  style={{ width: 40, height: 40 }}
+                  type="text"
                   icon={<UserOutlined />}
                   aria-label={t('navigation.userMenu', { defaultValue: 'Open user menu' })}
                   data-testid="user-menu-button"
                 />
-              </RediaccDropdown>
-            </HeaderRight>
-          </StyledHeader>
-          <StyledContent
-            $marginLeft={sidebarWidth}
-            $paddingTop={contentPaddingTop}
+              </Dropdown>
+            </div>
+          </Layout.Header>
+          <Layout.Content
+            style={{
+              paddingTop: contentPaddingTop,
+              marginLeft: sidebarWidth,
+              minHeight: 240,
+              position: 'relative',
+            }}
             data-testid="main-content"
           >
             {isTransitioning ? (
-              <TransitionOverlay>
-                <TransitionIcon>
+              <div style={{ position: 'absolute', top: '50%', left: '50%', textAlign: 'center' }}>
+                <div style={{ fontSize: 32 }}>
                   {uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}
-                </TransitionIcon>
-                <TransitionText>
+                </div>
+                <div style={{ fontSize: 16 }}>
                   {t('uiMode.switching', {
                     mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple'),
                   })}
-                </TransitionText>
-              </TransitionOverlay>
+                </div>
+              </div>
             ) : (
-              <ContentWrapper>
+              <div>
                 <Outlet />
-              </ContentWrapper>
+              </div>
             )}
-          </StyledContent>
+          </Layout.Content>
         </Layout>
-      </MainLayoutContainer>
+      </Layout>
     </>
   );
 };

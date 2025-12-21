@@ -3,7 +3,6 @@ import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { createTelemetryConfig, telemetryService } from '@/services/telemetryService';
 import { selectCompany, selectUser } from '@/store/auth/authSelectors';
-import { TelemetryProviderShell } from './styles';
 
 type TelemetryAttributes = Record<string, string | number | boolean>;
 
@@ -409,7 +408,7 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
 
   return (
     <TelemetryContext.Provider value={contextValue}>
-      <TelemetryProviderShell>{children}</TelemetryProviderShell>
+      <div style={{ display: 'contents' }}>{children}</div>
     </TelemetryContext.Provider>
   );
 };

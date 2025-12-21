@@ -1,9 +1,8 @@
+import { Form, Input, InputNumber } from 'antd';
 import React from 'react';
-import { RediaccInput, RediaccInputNumber, RediaccPasswordInput } from '@/components/ui/Form';
 import { FieldFormItem } from '../components/FieldFormItem';
 import FieldGenerator from '../components/FieldGenerator';
 import { FieldLabel } from '../components/FieldLabel';
-import { FieldItem } from '../styles';
 import type { FieldRendererProps } from './types';
 
 export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
@@ -21,38 +20,38 @@ export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
   // Special case: ssh_password field
   if (fieldName === 'ssh_password') {
     return (
-      <FieldItem
+      <Form.Item
         name={fieldName}
         label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
         rules={rules}
         initialValue={fieldDef.default}
       >
-        <RediaccPasswordInput
-          fullWidth
+        <Input.Password
+          style={{ width: '100%' }}
           placeholder={t('vaultEditor.sshPasswordPlaceholder')}
           autoComplete="new-password"
           data-testid={`vault-editor-field-${fieldName}`}
         />
-      </FieldItem>
+      </Form.Item>
     );
   }
 
   // Special case: host_entry field
   if (fieldName === 'host_entry') {
     return (
-      <FieldItem
+      <Form.Item
         name={fieldName}
         label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
         rules={rules}
         initialValue={fieldDef.default}
         extra={t('vaultEditor.hostEntryHelp')}
       >
-        <RediaccInput
-          fullWidth
+        <Input
+          style={{ width: '100%' }}
           placeholder={t('vaultEditor.hostEntryPlaceholder')}
           data-testid={`vault-editor-field-${fieldName}`}
         />
-      </FieldItem>
+      </Form.Item>
     );
   }
 
@@ -66,8 +65,8 @@ export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
         rules={rules}
         initialValue={fieldDef.default}
       >
-        <RediaccInputNumber
-          fullWidth
+        <InputNumber
+          style={{ width: '100%' }}
           placeholder={t('vaultEditor.portPlaceholder')}
           min={1}
           max={65535}
@@ -102,14 +101,14 @@ export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
   };
 
   return (
-    <FieldItem
+    <Form.Item
       name={fieldName}
       label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
       rules={rules}
       initialValue={fieldDef.default}
     >
-      <RediaccInput
-        fullWidth
+      <Input
+        style={{ width: '100%' }}
         placeholder={fieldPlaceholder}
         type={fieldDef.sensitive ? 'password' : 'text'}
         autoComplete={fieldDef.sensitive ? 'new-password' : 'off'}
@@ -125,6 +124,6 @@ export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
           ) : undefined
         }
       />
-    </FieldItem>
+    </Form.Item>
   );
 };

@@ -1,13 +1,7 @@
+import { Card, Flex, Table, Tag } from 'antd';
 import React from 'react';
 import type { CephPool } from '@/api/queries/ceph';
-import { RediaccTable, RediaccTag } from '@/components/ui';
-import {
-  CardHeader,
-  CardIcon,
-  CardTitle,
-  ClusterCard,
-  TableWrapper,
-} from '@/pages/ceph/components/PoolTable/styles';
+import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 import type { TFunction } from 'i18next';
 
@@ -40,31 +34,30 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
   const activeKeys = expandedRowKeys.filter((key) => clusterPoolKeys.includes(key));
 
   return (
-    <ClusterCard
+    <Card
       key={clusterName}
       title={
-        <CardHeader>
-          <CardIcon />
-          <CardTitle>
+        <Flex align="center" gap={8} wrap>
+          <CloudServerOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
+          <span style={{ fontWeight: 600 }}>
             {t('pools.clusterPrefix')}: {clusterName}
-          </CardTitle>
+          </span>
           {teamName && (
-            <RediaccTag variant="primary" compact>
+            <Tag bordered={false} color="processing">
               {teamName}
-            </RediaccTag>
+            </Tag>
           )}
-        </CardHeader>
+        </Flex>
       }
     >
-      <TableWrapper>
-        <RediaccTable<CephPool>
+      <div style={{ overflow: 'hidden' }}>
+        <Table<CephPool>
           columns={columns}
           dataSource={pools}
           rowKey="poolGuid"
           loading={loading}
           scroll={{ x: 'max-content' }}
           pagination={false}
-          interactive
           data-testid={`ds-pool-table-${clusterName}`}
           expandable={{
             expandedRowRender,
@@ -85,7 +78,7 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
           })}
           rowClassName={() => 'pool-row'}
         />
-      </TableWrapper>
-    </ClusterCard>
+      </div>
+    </Card>
   );
 };

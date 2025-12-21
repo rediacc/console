@@ -1,15 +1,12 @@
 import React from 'react';
-import { Alert, Empty } from 'antd';
+import { Alert, Empty, Flex } from 'antd';
 import { useRecentAuditLogs } from '@/api/queries/audit';
 import { useDashboard } from '@/api/queries/dashboard';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccStack } from '@/components/ui';
 import CephDashboardWidget from '@/pages/dashboard/components/CephDashboardWidget';
 import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter';
-import { PageContainer } from '@/styles/primitives';
 import { AlertOutlined } from '@/utils/optimizedIcons';
 import type { QueueMachineIssue, QueueTeamIssue } from '@rediacc/shared/types';
-import { CenteredState } from './styles';
 import AccountHealthWidget from './widgets/AccountHealthWidget';
 import DashboardAlertsWidget from './widgets/DashboardAlertsWidget';
 import QueueDetailsWidget from './widgets/QueueDetailsWidget';
@@ -26,19 +23,19 @@ const DashboardPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <PageContainer>
-        <CenteredState>
+      <div>
+        <div style={{ width: '100%', textAlign: 'center' }}>
           <LoadingWrapper loading centered minHeight={200}>
             <div />
           </LoadingWrapper>
-        </CenteredState>
-      </PageContainer>
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <PageContainer>
+      <div>
         <Alert
           message="Error"
           description="Failed to load dashboard data. Please try again later."
@@ -47,15 +44,15 @@ const DashboardPage: React.FC = () => {
           icon={<AlertOutlined />}
           data-testid="dashboard-error-alert"
         />
-      </PageContainer>
+      </div>
     );
   }
 
   if (!dashboard) {
     return (
-      <PageContainer>
+      <div>
         <Empty description="No dashboard data available" />
-      </PageContainer>
+      </div>
     );
   }
 
@@ -75,8 +72,8 @@ const DashboardPage: React.FC = () => {
   const featureAccess = dashboard.featureAccess;
 
   return (
-    <PageContainer>
-      <RediaccStack variant="spaced-column" fullWidth>
+    <div>
+      <Flex vertical gap={24} style={{ width: '100%' }}>
         <DashboardAlertsWidget dashboard={dashboard} accountHealth={accountHealth} />
 
         <ResourceUsageWidget resources={dashboard.resources} />
@@ -102,8 +99,8 @@ const DashboardPage: React.FC = () => {
         <RecentActivityWidget auditLogs={auditLogs} isLoading={auditLoading} />
 
         <SystemVersionFooter />
-      </RediaccStack>
-    </PageContainer>
+      </Flex>
+    </div>
   );
 };
 

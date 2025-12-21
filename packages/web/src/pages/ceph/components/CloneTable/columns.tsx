@@ -1,11 +1,10 @@
+import { Tag, Tooltip } from 'antd';
 import React from 'react';
-import { CloudUploadOutlined, EllipsisOutlined } from '@ant-design/icons';
+import { CloudUploadOutlined, CopyOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { TFunction } from 'i18next';
 import type { CephRbdClone } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn } from '@/components/common/columns';
-import { RediaccTag, RediaccTooltip } from '@/components/ui';
-import { CloneIcon, CloneName, NameCell } from './styles';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -27,21 +26,20 @@ export const buildCloneColumns = ({
     dataIndex: 'cloneName',
     key: 'cloneName',
     render: (text: string, record: CephRbdClone) => (
-      <NameCell data-testid={`clone-list-item-${record.cloneName}`}>
-        <CloneIcon />
-        <CloneName>{text}</CloneName>
+      <span
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+        data-testid={`clone-list-item-${record.cloneName}`}
+      >
+        <CopyOutlined style={{ fontSize: 16, color: 'var(--ant-color-text-secondary)' }} />
+        <span style={{ fontWeight: 400 }}>{text}</span>
         {record.vaultContent && (
-          <RediaccTooltip title={t('common.hasVault')}>
-            <RediaccTag
-              variant="neutral"
-              compact
-              data-testid={`clone-list-vault-tag-${record.cloneName}`}
-            >
+          <Tooltip title={t('common.hasVault')}>
+            <Tag data-testid={`clone-list-vault-tag-${record.cloneName}`} bordered={false}>
               {t('common.vault')}
-            </RediaccTag>
-          </RediaccTooltip>
+            </Tag>
+          </Tooltip>
         )}
-      </NameCell>
+      </span>
     ),
   },
   {

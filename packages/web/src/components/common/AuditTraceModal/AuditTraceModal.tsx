@@ -1,16 +1,8 @@
 import React from 'react';
-import { Space, Tag, Typography } from 'antd';
+import { Alert, Button, Dropdown, Flex, Modal, Space, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { AuditTraceRecord, useEntityAuditTrace } from '@/api/queries/audit';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import {
-  IconWrapper,
-  RediaccAlert,
-  RediaccButton,
-  RediaccDropdown,
-  RediaccTable,
-  RediaccText,
-} from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { createDateSorter, createSorter, formatTimestampAsIs } from '@/platform';
 import type { BaseModalProps } from '@/types';
@@ -33,14 +25,6 @@ import {
   UserOutlined,
 } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import {
-  StatItem,
-  StatValue,
-  StyledModal,
-  SummaryContainer,
-  SummaryRow,
-  SummaryStats,
-} from './styles';
 
 const { Text: AntText } = Typography;
 
@@ -69,83 +53,31 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
   // Map icon hints to actual icons
   // Using grayscale with opacity variations for differentiation
   const getIcon = (iconHint: string) => {
-    // Use CSS variables for theme-aware colors
-    const errorColor = 'var(--color-error)';
-    const defaultColor = 'var(--color-text-secondary)';
-
     switch (iconHint) {
       case 'plus-circle':
-        return (
-          <IconWrapper $color={defaultColor}>
-            <PlusCircleOutlined />
-          </IconWrapper>
-        );
+        return <PlusCircleOutlined />;
       case 'edit':
-        return (
-          <IconWrapper $color={defaultColor}>
-            <EditOutlined />
-          </IconWrapper>
-        );
+        return <EditOutlined />;
       case 'trash':
-        return (
-          <IconWrapper $color={errorColor}>
-            <DeleteOutlined />
-          </IconWrapper>
-        );
+        return <DeleteOutlined />;
       case 'lock':
-        return (
-          <IconWrapper $color={defaultColor}>
-            <LockOutlined />
-          </IconWrapper>
-        );
+        return <LockOutlined />;
       case 'key':
-        return (
-          <IconWrapper $color={defaultColor}>
-            <KeyOutlined />
-          </IconWrapper>
-        );
+        return <KeyOutlined />;
       case 'users':
-        return (
-          <IconWrapper $color={defaultColor}>
-            <UserOutlined />
-          </IconWrapper>
-        );
+        return <UserOutlined />;
       case 'check-circle':
-        return (
-          <IconWrapper $color={defaultColor}>
-            <CheckCircleOutlined />
-          </IconWrapper>
-        );
+        return <CheckCircleOutlined />;
       case 'x-circle':
-        return (
-          <IconWrapper $color={errorColor}>
-            <CloseCircleOutlined />
-          </IconWrapper>
-        );
+        return <CloseCircleOutlined />;
       case 'database':
-        return (
-          <IconWrapper $color={defaultColor}>
-            <DatabaseOutlined />
-          </IconWrapper>
-        );
+        return <DatabaseOutlined />;
       case 'hdd':
-        return (
-          <IconWrapper $color={defaultColor}>
-            <HddOutlined />
-          </IconWrapper>
-        );
+        return <HddOutlined />;
       case 'copy':
-        return (
-          <IconWrapper $color={defaultColor}>
-            <CopyOutlined />
-          </IconWrapper>
-        );
+        return <CopyOutlined />;
       default:
-        return (
-          <IconWrapper $color={defaultColor}>
-            <InfoCircleOutlined />
-          </IconWrapper>
-        );
+        return <InfoCircleOutlined />;
     }
   };
 
@@ -273,16 +205,14 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       render: (timestamp: string, record: AuditTraceRecord, index: number) => (
         <Space direction="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
           <AntText>{formatTimestampAsIs(timestamp, 'datetime')}</AntText>
-          <RediaccText variant="caption" muted>
-            {record.timeAgo}
-          </RediaccText>
+          <Typography.Text type="secondary">{record.timeAgo}</Typography.Text>
         </Space>
       ),
     },
   ];
 
   return (
-    <StyledModal
+    <Modal
       title={
         <Space>
           <HistoryOutlined />
@@ -308,10 +238,10 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           <div />
         </LoadingWrapper>
       ) : error ? (
-        <RediaccAlert
+        <Alert
           message={t('audit.error')}
           description={error instanceof Error ? error.message : t('audit.errorLoading')}
-          variant="error"
+          type="error"
           showIcon
           data-testid="audit-trace-error-alert"
         />
@@ -319,29 +249,29 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
         <>
           {/* Summary Section */}
           {data.summary && (
-            <SummaryContainer data-testid="audit-trace-summary">
-              <SummaryRow>
-                <SummaryStats>
-                  <StatItem data-testid="audit-trace-total-records">
+            <div style={{ width: '100%' }} data-testid="audit-trace-summary">
+              <Flex align="center" justify="space-between" wrap>
+                <Flex gap={24} wrap>
+                  <Flex vertical data-testid="audit-trace-total-records">
                     <AntText color="secondary">{t('audit.totalRecords')}</AntText>
-                    <StatValue>{data.summary.totalAuditRecords}</StatValue>
-                  </StatItem>
-                  <StatItem data-testid="audit-trace-visible-records">
+                    <Typography.Text strong>{data.summary.totalAuditRecords}</Typography.Text>
+                  </Flex>
+                  <Flex vertical data-testid="audit-trace-visible-records">
                     <AntText color="secondary">{t('audit.visibleRecords')}</AntText>
-                    <StatValue>{data.summary.visibleAuditRecords}</StatValue>
-                  </StatItem>
+                    <Typography.Text strong>{data.summary.visibleAuditRecords}</Typography.Text>
+                  </Flex>
                   {data.summary.lastActivity && (
-                    <StatItem data-testid="audit-trace-last-activity">
+                    <Flex vertical data-testid="audit-trace-last-activity">
                       <AntText color="secondary">{t('audit.lastActivity')}</AntText>
                       <AntText strong>
                         {new Date(data.summary.lastActivity).toLocaleDateString()}
                       </AntText>
-                    </StatItem>
+                    </Flex>
                   )}
-                </SummaryStats>
+                </Flex>
 
                 {/* Export Button */}
-                <RediaccDropdown
+                <Dropdown
                   menu={{
                     items: [
                       {
@@ -363,19 +293,19 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                   placement="bottomRight"
                   data-testid="audit-trace-export-dropdown"
                 >
-                  <RediaccButton
+                  <Button
                     icon={<DownloadOutlined />}
                     data-testid="audit-trace-export-button"
                   >
                     {t('audit.export')}
-                  </RediaccButton>
-                </RediaccDropdown>
-              </SummaryRow>
-            </SummaryContainer>
+                  </Button>
+                </Dropdown>
+              </Flex>
+            </div>
           )}
 
           {/* Records Table */}
-          <RediaccTable<AuditTraceRecord>
+          <Table<AuditTraceRecord>
             columns={columns}
             dataSource={data.records}
             rowKey={(record, index) => `${record.timestamp}-${index}`}
@@ -390,7 +320,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                 }),
             }}
             scroll={{ x: 800 }}
-            size="sm"
+            size="small"
             data-testid="audit-trace-table"
           />
 
@@ -398,7 +328,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           {/* {renderTimelineView()} */}
         </>
       ) : null}
-    </StyledModal>
+    </Modal>
   );
 };
 

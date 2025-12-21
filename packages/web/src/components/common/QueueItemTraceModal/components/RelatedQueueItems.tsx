@@ -1,10 +1,8 @@
 import React from 'react';
-import { Card, Col, Empty, Row, Space } from 'antd';
+import { Card, Col, Empty, Row, Space, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { RediaccTag, RediaccText } from '@/components/ui';
 import type { QueuePositionEntry } from '@rediacc/shared/types';
-import { ScrollContainer, ScrollItem, MonospaceText } from '../styles';
 
 interface RelatedQueueItemsProps {
   queuePosition: QueuePositionEntry[];
@@ -21,63 +19,57 @@ export const RelatedQueueItems: React.FC<RelatedQueueItemsProps> = ({ queuePosit
       <Row gutter={[16, 16]}>
         <Col span={12}>
           <Card size="small" title={t('trace.tasksBefore')}>
-            <ScrollContainer>
+            <div style={{ overflowY: 'auto' }}>
               {tasksBefore.map((item, index) => (
-                <ScrollItem key={index}>
+                <div key={index}>
                   <Space>
-                    <MonospaceText size="xs" code>
+                    <Typography.Text code style={{ fontFamily: 'monospace' }}>
                       {item.taskId}
-                    </MonospaceText>
-                    <RediaccTag
-                      compact
-                      variant={item.status === 'PROCESSING' ? 'primary' : 'neutral'}
-                    >
+                    </Typography.Text>
+                    <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'}>
                       {item.status}
-                    </RediaccTag>
-                    <RediaccText variant="caption" color="muted">
+                    </Tag>
+                    <Typography.Text type="secondary">
                       {dayjs(item.createdTime).fromNow()}
-                    </RediaccText>
+                    </Typography.Text>
                   </Space>
-                </ScrollItem>
+                </div>
               ))}
               {tasksBefore.length === 0 && (
                 <Empty description={t('trace.noTasksAhead')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
               )}
-            </ScrollContainer>
+            </div>
           </Card>
         </Col>
         <Col span={12}>
           <Card size="small" title={t('trace.tasksAfter')}>
-            <ScrollContainer>
+            <div style={{ overflowY: 'auto' }}>
               {tasksAfter.map((item, index) => (
-                <ScrollItem key={index}>
+                <div key={index}>
                   <Space>
-                    <MonospaceText size="xs" code>
+                    <Typography.Text code style={{ fontFamily: 'monospace' }}>
                       {item.taskId}
-                    </MonospaceText>
-                    <RediaccTag
-                      compact
-                      variant={item.status === 'PROCESSING' ? 'primary' : 'neutral'}
-                    >
+                    </Typography.Text>
+                    <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'}>
                       {item.status}
-                    </RediaccTag>
-                    <RediaccText variant="caption" color="muted">
+                    </Tag>
+                    <Typography.Text type="secondary">
                       {dayjs(item.createdTime).fromNow()}
-                    </RediaccText>
+                    </Typography.Text>
                   </Space>
-                </ScrollItem>
+                </div>
               ))}
               {tasksAfter.length === 0 && (
                 <Empty description="No tasks behind" image={Empty.PRESENTED_IMAGE_SIMPLE} />
               )}
-            </ScrollContainer>
+            </div>
           </Card>
         </Col>
       </Row>
       <div>
-        <RediaccText variant="caption" color="muted">
+        <Typography.Text type="secondary">
           Total: {tasksBefore.length} tasks ahead, {tasksAfter.length} tasks behind
-        </RediaccText>
+        </Typography.Text>
       </div>
     </>
   );

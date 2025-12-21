@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Badge, Collapse, Empty, Modal, Space } from 'antd';
+import { Badge, Collapse, Empty, Flex, Modal, Segmented, Space, Tag, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +9,6 @@ import {
   useRetryFailedQueueItem,
 } from '@/api/queries/queue';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccTag, RediaccText, RediaccTooltip } from '@/components/ui';
 import { useTheme } from '@/context/ThemeContext';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { normalizeToString } from '@/platform';
@@ -39,14 +38,6 @@ import {
   TimelineView,
 } from './components';
 import { useTraceState } from './hooks/useTraceState';
-import {
-  LastFetchedText,
-  ModalTitleContainer,
-  ModalTitleLeft,
-  ModalTitleRight,
-  ModeSegmented,
-  SectionMargin,
-} from './styles';
 import { getSimplifiedStatus, getTaskStaleness, isTaskStale } from './utils';
 import { isTaskInTerminalState } from './utils/taskStateUtils';
 import type { QueueItemTraceModalProps } from './types';
@@ -131,19 +122,31 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   const simplifiedStatus = traceData?.queueDetails
     ? getSimplifiedStatus(traceData.queueDetails)
     : { status: 'unknown', color: 'default' as const, icon: null };
+  const statusTagColor = (() => {
+    const map = {
+      neutral: 'default',
+      success: 'success',
+      warning: 'warning',
+      error: 'error',
+      primary: 'processing',
+      info: 'processing',
+      default: 'default',
+    } as const;
+    return map[simplifiedStatus.color as keyof typeof map] ?? 'default';
+  })();
 
   return (
     <Modal
       className={ModalSize.Large}
       data-testid="queue-trace-modal"
       title={
-        <ModalTitleContainer>
-          <ModalTitleLeft>
+        <Flex align="center" justify="space-between" wrap>
+          <Flex align="center" gap={8}>
             <HistoryOutlined />
             <span>{`Queue Item Trace - ${taskId || ''}`}</span>
-          </ModalTitleLeft>
-          <ModalTitleRight>
-            <ModeSegmented
+          </Flex>
+          <Flex align="center" gap={8} wrap>
+            <Segmented
               data-testid="queue-trace-mode-switch"
               value={simpleMode ? 'simple' : 'detailed'}
               onChange={(value) => setSimpleMode(value === 'simple')}
@@ -153,12 +156,12 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
               ]}
             />
             {lastTraceFetchTime && (
-              <LastFetchedText>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 Last fetched: {lastTraceFetchTime.format('HH:mm:ss')}
-              </LastFetchedText>
+              </Typography.Text>
             )}
-          </ModalTitleRight>
-        </ModalTitleContainer>
+          </Flex>
+        </Flex>
       }
       open={open}
       onCancel={handleClose}
@@ -207,7 +210,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                 consoleProgress={consoleProgress}
               />
 
-              <SectionMargin $top={spacing('MD')}>
+              <div style={{ marginTop: spacing('MD') }}>
                 <Collapse
                   data-testid="queue-trace-simple-console-collapse"
                   activeKey={isSimpleConsoleExpanded ? ['console'] : []}
@@ -220,7 +223,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                         <Space>
                           <span>Response (Console)</span>
                           {traceData?.queueDetails?.status === 'PROCESSING' && (
-                            <RediaccTag variant="primary">Live Output</RediaccTag>
+                            <Tag color="processing">Live Output</Tag>
                           )}
                         </Space>
                       ),
@@ -238,12 +241,12 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                     },
                   ]}
                 />
-              </SectionMargin>
+              </div>
             </>
           )}
 
           {!simpleMode && (
-            <SectionMargin $top={spacing('MD')}>
+            <div style={{ marginTop: spacing('MD') }}>
               <Collapse
                 data-testid="queue-trace-collapse"
                 className="queue-trace-collapse"
@@ -259,22 +262,13 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <DashboardOutlined />
                               <span>Task Overview</span>
-                              <RediaccTag
-                                variant={
-                                  simplifiedStatus.color as
-                                    | 'neutral'
-                                    | 'success'
-                                    | 'error'
-                                    | 'warning'
-                                    | 'primary'
-                                }
-                              >
+                              <Tag color={statusTagColor}>
                                 {simplifiedStatus.status}
-                              </RediaccTag>
+                              </Tag>
                               {isTaskStale(traceData.queueDetails) && (
-                                <RediaccTag variant="warning" icon={<WarningOutlined />}>
+                                <Tag color="warning" icon={<WarningOutlined />}>
                                   Stale
-                                </RediaccTag>
+                                </Tag>
                               )}
                             </Space>
                           ),
@@ -288,9 +282,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                               'CANCELLING' &&
                             normalizeToString(traceData.queueDetails, 'status', 'Status') !==
                               'FAILED' ? (
-                              <RediaccTooltip title={t('common:tooltips.taskCancellable')}>
+                              <Tooltip title={t('common:tooltips.taskCancellable')}>
                                 <Badge status="processing" text="Cancellable" />
-                              </RediaccTooltip>
+                              </Tooltip>
                             ) : undefined,
                           children: (
                             <MachineDetails
@@ -316,9 +310,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <FileTextOutlined />
                               <span>Queue Item Details</span>
-                              <RediaccText variant="caption" color="muted">
+                              <Typography.Text type="secondary">
                                 (Result Set 1)
-                              </RediaccText>
+                              </Typography.Text>
                             </Space>
                           ),
                           children: (
@@ -338,9 +332,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <HistoryOutlined />
                               <span>Processing Timeline</span>
-                              <RediaccText variant="caption" color="muted">
+                              <Typography.Text type="secondary">
                                 (Result Set 4 - Audit Log)
-                              </RediaccText>
+                              </Typography.Text>
                             </Space>
                           ),
                           children: <TimelineView traceLogs={traceData.traceLogs} />,
@@ -354,9 +348,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <FileTextOutlined />
                               <span>Vault Content</span>
-                              <RediaccText variant="caption" color="muted">
+                              <Typography.Text type="secondary">
                                 (Result Sets 2 & 3)
-                              </RediaccText>
+                              </Typography.Text>
                             </Space>
                           ),
                           children: (
@@ -375,9 +369,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <TeamOutlined />
                               <span>Related Queue Items</span>
-                              <RediaccText variant="caption" color="muted">
+                              <Typography.Text type="secondary">
                                 (Result Set 5 - Nearby Tasks)
-                              </RediaccText>
+                              </Typography.Text>
                             </Space>
                           ),
                           children: <RelatedQueueItems queuePosition={traceData.queuePosition} />,
@@ -391,9 +385,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             <Space>
                               <DashboardOutlined />
                               <span>Performance Metrics</span>
-                              <RediaccText variant="caption" color="muted">
+                              <Typography.Text type="secondary">
                                 (Result Set 6 - Machine Stats)
-                              </RediaccText>
+                              </Typography.Text>
                             </Space>
                           ),
                           children: <PerformanceMetrics machineStats={traceData.machineStats} />,
@@ -402,7 +396,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                   ].filter(Boolean) as CollapseProps['items']
                 }
               />
-            </SectionMargin>
+            </div>
           )}
         </div>
       ) : (

@@ -1,22 +1,10 @@
 import React from 'react';
-import { Empty } from 'antd';
+import { Empty, Select, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAvailableMachinesForClone } from '@/api/queries/ceph';
-import { StatusIcon } from '@/components/common/styled';
-import { RediaccOption, RediaccSelect, RediaccTag, RediaccText } from '@/components/ui';
 import type { Machine } from '@/types';
 import { CheckCircleOutlined, CloudServerOutlined, WarningOutlined } from '@/utils/optimizedIcons';
-import {
-  BridgeTag,
-  EmptyDescription,
-  MachineIcon,
-  MachineMeta,
-  MachineName,
-  OptionContent,
-  StatusContainer,
-  StyledSelect,
-  TeamTag,
-} from './styles';
+import { Flex } from 'antd';
 import type { DefaultOptionType } from 'antd/es/select';
 
 interface AvailableMachinesSelectorProps {
@@ -74,73 +62,98 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
     const isDisabled = !allowSelectAssigned && isAssigned;
 
     return (
-      <RediaccOption
+      <Select.Option
         key={machine.machineName}
         value={machine.machineName}
         label={machine.machineName}
         disabled={isDisabled}
         data-testid={`available-machines-option-${machine.machineName}`}
       >
-        <OptionContent data-testid={`available-machines-option-content-${machine.machineName}`}>
-          <MachineMeta>
-            <MachineIcon as={CloudServerOutlined} />
-            <MachineName $dimmed={!!isDisabled}>{machine.machineName}</MachineName>
-            <TeamTag data-testid={`available-machines-team-tag-${machine.machineName}`}>
+        <div
+          data-testid={`available-machines-option-content-${machine.machineName}`}
+          style={{ display: 'flex', alignItems: 'center', width: '100%' }}
+        >
+          <div style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 16 }}>
+              <CloudServerOutlined />
+            </span>
+            <Typography.Text
+              style={{
+                fontWeight: 600,
+                color: isDisabled ? 'var(--ant-color-text-secondary)' : undefined,
+              }}
+            >
+              {machine.machineName}
+            </Typography.Text>
+            <Tag
+              bordered={false}
+              color="success"
+              data-testid={`available-machines-team-tag-${machine.machineName}`}
+            >
               {machine.teamName}
-            </TeamTag>
+            </Tag>
             {machine.bridgeName && (
-              <BridgeTag data-testid={`available-machines-bridge-tag-${machine.machineName}`}>
+              <Tag
+                bordered={false}
+                color="processing"
+                data-testid={`available-machines-bridge-tag-${machine.machineName}`}
+              >
                 {machine.bridgeName}
-              </BridgeTag>
+              </Tag>
             )}
-          </MachineMeta>
+          </div>
           {showAssignmentStatus && (
-            <StatusContainer>
+            <Flex align="center">
               {isAssigned ? (
                 machine.cephClusterName ? (
-                  <RediaccTag
-                    variant="primary"
+                  <Tag
                     data-testid={`available-machines-cluster-tag-${machine.machineName}`}
+                    color="processing"
                   >
-                    <StatusIcon as={WarningOutlined} />
-                    <RediaccText variant="caption">
+                    <span style={{ display: 'inline-flex', fontSize: 12 }}>
+                      <WarningOutlined />
+                    </span>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       {t('machines:assignmentStatus.cluster')}: {machine.cephClusterName}
-                    </RediaccText>
-                  </RediaccTag>
+                    </Typography.Text>
+                  </Tag>
                 ) : (
-                  <RediaccTag
-                    variant="warning"
+                  <Tag
                     data-testid={`available-machines-assigned-tag-${machine.machineName}`}
+                    color="warning"
                   >
-                    <StatusIcon as={WarningOutlined} />
-                    <RediaccText variant="caption">
+                    <span style={{ display: 'inline-flex', fontSize: 12 }}>
+                      <WarningOutlined />
+                    </span>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       {t('machines:assignmentStatus.assigned', 'Assigned')}
-                    </RediaccText>
-                  </RediaccTag>
+                    </Typography.Text>
+                  </Tag>
                 )
               ) : (
-                <RediaccTag
-                  variant="success"
+                <Tag
                   data-testid={`available-machines-available-tag-${machine.machineName}`}
+                  color="success"
                 >
-                  <StatusIcon as={CheckCircleOutlined} />
-                  <RediaccText variant="caption">
+                  <span style={{ display: 'inline-flex', fontSize: 12 }}>
+                    <CheckCircleOutlined />
+                  </span>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     {t('machines:assignmentStatus.available')}
-                  </RediaccText>
-                </RediaccTag>
+                  </Typography.Text>
+                </Tag>
               )}
-            </StatusContainer>
+            </Flex>
           )}
-        </OptionContent>
-      </RediaccOption>
+        </div>
+      </Select.Option>
     );
   };
 
   return (
-    <StyledSelect
-      as={RediaccSelect}
+    <Select
       mode="multiple"
-      style={style}
+      style={{ width: '100%', ...style }}
       placeholder={placeholder || t('machines:selectMachines')}
       value={value}
       onChange={handleChange}
@@ -153,17 +166,21 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
       notFoundContent={
         machines.length === 0 ? (
           <Empty
-            description={<EmptyDescription>{t('machines:noAvailableMachines')}</EmptyDescription>}
+            description={
+              <Typography.Text type="secondary">{t('machines:noAvailableMachines')}</Typography.Text>
+            }
           />
         ) : (
           <Empty
-            description={<EmptyDescription>{t('common:noMatchingResults')}</EmptyDescription>}
+            description={
+              <Typography.Text type="secondary">{t('common:noMatchingResults')}</Typography.Text>
+            }
           />
         )
       }
     >
       {machines.map(renderMachineOption)}
-    </StyledSelect>
+    </Select>
   );
 };
 

@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useEffect, useState } from 'react';
-import { Modal } from 'antd';
+import { Button, Card, Empty, Flex, Modal, Space, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -15,20 +15,6 @@ import { Repository, useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccTooltip } from '@/components/ui';
-import {
-  ActionBar as ButtonGroup,
-  ContentSection,
-  SectionHeaderRow as HeaderRow,
-  SectionStack as HeaderSection,
-  PageCard,
-  PageWrapper,
-  RediaccButton,
-  SectionHeading,
-  SectionStack,
-  ControlStack as TeamControls,
-  InputSlot as TeamSelectorWrapper,
-} from '@/components/ui';
 import { useDialogState, useQueueTraceModal, useTeamSelection, useUnifiedModal } from '@/hooks';
 import { useQueueAction } from '@/hooks/useQueueAction';
 import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
@@ -43,7 +29,7 @@ import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import type { MachineFormValues as BaseMachineFormValues } from '@rediacc/shared/types';
-import { EmptyState, StyledTeamSelector } from './MachinesPage.styles';
+import TeamSelector from '@/components/common/TeamSelector';
 
 // Extend shared type with UI-specific field for auto-setup option
 type MachineFormValues = BaseMachineFormValues & { autoSetup?: boolean };
@@ -460,57 +446,53 @@ const MachinesPage: React.FC = () => {
 
   return (
     <>
-      <PageWrapper>
-        <SectionStack>
-          <SectionHeading level={3}>
+      <div>
+          <Typography.Title level={3}>
             {t('machines:heading', { defaultValue: 'Machines' })}
-          </SectionHeading>
-          <PageCard>
-            <HeaderSection>
-              <HeaderRow>
-                <TeamControls>
-                  <TeamSelectorWrapper>
-                    <StyledTeamSelector
-                      data-testid="machines-team-selector"
-                      teams={teams}
-                      selectedTeams={selectedTeams}
-                      onChange={setSelectedTeams}
-                      loading={teamsLoading}
-                      placeholder={t('teams.selectTeamToView')}
+          </Typography.Title>
+          <Card>
+            <Flex justify="space-between" align="center" wrap gap={12}>
+              <div style={{ flex: 1, minWidth: 260 }}>
+                <TeamSelector
+                  data-testid="machines-team-selector"
+                  teams={teams}
+                  selectedTeams={selectedTeams}
+                  onChange={setSelectedTeams}
+                  loading={teamsLoading}
+                  placeholder={t('teams.selectTeamToView')}
+                />
+              </div>
+              {selectedTeams.length > 0 && (
+                <Space size="small">
+                  <Tooltip title={t('machines:createMachine')}>
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      data-testid="machines-create-machine-button"
+                      onClick={() => openUnifiedModal('create')}
+                      aria-label={t('machines:createMachine')}
                     />
-                  </TeamSelectorWrapper>
-                </TeamControls>
-                {selectedTeams.length > 0 && (
-                  <ButtonGroup>
-                    <RediaccTooltip title={t('machines:createMachine')}>
-                      <RediaccButton
-                        iconOnly
-                        icon={<PlusOutlined />}
-                        data-testid="machines-create-machine-button"
-                        onClick={() => openUnifiedModal('create')}
-                        aria-label={t('machines:createMachine')}
-                      />
-                    </RediaccTooltip>
-                    <RediaccTooltip title={t('machines:checkAndRefresh')}>
-                      <RediaccButton
-                        iconOnly
-                        icon={<ReloadOutlined />}
-                        data-testid="machines-test-and-refresh-button"
-                        onClick={() => connectivityTest.open()}
-                        disabled={machines.length === 0}
-                        aria-label={t('machines:checkAndRefresh')}
-                      />
-                    </RediaccTooltip>
-                  </ButtonGroup>
-                )}
-              </HeaderRow>
-            </HeaderSection>
+                  </Tooltip>
+                  <Tooltip title={t('machines:checkAndRefresh')}>
+                    <Button
+                      type="text"
+                      icon={<ReloadOutlined />}
+                      data-testid="machines-test-and-refresh-button"
+                      onClick={() => connectivityTest.open()}
+                      disabled={machines.length === 0}
+                      aria-label={t('machines:checkAndRefresh')}
+                    />
+                  </Tooltip>
+                </Space>
+              )}
+            </Flex>
 
-            <ContentSection>
+            <div style={{ marginTop: 16 }}>
               {selectedTeams.length === 0 ? (
-                <EmptyState
-                  image={EmptyState.PRESENTED_IMAGE_SIMPLE}
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={t('teams.selectTeamPrompt')}
+                  style={{ padding: '24px 0' }}
                 />
               ) : (
                 <SplitResourceView
@@ -551,10 +533,9 @@ const MachinesPage: React.FC = () => {
                   onTogglePanelCollapse={handleTogglePanelCollapse}
                 />
               )}
-            </ContentSection>
-          </PageCard>
-        </SectionStack>
-      </PageWrapper>
+            </div>
+          </Card>
+      </div>
 
       <UnifiedResourceModal
         data-testid="machines-machine-modal"

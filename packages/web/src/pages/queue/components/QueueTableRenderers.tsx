@@ -1,6 +1,6 @@
+import { Flex, Tag, Tooltip, Typography } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { RediaccStack, RediaccText, RediaccTooltip } from '@/components/ui';
 import {
   formatTimestampAsIs,
   getSeverityColor,
@@ -11,18 +11,6 @@ import { ExclamationCircleOutlined } from '@/utils/optimizedIcons';
 import { renderPriority } from '@/utils/queueRenderers';
 import type { ParsedError } from '@rediacc/shared/error-parser';
 import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
-import {
-  AdditionalMessagesText,
-  AgeText,
-  ErrorMessageText,
-  LastRetryText,
-  PriorityTooltipTitle,
-  RetrySummaryTag,
-  SeverityPill,
-  TooltipContent,
-  TooltipContentSection,
-  TruncatedErrorText,
-} from '../styles';
 
 interface PriorityWithTooltipProps {
   priorityLabel: string | undefined;
@@ -36,17 +24,19 @@ export const PriorityWithTooltip: React.FC<PriorityWithTooltipProps> = ({
   const { t } = useTranslation(['queue']);
 
   const tooltipContent = (
-    <TooltipContent>
-      <PriorityTooltipTitle>{priorityLabel}</PriorityTooltipTitle>
-      <RediaccText variant="caption" as="div">
+    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 200 }}>
+      <Typography.Text style={{ display: 'block', fontWeight: 700 }}>
+        {priorityLabel}
+      </Typography.Text>
+      <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
         {record.priority === 1 ? t('queue:priorityTooltipP1') : t('queue:priorityTooltipTier')}
-      </RediaccText>
-    </TooltipContent>
+      </Typography.Text>
+    </div>
   );
 
   return (
     renderPriority(priorityLabel, record.priority, tooltipContent) || (
-      <RediaccText color="secondary">-</RediaccText>
+      <Typography.Text type="secondary">-</Typography.Text>
     )
   );
 };
@@ -75,7 +65,7 @@ export const AgeRenderer: React.FC<AgeRendererProps> = ({ ageInMinutes, record }
     color = 'orange';
   }
 
-  return <AgeText $color={color}>{ageText}</AgeText>;
+  return <Typography.Text style={{ color }}>{ageText}</Typography.Text>;
 };
 
 interface ErrorRetriesRendererProps {
@@ -87,7 +77,13 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
   retryCount,
   record,
 }) => {
-  if (!retryCount && retryCount !== 0) return <RediaccText color="secondary">-</RediaccText>;
+  if (!retryCount && retryCount !== 0) {
+    return (
+      <Typography.Text type="secondary" style={{ color: 'var(--ant-color-text-secondary)' }}>
+        -
+      </Typography.Text>
+    );
+  }
 
   const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT;
   let retryColor: string;
@@ -107,52 +103,73 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
   const { allErrors, primaryError } = parseFailureReason(record.lastFailureReason);
 
   return (
-    <RediaccStack variant="column" fullWidth gap="xs">
+    <Flex vertical gap={4} style={{ width: '100%' }}>
       {/* Error messages with severity badges */}
       {allErrors.length > 0 && (
-        <RediaccTooltip
+        <Tooltip
           title={
-            <TooltipContent>
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 200 }}>
               {allErrors.map((error: ParsedError, index: number) => (
-                <ErrorMessageText
+                <Typography.Text
                   key={`${error.message}-${index}`}
-                  $isLast={index === allErrors.length - 1}
+                  style={{ display: 'block', fontSize: 14 }}
                 >
                   {error.severity && <strong>[{error.severity}]</strong>} {error.message}
-                </ErrorMessageText>
+                </Typography.Text>
               ))}
               {record.lastRetryAt && (
-                <LastRetryText>
+                <Typography.Text style={{ display: 'block', fontSize: 14 }}>
                   Last retry: {formatTimestampAsIs(record.lastRetryAt, 'datetime')}
-                </LastRetryText>
+                </Typography.Text>
               )}
-            </TooltipContent>
+            </div>
           }
         >
-          <TooltipContentSection>
+          <div style={{ width: '100%' }}>
             {/* Show primary (highest severity) error */}
-            <RediaccStack direction="horizontal" gap={4} style={{ width: '100%' }}>
+            <Flex gap={4} style={{ width: '100%' }}>
               {primaryError?.severity && (
-                <SeverityPill $color={getSeverityColor(primaryError.severity)}>
+                <Tag
+                  color={getSeverityColor(primaryError.severity)}
+                  style={{ fontSize: 12, lineHeight: 1.2 }}
+                >
                   {primaryError.severity}
-                </SeverityPill>
+                </Tag>
               )}
-              <TruncatedErrorText as="span">{primaryError?.message}</TruncatedErrorText>
-            </RediaccStack>
+              <Typography.Text
+                style={{
+                  display: 'inline-flex',
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 14,
+                  color: 'var(--ant-color-text-tertiary)',
+                }}
+              >
+                {primaryError?.message}
+              </Typography.Text>
+            </Flex>
             {/* Show count of additional errors if any */}
             {allErrors.length > 1 && (
-              <AdditionalMessagesText>
+              <Typography.Text
+                style={{
+                  fontStyle: 'italic',
+                  fontSize: 12,
+                  color: 'var(--ant-color-text-tertiary)',
+                }}
+              >
                 +{allErrors.length - 1} more {allErrors.length - 1 === 1 ? 'message' : 'messages'}
-              </AdditionalMessagesText>
+              </Typography.Text>
             )}
-          </TooltipContentSection>
-        </RediaccTooltip>
+          </div>
+        </Tooltip>
       )}
 
       {/* Retry count badge */}
-      <RetrySummaryTag $color={retryColor} icon={icon}>
+      <Tag color={retryColor} icon={icon}>
         {retryCount}/{maxRetries} retries
-      </RetrySummaryTag>
-    </RediaccStack>
+      </Tag>
+    </Flex>
   );
 };

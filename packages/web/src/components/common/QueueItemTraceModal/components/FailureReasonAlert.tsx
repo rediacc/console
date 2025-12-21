@@ -1,5 +1,5 @@
+import { Alert } from 'antd';
 import React from 'react';
-import { RediaccAlert } from '@/components/ui';
 import { normalizeToNumber, normalizeToString } from '@/platform';
 import { CloseCircleOutlined, RetweetOutlined } from '@/utils/optimizedIcons';
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
@@ -34,7 +34,7 @@ export const FailureReasonAlert: React.FC<FailureReasonAlertProps> = ({ queueDet
     return 'Task Failed';
   };
 
-  const getVariant = () => {
+  const getType = () => {
     if (isPendingRetry) {
       return maxRetriesReached ? 'error' : 'warning';
     }
@@ -49,11 +49,11 @@ export const FailureReasonAlert: React.FC<FailureReasonAlertProps> = ({ queueDet
   };
 
   return (
-    <RediaccAlert
+    <Alert
       data-testid="queue-trace-alert-failure"
       message={getMessage()}
       description={lastFailureReason}
-      variant={getVariant()}
+      type={getType()}
       showIcon
       icon={getIcon()}
     />

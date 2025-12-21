@@ -1,12 +1,8 @@
 import React from 'react';
-import {
-  SkeletonButtonContainer,
-  SkeletonCardContainer,
-  SkeletonCell,
-  SkeletonInputContainer,
-  SkeletonRowContainer,
-  SkeletonTextContainer,
-} from './styles';
+const baseStyle: React.CSSProperties = {
+  background: 'var(--ant-color-border)',
+  borderRadius: 4,
+};
 
 /**
  * Skeleton Loader Components
@@ -28,7 +24,15 @@ export interface SkeletonTextProps {
 }
 
 export const SkeletonText: React.FC<SkeletonTextProps> = ({ width, height }) => {
-  return <SkeletonTextContainer $width={width} $height={height} />;
+  return (
+    <div
+      style={{
+        ...baseStyle,
+        width: width ?? '100%',
+        height: height ?? '16px',
+      }}
+    />
+  );
 };
 
 export interface SkeletonRowProps {
@@ -38,11 +42,11 @@ export interface SkeletonRowProps {
 
 export const SkeletonRow: React.FC<SkeletonRowProps> = ({ columns = 4 }) => {
   return (
-    <SkeletonRowContainer>
+    <div style={{ display: 'flex', alignItems: 'center', padding: '12px 0', width: '100%' }}>
       {Array.from({ length: columns }).map((_, index) => (
-        <SkeletonCell key={index} />
+        <div key={index} style={{ ...baseStyle, height: 20, flex: 1 }} />
       ))}
-    </SkeletonRowContainer>
+    </div>
   );
 };
 
@@ -53,21 +57,31 @@ export interface SkeletonCardProps {
 
 export const SkeletonCard: React.FC<SkeletonCardProps> = ({ lines = 3 }) => {
   return (
-    <SkeletonCardContainer>
+    <div
+      style={{
+        backgroundColor: 'var(--ant-color-bg-container)',
+        border: '1px solid var(--ant-color-border)',
+        borderRadius: 6,
+        padding: 24,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       {Array.from({ length: lines }).map((_, index) => (
         <SkeletonText key={index} width={index === lines - 1 ? '60%' : '100%'} height="16px" />
       ))}
-    </SkeletonCardContainer>
+    </div>
   );
 };
 
 export const SkeletonButton: React.FC = () => {
-  return <SkeletonButtonContainer />;
+  return <div style={{ ...baseStyle, height: 40, width: 120, borderRadius: 6 }} />;
 };
 
 export const SkeletonInput: React.FC = () => {
-  return <SkeletonInputContainer />;
+  return <div style={{ ...baseStyle, height: 40, width: '100%' }} />;
 };
 
-// Re-export for convenience
-export { SkeletonBase } from './styles';
+export const SkeletonBase = (props: React.HTMLAttributes<HTMLDivElement>) => (
+  <div style={{ ...baseStyle, ...props.style }} {...props} />
+);

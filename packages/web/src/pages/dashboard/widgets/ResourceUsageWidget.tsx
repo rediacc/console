@@ -1,17 +1,7 @@
 import React from 'react';
-import { Col, Row } from 'antd';
-import { useTheme as useStyledTheme } from 'styled-components';
-import { RediaccCard, RediaccStack, RediaccText } from '@/components/ui';
+import { Card, Col, Flex, Progress, Row, Typography, theme } from 'antd';
 import { DesktopOutlined, InboxOutlined, ThunderboltOutlined } from '@/utils/optimizedIcons';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
-import {
-  ErrorText,
-  InlineStack,
-  ResourceProgress,
-  ResourceTile,
-  TileHeader,
-  TileMeta,
-} from '../styles';
 
 const resourceIcons: Record<string, React.ReactNode> = {
   Machine: <DesktopOutlined />,
@@ -34,21 +24,20 @@ interface ResourceUsageWidgetProps {
 }
 
 const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) => {
-  const theme = useStyledTheme();
+  const { token } = theme.useToken();
 
   return (
-    <RediaccCard
-      fullWidth
+    <Card
       title={
-        <InlineStack>
+        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <ThunderboltOutlined />
           <span>Resource Usage</span>
-        </InlineStack>
+        </Flex>
       }
       extra={
-        <RediaccText variant="description">
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           Monitor your resource consumption against plan limits
-        </RediaccText>
+        </Typography.Text>
       }
       data-testid="dashboard-card-resource-usage"
     >
@@ -60,39 +49,42 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
           )
           .map((resource) => {
             const progressColor =
-              resource.isLimitReached === 1 ? theme.colors.error : theme.colors.primary;
+              resource.isLimitReached === 1 ? token.colorError : token.colorPrimary;
             return (
               <Col key={resource.resourceType} xs={24} sm={12} md={8}>
-                <ResourceTile>
-                  <RediaccStack direction="vertical" gap="md" fullWidth>
-                    <TileHeader>
-                      <InlineStack>
+                <div>
+                  <Flex vertical gap={16} style={{ width: '100%' }}>
+                    <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+                      <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
                         {resourceIcons[resource.resourceType]}
-                        <RediaccText weight="bold">{resource.resourceType}s</RediaccText>
-                      </InlineStack>
-                      <TileMeta>
+                        <Typography.Text strong>{resource.resourceType}s</Typography.Text>
+                      </Flex>
+                      <Typography.Text
+                        type="secondary"
+                        style={{ display: 'inline-block', fontWeight: 500, fontSize: 14 }}
+                      >
                         {resource.currentUsage} /{' '}
                         {resource.resourceLimit === 0 ? '∞' : resource.resourceLimit}
-                      </TileMeta>
-                    </TileHeader>
-                    <ResourceProgress
+                      </Typography.Text>
+                    </Flex>
+                    <Progress
                       percent={resource.resourceLimit === 0 ? 0 : resource.usagePercentage}
                       status={getProgressStatus(resource.usagePercentage)}
                       strokeColor={progressColor}
                       data-testid={`dashboard-progress-${resource.resourceType.toLowerCase()}`}
                     />
                     {resource.isLimitReached === 1 && (
-                      <ErrorText variant="caption" as="span">
+                      <Typography.Text type="danger" style={{ fontSize: 12 }}>
                         Limit reached
-                      </ErrorText>
+                      </Typography.Text>
                     )}
-                  </RediaccStack>
-                </ResourceTile>
+                  </Flex>
+                </div>
               </Col>
             );
           })}
       </Row>
-    </RediaccCard>
+    </Card>
   );
 };
 

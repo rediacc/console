@@ -1,6 +1,5 @@
-import { Space } from 'antd';
+import { Button, Space, Tooltip, Typography } from 'antd';
 import { renderBoolean, renderTimestamp } from '@/components/common/columns';
-import { RediaccButton, RediaccText, RediaccTooltip } from '@/components/ui';
 import {
   ApiOutlined,
   CloseCircleOutlined,
@@ -36,9 +35,9 @@ export const getQueueColumns = ({
     key: 'taskId',
     width: 200,
     render: (id: string) => (
-      <RediaccText code copyable>
+      <Typography.Text code copyable>
         {id}
-      </RediaccText>
+      </Typography.Text>
     ),
   },
   {
@@ -129,7 +128,7 @@ export const getQueueColumns = ({
     key: 'createdBy',
     width: 150,
     render: (createdBy: string | undefined) =>
-      createdBy || <RediaccText color="secondary">-</RediaccText>,
+      createdBy || <Typography.Text type="secondary">-</Typography.Text>,
   },
   {
     title: t('queue:columns.created'),
@@ -146,29 +145,29 @@ export const getQueueColumns = ({
     width: 180,
     render: (_: unknown, record: QueueItem) => (
       <Space size="small">
-        <RediaccTooltip title={t('common:tooltips.trace')}>
-          <RediaccButton
-            iconOnly
+        <Tooltip title={t('common:tooltips.trace')}>
+          <Button
+            type="text"
             icon={<HistoryOutlined />}
             onClick={() => record.taskId && handleViewTrace(record.taskId)}
             data-testid={`queue-trace-button-${record.taskId}`}
             aria-label={t('common:aria.trace')}
           />
-        </RediaccTooltip>
+        </Tooltip>
         {record.canBeCancelled &&
           record.healthStatus !== 'CANCELLED' &&
           record.healthStatus !== 'CANCELLING' && (
-            <RediaccTooltip title={t('common:tooltips.cancel')}>
-              <RediaccButton
+            <Tooltip title={t('common:tooltips.cancel')}>
+              <Button
                 danger
-                iconOnly
+                type="text"
                 icon={<CloseCircleOutlined />}
                 onClick={() => record.taskId && handleCancelQueueItem(record.taskId)}
                 loading={cancelLoading}
                 data-testid={`queue-cancel-button-${record.taskId}`}
                 aria-label={t('common:aria.cancel')}
               />
-            </RediaccTooltip>
+            </Tooltip>
           )}
       </Space>
     ),

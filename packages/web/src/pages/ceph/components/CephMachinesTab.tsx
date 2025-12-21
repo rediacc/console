@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Card, Col, Row, Space } from 'antd';
+import { Button, Card, Col, Input, Row, Select, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useMachines } from '@/api/queries/machines';
-import { RediaccButton, RediaccSearchInput } from '@/components/ui';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { useDialogState } from '@/hooks/useDialogState';
 import { AssignToClusterModal } from '@/pages/ceph/components/AssignToClusterModal';
@@ -20,13 +19,6 @@ import {
 } from '@/utils/optimizedIcons';
 import { FilterableMachineTable } from './FilterableMachineTable';
 import { MachineAvailabilitySummary } from './MachineAvailabilitySummary';
-import {
-  BulkActionsToolbar,
-  BulkActionsLabel,
-  RightAlignedCol,
-  FiltersCard,
-  FullWidthSelect,
-} from './styles';
 
 interface CephMachinesTabProps {
   teamFilter?: string | string[];
@@ -139,47 +131,49 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
     if (!isExpertMode || selectedMachines.length === 0) return null;
 
     return (
-      <BulkActionsToolbar>
+      <div
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+      >
         <Space>
-          <BulkActionsLabel>
+          <span style={{ fontWeight: 500 }}>
             {t('machines:bulkActions.selected', { count: selectedMachines.length })}
-          </BulkActionsLabel>
-          <RediaccButton
+          </span>
+          <Button
             onClick={() => setSelectedMachines([])}
             data-testid="ds-machines-clear-selection"
             style={componentStyles.controlSurface}
           >
             {t('common:actions.clearSelection')}
-          </RediaccButton>
+          </Button>
         </Space>
         <Space>
-          <RediaccButton
-            variant="primary"
+          <Button
+            type="primary"
             icon={<CloudServerOutlined />}
             onClick={() => setBulkAssignClusterModal(true)}
             data-testid="ds-machines-bulk-assign-cluster"
             style={componentStyles.controlSurface}
           >
             {t('machines:bulkActions.assignToCluster')}
-          </RediaccButton>
-          <RediaccButton
+          </Button>
+          <Button
             icon={<CloudServerOutlined />}
             onClick={() => setRemoveFromClusterModal(true)}
             data-testid="ds-machines-bulk-remove-cluster"
             style={componentStyles.controlSurface}
           >
             {t('machines:bulkActions.removeFromCluster')}
-          </RediaccButton>
-          <RediaccButton
+          </Button>
+          <Button
             icon={<InfoCircleOutlined />}
             onClick={() => setViewAssignmentStatusModal(true)}
             data-testid="ds-machines-bulk-view-status"
             style={componentStyles.controlSurface}
           >
             {t('machines:bulkActions.viewAssignmentStatus')}
-          </RediaccButton>
+          </Button>
         </Space>
-      </BulkActionsToolbar>
+      </div>
     );
   };
 
@@ -189,10 +183,10 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
       <MachineAvailabilitySummary teamFilter={teamFilter} onRefresh={handleRefresh} />
 
       {/* Filters and Actions */}
-      <FiltersCard style={componentStyles.card}>
+      <Card style={componentStyles.card}>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} lg={8}>
-            <RediaccSearchInput
+            <Input.Search
               placeholder={t('machines.filters.searchPlaceholder')}
               value={searchText}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
@@ -203,13 +197,13 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
           </Col>
 
           <Col xs={24} sm={12} lg={8}>
-            <FullWidthSelect
-              style={componentStyles.input}
+            <Select
               placeholder={t('machines.filters.assignmentStatus')}
               value={assignmentFilter}
               onChange={(value) => setAssignmentFilter(value as AssignmentFilter)}
               suffixIcon={<FilterOutlined />}
               data-testid="ds-machines-filter-assignment"
+              style={{ ...componentStyles.input, width: '100%' }}
               options={[
                 { value: 'all', label: t('machines.filters.allStatuses') },
                 { value: 'available', label: t('assignment.available') },
@@ -221,21 +215,21 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
           </Col>
 
           <Col xs={24} lg={8}>
-            <RightAlignedCol>
+            <div style={{ textAlign: 'right' }}>
               <Space>
-                <RediaccButton
+                <Button
                   icon={<ExportOutlined />}
                   onClick={handleExport}
                   data-testid="ds-machines-export-button"
                   style={componentStyles.controlSurface}
                 >
                   {t('machines.actions.exportReport')}
-                </RediaccButton>
+                </Button>
               </Space>
-            </RightAlignedCol>
+            </div>
           </Col>
         </Row>
-      </FiltersCard>
+      </Card>
 
       {/* Bulk Actions Toolbar */}
       {renderBulkActionsToolbar()}

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Empty } from 'antd';
-import { ConsoleOutputContainer } from '../styles';
 import type { ConsoleOutputProps } from '../types';
 
 export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
@@ -14,12 +13,11 @@ export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
   }
 
   return (
-    <ConsoleOutputContainer
+    <div
       ref={consoleOutputRef}
       data-testid="queue-trace-console-output"
-      $theme={theme}
     >
       {content}
-    </ConsoleOutputContainer>
+    </div>
   );
 };

@@ -1,11 +1,9 @@
 import React from 'react';
-import { Empty } from 'antd';
+import { Card, Empty, Flex, Tag, Timeline, Typography } from 'antd';
+import { Link as RouterLink } from 'react-router-dom';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccCard, RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
-import { EmptyStateWrapper } from '@/styles/primitives';
 import { HistoryOutlined } from '@/utils/optimizedIcons';
 import type { GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
-import { AuditMeta, FlexBetween, InlineLink, InlineStack, TimelineWrapper } from '../styles';
 import { getActionIcon } from '../utils/actionIconMapping';
 import { formatTimestamp } from '../utils/formatTimestamp';
 
@@ -18,29 +16,32 @@ interface RecentActivityWidgetProps {
 
 const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ auditLogs, isLoading }) => {
   return (
-    <RediaccCard
-      fullWidth
+    <Card
       title={
-        <InlineStack>
+        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <HistoryOutlined />
           <span>Recent Activity</span>
-        </InlineStack>
+        </Flex>
       }
       extra={
-        <InlineLink to="/audit" data-testid="dashboard-activity-viewall-link">
+        <RouterLink
+          to="/audit"
+          data-testid="dashboard-activity-viewall-link"
+          style={{ fontWeight: 500 }}
+        >
           View All
-        </InlineLink>
+        </RouterLink>
       }
       data-testid="dashboard-card-recent-activity"
     >
       {isLoading ? (
-        <EmptyStateWrapper>
+        <Flex vertical align="center" justify="center">
           <LoadingWrapper loading centered minHeight={120}>
             <div />
           </LoadingWrapper>
-        </EmptyStateWrapper>
+        </Flex>
       ) : auditLogs && auditLogs.length > 0 ? (
-        <TimelineWrapper
+        <Timeline
           items={auditLogs
             .filter((log) => {
               const action = log.action.toLowerCase();
@@ -53,34 +54,36 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ auditLogs, 
               key: index,
               dot: getActionIcon(log.action),
               children: (
-                <RediaccStack direction="vertical" gap="sm" fullWidth>
-                  <FlexBetween>
-                    <InlineStack>
-                      <RediaccText weight="bold">{log.action.replace(/_/g, ' ')}</RediaccText>
-                      <RediaccTag variant="neutral">{log.entity}</RediaccTag>
-                    </InlineStack>
-                    <AuditMeta>{formatTimestamp(log.timestamp)}</AuditMeta>
-                  </FlexBetween>
-                  <AuditMeta>
+                <Flex vertical gap={8} style={{ width: '100%' }}>
+                  <Flex align="center" justify="space-between">
+                    <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+                      <Typography.Text strong>{log.action.replace(/_/g, ' ')}</Typography.Text>
+                      <Tag bordered={false}>{log.entity}</Tag>
+                    </Flex>
+                    <Typography.Text type="secondary" style={{ fontSize: 14 }}>
+                      {formatTimestamp(log.timestamp)}
+                    </Typography.Text>
+                  </Flex>
+                  <Typography.Text type="secondary" style={{ fontSize: 14 }}>
                     {log.entityName} {log.actionByUser && `• ${log.actionByUser}`}
-                  </AuditMeta>
+                  </Typography.Text>
                   {log.details && log.details.trim() && (
-                    <AuditMeta>
+                    <Typography.Text type="secondary" style={{ fontSize: 14 }}>
                       {log.details.length > DESCRIPTION_TRUNCATE_LENGTH
                         ? `${log.details.substring(0, DESCRIPTION_TRUNCATE_LENGTH)}...`
                         : log.details}
-                    </AuditMeta>
+                    </Typography.Text>
                   )}
-                </RediaccStack>
+                </Flex>
               ),
             }))}
         />
       ) : (
-        <EmptyStateWrapper>
+        <Flex vertical align="center" justify="center">
           <Empty description="No recent activity" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        </EmptyStateWrapper>
+        </Flex>
       )}
-    </RediaccCard>
+    </Card>
   );
 };
 

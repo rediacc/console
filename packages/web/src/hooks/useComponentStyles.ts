@@ -95,11 +95,11 @@ export const useComponentStyles = () => {
       // Theme-aware styles
       sidebar: {
         width: DESIGN_TOKENS.DIMENSIONS.SIDEBAR_WIDTH,
-        background: 'var(--color-bg-primary)',
+        background: 'var(--ant-color-bg-container)',
       },
       header: {
         height: DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT,
-        background: 'var(--color-bg-primary)',
+        background: 'var(--ant-color-bg-container)',
       },
 
       // Icon styles
@@ -116,7 +116,7 @@ export const useComponentStyles = () => {
       errorField: {},
       errorMessage: {
         ...createTypographyStyle('XS', 'REGULAR', 'NORMAL'),
-        color: 'var(--color-error)',
+        color: 'var(--ant-color-error)',
       },
 
       // Loading states
@@ -132,7 +132,7 @@ export const useComponentStyles = () => {
 
       // Focus styles for accessibility
       focusVisible: {
-        outline: '2px solid var(--color-primary)',
+        outline: '2px solid var(--ant-color-primary)',
         outlineOffset: '2px',
         borderRadius: borderRadius('SM'),
       },
@@ -164,7 +164,7 @@ export const useFormStyles = () => {
 
       formLabel: {
         ...createTypographyStyle('SM', 'MEDIUM', 'NORMAL'),
-        color: 'var(--color-text-primary)',
+        color: 'var(--ant-color-text)',
         display: 'block',
       },
 
@@ -183,7 +183,7 @@ export const useFormStyles = () => {
 
       formHelper: {
         ...createTypographyStyle('XS', 'REGULAR', 'NORMAL'),
-        color: 'var(--color-text-secondary)',
+        color: 'var(--ant-color-text-secondary)',
       },
 
       fieldset: {
@@ -193,7 +193,7 @@ export const useFormStyles = () => {
 
       legend: {
         ...createTypographyStyle('SM', 'MEDIUM', 'NORMAL'),
-        color: 'var(--color-text-primary)',
+        color: 'var(--ant-color-text)',
         padding: `0 ${spacing('SM')}px`,
       },
     }),
@@ -214,7 +214,7 @@ export const useTableStyles = () => {
       },
 
       tableHeader: {
-        background: 'var(--color-fill-quaternary)',
+        background: 'var(--ant-color-fill-quaternary)',
         fontWeight: fontWeight('MEDIUM'),
         fontSize: fontSize('SM'),
       },
@@ -231,7 +231,7 @@ export const useTableStyles = () => {
         background: 'transparent',
         cursor: 'pointer',
         '&:hover': {
-          background: 'var(--color-fill-tertiary)',
+          background: 'var(--ant-color-fill-tertiary)',
         },
       },
 
@@ -241,15 +241,15 @@ export const useTableStyles = () => {
       },
 
       tableRowHover: {
-        backgroundColor: 'var(--color-bg-primary)',
+        backgroundColor: 'var(--ant-color-bg-container)',
       },
 
       tableRowSelected: {
-        backgroundColor: 'var(--color-primary-bg)',
+        backgroundColor: 'var(--ant-color-primary-bg)',
       },
 
       tableRowHighlighted: {
-        backgroundColor: 'var(--color-primary-bg)',
+        backgroundColor: 'var(--ant-color-primary-bg)',
       },
 
       // Loading overlay styles
@@ -257,7 +257,7 @@ export const useTableStyles = () => {
       tableLoadingOverlay: {
         position: 'absolute' as const,
         inset: 0,
-        backgroundColor: 'var(--color-bg-primary)',
+        backgroundColor: 'var(--ant-color-bg-container)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -283,16 +283,16 @@ export const useNavigationStyles = () => {
         borderRadius: borderRadius('MD'),
         cursor: 'pointer',
         textDecoration: 'none',
-        color: 'var(--color-text-primary)',
+        color: 'var(--ant-color-text)',
         minHeight: DESIGN_TOKENS.DIMENSIONS.FORM_CONTROL_HEIGHT,
         '&:hover': {
-          background: 'var(--color-fill-tertiary)',
+          background: 'var(--ant-color-fill-tertiary)',
         },
       },
 
       navItemActive: {
         background: 'var(--overlay-nav-active)',
-        color: 'var(--color-primary)',
+        color: 'var(--ant-color-primary)',
         fontWeight: fontWeight('MEDIUM'),
       },
 
@@ -304,11 +304,11 @@ export const useNavigationStyles = () => {
         display: 'flex',
         alignItems: 'center',
         fontSize: fontSize('SM'),
-        color: 'var(--color-text-secondary)',
+        color: 'var(--ant-color-text-secondary)',
       },
 
       breadcrumbSeparator: {
-        color: 'var(--color-text-tertiary)',
+        color: 'var(--ant-color-text-tertiary)',
       },
     }),
     [baseStyles]

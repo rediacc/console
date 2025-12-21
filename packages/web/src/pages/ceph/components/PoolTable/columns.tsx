@@ -7,9 +7,10 @@ import {
   EditOutlined,
   FunctionOutlined,
   HistoryOutlined,
+  RightOutlined,
+  DatabaseOutlined,
 } from '@/utils/optimizedIcons';
 import { getPoolFunctionMenuItems } from './menus';
-import { ExpandIcon, PoolIcon, PoolNameCell, PoolNameText } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 import type { TFunction } from 'i18next';
 
@@ -39,11 +40,16 @@ export const buildPoolColumns = ({
     render: (name: string, record: CephPool) => {
       const isExpanded = expandedRowKeys.includes(record.poolGuid || '');
       return (
-        <PoolNameCell>
-          <ExpandIcon $expanded={isExpanded} />
-          <PoolIcon />
-          <PoolNameText>{name}</PoolNameText>
-        </PoolNameCell>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <RightOutlined
+            style={{
+              transform: isExpanded ? 'rotate(90deg)' : undefined,
+              transition: 'transform 0.2s ease',
+            }}
+          />
+          <DatabaseOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
+          <span style={{ fontWeight: 400 }}>{name}</span>
+        </span>
       );
     },
   },

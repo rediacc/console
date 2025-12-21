@@ -2,7 +2,7 @@
  * Modal Size Types and Enums
  *
  * This file provides type-safe modal sizing options that correspond to the CSS classes
- * defined in /src/styles/GlobalStyles.ts
+ * defined in /src/styles/global.css
  *
  * Usage:
  * import { ModalSize } from '@/types/modal'

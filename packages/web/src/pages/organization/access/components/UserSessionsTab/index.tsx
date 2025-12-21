@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Col, Popconfirm, Row, Space } from 'antd';
+import { Button, Card, Col, Flex, Input, Popconfirm, Row, Space, Statistic, Table, Tag, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
@@ -11,14 +11,6 @@ import {
   createStatusColumn,
   createTruncatedColumn,
 } from '@/components/common/columns';
-import { InlineStack } from '@/components/common/styled';
-import {
-  RediaccButton,
-  RediaccStatistic,
-  RediaccTable,
-  RediaccText,
-  RediaccTooltip,
-} from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { createDateSorter } from '@/platform';
 import { selectUser } from '@/store/auth/authSelectors';
@@ -31,19 +23,6 @@ import {
   SearchOutlined,
   StopOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  CardTitleText,
-  CellText,
-  RefreshButton,
-  SearchInput,
-  SessionTag,
-  StatCard,
-  StatSuffix,
-  StatTitle,
-  TabContainer,
-  TableCard,
-  TableCardTitle,
-} from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
 dayjs.extend(relativeTime);
@@ -89,7 +68,14 @@ const UserSessionsTab: React.FC = () => {
     width: 300,
     renderText: (agent: string | null | undefined) => agent ?? userAgentFallback,
     renderWrapper: (content, fullText) => (
-      <CellText $muted={fullText === userAgentFallback}>{content}</CellText>
+      <span
+        style={{
+          fontSize: 14,
+          color: fullText === userAgentFallback ? 'var(--ant-color-text-secondary)' : undefined,
+        }}
+      >
+        {content}
+      </span>
     ),
   });
 
@@ -132,21 +118,21 @@ const UserSessionsTab: React.FC = () => {
     fixed: 'end',
     renderActions: (record) => (
       <Popconfirm
-        title={<StatTitle>{t('userSessions.confirmTerminate')}</StatTitle>}
+        title={<span style={{ fontSize: 14, fontWeight: 500 }}>{t('userSessions.confirmTerminate')}</span>}
         description={
-          <CellText>
+          <span style={{ fontSize: 14 }}>
             {record.userEmail === user?.email
               ? t('userSessions.confirmTerminateSelf')
               : t('userSessions.confirmTerminateOther', { email: record.userEmail })}
-          </CellText>
+          </span>
         }
         onConfirm={() => handleTerminateSession(record)}
         okText={t('common:yes')}
         cancelText={t('common:no')}
         disabled={!record.isActive}
       >
-        <RediaccTooltip title={t('userSessions.terminate')}>
-          <RediaccButton
+        <Tooltip title={t('userSessions.terminate')}>
+          <Button
             data-testid={`sessions-terminate-${record.requestId}`}
             variant="link"
             danger
@@ -155,7 +141,7 @@ const UserSessionsTab: React.FC = () => {
             loading={deleteUserRequestMutation.isPending}
             aria-label={t('userSessions.terminate')}
           />
-        </RediaccTooltip>
+        </Tooltip>
       </Popconfirm>
     ),
   });
@@ -168,11 +154,15 @@ const UserSessionsTab: React.FC = () => {
       width: 200,
       render: (email: string) => (
         <Space size="small">
-          <CellText>{email}</CellText>
+          <span style={{ fontSize: 14 }}>{email}</span>
           {email === user?.email && (
-            <SessionTag variant="primary" data-testid="sessions-current-session-tag">
+            <Tag
+              color="processing"
+              style={{ fontSize: 12, fontWeight: 500 }}
+              data-testid="sessions-current-session-tag"
+            >
               {t('userSessions.currentSession')}
-            </SessionTag>
+            </Tag>
           )}
         </Space>
       ),
@@ -189,28 +179,30 @@ const UserSessionsTab: React.FC = () => {
 
         return (
           <Space size="small">
-            <CellText>{name}</CellText>
+            <span style={{ fontSize: 14 }}>{name}</span>
             {record.parentRequestId && (
-              <RediaccTooltip title={t('userSessions.forkToken')}>
-                <SessionTag
-                  variant="primary"
+              <Tooltip title={t('userSessions.forkToken')}>
+                <Tag
+                  color="processing"
                   icon={<LinkOutlined />}
+                  style={{ fontSize: 12, fontWeight: 500 }}
                   data-testid="sessions-fork-tag"
                 >
                   {t('userSessions.fork')}
-                </SessionTag>
-              </RediaccTooltip>
+                </Tag>
+              </Tooltip>
             )}
             {childCount > 0 && (
-              <RediaccTooltip title={t('userSessions.hasChildren', { count: childCount })}>
-                <SessionTag
-                  variant="warning"
+              <Tooltip title={t('userSessions.hasChildren', { count: childCount })}>
+                <Tag
+                  color="warning"
                   icon={<BranchesOutlined />}
+                  style={{ fontSize: 12, fontWeight: 500 }}
                   data-testid="sessions-child-tag"
                 >
                   {childCount}
-                </SessionTag>
-              </RediaccTooltip>
+                </Tag>
+              </Tooltip>
             )}
           </Space>
         );
@@ -222,7 +214,14 @@ const UserSessionsTab: React.FC = () => {
       key: 'ipAddress',
       width: 140,
       render: (ip: string | null) => (
-        <CellText $muted={!ip}>{ip || t('userSessions.notAvailable')}</CellText>
+        <span
+          style={{
+            fontSize: 14,
+            color: !ip ? 'var(--ant-color-text-secondary)' : undefined,
+          }}
+        >
+          {ip || t('userSessions.notAvailable')}
+        </span>
       ),
     },
     userAgentColumn,
@@ -246,37 +245,36 @@ const UserSessionsTab: React.FC = () => {
   ];
 
   return (
-    <TabContainer data-testid="user-sessions-tab">
+    <Flex vertical gap={16} data-testid="user-sessions-tab">
       <Row gutter={16}>
         <Col span={6}>
-          <StatCard data-testid="sessions-stat-total">
-            <RediaccStatistic
-              title={<StatTitle>{t('userSessions.totalSessions')}</StatTitle>}
+          <Card data-testid="sessions-stat-total">
+            <Statistic
+              title={<span style={{ fontSize: 14, fontWeight: 500 }}>{t('userSessions.totalSessions')}</span>}
               value={sessions.length}
             />
-          </StatCard>
+          </Card>
         </Col>
         <Col span={6}>
-          <StatCard data-testid="sessions-stat-active">
-            <RediaccStatistic
-              title={<StatTitle>{t('userSessions.activeSessions')}</StatTitle>}
+          <Card data-testid="sessions-stat-active">
+            <Statistic
+              title={<span style={{ fontSize: 14, fontWeight: 500 }}>{t('userSessions.activeSessions')}</span>}
               value={activeSessions.length}
-              variant="success"
             />
-          </StatCard>
+          </Card>
         </Col>
         <Col span={6}>
-          <StatCard data-testid="sessions-stat-unique-users">
-            <RediaccStatistic
-              title={<StatTitle>{t('userSessions.uniqueUsers')}</StatTitle>}
+          <Card data-testid="sessions-stat-unique-users">
+            <Statistic
+              title={<span style={{ fontSize: 14, fontWeight: 500 }}>{t('userSessions.uniqueUsers')}</span>}
               value={new Set(sessions.map((session) => session.userEmail)).size}
             />
-          </StatCard>
+          </Card>
         </Col>
         <Col span={6}>
-          <StatCard data-testid="sessions-stat-average-duration">
-            <RediaccStatistic
-              title={<StatTitle>{t('userSessions.averageDuration')}</StatTitle>}
+          <Card data-testid="sessions-stat-average-duration">
+            <Statistic
+              title={<span style={{ fontSize: 14, fontWeight: 500 }}>{t('userSessions.averageDuration')}</span>}
               value={
                 sessions.length > 0
                   ? Math.round(
@@ -290,28 +288,30 @@ const UserSessionsTab: React.FC = () => {
                     )
                   : 0
               }
-              suffix={<StatSuffix>{t('userSessions.minutes')}</StatSuffix>}
+              suffix={<span style={{ fontSize: 12 }}>{t('userSessions.minutes')}</span>}
             />
-          </StatCard>
+          </Card>
         </Col>
       </Row>
 
-      <TableCard
+      <Card
         title={
-          <TableCardTitle>
-            <InlineStack>
-              <CardTitleText>{t('userSessions.title')}</CardTitleText>
-              <RediaccTooltip title={t('common:actions.refresh')}>
-                <RefreshButton
+          <Flex justify="space-between" align="center">
+            <Space size={8}>
+              <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>{t('userSessions.title')}</Typography.Text>
+              <Tooltip title={t('common:actions.refresh')}>
+                <Button
+                  style={{ minWidth: 40, minHeight: 40, fontSize: 16 }}
                   data-testid="sessions-refresh-button"
                   icon={<ReloadOutlined />}
                   onClick={() => refetch()}
                   loading={isLoading}
                   aria-label={t('common:actions.refresh')}
                 />
-              </RediaccTooltip>
-            </InlineStack>
-            <SearchInput
+              </Tooltip>
+            </Space>
+            <Input
+              style={{ width: 'min(360px, 100%)', maxWidth: '100%' }}
               data-testid="sessions-search-input"
               placeholder={t('userSessions.searchPlaceholder')}
               prefix={<SearchOutlined />}
@@ -319,10 +319,10 @@ const UserSessionsTab: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               autoComplete="off"
             />
-          </TableCardTitle>
+          </Flex>
         }
       >
-        <RediaccTable<UserRequest>
+        <Table<UserRequest>
           data-testid="sessions-table"
           columns={columns}
           dataSource={filteredSessions}
@@ -332,9 +332,9 @@ const UserSessionsTab: React.FC = () => {
             pageSize: 10,
             showSizeChanger: true,
             showTotal: (total) => (
-              <RediaccText variant="caption">
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 {t('userSessions.totalCount', { count: total })}
-              </RediaccText>
+              </Typography.Text>
             ),
           }}
           scroll={{ x: 1500 }}
@@ -344,8 +344,8 @@ const UserSessionsTab: React.FC = () => {
             }) as React.HTMLAttributes<HTMLTableRowElement>
           }
         />
-      </TableCard>
-    </TabContainer>
+      </Card>
+    </Flex>
   );
 };
 

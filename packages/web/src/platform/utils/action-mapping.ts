@@ -25,11 +25,11 @@ export interface ActionConfig {
  * Default action icon mapping configuration
  */
 export const ACTION_ICON_MAP: ActionConfig[] = [
-  { keywords: ['create'], icon: CheckCircleOutlined, color: 'var(--color-success)' },
-  { keywords: ['delete'], icon: CloseCircleOutlined, color: 'var(--color-error)' },
-  { keywords: ['update', 'modify'], icon: EditOutlined, color: 'var(--color-warning)' },
-  { keywords: ['login', 'auth'], icon: LoginOutlined, color: 'var(--color-primary)' },
-  { keywords: ['export', 'import'], icon: SwapOutlined, color: 'var(--color-info)' },
+  { keywords: ['create'], icon: CheckCircleOutlined, color: 'var(--ant-color-success)' },
+  { keywords: ['delete'], icon: CloseCircleOutlined, color: 'var(--ant-color-error)' },
+  { keywords: ['update', 'modify'], icon: EditOutlined, color: 'var(--ant-color-warning)' },
+  { keywords: ['login', 'auth'], icon: LoginOutlined, color: 'var(--ant-color-primary)' },
+  { keywords: ['export', 'import'], icon: SwapOutlined, color: 'var(--ant-color-info)' },
 ];
 
 /**
@@ -37,7 +37,7 @@ export const ACTION_ICON_MAP: ActionConfig[] = [
  */
 export const DEFAULT_ACTION_CONFIG: Omit<ActionConfig, 'keywords'> = {
   icon: InfoCircleOutlined,
-  color: 'var(--color-text-secondary)',
+  color: 'var(--ant-color-text-secondary)',
 };
 
 /**

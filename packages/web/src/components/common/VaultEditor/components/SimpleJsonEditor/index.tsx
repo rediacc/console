@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { EditorContainer, EditorTextarea, ErrorBanner } from './styles';
 
 interface SimpleJsonEditorProps {
   value: string;
@@ -100,8 +99,18 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   };
 
   return (
-    <EditorContainer className={className} $height={height}>
-      <EditorTextarea
+    <div
+      className={className}
+      style={{
+        position: 'relative',
+        height: typeof height === 'number' ? `${height}px` : height,
+        overflow: 'hidden',
+        fontFamily: 'monospace',
+        fontSize: 14,
+        lineHeight: 1.5,
+      }}
+    >
+      <textarea
         value={internalValue}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
@@ -111,9 +120,32 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
         autoCorrect="off"
         autoCapitalize="off"
         data-testid={dataTestId}
+        style={{
+          width: '100%',
+          height: '100%',
+          outline: 'none',
+          resize: 'none',
+          fontFamily: 'inherit',
+          fontSize: 'inherit',
+          lineHeight: 'inherit',
+          tabSize: 2,
+        }}
       />
 
-      {error && <ErrorBanner>JSON Error: {error}</ErrorBanner>}
-    </EditorContainer>
+      {error && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            fontSize: 12,
+            fontWeight: 500,
+          }}
+        >
+          JSON Error: {error}
+        </div>
+      )}
+    </div>
   );
 };

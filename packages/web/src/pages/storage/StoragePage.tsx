@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
-import { Modal, Space, Tag } from 'antd';
+import { Button, Modal, Space, Tag, Tooltip, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
-import styled, { useTheme } from 'styled-components';
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
 import {
@@ -23,16 +22,6 @@ import ResourceListView, {
 } from '@/components/common/ResourceListView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccTooltip } from '@/components/ui';
-import {
-  ListSubtitle,
-  ListTitle,
-  ListTitleRow,
-  PageWrapper,
-  RediaccButton,
-  SectionHeading,
-  SectionStack,
-} from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import {
   useAsyncAction,
@@ -68,18 +57,17 @@ interface StorageFunctionData {
   selectedMachine?: string;
 }
 
-const TeamSelectorWrapper = styled.div`
-  width: 100%;
-  max-width: ${({ theme }) => theme.dimensions.SELECTOR_MAX_WIDTH}px;
-`;
+const TeamSelectorWrapper = (props: React.HTMLAttributes<HTMLDivElement>) => (
+  <div style={{ width: '100%', maxWidth: 360 }} {...props} />
+);
 
-const StorageLocationIcon = styled(CloudOutlined)`
-  color: ${({ theme }) => theme.colors.primary};
-`;
+const StorageLocationIcon = (props: React.ComponentProps<typeof CloudOutlined>) => (
+  <CloudOutlined style={{ color: 'var(--ant-color-primary)' }} {...props} />
+);
 
 const StoragePage: React.FC = () => {
   const { t } = useTranslation(['resources', 'common']);
-  const theme = useTheme();
+  const { token } = theme.useToken();
   const [modal, contextHolder] = Modal.useModal();
 
   // Custom hooks for common patterns
@@ -339,7 +327,7 @@ const StoragePage: React.FC = () => {
         width: COLUMN_WIDTHS.TAG,
         ellipsis: true,
         render: (teamName: string) => (
-          <Tag color={theme.colors.textSecondary /* Was secondary */}>{teamName}</Tag>
+          <Tag color={token.colorTextSecondary}>{teamName}</Tag>
         ),
       },
       ...(featureFlags.isEnabled('vaultVersionColumns')
@@ -422,7 +410,7 @@ const StoragePage: React.FC = () => {
       openUnifiedModal,
       setCurrentResource,
       t,
-      theme.colors.textSecondary, // Was secondary
+      token.colorTextSecondary,
     ]
   );
 
@@ -434,11 +422,10 @@ const StoragePage: React.FC = () => {
 
   return (
     <>
-      <PageWrapper>
-        <SectionStack>
-          <SectionHeading level={3}>
+      <div>
+          <Typography.Title level={3}>
             {t('storage.heading', { defaultValue: 'Storage' })}
-          </SectionHeading>
+          </Typography.Title>
 
           <TeamSelectorWrapper>
             <TeamSelector
@@ -455,14 +442,16 @@ const StoragePage: React.FC = () => {
 
           <ResourceListView<GetTeamStorages_ResultSet1>
             title={
-              <ListTitleRow>
-                <ListTitle>{t('storage.title', { defaultValue: 'Storage Locations' })}</ListTitle>
-                <ListSubtitle>
+              <Space direction="vertical" size={0}>
+                <Typography.Text strong>
+                  {t('storage.title', { defaultValue: 'Storage Locations' })}
+                </Typography.Text>
+                <Typography.Text type="secondary">
                   {t('storage.subtitle', {
                     defaultValue: 'Manage remote storage locations and rclone configurations',
                   })}
-                </ListSubtitle>
-              </ListTitleRow>
+                </Typography.Text>
+              </Space>
             }
             loading={storagesLoading}
             data={displayedStorages}
@@ -499,37 +488,36 @@ const StoragePage: React.FC = () => {
             actions={
               hasTeamSelection ? (
                 <>
-                  <RediaccTooltip title={t('storage.createStorage')}>
-                    <RediaccButton
-                      variant="primary"
+                  <Tooltip title={t('storage.createStorage')}>
+                    <Button
+                      type="primary"
                       icon={<PlusOutlined />}
                       data-testid="resources-create-storage-button"
                       onClick={() => openUnifiedModal('create')}
                       aria-label={t('storage.createStorage')}
                     />
-                  </RediaccTooltip>
-                  <RediaccTooltip title={t('resources:storage.import.button')}>
-                    <RediaccButton
+                  </Tooltip>
+                  <Tooltip title={t('resources:storage.import.button')}>
+                    <Button
                       icon={<ImportOutlined />}
                       data-testid="resources-import-button"
                       onClick={() => rcloneImportWizard.open()}
                       aria-label={t('resources:storage.import.button')}
                     />
-                  </RediaccTooltip>
-                  <RediaccTooltip title={t('common:actions.refresh')}>
-                    <RediaccButton
+                  </Tooltip>
+                  <Tooltip title={t('common:actions.refresh')}>
+                    <Button
                       icon={<ReloadOutlined />}
                       data-testid="resources-refresh-button"
                       onClick={() => refetchStorage()}
                       aria-label={t('common:actions.refresh')}
                     />
-                  </RediaccTooltip>
+                  </Tooltip>
                 </>
               ) : undefined
             }
           />
-        </SectionStack>
-      </PageWrapper>
+      </div>
 
       <UnifiedResourceModal
         data-testid="resources-storage-modal"

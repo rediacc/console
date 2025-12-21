@@ -1,7 +1,5 @@
 import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
-import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { telemetryService } from '@/services/telemetryService';
-import { darkTheme, lightTheme } from '@/styles/styledTheme';
 
 type Theme = 'light' | 'dark';
 
@@ -84,11 +82,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     setTheme(newTheme);
   };
 
-  const styledTheme = theme === 'dark' ? darkTheme : lightTheme;
-
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <StyledThemeProvider theme={styledTheme}>{children}</StyledThemeProvider>
+      {children}
     </ThemeContext.Provider>
   );
 };

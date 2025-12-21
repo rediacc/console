@@ -1,10 +1,8 @@
 import React, { Component, ReactNode } from 'react';
 import { BugOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Result } from 'antd';
-import { RediaccButton } from '@/components/ui';
+import { Button, Result } from 'antd';
 import i18n from '@/i18n/config';
 import { telemetryService } from '@/services/telemetryService';
-import { ErrorContent, ErrorDetails, ErrorSummary, FallbackContainer } from './styles';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -109,7 +107,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       // Default error UI
       return (
-        <FallbackContainer>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 24, minHeight: 320 }}>
           <Result
             status="error"
             title={i18n.t('common:errorBoundary.title')}
@@ -117,9 +115,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               <div>
                 <p>{i18n.t('common:errorBoundary.description')}</p>
                 {import.meta.env.DEV && this.state.error && (
-                  <ErrorDetails>
-                    <ErrorSummary>{i18n.t('common:errorBoundary.errorDetails')}</ErrorSummary>
-                    <ErrorContent>
+                  <details
+                    style={{
+                      padding: 12,
+                      textAlign: 'left',
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
+                      {i18n.t('common:errorBoundary.errorDetails')}
+                    </summary>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       <strong>Error:</strong> {this.state.error.message}
                       <br />
                       <strong>Stack:</strong> {this.state.error.stack}
@@ -129,26 +136,26 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                           <strong>Component Stack:</strong> {this.state.errorInfo.componentStack}
                         </>
                       )}
-                    </ErrorContent>
-                  </ErrorDetails>
+                    </div>
+                  </details>
                 )}
               </div>
             }
             extra={[
-              <RediaccButton key="retry" onClick={this.handleRetry} icon={<BugOutlined />}>
+              <Button key="retry" onClick={this.handleRetry} icon={<BugOutlined />}>
                 {i18n.t('common:errorBoundary.tryAgain')}
-              </RediaccButton>,
-              <RediaccButton
+              </Button>,
+              <Button
                 key="reload"
-                variant="primary"
+                type="primary"
                 onClick={this.handleReload}
                 icon={<ReloadOutlined />}
               >
                 {i18n.t('common:errorBoundary.reloadPage')}
-              </RediaccButton>,
+              </Button>,
             ]}
           />
-        </FallbackContainer>
+        </div>
       );
     }
 

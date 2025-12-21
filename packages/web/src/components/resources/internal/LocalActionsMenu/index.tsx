@@ -1,9 +1,9 @@
+import { Button, Dropdown, Tooltip, Typography } from 'antd';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { LocalCommandModal } from '@/components/resources/internal/LocalCommandModal';
 import { PipInstallationModal } from '@/components/resources/internal/PipInstallationModal';
-import { RediaccDropdown, RediaccTooltip, IconWrapper } from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
 import {
@@ -19,7 +19,6 @@ import {
   DesktopOutlined,
   FileTextOutlined,
 } from '@/utils/optimizedIcons';
-import { MenuLabel, TriggerButton } from './styles';
 import type { MenuProps } from 'antd';
 
 type ItemType = NonNullable<MenuProps['items']>[number];
@@ -41,11 +40,7 @@ interface LocalActionsMenuProps {
   isMachineOnlyMenu?: boolean;
 }
 
-const createMenuIcon = (IconComponent: React.ElementType) => (
-  <IconWrapper $size="md" $tone="primary">
-    <IconComponent />
-  </IconWrapper>
-);
+const createMenuIcon = (IconComponent: React.ElementType) => <IconComponent />;
 
 export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   machine,
@@ -182,7 +177,11 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       items.push({
         key: 'container-terminal',
         icon: createMenuIcon(CodeOutlined),
-        label: <MenuLabel>{t('resources:localActions.openContainerTerminal')}</MenuLabel>,
+        label: (
+          <Typography.Text style={{ fontSize: 14 }}>
+            {t('resources:localActions.openContainerTerminal')}
+          </Typography.Text>
+        ),
         onClick: () => handleOpenInDesktop(undefined, 'terminal'),
         'data-testid': `local-actions-container-terminal-${containerId}`,
       });
@@ -195,7 +194,11 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
     items.push({
       key: 'container-logs',
       icon: createMenuIcon(BuildOutlined),
-      label: <MenuLabel>{t('resources:localActions.viewContainerLogs')}</MenuLabel>,
+      label: (
+        <Typography.Text style={{ fontSize: 14 }}>
+          {t('resources:localActions.viewContainerLogs')}
+        </Typography.Text>
+      ),
       onClick: () => handleOpenInDesktop(undefined, 'logs'),
       'data-testid': `local-actions-container-logs-${containerId}`,
     });
@@ -204,7 +207,11 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       items.push({
         key: 'container-stats',
         icon: createMenuIcon(BuildOutlined),
-        label: <MenuLabel>{t('resources:localActions.containerStats')}</MenuLabel>,
+        label: (
+          <Typography.Text style={{ fontSize: 14 }}>
+            {t('resources:localActions.containerStats')}
+          </Typography.Text>
+        ),
         onClick: () => handleOpenInDesktop(undefined, 'stats'),
         'data-testid': `local-actions-container-stats-${containerId}`,
       });
@@ -217,21 +224,33 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
     {
       key: 'open',
       icon: createMenuIcon(DesktopOutlined),
-      label: <MenuLabel>{t('resources:localActions.openInDesktop')}</MenuLabel>,
+      label: (
+        <Typography.Text style={{ fontSize: 14 }}>
+          {t('resources:localActions.openInDesktop')}
+        </Typography.Text>
+      ),
       onClick: () => handleOpenInDesktop(),
       'data-testid': `local-actions-open-${repository}`,
     },
     {
       key: 'vscode',
       icon: createMenuIcon(FileTextOutlined),
-      label: <MenuLabel>{t('resources:localActions.openInVSCode')}</MenuLabel>,
+      label: (
+        <Typography.Text style={{ fontSize: 14 }}>
+          {t('resources:localActions.openInVSCode')}
+        </Typography.Text>
+      ),
       onClick: () => handleOpenInDesktop('vscode'),
       'data-testid': `local-actions-vscode-${repository}`,
     },
     {
       key: 'terminal',
       icon: createMenuIcon(CodeOutlined),
-      label: <MenuLabel>{t('resources:localActions.openTerminal')}</MenuLabel>,
+      label: (
+        <Typography.Text style={{ fontSize: 14 }}>
+          {t('resources:localActions.openTerminal')}
+        </Typography.Text>
+      ),
       onClick: () => handleOpenInDesktop('terminal'),
       'data-testid': `local-actions-terminal-${repository}`,
     },
@@ -239,7 +258,11 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
     {
       key: 'cli-commands',
       icon: createMenuIcon(BuildOutlined),
-      label: <MenuLabel>{t('resources:localActions.showCLICommands')}</MenuLabel>,
+      label: (
+        <Typography.Text style={{ fontSize: 14 }}>
+          {t('resources:localActions.showCLICommands')}
+        </Typography.Text>
+      ),
       onClick: () => commandModal.open(),
       'data-testid': `local-actions-cli-commands-${repository}`,
     },
@@ -258,22 +281,23 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
 
   return (
     <>
-      <RediaccDropdown
+      <Dropdown
         menu={menuConfig}
         trigger={['click']}
         disabled={disabled || isCheckingProtocol}
         data-testid={`local-actions-dropdown-container-${repository}`}
       >
-        <RediaccTooltip title={tooltipLabel}>
-          <TriggerButton
+        <Tooltip title={tooltipLabel}>
+          <Button
             icon={createMenuIcon(DesktopOutlined)}
             loading={isCheckingProtocol}
             disabled={disabled || isCheckingProtocol}
             data-testid={triggerTestId}
             aria-label={tooltipLabel}
+            style={{ display: 'inline-flex', alignItems: 'center', minHeight: 40 }}
           />
-        </RediaccTooltip>
-      </RediaccDropdown>
+        </Tooltip>
+      </Dropdown>
 
       <PipInstallationModal
         open={installModal.isOpen}

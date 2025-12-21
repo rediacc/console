@@ -1,9 +1,8 @@
 import React from 'react';
-import { Space } from 'antd';
+import { Avatar, Button, Divider, Flex, Segmented, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '@/components/common/LanguageSelector';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
-import { RediaccDivider, RediaccText } from '@/components/ui';
 import {
   LogoutOutlined,
   SafetyCertificateOutlined,
@@ -12,19 +11,6 @@ import {
 } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
-import {
-  AppearanceRow,
-  LanguageSection,
-  LogoutButton,
-  MenuContainer,
-  ModeSegmented,
-  PlanBadge,
-  UserAvatar,
-  UserDetails,
-  UserInfo,
-  BlockText,
-  LanguageLabel,
-} from './styles';
 
 type UserMenuProps = {
   user: { email: string } | null;
@@ -46,33 +32,37 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   const { t } = useTranslation('common');
 
   return (
-    <MenuContainer>
-      <UserInfo data-testid="user-info">
-        <UserAvatar icon={<UserOutlined />} size={DESIGN_TOKENS.DIMENSIONS.ICON_XXL} />
-        <UserDetails>
-          <BlockText variant="value" weight="semibold" data-testid="user-info-email">
+    <div style={{ width: 280, padding: 16 }}>
+      <Flex align="center" gap={12} wrap data-testid="user-info">
+        <Avatar icon={<UserOutlined />} size={DESIGN_TOKENS.DIMENSIONS.ICON_XXL} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Typography.Text strong style={{ display: 'block' }} data-testid="user-info-email">
             {user?.email}
-          </BlockText>
+          </Typography.Text>
           {company && (
-            <BlockText variant="caption" data-testid="user-info-company">
+            <Typography.Text
+              type="secondary"
+              style={{ fontSize: 12, display: 'block' }}
+              data-testid="user-info-company"
+            >
               {company}
-            </BlockText>
+            </Typography.Text>
           )}
           {companyData?.activeSubscription && (
-            <PlanBadge data-testid="user-info-plan">
+            <Tag color="processing" style={{ fontSize: 12, fontWeight: 600 }} data-testid="user-info-plan">
               {companyData.activeSubscription.planCode ?? 'UNKNOWN'}
-            </PlanBadge>
+            </Tag>
           )}
-        </UserDetails>
-      </UserInfo>
+        </div>
+      </Flex>
 
-      <RediaccDivider spacing="none" />
+      <Divider style={{ margin: '12px 0' }} />
 
       <div>
-        <RediaccText variant="label">
+        <Typography.Text type="secondary">
           {t('uiMode.label', { defaultValue: 'Interface Mode' })}
-        </RediaccText>
-        <ModeSegmented
+        </Typography.Text>
+        <Segmented
           block
           value={uiMode}
           onChange={(value) => {
@@ -104,39 +94,41 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         />
       </div>
 
-      <RediaccDivider spacing="none" />
+      <Divider style={{ margin: '12px 0' }} />
 
-      <AppearanceRow>
+      <Flex align="center" justify="space-between">
         <div>
-          <BlockText variant="value" weight="semibold">
+          <Typography.Text strong style={{ display: 'block' }}>
             {t('appearance.label', { defaultValue: 'Appearance' })}
-          </BlockText>
-          <RediaccText variant="caption">
+          </Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t('appearance.description', { defaultValue: 'Device theme' })}
-          </RediaccText>
+          </Typography.Text>
         </div>
         <ThemeToggle />
-      </AppearanceRow>
+      </Flex>
 
-      <RediaccDivider spacing="none" />
+      <Divider style={{ margin: '12px 0' }} />
 
-      <LanguageSection>
-        <LanguageLabel variant="value" weight="semibold">
+      <div>
+        <Typography.Text strong style={{ display: 'block' }}>
           {t('language.label', { defaultValue: 'Language' })}
-        </LanguageLabel>
+        </Typography.Text>
         <LanguageSelector iconOnly={false} />
-      </LanguageSection>
+      </div>
 
-      <RediaccDivider spacing="none" />
+      <Divider style={{ margin: '12px 0' }} />
 
-      <LogoutButton
-        variant="danger"
+      <Button
+        type="text"
+        danger
         icon={<LogoutOutlined />}
         onClick={onLogout}
         data-testid="main-logout-button"
+        style={{ width: '100%', justifyContent: 'flex-start' }}
       >
         {t('navigation.logout')}
-      </LogoutButton>
-    </MenuContainer>
+      </Button>
+    </div>
   );
 };

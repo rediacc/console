@@ -1,12 +1,10 @@
 import { useCallback, useMemo } from 'react';
-import { Modal } from 'antd';
+import { Button, Empty, Modal, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CephCluster, CephPool } from '@/api/queries/ceph';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { RediaccButton } from '@/components/ui';
 import { useExpandableTable, useTraceModal } from '@/hooks';
 import RbdImageTable from '@/pages/ceph/components/RbdImageTable';
-import { EmptyStatePanel } from '@/styles/primitives';
 import { confirmAction } from '@/utils/confirmations';
 import { buildPoolColumns } from './columns';
 import { ClusterPoolsCard } from './components/ClusterPoolsCard';
@@ -128,14 +126,12 @@ export const PoolTable: React.FC<PoolTableProps> = ({
 
   if (pools.length === 0 && !loading) {
     return (
-      <EmptyStatePanel
-        description={t('pools.noPools')}
-        action={
-          <RediaccButton onClick={onCreatePool} data-testid="ds-create-pool-empty">
-            {t('pools.create')}
-          </RediaccButton>
-        }
-      />
+      <Space direction="vertical" align="center">
+        <Empty description={t('pools.noPools')} />
+        <Button type="primary" onClick={onCreatePool} data-testid="ds-create-pool-empty">
+          {t('pools.create')}
+        </Button>
+      </Space>
     );
   }
 

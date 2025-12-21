@@ -1,8 +1,7 @@
+import { Button } from 'antd';
 import React from 'react';
-import { RediaccButton } from '@/components/ui';
 import { normalizeToBoolean, normalizeToNumber, normalizeToString } from '@/platform';
 import { CloseCircleOutlined, ReloadOutlined, RetweetOutlined } from '@/utils/optimizedIcons';
-import { ActionButton } from '../styles';
 import type { ActionButtonsProps } from '../types';
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
@@ -38,28 +37,30 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     // Show Cancel button for PENDING, ASSIGNED, or PROCESSING tasks that can be cancelled
     // Style and text vary based on staleness level
     showCancelButton ? (
-      <ActionButton
+      <Button
         key="cancel"
         data-testid="queue-trace-cancel-button"
         danger
-        variant={taskStaleness === 'critical' ? 'primary' : 'default'}
+        type={taskStaleness === 'critical' ? 'primary' : 'default'}
         icon={<CloseCircleOutlined />}
         onClick={onCancel}
         loading={isCancelling}
-        style={styles.buttonPrimary}
-        $bold={taskStaleness === 'critical'}
-        $large={taskStaleness === 'critical'}
+        style={{
+          fontWeight: taskStaleness === 'critical' ? 600 : 500,
+          fontSize: taskStaleness === 'critical' ? 14 : 12,
+          ...styles.buttonPrimary,
+        }}
       >
         {taskStaleness === 'critical'
           ? 'Cancel Stuck Task'
           : taskStaleness === 'stale'
             ? 'Cancel Task'
             : 'Cancel'}
-      </ActionButton>
+      </Button>
     ) : null,
     // Show Retry button only for failed tasks that haven't reached max retries
     showRetryButton ? (
-      <RediaccButton
+      <Button
         key="retry"
         data-testid="queue-trace-retry-button"
         danger
@@ -69,9 +70,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         style={styles.buttonPrimary}
       >
         Retry Again
-      </RediaccButton>
+      </Button>
     ) : null,
-    <RediaccButton
+    <Button
       key="refresh"
       data-testid="queue-trace-refresh-button"
       icon={<ReloadOutlined />}
@@ -80,14 +81,14 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       style={styles.buttonSecondary}
     >
       Refresh
-    </RediaccButton>,
-    <RediaccButton
+    </Button>,
+    <Button
       key="close"
       data-testid="queue-trace-close-button"
       onClick={onClose}
       style={styles.buttonSecondary}
     >
       Close
-    </RediaccButton>,
+    </Button>,
   ].filter(Boolean);
 };

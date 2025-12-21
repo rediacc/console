@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Empty, Modal, Space, Tabs, Tag } from 'antd';
+import { Button, Empty, Modal, Space, Table, Tabs, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   CephClusterMachine,
@@ -13,7 +13,6 @@ import {
 import { createDateColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector';
-import { RediaccButton, RediaccTable } from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { createSorter, formatTimestampAsIs } from '@/platform';
 import type { Machine } from '@/types';
@@ -25,7 +24,6 @@ import {
   DesktopOutlined,
   PlusOutlined,
 } from '@/utils/optimizedIcons';
-import { FullWidthSpace, RemoveButton } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ManageClusterMachinesModalProps {
@@ -216,7 +214,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     }
 
     return (
-      <FullWidthSpace direction="vertical" size="large">
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <div>
           <p>{t('machines:selectMachines')}</p>
           <AvailableMachinesSelector
@@ -233,7 +231,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
             </Tag>
           </div>
         )}
-      </FullWidthSpace>
+      </Space>
     );
   };
 
@@ -258,34 +256,35 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     };
 
     return (
-      <FullWidthSpace direction="vertical" size="large">
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {selectedRemoveMachines.length > 0 && (
           <div>
             <Tag color="warning">
               {t('machines:bulkOperations.selectedCount', { count: selectedRemoveMachines.length })}
             </Tag>
-            <RemoveButton
-              variant="danger"
+            <Button
+              type="primary"
+              danger
               icon={<DeleteOutlined />}
               onClick={handleRemoveMachines}
               loading={removingMachines}
               data-testid="ds-manage-machines-remove-button"
             >
               {t('machines:removeFromCluster')}
-            </RemoveButton>
+            </Button>
           </div>
         )}
 
-        <RediaccTable<CephClusterMachine>
+        <Table<CephClusterMachine>
           rowSelection={rowSelection}
           columns={assignedColumns}
           dataSource={clusterMachines}
           rowKey="machineName"
-          size="sm"
+          size="small"
           pagination={false}
           data-testid="ds-manage-machines-assigned-table"
         />
-      </FullWidthSpace>
+      </Space>
     );
   };
 
@@ -302,13 +301,13 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       className={ModalSize.Large}
       data-testid="ds-manage-cluster-machines-modal"
       footer={[
-        <RediaccButton key="cancel" onClick={onCancel} data-testid="ds-manage-machines-cancel">
+        <Button key="cancel" onClick={onCancel} data-testid="ds-manage-machines-cancel">
           {t('common:actions.cancel')}
-        </RediaccButton>,
+        </Button>,
         activeTab === 'assign' && (
-          <RediaccButton
+          <Button
             key="assign"
-            variant="primary"
+            type="primary"
             icon={<PlusOutlined />}
             loading={assigningMachines}
             disabled={selectedMachines.length === 0}
@@ -316,7 +315,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
             data-testid="ds-manage-machines-assign-button"
           >
             {t('machines:assignToCluster')}
-          </RediaccButton>
+          </Button>
         ),
       ].filter(Boolean)}
     >

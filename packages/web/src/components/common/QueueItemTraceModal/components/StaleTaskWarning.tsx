@@ -1,6 +1,5 @@
 import React from 'react';
-import { Button } from 'antd';
-import { RediaccAlert } from '@/components/ui';
+import { Alert, Button } from 'antd';
 import { normalizeToString } from '@/platform';
 import {
   ClockCircleOutlined,
@@ -34,11 +33,11 @@ export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
   // Cancelling status
   if (status === 'CANCELLING') {
     return (
-      <RediaccAlert
+      <Alert
         data-testid="queue-trace-alert-cancelling"
         message="Task Being Cancelled"
         description="The task is being cancelled. The bridge will stop execution gracefully."
-        variant="warning"
+        type="warning"
         showIcon
         icon={<SyncOutlined spin />}
       />
@@ -48,25 +47,24 @@ export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
   // Progressive staleness warnings
   if (taskStaleness === 'early') {
     return (
-      <RediaccAlert
+      <Alert
         data-testid="queue-trace-alert-early"
         message="Task May Be Inactive"
         description="Task hasn't provided updates for over 1 minute. This may be normal for long-running operations."
-        variant="info"
+        type="info"
         showIcon
         icon={<ClockCircleOutlined />}
-        spacing="default"
       />
     );
   }
 
   if (taskStaleness === 'stale') {
     return (
-      <RediaccAlert
+      <Alert
         data-testid="queue-trace-alert-stale"
         message="Task May Be Stale"
         description="Task appears inactive for over 1.5 minutes. Consider canceling if no progress is expected."
-        variant="warning"
+        type="warning"
         showIcon
         icon={<WarningOutlined />}
         action={
@@ -82,18 +80,17 @@ export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
             </Button>
           ) : null
         }
-        spacing="default"
       />
     );
   }
 
   if (taskStaleness === 'critical') {
     return (
-      <RediaccAlert
+      <Alert
         data-testid="queue-trace-alert-critical"
         message="Task Likely Stuck - Cancellation Recommended"
         description="Task has been inactive for over 2 minutes. The queue processor will automatically timeout this task at 3 minutes if no activity is detected."
-        variant="error"
+        type="error"
         showIcon
         icon={<ExclamationCircleOutlined />}
         action={

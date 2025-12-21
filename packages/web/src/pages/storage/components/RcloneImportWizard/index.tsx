@@ -1,16 +1,9 @@
 import React, { useState } from 'react';
-import { Space, Steps, Tag, Typography, Upload } from 'antd';
+import { Alert, Button, Checkbox, Flex, Modal, Space, Steps, Table, Tag, Tooltip, Typography, Upload } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useCreateStorage, useStorage } from '@/api/queries/storage';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import {
-  RediaccAlert,
-  RediaccButton,
-  RediaccCheckbox,
-  RediaccTable,
-  RediaccTooltip,
-} from '@/components/ui';
 import { createSorter } from '@/platform';
 import {
   CheckCircleOutlined,
@@ -21,15 +14,6 @@ import {
   UploadOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  LoadingState,
-  NameText,
-  ParsingErrorAlert,
-  StatusMessage,
-  StepsContainer,
-  UploadStepWrapper,
-  WizardModal,
-} from './styles';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload';
 import type { TFunction } from 'i18next';
@@ -79,9 +63,8 @@ const UploadStep: React.FC<UploadStepProps> = ({
   onBeforeUpload,
   onFileListChange,
 }) => (
-  <UploadStepWrapper>
-    <RediaccAlert
-      spacing="spacious"
+  <div>
+    <Alert
       message={t('resources:storage.import.instructions')}
       description={
         <div>
@@ -92,7 +75,7 @@ const UploadStep: React.FC<UploadStepProps> = ({
           <Paragraph>{t('resources:storage.import.uploadPrompt')}</Paragraph>
         </div>
       }
-      variant="info"
+      type="info"
       showIcon
       icon={<InfoCircleOutlined />}
     />
@@ -112,8 +95,8 @@ const UploadStep: React.FC<UploadStepProps> = ({
       <p className="ant-upload-hint">{t('resources:storage.import.supportedFormats')}</p>
     </Upload.Dragger>
 
-    {parsingError && <ParsingErrorAlert message={parsingError} variant="error" showIcon />}
-  </UploadStepWrapper>
+    {parsingError && <Alert message={parsingError} type="error" showIcon />}
+  </div>
 );
 
 interface SelectionStepProps {
@@ -124,20 +107,19 @@ interface SelectionStepProps {
 
 const SelectionStep: React.FC<SelectionStepProps> = ({ t, importStatuses, columns }) => (
   <div>
-    <RediaccAlert
-      spacing="default"
+    <Alert
       message={t('resources:storage.import.selectStorages')}
       description={t('resources:storage.import.selectDescription')}
-      variant="info"
+      type="info"
       showIcon
     />
 
-    <RediaccTable<ImportStatus>
+    <Table<ImportStatus>
       dataSource={importStatuses}
       columns={columns}
       rowKey="name"
       pagination={false}
-      size="sm"
+      size="small"
       data-testid="rclone-wizard-config-table"
     />
   </div>
@@ -153,7 +135,7 @@ interface ResultStepProps {
 const ResultStep: React.FC<ResultStepProps> = ({ t, importStatuses, columns, isImporting }) => (
   <div>
     {isImporting ? (
-      <LoadingState>
+      <Flex align="center" justify="center">
         <LoadingWrapper
           loading
           centered
@@ -162,23 +144,22 @@ const ResultStep: React.FC<ResultStepProps> = ({ t, importStatuses, columns, isI
         >
           <div />
         </LoadingWrapper>
-      </LoadingState>
+      </Flex>
     ) : (
       <>
-        <RediaccAlert
-          spacing="default"
+        <Alert
           message={t('resources:storage.import.complete')}
           description={t('resources:storage.import.completeDescription')}
-          variant="success"
+          type="success"
           showIcon
         />
 
-        <RediaccTable<ImportStatus>
+        <Table<ImportStatus>
           dataSource={importStatuses}
           columns={columns}
           rowKey="name"
           pagination={false}
-          size="sm"
+          size="small"
           data-testid="rclone-wizard-results-table"
         />
       </>
@@ -489,7 +470,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   const columns: ColumnsType<ImportStatus> = [
     {
       title: (
-        <RediaccCheckbox
+        <Checkbox
           checked={importStatuses.every((s) => s.selected)}
           indeterminate={
             importStatuses.some((s) => s.selected) && !importStatuses.every((s) => s.selected)
@@ -503,7 +484,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       key: 'selected',
       width: 50,
       render: (_: unknown, record: ImportStatus, index: number) => (
-        <RediaccCheckbox
+        <Checkbox
           checked={record.selected}
           onChange={() => toggleSelection(index)}
           disabled={currentStep === 2}
@@ -518,13 +499,13 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
         return (
           <Space>
             <CloudOutlined />
-            <NameText>{truncated}</NameText>
+            <span style={{ fontWeight: 600 }}>{truncated}</span>
             {record.exists && (
-              <RediaccTooltip title={t('resources:storage.import.alreadyExists')}>
+              <Tooltip title={t('resources:storage.import.alreadyExists')}>
                 <Tag color="warning">
                   <InfoCircleOutlined /> {t('resources:storage.import.exists')}
                 </Tag>
-              </RediaccTooltip>
+              </Tooltip>
             )}
           </Space>
         );
@@ -550,7 +531,9 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
         return (
           <Space direction="vertical" size={8}>
             {statusColumn.render?.(status, record, 0) as React.ReactNode}
-            {record.message && <StatusMessage>{record.message}</StatusMessage>}
+            {record.message && (
+              <Typography.Text style={{ fontSize: 12 }}>{record.message}</Typography.Text>
+            )}
           </Space>
         );
       },
@@ -586,53 +569,54 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   };
 
   return (
-    <WizardModal
+    <Modal
       title={
         <Space>
           <CloudOutlined />
           {t('resources:storage.import.title')}
         </Space>
       }
+      width={960}
       open={open}
       onCancel={handleClose}
       footer={
         currentStep === 0 ? (
-          <RediaccButton onClick={handleClose} data-testid="rclone-wizard-cancel-button">
+          <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">
             {t('common:actions.cancel')}
-          </RediaccButton>
+          </Button>
         ) : currentStep === 1 ? (
           <>
-            <RediaccButton
+            <Button
               onClick={() => setCurrentStep(0)}
               data-testid="rclone-wizard-back-button"
             >
               {t('common:actions.back')}
-            </RediaccButton>
-            <RediaccButton onClick={handleClose} data-testid="rclone-wizard-cancel-button">
+            </Button>
+            <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">
               {t('common:actions.cancel')}
-            </RediaccButton>
-            <RediaccButton
-              variant="primary"
+            </Button>
+            <Button
+              type="primary"
               onClick={handleImport}
               disabled={!importStatuses.some((s) => s.selected)}
               loading={isImporting}
               data-testid="rclone-wizard-import-button"
             >
               {t('resources:storage.import.importSelected')}
-            </RediaccButton>
+            </Button>
           </>
         ) : (
-          <RediaccButton
-            variant="primary"
+          <Button
+            type="primary"
             onClick={handleClose}
             data-testid="rclone-wizard-close-button"
           >
             {t('common:actions.close')}
-          </RediaccButton>
+          </Button>
         )
       }
     >
-      <StepsContainer>
+      <div>
         <Steps
           current={currentStep}
           data-testid="rclone-wizard-steps"
@@ -642,10 +626,10 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
             { title: t('resources:storage.import.step3') },
           ]}
         />
-      </StepsContainer>
+      </div>
 
       {renderStepContent()}
-    </WizardModal>
+    </Modal>
   );
 };
 

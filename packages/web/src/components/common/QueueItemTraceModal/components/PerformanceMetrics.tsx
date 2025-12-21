@@ -1,7 +1,6 @@
 import React from 'react';
-import { Card, Col, Divider, Progress, Row, Space, Statistic } from 'antd';
+import { Alert, Card, Col, Divider, Progress, Row, Space, Statistic, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccAlert, RediaccText } from '@/components/ui';
 import { DashboardOutlined, HourglassOutlined, SyncOutlined } from '@/utils/optimizedIcons';
 
 interface MachineStats {
@@ -32,7 +31,7 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
               prefix={<HourglassOutlined />}
               suffix="tasks"
               valueStyle={{
-                color: isHighQueue ? 'var(--color-error)' : 'var(--color-text-primary)',
+                color: isHighQueue ? 'var(--ant-color-error)' : 'var(--ant-color-text)',
               }}
             />
             <Progress
@@ -50,7 +49,7 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
               prefix={<SyncOutlined spin />}
               suffix="tasks"
             />
-            <RediaccText color="secondary">Currently being processed on this machine</RediaccText>
+            <Typography.Text color="secondary" type="secondary">Currently being processed on this machine</Typography.Text>
           </Card>
         </Col>
         <Col span={8}>
@@ -60,7 +59,7 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
               value={`${machineStats.activeProcessingCount}/${machineStats.maxConcurrentTasks || 'N/A'}`}
               prefix={<DashboardOutlined />}
               valueStyle={{
-                color: isAtCapacity ? 'var(--color-error)' : 'var(--color-text-primary)',
+                color: isAtCapacity ? 'var(--ant-color-error)' : 'var(--ant-color-text)',
               }}
             />
             <Progress
@@ -79,23 +78,23 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
         </Col>
       </Row>
       <Divider />
-      <RediaccAlert
+      <Alert
         data-testid="queue-trace-performance-alert"
         message="Performance Analysis"
         description={
           <Space direction="vertical">
             {isHighQueue && (
-              <RediaccText>High queue depth detected. Tasks may experience delays.</RediaccText>
+              <Typography.Text>High queue depth detected. Tasks may experience delays.</Typography.Text>
             )}
             {isAtCapacity && (
-              <RediaccText>Machine at full capacity. New tasks will wait in queue.</RediaccText>
+              <Typography.Text>Machine at full capacity. New tasks will wait in queue.</Typography.Text>
             )}
             {isIdle && (
-              <RediaccText>Machine is idle and ready to process tasks immediately.</RediaccText>
+              <Typography.Text>Machine is idle and ready to process tasks immediately.</Typography.Text>
             )}
           </Space>
         }
-        variant={isHighQueue ? 'warning' : 'info'}
+        type={isHighQueue ? 'warning' : 'info'}
       />
     </>
   );

@@ -1,6 +1,5 @@
 import React from 'react';
-import { Alert } from 'antd';
-import { RediaccStack } from '@/components/ui';
+import { Alert, Flex } from 'antd';
 import { ClockCircleOutlined, ExclamationCircleOutlined } from '@/utils/optimizedIcons';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
 
@@ -21,7 +20,7 @@ const DashboardAlertsWidget: React.FC<DashboardAlertsWidgetProps> = ({
   }
 
   return (
-    <RediaccStack variant="spaced-column" fullWidth>
+    <Flex vertical gap={24} style={{ width: '100%' }}>
       {showSubscriptionAlert && dashboard.activeSubscription && (
         <Alert
           message="Subscription Expiring Soon"
@@ -43,7 +42,7 @@ const DashboardAlertsWidget: React.FC<DashboardAlertsWidgetProps> = ({
           data-testid="dashboard-alert-resource-limits"
         />
       )}
-    </RediaccStack>
+    </Flex>
   );
 };
 

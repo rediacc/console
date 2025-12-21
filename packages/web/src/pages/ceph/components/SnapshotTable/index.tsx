@@ -1,3 +1,4 @@
+import { Button, Flex, Table, Tooltip, Typography } from 'antd';
 import { useCallback, useMemo, useState, type Key } from 'react';
 import {
   CopyOutlined,
@@ -22,14 +23,12 @@ import {
 } from '@/api/queries/cephMutations';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccButton, RediaccTable, RediaccTooltip } from '@/components/ui';
 import { useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import CloneTable from '@/pages/ceph/components/CloneTable';
 import type { SnapshotFormValues as FullSnapshotFormValues } from '@rediacc/shared/types';
 import { buildSnapshotColumns } from './columns';
-import { ActionsRow, Container, ExpandButton, TableWrapper, Title } from './styles';
 import type { MenuProps } from 'antd';
 
 interface SnapshotTableProps {
@@ -244,26 +243,28 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
 
   return (
     <>
-      <Container data-testid="snapshot-list-container">
-        <Title>{t('snapshots.title')}</Title>
-        <ActionsRow>
-          <RediaccTooltip title={t('snapshots.create')}>
-            <RediaccButton
+      <Flex vertical gap={16} data-testid="snapshot-list-container">
+        <Typography.Title level={4} style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
+          {t('snapshots.title')}
+        </Typography.Title>
+        <Flex align="center" wrap>
+          <Tooltip title={t('snapshots.create')}>
+            <Button
               icon={<PlusOutlined />}
               onClick={handleCreate}
               data-testid="snapshot-list-create-button"
               aria-label={t('snapshots.create')}
             />
-          </RediaccTooltip>
-        </ActionsRow>
+          </Tooltip>
+        </Flex>
 
-        <TableWrapper>
-          <RediaccTable<CephRbdSnapshot>
+        <div style={{ overflow: 'hidden' }}>
+          <Table<CephRbdSnapshot>
             columns={columns}
             dataSource={snapshots}
             rowKey="snapshotGuid"
             loading={isLoading}
-            size="sm"
+            size="small"
             pagination={false}
             data-testid="snapshot-list-table"
             expandable={{
@@ -271,7 +272,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
               expandedRowKeys,
               onExpandedRowsChange: (keys: readonly Key[]) => setExpandedRowKeys(keys.map(String)),
               expandIcon: ({ onExpand, record }) => (
-                <ExpandButton
+                <Button
                   icon={<CopyOutlined />}
                   onClick={(event) => onExpand(record, event)}
                   data-testid={`snapshot-list-expand-${record.snapshotName}`}
@@ -279,8 +280,8 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
               ),
             }}
           />
-        </TableWrapper>
-      </Container>
+        </div>
+      </Flex>
 
       <UnifiedResourceModal
         open={modalState.open}

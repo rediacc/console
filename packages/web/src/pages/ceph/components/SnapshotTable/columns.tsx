@@ -1,11 +1,10 @@
-import { CloudUploadOutlined, EllipsisOutlined } from '@ant-design/icons';
+import { Tag, Tooltip } from 'antd';
+import { CameraOutlined, CloudUploadOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { TFunction } from 'i18next';
 import type { CephRbdSnapshot } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
-import { RediaccTag, RediaccTooltip } from '@/components/ui';
 import { createSorter } from '@/platform';
-import { NameCell, NameIcon, NameText } from './styles';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -26,21 +25,23 @@ export const buildSnapshotColumns = ({
     key: 'snapshotName',
     sorter: createSorter<CephRbdSnapshot>('snapshotName'),
     render: (text: string, record: CephRbdSnapshot) => (
-      <NameCell data-testid={`snapshot-list-item-${record.snapshotName}`}>
-        <NameIcon />
-        <NameText>{text}</NameText>
+      <span
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+        data-testid={`snapshot-list-item-${record.snapshotName}`}
+      >
+        <CameraOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
+        <span style={{ fontWeight: 400 }}>{text}</span>
         {record.vaultContent && (
-          <RediaccTooltip title={t('common.hasVault')}>
-            <RediaccTag
-              variant="neutral"
-              compact
+          <Tooltip title={t('common.hasVault')}>
+            <Tag
               data-testid={`snapshot-list-vault-indicator-${record.snapshotName}`}
+              bordered={false}
             >
               {t('common.vault')}
-            </RediaccTag>
-          </RediaccTooltip>
+            </Tag>
+          </Tooltip>
         )}
-      </NameCell>
+      </span>
     ),
   },
   createTruncatedColumn<CephRbdSnapshot>({

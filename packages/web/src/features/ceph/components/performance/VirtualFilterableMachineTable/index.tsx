@@ -1,18 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
-import { Badge } from 'antd';
-import { ActionGroup } from '@/components/common/styled';
+import { Badge, Button, Flex, Input, Select } from 'antd';
 import { MachineAssignmentService } from '@/features/ceph';
-import {
-  AssignmentSelect,
-  Container,
-  FilterInput,
-  OptionLabel,
-  PageSizeSelect,
-  RefreshButton,
-  StatusText,
-  ToolbarStack,
-} from '@/features/ceph/components/performance/VirtualFilterableMachineTable/styles';
 import { VirtualMachineTable } from '@/features/ceph/components/performance/VirtualMachineTable';
 import { useDebounce } from '@/features/ceph/utils/useDebounce';
 import { Machine, MachineAssignmentType } from '@/types';
@@ -122,7 +111,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
         value: 'ALL',
         label: (
           <Badge count={assignmentCounts.ALL} showZero color="blue">
-            <OptionLabel>All Machines</OptionLabel>
+            <span>All Machines</span>
           </Badge>
         ),
       },
@@ -130,7 +119,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
         value: 'AVAILABLE',
         label: (
           <Badge count={assignmentCounts.AVAILABLE} showZero color="green">
-            <OptionLabel>Available</OptionLabel>
+            <span>Available</span>
           </Badge>
         ),
       },
@@ -138,7 +127,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
         value: 'CLUSTER',
         label: (
           <Badge count={assignmentCounts.CLUSTER} showZero color="blue">
-            <OptionLabel>Assigned to Cluster</OptionLabel>
+            <span>Assigned to Cluster</span>
           </Badge>
         ),
       },
@@ -146,7 +135,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
         value: 'IMAGE',
         label: (
           <Badge count={assignmentCounts.IMAGE} showZero color="purple">
-            <OptionLabel>Assigned to Image</OptionLabel>
+            <span>Assigned to Image</span>
           </Badge>
         ),
       },
@@ -154,7 +143,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
         value: 'CLONE',
         label: (
           <Badge count={assignmentCounts.CLONE} showZero color="orange">
-            <OptionLabel>Assigned to Clone</OptionLabel>
+            <span>Assigned to Clone</span>
           </Badge>
         ),
       },
@@ -173,10 +162,11 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
   );
 
   return (
-    <Container data-testid="filterable-machine-container">
-      <ToolbarStack>
-        <ActionGroup>
-          <FilterInput
+    <Flex vertical gap={12} data-testid="filterable-machine-container">
+      <Flex vertical gap={8}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <Input
+            style={{ width: 'min(360px, 100%)', maxWidth: '100%' }}
             data-testid="filterable-machine-search"
             prefix={<SearchOutlined />}
             placeholder="Search machines..."
@@ -185,7 +175,8 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
             allowClear
           />
 
-          <AssignmentSelect
+          <Select
+            style={{ width: 'min(200px, 100%)' }}
             data-testid="filterable-machine-filter-assignment"
             value={assignmentFilter}
             onChange={(value) => setAssignmentFilter(value as MachineAssignmentType | 'ALL')}
@@ -193,7 +184,8 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
             options={assignmentOptions}
           />
 
-          <PageSizeSelect
+          <Select
+            style={{ width: 'min(200px, 100%)' }}
             data-testid="filterable-machine-page-size"
             value={pageSize}
             onChange={(value) => setPageSize(Number(value))}
@@ -201,7 +193,8 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           />
 
           {onRefresh && (
-            <RefreshButton
+            <Button
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 48, minHeight: 40 }}
               icon={<ReloadOutlined />}
               data-testid="filterable-machine-refresh"
               onClick={onRefresh}
@@ -209,15 +202,18 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
               aria-label="Refresh machines"
             >
               Refresh
-            </RefreshButton>
+            </Button>
           )}
-        </ActionGroup>
+        </div>
 
-        <StatusText data-testid="filterable-machine-status">
+        <div
+          style={{ fontSize: 14, color: 'var(--ant-color-text-secondary)' }}
+          data-testid="filterable-machine-status"
+        >
           Showing {displayedMachines.length} of {filteredMachines.length} machines
           {hasMore && ' (scroll to load more)'}
-        </StatusText>
-      </ToolbarStack>
+        </div>
+      </Flex>
 
       <div data-testid="filterable-machine-table">
         <VirtualMachineTable
@@ -231,6 +227,6 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           renderActions={renderActions}
         />
       </div>
-    </Container>
+    </Flex>
   );
 };

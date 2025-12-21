@@ -1,9 +1,7 @@
 import React from 'react';
-import { Card, Col, Divider, Space } from 'antd';
-import { RediaccAlert, RediaccStack, RediaccText } from '@/components/ui';
-import { QuestionCircleOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons';
+import { Alert, Card, Col, Divider, Flex, Space, Typography } from 'antd';
+import { BulbOutlined, QuestionCircleOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons';
 import { VaultFieldRenderer } from '../fieldRenderers';
-import { ProviderSectionSpacer, TipsAlert, TipsDividerIcon } from '../styles';
 import type { VaultFormValues, StorageProviderDefinition } from '../types';
 import type { FormInstance } from 'antd';
 
@@ -34,13 +32,12 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
         size="default"
         data-testid="vault-editor-panel-provider"
       >
-        <RediaccAlert
-          spacing="default"
+        <Alert
           message={providerFields.name}
           description={t(`storageProviders:storageProviders.${selectedProvider}.helpText`, {
             defaultValue: providerFields.description,
           })}
-          variant="info"
+          type="info"
           showIcon
           icon={<QuestionCircleOutlined />}
         />
@@ -74,7 +71,7 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
         {providerFields.optional && providerFields.optional.length > 0 && (
           <>
             {providerFields.required && providerFields.required.length > 0 && (
-              <ProviderSectionSpacer />
+              <div />
             )}
             {providerFields.optional.map((fieldName: string) => {
               if (!providerFields.fields || !(fieldName in providerFields.fields)) return null;
@@ -102,15 +99,15 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
 
         <Divider>
           <Space>
-            <TipsDividerIcon />
-            <RediaccText weight="bold">
+            <BulbOutlined />
+            <Typography.Text strong>
               {t('storageProviders:common.tips', { defaultValue: 'Tips' })}
-            </RediaccText>
+            </Typography.Text>
           </Space>
         </Divider>
-        <TipsAlert
+        <Alert
           message={
-            <RediaccStack direction="vertical" gap="sm" fullWidth>
+            <Flex vertical gap={8} style={{ width: '100%' }}>
               {[1, 2, 3, 4]
                 .map((index) => {
                   const tip = t(
@@ -119,14 +116,14 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
                   );
                   return tip ? (
                     <div key={index}>
-                      <RediaccText>- {tip}</RediaccText>
+                      <Typography.Text>- {tip}</Typography.Text>
                     </div>
                   ) : null;
                 })
                 .filter(Boolean)}
-            </RediaccStack>
+            </Flex>
           }
-          variant="info"
+          type="info"
           showIcon
           icon={<InfoCircleOutlined />}
         />

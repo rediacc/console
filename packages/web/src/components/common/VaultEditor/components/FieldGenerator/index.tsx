@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { Popover } from 'antd';
+import { Button, Flex, Popover, Radio, Tooltip, Typography, type RadioChangeEvent } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { InlineStack } from '@/components/common/styled';
-import { RediaccStack, RediaccText, RediaccTooltip } from '@/components/ui';
 import { useMessage } from '@/hooks';
 import {
   GenerationOptions,
@@ -10,20 +8,6 @@ import {
   generateSSHKeyPair,
 } from '@/utils/cryptoGenerators';
 import { CheckOutlined, CopyOutlined, KeyOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
-import {
-  ActionStack,
-  ControlButton,
-  CopyButton,
-  GeneratedValueCard,
-  GeneratorButton,
-  OptionGroup,
-  OptionLabel,
-  OptionRadio,
-  PopoverContainer,
-  SmallIcon,
-  ValueContent,
-  ValueHeader,
-} from './styles';
 
 interface FieldGeneratorProps {
   fieldType: 'ssh_keys' | 'repo_credential';
@@ -107,23 +91,25 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     onChange: (val: T) => void
   ) => (
     <div>
-      <OptionLabel>{label}</OptionLabel>
-      <OptionGroup
+      <label style={{ fontWeight: 500, fontSize: 14, display: 'block' }}>{label}</label>
+      <Radio.Group
+        style={{ display: 'block' }}
         value={value}
-        onChange={(e) => onChange(e.target.value as T)}
+        onChange={(e: RadioChangeEvent) => onChange(e.target.value as T)}
         data-testid={`vault-editor-radio-${label.toLowerCase().replace(/\s+/g, '-')}`}
       >
         {options.map((opt) => (
-          <OptionRadio
+          <Radio.Button
+            style={{ display: 'block', fontSize: 14 }}
             key={opt.value}
             value={opt.value}
             disabled={opt.disabled}
             data-testid={`vault-editor-radio-option-${opt.value}`}
           >
             {opt.label}
-          </OptionRadio>
+          </Radio.Button>
         ))}
-      </OptionGroup>
+      </Radio.Group>
     </div>
   );
 
@@ -131,7 +117,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   const currentKeySize: 2048 | 4096 = keyOptions.keySize ?? 2048;
 
   const renderSSHKeyOptions = () => (
-    <RediaccStack direction="vertical" fullWidth>
+    <Flex vertical style={{ width: '100%' }}>
       {renderRadioGroup(t('fieldGenerator.keyType'), currentKeyType, keyTypeOptions, (val) =>
         setKeyOptions({ ...keyOptions, keyType: val })
       )}
@@ -139,120 +125,138 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
         renderRadioGroup(t('fieldGenerator.keySize'), currentKeySize, keySizeOptions, (val) =>
           setKeyOptions({ ...keyOptions, keySize: val })
         )}
-    </RediaccStack>
+    </Flex>
   );
 
   const renderGeneratedValues = () => (
-    <RediaccStack direction="vertical" fullWidth>
+    <Flex vertical style={{ width: '100%' }}>
       {Object.entries(generatedValues).map(([field, value]) => (
-        <GeneratedValueCard key={field}>
-          <ValueHeader>
-            <RediaccText weight="bold">{field}:</RediaccText>
-            <CopyButton
+        <div key={field} style={{ display: 'flex', flexDirection: 'column' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontWeight: 500,
+            }}
+          >
+            <Typography.Text strong>{field}:</Typography.Text>
+            <Button
               icon={
                 copiedField === field ? (
-                  <SmallIcon>
+                  <span style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
                     <CheckOutlined />
-                  </SmallIcon>
+                  </span>
                 ) : (
-                  <SmallIcon>
+                  <span style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
                     <CopyOutlined />
-                  </SmallIcon>
+                  </span>
                 )
               }
               onClick={() => handleCopy(field, value)}
               data-testid={`vault-editor-copy-${field.toLowerCase()}`}
             >
               {copiedField === field ? t('fieldGenerator.copied') : t('fieldGenerator.copy')}
-            </CopyButton>
-          </ValueHeader>
-          <ValueContent>{value}</ValueContent>
-        </GeneratedValueCard>
+            </Button>
+          </div>
+          <div
+            style={{
+              wordBreak: 'break-all',
+              maxHeight: 200,
+              overflow: 'auto',
+              fontSize: 12,
+              lineHeight: 1.4,
+            }}
+          >
+            {value}
+          </div>
+        </div>
       ))}
-    </RediaccStack>
+    </Flex>
   );
 
   const popoverContent = (
-    <PopoverContainer>
+    <div style={{ width: 320, maxWidth: '100%' }}>
       {fieldType === 'ssh_keys' && !Object.keys(generatedValues).length && renderSSHKeyOptions()}
 
       {Object.keys(generatedValues).length > 0 && renderGeneratedValues()}
 
-      <ActionStack direction="horizontal" justify="end" fullWidth>
+      <Flex justify="flex-end" style={{ width: '100%' }}>
         {Object.keys(generatedValues).length === 0 ? (
-          <ControlButton
-            variant="primary"
+          <Button
+            type="primary"
             icon={
-              <SmallIcon>
+              <span style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
                 <KeyOutlined />
-              </SmallIcon>
+              </span>
             }
             onClick={handleGenerate}
             loading={generating}
             data-testid="vault-editor-generate-button"
           >
             {t('fieldGenerator.generate')}
-          </ControlButton>
+          </Button>
         ) : (
           <>
-            <ControlButton
+            <Button
               onClick={() => setGeneratedValues({})}
               data-testid="vault-editor-generate-cancel"
             >
               {t('fieldGenerator.cancel')}
-            </ControlButton>
-            <ControlButton
+            </Button>
+            <Button
               icon={
-                <SmallIcon>
+                <span style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
                   <ReloadOutlined />
-                </SmallIcon>
+                </span>
               }
               onClick={handleGenerate}
               loading={generating}
               data-testid="vault-editor-regenerate-button"
             >
               {t('fieldGenerator.regenerate')}
-            </ControlButton>
-            <ControlButton
-              variant="primary"
+            </Button>
+            <Button
+              type="primary"
               onClick={handleApply}
               data-testid="vault-editor-apply-generated"
             >
               {t('fieldGenerator.apply')}
-            </ControlButton>
+            </Button>
           </>
         )}
-      </ActionStack>
-    </PopoverContainer>
+      </Flex>
+    </div>
   );
 
   return (
     <Popover
       content={popoverContent}
       title={
-        <InlineStack>
-          <SmallIcon>
+        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+          <span style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
             <KeyOutlined />
-          </SmallIcon>
+          </span>
           <span>{t(`fieldGenerator.title.${fieldType}`)}</span>
-        </InlineStack>
+        </Flex>
       }
       trigger="click"
       open={visible}
       onOpenChange={setVisible}
       placement="left"
     >
-      <RediaccTooltip title={t('fieldGenerator.tooltip')}>
-        <GeneratorButton
-          variant="text"
+      <Tooltip title={t('fieldGenerator.tooltip')}>
+        <Button
+          type="text"
           icon={
-            <SmallIcon>
+            <span style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center' }}>
               <KeyOutlined />
-            </SmallIcon>
+            </span>
           }
+          aria-label={t('fieldGenerator.tooltip')}
           data-testid={props['data-testid'] || 'vault-editor-field-generator'}
         />
-      </RediaccTooltip>
+      </Tooltip>
     </Popover>
   );
 };

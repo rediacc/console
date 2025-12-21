@@ -1,4 +1,4 @@
-import { Space } from 'antd';
+import { Badge, Space, Tag } from 'antd';
 import { TFunction } from 'i18next';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
@@ -24,7 +24,6 @@ import {
   WifiOutlined,
 } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { MachineNameIcon, StyledBadge, StyledTag } from './styles';
 import type { ColumnsType } from 'antd/es/table/interface';
 
 type ExecutePingForMachineAndWait = ReturnType<
@@ -36,6 +35,19 @@ export interface MachineFunctionAction {
   description?: string;
   showInMenu?: boolean;
 }
+
+const getTagColor = (variant?: 'team' | 'bridge' | 'region' | 'repository' | 'status' | 'grand') =>
+  variant === 'team'
+    ? 'success'
+    : variant === 'bridge'
+      ? 'processing'
+      : variant === 'region'
+        ? 'default'
+        : variant === 'repository'
+          ? 'processing'
+          : variant === 'grand'
+            ? 'warning'
+            : 'default';
 
 interface MachineColumnsParams {
   t: TFunction;
@@ -84,7 +96,7 @@ export const buildMachineTableColumns = ({
     sorter: createSorter<Machine>('machineName'),
     renderWrapper: (content) => (
       <Space>
-        <MachineNameIcon />
+        <DesktopOutlined style={{ fontSize: 16 }} />
         <strong>{content}</strong>
       </Space>
     ),
@@ -132,7 +144,11 @@ export const buildMachineTableColumns = ({
         key: 'teamName',
         width: 150,
         sorter: createSorter<Machine>('teamName'),
-        renderWrapper: (content) => <StyledTag $variant="team">{content}</StyledTag>,
+        renderWrapper: (content) => (
+          <Tag bordered={false} color={getTagColor('team')}>
+            {content}
+          </Tag>
+        ),
       })
     );
   }
@@ -148,7 +164,13 @@ export const buildMachineTableColumns = ({
           sorter: createSorter<Machine>('regionName'),
           renderText: (regionName?: string | null) => regionName || '-',
           renderWrapper: (content, fullText) =>
-            fullText === '-' ? <span>-</span> : <StyledTag $variant="region">{content}</StyledTag>,
+            fullText === '-' ? (
+              <span>-</span>
+            ) : (
+              <Tag bordered={false} color={getTagColor('region')}>
+                {content}
+              </Tag>
+            ),
         }),
         createTruncatedColumn<Machine>({
           title: t('machines:bridge'),
@@ -156,7 +178,11 @@ export const buildMachineTableColumns = ({
           key: 'bridgeName',
           width: 150,
           sorter: createSorter<Machine>('bridgeName'),
-          renderWrapper: (content) => <StyledTag $variant="bridge">{content}</StyledTag>,
+          renderWrapper: (content) => (
+            <Tag bordered={false} color={getTagColor('bridge')}>
+              {content}
+            </Tag>
+          ),
         })
       );
     } else if (uiMode !== 'simple') {
@@ -167,7 +193,11 @@ export const buildMachineTableColumns = ({
           key: 'bridgeName',
           width: 150,
           sorter: createSorter<Machine>('bridgeName'),
-          renderWrapper: (content) => <StyledTag $variant="bridge">{content}</StyledTag>,
+          renderWrapper: (content) => (
+            <Tag bordered={false} color={getTagColor('bridge')}>
+              {content}
+            </Tag>
+          ),
         })
       );
     }
@@ -191,7 +221,7 @@ export const buildMachineTableColumns = ({
       width: 100,
       align: 'center' as const,
       sorter: createSorter<Machine>('queueCount'),
-      render: (count: number) => <StyledBadge $isPositive={count > 0} count={count} showZero />,
+      render: (count: number) => <Badge count={count} showZero />,
     });
   }
 

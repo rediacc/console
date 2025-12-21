@@ -1,16 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { Input, Select, Tag, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { SearchOutlined, TeamOutlined } from '@/utils/optimizedIcons';
 import type { GetCompanyTeams_ResultSet1 as Team } from '@rediacc/shared/types';
-import {
-  DropdownMenuWrapper,
-  DropdownSearchContainer,
-  OptionIcon,
-  OptionLabel,
-  SearchInput,
-  TeamSelect,
-  TeamTag,
-} from './styles';
 
 interface TeamSelectorProps {
   teams: Team[];
@@ -39,12 +31,12 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
 
     return filtered.map((team) => ({
       label: (
-        <OptionLabel>
-          <OptionIcon>
+        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+          <Flex align="center" style={{ display: 'inline-flex' }}>
             <TeamOutlined />
-          </OptionIcon>
+          </Flex>
           <span>{team.teamName}</span>
-        </OptionLabel>
+        </Flex>
       ),
       value: team.teamName,
       'data-testid': `team-selector-option-${team.teamName}`,
@@ -52,9 +44,9 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
   }, [teams, searchValue]);
 
   return (
-    <TeamSelect
+    <Select
       mode="multiple"
-      style={style}
+      style={{ width: '100%', ...style }}
       placeholder={placeholder}
       value={selectedTeams}
       onChange={(values) => onChange(values as string[])}
@@ -68,15 +60,21 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       tagRender={(props: { value: string; closable: boolean; onClose: () => void }) => {
         const { value, closable, onClose } = props;
         return (
-          <TeamTag closable={closable} onClose={onClose} data-testid={`team-selector-tag-${value}`}>
+          <Tag
+            color="processing"
+            style={{ display: 'inline-flex', alignItems: 'center' }}
+            closable={closable}
+            onClose={onClose}
+            data-testid={`team-selector-tag-${value}`}
+          >
             {value}
-          </TeamTag>
+          </Tag>
         );
       }}
       dropdownRender={(menu: React.ReactElement) => (
         <>
-          <DropdownSearchContainer>
-            <SearchInput
+          <div>
+            <Input
               placeholder={t('teams.placeholders.searchTeams')}
               prefix={<SearchOutlined />}
               value={searchValue}
@@ -85,13 +83,19 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
               autoComplete="off"
               data-testid="team-selector-search"
             />
-          </DropdownSearchContainer>
-          <DropdownMenuWrapper>{menu}</DropdownMenuWrapper>
+          </div>
+          <div>{menu}</div>
         </>
       )}
       maxTagCount="responsive"
       maxTagPlaceholder={(omittedValues: unknown[]) => (
-        <TeamTag data-testid="team-selector-more-tag">+{omittedValues.length} more</TeamTag>
+        <Tag
+          color="processing"
+          style={{ display: 'inline-flex', alignItems: 'center' }}
+          data-testid="team-selector-more-tag"
+        >
+          +{omittedValues.length} more
+        </Tag>
       )}
     />
   );

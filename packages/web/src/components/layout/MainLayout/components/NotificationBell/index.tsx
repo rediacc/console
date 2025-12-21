@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Badge, Empty, Grid, List, Space, Tag } from 'antd';
+import { Badge, Button, Dropdown, Empty, Flex, Grid, List, Space, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { RediaccDropdown, RediaccText } from '@/components/ui';
 import {
   clearAllNotifications,
   clearNotification,
@@ -23,22 +22,6 @@ import {
   InfoCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  BellButton,
-  EmptyWrapper,
-  NotificationActionButton,
-  NotificationCloseButton,
-  NotificationDropdown,
-  NotificationHeader,
-  NotificationIconWrapper,
-  NotificationItem,
-  NotificationListWrapper,
-  NotificationMessageWrapper,
-  NotificationTag,
-  NotificationText,
-  NotificationTitleContent,
-  NotificationTitleRow,
-} from './styles';
 
 dayjs.extend(relativeTime);
 
@@ -78,9 +61,9 @@ const NotificationBell: React.FC = () => {
     })();
 
     return (
-      <NotificationIconWrapper $type={type}>
+      <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
         <IconComponent />
-      </NotificationIconWrapper>
+      </div>
     );
   };
 
@@ -115,103 +98,108 @@ const NotificationBell: React.FC = () => {
   };
 
   const dropdownContent = (
-    <NotificationDropdown className="notification-dropdown" data-testid="notification-dropdown">
-      <NotificationHeader>
-        <RediaccText variant="title">{t('notifications.title', 'Notifications')}</RediaccText>
+    <div style={{ maxHeight: 400, minWidth: 320 }} className="notification-dropdown" data-testid="notification-dropdown">
+      <Flex align="center" justify="space-between" style={{ padding: '16px 24px', fontWeight: 600 }}>
+        <Typography.Text strong>{t('notifications.title', 'Notifications')}</Typography.Text>
         {notifications.length > 0 && (
           <Space>
-            <NotificationActionButton
+            <Button
+              style={{ padding: '0 12px', fontSize: 12 }}
               onClick={handleMarkAllAsRead}
               disabled={unreadCount === 0}
               data-testid="notification-mark-all-read"
             >
               {t('notifications.markAllRead', 'Mark all as read')}
-            </NotificationActionButton>
-            <NotificationActionButton
-              variant="danger"
+            </Button>
+            <Button
+              type="text"
+              danger
+              style={{ padding: '0 12px', fontSize: 12 }}
               onClick={handleClearAll}
               data-testid="notification-clear-all"
             >
               {t('notifications.clearAll', 'Clear all')}
-            </NotificationActionButton>
+            </Button>
           </Space>
         )}
-      </NotificationHeader>
+      </Flex>
 
-      <NotificationListWrapper>
+      <div style={{ maxHeight: 320, overflowY: 'auto' }}>
         {notifications.length === 0 ? (
-          <EmptyWrapper>
+          <div style={{ padding: '40px 0' }}>
             <Empty description={t('notifications.empty', 'No notifications')} />
-          </EmptyWrapper>
+          </div>
         ) : (
           <List
             dataSource={notifications}
             renderItem={(notification: Notification, index: number) => (
-              <NotificationItem
+              <div
                 key={notification.id}
-                $isRead={notification.read}
+                style={{ padding: '16px 24px', cursor: 'pointer' }}
                 onClick={() => handleMarkAsRead(notification.id)}
                 data-testid={`notification-item-${index}`}
               >
                 <List.Item.Meta
                   title={
-                    <NotificationTitleRow>
-                      <NotificationTitleContent>
-                        <NotificationText $isRead={notification.read}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                        <Typography.Text style={{ fontWeight: notification.read ? 400 : 600 }}>
                           {notification.title}
-                        </NotificationText>
-                        <NotificationTag>
+                        </Typography.Text>
+                        <span>
                           <Tag color={getTypeColor(notification.type)}>
                             {t(`notifications.types.${notification.type}`).toUpperCase()}
                           </Tag>
-                        </NotificationTag>
+                        </span>
                         {getIcon(notification.type)}
-                      </NotificationTitleContent>
-                      <NotificationCloseButton
-                        iconOnly
+                      </div>
+                      <Button
+                        type="text"
                         icon={<CloseOutlined />}
                         onClick={(e) => handleClear(notification.id, e)}
                         data-testid={`notification-close-${index}`}
                         aria-label="Close notification"
+                        style={{ flexShrink: 0 }}
                       />
-                    </NotificationTitleRow>
+                    </div>
                   }
                   description={
                     <div>
-                      <NotificationMessageWrapper className="notification-message">
-                        <RediaccText variant="description">{notification.message}</RediaccText>
-                      </NotificationMessageWrapper>
-                      <RediaccText variant="caption">
+                      <div style={{ display: 'block', wordBreak: 'break-word' }} className="notification-message">
+                        <Typography.Text type="secondary">{notification.message}</Typography.Text>
+                      </div>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                         {dayjs(notification.timestamp).fromNow()}
-                      </RediaccText>
+                      </Typography.Text>
                     </div>
                   }
                 />
-              </NotificationItem>
+              </div>
             )}
           />
         )}
-      </NotificationListWrapper>
-    </NotificationDropdown>
+      </div>
+    </div>
   );
 
   return (
     <Badge count={unreadCount} offset={[-4, 4]}>
-      <RediaccDropdown
+      <Dropdown
         trigger={['click']}
         placement={isMobile ? 'bottomCenter' : 'bottomRight'}
         open={dropdownOpen}
         onOpenChange={setDropdownOpen}
         menu={{ items: [] }}
-        popupRender={() => dropdownContent}
+        dropdownRender={() => dropdownContent}
       >
-        <BellButton
-          iconOnly
+        <Button
+          type="text"
           icon={<BellOutlined />}
           aria-label="Notifications"
           data-testid="notification-bell"
+          style={{ width: 40, height: 40 }}
         />
-      </RediaccDropdown>
+      </Dropdown>
     </Badge>
   );
 };

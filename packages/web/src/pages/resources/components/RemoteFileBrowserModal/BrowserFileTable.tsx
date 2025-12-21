@@ -1,12 +1,10 @@
 import React, { useMemo } from 'react';
 import { FileOutlined, FolderOutlined } from '@ant-design/icons';
-import { Empty, Space, type TableProps } from 'antd';
+import { Empty, Space, Table, Tooltip, type TableProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccTable, RediaccTooltip } from '@/components/ui';
 import { createCustomSorter, createSorter } from '@/platform';
-import { FileIcon, FolderIcon, TooltipGuidText } from './styles';
 import type { RemoteFile } from './types';
 import type { ColumnsType } from 'antd/es/table/interface';
 
@@ -59,13 +57,13 @@ export const BrowserFileTable: React.FC<BrowserFileTableProps> = ({
       ...nameColumn,
       render: (name: string, record: RemoteFile) => {
         const icon = record.isDirectory ? (
-          <FolderIcon>
+          <span>
             <FolderOutlined />
-          </FolderIcon>
+          </span>
         ) : (
-          <FileIcon>
+          <span>
             <FileOutlined />
-          </FileIcon>
+          </span>
         );
 
         const displayName = record.isDirectory ? (
@@ -90,14 +88,16 @@ export const BrowserFileTable: React.FC<BrowserFileTableProps> = ({
           const tooltipContent = (
             <div>
               <div>{name}</div>
-              <TooltipGuidText>Original file: {record.originalGuid}</TooltipGuidText>
+              <div style={{ color: 'var(--ant-color-text-secondary)' }}>
+                Original file: {record.originalGuid}
+              </div>
             </div>
           );
-          return <RediaccTooltip title={tooltipContent}>{content}</RediaccTooltip>;
+          return <Tooltip title={tooltipContent}>{content}</Tooltip>;
         }
 
         if (name.length > 50) {
-          return <RediaccTooltip title={name}>{content}</RediaccTooltip>;
+          return <Tooltip title={name}>{content}</Tooltip>;
         }
 
         return content;
@@ -128,7 +128,7 @@ export const BrowserFileTable: React.FC<BrowserFileTableProps> = ({
           data-testid="file-browser-empty-state"
         />
       ) : (
-        <RediaccTable<RemoteFile>
+        <Table<RemoteFile>
           dataSource={filteredFiles}
           columns={columns}
           rowKey="name"

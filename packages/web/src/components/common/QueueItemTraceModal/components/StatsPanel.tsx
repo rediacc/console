@@ -1,8 +1,7 @@
 import React from 'react';
-import { Col, Row } from 'antd';
+import { Col, Row, Statistic } from 'antd';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { RediaccStatistic } from '@/components/ui';
 import { ClockCircleOutlined, HourglassOutlined, SyncOutlined } from '@/utils/optimizedIcons';
 import type { StatsPanelProps } from '../types';
 
@@ -17,7 +16,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
   return (
     <Row gutter={[16, 16]}>
       <Col span={8}>
-        <RediaccStatistic
+        <Statistic
           title={t('queue:statistics.totalDuration')}
           value={
             totalDurationSeconds < 60 ? totalDurationSeconds : Math.floor(totalDurationSeconds / 60)
@@ -27,7 +26,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
         />
       </Col>
       <Col span={8}>
-        <RediaccStatistic
+        <Statistic
           title={t('queue:statistics.processing')}
           value={
             processingDurationSeconds
@@ -41,7 +40,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
         />
       </Col>
       <Col span={8}>
-        <RediaccStatistic
+        <Statistic
           title={t('queue:statistics.timeSinceAssigned')}
           value={
             queueDetails.assignedTime
@@ -50,7 +49,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
           }
           suffix={queueDetails.assignedTime ? 'min' : ''}
           prefix={<HourglassOutlined />}
-          critical={isTaskStale}
+          valueStyle={isTaskStale ? { color: 'var(--ant-color-error)' } : undefined}
         />
       </Col>
     </Row>

@@ -4,7 +4,6 @@ import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { Machine, Repository } from '@/types';
-import { Backdrop, LeftPanel, SplitViewContainer } from './styles';
 
 export interface ContainerData {
   id: string;
@@ -112,21 +111,42 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
     const leftPanelWidth = selectedResource ? `calc(100% - ${actualPanelWidth}px)` : '100%';
 
     return (
-      <SplitViewContainer data-testid="split-resource-view-container">
+      <div
+        data-testid="split-resource-view-container"
+        style={{
+          display: 'flex',
+          height: '100%',
+          width: '100%',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
         {/* Left Panel - Machine Table */}
-        <LeftPanel $width={leftPanelWidth} data-testid="split-resource-view-left-panel">
+        <div
+          data-testid="split-resource-view-left-panel"
+          style={{ width: leftPanelWidth, height: '100%', overflow: 'auto', minWidth: 240 }}
+        >
           <MachineTable
             {...props}
             onRowClick={handleMachineSelect}
             selectedMachine={selectedResource as Machine}
           />
-        </LeftPanel>
+        </div>
 
         {/* Backdrop - appears when panel is open, covers full viewport */}
         {shouldRenderBackdrop && (
-          <Backdrop
-            $visible={backdropVisible}
-            $rightOffset={actualPanelWidth}
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: actualPanelWidth,
+              bottom: 0,
+              display: backdropVisible ? 'block' : 'none',
+              backgroundColor: '#404040',
+              zIndex: 1000,
+              pointerEvents: backdropVisible ? 'auto' : 'none',
+            }}
             onClick={handlePanelClose}
             data-testid="split-resource-view-backdrop"
           />
@@ -152,7 +172,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
             collapsedWidth={DETAIL_PANEL.COLLAPSED_WIDTH}
           />
         )}
-      </SplitViewContainer>
+      </div>
     );
   }
 

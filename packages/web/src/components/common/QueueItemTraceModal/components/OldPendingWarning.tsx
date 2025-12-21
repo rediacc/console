@@ -1,5 +1,5 @@
+import { Alert } from 'antd';
 import React from 'react';
-import { RediaccAlert } from '@/components/ui';
 import { WarningOutlined } from '@/utils/optimizedIcons';
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { isStalePending } from '../utils';
@@ -14,11 +14,11 @@ export const OldPendingWarning: React.FC<OldPendingWarningProps> = ({ queueDetai
   }
 
   return (
-    <RediaccAlert
+    <Alert
       data-testid="queue-trace-alert-old-pending"
       message="Old Pending Task"
       description="This task has been pending for over 6 hours. It may expire soon if not processed."
-      variant="warning"
+      type="warning"
       showIcon
       icon={<WarningOutlined />}
     />

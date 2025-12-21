@@ -1,20 +1,7 @@
 import React from 'react';
-import { Form, Popover, Slider, Space } from 'antd';
+import { Alert, Form, Flex, Popover, Slider, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccText } from '@/components/ui';
-import { ExclamationCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
-import {
-  PriorityAlert,
-  PriorityAlertDetail,
-  PriorityAlertNote,
-  PriorityHelpIcon,
-  PriorityLegendRow,
-  PriorityLegendTag,
-  PriorityPopoverContent,
-  PriorityLabelBlock,
-  PriorityStatusTag,
-  PriorityTagWrapper,
-} from '../styles';
+import { ExclamationCircleOutlined, QuestionCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 
 interface PrioritySelectorProps {
   priority: number;
@@ -42,24 +29,22 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
           {t('functions:priority')}
           <Popover
             content={
-              <PriorityPopoverContent>
-                <PriorityLabelBlock>
-                  <RediaccText variant="title">{t('functions:priorityPopoverLevels')}</RediaccText>
-                </PriorityLabelBlock>
+              <div style={{ maxWidth: 320 }}>
+                <div style={{ display: 'block' }}>
+                  <Typography.Text strong>{t('functions:priorityPopoverLevels')}</Typography.Text>
+                </div>
                 {priorityLegendItems.map((item) => (
-                  <PriorityLegendRow key={item.level}>
-                    <PriorityLegendTag $level={item.level}>
-                      P{item.level} ({item.label})
-                    </PriorityLegendTag>
-                    <RediaccText variant="description">{item.description}</RediaccText>
-                  </PriorityLegendRow>
+                  <Flex key={item.level} align="center" gap={8} wrap>
+                    <Tag>P{item.level} ({item.label})</Tag>
+                    <Typography.Text type="secondary">{item.description}</Typography.Text>
+                  </Flex>
                 ))}
-              </PriorityPopoverContent>
+              </div>
             }
             title={t('functions:priorityPopoverTitle')}
             trigger="click"
           >
-            <PriorityHelpIcon />
+            <QuestionCircleOutlined style={{ fontSize: 16, cursor: 'pointer' }} />
           </Popover>
         </Space>
       }
@@ -89,16 +74,13 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
         }}
         data-testid="function-modal-priority-slider"
       />
-      <PriorityTagWrapper>
-        <PriorityStatusTag
-          $priority={priority}
-          icon={priority === 1 ? <ExclamationCircleOutlined /> : undefined}
-        >
+      <div style={{ textAlign: 'center' }}>
+        <Tag icon={priority === 1 ? <ExclamationCircleOutlined /> : undefined}>
           {t('functions:currentPriority')}: {getPriorityLabel(priority)} ({priority})
-        </PriorityStatusTag>
-      </PriorityTagWrapper>
+        </Tag>
+      </div>
       {priority && (
-        <PriorityAlert
+        <Alert
           message={
             priority === 1
               ? t('functions:priorityHighestTimeout')
@@ -113,12 +95,10 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
           description={
             priority === 1 ? (
               <>
-                <PriorityAlertNote>
-                  {t('functions:priorityHighestTimeoutWarning')}
-                </PriorityAlertNote>
-                <PriorityAlertDetail>
+                <div>{t('functions:priorityHighestTimeoutWarning')}</div>
+                <div style={{ fontStyle: 'italic' }}>
                   {t('functions:priorityHighestDescription')}
-                </PriorityAlertDetail>
+                </div>
               </>
             ) : priority === 2 ? (
               t('functions:priorityHighDescription')
@@ -130,7 +110,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
               t('functions:priorityLowestDescription')
             )
           }
-          variant={
+          type={
             priority === 1
               ? 'error'
               : priority === 2

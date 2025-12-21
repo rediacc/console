@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { Typography } from 'antd';
 import { Alert } from 'antd';
 import { type TFunction } from 'i18next';
-import { RediaccText } from '@/components/ui';
 import { prepareGrandDeletion } from '@/platform';
 import { showMessage } from '@/utils/messages';
-import { ConfirmationInput, ModalContent } from '../styledComponents';
 import type { Repository } from '../types';
 import type { HookAPI } from 'antd/es/modal/useModal';
 
@@ -58,9 +56,9 @@ export const useConfirmRepositoryDeletion = ({
                 count: context.childClones.length,
               })}
             </Typography.Paragraph>
-            <RediaccText as="p" weight="bold">
+            <Typography.Text strong style={{ display: 'block' }}>
               {t('resources:repositories.clonesList')}
-            </RediaccText>
+            </Typography.Text>
             <ul>
               {context.childClones.map((clone) => (
                 <li key={clone.repositoryGuid}>{clone.repositoryName}</li>
@@ -81,7 +79,7 @@ export const useConfirmRepositoryDeletion = ({
     modal.confirm({
       title: t('resources:repositories.deleteGrandConfirmTitle'),
       content: (
-        <ModalContent>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Alert
             message={t('resources:repositories.deleteGrandWarning')}
             description={t('resources:repositories.deleteGrandWarningDesc', {
@@ -90,17 +88,18 @@ export const useConfirmRepositoryDeletion = ({
             type="warning"
             showIcon
           />
-          <RediaccText weight="bold">
+          <Typography.Text strong>
             {t('resources:repositories.deleteGrandConfirmPrompt', { name: repository.name })}
-          </RediaccText>
-          <ConfirmationInput
+          </Typography.Text>
+          <input
             type="text"
             placeholder={repository.name}
+            style={{ width: '100%' }}
             onChange={(e) => {
               confirmationInput = e.target.value;
             }}
           />
-        </ModalContent>
+        </div>
       ),
       okText: t('common:delete'),
       okType: 'danger',

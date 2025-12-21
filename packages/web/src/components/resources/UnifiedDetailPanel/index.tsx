@@ -1,8 +1,8 @@
+import { Button, Tooltip } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
 import { RepositoryDetailPanel } from '@/components/resources/internal/RepositoryDetailPanel';
-import { RediaccTooltip } from '@/components/ui';
 import type { Machine, PluginContainer, Repository } from '@/types';
 import {
   ContainerOutlined,
@@ -10,15 +10,6 @@ import {
   DoubleLeftOutlined,
   InboxOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  CollapsedIcon,
-  CollapsedPanel,
-  ExpandedContent,
-  PanelContainer,
-  ResizeHandle,
-  ResizeIndicator,
-  ToggleButton,
-} from './styles';
 
 interface ContainerData {
   id: string;
@@ -148,28 +139,61 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   const actualWidth = isCollapsed ? collapsedWidth : splitWidth;
 
   return (
-    <PanelContainer $width={actualWidth} data-testid="unified-detail-panel">
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: actualWidth,
+        display: 'flex',
+        flexShrink: 0,
+        zIndex: 1000,
+      }}
+      data-testid="unified-detail-panel"
+    >
       {!isCollapsed && (
-        <ResizeHandle onMouseDown={handleMouseDown} data-testid="unified-detail-resize-handle">
-          <ResizeIndicator />
-        </ResizeHandle>
+        <div
+          onMouseDown={handleMouseDown}
+          data-testid="unified-detail-resize-handle"
+          style={{
+            position: 'absolute',
+            left: -3,
+            top: 0,
+            bottom: 0,
+            width: 8,
+            cursor: 'ew-resize',
+            zIndex: 10,
+          }}
+        >
+          <div style={{ position: 'absolute', left: 2, top: 0, bottom: 0, width: 2 }} />
+        </div>
       )}
 
       {isCollapsed ? (
-        <CollapsedPanel data-testid="unified-detail-collapsed">
-          <RediaccTooltip title="Expand Panel" placement="left">
-            <ToggleButton
-              variant="text"
+        <div
+          data-testid="unified-detail-collapsed"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            width: '100%',
+          }}
+        >
+          <Tooltip title="Expand Panel" placement="left">
+            <Button
+              type="text"
               icon={<DoubleLeftOutlined />}
               onClick={onToggleCollapse}
               data-testid="unified-detail-expand-button"
               aria-label="Expand Panel"
             />
-          </RediaccTooltip>
-          <CollapsedIcon $type={actualType}>{getResourceIcon()}</CollapsedIcon>
-        </CollapsedPanel>
+          </Tooltip>
+          <span style={{ fontSize: 16 }}>{getResourceIcon()}</span>
+        </div>
       ) : (
-        <ExpandedContent data-testid="unified-detail-content">
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }} data-testid="unified-detail-content">
           {actualType === 'machine' ? (
             <MachineVaultStatusPanel
               machine={currentData as Machine}
@@ -192,8 +216,8 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
               splitView
             />
           )}
-        </ExpandedContent>
+        </div>
       )}
-    </PanelContainer>
+    </div>
   );
 };

@@ -1,9 +1,7 @@
 import React from 'react';
-import { Progress, Space, Steps, Typography } from 'antd';
-import { RediaccStack } from '@/components/ui';
+import { Card, Flex, Progress, Space, Steps, Typography } from 'antd';
 import { normalizeToString, formatTimestampAsIs } from '@/platform';
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
-import { SpacedCardBottom, NoteWrapper, ItalicCaption } from '../styles';
 import { getCurrentStep, getSimplifiedStatus, getTimelineTimestamp } from '../utils';
 import type { TraceLog } from '../types';
 
@@ -24,8 +22,8 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
   const status = normalizeToString(queueDetails, 'status', 'Status');
 
   return (
-    <SpacedCardBottom data-testid="queue-trace-simple-overview">
-      <RediaccStack variant="spaced-column" fullWidth>
+    <Card data-testid="queue-trace-simple-overview">
+      <Flex vertical gap={24} style={{ width: '100%' }}>
         {/* Status Summary */}
         <div style={{ textAlign: 'center' }}>
           <Space size="large">
@@ -106,9 +104,14 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
           status !== 'COMPLETED' &&
           status !== 'FAILED' &&
           status !== 'CANCELLED' && (
-            <NoteWrapper>
-              <ItalicCaption>{progressMessage}</ItalicCaption>
-            </NoteWrapper>
+            <div>
+              <Typography.Text
+                type="secondary"
+                style={{ fontStyle: 'italic', textAlign: 'center', fontSize: 12 }}
+              >
+                {progressMessage}
+              </Typography.Text>
+            </div>
           )}
 
         {/* Progress Bar */}
@@ -126,7 +129,7 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
             }
           />
         )}
-      </RediaccStack>
-    </SpacedCardBottom>
+      </Flex>
+    </Card>
   );
 };

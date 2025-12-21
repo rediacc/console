@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Alert } from 'antd';
+import { Alert, Form, Row } from 'antd';
 import { useMessage } from '@/hooks';
 import { useVaultEditorState } from './hooks/useVaultEditorState';
 import {
@@ -11,7 +11,6 @@ import {
   VaultEditorTestConnection,
   VaultEditorSystemCompatibility,
 } from './sections';
-import { EditorContainer, EditorForm, FormRow, InfoBanner } from './styles';
 import { handleImport, handleExport, handleRawJsonChange } from './utilities';
 import type { VaultEditorProps, VaultFormValues } from './types';
 import type { UploadFile } from 'antd/es/upload/interface';
@@ -234,26 +233,26 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
   const fields = entityDef.fields || {};
 
   return (
-    <EditorContainer>
+    <div>
       {uiMode !== 'simple' && (
-        <InfoBanner
+        <Alert
           message={t(`vaultEditor.${entityDef.descriptionKey}`)}
-          variant="info"
+          type="info"
           showIcon
         />
       )}
 
       {/* Warning for TEAM vault without SSH keys */}
       {entityType === 'TEAM' && (!initialData.SSH_PRIVATE_KEY || !initialData.SSH_PUBLIC_KEY) && (
-        <InfoBanner
+        <Alert
           message={t('vaultEditor.missingSshKeysWarning')}
           description={t('vaultEditor.missingSshKeysDescription')}
-          variant="warning"
+          type="warning"
           showIcon
         />
       )}
 
-      <EditorForm
+      <Form
         form={form}
         layout="horizontal"
         labelCol={{ xs: { span: 24 }, sm: { span: 8 } }}
@@ -269,7 +268,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
         className="vault-editor-form"
         data-testid="vault-editor-form"
       >
-        <FormRow gutter={formGutter} wrap data-testid="vault-editor-cards">
+        <Row gutter={formGutter} wrap data-testid="vault-editor-cards">
           {(requiredFields.length > 0 || optionalFields.length > 0) && (
             <>
               <VaultEditorRequiredFields
@@ -334,9 +333,9 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
             onChange={onRawJsonChange}
             t={t}
           />
-        </FormRow>
-      </EditorForm>
-    </EditorContainer>
+        </Row>
+      </Form>
+    </div>
   );
 };
 

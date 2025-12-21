@@ -5,7 +5,7 @@ import {
   FolderOpenOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, Empty, Modal, Space } from 'antd';
+import { Alert, Button, Empty, Flex, Input, Modal, Select, Space, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
@@ -13,14 +13,12 @@ import { useStorage } from '@/api/queries/storage';
 import { useTeams } from '@/api/queries/teams';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
-import { RediaccInput, RediaccSelect, RediaccStack, RediaccTooltip } from '@/components/ui';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { BrowserBreadcrumb } from './BrowserBreadcrumb';
 import { BrowserFileTable } from './BrowserFileTable';
-import { FullWidthSelect, LoadingPadding, SearchInput, SourceLabel, SourceSelect } from './styles';
 import { useBrowserQueueAction } from './useBrowserQueueAction';
 import { buildListQueueVault, buildPullQueueVault } from './vaultBuilder';
 import type { RemoteFile, RemoteFileBrowserModalProps, SourceOption } from './types';
@@ -226,15 +224,15 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       onCancel={onCancel}
       className={ModalSize.Large}
       footer={[
-        <RediaccTooltip key="cancel" title={t('common:actions.cancel')}>
+        <Tooltip key="cancel" title={t('common:actions.cancel')}>
           <Button
             icon={<CloseOutlined />}
             onClick={onCancel}
             data-testid="file-browser-cancel-button"
             aria-label={t('common:actions.cancel')}
           />
-        </RediaccTooltip>,
-        <RediaccTooltip key="refresh" title={t('common:actions.refresh')}>
+        </Tooltip>,
+        <Tooltip key="refresh" title={t('common:actions.refresh')}>
           <Button
             icon={<ReloadOutlined />}
             onClick={loadFiles}
@@ -242,8 +240,8 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
             data-testid="file-browser-refresh-button"
             aria-label={t('common:actions.refresh')}
           />
-        </RediaccTooltip>,
-        <RediaccTooltip key="pull" title={t('resources:remoteFiles.pull')}>
+        </Tooltip>,
+        <Tooltip key="pull" title={t('resources:remoteFiles.pull')}>
           <Button
             type="primary"
             icon={<CloudDownloadOutlined />}
@@ -252,19 +250,19 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
             data-testid="file-browser-pull-button"
             aria-label={t('resources:remoteFiles.pull')}
           />
-        </RediaccTooltip>,
+        </Tooltip>,
       ]}
     >
-      <RediaccStack direction="vertical" gap="md" fullWidth>
+      <Flex vertical gap={16} style={{ width: '100%' }}>
         <div data-testid="file-browser-source-container">
-          <SourceLabel data-testid="file-browser-source-label">
+          <div style={{ fontWeight: 500 }} data-testid="file-browser-source-label">
             {t('resources:remoteFiles.sourceLabel')}
-          </SourceLabel>
-          <RediaccStack direction="horizontal" justify="between" fullWidth>
+          </div>
+          <Flex justify="space-between" style={{ width: '100%' }}>
             <Space>
-              <SourceSelect>
-                <FullWidthSelect>
-                  <RediaccSelect
+              <div style={{ width: 240 }}>
+                <div style={{ width: '100%' }}>
+                  <Select
                     placeholder={t('resources:remoteFiles.selectSource')}
                     value={selectedSource}
                     onChange={(value) => {
@@ -276,13 +274,13 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                     loading={isLoadingStorage || isLoadingMachines}
                     notFoundContent={
                       isLoadingStorage || isLoadingMachines ? (
-                        <LoadingPadding>
+                        <div>
                           <InlineLoadingIndicator
                             width="100%"
                             height={18}
                             data-testid="file-browser-source-loading"
                           />
-                        </LoadingPadding>
+                        </div>
                       ) : storageSources.length === 0 ? (
                         <Empty
                           image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -293,9 +291,9 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                     options={storageSources}
                     data-testid="file-browser-source-select"
                   />
-                </FullWidthSelect>
-              </SourceSelect>
-              <RediaccTooltip title={t('resources:remoteFiles.loadFiles')}>
+                </div>
+              </div>
+              <Tooltip title={t('resources:remoteFiles.loadFiles')}>
                 <Button
                   icon={<FolderOpenOutlined />}
                   onClick={loadFiles}
@@ -304,17 +302,17 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                   data-testid="file-browser-load-files-button"
                   aria-label={t('resources:remoteFiles.loadFiles')}
                 />
-              </RediaccTooltip>
+              </Tooltip>
             </Space>
-            <SearchInput>
-              <RediaccInput
+            <div style={{ width: 200 }}>
+              <Input
                 placeholder={t('common:actions.search')}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 data-testid="file-browser-search-input"
               />
-            </SearchInput>
-          </RediaccStack>
+            </div>
+          </Flex>
         </div>
 
         <BrowserBreadcrumb currentPath={currentPath} onNavigate={handleNavigate} />
@@ -335,7 +333,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           showIcon
           data-testid="file-browser-info-alert"
         />
-      </RediaccStack>
+      </Flex>
     </Modal>
   );
 };

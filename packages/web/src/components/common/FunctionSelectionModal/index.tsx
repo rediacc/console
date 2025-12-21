@@ -1,14 +1,12 @@
 import React, { startTransition, useEffect, useMemo, useRef, useState } from 'react';
-import { Col, Empty, Form, Row, Space, Typography } from 'antd';
+import { Alert, Button, Card, Col, Empty, Flex, Form, Input, Modal, Row, Select, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import type { QueueFunction } from '@/api/queries/queue';
 import { useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
-import { RediaccButton, RediaccSelect, RediaccStack, RediaccText } from '@/components/ui';
 import { useLocalizedFunctions } from '@/services/functionsService';
-import { ModalHeader, ModalSubtitle, ModalTitle } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import FunctionParameterField from './components/FunctionParameterField';
 import PrioritySelector from './components/PrioritySelector';
@@ -16,24 +14,6 @@ import { useFunctionParameters } from './hooks/useFunctionParameters';
 import { useFunctionSelection } from './hooks/useFunctionSelection';
 import { useFunctionSubmission } from './hooks/useFunctionSubmission';
 import { usePriorityManagement } from './hooks/usePriorityManagement';
-import {
-  AlertLink,
-  AlertLinkWrapper,
-  CategorySection,
-  CategoryTitleBlock,
-  ConfigCard,
-  FunctionItemHeader,
-  FunctionList,
-  FunctionListCard,
-  FunctionOption,
-  LineageSeparator,
-  LineageTag,
-  PushAlertCard,
-  PushAlertsRow,
-  QuickTaskTag,
-  SearchInput,
-  StyledModal,
-} from './styles';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;
@@ -247,23 +227,25 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 
   return (
     <>
-      <StyledModal
+      <Modal
         title={
-          <ModalHeader>
-            <ModalTitle>
-              <span>{title || t('functions:selectFunction')}</span>
-              {subtitle && <ModalSubtitle as="div">{subtitle}</ModalSubtitle>}
-            </ModalTitle>
-          </ModalHeader>
+          <Flex vertical>
+            <Typography.Text>{title || t('functions:selectFunction')}</Typography.Text>
+            {subtitle && (
+              <Typography.Text style={{ color: 'var(--ant-color-text-secondary)', fontSize: 12 }}>
+                {subtitle}
+              </Typography.Text>
+            )}
+          </Flex>
         }
         open={open}
         onCancel={handleCancel}
         className={ModalSize.Large}
         footer={[
-          <RediaccButton key="cancel" onClick={handleCancel} data-testid="function-modal-cancel">
+          <Button key="cancel" onClick={handleCancel} data-testid="function-modal-cancel">
             {t('common:actions.cancel')}
-          </RediaccButton>,
-          <RediaccButton
+          </Button>,
+          <Button
             key="submit"
             htmlType="submit"
             onClick={handleSubmit}
@@ -276,32 +258,34 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
             data-testid="function-modal-submit"
           >
             {t('common:actions.addToQueue')}
-          </RediaccButton>,
+          </Button>,
         ]}
         data-testid="function-modal"
       >
         <Row gutter={24}>
           {!preselectedFunction && (
             <Col span={10}>
-              <FunctionListCard title={t('functions:availableFunctions')} size="sm">
-                <SearchInput
+              <Card title={t('functions:availableFunctions')} size="small">
+                <Input.Search
                   placeholder={t('functions:searchFunctions')}
                   value={functionSearchTerm}
-                  onChange={(e) => setFunctionSearchTerm(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFunctionSearchTerm(e.target.value)
+                  }
                   autoComplete="off"
                   data-testid="function-modal-search"
                 />
-                <FunctionList>
+                <div>
                   {Object.entries(functionsByCategory).map(([category, funcs]) => (
-                    <CategorySection
+                    <div
                       key={category}
                       data-testid={`function-modal-category-${category}`}
                     >
-                      <CategoryTitleBlock>
-                        <RediaccText variant="title">
+                      <div style={{ display: 'block' }}>
+                        <Typography.Text strong>
                           {categories[category]?.name || category}
-                        </RediaccText>
-                      </CategoryTitleBlock>
+                        </Typography.Text>
+                      </div>
                       {funcs.map((func) => {
                         const isQuickTask =
                           QUICK_TASK_NAMES.includes(func.name) ||
@@ -309,124 +293,129 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           func.name.includes('check');
 
                         return (
-                          <FunctionOption
+                          <Flex
+                            vertical
+                            component="button"
                             key={func.name}
+                            // @ts-expect-error - Flex component accepts button-specific props when component="button"
+                            type="button"
                             onClick={() => handleSelectFunction(func)}
-                            $selected={selectedFunction?.name === func.name}
                             data-testid={`function-modal-item-${func.name}`}
+                            style={{
+                              width: '100%',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                            }}
                           >
-                            <FunctionItemHeader>
-                              <RediaccText weight="bold">{func.name}</RediaccText>
+                            <Flex align="center" justify="space-between">
+                              <Typography.Text strong>{func.name}</Typography.Text>
                               {isQuickTask && (
-                                <QuickTaskTag>⚡ {t('functions:quickTaskBadge')}</QuickTaskTag>
+                                <Tag color="warning">⚡ {t('functions:quickTaskBadge')}</Tag>
                               )}
-                            </FunctionItemHeader>
-                            <RediaccText variant="description">{func.description}</RediaccText>
-                          </FunctionOption>
+                            </Flex>
+                            <Typography.Text type="secondary">{func.description}</Typography.Text>
+                          </Flex>
                         );
                       })}
-                    </CategorySection>
+                    </div>
                   ))}
-                </FunctionList>
-              </FunctionListCard>
+                </div>
+              </Card>
             </Col>
           )}
 
           <Col span={preselectedFunction ? 24 : 14}>
             {selectedFunction ? (
-              <RediaccStack variant="spaced-column" fullWidth>
-                <ConfigCard
+              <Flex vertical gap={24} style={{ width: '100%' }}>
+                <Card
                   title={`${t('functions:configure')}: ${selectedFunction.name}`}
-                  size="sm"
+                  size="small"
                 >
                   <Paragraph>{selectedFunction.description}</Paragraph>
 
                   <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }}>
                     {/* Show additional info for push function */}
                     {selectedFunction.name === 'push' && functionParams.dest && (
-                      <PushAlertsRow $hasWarning={functionParams.state === 'online'}>
-                        <PushAlertCard
-                          $variant="info"
-                          variant="info"
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns:
+                            functionParams.state === 'online' ? '1fr 0.8fr' : '1fr',
+                        }}
+                      >
+                        <Alert
+                          type="info"
                           showIcon
                           message="Push Operation Details"
                           description={
                             <Space direction="vertical" size="small">
                               <div>
-                                <RediaccText weight="bold">Destination Filename: </RediaccText>
-                                <RediaccText code>{functionParams.dest}</RediaccText>
+                                <Typography.Text strong>Destination Filename: </Typography.Text>
+                                <Typography.Text code>{functionParams.dest}</Typography.Text>
                               </div>
                               {additionalContext?.parentRepo && (
                                 <div>
-                                  <RediaccText weight="bold">Repository Lineage: </RediaccText>
+                                  <Typography.Text strong>Repository Lineage: </Typography.Text>
                                   <Space>
-                                    <LineageTag $variant="parent">
-                                      {additionalContext.parentRepo}
-                                    </LineageTag>
-                                    <LineageSeparator>→</LineageSeparator>
-                                    <LineageTag $variant="source">
-                                      {additionalContext.sourceRepo}
-                                    </LineageTag>
-                                    <LineageSeparator>→</LineageSeparator>
-                                    <LineageTag $variant="destination">
-                                      {functionParams.dest}
-                                    </LineageTag>
+                                    <Tag color="processing">{additionalContext.parentRepo}</Tag>
+                                    <Typography.Text type="secondary">→</Typography.Text>
+                                    <Tag color="success">{additionalContext.sourceRepo}</Tag>
+                                    <Typography.Text type="secondary">→</Typography.Text>
+                                    <Tag color="default">{functionParams.dest}</Tag>
                                   </Space>
                                 </div>
                               )}
                               {!additionalContext?.parentRepo && additionalContext?.sourceRepo && (
                                 <div>
-                                  <RediaccText weight="bold">Source Repository: </RediaccText>
-                                  <LineageTag $variant="source">
-                                    {additionalContext.sourceRepo}
-                                  </LineageTag>
-                                  <RediaccText variant="description" as="span">
+                                  <Typography.Text strong>Source Repository: </Typography.Text>
+                                  <Tag color="success">{additionalContext.sourceRepo}</Tag>
+                                  <Typography.Text type="secondary">
                                     {' '}
                                     (Original)
-                                  </RediaccText>
+                                  </Typography.Text>
                                 </div>
                               )}
                               <div>
-                                <RediaccText variant="description">
+                                <Typography.Text type="secondary">
                                   {functionParams.state === 'online'
                                     ? 'The repository will be pushed in online state (mounted).'
                                     : 'The repository will be pushed in offline state (unmounted).'}
-                                </RediaccText>
+                                </Typography.Text>
                               </div>
                             </Space>
                           }
                         />
                         {functionParams.state === 'online' && (
-                          <PushAlertCard
-                            $variant="warning"
-                            variant="warning"
+                          <Alert
+                            type="warning"
                             showIcon
                             message={t('functions:onlinePushWarningTitle')}
                             description={
                               <Space direction="vertical" size="small">
-                                <RediaccText variant="description">
+                                <Typography.Text type="secondary">
                                   {t('functions:onlinePushWarningMessage')}
-                                </RediaccText>
-                                <AlertLinkWrapper>
-                                  <AlertLink
+                                </Typography.Text>
+                                <div>
+                                  <a
                                     href="https://docs.rediacc.com/concepts/repo-push-operations"
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    style={{ fontSize: 12 }}
                                   >
                                     {t('functions:onlinePushLearnMore')}
-                                  </AlertLink>
-                                </AlertLinkWrapper>
+                                  </a>
+                                </div>
                               </Space>
                             }
                           />
                         )}
-                      </PushAlertsRow>
+                      </div>
                     )}
 
                     {/* Machine Selection */}
                     {showMachineSelection && (
                       <Form.Item label={t('machines:machine')} required>
-                        <RediaccSelect
+                        <Select
                           value={selectedMachine}
                           onChange={setSelectedMachine}
                           placeholder={t('machines:selectMachine')}
@@ -487,16 +476,16 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       />
                     )}
                   </Form>
-                </ConfigCard>
-              </RediaccStack>
+                </Card>
+              </Flex>
             ) : (
-              <ConfigCard>
+              <Card>
                 <Empty description={t('functions:selectFunctionToConfigure')} />
-              </ConfigCard>
+              </Card>
             )}
           </Col>
         </Row>
-      </StyledModal>
+      </Modal>
 
       {/* Template Preview Modal */}
       <TemplatePreviewModal

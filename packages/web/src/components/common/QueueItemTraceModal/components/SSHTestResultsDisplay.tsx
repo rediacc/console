@@ -1,21 +1,13 @@
 import React from 'react';
-import { Collapse, Descriptions, Space } from 'antd';
+import { Alert, Card, Collapse, Descriptions, Flex, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
-import { RediaccAlert, RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
 import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 import { spacing } from '@/utils/styleConstants';
-import {
-  SpacedCardBottom,
-  CompatibilityStatusText,
-  IssuesList,
-  RecommendationsList,
-  SectionMargin,
-} from '../styles';
 import type { SSHTestResult } from '../utils/sshTestResultParser';
 
 interface SSHTestResultsDisplayProps {
@@ -32,124 +24,127 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
     compatible: {
       type: 'success' as const,
       icon: <CheckCircleOutlined />,
-      color: 'var(--color-success)',
+      color: 'var(--ant-color-success)',
     },
     warning: {
       type: 'warning' as const,
       icon: <WarningOutlined />,
-      color: 'var(--color-warning)',
+      color: 'var(--ant-color-warning)',
     },
     incompatible: {
       type: 'error' as const,
       icon: <ExclamationCircleOutlined />,
-      color: 'var(--color-error)',
+      color: 'var(--ant-color-error)',
     },
     unknown: {
       type: 'info' as const,
       icon: <ExclamationCircleOutlined />,
-      color: 'var(--color-info)',
+      color: 'var(--ant-color-info)',
     },
   };
 
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown;
 
   return (
-    <RediaccStack variant="column" fullWidth>
+    <Flex vertical gap={16} style={{ width: '100%' }}>
       {/* SSH Test Result Summary */}
-      <SpacedCardBottom size="sm" title={t('trace.sshTestResult')}>
+      <Card size="small" title={t('trace.sshTestResult')}>
         <Descriptions column={2} size="small">
           <Descriptions.Item label="Status">
-            <RediaccTag variant="success">{result.status}</RediaccTag>
+            <Tag color="success">{result.status}</Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Machine">{result.machine || 'N/A'}</Descriptions.Item>
           <Descriptions.Item label="IP Address">{result.ip}</Descriptions.Item>
           <Descriptions.Item label="User">{result.user}</Descriptions.Item>
           <Descriptions.Item label="Auth Method">
-            <RediaccTag variant="neutral">{result.auth_method}</RediaccTag>
+            <Tag color="default">{result.auth_method}</Tag>
           </Descriptions.Item>
           <Descriptions.Item label="SSH Key">
             {result.ssh_key_configured ? (
-              <RediaccTag variant="success">Configured</RediaccTag>
+              <Tag color="success">Configured</Tag>
             ) : (
-              <RediaccTag variant="warning">Not Configured</RediaccTag>
+              <Tag color="warning">Not Configured</Tag>
             )}
           </Descriptions.Item>
         </Descriptions>
-      </SpacedCardBottom>
+      </Card>
 
       {/* System Information */}
-      <SpacedCardBottom size="sm" title={t('trace.systemInfo')}>
+      <Card size="small" title={t('trace.systemInfo')}>
         <Descriptions column={1} size="small">
           <Descriptions.Item label="Operating System">
             {osInfo.pretty_name || 'Unknown'}
           </Descriptions.Item>
           <Descriptions.Item label="Kernel Version">
-            <RediaccText code>{compatibility.kernel_version || 'Unknown'}</RediaccText>
+            <Typography.Text code>{compatibility.kernel_version || 'Unknown'}</Typography.Text>
           </Descriptions.Item>
           <Descriptions.Item label="OS ID">{osInfo.id || 'Unknown'}</Descriptions.Item>
           <Descriptions.Item label="Version">{osInfo.version_id || 'Unknown'}</Descriptions.Item>
           <Descriptions.Item label="BTRFS Support">
             {compatibility.btrfs_available ? (
-              <RediaccTag variant="success">Available</RediaccTag>
+              <Tag color="success">Available</Tag>
             ) : (
-              <RediaccTag variant="warning">Not Available</RediaccTag>
+              <Tag color="warning">Not Available</Tag>
             )}
           </Descriptions.Item>
           <Descriptions.Item label="Sudo Support">
             {(() => {
               const sudoStatus = compatibility.sudo_available || 'unknown';
               if (sudoStatus === 'available') {
-                return <RediaccTag variant="success">Available</RediaccTag>;
+                return <Tag color="success">Available</Tag>;
               }
               if (sudoStatus === 'password_required') {
-                return <RediaccTag variant="warning">Password Required</RediaccTag>;
+                return <Tag color="warning">Password Required</Tag>;
               }
               if (sudoStatus === 'not_installed') {
-                return <RediaccTag variant="error">Not Installed</RediaccTag>;
+                return <Tag color="error">Not Installed</Tag>;
               }
-              return <RediaccTag variant="neutral">Unknown</RediaccTag>;
+              return <Tag color="default">Unknown</Tag>;
             })()}
           </Descriptions.Item>
         </Descriptions>
-      </SpacedCardBottom>
+      </Card>
 
       {/* Compatibility Status */}
-      <RediaccAlert
+      <Alert
         data-testid="queue-trace-ssh-compatibility-alert"
-        variant={config.type}
+        type={config.type}
         icon={config.icon}
         message={
           <Space>
-            <RediaccText weight="bold">Compatibility Status:</RediaccText>
-            <CompatibilityStatusText
-              $status={status as 'compatible' | 'warning' | 'incompatible' | 'unknown'}
+            <Typography.Text strong>Compatibility Status:</Typography.Text>
+            <Typography.Text
+              style={{
+                color: config.color,
+                textTransform: 'capitalize',
+              }}
             >
               {status}
-            </CompatibilityStatusText>
+            </Typography.Text>
           </Space>
         }
         description={
           <>
             {compatibility.compatibility_issues &&
               compatibility.compatibility_issues.length > 0 && (
-                <SectionMargin $top={spacing('SM')}>
-                  <RediaccText weight="bold">Known Issues:</RediaccText>
-                  <IssuesList>
+                <div style={{ marginTop: spacing('SM') }}>
+                  <Typography.Text strong>Known Issues:</Typography.Text>
+                  <ul>
                     {compatibility.compatibility_issues.map((issue: string, index: number) => (
                       <li key={index}>{issue}</li>
                     ))}
-                  </IssuesList>
-                </SectionMargin>
+                  </ul>
+                </div>
               )}
             {compatibility.recommendations && compatibility.recommendations.length > 0 && (
-              <SectionMargin>
-                <RediaccText weight="bold">Recommendations:</RediaccText>
-                <RecommendationsList>
+              <div style={{ marginTop: spacing('MD') }}>
+                <Typography.Text strong>Recommendations:</Typography.Text>
+                <ul>
                   {compatibility.recommendations.map((rec: string, index: number) => (
                     <li key={index}>{rec}</li>
                   ))}
-                </RecommendationsList>
-              </SectionMargin>
+                </ul>
+              </div>
             )}
           </>
         }
@@ -157,7 +152,7 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
       />
 
       {/* Raw JSON fallback */}
-      <SectionMargin $top={spacing('MD')}>
+      <div style={{ marginTop: spacing('MD') }}>
         <Collapse
           items={[
             {
@@ -173,7 +168,7 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
             },
           ]}
         />
-      </SectionMargin>
-    </RediaccStack>
+      </div>
+    </Flex>
   );
 };

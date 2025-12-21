@@ -1,10 +1,9 @@
-﻿import React from 'react';
+import { Table } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable';
-import { RediaccTable } from '@/components/ui';
 import type { Machine } from '@/types';
 import { buildMachineTableColumns } from './columns';
-import { ExpandedRowContent, TableContainer } from './styles';
 import type { TableRowSelection } from 'antd/es/table/interface';
 
 export interface FilterableMachineTableProps {
@@ -54,16 +53,16 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
 
   const renderExpandedRow = React.useCallback(
     (machine: Machine) => (
-      <ExpandedRowContent>
+      <div>
         <MachineRepositoryTable machine={machine} refreshKey={refreshKeys[machine.machineName]} />
-      </ExpandedRowContent>
+      </div>
     ),
     [refreshKeys]
   );
 
   return (
-    <TableContainer>
-      <RediaccTable<Machine>
+    <div style={{ width: '100%', overflow: 'hidden' }}>
+      <Table<Machine>
         columns={columns}
         dataSource={machines}
         rowKey="machineName"
@@ -87,7 +86,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
             }),
         }}
       />
-    </TableContainer>
+    </div>
   );
 };
 

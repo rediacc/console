@@ -1,42 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Col, Empty, Popconfirm, Row } from 'antd';
+import { Button, Card, Col, Collapse, Empty, Flex, Form, Input, Popconfirm, Row, Switch, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
-import { RediaccInput, RediaccSwitch, RediaccText } from '@/components/ui';
 import {
   CodeOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
   PlusOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  AddEntryCard,
-  CollapseWrapper,
-  DescriptionWrapper,
-  EditorContainer,
-  EditorStack,
-  EntryActionsRow,
-  EntryHeader,
-  FieldsText,
-  ImagePatternCard,
-  InlineFormItem,
-  JsonEditorTitleWrapper,
-  JsonErrorText,
-  KeyInput,
-  KeyInputWrapper,
-  KeyTag,
-  NumericInput,
-  PanelActions,
-  PanelDeleteButton,
-  PrimaryActionButton,
-  RawJsonCard,
-  SecondaryActionButton,
-  SummaryBadgeRow,
-  SummaryCard,
-  TitleText,
-  TypeTag,
-  UniformTag,
-} from './styles';
 
 type NestedEntryValue = unknown;
 type NestedRecord = Record<string, NestedEntryValue>;
@@ -269,13 +240,13 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
         (structureInfo.hasImagePattern || looksLikeImageReference(imageValue))
       ) {
         return (
-          <ImagePatternCard size="sm">
+          <Card size="small">
             <Row gutter={16}>
               <Col span={18}>
-                <InlineFormItem
-                  label={<RediaccText variant="label">{t('nestedObjectEditor.Image')}</RediaccText>}
+                <Form.Item
+                  label={<Typography.Text type="secondary">{t('nestedObjectEditor.Image')}</Typography.Text>}
                 >
-                  <RediaccInput
+                  <Input
                     value={imageValue}
                     onChange={(event) =>
                       handleUpdateEntry(index, {
@@ -290,15 +261,15 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                         : `vault-editor-nested-field-${entry.key}-image`
                     }
                   />
-                </InlineFormItem>
+                </Form.Item>
               </Col>
               <Col span={6}>
-                <InlineFormItem
+                <Form.Item
                   label={
-                    <RediaccText variant="label">{t('nestedObjectEditor.Active')}</RediaccText>
+                    <Typography.Text type="secondary">{t('nestedObjectEditor.Active')}</Typography.Text>
                   }
                 >
-                  <RediaccSwitch
+                  <Switch
                     checked={activeValue}
                     onChange={(checked) =>
                       handleUpdateEntry(index, {
@@ -312,10 +283,10 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                         : `vault-editor-nested-field-${entry.key}-active`
                     }
                   />
-                </InlineFormItem>
+                </Form.Item>
               </Col>
             </Row>
-          </ImagePatternCard>
+          </Card>
         );
       }
 
@@ -336,7 +307,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
 
     if (typeof entry.value === 'boolean') {
       return (
-        <RediaccSwitch
+        <Switch
           checked={entry.value}
           onChange={(checked) => handleUpdateEntry(index, { value: checked })}
           disabled={readOnly}
@@ -351,7 +322,8 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
 
     if (typeof entry.value === 'number') {
       return (
-        <NumericInput
+        <Input
+          style={{ width: '100%', maxWidth: 240 }}
           value={String(entry.value)}
           onChange={(event) =>
             handleUpdateEntry(index, { value: Number(event.currentTarget.value) })
@@ -367,7 +339,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
     }
 
     return (
-      <RediaccInput
+      <Input
         value={entry.value as string | undefined}
         onChange={(event) => handleUpdateEntry(index, { value: event.target.value })}
         disabled={readOnly}
@@ -379,46 +351,47 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   };
 
   return (
-    <EditorContainer>
+    <div style={{ width: '100%' }}>
       {(title || description || structureInfo.isUniform) && (
-        <SummaryCard>
-          {title && <TitleText>{title}</TitleText>}
+        <div>
+          {title && <Typography.Text strong>{title}</Typography.Text>}
           {description && (
-            <DescriptionWrapper>
+            <Typography.Text type="secondary">
               <InfoCircleOutlined /> {description}
-            </DescriptionWrapper>
+            </Typography.Text>
           )}
           {structureInfo.isUniform && (
-            <SummaryBadgeRow>
-              <UniformTag variant="success">{t('nestedObjectEditor.Uniform Structure')}</UniformTag>
+            <Flex wrap gap={8}>
+              <Tag color="success">{t('nestedObjectEditor.Uniform Structure')}</Tag>
               {structureInfo.keys && (
-                <FieldsText>
+                <Typography.Text type="secondary" style={{ fontFamily: 'monospace' }}>
                   {t('nestedObjectEditor.Fields')}: {structureInfo.keys.join(', ')}
-                </FieldsText>
+                </Typography.Text>
               )}
               {structureInfo.hasImagePattern && (
-                <UniformTag variant="info">
+                <Tag color="processing">
                   {t('nestedObjectEditor.Container Images Detected')}
-                </UniformTag>
+                </Tag>
               )}
-            </SummaryBadgeRow>
+            </Flex>
           )}
-        </SummaryCard>
+        </div>
       )}
 
-      <EditorStack>
+      <Flex vertical gap={16} style={{ width: '100%' }}>
         {!readOnly && (
-          <AddEntryCard
-            size="sm"
+          <Card
+            size="small"
             title={
-              <RediaccText size="sm" weight="semibold">
+              <Typography.Text strong style={{ fontSize: 12 }}>
                 {t('nestedObjectEditor.Add New Entry')}
-              </RediaccText>
+              </Typography.Text>
             }
           >
-            <EntryActionsRow>
-              <KeyInputWrapper>
-                <KeyInput
+            <Flex align="center" wrap gap={8}>
+              <div style={{ flex: '1 1 60%', minWidth: 240, maxWidth: '100%' }}>
+                <Input
+                  style={{ width: '100%' }}
                   placeholder={t('nestedObjectEditor.Enter key name')}
                   value={newKey}
                   onChange={(event) => setNewKey(event.target.value)}
@@ -426,16 +399,17 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                   autoComplete="off"
                   data-testid={dataTestId ? `${dataTestId}-new-key` : 'vault-editor-nested-new-key'}
                 />
-              </KeyInputWrapper>
-              <PrimaryActionButton
+              </div>
+              <Button
+                type="primary"
                 icon={<PlusOutlined />}
                 onClick={handleAddEntry}
                 disabled={!newKey.trim()}
                 data-testid={dataTestId ? `${dataTestId}-add` : 'vault-editor-nested-add'}
               >
                 {t('nestedObjectEditor.Add')}
-              </PrimaryActionButton>
-              <SecondaryActionButton
+              </Button>
+              <Button
                 icon={<CodeOutlined />}
                 onClick={() => setShowRawJson((current) => !current)}
                 data-testid={
@@ -445,9 +419,9 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                 {showRawJson
                   ? t('nestedObjectEditor.Hide JSON')
                   : t('nestedObjectEditor.Show JSON')}
-              </SecondaryActionButton>
-            </EntryActionsRow>
-          </AddEntryCard>
+              </Button>
+            </Flex>
+          </Card>
         )}
 
         {entries.length === 0 ? (
@@ -456,37 +430,37 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
         ) : (
-          <CollapseWrapper
+          <Collapse
             defaultActiveKey={entries.map((_, i) => i.toString())}
             data-testid={dataTestId ? `${dataTestId}-collapse` : 'vault-editor-nested-collapse'}
             items={entries.map((entry, index) => ({
               key: entry.key,
               label: (
-                <EntryHeader>
-                  <KeyTag variant="info">{entry.key}</KeyTag>
+                <Flex align="center" wrap gap={8}>
+                  <Tag color="processing">{entry.key}</Tag>
                   {isRecordLike(entry.value) && (
-                    <TypeTag variant="success">{t('nestedObjectEditor.Object')}</TypeTag>
+                    <Tag color="success">{t('nestedObjectEditor.Object')}</Tag>
                   )}
                   {Array.isArray(entry.value) && (
-                    <TypeTag variant="warning">{t('nestedObjectEditor.Array')}</TypeTag>
+                    <Tag color="warning">{t('nestedObjectEditor.Array')}</Tag>
                   )}
                   {typeof entry.value === 'boolean' && (
-                    <TypeTag variant={entry.value ? 'success' : 'neutral'}>
+                    <Tag color={entry.value ? 'success' : 'default'}>
                       {entry.value ? t('nestedObjectEditor.True') : t('nestedObjectEditor.False')}
-                    </TypeTag>
+                    </Tag>
                   )}
-                </EntryHeader>
+                </Flex>
               ),
               extra: !readOnly ? (
-                <PanelActions onClick={(event) => event.stopPropagation()}>
+                <Flex onClick={(event) => event.stopPropagation()}>
                   <Popconfirm
                     title={t('nestedObjectEditor.Delete this entry?')}
                     onConfirm={() => handleDeleteEntry(index)}
                     okText={t('nestedObjectEditor.Yes')}
                     cancelText={t('nestedObjectEditor.No')}
                   >
-                    <PanelDeleteButton
-                      variant="text"
+                    <Button
+                      type="text"
                       danger
                       icon={<DeleteOutlined />}
                       data-testid={
@@ -496,7 +470,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                       }
                     />
                   </Popconfirm>
-                </PanelActions>
+                </Flex>
               ) : undefined,
               children: renderEntryValue(entry, index),
             }))}
@@ -504,19 +478,19 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
         )}
 
         {showRawJson && (
-          <RawJsonCard
-            size="sm"
+          <Card
+            size="small"
             title={
-              <JsonEditorTitleWrapper>
+              <Typography.Text strong>
                 <CodeOutlined />
                 {t('nestedObjectEditor.Raw JSON Editor')}
-              </JsonEditorTitleWrapper>
+              </Typography.Text>
             }
           >
             {rawJsonError && (
-              <JsonErrorText>
+              <Typography.Text type="danger">
                 {t('nestedObjectEditor.JSON Error')}: {rawJsonError}
-              </JsonErrorText>
+              </Typography.Text>
             )}
             <SimpleJsonEditor
               value={rawJsonValue}
@@ -525,9 +499,9 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               height="300px"
               data-testid={dataTestId ? `${dataTestId}-raw-json` : 'vault-editor-nested-raw-json'}
             />
-          </RawJsonCard>
+          </Card>
         )}
-      </EditorStack>
-    </EditorContainer>
+      </Flex>
+    </div>
   );
 };

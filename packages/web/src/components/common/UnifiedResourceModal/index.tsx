@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Modal, Space, Upload } from 'antd';
+import { Button, Checkbox, Collapse, Flex, Modal, Space, Tag, Typography, Upload } from 'antd';
 import { type Resolver, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -13,12 +13,11 @@ import ResourceFormWithVault, {
   type ResourceFormWithVaultRef,
 } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
-import { RediaccButton, RediaccText } from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
-import { AppstoreOutlined } from '@/utils/optimizedIcons';
+import { AppstoreOutlined, DownloadOutlined, UploadOutlined } from '@/utils/optimizedIcons';
 import {
   renderModalTitle,
   resolveTeamName,
@@ -31,16 +30,6 @@ import { useBridgeSelection } from './hooks/useBridgeSelection';
 import { useResourceDefaults } from './hooks/useResourceDefaults';
 import { useResourceSchema } from './hooks/useResourceSchema';
 import { useTemplateSelection } from './hooks/useTemplateSelection';
-import {
-  AutoSetupCheckbox,
-  DownloadIcon,
-  FooterContainer,
-  FooterLeftActions,
-  FooterRightActions,
-  SelectedTemplateTag,
-  TemplateCollapse,
-  UploadIcon,
-} from './styles';
 import { getFormFields } from './utils/formFieldGenerators';
 import { parseVaultData } from './utils/parseVaultData';
 import { transformFormData } from './utils/transformFormData';
@@ -393,8 +382,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         onCancel={onCancel}
         destroyOnClose
         footer={[
-          <FooterContainer key="footer-container">
-            <FooterLeftActions>
+          <Flex align="center" justify="space-between" gap={16} key="footer-container">
+            <Flex align="center" gap={8}>
               {mode === 'create' && uiMode === 'expert' && (
                 <Space>
                   <Upload
@@ -408,16 +397,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                       return false;
                     }}
                   >
-                    <RediaccButton
+                    <Button
                       data-testid="resource-modal-import-button"
-                      icon={<UploadIcon />}
+                    icon={<UploadOutlined style={{ fontSize: 12 }} />}
                     >
                       {t('common:vaultEditor.importJson')}
-                    </RediaccButton>
+                    </Button>
                   </Upload>
-                  <RediaccButton
+                  <Button
                     data-testid="resource-modal-export-button"
-                    icon={<DownloadIcon />}
+                    icon={<DownloadOutlined style={{ fontSize: 12 }} />}
                     onClick={() => {
                       if (importExportHandlers.current) {
                         importExportHandlers.current.handleExport();
@@ -425,43 +414,43 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     }}
                   >
                     {t('common:vaultEditor.exportJson')}
-                  </RediaccButton>
+                  </Button>
                 </Space>
               )}
-            </FooterLeftActions>
-            <FooterRightActions>
+            </Flex>
+            <Flex align="center" gap={8}>
               {mode === 'create' && resourceType === 'machine' && (
-                <AutoSetupCheckbox
+                <Checkbox
                   data-testid="resource-modal-auto-setup-checkbox"
                   checked={autoSetupEnabled}
                   onChange={(e) => setAutoSetupEnabled(e.target.checked)}
                 >
                   {t('machines:autoSetupAfterCreation')}
-                </AutoSetupCheckbox>
+                </Checkbox>
               )}
-              <RediaccButton
+              <Button
                 data-testid="resource-modal-cancel-button"
                 onClick={onCancel}
               >
                 {t('general.cancel')}
-              </RediaccButton>
+              </Button>
               {mode === 'create' && existingData && onUpdateVault && (
-                <RediaccButton
+                <Button
                   data-testid="resource-modal-vault-button"
                   onClick={() => vaultModal.open()}
                 >
                   {t('general.vault')}
-                </RediaccButton>
+                </Button>
               )}
               {showFunctions && (
-                <RediaccButton
+                <Button
                   data-testid="resource-modal-functions-button"
                   onClick={() => functionModal.open()}
                 >
                   {t(`${resourceType}s.${resourceType}Functions`)}
-                </RediaccButton>
+                </Button>
               )}
-              <RediaccButton
+              <Button
                 data-testid="resource-modal-ok-button"
                 loading={isSubmitting}
                 disabled={mode === 'create' && resourceType === 'machine' && !testConnectionSuccess}
@@ -472,9 +461,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                 }}
               >
                 {mode === 'create' ? t('general.create') : t('general.save')}
-              </RediaccButton>
-            </FooterRightActions>
-          </FooterContainer>,
+              </Button>
+            </Flex>
+          </Flex>,
         ]}
         className={ModalSize.Fullscreen}
       >
@@ -503,7 +492,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             resourceType === 'repository' &&
             mode === 'create' &&
             creationContext !== 'credentials-only' ? (
-              <TemplateCollapse
+              <Collapse
                 data-testid="resource-modal-template-collapse"
                 items={[
                   {
@@ -511,11 +500,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     label: (
                       <Space size="small">
                         <AppstoreOutlined />
-                        <RediaccText>{t('resources:templates.selectTemplate')}</RediaccText>
+                        <Typography.Text>{t('resources:templates.selectTemplate')}</Typography.Text>
                         {selectedTemplate && (
-                          <SelectedTemplateTag variant="primary">
+                          <Tag color="processing">
                             {selectedTemplate.replace(/^(db_|kick_|route_)/, '')}
-                          </SelectedTemplateTag>
+                          </Tag>
                         )}
                       </Space>
                     ),
@@ -542,11 +531,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           }
           defaultsContent={
             <Space direction="vertical" size={4}>
-              <RediaccText>{t('general.team')}: Private Team</RediaccText>
+              <Typography.Text>{t('general.team')}: Private Team</Typography.Text>
               {resourceType === 'machine' && (
                 <>
-                  <RediaccText>{t('machines:region')}: Default Region</RediaccText>
-                  <RediaccText>{t('machines:bridge')}: Global Bridges</RediaccText>
+                  <Typography.Text>{t('machines:region')}: Default Region</Typography.Text>
+                  <Typography.Text>{t('machines:bridge')}: Global Bridges</Typography.Text>
                 </>
               )}
             </Space>

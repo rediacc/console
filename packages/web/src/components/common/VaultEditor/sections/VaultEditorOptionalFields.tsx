@@ -1,7 +1,6 @@
 import React from 'react';
 import { Col, Divider, Form } from 'antd';
 import { VaultFieldRenderer } from '../fieldRenderers';
-import { FieldDivider } from '../styles';
 import type { FieldDefinition, VaultFormValues } from '../types';
 import type { FormInstance } from 'antd';
 
@@ -57,9 +56,9 @@ export const VaultEditorOptionalFields: React.FC<VaultEditorOptionalFieldsProps>
   return (
     <>
       {requiredFields.length > 0 && optionalFields.length > 0 && (
-        <FieldDivider>
+        <div>
           <Divider />
-        </FieldDivider>
+        </div>
       )}
       {optionalFields.map((fieldName) => {
         const field = fields[fieldName as keyof typeof fields];

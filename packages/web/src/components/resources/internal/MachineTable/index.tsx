@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Empty, Space } from 'antd';
+import { Button, Card, Empty, Flex, Space, Table, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +7,6 @@ import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
-import { RediaccButton, RediaccEmpty, RediaccTable, RediaccTooltip } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
@@ -33,30 +32,18 @@ import {
 } from '@/utils/optimizedIcons';
 import type { DeployedRepo } from '@rediacc/shared/services/machine';
 import { buildMachineTableColumns, type MachineFunctionAction } from './columns';
-import {
-  BulkActionsBar,
-  BulkActionsSummary,
-  GroupCardContainer,
-  GroupCardCount,
-  GroupCardHeader,
-  GroupCardIndicator,
-  GroupCardRow,
-  GroupCardTitle,
-  GroupedCardStack,
-  GroupHeaderTag,
-  GroupRowActionButton,
-  GroupRowContent,
-  GroupRowIcon,
-  GroupRowInfo,
-  GroupRowName,
-  MachineTableWrapper,
-  StyledRediaccEmpty,
-  StyledTag,
-  TableContainer,
-  ViewToggleButton,
-  ViewToggleContainer,
-  ViewToggleDivider,
-} from './styles';
+const getTagColor = (variant?: 'team' | 'bridge' | 'region' | 'repository' | 'status' | 'grand') =>
+  variant === 'team'
+    ? 'success'
+    : variant === 'bridge'
+      ? 'processing'
+      : variant === 'region'
+        ? 'default'
+        : variant === 'repository'
+          ? 'processing'
+          : variant === 'grand'
+            ? 'warning'
+            : 'default';
 
 // Local type for group variants - maps to preset prop
 type GroupVariant = 'repository' | 'bridge' | 'team' | 'region' | 'status' | 'grand';
@@ -277,49 +264,49 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     if (!canAssignToCluster || selectedRowKeys.length === 0) return null;
 
     return (
-      <BulkActionsBar>
+      <Flex align="center" justify="space-between" wrap>
         <Space size="middle">
-          <BulkActionsSummary>
+          <span style={{ fontWeight: 600 }}>
             {t('machines:bulkActions.selected', { count: selectedRowKeys.length })}
-          </BulkActionsSummary>
-          <RediaccTooltip title={t('common:actions.clearSelection')}>
-            <RediaccButton
+          </span>
+          <Tooltip title={t('common:actions.clearSelection')}>
+            <Button
               onClick={() => setSelectedRowKeys([])}
               data-testid="machine-bulk-clear-selection"
               aria-label={t('common:actions.clearSelection')}
             >
               Clear
-            </RediaccButton>
-          </RediaccTooltip>
+            </Button>
+          </Tooltip>
         </Space>
         <Space size="middle">
-          <RediaccTooltip title={t('machines:bulkActions.assignToCluster')}>
-            <RediaccButton
-              variant="primary"
+          <Tooltip title={t('machines:bulkActions.assignToCluster')}>
+            <Button
+              type="primary"
               icon={<CloudServerOutlined />}
               onClick={() => setBulkAssignClusterModal(true)}
               data-testid="machine-bulk-assign-cluster"
               aria-label={t('machines:bulkActions.assignToCluster')}
             />
-          </RediaccTooltip>
-          <RediaccTooltip title={t('machines:bulkActions.removeFromCluster')}>
-            <RediaccButton
+          </Tooltip>
+          <Tooltip title={t('machines:bulkActions.removeFromCluster')}>
+            <Button
               icon={<CloudServerOutlined />}
               onClick={() => setRemoveFromClusterModal(true)}
               data-testid="machine-bulk-remove-cluster"
               aria-label={t('machines:bulkActions.removeFromCluster')}
             />
-          </RediaccTooltip>
-          <RediaccTooltip title={t('machines:bulkActions.viewAssignmentStatus')}>
-            <RediaccButton
+          </Tooltip>
+          <Tooltip title={t('machines:bulkActions.viewAssignmentStatus')}>
+            <Button
               icon={<InfoCircleOutlined />}
               onClick={() => setViewAssignmentStatusModal(true)}
               data-testid="machine-bulk-view-status"
               aria-label={t('machines:bulkActions.viewAssignmentStatus')}
             />
-          </RediaccTooltip>
+          </Tooltip>
         </Space>
-      </BulkActionsBar>
+      </Flex>
     );
   };
 
@@ -332,83 +319,90 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
     // In expert/normal mode, show all grouping buttons
     return (
-      <ViewToggleContainer>
+      <div>
         <Space wrap size="small">
-          <RediaccTooltip title={t('machines:machine')}>
-            <ViewToggleButton
-              variant={groupBy === 'machine' ? 'primary' : 'default'}
+          <Tooltip title={t('machines:machine')}>
+            <Button
+              style={{ minWidth: 42 }}
+              type={groupBy === 'machine' ? 'primary' : 'default'}
               icon={<DesktopOutlined />}
               onClick={() => setGroupBy('machine')}
               data-testid="machine-view-toggle-machine"
               aria-label={t('machines:machine')}
             />
-          </RediaccTooltip>
+          </Tooltip>
 
-          <ViewToggleDivider />
+          <span style={{ width: 1, height: 24 }} />
 
-          <RediaccTooltip title={t('machines:groupByBridge')}>
-            <ViewToggleButton
-              variant={groupBy === 'bridge' ? 'primary' : 'default'}
+          <Tooltip title={t('machines:groupByBridge')}>
+            <Button
+              style={{ minWidth: 42 }}
+              type={groupBy === 'bridge' ? 'primary' : 'default'}
               icon={<CloudServerOutlined />}
               onClick={() => setGroupBy('bridge')}
               data-testid="machine-view-toggle-bridge"
               aria-label={t('machines:groupByBridge')}
             />
-          </RediaccTooltip>
+          </Tooltip>
 
-          <RediaccTooltip title={t('machines:groupByTeam')}>
-            <ViewToggleButton
-              variant={groupBy === 'team' ? 'primary' : 'default'}
+          <Tooltip title={t('machines:groupByTeam')}>
+            <Button
+              style={{ minWidth: 42 }}
+              type={groupBy === 'team' ? 'primary' : 'default'}
               icon={<TeamOutlined />}
               onClick={() => setGroupBy('team')}
               data-testid="machine-view-toggle-team"
               aria-label={t('machines:groupByTeam')}
             />
-          </RediaccTooltip>
+          </Tooltip>
 
           {isExpertMode && (
-            <RediaccTooltip title={t('machines:groupByRegion')}>
-              <ViewToggleButton
-                variant={groupBy === 'region' ? 'primary' : 'default'}
+            <Tooltip title={t('machines:groupByRegion')}>
+              <Button
+                style={{ minWidth: 42 }}
+                type={groupBy === 'region' ? 'primary' : 'default'}
                 icon={<GlobalOutlined />}
                 onClick={() => setGroupBy('region')}
                 data-testid="machine-view-toggle-region"
                 aria-label={t('machines:groupByRegion')}
               />
-            </RediaccTooltip>
+            </Tooltip>
           )}
 
-          <RediaccTooltip title={t('machines:groupByRepo')}>
-            <ViewToggleButton
-              variant={groupBy === 'repository' ? 'primary' : 'default'}
+          <Tooltip title={t('machines:groupByRepo')}>
+            <Button
+              style={{ minWidth: 42 }}
+              type={groupBy === 'repository' ? 'primary' : 'default'}
               icon={<InboxOutlined />}
               onClick={() => setGroupBy('repository')}
               data-testid="machine-view-toggle-repo"
               aria-label={t('machines:groupByRepo')}
             />
-          </RediaccTooltip>
+          </Tooltip>
 
-          <RediaccTooltip title={t('machines:groupByStatus')}>
-            <ViewToggleButton
-              variant={groupBy === 'status' ? 'primary' : 'default'}
+          <Tooltip title={t('machines:groupByStatus')}>
+            <Button
+              style={{ minWidth: 42 }}
+              type={groupBy === 'status' ? 'primary' : 'default'}
               icon={<DashboardOutlined />}
               onClick={() => setGroupBy('status')}
               data-testid="machine-view-toggle-status"
               aria-label={t('machines:groupByStatus')}
             />
-          </RediaccTooltip>
+          </Tooltip>
 
-          <RediaccTooltip title={t('machines:groupByGrand')}>
-            <ViewToggleButton
-              variant={groupBy === 'grand' ? 'primary' : 'default'}
+          <Tooltip title={t('machines:groupByGrand')}>
+            <Button
+              style={{ minWidth: 42 }}
+              type={groupBy === 'grand' ? 'primary' : 'default'}
               icon={<BranchesOutlined />}
               onClick={() => setGroupBy('grand')}
               data-testid="machine-view-toggle-grand"
               aria-label={t('machines:groupByGrand')}
             />
-          </RediaccTooltip>
+          </Tooltip>
         </Space>
-      </ViewToggleContainer>
+      </div>
     );
   };
 
@@ -507,13 +501,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const renderGroupedTableView = () => {
     if (Object.keys(groupedMachinesForTable).length === 0) {
       return (
-        <StyledRediaccEmpty>
-          <RediaccEmpty
-            variant="minimal"
+        <div>
+          <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={t('resources:repositories.noRepositories')}
           />
-        </StyledRediaccEmpty>
+        </div>
       );
     }
 
@@ -528,12 +521,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     };
 
     const indicatorColors: Record<GroupVariant, string> = {
-      team: 'var(--color-success)',
-      bridge: 'var(--color-primary)',
-      region: 'var(--color-info)',
-      repository: 'var(--color-secondary)',
-      status: 'var(--color-warning)',
-      grand: 'var(--color-secondary)',
+      team: 'var(--ant-color-success)',
+      bridge: 'var(--ant-color-primary)',
+      region: 'var(--ant-color-info)',
+      repository: 'var(--ant-color-text-tertiary)',
+      status: 'var(--ant-color-warning)',
+      grand: 'var(--ant-color-text-tertiary)',
     };
 
     const iconMap: Partial<Record<GroupByMode, React.ReactNode>> = {
@@ -546,31 +539,36 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     };
 
     return (
-      <GroupedCardStack>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         {Object.entries(groupedMachinesForTable).map(([groupKey, machines], groupIndex) => {
           const variant = variantMap[groupBy];
           const indicatorColor = indicatorColors[variant];
 
           return (
-            <GroupCardContainer key={groupKey} $isAlternate={groupIndex % 2 === 0}>
-              <GroupCardHeader>
-                <GroupCardIndicator $color={indicatorColor} />
+            <Card key={groupKey}>
+              <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+                <div style={{ width: 8, height: 24, backgroundColor: indicatorColor }} />
                 <Space size="small">
-                  <GroupCardTitle>#{groupIndex + 1}</GroupCardTitle>
-                  <GroupHeaderTag $variant={variant} icon={iconMap[groupBy]}>
+                  <span style={{ fontSize: 16, fontWeight: 700 }}>#{groupIndex + 1}</span>
+                  <Tag bordered={false} color={getTagColor(variant)} icon={iconMap[groupBy]}>
                     {groupKey}
-                  </GroupHeaderTag>
-                  <GroupCardCount>
+                  </Tag>
+                  <span style={{ fontSize: 14 }}>
                     {machines.length}{' '}
                     {machines.length === 1 ? t('machines:machine') : t('machines:machines')}
-                  </GroupCardCount>
+                  </span>
                 </Space>
-              </GroupCardHeader>
+              </Flex>
 
               {machines.map((machine, index) => (
-                <GroupCardRow
+                <div
                   key={machine.machineName}
-                  $isStriped={index % 2 !== 0}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                  }}
                   onClick={() =>
                     navigate(`/machines/${machine.machineName}/repositories`, {
                       state: { machine },
@@ -578,25 +576,31 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   }
                   data-testid={`grouped-machine-row-${machine.machineName}`}
                 >
-                  <GroupRowContent>
-                    <GroupRowIcon />
-                    <GroupRowInfo>
-                      <GroupRowName>{machine.machineName}</GroupRowName>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <DesktopOutlined style={{ fontSize: 20 }} />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: 16, fontWeight: 600 }}>{machine.machineName}</span>
                       <Space size="small">
-                        <StyledTag $variant="team">{machine.teamName}</StyledTag>
+                        <Tag bordered={false} color={getTagColor('team')}>
+                          {machine.teamName}
+                        </Tag>
                         {machine.bridgeName && (
-                          <StyledTag $variant="bridge">{machine.bridgeName}</StyledTag>
+                          <Tag bordered={false} color={getTagColor('bridge')}>
+                            {machine.bridgeName}
+                          </Tag>
                         )}
                         {machine.regionName && (
-                          <StyledTag $variant="region">{machine.regionName}</StyledTag>
+                          <Tag bordered={false} color={getTagColor('region')}>
+                            {machine.regionName}
+                          </Tag>
                         )}
                       </Space>
-                    </GroupRowInfo>
-                  </GroupRowContent>
+                    </div>
+                  </div>
 
-                  <RediaccTooltip title={t('machines:viewRepos')}>
-                    <GroupRowActionButton
-                      variant="primary"
+                  <Tooltip title={t('machines:viewRepos')}>
+                    <Button
+                      type="primary"
                       icon={<RightOutlined />}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -606,31 +610,32 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       }}
                     >
                       {t('machines:viewRepos')}
-                    </GroupRowActionButton>
-                  </RediaccTooltip>
-                </GroupCardRow>
+                    </Button>
+                  </Tooltip>
+                </div>
               ))}
-            </GroupCardContainer>
+            </Card>
           );
         })}
-      </GroupedCardStack>
+      </div>
     );
   };
 
   return (
-    <MachineTableWrapper className={className}>
+    <Flex vertical style={{ height: '100%' }} className={className}>
       {renderViewToggle()}
       {renderBulkActionsToolbar()}
 
       {groupBy === 'machine' ? (
-        <TableContainer ref={tableContainerRef}>
-          <RediaccTable
+        <div
+          ref={tableContainerRef}
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        >
+          <Table
             columns={columns}
             dataSource={filteredMachines}
             rowKey="machineName"
             loading={isLoading}
-            interactive
-            selectable
             scroll={{ x: 'max-content' }}
             rowSelection={rowSelection}
             rowClassName={(record) => {
@@ -664,7 +669,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             })}
             sticky
           />
-        </TableContainer>
+        </div>
       ) : (
         renderGroupedTableView()
       )}
@@ -741,6 +746,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           onClose={handlePanelClose}
         />
       )}
-    </MachineTableWrapper>
+    </Flex>
   );
 };

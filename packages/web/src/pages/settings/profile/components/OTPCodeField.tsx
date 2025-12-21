@@ -1,14 +1,13 @@
 import React from 'react';
-import { Form } from 'antd';
-import styled from 'styled-components';
-import { RediaccInput } from '@/components/ui';
+import { Form, Input } from 'antd';
 import type { Rule } from 'antd/es/form';
 
-const CenteredInput = styled(RediaccInput)`
-  text-align: center;
-  letter-spacing: 0.5em;
-  font-family: ${({ theme }) => theme.fontFamily.MONO};
-`;
+const CenteredInput = (props: React.ComponentProps<typeof Input>) => (
+  <Input
+    style={{ textAlign: 'center', letterSpacing: '0.5em', fontFamily: 'monospace' }}
+    {...props}
+  />
+);
 
 export interface OTPCodeFieldProps {
   /** Field name in the form */

@@ -1,8 +1,5 @@
+import { Button, Dropdown, Tooltip } from 'antd';
 import React from 'react';
-import styled from 'styled-components';
-import { RediaccDropdown, RediaccTooltip } from '@/components/ui';
-// eslint-disable-next-line import/order -- False positive: no empty line exists
-import { TableActionButton } from '@/components/common/styled';
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -85,19 +82,13 @@ export interface ActionButtonGroupProps<T> {
 // STYLED COMPONENTS
 // =============================================================================
 
-const Container = styled.div`
-  display: inline-flex;
-  align-items: center;
-`;
+const Container: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
+  <div style={{ display: 'inline-flex', alignItems: 'center' }} {...props} />
+);
 
-/**
- * Placeholder element that reserves space for hidden buttons
- */
-const ButtonPlaceholder = styled.div`
-  width: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-  min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-  flex-shrink: 0;
-`;
+const ButtonPlaceholder: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
+  <div style={{ width: 40, minHeight: 40, flexShrink: 0 }} {...props} />
+);
 
 // =============================================================================
 // COMPONENT
@@ -196,8 +187,10 @@ export function ActionButtonGroup<T>({
         const labelText = config.label ? getTooltipText(config.label) : undefined;
 
         const buttonElement = (
-          <TableActionButton
-            variant={config.variant === 'primary' ? 'primary' : undefined}
+          <Button
+            type={
+              config.variant === 'primary' ? 'primary' : config.variant === 'link' ? 'link' : 'default'
+            }
             icon={config.icon}
             danger={config.danger}
             disabled={isDisabled}
@@ -205,16 +198,16 @@ export function ActionButtonGroup<T>({
             loading={isLoading}
             data-testid={testId}
             aria-label={ariaLabel}
-            $hasLabel={!!labelText}
+            shape={labelText ? 'default' : 'circle'}
           >
             {labelText}
-          </TableActionButton>
+          </Button>
         );
 
         // Wrap in dropdown if needed
         if (config.dropdownItems) {
           return (
-            <RediaccDropdown
+            <Dropdown
               key={config.type}
               menu={{
                 items: config.dropdownItems,
@@ -224,15 +217,15 @@ export function ActionButtonGroup<T>({
               }}
               trigger={['click']}
             >
-              <RediaccTooltip title={tooltipText}>{buttonElement}</RediaccTooltip>
-            </RediaccDropdown>
+              <Tooltip title={tooltipText}>{buttonElement}</Tooltip>
+            </Dropdown>
           );
         }
 
         return (
-          <RediaccTooltip key={config.type} title={tooltipText}>
+          <Tooltip key={config.type} title={tooltipText}>
             {buttonElement}
-          </RediaccTooltip>
+          </Tooltip>
         );
       })}
     </Container>

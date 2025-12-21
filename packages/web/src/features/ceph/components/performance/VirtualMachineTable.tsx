@@ -1,25 +1,12 @@
+import { Checkbox, Flex } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { List as ReactWindowList } from 'react-window';
 import * as InfiniteLoaderModule from 'react-window-infinite-loader';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
-import { RediaccCheckbox } from '@/components/ui';
 import { useTableStyles } from '@/hooks/useComponentStyles';
 import { useMachineSelection } from '@/store/ceph/hooks';
 import { Machine } from '@/types';
-import {
-  ActionsColumn,
-  CheckboxColumn,
-  HeaderContent,
-  HeaderWrapper,
-  LoadingRow,
-  MachineNameColumn,
-  RowContent,
-  RowWrapper,
-  StatusColumn,
-  TableWrapper,
-  TeamNameColumn,
-} from './styles';
 
 type ScrollAlign = 'auto' | 'smart' | 'center' | 'end' | 'start';
 
@@ -135,39 +122,65 @@ const MachineRow: React.FC<
   }, [machine, onRowClick]);
 
   return (
-    <RowWrapper
+    <Flex
+      align="center"
       style={{
+        cursor: onRowClick ? 'pointer' : 'default',
+        minHeight: 40,
         ...style,
         ...tableStyles.tableCell,
       }}
-      $hasOnClick={!!onRowClick}
       onClick={handleRowClick}
       data-testid={`virtual-machine-row-${machine.machineName}`}
     >
-      <RowContent>
+      <Flex align="center" style={{ width: '100%' }}>
         {selectable && (
-          <CheckboxColumn>
-            <RediaccCheckbox
+          <div style={{ width: 32, flexShrink: 0 }}>
+            <Checkbox
               checked={isSelected}
               onClick={handleCheckboxChange}
               data-testid={`virtual-machine-checkbox-${machine.machineName}`}
             />
-          </CheckboxColumn>
+          </div>
         )}
-        <MachineNameColumn data-testid={`virtual-machine-name-${machine.machineName}`}>
+        <div
+          data-testid={`virtual-machine-name-${machine.machineName}`}
+          style={{
+            flex: 1,
+            minWidth: 200,
+            fontWeight: 500,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
           {machine.machineName}
-        </MachineNameColumn>
-        <TeamNameColumn>{machine.teamName}</TeamNameColumn>
-        <StatusColumn data-testid={`virtual-machine-status-${machine.machineName}`}>
+        </div>
+        <div
+          style={{
+            width: 200,
+            color: 'var(--ant-color-text-secondary)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {machine.teamName}
+        </div>
+        <div style={{ width: 160 }} data-testid={`virtual-machine-status-${machine.machineName}`}>
           <MachineAssignmentStatusCell machine={machine} />
-        </StatusColumn>
+        </div>
         {renderActions && (
-          <ActionsColumn data-testid={`virtual-machine-actions-${machine.machineName}`}>
+          <Flex
+            justify="flex-end"
+            style={{ width: 120 }}
+            data-testid={`virtual-machine-actions-${machine.machineName}`}
+          >
             {renderActions(machine)}
-          </ActionsColumn>
+          </Flex>
         )}
-      </RowContent>
-    </RowWrapper>
+      </Flex>
+    </Flex>
   );
 };
 
@@ -220,13 +233,18 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
 
       if (!rowIsItemLoaded(index)) {
         return (
-          <LoadingRow style={style} data-testid="virtual-machine-row-loading">
+          <Flex
+            align="center"
+            justify="center"
+            style={style}
+            data-testid="virtual-machine-row-loading"
+          >
             <InlineLoadingIndicator
               width="90%"
               height={24}
               data-testid="virtual-machine-row-loading-indicator"
             />
-          </LoadingRow>
+          </Flex>
         );
       }
 
@@ -360,29 +378,59 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   ]);
 
   return (
-    <TableWrapper
+    <div
       style={{
         ...tableStyles.tableContainer,
+        overflow: 'hidden',
       }}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       data-testid="virtual-machine-table"
     >
-      <HeaderWrapper
+      <Flex
         style={{
           ...tableStyles.tableHeader,
+          fontWeight: 500,
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
         }}
         data-testid="virtual-machine-header"
       >
-        <HeaderContent>
-          {selectable && <CheckboxColumn />}
-          <MachineNameColumn>Machine Name</MachineNameColumn>
-          <TeamNameColumn>Team</TeamNameColumn>
-          <StatusColumn>Assignment Status</StatusColumn>
-          {renderActions && <ActionsColumn>Actions</ActionsColumn>}
-        </HeaderContent>
-      </HeaderWrapper>
+        <Flex align="center" style={{ width: '100%' }}>
+          {selectable && <div style={{ width: 32, flexShrink: 0 }} />}
+          <div
+            style={{
+              flex: 1,
+              minWidth: 200,
+              fontWeight: 500,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Machine Name
+          </div>
+          <div
+            style={{
+              width: 200,
+              color: 'var(--ant-color-text-secondary)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Team
+          </div>
+          <div style={{ width: 160 }}>Assignment Status</div>
+          {renderActions && (
+            <Flex justify="flex-end" style={{ width: 120 }}>
+              Actions
+            </Flex>
+          )}
+        </Flex>
+      </Flex>
       <div data-testid="virtual-machine-keyboard-navigation">{content}</div>
-    </TableWrapper>
+    </div>
   );
 };

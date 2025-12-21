@@ -1,8 +1,7 @@
 ﻿import React, { useEffect, useMemo } from 'react';
-import { Col, Progress, Row, Space } from 'antd';
+import { Alert, Card, Col, Empty, Flex, Progress, Row, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
-import { IconWrapper, RediaccAlert, RediaccEmpty, RediaccText } from '@/components/ui';
 import type { Machine } from '@/types';
 import {
   AppstoreOutlined,
@@ -20,39 +19,23 @@ import {
 import { abbreviatePath } from '@/utils/pathUtils';
 import type { GetTeamRepositories_ResultSet1 as Repository } from '@rediacc/shared/types';
 import {
-  ActivityCard,
-  ActivityMetrics,
-  CollapseButton,
-  ContentWrapper,
-  FieldLabel,
-  FieldRow,
-  FieldValue,
-  FieldValueMonospace,
-  Header,
-  HeaderIcon,
-  HeaderRow,
-  PanelTitle,
-  PanelWrapper,
-  PathsCard,
-  Section,
-  SectionCard,
-  SectionDivider,
-  SectionHeader,
-  SectionTitle,
-  ServiceCard,
-  ServiceHeader,
-  ServiceMetaGrid,
-  ServiceMetaItem,
-  ServicesList,
-  Stack,
-  StyledRediaccEmpty,
-  StatusTag,
-  StyledTag,
-  TagGroup,
-  TitleGroup,
-  VolumeDescription,
-  VolumeList,
-} from './styles';
+  DetailPanelBody,
+  DetailPanelCollapseButton,
+  DetailPanelDivider,
+  DetailPanelFieldLabel,
+  DetailPanelFieldMonospaceValue,
+  DetailPanelFieldRow,
+  DetailPanelFieldValue,
+  DetailPanelHeader,
+  DetailPanelHeaderRow,
+  DetailPanelSectionCard,
+  DetailPanelSectionHeader,
+  DetailPanelSectionTitle,
+  DetailPanelSurface,
+  DetailPanelTagGroup,
+  DetailPanelTitle,
+  DetailPanelTitleGroup,
+} from '@/components/resources/internal/detailPanelPrimitives';
 import type { TFunction } from 'i18next';
 
 interface RepositoryDetailPanelProps {
@@ -108,6 +91,12 @@ interface RepositoryPanelData {
   systemData?: Record<string, unknown>;
   services: ServiceData[];
 }
+
+const getTagColor = (variant: 'team' | 'machine' | 'version') =>
+  variant === 'team' ? 'success' : variant === 'machine' ? 'processing' : 'default';
+
+const getStatusColor = (tone?: 'success' | 'warning' | 'error' | 'info' | 'neutral') =>
+  tone === 'neutral' ? 'default' : tone === 'info' ? 'processing' : tone;
 
 export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
   repository,
@@ -219,58 +208,60 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
   if (!repository || !visible) return null;
 
   return (
-    <PanelWrapper $splitView={splitView} $visible={visible} data-testid="repository-detail-panel">
-      <Header>
-        <HeaderRow>
-          <TitleGroup>
-            <HeaderIcon />
-            <PanelTitle level={4} data-testid={`repo-detail-title-${repository.repositoryName}`}>
+    <DetailPanelSurface $splitView={splitView} $visible={visible} data-testid="repository-detail-panel">
+      <DetailPanelHeader>
+        <DetailPanelHeaderRow>
+          <DetailPanelTitleGroup>
+            <FolderOutlined style={{ fontSize: 28 }} />
+            <DetailPanelTitle level={4} data-testid={`repo-detail-title-${repository.repositoryName}`}>
               {repository.repositoryName}
-            </PanelTitle>
-          </TitleGroup>
-          <CollapseButton
-            variant="text"
+            </DetailPanelTitle>
+          </DetailPanelTitleGroup>
+          <DetailPanelCollapseButton
             icon={<DoubleRightOutlined />}
             onClick={onClose}
             data-testid="repository-detail-collapse"
             aria-label="Collapse panel"
           />
-        </HeaderRow>
+        </DetailPanelHeaderRow>
 
-        <TagGroup>
-          <StyledTag
-            $variant="team"
+        <DetailPanelTagGroup>
+          <Tag
+            bordered={false}
+            color={getTagColor('team')}
             icon={<AppstoreOutlined />}
             data-testid={`repo-detail-team-tag-${repository.repositoryName}`}
           >
             {t('common:general.team')}: {repository.teamName}
-          </StyledTag>
+          </Tag>
           {repositoryData && (
-            <StyledTag
-              $variant="machine"
+            <Tag
+              bordered={false}
+              color={getTagColor('machine')}
               icon={<CloudServerOutlined />}
               data-testid={`repo-detail-machine-tag-${repository.repositoryName}`}
             >
               {t('machines:machine')}: {repositoryData.machine.machineName}
-            </StyledTag>
+            </Tag>
           )}
-          <StyledTag
-            $variant="version"
+          <Tag
+            bordered={false}
+            color={getTagColor('version')}
             data-testid={`repo-detail-vault-version-tag-${repository.repositoryName}`}
           >
             {t('resources:repositories.vaultVersion')}: {repository.vaultVersion}
-          </StyledTag>
-        </TagGroup>
-      </Header>
+          </Tag>
+        </DetailPanelTagGroup>
+      </DetailPanelHeader>
 
-      <ContentWrapper data-testid="repository-detail-content">
+      <DetailPanelBody data-testid="repository-detail-content">
         {!repositoryData ? (
-          <StyledRediaccEmpty>
-            <RediaccEmpty
+          <div>
+            <Empty
               description={t('resources:repositories.noRepoData')}
               data-testid="repository-detail-empty-state"
             />
-          </StyledRediaccEmpty>
+          </div>
         ) : (
           <>
             <RepoInfoSection repository={repository} panelData={repositoryData} t={t} />
@@ -285,8 +276,8 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
             )}
           </>
         )}
-      </ContentWrapper>
-    </PanelWrapper>
+      </DetailPanelBody>
+    </DetailPanelSurface>
   );
 };
 
@@ -300,97 +291,102 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
   const { repositoryData } = panelData;
 
   return (
-    <Section data-testid="repository-detail-info-section">
-      <SectionHeader>
-        <IconWrapper $color="var(--color-success)" $size="lg">
-          <FolderOutlined />
-        </IconWrapper>
-        <SectionTitle level={5}>{t('resources:repositories.repoInfo')}</SectionTitle>
-      </SectionHeader>
+      <div data-testid="repository-detail-info-section">
+      <DetailPanelSectionHeader>
+        <FolderOutlined />
+        <DetailPanelSectionTitle level={5}>{t('resources:repositories.repoInfo')}</DetailPanelSectionTitle>
+      </DetailPanelSectionHeader>
 
-      <SectionCard size="sm" data-testid="repository-detail-info-card">
-        <Stack>
-          <FieldRow>
-            <FieldLabel>{t('resources:repositories.repositoryGuid')}:</FieldLabel>
-            <FieldValueMonospace
+      <DetailPanelSectionCard size="small" data-testid="repository-detail-info-card">
+        <Flex vertical style={{ width: '100%' }}>
+          <DetailPanelFieldRow>
+            <DetailPanelFieldLabel>{t('resources:repositories.repositoryGuid')}:</DetailPanelFieldLabel>
+            <DetailPanelFieldMonospaceValue
               copyable
               data-testid={`repo-detail-guid-${repository.repositoryName}`}
             >
               {repository.repositoryGuid}
-            </FieldValueMonospace>
-          </FieldRow>
+            </DetailPanelFieldMonospaceValue>
+          </DetailPanelFieldRow>
 
-          <FieldRow>
-            <FieldLabel>{t('resources:repositories.status')}:</FieldLabel>
+          <DetailPanelFieldRow>
+            <DetailPanelFieldLabel>{t('resources:repositories.status')}:</DetailPanelFieldLabel>
             <Space>
               {repositoryData.mounted ? (
-                <StatusTag
-                  $tone="success"
+                <Tag
+                  bordered={false}
+                  color={getStatusColor('success')}
                   icon={<CheckCircleOutlined />}
                   data-testid={`repo-detail-status-mounted-${repository.repositoryName}`}
                 >
                   {t('resources:repositories.mounted')}
-                </StatusTag>
+                </Tag>
               ) : (
-                <StatusTag
+                <Tag
+                  bordered={false}
+                  color={getStatusColor('neutral')}
                   data-testid={`repo-detail-status-unmounted-${repository.repositoryName}`}
                   icon={<StopOutlined />}
                 >
                   {t('resources:repositories.notMounted')}
-                </StatusTag>
+                </Tag>
               )}
               {repositoryData.accessible && (
-                <StatusTag
-                  $tone="success"
+                <Tag
+                  bordered={false}
+                  color={getStatusColor('success')}
                   data-testid={`repo-detail-status-accessible-${repository.repositoryName}`}
                 >
                   {t('resources:repositories.accessible')}
-                </StatusTag>
+                </Tag>
               )}
             </Space>
-          </FieldRow>
+          </DetailPanelFieldRow>
 
           {repositoryData.has_rediaccfile && (
-            <FieldRow>
-              <FieldLabel>{t('resources:repositories.rediaccfile')}:</FieldLabel>
-              <StatusTag
-                $tone="info"
+            <DetailPanelFieldRow>
+              <DetailPanelFieldLabel>{t('resources:repositories.rediaccfile')}:</DetailPanelFieldLabel>
+              <Tag
+                bordered={false}
+                color={getStatusColor('info')}
                 data-testid={`repo-detail-rediaccfile-${repository.repositoryName}`}
               >
                 {t('resources:repositories.hasRediaccfile')}
-              </StatusTag>
-            </FieldRow>
+              </Tag>
+            </DetailPanelFieldRow>
           )}
 
           {repositoryData.docker_running &&
             repositoryData.volume_status &&
             repositoryData.volume_status !== 'none' && (
-              <FieldRow>
-                <FieldLabel>Docker Volumes:</FieldLabel>
+              <DetailPanelFieldRow>
+                <DetailPanelFieldLabel>Docker Volumes:</DetailPanelFieldLabel>
                 {repositoryData.volume_status === 'safe' ? (
-                  <StatusTag
-                    $tone="success"
+                  <Tag
+                    bordered={false}
+                    color={getStatusColor('success')}
                     icon={<CheckCircleOutlined />}
                     data-testid={`repo-detail-volume-safe-${repository.repositoryName}`}
                   >
                     {repositoryData.internal_volumes} Safe Volume
                     {repositoryData.internal_volumes !== 1 ? 's' : ''}
-                  </StatusTag>
+                  </Tag>
                 ) : (
-                  <StatusTag
-                    $tone="warning"
+                  <Tag
+                    bordered={false}
+                    color={getStatusColor('warning')}
                     icon={<WarningOutlined />}
                     data-testid={`repo-detail-volume-warning-${repository.repositoryName}`}
                   >
                     {repositoryData.external_volumes} External, {repositoryData.internal_volumes}{' '}
                     Internal
-                  </StatusTag>
+                  </Tag>
                 )}
-              </FieldRow>
+              </DetailPanelFieldRow>
             )}
-        </Stack>
-      </SectionCard>
-    </Section>
+        </Flex>
+      </DetailPanelSectionCard>
+    </div>
   );
 };
 
@@ -406,27 +402,26 @@ const ExternalVolumeWarning: React.FC<SectionProps> = ({ repository, panelData }
   }
 
   return (
-    <RediaccAlert
-      spacing="default"
-      variant="warning"
+    <Alert
+      type="warning"
       showIcon
       icon={<WarningOutlined />}
       message="External Docker Volumes Detected"
       description={
-        <VolumeDescription>
-          <FieldValue>The following volumes are stored outside the repository:</FieldValue>
-          <VolumeList>
+        <Flex vertical>
+          <DetailPanelFieldValue>The following volumes are stored outside the repository:</DetailPanelFieldValue>
+          <ul>
             {repositoryData.external_volume_names.map((vol) => (
               <li key={vol}>
-                <FieldValue code>{vol}</FieldValue>
+                <DetailPanelFieldValue code>{vol}</DetailPanelFieldValue>
               </li>
             ))}
-          </VolumeList>
-          <FieldValue color="secondary">
+          </ul>
+          <DetailPanelFieldValue color="secondary">
             <strong>Warning:</strong> If this repository is cloned, these volumes will be orphaned.
-            Use bind mounts to <FieldValue code>$REPOSITORY_PATH</FieldValue> instead.
-          </FieldValue>
-        </VolumeDescription>
+            Use bind mounts to <DetailPanelFieldValue code>$REPOSITORY_PATH</DetailPanelFieldValue> instead.
+          </DetailPanelFieldValue>
+        </Flex>
       }
       data-testid={`repo-detail-volume-warning-alert-${repository.repositoryName}`}
     />
@@ -440,68 +435,63 @@ const StorageSection: React.FC<SectionProps> = ({ repository, panelData, t }) =>
     : 0;
 
   return (
-    <Section>
-      <SectionDivider data-testid="repository-detail-storage-divider">
-        <IconWrapper $color="var(--color-info)">
-          <InfoCircleOutlined />
-        </IconWrapper>
+    <div>
+      <DetailPanelDivider data-testid="repository-detail-storage-divider">
+        <InfoCircleOutlined />
         {t('resources:repositories.storageInfo')}
-      </SectionDivider>
+      </DetailPanelDivider>
 
       <Row gutter={[16, 16]}>
         <Col span={24}>
-          <SectionCard
-            size="sm"
+          <DetailPanelSectionCard
+            size="small"
             data-testid={`repo-detail-storage-info-card-${repository.repositoryName}`}
           >
-            <Stack>
-              <FieldRow>
-                <FieldLabel>{t('resources:repositories.imageSize')}:</FieldLabel>
-                <FieldValue>{repositoryData.size_human}</FieldValue>
-              </FieldRow>
-              <FieldRow>
-                <FieldLabel>{t('resources:repositories.lastModified')}:</FieldLabel>
-                <FieldValue>{repositoryData.modified_human}</FieldValue>
-              </FieldRow>
-            </Stack>
-          </SectionCard>
+            <Flex vertical style={{ width: '100%' }}>
+              <DetailPanelFieldRow>
+                <DetailPanelFieldLabel>{t('resources:repositories.imageSize')}:</DetailPanelFieldLabel>
+                <DetailPanelFieldValue>{repositoryData.size_human}</DetailPanelFieldValue>
+              </DetailPanelFieldRow>
+              <DetailPanelFieldRow>
+                <DetailPanelFieldLabel>{t('resources:repositories.lastModified')}:</DetailPanelFieldLabel>
+                <DetailPanelFieldValue>{repositoryData.modified_human}</DetailPanelFieldValue>
+              </DetailPanelFieldRow>
+            </Flex>
+          </DetailPanelSectionCard>
         </Col>
 
         {repositoryData.mounted && repositoryData.disk_space && (
           <Col span={24}>
-            <SectionCard
-              size="sm"
+            <DetailPanelSectionCard
+              size="small"
               data-testid={`repo-detail-disk-usage-card-${repository.repositoryName}`}
             >
-              <Stack>
-                <FieldRow>
+              <Flex vertical style={{ width: '100%' }}>
+                <DetailPanelFieldRow>
                   <Space>
-                    <IconWrapper $color="var(--color-success)">
-                      <DatabaseOutlined />
-                    </IconWrapper>
-                    <FieldValue weight="semibold">
+                    <DatabaseOutlined />
+                    <DetailPanelFieldValue strong>
                       {t('resources:repositories.diskUsage')}
-                    </FieldValue>
+                    </DetailPanelFieldValue>
                   </Space>
-                </FieldRow>
-                <FieldValue>
+                </DetailPanelFieldRow>
+                <DetailPanelFieldValue>
                   {repositoryData.disk_space.used} / {repositoryData.disk_space.total}
-                </FieldValue>
+                </DetailPanelFieldValue>
                 <Progress
                   percent={diskPercent}
                   status={diskPercent > 90 ? 'exception' : 'normal'}
-                  strokeColor={diskPercent > 90 ? 'var(--color-error)' : 'var(--color-success)'}
                   data-testid={`repo-detail-disk-usage-progress-${repository.repositoryName}`}
                 />
-                <RediaccText variant="caption">
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   {t('resources:repositories.available')}: {repositoryData.disk_space.available}
-                </RediaccText>
-              </Stack>
-            </SectionCard>
+                </Typography.Text>
+              </Flex>
+            </DetailPanelSectionCard>
           </Col>
         )}
       </Row>
-    </Section>
+    </div>
   );
 };
 
@@ -509,39 +499,37 @@ const FilePathsSection: React.FC<SectionProps> = ({ repository, panelData, t }) 
   const { repositoryData } = panelData;
 
   return (
-    <Section>
-      <SectionDivider data-testid="repository-detail-file-paths-divider">
-        <IconWrapper $color="var(--color-primary)">
-          <FolderOutlined />
-        </IconWrapper>
+    <div>
+      <DetailPanelDivider data-testid="repository-detail-file-paths-divider">
+        <FolderOutlined />
         {t('resources:repositories.filePaths')}
-      </SectionDivider>
+      </DetailPanelDivider>
 
-      <PathsCard size="sm" data-testid={`repo-detail-file-paths-card-${repository.repositoryName}`}>
-        <Stack>
-          <FieldRow>
-            <FieldLabel>{t('resources:repositories.imagePath')}:</FieldLabel>
-            <FieldValueMonospace
+      <DetailPanelSectionCard size="small" data-testid={`repo-detail-file-paths-card-${repository.repositoryName}`}>
+        <Flex vertical style={{ width: '100%' }}>
+          <DetailPanelFieldRow>
+            <DetailPanelFieldLabel>{t('resources:repositories.imagePath')}:</DetailPanelFieldLabel>
+            <DetailPanelFieldMonospaceValue
               copyable={{ text: repositoryData.image_path }}
               data-testid={`repo-detail-image-path-${repository.repositoryName}`}
             >
               {abbreviatePath(repositoryData.image_path, 45)}
-            </FieldValueMonospace>
-          </FieldRow>
+            </DetailPanelFieldMonospaceValue>
+          </DetailPanelFieldRow>
           {repositoryData.mount_path && (
-            <FieldRow>
-              <FieldLabel>{t('resources:repositories.mountPath')}:</FieldLabel>
-              <FieldValueMonospace
+            <DetailPanelFieldRow>
+              <DetailPanelFieldLabel>{t('resources:repositories.mountPath')}:</DetailPanelFieldLabel>
+              <DetailPanelFieldMonospaceValue
                 copyable={{ text: repositoryData.mount_path }}
                 data-testid={`repo-detail-mount-path-${repository.repositoryName}`}
               >
                 {abbreviatePath(repositoryData.mount_path, 45)}
-              </FieldValueMonospace>
-            </FieldRow>
+              </DetailPanelFieldMonospaceValue>
+            </DetailPanelFieldRow>
           )}
-        </Stack>
-      </PathsCard>
-    </Section>
+        </Flex>
+      </DetailPanelSectionCard>
+    </div>
   );
 };
 
@@ -549,47 +537,43 @@ const ActivitySection: React.FC<SectionProps> = ({ repository, panelData, t }) =
   const { repositoryData } = panelData;
 
   return (
-    <Section>
-      <SectionDivider data-testid="repository-detail-activity-divider">
-        <IconWrapper $color="var(--color-info)">
-          <FieldTimeOutlined />
-        </IconWrapper>
-        {t('resources:repositories.activity')}
-      </SectionDivider>
+    <div>
+    <DetailPanelDivider data-testid="repository-detail-activity-divider">
+      <FieldTimeOutlined />
+      {t('resources:repositories.activity')}
+    </DetailPanelDivider>
 
-      <ActivityCard
-        size="sm"
+      <DetailPanelSectionCard
+        size="small"
         data-testid={`repo-detail-activity-card-${repository.repositoryName}`}
       >
-        <ActivityMetrics>
+        <Flex vertical>
           {repositoryData.docker_running && (
-            <FieldRow>
-              <FieldLabel>{t('resources:repositories.containers')}:</FieldLabel>
-              <FieldValue>{repositoryData.container_count}</FieldValue>
-            </FieldRow>
+            <DetailPanelFieldRow>
+              <DetailPanelFieldLabel>{t('resources:repositories.containers')}:</DetailPanelFieldLabel>
+              <DetailPanelFieldValue>{repositoryData.container_count}</DetailPanelFieldValue>
+            </DetailPanelFieldRow>
           )}
           {repositoryData.has_services && (
-            <FieldRow>
-              <FieldLabel>{t('resources:repositories.services')}:</FieldLabel>
-              <FieldValue>{repositoryData.service_count}</FieldValue>
-            </FieldRow>
+            <DetailPanelFieldRow>
+              <DetailPanelFieldLabel>{t('resources:repositories.services')}:</DetailPanelFieldLabel>
+              <DetailPanelFieldValue>{repositoryData.service_count}</DetailPanelFieldValue>
+            </DetailPanelFieldRow>
           )}
-        </ActivityMetrics>
-      </ActivityCard>
-    </Section>
+        </Flex>
+      </DetailPanelSectionCard>
+    </div>
   );
 };
 
 const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) => (
-  <Section>
-    <SectionDivider data-testid="repository-detail-services-divider">
-      <IconWrapper $color="var(--color-primary)">
-        <CodeOutlined />
-      </IconWrapper>
+  <div>
+    <DetailPanelDivider data-testid="repository-detail-services-divider">
+      <CodeOutlined />
       {t('resources:repositories.servicesSection')}
-    </SectionDivider>
+    </DetailPanelDivider>
 
-    <ServicesList data-testid="repository-detail-services-list">
+    <div data-testid="repository-detail-services-list">
       {panelData.services.map((service, index) => {
         const state: 'active' | 'failed' | 'other' =
           service.active_state === 'active'
@@ -599,70 +583,63 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
               : 'other';
 
         return (
-          <ServiceCard
+          <Card
             key={`${service.name}-${index}`}
-            size="sm"
-            $state={state}
+            size="small"
             data-testid={`repo-detail-service-card-${repository.repositoryName}-${service.name}`}
           >
             <Row gutter={[16, 8]}>
               <Col span={24}>
-                <ServiceHeader>
-                  <FieldValue
-                    weight="semibold"
-                    data-testid={`repo-detail-service-name-${repository.repositoryName}-${service.name}`}
-                  >
+                <Flex justify="space-between" align="center">
+                  <DetailPanelFieldValue strong data-testid={`repo-detail-service-name-${repository.repositoryName}-${service.name}`}>
                     {service.name}
-                  </FieldValue>
-                  <StatusTag
-                    $tone={(() => {
-                      if (state === 'active') return 'success';
-                      if (state === 'failed') return 'error';
-                      return 'neutral';
-                    })()}
+                  </DetailPanelFieldValue>
+                  <Tag
+                    bordered={false}
+                    color={getStatusColor(state === 'active' ? 'success' : state === 'failed' ? 'error' : 'neutral')}
                     data-testid={`repo-detail-service-status-${repository.repositoryName}-${service.name}`}
                   >
                     {service.active_state}
-                  </StatusTag>
-                </ServiceHeader>
+                  </Tag>
+                </Flex>
               </Col>
               {(service.memory_human ||
                 service.main_pid ||
                 service.uptime_human ||
                 service.restarts !== undefined) && (
                 <Col span={24}>
-                  <ServiceMetaGrid>
+                  <Flex wrap>
                     {service.memory_human && (
-                      <ServiceMetaItem>
-                        <RediaccText variant="caption">Memory</RediaccText>
-                        <RediaccText variant="caption">{service.memory_human}</RediaccText>
-                      </ServiceMetaItem>
+                      <Flex vertical>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>Memory</Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{service.memory_human}</Typography.Text>
+                      </Flex>
                     )}
                     {service.main_pid && (
-                      <ServiceMetaItem>
-                        <RediaccText variant="caption">PID</RediaccText>
-                        <RediaccText variant="caption">{service.main_pid}</RediaccText>
-                      </ServiceMetaItem>
+                      <Flex vertical>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>PID</Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{service.main_pid}</Typography.Text>
+                      </Flex>
                     )}
                     {service.uptime_human && (
-                      <ServiceMetaItem>
-                        <RediaccText variant="caption">Uptime</RediaccText>
-                        <RediaccText variant="caption">{service.uptime_human}</RediaccText>
-                      </ServiceMetaItem>
+                      <Flex vertical>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>Uptime</Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{service.uptime_human}</Typography.Text>
+                      </Flex>
                     )}
                     {service.restarts !== undefined && (
-                      <ServiceMetaItem>
-                        <RediaccText variant="caption">Restarts</RediaccText>
-                        <RediaccText variant="caption">{service.restarts}</RediaccText>
-                      </ServiceMetaItem>
+                      <Flex vertical>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>Restarts</Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{service.restarts}</Typography.Text>
+                      </Flex>
                     )}
-                  </ServiceMetaGrid>
+                  </Flex>
                 </Col>
               )}
             </Row>
-          </ServiceCard>
+          </Card>
         );
       })}
-    </ServicesList>
-  </Section>
+    </div>
+  </div>
 );

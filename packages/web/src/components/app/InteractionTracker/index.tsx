@@ -1,6 +1,5 @@
 import React, { ReactNode, useEffect, useRef } from 'react';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
-import { TrackerContainer } from './styles';
 
 type TelemetryAttributes = Record<string, string | number | boolean>;
 
@@ -103,7 +102,11 @@ export const InteractionTracker: React.FC<InteractionTrackerProps> = ({ children
     };
   }, [isInitialized, trackUserAction]);
 
-  return <TrackerContainer ref={containerRef}>{children}</TrackerContainer>;
+  return (
+    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+      {children}
+    </div>
+  );
 };
 
 /**

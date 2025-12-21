@@ -1,31 +1,14 @@
 import React from 'react';
-import { Form, Modal } from 'antd';
+import { Alert, Button, Card, Flex, Form, Modal, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useUpdateUserPassword, useUpdateUserVault, useUserVault } from '@/api/queries/users';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
 import { PasswordConfirmField, PasswordField } from '@/components/forms/FormFields';
-import { RediaccTooltip } from '@/components/ui';
-import {
-  CardActions,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  IconWrapper,
-  ModalActions,
-  PageWrapper,
-  RediaccButton,
-  RediaccCard,
-  RequirementsList,
-  SectionHeading,
-  SectionStack,
-} from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState, useModalForm } from '@/hooks';
 import TwoFactorSettings from '@/pages/settings/profile/components/TwoFactorSettings';
-import { FormItemActions, ModalAlert } from '@/pages/system/styles';
 import { logout } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
@@ -114,25 +97,25 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <PageWrapper>
-      <SectionStack>
-        <SectionHeading level={3}>{t('personal.title')}</SectionHeading>
+    <div>
+      <div>
+        <Typography.Title level={3}>{t('personal.title')}</Typography.Title>
 
-        <RediaccCard fullHeight>
-          <CardContent>
-            <CardHeader>
-              <IconWrapper $size="md">
-                <UserOutlined />
-              </IconWrapper>
-              <CardTitle level={4}>{t('personal.title')}</CardTitle>
-            </CardHeader>
+        <Card>
+          <Flex vertical gap={16}>
+            <Flex align="center" gap={8}>
+              <UserOutlined />
+              <Typography.Title level={4} style={{ margin: 0 }}>
+                {t('personal.title')}
+              </Typography.Title>
+            </Flex>
 
-            <CardDescription>{t('personal.description')}</CardDescription>
+            <Typography.Text type="secondary">{t('personal.description')}</Typography.Text>
 
-            <CardActions>
+            <Flex wrap gap={8} align="center">
               {featureFlags.isEnabled('personalVaultConfiguration') && (
-                <RediaccTooltip title={t('personal.configureVault')}>
-                  <RediaccButton
+                <Tooltip title={t('personal.configureVault')}>
+                  <Button
                     icon={<SettingOutlined />}
                     onClick={() => {
                       refetchUserVault();
@@ -141,28 +124,28 @@ const ProfilePage: React.FC = () => {
                     data-testid="system-user-vault-button"
                     aria-label={t('personal.configureVault')}
                   />
-                </RediaccTooltip>
+                </Tooltip>
               )}
-              <RediaccTooltip title={tSystem('actions.changePassword')}>
-                <RediaccButton
+              <Tooltip title={tSystem('actions.changePassword')}>
+                <Button
                   icon={<KeyOutlined />}
                   onClick={openChangePassword}
                   data-testid="system-change-password-button"
                   aria-label={tSystem('actions.changePassword')}
                 />
-              </RediaccTooltip>
-              <RediaccTooltip title={tSystem('actions.twoFactorAuth')}>
-                <RediaccButton
+              </Tooltip>
+              <Tooltip title={tSystem('actions.twoFactorAuth')}>
+                <Button
                   icon={<SafetyCertificateOutlined />}
                   onClick={() => twoFactorModal.open()}
                   data-testid="system-two-factor-button"
                   aria-label={tSystem('actions.twoFactorAuth')}
                 />
-              </RediaccTooltip>
-            </CardActions>
-          </CardContent>
-        </RediaccCard>
-      </SectionStack>
+              </Tooltip>
+            </Flex>
+          </Flex>
+        </Card>
+      </div>
 
       <VaultEditorModal
         open={userVaultModal.isOpen}
@@ -188,12 +171,12 @@ const ProfilePage: React.FC = () => {
           onFinish={handleChangePassword}
           autoComplete="off"
         >
-          <ModalAlert
+          <Alert
             message={t('personal.changePassword.requirementsTitle', {
               defaultValue: 'Password Requirements',
             })}
             description={
-              <RequirementsList>
+              <ul className="requirements-list">
                 <li>
                   {t('personal.changePassword.requirement1', {
                     defaultValue: 'At least 8 characters long',
@@ -214,9 +197,9 @@ const ProfilePage: React.FC = () => {
                     defaultValue: 'Contains at least one special character',
                   })}
                 </li>
-              </RequirementsList>
+              </ul>
             }
-            variant="info"
+            type="info"
             showIcon
           />
 
@@ -256,21 +239,21 @@ const ProfilePage: React.FC = () => {
             })}
           />
 
-          <FormItemActions>
-            <ModalActions>
-              <RediaccButton onClick={closeChangePassword}>
+          <Form.Item>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <Button onClick={closeChangePassword}>
                 {tCommon('actions.cancel')}
-              </RediaccButton>
-              <RediaccButton htmlType="submit" loading={updateUserPasswordMutation.isPending}>
+              </Button>
+              <Button htmlType="submit" loading={updateUserPasswordMutation.isPending}>
                 {t('personal.changePassword.submit', { defaultValue: 'Change Password' })}
-              </RediaccButton>
-            </ModalActions>
-          </FormItemActions>
+              </Button>
+            </div>
+          </Form.Item>
         </Form>
       </Modal>
 
       <TwoFactorSettings open={twoFactorModal.isOpen} onCancel={twoFactorModal.close} />
-    </PageWrapper>
+    </div>
   );
 };
 

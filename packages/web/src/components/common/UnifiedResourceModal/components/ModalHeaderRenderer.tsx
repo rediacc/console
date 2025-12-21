@@ -1,7 +1,6 @@
 import React from 'react';
-import { Space } from 'antd';
+import { Flex, Space, Typography } from 'antd';
 import { TFunction } from 'i18next';
-import { RediaccStack, RediaccText } from '@/components/ui';
 import type { ResourceType } from '../index';
 
 type ExistingResourceData = Record<string, unknown>;
@@ -79,11 +78,11 @@ export const createFunctionSubtitle = (
 
   return (
     <Space size="small">
-      <RediaccText color="secondary">{t('machines:team')}:</RediaccText>
-      <RediaccText weight="bold">{teamLabel}</RediaccText>
+      <Typography.Text type="secondary">{t('machines:team')}:</Typography.Text>
+      <Typography.Text strong>{teamLabel}</Typography.Text>
       {['machine', 'repository', 'storage'].includes(resourceType) && resourceName && (
         <>
-          <RediaccText color="secondary">
+          <Typography.Text type="secondary">
             {t(
               resourceType === 'machine'
                 ? 'machines:machine'
@@ -92,8 +91,8 @@ export const createFunctionSubtitle = (
                   : 'repositories.repository'
             )}
             :
-          </RediaccText>
-          <RediaccText weight="bold">{resourceName}</RediaccText>
+          </Typography.Text>
+          <Typography.Text strong>{resourceName}</Typography.Text>
         </>
       )}
     </Space>
@@ -201,16 +200,16 @@ export const renderModalTitle = (props: ModalHeaderRendererProps): React.ReactNo
   if (props.mode === 'create' && props.resourceType === 'machine') {
     const subtitle = getModalSubtitle(props);
     return (
-      <RediaccStack direction="vertical" gap="xs">
-        <RediaccText size="lg" weight="semibold">
+      <Flex vertical gap={4}>
+        <Typography.Text strong style={{ fontSize: 16 }}>
           {baseTitle}
-        </RediaccText>
+        </Typography.Text>
         {subtitle && (
-          <RediaccText size="sm" color="secondary">
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {props.t('general.team')}: {subtitle}
-          </RediaccText>
+          </Typography.Text>
         )}
-      </RediaccStack>
+      </Flex>
     );
   }
 

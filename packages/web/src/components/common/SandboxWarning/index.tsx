@@ -3,7 +3,7 @@ import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { configService } from '@/services/configService';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { BannerMessage, SandboxBanner } from './styles';
+import { Alert, Flex } from 'antd';
 
 const SandboxWarning: React.FC = () => {
   const { t } = useTranslation('common');
@@ -33,16 +33,27 @@ const SandboxWarning: React.FC = () => {
   }
 
   return (
-    <SandboxBanner
+    <Alert
       banner
-      variant="warning"
+      type="warning"
       showIcon={false}
       closable={false}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 240,
+        right: 0,
+        zIndex: 1000,
+        minHeight: 40,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
       message={
-        <BannerMessage>
+        <Flex align="center" gap={8} wrap style={{ textAlign: 'center', fontWeight: 500 }}>
           <ExclamationCircleOutlined />
           <strong>{t('warnings.sandboxEnvironment')}:</strong> {t('warnings.sandboxMessage')}
-        </BannerMessage>
+        </Flex>
       }
     />
   );

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, Modal, Popconfirm, Space } from 'antd';
+import { Button, Flex, Form, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
@@ -17,17 +17,6 @@ import {
 } from '@/api/queries/users';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import ResourceListView from '@/components/common/ResourceListView';
-import { RediaccTag, RediaccTooltip } from '@/components/ui';
-import {
-  ListTitleRow as UsersListHeader,
-  ListSubtitle as UsersListSubtitle,
-  ListTitle as UsersListTitle,
-  PageWrapper as UsersPageWrapper,
-  RediaccButton,
-  RediaccSelect,
-  SectionHeading as UsersSectionHeading,
-  SectionStack as UsersSectionStack,
-} from '@/components/ui';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import ResourceForm from '@/pages/organization/users/components/ResourceForm';
 import {
@@ -152,13 +141,13 @@ const UsersPage: React.FC = () => {
       width: 120,
       render: (activated: boolean) =>
         activated ? (
-          <RediaccTag icon={<CheckCircleOutlined />} variant="success">
+          <Tag icon={<CheckCircleOutlined />} color="success">
             {t('users.status.active', { defaultValue: 'Active' })}
-          </RediaccTag>
+          </Tag>
         ) : (
-          <RediaccTag icon={<StopOutlined />} variant="neutral">
+          <Tag icon={<StopOutlined />} color="default">
             {t('users.status.inactive', { defaultValue: 'Inactive' })}
-          </RediaccTag>
+          </Tag>
         ),
     },
     {
@@ -167,13 +156,13 @@ const UsersPage: React.FC = () => {
       key: 'permissionGroupName',
       render: (group: string) =>
         group ? (
-          <RediaccTag icon={<SafetyOutlined />} variant="info">
+          <Tag icon={<SafetyOutlined />} color="processing">
             {group}
-          </RediaccTag>
+          </Tag>
         ) : (
-          <RediaccTag variant="neutral">
+          <Tag color="default">
             {t('users.permissionGroups.none', { defaultValue: 'No Group' })}
-          </RediaccTag>
+          </Tag>
         ),
     },
     {
@@ -191,9 +180,9 @@ const UsersPage: React.FC = () => {
       width: 300,
       render: (_: unknown, record: User) => (
         <Space>
-          <RediaccTooltip title={tSystem('actions.permissions')}>
-            <RediaccButton
-              variant="primary"
+          <Tooltip title={tSystem('actions.permissions')}>
+            <Button
+              type="text"
               icon={<SafetyOutlined />}
               onClick={() => {
                 assignPermissionModal.open(record);
@@ -202,10 +191,10 @@ const UsersPage: React.FC = () => {
               data-testid={`system-user-permissions-button-${record.userEmail}`}
               aria-label={tSystem('actions.permissions')}
             />
-          </RediaccTooltip>
-          <RediaccTooltip title={tSystem('actions.trace')}>
-            <RediaccButton
-              variant="primary"
+          </Tooltip>
+          <Tooltip title={tSystem('actions.trace')}>
+            <Button
+              type="text"
               icon={<HistoryOutlined />}
               onClick={() =>
                 auditTrace.open({
@@ -217,7 +206,7 @@ const UsersPage: React.FC = () => {
               data-testid={`system-user-trace-button-${record.userEmail}`}
               aria-label={tSystem('actions.trace')}
             />
-          </RediaccTooltip>
+          </Tooltip>
           {record.activated && (
             <Popconfirm
               title={tSystem('users.deactivate.confirmTitle', { defaultValue: 'Deactivate User' })}
@@ -230,15 +219,16 @@ const UsersPage: React.FC = () => {
               cancelText={tCommon('general.no')}
               okButtonProps={{ danger: true }}
             >
-              <RediaccTooltip title={tSystem('actions.deactivate')}>
-                <RediaccButton
-                  variant="danger"
+              <Tooltip title={tSystem('actions.deactivate')}>
+                <Button
+                  type="text"
+                  danger
                   icon={<StopOutlined />}
                   loading={deactivateUserMutation.isPending}
                   data-testid={`system-user-deactivate-button-${record.userEmail}`}
                   aria-label={tSystem('actions.deactivate')}
                 />
-              </RediaccTooltip>
+              </Tooltip>
             </Popconfirm>
           )}
           {!record.activated && (
@@ -252,15 +242,15 @@ const UsersPage: React.FC = () => {
               okText={tCommon('general.yes')}
               cancelText={tCommon('general.no')}
             >
-              <RediaccTooltip title={tSystem('actions.activate')}>
-                <RediaccButton
-                  variant="primary"
+              <Tooltip title={tSystem('actions.activate')}>
+                <Button
+                  type="text"
                   icon={<CheckOutlined />}
                   loading={reactivateUserMutation.isPending}
                   data-testid={`system-user-activate-button-${record.userEmail}`}
                   aria-label={tSystem('actions.activate')}
                 />
-              </RediaccTooltip>
+              </Tooltip>
             </Popconfirm>
           )}
         </Space>
@@ -269,19 +259,21 @@ const UsersPage: React.FC = () => {
   ];
 
   return (
-    <UsersPageWrapper>
-      <UsersSectionStack>
-        <UsersSectionHeading level={3}>
+    <div>
+      <Flex vertical gap={16}>
+        <Typography.Title level={3} style={{ margin: 0 }}>
           {t('users.heading', { defaultValue: 'Users' })}
-        </UsersSectionHeading>
+        </Typography.Title>
         <ResourceListView
           title={
-            <UsersListHeader>
-              <UsersListTitle>{t('users.title', { defaultValue: 'Users' })}</UsersListTitle>
-              <UsersListSubtitle>
+            <div>
+              <Typography.Title level={4} style={{ margin: 0 }}>
+                {t('users.title', { defaultValue: 'Users' })}
+              </Typography.Title>
+              <Typography.Text type="secondary">
                 {t('users.subtitle', { defaultValue: 'Manage users and their permissions' })}
-              </UsersListSubtitle>
-            </UsersListHeader>
+              </Typography.Text>
+            </div>
           }
           loading={usersLoading}
           data={users}
@@ -290,18 +282,18 @@ const UsersPage: React.FC = () => {
           searchPlaceholder={t('users.searchPlaceholder', { defaultValue: 'Search users...' })}
           data-testid="system-user-table"
           actions={
-            <RediaccTooltip title={tSystem('actions.createUser')}>
-              <RediaccButton
-                variant="primary"
+            <Tooltip title={tSystem('actions.createUser')}>
+              <Button
+                type="primary"
                 icon={<PlusOutlined />}
                 onClick={() => createUserModal.open()}
                 data-testid="system-create-user-button"
                 aria-label={tSystem('actions.createUser')}
               />
-            </RediaccTooltip>
+            </Tooltip>
           }
         />
-      </UsersSectionStack>
+      </Flex>
 
       <Modal
         title={t('users.modals.createTitle', { defaultValue: 'Create User' })}
@@ -343,7 +335,7 @@ const UsersPage: React.FC = () => {
           <Form.Item
             label={t('users.modals.permissionGroupLabel', { defaultValue: 'Permission Group' })}
           >
-            <RediaccSelect
+            <Select
               value={selectedUserGroup}
               onChange={(value) => setSelectedUserGroup((value as string) || '')}
               placeholder={t('users.modals.permissionGroupPlaceholder', {
@@ -367,7 +359,7 @@ const UsersPage: React.FC = () => {
         entityIdentifier={auditTrace.entityIdentifier}
         entityName={auditTrace.entityName}
       />
-    </UsersPageWrapper>
+    </div>
   );
 };
 

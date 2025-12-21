@@ -1,7 +1,6 @@
 import React from 'react';
-import { Alert, Col, Empty, Row } from 'antd';
+import { Alert, Card, Col, Empty, Flex, Row, Statistic } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccCard, RediaccStack, RediaccStatistic } from '@/components/ui';
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -12,7 +11,7 @@ import {
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
-import { InlineLink, InlineStack } from '../styles';
+import { Link as RouterLink } from 'react-router-dom';
 
 interface QueueOverviewWidgetProps {
   queueStats?: CompanyDashboardData['queueStats'];
@@ -23,71 +22,69 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
 
   if (!queueStats) {
     return (
-      <RediaccCard
-        fullWidth
+      <Card
         title={
-          <InlineStack>
+          <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
             <RobotOutlined />
             <span>Queue Overview</span>
-          </InlineStack>
+          </Flex>
         }
         data-testid="dashboard-card-queue-overview-empty"
       >
         <Empty description="No queue data available" />
-      </RediaccCard>
+      </Card>
     );
   }
 
   return (
-    <RediaccCard
-      fullWidth
+    <Card
       title={
-        <InlineStack>
+        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <RobotOutlined />
           <span>Queue Overview</span>
-        </InlineStack>
+        </Flex>
       }
       extra={
-        <InlineLink to="/queue" data-testid="dashboard-queue-manage-link">
+        <RouterLink
+          to="/queue"
+          data-testid="dashboard-queue-manage-link"
+          style={{ fontWeight: 500 }}
+        >
           Manage
-        </InlineLink>
+        </RouterLink>
       }
       data-testid="dashboard-card-queue-overview"
     >
-      <RediaccStack direction="vertical" gap="md" fullWidth>
+      <Flex vertical gap={16} style={{ width: '100%' }}>
         <Row gutter={[16, 16]}>
           <Col xs={12} md={6}>
-            <RediaccStatistic
+            <Statistic
               title={t('dashboard.pending')}
               value={queueStats.pendingCount || 0}
-              variant="warning"
               prefix={<ClockCircleOutlined />}
               data-testid="dashboard-stat-pending"
             />
           </Col>
           <Col xs={12} md={6}>
-            <RediaccStatistic
+            <Statistic
               title={t('dashboard.processing')}
               value={queueStats.activeCount || 0}
-              variant="info"
               prefix={<SyncOutlined spin />}
               data-testid="dashboard-stat-processing"
             />
           </Col>
           <Col xs={12} md={6}>
-            <RediaccStatistic
+            <Statistic
               title={t('dashboard.completed')}
               value={queueStats.completedCount || 0}
-              variant="success"
               prefix={<CheckCircleOutlined />}
               data-testid="dashboard-stat-completed"
             />
           </Col>
           <Col xs={12} md={6}>
-            <RediaccStatistic
+            <Statistic
               title={t('dashboard.failed')}
               value={queueStats.failedCount || 0}
-              variant="error"
               prefix={<ExclamationCircleOutlined />}
               data-testid="dashboard-stat-failed"
             />
@@ -95,7 +92,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
         </Row>
 
         {(queueStats.hasStaleItems === 1 || queueStats.hasOldPendingItems === 1) && (
-          <RediaccStack direction="vertical" gap="sm" fullWidth>
+          <Flex vertical gap={8} style={{ width: '100%' }}>
             {queueStats.hasStaleItems === 1 && (
               <Alert
                 message={`${queueStats.staleCount || 0} stale items`}
@@ -114,10 +111,10 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
                 data-testid="dashboard-alert-old-pending"
               />
             )}
-          </RediaccStack>
+          </Flex>
         )}
-      </RediaccStack>
-    </RediaccCard>
+      </Flex>
+    </Card>
   );
 };
 

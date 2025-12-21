@@ -1,19 +1,11 @@
 import React, { useEffect, useState, type ComponentPropsWithoutRef } from 'react';
-import { Col, List, Row, Typography } from 'antd';
+import { Alert, Button, Card, Col, Divider, Flex, List, Modal, Row, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown, { type Components as MarkdownComponents } from 'react-markdown';
 import { Prism as SyntaxHighlighter, type SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import {
-  RediaccButton,
-  RediaccDivider,
-  RediaccStack,
-  RediaccTag,
-  RediaccText,
-} from '@/components/ui';
 import { templateService } from '@/services/templateService';
-import { TabLabel } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import {
   AppstoreOutlined,
@@ -24,40 +16,6 @@ import {
   RocketOutlined,
   SafetyOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  AlertStack,
-  BodyParagraph,
-  CenteredLoadingContainer,
-  Checklist,
-  ChecklistItem,
-  DescriptionCard,
-  DifficultyTag,
-  FeatureCard,
-  FeatureText,
-  FileListCard,
-  FileListColumn,
-  FileListItem,
-  FileMeta,
-  FileName,
-  FilePath,
-  FilePreviewBody,
-  FilePreviewCard,
-  FilePreviewColumn,
-  FilesLayout,
-  FullHeightList,
-  IconLabel,
-  MarkdownContent,
-  OverviewScroll,
-  RoundedAlert,
-  SecurityCard,
-  SecurityScroll,
-  SecurityTitle,
-  StyledModal,
-  StyledTabs,
-  SuccessIcon,
-  TemplateAvatar,
-  TemplateIconWrapper,
-} from './styles';
 
 interface TemplateFile {
   name: string;
@@ -201,9 +159,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 
   // Use generic icon for all templates (backend provides proper names)
   const getTemplateIcon = () => (
-    <TemplateIconWrapper>
+    <span style={{ display: 'inline-flex', fontSize: 32 }}>
       <AppstoreOutlined />
-    </TemplateIconWrapper>
+    </span>
   );
 
   const getDifficultyColor = (difficulty?: string) => {
@@ -272,79 +230,82 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     context === 'marketplace' ? effectiveTemplate.name : t('resources:templates.templateDetails');
 
   const overviewContent = (
-    <OverviewScroll>
+    <div style={{ overflow: 'auto' }}>
       <Row gutter={[24, 24]}>
         <Col xs={24} md={context === 'marketplace' ? 16 : 24}>
-          <DescriptionCard
+          <Card
             title={
-              <RediaccText variant="title">
+              <Typography.Text strong>
                 {context === 'marketplace'
                   ? t('marketplace:description')
                   : t('resources:templates.overview')}
-              </RediaccText>
+              </Typography.Text>
             }
             data-testid={context === 'marketplace' ? undefined : 'template-details-readme-content'}
           >
-            <MarkdownContent>
+            <div style={{ lineHeight: 1.5 }}>
               <ReactMarkdown>{templateDetails?.readme || effectiveTemplate.readme}</ReactMarkdown>
-            </MarkdownContent>
-          </DescriptionCard>
+            </div>
+          </Card>
         </Col>
         {context === 'marketplace' && (
           <Col xs={24} md={8}>
-            <FeatureCard
-              title={<RediaccText variant="title">{t('marketplace:features')}</RediaccText>}
+            <Card
+              title={<Typography.Text strong>{t('marketplace:features')}</Typography.Text>}
             >
-              <RediaccStack direction="vertical" gap="sm" fullWidth>
+              <Flex vertical gap={8} style={{ width: '100%' }}>
                 {effectiveTemplate.tags?.map((tag) => (
-                  <RediaccStack key={tag} direction="horizontal" gap="sm" fullWidth align="center">
-                    <SuccessIcon>
+                  <Flex key={tag} gap={8} align="center" style={{ width: '100%' }}>
+                    <Flex align="center" style={{ display: 'inline-flex' }}>
                       <CheckCircleOutlined />
-                    </SuccessIcon>
-                    <FeatureText>{tag}</FeatureText>
-                  </RediaccStack>
+                    </Flex>
+                    <Typography.Text>{tag}</Typography.Text>
+                  </Flex>
                 ))}
-              </RediaccStack>
-            </FeatureCard>
+              </Flex>
+            </Card>
           </Col>
         )}
       </Row>
-    </OverviewScroll>
+    </div>
   );
 
   const filesContent = loading ? (
-    <CenteredLoadingContainer
+    <Flex
+      vertical
+      align="center"
+      gap={8}
+      style={{ width: '100%' }}
       data-testid={context === 'marketplace' ? undefined : 'template-details-loading'}
     >
       <LoadingWrapper loading centered minHeight={160}>
         <div />
       </LoadingWrapper>
-      <RediaccText color="secondary">
+      <Typography.Text type="secondary">
         {context === 'marketplace'
           ? t('marketplace:loadingFiles')
           : t('resources:templates.loadingDetails')}
-      </RediaccText>
-    </CenteredLoadingContainer>
+      </Typography.Text>
+    </Flex>
   ) : templateDetails && templateDetails.files.length > 0 ? (
-    <FilesLayout>
-      <FileListColumn>
-        <FileListCard
+    <Flex gap={16} wrap style={{ width: '100%' }}>
+      <div style={{ width: '32%' }}>
+        <Card
           title={
-            <IconLabel>
+            <Flex align="center" gap={8} style={{ display: 'inline-flex' }}>
               <FileOutlined />
               {context === 'marketplace'
                 ? t('marketplace:fileList')
                 : t('resources:templates.files')}
-            </IconLabel>
+            </Flex>
           }
           data-testid={context === 'marketplace' ? undefined : 'template-details-files-content'}
         >
-          <FullHeightList>
+          <div style={{ height: '100%' }}>
             <List
               dataSource={templateDetails.files}
               renderItem={(file, index) => (
-                <FileListItem
-                  $active={selectedFileIndex === index}
+                <List.Item
                   onClick={() => setSelectedFileIndex(index)}
                   data-testid={
                     context === 'marketplace'
@@ -352,30 +313,30 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                       : `template-details-file-header-${index}`
                   }
                 >
-                  <FileMeta>
-                    <IconLabel>
+                  <Flex vertical gap={4}>
+                    <Flex align="center" gap={8} style={{ display: 'inline-flex' }}>
                       <CodeOutlined />
-                      <FileName code>{file.path || file.name}</FileName>
-                    </IconLabel>
-                  </FileMeta>
-                </FileListItem>
+                      <Typography.Text code>{file.path || file.name}</Typography.Text>
+                    </Flex>
+                  </Flex>
+                </List.Item>
               )}
             />
-          </FullHeightList>
-        </FileListCard>
-      </FileListColumn>
-      <FilePreviewColumn>
-        <FilePreviewCard
+          </div>
+        </Card>
+      </div>
+      <div style={{ flex: '1 1 auto' }}>
+        <Card
           title={
-            <RediaccStack direction="horizontal" gap="sm" align="center" justify="between">
-              <IconLabel>
+            <Flex gap={8} align="center" justify="space-between">
+              <Flex align="center" gap={8} style={{ display: 'inline-flex' }}>
                 <CodeOutlined />
-                <FilePath>
+                <Typography.Text style={{ fontFamily: 'monospace' }}>
                   {templateDetails.files[selectedFileIndex]?.path ||
                     templateDetails.files[selectedFileIndex]?.name}
-                </FilePath>
-              </IconLabel>
-            </RediaccStack>
+                </Typography.Text>
+              </Flex>
+            </Flex>
           }
           data-testid={
             context === 'marketplace'
@@ -383,89 +344,89 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
               : `template-details-file-content-${selectedFileIndex}`
           }
         >
-          <FilePreviewBody>
+          <div style={{ flex: '1 1 auto', overflow: 'auto' }}>
             {templateDetails.files[selectedFileIndex] &&
               renderFileContent(templateDetails.files[selectedFileIndex])}
-          </FilePreviewBody>
-        </FilePreviewCard>
-      </FilePreviewColumn>
-    </FilesLayout>
+          </div>
+        </Card>
+      </div>
+    </Flex>
   ) : (
-    <RoundedAlert
+    <Alert
       message={
         context === 'marketplace' ? t('marketplace:noFiles') : t('resources:templates.noReadme')
       }
       description={context === 'marketplace' ? t('marketplace:noFilesDesc') : undefined}
-      variant="info"
+      type="info"
       showIcon
       data-testid={context === 'marketplace' ? undefined : 'template-details-readme-empty'}
     />
   );
 
   const securityContent = (
-    <SecurityScroll>
-      <SecurityCard>
-        <AlertStack>
-          <RoundedAlert
+    <div style={{ overflow: 'auto' }}>
+      <Card>
+        <Flex vertical gap={16}>
+          <Alert
             message={
-              <RediaccText weight="semibold">
+              <Typography.Text strong>
                 {context === 'marketplace' ? t('marketplace:securityReview') : 'Security Review'}
-              </RediaccText>
+              </Typography.Text>
             }
             description={
-              <RediaccText variant="description">
+              <Typography.Text type="secondary">
                 {context === 'marketplace'
                   ? t('marketplace:securityReviewDesc')
                   : 'Please review the template files for security considerations before deployment.'}
-              </RediaccText>
+              </Typography.Text>
             }
-            variant="info"
+            type="info"
             showIcon
           />
 
-          <SecurityTitle>
+          <Typography.Title level={5}>
             {context === 'marketplace' ? t('marketplace:bestPractices') : 'Best Practices'}
-          </SecurityTitle>
-          <Checklist>
-            <ChecklistItem>Review all configuration files before deployment</ChecklistItem>
-            <ChecklistItem>Update default passwords and credentials</ChecklistItem>
-            <ChecklistItem>Ensure proper network security configuration</ChecklistItem>
-            <ChecklistItem>Keep software components up to date</ChecklistItem>
-          </Checklist>
+          </Typography.Title>
+          <ul>
+            <li style={{ lineHeight: 1.5 }}>Review all configuration files before deployment</li>
+            <li style={{ lineHeight: 1.5 }}>Update default passwords and credentials</li>
+            <li style={{ lineHeight: 1.5 }}>Ensure proper network security configuration</li>
+            <li style={{ lineHeight: 1.5 }}>Keep software components up to date</li>
+          </ul>
 
-          <RediaccDivider spacing="lg" />
+          <Divider style={{ margin: '24px 0' }} />
 
-          <SecurityTitle>Container Security</SecurityTitle>
-          <BodyParagraph>
+          <Typography.Title level={5}>Container Security</Typography.Title>
+          <Typography.Paragraph style={{ lineHeight: 1.5 }}>
             Always review container configurations and ensure they follow security best practices
             for your deployment environment.
-          </BodyParagraph>
-        </AlertStack>
-      </SecurityCard>
-    </SecurityScroll>
+          </Typography.Paragraph>
+        </Flex>
+      </Card>
+    </div>
   );
 
   const tabItems = [
     {
       key: 'overview',
       label: (
-        <TabLabel>
+        <Flex align="center" gap={8}>
           <FileTextOutlined />
           {context === 'marketplace'
             ? t('marketplace:overview')
             : t('resources:templates.overview')}
-        </TabLabel>
+        </Flex>
       ),
       children: overviewContent,
     },
     {
       key: 'files',
       label: (
-        <TabLabel>
+        <Flex align="center" gap={8}>
           <CodeOutlined />
           {context === 'marketplace' ? t('marketplace:files') : t('resources:templates.files')}
           {templateDetails?.files && ` (${templateDetails.files.length})`}
-        </TabLabel>
+        </Flex>
       ),
       disabled: loading || !templateDetails,
       children: filesContent,
@@ -473,27 +434,28 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     {
       key: 'security',
       label: (
-        <TabLabel>
+        <Flex align="center" gap={8}>
           <SafetyOutlined />
           {context === 'marketplace' ? t('marketplace:security') : 'Security'}
-        </TabLabel>
+        </Flex>
       ),
       children: securityContent,
     },
   ];
 
   return (
-    <StyledModal
+    <Modal
       data-testid={
         context === 'marketplace' ? 'marketplace-preview-modal' : 'template-details-modal'
       }
       title={
-        <RediaccStack direction="horizontal" gap="md" align="center">
+        <Flex gap={16} align="center">
           {effectiveTemplate.iconUrl && !iconFailed ? (
-            <TemplateAvatar
+            <img
               src={effectiveTemplate.iconUrl}
               alt={effectiveTemplate.name}
               onError={() => setIconFailed(true)}
+              style={{ width: 40, height: 40, objectFit: 'contain' }}
             />
           ) : (
             getTemplateIcon()
@@ -501,27 +463,27 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           <div>
             <Typography.Title level={4}>{modalTitle}</Typography.Title>
             {context === 'repository-creation' && (
-              <RediaccTag variant="primary" data-testid="template-details-name-tag">
+              <Tag data-testid="template-details-name-tag" color="processing">
                 {effectiveTemplate.name}
-              </RediaccTag>
+              </Tag>
             )}
             {context === 'marketplace' && effectiveTemplate.difficulty && (
-              <DifficultyTag variant={getDifficultyColor(effectiveTemplate.difficulty)}>
+              <Tag color={getDifficultyColor(effectiveTemplate.difficulty)}>
                 {t(
                   `difficulty${effectiveTemplate.difficulty?.charAt(0).toUpperCase()}${effectiveTemplate.difficulty?.slice(
                     1
                   )}`
                 )}
-              </DifficultyTag>
+              </Tag>
             )}
           </div>
-        </RediaccStack>
+        </Flex>
       }
       open={open}
       onCancel={onClose}
       className={ModalSize.Large}
       footer={[
-        <RediaccButton
+        <Button
           key="close"
           onClick={onClose}
           data-testid={
@@ -531,8 +493,8 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           }
         >
           {t('common:actions.close')}
-        </RediaccButton>,
-        <RediaccButton
+        </Button>,
+        <Button
           key="action"
           icon={getActionButtonIcon()}
           onClick={handleAction}
@@ -543,19 +505,19 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           }
         >
           {getActionButtonText()}
-        </RediaccButton>,
+        </Button>,
       ]}
     >
-      <StyledTabs
+      <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
         items={tabItems}
-        size="md"
+        size="middle"
         data-testid={
           context === 'marketplace' ? 'marketplace-preview-tabs' : 'template-details-tabs'
         }
       />
-    </StyledModal>
+    </Modal>
   );
 };
 

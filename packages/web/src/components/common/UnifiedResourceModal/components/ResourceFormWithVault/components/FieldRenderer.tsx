@@ -1,12 +1,6 @@
+import { Input, InputNumber, Select, Space } from 'antd';
 import { Control, Controller, type FieldValues } from 'react-hook-form';
-import {
-  SizeInputGroup,
-  SizeNumberInput,
-  SizeUnitSelect,
-} from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/styles';
 import type { FormFieldConfig } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/types';
-import { RediaccInput, RediaccPasswordInput, RediaccSelect } from '@/components/ui';
-
 interface FieldRendererProps<T extends FieldValues> {
   field: FormFieldConfig<T>;
   control: Control<T>;
@@ -21,9 +15,9 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
           control={control}
           rules={field.rules}
           render={({ field: controllerField }) => (
-            <RediaccSelect
+            <Select
               {...controllerField}
-              fullWidth
+              style={{ width: '100%' }}
               options={field.options}
               placeholder={field.placeholder}
               disabled={field.disabled}
@@ -42,7 +36,7 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
           control={control}
           rules={field.rules}
           render={({ field: controllerField }) => (
-            <RediaccPasswordInput
+            <Input.Password
               {...controllerField}
               placeholder={field.placeholder}
               disabled={field.disabled}
@@ -79,8 +73,8 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
             }
 
             return (
-              <SizeInputGroup>
-                <SizeNumberInput
+              <Space.Compact style={{ width: '100%' }}>
+                <InputNumber
                   data-testid={`resource-modal-field-${field.name}-size-input`}
                   value={parsedValue}
                   onChange={(value) => {
@@ -118,8 +112,9 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
                   keyboard
                   step={1}
                   precision={0}
+                  style={{ flex: 1 }}
                 />
-                <SizeUnitSelect
+                <Select
                   data-testid={`resource-modal-field-${field.name}-size-unit`}
                   value={parsedUnit}
                   onChange={(unit) => {
@@ -139,8 +134,9 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
                     return { value, label };
                   })}
                   disabled={field.disabled}
+                  style={{ width: 80 }}
                 />
-              </SizeInputGroup>
+              </Space.Compact>
             );
           }}
         />
@@ -153,7 +149,7 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
           control={control}
           rules={field.rules}
           render={({ field: controllerField }) => {
-            // RediaccInput only supports: 'text' | 'email' | 'url' | 'tel' | 'password'
+            // Input only supports: 'text' | 'email' | 'url' | 'tel' | 'password'
             // For other types like 'number', use 'text' as fallback
             let inputType: 'text' | 'email' | 'url' | 'tel' | 'password';
             if (field.type === 'email') {
@@ -165,7 +161,7 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
             }
 
             return (
-              <RediaccInput
+              <Input
                 {...controllerField}
                 data-testid={`resource-modal-field-${field.name}-input`}
                 type={inputType}

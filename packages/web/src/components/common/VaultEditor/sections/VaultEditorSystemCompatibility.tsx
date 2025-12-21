@@ -1,19 +1,11 @@
 import React, { type JSX } from 'react';
-import { Alert, Col, Descriptions, Space } from 'antd';
-import { RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
+import { Alert, Col, Descriptions, Flex, Form, Space, Tag, Typography } from 'antd';
 import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   QuestionCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  CompatibilityStatusText,
-  FieldItem,
-  IssueList,
-  ListSection,
-  RecommendationList,
-} from '../styles';
 import type { VaultFormValues } from '../types';
 import type { FormInstance } from 'antd';
 
@@ -92,13 +84,13 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
 
   return (
     <Col xs={24} lg={12}>
-      <FieldItem
+      <Form.Item
         label={
-          <RediaccText weight="bold">{t('vaultEditor.systemCompatibility.title')}</RediaccText>
+          <Typography.Text strong>{t('vaultEditor.systemCompatibility.title')}</Typography.Text>
         }
         colon={false}
       >
-        <RediaccStack direction="vertical" gap="sm" fullWidth>
+        <Flex vertical gap={8} style={{ width: '100%' }}>
           <Descriptions bordered size="small" column={1}>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.operatingSystem')}>
               {osInfo.pretty_name || t('vaultEditor.systemCompatibility.unknown')}
@@ -108,29 +100,27 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
             </Descriptions.Item>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.btrfsAvailable')}>
               {kernelCompatibility.btrfs_available ? (
-                <RediaccTag variant="success">
+                <Tag color="success">
                   {t('vaultEditor.systemCompatibility.yes')}
-                </RediaccTag>
+                </Tag>
               ) : (
-                <RediaccTag variant="warning">{t('vaultEditor.systemCompatibility.no')}</RediaccTag>
+                <Tag color="warning">{t('vaultEditor.systemCompatibility.no')}</Tag>
               )}
             </Descriptions.Item>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.sudoAvailable')}>
-              <RediaccTag
-                variant={
-                  sudoConfigValue.color as 'neutral' | 'success' | 'error' | 'warning' | 'primary'
-                }
+              <Tag
+                color={sudoConfigValue.color === 'neutral' ? 'default' : sudoConfigValue.color}
               >
                 {sudoConfigValue.text}
-              </RediaccTag>
+              </Tag>
             </Descriptions.Item>
             {osSetupCompleted !== null && (
               <Descriptions.Item label={t('vaultEditor.systemCompatibility.osSetup')}>
-                <RediaccTag variant={osSetupCompleted ? 'success' : 'warning'}>
+                <Tag color={osSetupCompleted ? 'success' : 'warning'}>
                   {osSetupCompleted
                     ? t('vaultEditor.systemCompatibility.setupCompleted')
                     : t('vaultEditor.systemCompatibility.setupRequired')}
-                </RediaccTag>
+                </Tag>
               </Descriptions.Item>
             )}
           </Descriptions>
@@ -140,50 +130,55 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
             icon={config.icon}
             message={
               <Space>
-                <RediaccText weight="bold">
+                <Typography.Text strong>
                   {t('vaultEditor.systemCompatibility.compatibilityStatus')}:
-                </RediaccText>
-                <CompatibilityStatusText $variant={config.statusVariant}>
+                </Typography.Text>
+                <span
+                  style={{
+                    textTransform: 'capitalize',
+                    color: `var(--ant-color-${config.statusVariant})`,
+                  }}
+                >
                   {t(`vaultEditor.systemCompatibility.${status}`)}
-                </CompatibilityStatusText>
+                </span>
               </Space>
             }
             description={
               <>
                 {kernelCompatibility.compatibility_issues &&
                   kernelCompatibility.compatibility_issues.length > 0 && (
-                    <ListSection>
-                      <RediaccText weight="bold">
+                    <div>
+                      <Typography.Text strong>
                         {t('vaultEditor.systemCompatibility.knownIssues')}:
-                      </RediaccText>
-                      <IssueList>
+                      </Typography.Text>
+                      <ul>
                         {kernelCompatibility.compatibility_issues.map(
                           (issue: string, index: number) => (
                             <li key={index}>{issue}</li>
                           )
                         )}
-                      </IssueList>
-                    </ListSection>
+                      </ul>
+                    </div>
                   )}
                 {kernelCompatibility.recommendations &&
                   kernelCompatibility.recommendations.length > 0 && (
-                    <ListSection>
-                      <RediaccText weight="bold">
+                    <div>
+                      <Typography.Text strong>
                         {t('vaultEditor.systemCompatibility.recommendations')}:
-                      </RediaccText>
-                      <RecommendationList>
+                      </Typography.Text>
+                      <ul>
                         {kernelCompatibility.recommendations.map((rec: string, index: number) => (
                           <li key={index}>{rec}</li>
                         ))}
-                      </RecommendationList>
-                    </ListSection>
+                      </ul>
+                    </div>
                   )}
               </>
             }
             showIcon
           />
-        </RediaccStack>
-      </FieldItem>
+        </Flex>
+      </Form.Item>
     </Col>
   );
 };

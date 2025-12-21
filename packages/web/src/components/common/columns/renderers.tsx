@@ -1,32 +1,22 @@
+import { Tag, Tooltip, Typography } from 'antd';
 import React from 'react';
 import dayjs from 'dayjs';
-import styled from 'styled-components';
-import { RediaccTag, RediaccText, RediaccTooltip } from '@/components/ui';
-
-/**
- * Styled version tag used across column renderers
- */
-export const VersionTag = styled(RediaccTag)`
-  && {
-  }
-`;
-
 /**
  * Styled truncated text for monospace display
  */
-const TruncatedMonoText = styled.span`
-  font-family: ${({ theme }) => theme.fontFamily.MONO};
-  font-size: ${({ theme }) => theme.fontSize.XS}px;
-  color: var(--color-text-secondary);
-`;
+const truncatedMonoTextStyle: React.CSSProperties = {
+  fontFamily: 'monospace',
+  fontSize: 12,
+  color: 'var(--ant-color-text-secondary)',
+};
 
 /**
  * Styled status icon wrapper
  */
-const StatusIconWrapper = styled.span`
-  font-size: ${({ theme }) => theme.spacing.MD}px;
-  cursor: pointer;
-`;
+const statusIconWrapperStyle: React.CSSProperties = {
+  fontSize: 16,
+  cursor: 'pointer',
+};
 
 /**
  * Render a timestamp in a consistent format
@@ -55,7 +45,7 @@ export const renderTimestampElement = (
   format: string = 'YYYY-MM-DD HH:mm:ss'
 ): React.ReactNode => {
   if (!timestamp) {
-    return <RediaccText color="secondary">-</RediaccText>;
+    return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
   }
   return dayjs(timestamp).format(format);
 };
@@ -73,16 +63,16 @@ export const renderTruncatedId = (
   showEllipsis: boolean = true
 ): React.ReactNode => {
   if (!id) {
-    return <RediaccText color="secondary">-</RediaccText>;
+    return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
   }
 
   const truncated = id.substring(0, length);
   const display = showEllipsis ? `${truncated}...` : truncated;
 
   return (
-    <RediaccTooltip title={id}>
-      <TruncatedMonoText>{display}</TruncatedMonoText>
-    </RediaccTooltip>
+    <Tooltip title={id}>
+      <span style={truncatedMonoTextStyle}>{display}</span>
+    </Tooltip>
   );
 };
 
@@ -97,13 +87,13 @@ export const renderCopyableId = (
   length: number = 8
 ): React.ReactNode => {
   if (!id) {
-    return <RediaccText color="secondary">-</RediaccText>;
+    return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
   }
 
   return (
-    <RediaccText code copyable>
+    <Typography.Text code copyable>
       {id.substring(0, length)}...
-    </RediaccText>
+    </Typography.Text>
   );
 };
 
@@ -118,11 +108,11 @@ export const renderVersionTag = (
   formatFn?: (version: number) => string
 ): React.ReactNode => {
   if (version === null || version === undefined) {
-    return <RediaccText color="secondary">-</RediaccText>;
+    return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
   }
 
   const label = formatFn ? formatFn(version) : `v${version}`;
-  return <VersionTag>{label}</VersionTag>;
+  return <Tag>{label}</Tag>;
 };
 
 /**
@@ -147,9 +137,9 @@ export const createStatusRenderer = <T extends string>(
   function StatusRenderer(status: T): React.ReactNode {
     const config = statusMap[status] || defaultConfig;
     return (
-      <RediaccTooltip title={config.label || status}>
-        <StatusIconWrapper>{config.icon}</StatusIconWrapper>
-      </RediaccTooltip>
+      <Tooltip title={config.label || status}>
+        <span style={statusIconWrapperStyle}>{config.icon}</span>
+      </Tooltip>
     );
   }
 
@@ -193,11 +183,11 @@ export const renderBoolean = (
   noText: string = 'No'
 ): React.ReactNode => {
   if (value === null || value === undefined) {
-    return <RediaccText color="secondary">-</RediaccText>;
+    return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
   }
   return value ? (
-    <RediaccTag variant="success">{yesText}</RediaccTag>
+    <Tag color="success">{yesText}</Tag>
   ) : (
-    <RediaccTag>{noText}</RediaccTag>
+    <Tag>{noText}</Tag>
   );
 };

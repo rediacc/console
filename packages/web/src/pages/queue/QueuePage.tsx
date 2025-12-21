@@ -1,18 +1,10 @@
 import React, { useCallback, useMemo } from 'react';
-import { Modal, Space, Tabs } from 'antd';
+import { Badge, Button, Dropdown, Flex, Modal, Space, Tabs, Tooltip, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useTheme as useStyledTheme } from 'styled-components';
 import { QueueFilters, type QueueStatistics, useQueueItems } from '@/api/queries/queue';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import ResourceListView from '@/components/common/ResourceListView';
-import {
-  PageWrapper,
-  RediaccButton,
-  RediaccDropdown,
-  RediaccStack,
-  RediaccTooltip,
-} from '@/components/ui';
 import { useFilters, useMultiPagination, useQueueTraceModal } from '@/hooks';
 import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay';
 import {
@@ -22,7 +14,6 @@ import {
   filterFailedItems,
   isValidGuid,
 } from '@/platform';
-import { TabCount, TabLabel } from '@/styles/primitives';
 import { ExportOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
 import { QueueFilterPanel } from './components/QueueFilterPanel';
@@ -30,7 +21,6 @@ import { QueueStatisticsBar } from './components/QueueStatisticsBar';
 import { useQueueActions } from './hooks/useQueueActions';
 import { useQueueExport } from './hooks/useQueueExport';
 import { getQueueColumns } from './queueTableColumns';
-import { StyledRediaccCard } from './styles';
 import type { Dayjs } from 'dayjs';
 
 // Page-level filter state type
@@ -50,7 +40,7 @@ type QueuePageFilters = {
 const QueuePage: React.FC = () => {
   const { t } = useTranslation(['queue', 'common']);
   const [modal, contextHolder] = Modal.useModal();
-  const theme = useStyledTheme();
+  const { token } = theme.useToken();
 
   // Filter state management with useFilters hook
   const {
@@ -88,9 +78,8 @@ const QueuePage: React.FC = () => {
   );
 
   const handleStatusFilterChange = useCallback(
-    (values: Array<string | number>, _options: unknown) => {
-      const normalized = values.map((value) => String(value));
-      setFilter('statusFilter', normalized);
+    (values: string[]) => {
+      setFilter('statusFilter', values);
     },
     [setFilter]
   );
@@ -261,10 +250,10 @@ const QueuePage: React.FC = () => {
   });
 
   return (
-    <PageWrapper data-testid="queue-page-container">
+    <div data-testid="queue-page-container">
       {contextHolder}
-      <StyledRediaccCard data-testid="queue-filters-card">
-        <RediaccStack variant="column" fullWidth gap="sm">
+      <div data-testid="queue-filters-card">
+        <Flex vertical gap={8} style={{ width: '100%' }}>
           <QueueFilterPanel
             filters={filters}
             dropdownData={dropdownData}
@@ -289,16 +278,16 @@ const QueuePage: React.FC = () => {
           />
 
           <Space size={4}>
-            <RediaccTooltip title={t('common:actions.refresh')}>
-              <RediaccButton
-                iconOnly
+            <Tooltip title={t('common:actions.refresh')}>
+              <Button
+                type="text"
                 icon={<ReloadOutlined />}
                 onClick={() => refetch()}
                 loading={isFetching}
                 data-testid="queue-refresh-button"
               />
-            </RediaccTooltip>
-            <RediaccDropdown
+            </Tooltip>
+            <Dropdown
               menu={{
                 items: [
                   { key: 'csv', label: t('common:exportCSV'), onClick: () => handleExport('csv') },
@@ -310,17 +299,17 @@ const QueuePage: React.FC = () => {
                 ],
               }}
             >
-              <RediaccTooltip title={t('common:export')}>
-                <RediaccButton
-                  iconOnly
+              <Tooltip title={t('common:export')}>
+                <Button
+                  type="text"
                   icon={<ExportOutlined />}
                   data-testid="queue-export-dropdown"
                 />
-              </RediaccTooltip>
-            </RediaccDropdown>
+              </Tooltip>
+            </Dropdown>
           </Space>
-        </RediaccStack>
-      </StyledRediaccCard>
+        </Flex>
+      </div>
 
       <Tabs
         activeKey={activeTab}
@@ -330,13 +319,15 @@ const QueuePage: React.FC = () => {
           {
             key: 'active',
             label: (
-              <RediaccTooltip title={t('queue:tabs.active.tooltip')}>
-                <TabLabel data-testid="queue-tab-active">
+              <Tooltip title={t('queue:tabs.active.tooltip')}>
+                <span
+                  data-testid="queue-tab-active"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                >
                   {t('queue:tabs.active.title')}
-                  <TabCount count={activeItems.length} $color={theme.colors.textSecondary} />{' '}
-                  {/* Was secondary */}
-                </TabLabel>
-              </RediaccTooltip>
+                  <Badge count={activeItems.length} color={token.colorTextSecondary} />
+                </span>
+              </Tooltip>
             ),
             children: (
               <ResourceListView
@@ -361,16 +352,19 @@ const QueuePage: React.FC = () => {
           {
             key: 'completed',
             label: (
-              <RediaccTooltip title={t('queue:tabs.completed.tooltip')}>
-                <TabLabel data-testid="queue-tab-completed">
+              <Tooltip title={t('queue:tabs.completed.tooltip')}>
+                <span
+                  data-testid="queue-tab-completed"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                >
                   {t('queue:tabs.completed.title')}
-                  <TabCount
+                  <Badge
                     count={completedCount || completedItems.length}
                     showZero
-                    $color={theme.colors.success}
+                    color={token.colorSuccess}
                   />
-                </TabLabel>
-              </RediaccTooltip>
+                </span>
+              </Tooltip>
             ),
             children: (
               <ResourceListView
@@ -395,16 +389,19 @@ const QueuePage: React.FC = () => {
           {
             key: 'cancelled',
             label: (
-              <RediaccTooltip title={t('queue:tabs.cancelled.tooltip')}>
-                <TabLabel data-testid="queue-tab-cancelled">
+              <Tooltip title={t('queue:tabs.cancelled.tooltip')}>
+                <span
+                  data-testid="queue-tab-cancelled"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                >
                   {t('queue:tabs.cancelled.title')}
-                  <TabCount
+                  <Badge
                     count={cancelledCount || cancelledItems.length}
                     showZero
-                    $color={theme.colors.textTertiary} /* Was accent */
+                    color={token.colorTextTertiary}
                   />
-                </TabLabel>
-              </RediaccTooltip>
+                </span>
+              </Tooltip>
             ),
             children: (
               <ResourceListView
@@ -429,16 +426,19 @@ const QueuePage: React.FC = () => {
           {
             key: 'failed',
             label: (
-              <RediaccTooltip title={t('queue:tabs.failed.tooltip')}>
-                <TabLabel data-testid="queue-tab-failed">
+              <Tooltip title={t('queue:tabs.failed.tooltip')}>
+                <span
+                  data-testid="queue-tab-failed"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                >
                   {t('queue:tabs.failed.title')}
-                  <TabCount
+                  <Badge
                     count={failedCount || failedItems.length}
                     showZero
-                    $color={theme.colors.error}
+                    color={token.colorError}
                   />
-                </TabLabel>
-              </RediaccTooltip>
+                </span>
+              </Tooltip>
             ),
             children: (
               <ResourceListView
@@ -468,7 +468,7 @@ const QueuePage: React.FC = () => {
         open={queueTrace.state.open}
         onCancel={queueTrace.close}
       />
-    </PageWrapper>
+    </div>
   );
 };
 

@@ -193,7 +193,7 @@ export const createControlSurfaceStyle = (
 export const createCardStyle = (width?: number | string) => ({
   width: width || '100%',
   maxWidth: 'calc(100vw - 32px)',
-  background: 'var(--color-bg-primary)',
+  background: 'var(--ant-color-bg-container)',
 });
 
 export const createModalStyle = (width?: number) => ({

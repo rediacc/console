@@ -1,10 +1,8 @@
 import React, { useRef } from 'react';
-import { Card, Col, Space } from 'antd';
-import { RediaccAlert, RediaccTooltip } from '@/components/ui';
+import { Alert, Button, Card, Col, Flex, Space, Tooltip } from 'antd';
 import { featureFlags } from '@/config/featureFlags';
-import { CodeOutlined } from '@/utils/optimizedIcons';
+import { CodeOutlined, ExclamationCircleOutlined } from '@/utils/optimizedIcons';
 import { SimpleJsonEditor } from '../components/SimpleJsonEditor';
-import { DangerAlertIcon, FormatActions, FormatButton } from '../styles';
 
 interface VaultEditorRawJsonProps {
   rawJsonValue: string;
@@ -34,43 +32,41 @@ export const VaultEditorRawJson: React.FC<VaultEditorRawJsonProps> = ({
           <Space>
             <CodeOutlined />
             {t('vaultEditor.rawJsonEditor')}
-            <RediaccTooltip title={t('vaultEditor.rawJsonTooltip')}>
-              <DangerAlertIcon />
-            </RediaccTooltip>
+            <Tooltip title={t('vaultEditor.rawJsonTooltip')}>
+              <ExclamationCircleOutlined style={{ fontSize: 16 }} />
+            </Tooltip>
           </Space>
         }
         variant="borderless"
         size="default"
         data-testid="vault-editor-panel-rawjson"
       >
-        <RediaccAlert
-          spacing="default"
+        <Alert
           message={t('vaultEditor.expertModeOnly')}
           description={t('vaultEditor.expertModeDescription')}
-          variant="error"
+          type="error"
           showIcon
-          icon={<DangerAlertIcon />}
+          icon={<ExclamationCircleOutlined style={{ fontSize: 16 }} />}
         />
 
         {rawJsonError && (
-          <RediaccAlert
-            spacing="default"
+          <Alert
             message={t('vaultEditor.jsonError')}
             description={rawJsonError}
-            variant="error"
+            type="error"
             showIcon
           />
         )}
 
-        <FormatActions>
-          <FormatButton
-            variant="default"
+        <Flex justify="flex-end">
+          <Button
+            type="default"
             onClick={() => formatJsonRef.current?.()}
             data-testid="vault-editor-format-json"
           >
             Format
-          </FormatButton>
-        </FormatActions>
+          </Button>
+        </Flex>
 
         <SimpleJsonEditor
           value={rawJsonValue}

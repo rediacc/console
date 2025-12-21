@@ -1,4 +1,4 @@
-import { Space, Tag } from 'antd';
+import { Space, Tag, Typography } from 'antd';
 import { TFunction } from 'i18next';
 import { GetAuditLogs_ResultSet1 } from '@/api/queries/audit';
 import {
@@ -7,9 +7,8 @@ import {
   createTruncatedColumn,
   type StatusConfig,
 } from '@/components/common/columns';
-import { RediaccText } from '@/components/ui';
 import { createDateSorter } from '@/platform';
-import { ColumnFilterIcon, FilterHintIcon } from './styles';
+import { FilterOutlined } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ColumnBuilderParams {
@@ -49,7 +48,7 @@ export const buildAuditColumns = ({
     title: (
       <Space>
         {t('system:audit.columns.action')}
-        <FilterHintIcon />
+        <FilterOutlined style={{ fontSize: 12 }} />
       </Space>
     ),
     dataIndex: 'action',
@@ -65,13 +64,20 @@ export const buildAuditColumns = ({
       value: action,
     })) || [];
   actionColumn.onFilter = (value, record) => record.action === value;
-  actionColumn.filterIcon = (filtered: boolean) => <ColumnFilterIcon $active={filtered} />;
+  actionColumn.filterIcon = (filtered: boolean) => (
+    <FilterOutlined
+      style={{
+        fontSize: 14,
+        color: filtered ? 'var(--ant-color-primary)' : 'var(--ant-color-text-tertiary)',
+      }}
+    />
+  );
 
   const entityNameColumn = createTruncatedColumn<GetAuditLogs_ResultSet1>({
     title: (
       <Space>
         {t('system:audit.columns.entityName')}
-        <FilterHintIcon />
+        <FilterOutlined style={{ fontSize: 12 }} />
       </Space>
     ),
     dataIndex: 'entityName',
@@ -89,7 +95,14 @@ export const buildAuditColumns = ({
       value: name,
     })) || [];
   entityNameColumn.onFilter = (value, record) => record.entityName === value;
-  entityNameColumn.filterIcon = (filtered: boolean) => <ColumnFilterIcon $active={filtered} />;
+  entityNameColumn.filterIcon = (filtered: boolean) => (
+    <FilterOutlined
+      style={{
+        fontSize: 14,
+        color: filtered ? 'var(--ant-color-primary)' : 'var(--ant-color-text-tertiary)',
+      }}
+    />
+  );
 
   const userColumnFilters =
     [
@@ -108,7 +121,11 @@ export const buildAuditColumns = ({
     key: 'details',
     maxLength: 48,
     renderText: (value) => value || '',
-    renderWrapper: (content) => <RediaccText variant="caption">{content}</RediaccText>,
+    renderWrapper: (content) => (
+      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        {content}
+      </Typography.Text>
+    ),
   });
 
   return [
@@ -118,7 +135,7 @@ export const buildAuditColumns = ({
       title: (
         <Space>
           {t('system:audit.columns.entityType')}
-          <FilterHintIcon />
+          <FilterOutlined style={{ fontSize: 12 }} />
         </Space>
       ),
       dataIndex: 'entity',
@@ -131,14 +148,21 @@ export const buildAuditColumns = ({
           value: entity,
         })) || [],
       onFilter: (value, record) => record.entity === value,
-      filterIcon: (filtered: boolean) => <ColumnFilterIcon $active={filtered} />,
+      filterIcon: (filtered: boolean) => (
+        <FilterOutlined
+          style={{
+            fontSize: 14,
+            color: filtered ? 'var(--ant-color-primary)' : 'var(--ant-color-text-tertiary)',
+          }}
+        />
+      ),
     },
     entityNameColumn,
     {
       title: (
         <Space>
           {t('system:audit.columns.user')}
-          <FilterHintIcon />
+          <FilterOutlined style={{ fontSize: 12 }} />
         </Space>
       ),
       dataIndex: 'actionByUser',
@@ -146,7 +170,14 @@ export const buildAuditColumns = ({
       width: 200,
       filters: userColumnFilters,
       onFilter: (value, record) => record.actionByUser === value,
-      filterIcon: (filtered: boolean) => <ColumnFilterIcon $active={filtered} />,
+      filterIcon: (filtered: boolean) => (
+        <FilterOutlined
+          style={{
+            fontSize: 14,
+            color: filtered ? 'var(--ant-color-primary)' : 'var(--ant-color-text-tertiary)',
+          }}
+        />
+      ),
     },
     detailsColumn,
   ];

@@ -1,6 +1,5 @@
 import React from 'react';
-import { Empty } from 'antd';
-import { RediaccCard, RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
+import { Card, Empty, Flex, Tag, Typography } from 'antd';
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -8,7 +7,6 @@ import {
   SafetyCertificateOutlined,
 } from '@/utils/optimizedIcons';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
-import { FlexBetween, InlineStack, SectionFooter, StatusIcon } from '../styles';
 
 const STATUS_TYPE_MAP: Record<string, 'success' | 'warning' | 'error'> = {
   Critical: 'error',
@@ -23,67 +21,68 @@ interface AccountHealthWidgetProps {
 const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth }) => {
   if (!accountHealth) {
     return (
-      <RediaccCard
-        fullWidth
+      <Card
         data-testid="dashboard-account-health-card"
         title={
-          <InlineStack>
+          <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
             <SafetyCertificateOutlined />
             <span>Account Health</span>
-          </InlineStack>
+          </Flex>
         }
       >
         <Empty description="No account health data available" />
-      </RediaccCard>
+      </Card>
     );
   }
 
   return (
-    <RediaccCard
-      fullWidth
+    <Card
       data-testid="dashboard-account-health-card"
       title={
-        <InlineStack>
+        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <SafetyCertificateOutlined />
           <span>Account Health</span>
-        </InlineStack>
+        </Flex>
       }
     >
-      <RediaccStack direction="vertical" gap="md" fullWidth>
-        <FlexBetween>
-          <RediaccText>Overall Status</RediaccText>
-          <RediaccTag variant={STATUS_TYPE_MAP[accountHealth.subscriptionStatus] || 'success'}>
+      <Flex vertical gap={16} style={{ width: '100%' }}>
+        <Flex align="center" justify="space-between">
+          <Typography.Text>Overall Status</Typography.Text>
+          <Tag
+            bordered={false}
+            color={STATUS_TYPE_MAP[accountHealth.subscriptionStatus] || 'success'}
+          >
             {accountHealth.subscriptionStatus}
-          </RediaccTag>
-        </FlexBetween>
+          </Tag>
+        </Flex>
 
-        <RediaccStack direction="vertical" gap="sm" fullWidth>
-          <InlineStack>
+        <Flex vertical gap={8} style={{ width: '100%' }}>
+          <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
             {accountHealth.resourcesAtLimit > 0 ? (
-              <StatusIcon $variant="warning">
+              <span style={{ color: 'var(--ant-color-warning)', display: 'inline-flex' }}>
                 <ExclamationCircleOutlined />
-              </StatusIcon>
+              </span>
             ) : (
-              <StatusIcon $variant="success">
+              <span style={{ color: 'var(--ant-color-success)', display: 'inline-flex' }}>
                 <CheckCircleOutlined />
-              </StatusIcon>
+              </span>
             )}
-            <RediaccText>{accountHealth.resourcesAtLimit} resources at limit</RediaccText>
-          </InlineStack>
+            <Typography.Text>{accountHealth.resourcesAtLimit} resources at limit</Typography.Text>
+          </Flex>
 
-          <InlineStack>
-            <StatusIcon $variant="secondary">
+          <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+            <span style={{ color: 'var(--ant-color-text-secondary)', display: 'inline-flex' }}>
               <ClockCircleOutlined />
-            </StatusIcon>
-            <RediaccText>{accountHealth.resourcesNearLimit} resources near limit</RediaccText>
-          </InlineStack>
-        </RediaccStack>
+            </span>
+            <Typography.Text>{accountHealth.resourcesNearLimit} resources near limit</Typography.Text>
+          </Flex>
+        </Flex>
 
-        <SectionFooter>
-          <RediaccText weight="bold">{accountHealth.upgradeRecommendation}</RediaccText>
-        </SectionFooter>
-      </RediaccStack>
-    </RediaccCard>
+        <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+          <Typography.Text strong>{accountHealth.upgradeRecommendation}</Typography.Text>
+        </Flex>
+      </Flex>
+    </Card>
   );
 };
 

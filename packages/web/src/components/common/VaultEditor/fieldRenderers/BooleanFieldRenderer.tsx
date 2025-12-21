@@ -1,5 +1,5 @@
+import { Switch } from 'antd';
 import React from 'react';
-import { RediaccSwitch } from '@/components/ui';
 import { FieldFormItem } from '../components/FieldFormItem';
 import type { FieldRendererProps } from './types';
 
@@ -16,6 +16,6 @@ export const BooleanFieldRenderer: React.FC<FieldRendererProps> = ({
     initialValue={fieldDef.default}
     valuePropName="checked"
   >
-    <RediaccSwitch data-testid={`vault-editor-field-${fieldName}`} />
+    <Switch data-testid={`vault-editor-field-${fieldName}`} />
   </FieldFormItem>
 );

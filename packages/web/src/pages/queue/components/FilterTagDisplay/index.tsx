@@ -1,7 +1,5 @@
 import React from 'react';
-import { Tag } from 'antd';
-import styled from 'styled-components';
-import { RediaccButton } from '@/components/ui';
+import { Button, Tag } from 'antd';
 import type { Dayjs } from 'dayjs';
 
 type FilterTagValue = string | string[] | boolean | [Dayjs | null, Dayjs | null] | null;
@@ -21,19 +19,13 @@ export interface FilterTagDisplayProps {
   clearAllText?: string;
 }
 
-const FilterTagBar = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-`;
+const FilterTagBar = (props: React.HTMLAttributes<HTMLDivElement>) => (
+  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }} {...props} />
+);
 
-const ClearButton = styled(RediaccButton)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.XS}px;
-    padding: 0 ${({ theme }) => theme.spacing.XS}px;
-    height: auto;
-  }
-`;
+const ClearButton = (props: React.ComponentProps<typeof Button>) => (
+  <Button style={{ fontSize: 12, padding: '0 8px', height: 'auto' }} {...props} />
+);
 
 const isStringArray = (value: FilterTagValue): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === 'string');

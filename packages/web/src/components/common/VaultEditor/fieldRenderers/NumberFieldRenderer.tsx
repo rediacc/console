@@ -1,7 +1,6 @@
+import { Form, InputNumber } from 'antd';
 import React from 'react';
-import { RediaccInputNumber } from '@/components/ui/Form';
 import { FieldLabel } from '../components/FieldLabel';
-import { FieldItem } from '../styles';
 import type { FieldRendererProps } from './types';
 
 export const NumberFieldRenderer: React.FC<FieldRendererProps> = ({
@@ -12,18 +11,18 @@ export const NumberFieldRenderer: React.FC<FieldRendererProps> = ({
   fieldPlaceholder,
   rules,
 }) => (
-  <FieldItem
+  <Form.Item
     name={fieldName}
     label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
     rules={rules}
     initialValue={fieldDef.default}
   >
-    <RediaccInputNumber
-      fullWidth
+    <InputNumber
+      style={{ width: '100%' }}
       placeholder={fieldPlaceholder}
       min={fieldDef.minimum}
       max={fieldDef.maximum}
       data-testid={`vault-editor-field-${fieldName}`}
     />
-  </FieldItem>
+  </Form.Item>
 );

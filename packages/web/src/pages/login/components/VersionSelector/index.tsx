@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Typography } from 'antd';
 import { versionService } from '@/services/versionService';
-import { VersionText } from './styles';
 
 const VersionSelector: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,11 @@ const VersionSelector: React.FC = () => {
     fetchVersion();
   }, []);
 
-  return <VersionText color="secondary">{loading ? '...' : displayVersion}</VersionText>;
+  return (
+    <Typography.Text style={{ fontSize: 12, color: 'var(--ant-color-text-secondary)' }}>
+      {loading ? '...' : displayVersion}
+    </Typography.Text>
+  );
 };
 
 export default VersionSelector;

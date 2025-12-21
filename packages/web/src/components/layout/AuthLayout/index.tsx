@@ -1,23 +1,28 @@
 import React from 'react';
-import { Space } from 'antd';
+import { Layout, Space } from 'antd';
 import { Outlet } from 'react-router-dom';
 import LanguageSelector from '@/components/common/LanguageSelector';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
-import { AuthContent, AuthLayoutContainer, ControlsWrapper } from './styles';
 
 const AuthLayout: React.FC = () => {
   return (
-    <AuthLayoutContainer data-testid="auth-layout-container">
-      <ControlsWrapper data-testid="auth-layout-controls-wrapper">
+    <Layout style={{ minHeight: '100vh' }} data-testid="auth-layout-container">
+      <div
+        style={{ position: 'absolute', top: 24, right: 24, zIndex: 1000 }}
+        data-testid="auth-layout-controls-wrapper"
+      >
         <Space size="small">
           <LanguageSelector iconOnly={true} />
           <ThemeToggle data-testid="auth-layout-theme-toggle" />
         </Space>
-      </ControlsWrapper>
-      <AuthContent data-testid="auth-layout-content">
+      </div>
+      <Layout.Content
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+        data-testid="auth-layout-content"
+      >
         <Outlet />
-      </AuthContent>
-    </AuthLayoutContainer>
+      </Layout.Content>
+    </Layout>
   );
 };
 

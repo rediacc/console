@@ -1,29 +1,8 @@
 import React from 'react';
-import { Col, Empty, Row } from 'antd';
+import { Badge, Card, Col, Empty, Flex, Progress, Row, Statistic, Tag, Tooltip, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useTheme as useStyledTheme } from 'styled-components';
-import {
-  RediaccCard,
-  RediaccStack,
-  RediaccStatistic,
-  RediaccTag,
-  RediaccText,
-  RediaccTooltip,
-} from '@/components/ui';
 import { CrownOutlined } from '@/utils/optimizedIcons';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
-import {
-  DaysRemainingText,
-  InlineStack,
-  LicenseHeader,
-  LicenseItem,
-  PlanCountBadge,
-  QuantityBadge,
-  ResourceProgress,
-  ScrollContainer,
-  SectionLabelWrapper,
-  SectionTitleWrapper,
-} from '../styles';
 
 const CRITICAL_DAYS_THRESHOLD = 30;
 
@@ -39,51 +18,55 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
   planLimits,
 }) => {
   const { t } = useTranslation('system');
-  const theme = useStyledTheme();
+  const { token } = theme.useToken();
 
   return (
-    <RediaccCard
-      fullWidth
+    <Card
       title={
-        <InlineStack>
+        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <CrownOutlined />
           <span>Subscription & Plan Details - {planLimits?.planCode ?? 'N/A'}</span>
           {allActiveSubscriptions && allActiveSubscriptions.length > 0 && (
-            <PlanCountBadge count={allActiveSubscriptions.length} />
+            <Badge count={allActiveSubscriptions.length} />
           )}
-        </InlineStack>
+        </Flex>
       }
       data-testid="dashboard-card-subscription-plans"
     >
       <Row gutter={[24, 24]}>
         <Col xs={24} md={allActiveSubscriptions && allActiveSubscriptions.length > 0 ? 12 : 24}>
           {activeSubscription ? (
-            <RediaccStack direction="vertical" gap="md" fullWidth>
+            <Flex vertical gap={16} style={{ width: '100%' }}>
               <div>
-                <SectionLabelWrapper>
-                  <RediaccText variant="label">CURRENT SUBSCRIPTION</RediaccText>
-                </SectionLabelWrapper>
-                <SectionTitleWrapper level={4}>{activeSubscription.planCode}</SectionTitleWrapper>
+                <div style={{ letterSpacing: '0.08em', display: 'block' }}>
+                  <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>
+                    CURRENT SUBSCRIPTION
+                  </Typography.Text>
+                </div>
+                <Typography.Title level={4}>{activeSubscription.planCode}</Typography.Title>
                 <Row gutter={[16, 16]}>
                   <Col span={12}>
-                    <RediaccStatistic
+                    <Statistic
                       title={t('dashboard.activeLicenses')}
                       value={activeSubscription.totalActivePurchases}
-                      variant="textPrimary"
                       data-testid="dashboard-stat-active-licenses"
                     />
                   </Col>
                   <Col span={12}>
-                    <RediaccStatistic
+                    <Statistic
                       title={t('dashboard.daysRemaining')}
                       value={activeSubscription.daysRemaining}
-                      critical={activeSubscription.daysRemaining <= CRITICAL_DAYS_THRESHOLD}
+                      valueStyle={
+                        activeSubscription.daysRemaining <= CRITICAL_DAYS_THRESHOLD
+                          ? { color: token.colorError }
+                          : undefined
+                      }
                       data-testid="dashboard-stat-days-remaining"
                     />
                   </Col>
                 </Row>
               </div>
-            </RediaccStack>
+            </Flex>
           ) : (
             <Empty description={t('dashboard.noSubscription')} />
           )}
@@ -91,17 +74,19 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
 
         {allActiveSubscriptions && allActiveSubscriptions.length > 0 && (
           <Col xs={24} md={12}>
-            <RediaccStack direction="vertical" gap="md" fullWidth>
+            <Flex vertical gap={16} style={{ width: '100%' }}>
               <div>
-                <SectionLabelWrapper>
-                  <RediaccText variant="label">ALL ACTIVE LICENSES</RediaccText>
-                </SectionLabelWrapper>
-                <SectionTitleWrapper level={4}>
+                <div style={{ letterSpacing: '0.08em', display: 'block' }}>
+                  <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>
+                    ALL ACTIVE LICENSES
+                  </Typography.Text>
+                </div>
+                <Typography.Title level={4}>
                   {allActiveSubscriptions.length} Total
-                </SectionTitleWrapper>
+                </Typography.Title>
               </div>
-              <ScrollContainer>
-                <RediaccStack direction="vertical" gap="sm" fullWidth>
+              <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+                <Flex vertical gap={8} style={{ width: '100%' }}>
                   {allActiveSubscriptions.map((sub, index) => {
                     const startDate = new Date(sub.startDate);
                     const endDate = new Date(sub.endDate);
@@ -117,45 +102,50 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
 
                     const strokeColor =
                       sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD
-                        ? theme.colors.error
-                        : theme.colors.primary;
+                        ? token.colorError
+                        : token.colorPrimary;
 
                     return (
-                      <LicenseItem
+                      <div
                         key={`${sub.planCode}-${index}`}
                         data-testid={`dashboard-license-item-${index}`}
                       >
-                        <LicenseHeader>
-                          <InlineStack>
-                            <RediaccText weight="bold">{sub.planCode}</RediaccText>
-                            <QuantityBadge count={sub.quantity} />
-                            {sub.isTrial === 1 && <RediaccTag variant="info">Trial</RediaccTag>}
-                          </InlineStack>
-                          <DaysRemainingText
-                            variant="caption"
-                            as="span"
-                            $critical={sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD}
+                        <Flex align="center" justify="space-between">
+                          <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+                            <Typography.Text strong>{sub.planCode}</Typography.Text>
+                            <Badge count={sub.quantity} />
+                            {sub.isTrial === 1 && <Tag color="processing">Trial</Tag>}
+                          </Flex>
+                          <Typography.Text
+                            type="secondary"
+                            style={{
+                              fontSize: 14,
+                              color:
+                                sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD
+                                  ? 'var(--ant-color-error)'
+                                  : undefined,
+                            }}
                           >
                             {sub.daysRemaining} {sub.daysRemaining === 1 ? 'day' : 'days'} remaining
-                          </DaysRemainingText>
-                        </LicenseHeader>
-                        <RediaccTooltip
+                          </Typography.Text>
+                        </Flex>
+                        <Tooltip
                           title={`From ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`}
                         >
-                          <ResourceProgress
+                          <Progress
                             percent={percent}
                             showInfo={false}
-                            size="sm"
+                            size="small"
                             strokeColor={strokeColor}
                             data-testid={`dashboard-progress-subscription-${sub.planCode}`}
                           />
-                        </RediaccTooltip>
-                      </LicenseItem>
+                        </Tooltip>
+                      </div>
                     );
                   })}
-                </RediaccStack>
-              </ScrollContainer>
-            </RediaccStack>
+                </Flex>
+              </div>
+            </Flex>
           </Col>
         )}
       </Row>
@@ -163,40 +153,36 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
       {planLimits ? (
         <Row gutter={[24, 24]}>
           <Col xs={24} md={6}>
-            <RediaccStatistic
+            <Statistic
               title={t('dashboard.maxActiveJobs')}
               value={planLimits.maxActiveJobs}
-              variant="primary"
             />
           </Col>
           <Col xs={24} md={6}>
-            <RediaccStatistic
+            <Statistic
               title={t('dashboard.maxReservedJobs')}
               value={planLimits.maxReservedJobs}
-              variant="primary"
             />
           </Col>
           <Col xs={24} md={6}>
-            <RediaccStatistic
+            <Statistic
               title={t('dashboard.jobTimeout')}
               value={planLimits.jobTimeoutHours}
               suffix="hours"
-              variant="primary"
             />
           </Col>
           <Col xs={24} md={6}>
-            <RediaccStatistic
+            <Statistic
               title={t('dashboard.maxRepoSize')}
               value={planLimits.maxRepoSize}
               suffix="GB"
-              variant="primary"
             />
           </Col>
         </Row>
       ) : (
         <Empty description={t('dashboard.noPlanData')} />
       )}
-    </RediaccCard>
+    </Card>
   );
 };
 

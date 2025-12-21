@@ -1,13 +1,11 @@
 import React from 'react';
 import { DeleteOutlined, EditOutlined, EyeOutlined, MoreOutlined } from '@ant-design/icons';
-import { Space, type MenuProps, type TooltipProps } from 'antd';
-import { RediaccButton, RediaccDropdown, RediaccText, RediaccTooltip } from '@/components/ui';
+import { Button, Dropdown, Space, Tag, Tooltip, Typography, type MenuProps, type TooltipProps } from 'antd';
 import i18n from '@/i18n/config';
 import {
   createStatusRenderer,
   renderTimestampElement,
   type StatusConfig,
-  VersionTag,
 } from './renderers';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -270,11 +268,11 @@ export const createActionColumn = <T,>(
     };
 
     return (
-      <RediaccDropdown menu={menu} trigger={['click']}>
-        <RediaccButton icon={options.buttonIcon || <MoreOutlined />}>
+      <Dropdown menu={menu} trigger={['click']}>
+        <Button icon={options.buttonIcon || <MoreOutlined />}>
           {options.buttonLabel}
-        </RediaccButton>
-      </RediaccDropdown>
+        </Button>
+      </Dropdown>
     );
   },
 });
@@ -418,7 +416,7 @@ export const createTruncatedColumn = <T,>(
     render: (value: string | null | undefined, record: T) => {
       const resolvedValue = options.renderText ? options.renderText(value, record) : value;
       if (!resolvedValue) {
-        return <RediaccText color="secondary">-</RediaccText>;
+        return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
       }
       const shouldTruncate = resolvedValue.length > maxLength;
       const displayText = shouldTruncate
@@ -426,9 +424,9 @@ export const createTruncatedColumn = <T,>(
         : resolvedValue;
 
       const content = shouldTruncate ? (
-        <RediaccTooltip title={resolvedValue} placement={placement}>
+        <Tooltip title={resolvedValue} placement={placement}>
           <span>{displayText}</span>
-        </RediaccTooltip>
+        </Tooltip>
       ) : (
         <span>{displayText}</span>
       );
@@ -485,12 +483,12 @@ export const createCountColumn = <T,>(options: CountColumnOptions<T>): ColumnsTy
 
       if (options.useBadge) {
         return (
-          <RediaccTooltip title={options.title}>
+          <Tooltip title={options.title}>
             <Space size="small">
               {options.icon}
               <span>{count}</span>
             </Space>
-          </RediaccTooltip>
+          </Tooltip>
         );
       }
 
@@ -551,14 +549,14 @@ export const createVersionColumn = <T,>(
       }
 
       if (value === null || value === undefined) {
-        return <RediaccText color="secondary">-</RediaccText>;
+        return <Typography.Text color="secondary" type="secondary">-</Typography.Text>;
       }
 
       const formattedVersion = options.formatVersion
         ? options.formatVersion(value)
         : i18n.t('common:general.versionFormat', { defaultValue: 'v{{version}}', version: value });
 
-      return <VersionTag>{formattedVersion}</VersionTag>;
+      return <Tag>{formattedVersion}</Tag>;
     },
   };
 };

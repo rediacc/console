@@ -1,15 +1,15 @@
+import { Flex, Tooltip } from 'antd';
 import React from 'react';
-import { RediaccTooltip } from '@/components/ui';
-import { FieldInfoIcon, FieldLabelStack } from '../styles';
+import { InfoCircleOutlined } from '@/utils/optimizedIcons';
 import type { FieldLabelProps } from '../types';
 
 export const FieldLabel: React.FC<FieldLabelProps> = ({ label, description }) => (
-  <FieldLabelStack>
+  <Flex align="center" gap={4}>
     {label}
     {description && (
-      <RediaccTooltip title={description}>
-        <FieldInfoIcon />
-      </RediaccTooltip>
+      <Tooltip title={description}>
+        <InfoCircleOutlined style={{ fontSize: 12 }} />
+      </Tooltip>
     )}
-  </FieldLabelStack>
+  </Flex>
 );

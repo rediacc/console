@@ -12,7 +12,6 @@ import zhCN from 'antd/locale/zh_CN';
 import { useTranslation } from 'react-i18next';
 import { darkTheme, lightTheme } from '@/config/antdTheme';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
-import { ProvidersContainer } from './styles';
 
 type AntdLocale = typeof enUS;
 
@@ -62,7 +61,7 @@ const AppProvidersContent: React.FC<AppProvidersContentProps> = ({
   const themeConfig = currentTheme === 'dark' ? darkTheme : lightTheme;
 
   return (
-    <ProvidersContainer data-testid="app-providers-container">
+    <div data-testid="app-providers-container">
       <ConfigProvider
         key={language} // Force re-render when language changes
         locale={currentLocale}
@@ -70,6 +69,6 @@ const AppProvidersContent: React.FC<AppProvidersContentProps> = ({
       >
         <AntApp>{children}</AntApp>
       </ConfigProvider>
-    </ProvidersContainer>
+    </div>
   );
 };

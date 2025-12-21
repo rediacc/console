@@ -1,15 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Skeleton } from 'antd';
 import { useMachineAssignmentStatus } from '@/api/queries/ceph';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import { MachineAssignmentService } from '@/features/ceph/services';
 import type { Machine, MachineAssignmentType } from '@/types';
-import {
-  FlexCenterContainer,
-  LazyLoadingContainer,
-  LoadingMoreContainer,
-  StyledSkeletonButton,
-  StyledSkeletonInput,
-} from './styles';
 
 interface LazyAssignmentStatusProps {
   machine: Machine;
@@ -85,9 +79,18 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
   // Render loading skeleton
   if (!isVisible) {
     return (
-      <LazyLoadingContainer ref={containerRef} data-testid="lazy-status-loading-container">
-        <StyledSkeletonInput active size="small" data-testid="lazy-status-skeleton" />
-      </LazyLoadingContainer>
+      <div
+        ref={containerRef}
+        data-testid="lazy-status-loading-container"
+        style={{ height: 20, width: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Skeleton.Input
+          active
+          size="small"
+          data-testid="lazy-status-skeleton"
+          style={{ width: 120, height: 20 }}
+        />
+      </div>
     );
   }
 
@@ -108,9 +111,18 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
   // Loading state for API call
   if (isLoading && !hasLoaded) {
     return (
-      <FlexCenterContainer ref={containerRef} data-testid="lazy-status-api-loading-container">
-        <StyledSkeletonInput active size="small" data-testid="lazy-status-api-skeleton" />
-      </FlexCenterContainer>
+      <div
+        ref={containerRef}
+        data-testid="lazy-status-api-loading-container"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Skeleton.Input
+          active
+          size="small"
+          data-testid="lazy-status-api-skeleton"
+          style={{ width: 120, height: 20 }}
+        />
+      </div>
     );
   }
 
@@ -179,9 +191,12 @@ export const ProgressiveMachineStatusLoader: React.FC<{
         />
       ))}
       {loadedCount < machines.length && (
-        <LoadingMoreContainer data-testid="lazy-status-loading-more">
-          <StyledSkeletonButton active size="small" data-testid="lazy-status-loading-button" />
-        </LoadingMoreContainer>
+        <div
+          data-testid="lazy-status-loading-more"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Skeleton.Button active size="small" data-testid="lazy-status-loading-button" />
+        </div>
       )}
     </div>
   );

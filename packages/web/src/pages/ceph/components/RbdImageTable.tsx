@@ -10,12 +10,13 @@ import {
   DesktopOutlined,
   EllipsisOutlined,
   ExpandOutlined,
+  FileImageOutlined,
   InfoCircleOutlined,
   PlusOutlined,
   SettingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { Space, type MenuProps } from 'antd';
+import { Button, Space, Table, Tag, Tooltip, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -32,7 +33,6 @@ import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccTable, RediaccTag, RediaccTooltip } from '@/components/ui';
 import { useDialogState, useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
@@ -40,14 +40,6 @@ import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMach
 import { createSorter } from '@/platform';
 import type { ImageFormValues as FullImageFormValues } from '@rediacc/shared/types';
 import SnapshotTable from './SnapshotTable';
-import {
-  CreateImageButton,
-  ExpandButton,
-  ImageIcon,
-  ImageListContainer,
-  ImageName,
-  TableContainer,
-} from './styles';
 
 interface RbdImageTableProps {
   pool: CephPool;
@@ -270,14 +262,14 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       sorter: createSorter<CephRbdImage>('imageName'),
       render: (text: string, record: CephRbdImage) => (
         <Space data-testid={`rbd-image-name-${record.imageName}`}>
-          <ImageIcon />
-          <ImageName>{text}</ImageName>
+          <FileImageOutlined style={{ fontSize: 16 }} />
+          <span>{text}</span>
           {record.vaultContent && (
-            <RediaccTooltip title={t('common.hasVault')}>
-              <RediaccTag variant="info" data-testid={`rbd-vault-tag-${record.imageName}`}>
+            <Tooltip title={t('common.hasVault')}>
+              <Tag data-testid={`rbd-vault-tag-${record.imageName}`} color="processing">
                 {t('common.vault')}
-              </RediaccTag>
-            </RediaccTooltip>
+              </Tag>
+            </Tooltip>
           )}
         </Space>
       ),
@@ -296,22 +288,23 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       dataIndex: 'machineName',
       key: 'machineName',
       width: 200,
-      sorter: createSorter<CephRbdImage>('machineName'),
-      render: (machineName: string, record: CephRbdImage) =>
-        machineName ? (
-          <RediaccTag
-            icon={<CloudServerOutlined />}
-            variant="info"
-            data-testid={`rbd-machine-tag-${record.imageName}`}
-          >
-            {machineName}
-          </RediaccTag>
-        ) : (
-          <RediaccTag variant="neutral" data-testid={`rbd-machine-none-${record.imageName}`}>
-            {t('common.none')}
-          </RediaccTag>
-        ),
-    },
+        sorter: createSorter<CephRbdImage>('machineName'),
+        render: (machineName: string, record: CephRbdImage) =>
+          machineName ? (
+            <Tag
+              icon={<CloudServerOutlined />}
+              bordered={false}
+              color="processing"
+              data-testid={`rbd-machine-tag-${record.imageName}`}
+            >
+              {machineName}
+            </Tag>
+          ) : (
+            <Tag data-testid={`rbd-machine-none-${record.imageName}`} bordered={false}>
+              {t('common.none')}
+            </Tag>
+          ),
+      },
     createActionColumn<CephRbdImage>({
       width: 150,
       renderActions: (record) => (
@@ -350,24 +343,25 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
 
   return (
     <>
-      <ImageListContainer data-testid="rbd-image-list-container">
-        <CreateImageButton
-          variant="primary"
+      <div data-testid="rbd-image-list-container">
+        <Button
+          type="primary"
           icon={<PlusOutlined />}
           onClick={handleCreate}
           data-testid="rbd-create-image-button"
+          style={{ minHeight: 40 }}
         >
           {t('images.create')}
-        </CreateImageButton>
-      </ImageListContainer>
+        </Button>
+      </div>
 
-      <TableContainer>
-        <RediaccTable<CephRbdImage>
+      <div style={{ overflow: 'hidden' }}>
+        <Table<CephRbdImage>
           columns={columns}
           dataSource={images}
           rowKey="imageGuid"
           loading={isLoading}
-          size="sm"
+          size="small"
           pagination={false}
           data-testid="rbd-image-table"
           onRow={getRowProps}
@@ -376,7 +370,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
             expandedRowKeys,
             onExpandedRowsChange: (keys: readonly Key[]) => setExpandedRowKeys(keys.map(String)),
             expandIcon: ({ expanded, onExpand, record }) => (
-              <ExpandButton
+              <Button
                 icon={expanded ? <CameraOutlined /> : <CameraOutlined />}
                 onClick={(e) => onExpand(record, e)}
                 data-testid={`rbd-expand-snapshots-${record.imageName}`}
@@ -384,7 +378,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
             ),
           }}
         />
-      </TableContainer>
+      </div>
 
       <UnifiedResourceModal
         open={modalState.open}

@@ -1,7 +1,6 @@
 import React from 'react';
-import { Card, Col, Space } from 'antd';
-import { RediaccAlert, RediaccTooltip } from '@/components/ui';
-import { ExtraFieldsWarningIcon, RawJsonPreview } from '../styles';
+import { Alert, Card, Col, Space, Tooltip } from 'antd';
+import { WarningOutlined } from '@/utils/optimizedIcons';
 import type { VaultFormValues } from '../types';
 
 interface VaultEditorExtraFieldsProps {
@@ -25,24 +24,23 @@ export const VaultEditorExtraFields: React.FC<VaultEditorExtraFieldsProps> = ({
         title={
           <Space>
             {t('vaultEditor.extraFields')}
-            <RediaccTooltip title={t('vaultEditor.extraFieldsTooltip')}>
-              <ExtraFieldsWarningIcon />
-            </RediaccTooltip>
+            <Tooltip title={t('vaultEditor.extraFieldsTooltip')}>
+              <WarningOutlined style={{ fontSize: 16 }} />
+            </Tooltip>
           </Space>
         }
         variant="borderless"
         size="default"
         data-testid="vault-editor-panel-extra"
       >
-        <RediaccAlert
-          spacing="default"
+        <Alert
           message={t('vaultEditor.extraFieldsWarning')}
           description={t('vaultEditor.extraFieldsWarningDescription')}
-          variant="warning"
+          type="warning"
           showIcon
         />
         <Card size="small">
-          <RawJsonPreview>{JSON.stringify(extraFields, null, 2)}</RawJsonPreview>
+          <pre style={{ overflow: 'auto' }}>{JSON.stringify(extraFields, null, 2)}</pre>
         </Card>
       </Card>
     </Col>

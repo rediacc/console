@@ -1,8 +1,6 @@
 import React from 'react';
-import { Space } from 'antd';
+import { Checkbox, DatePicker, Input, Select, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccCheckbox } from '@/components/ui';
-import { FilterInput, FilterRangePicker, FilterSelect } from '@/styles/primitives';
 import { SearchOutlined } from '@/utils/optimizedIcons';
 import type { Dayjs } from 'dayjs';
 
@@ -30,7 +28,7 @@ interface QueueFilterPanelProps {
   filters: QueueFilterValues;
   dropdownData?: DropdownData;
   onFilterChange: <K extends keyof QueueFilterValues>(key: K, value: QueueFilterValues[K]) => void;
-  onStatusFilterChange: (values: Array<string | number>, options: unknown) => void;
+  onStatusFilterChange: (values: string[]) => void;
   onDateRangeChange: (
     dates: [Dayjs | null, Dayjs | null] | null,
     dateStrings?: [string, string]
@@ -50,8 +48,8 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
 
   return (
     <Space size={8} wrap>
-      <FilterSelect
-        $minWidth={150}
+      <Select
+        style={{ minWidth: 150 }}
         placeholder={t('filters.teamPlaceholder')}
         value={filters.teamName ?? undefined}
         onChange={(value) => {
@@ -63,8 +61,8 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         options={dropdownData?.teams || []}
         data-testid="queue-filter-team"
       />
-      <FilterSelect
-        $minWidth={150}
+      <Select
+        style={{ minWidth: 150 }}
         placeholder={t('filters.machinePlaceholder')}
         value={filters.machineName ?? undefined}
         onChange={(value) => onFilterChange('machineName', typeof value === 'string' ? value : '')}
@@ -75,8 +73,8 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         }))}
         data-testid="queue-filter-machine"
       />
-      <FilterSelect
-        $minWidth={130}
+      <Select
+        style={{ minWidth: 130 }}
         placeholder={t('filters.regionPlaceholder')}
         value={filters.regionName ?? undefined}
         onChange={(value) => onFilterChange('regionName', typeof value === 'string' ? value : '')}
@@ -84,8 +82,8 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         options={dropdownData?.regions || []}
         data-testid="queue-filter-region"
       />
-      <FilterSelect
-        $minWidth={130}
+      <Select
+        style={{ minWidth: 130 }}
         placeholder={t('filters.bridgePlaceholder')}
         value={filters.bridgeName ?? undefined}
         onChange={(value) => onFilterChange('bridgeName', typeof value === 'string' ? value : '')}
@@ -93,19 +91,24 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         options={dropdownData?.bridges || []}
         data-testid="queue-filter-bridge"
       />
-      <FilterRangePicker
+      <DatePicker.RangePicker
         value={dateRangeValue}
         onChange={onDateRangeChange}
         allowClear
         placeholder={[t('queue:filters.dateFrom'), t('queue:filters.dateTo')]}
         data-testid="queue-filter-date"
       />
-      <FilterSelect
+      <Select
         mode="multiple"
-        $minWidth={160}
+        style={{ minWidth: 160 }}
         placeholder={t('filters.statusPlaceholder')}
         value={filters.statusFilter}
-        onChange={onStatusFilterChange}
+        onChange={(values) => {
+          const normalized = (values as Array<string | number> | undefined)?.map((value) =>
+            String(value)
+          );
+          onStatusFilterChange(normalized ?? []);
+        }}
         options={[
           { label: t('queue:statusPending'), value: 'PENDING' },
           { label: t('queue:statusActive'), value: 'ACTIVE' },
@@ -116,7 +119,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         ]}
         data-testid="queue-filter-status"
       />
-      <FilterInput
+      <Input
         placeholder={t('filters.taskIdPlaceholder')}
         prefix={<SearchOutlined />}
         value={filters.taskIdFilter}
@@ -124,13 +127,13 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         allowClear
         data-testid="queue-filter-task"
       />
-      <RediaccCheckbox
+      <Checkbox
         checked={filters.onlyStale}
         onChange={(e) => onFilterChange('onlyStale', e.target.checked)}
         data-testid="queue-checkbox-only-stale"
       >
         {t('queue:filters.onlyStale')}
-      </RediaccCheckbox>
+      </Checkbox>
     </Space>
   );
 };

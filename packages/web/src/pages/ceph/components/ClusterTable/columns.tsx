@@ -1,3 +1,4 @@
+import { Button, Flex, Tag } from 'antd';
 import type { CephCluster } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
@@ -5,24 +6,17 @@ import {
   createTruncatedColumn,
   createVersionColumn,
 } from '@/components/common/columns';
-import { RediaccTag } from '@/components/ui';
 import { createSorter } from '@/platform';
 import {
   DeleteOutlined,
   EditOutlined,
   FunctionOutlined,
   HistoryOutlined,
+  RightOutlined,
+  CloudServerOutlined,
 } from '@/utils/optimizedIcons';
 import { MachineCountBadge } from './components/MachineCountBadge';
 import { getClusterFunctionMenuItems } from './menus';
-import {
-  ClusterIcon,
-  ClusterNameCell,
-  ClusterNameText,
-  ExpandIcon,
-  MachineManageCell,
-  ManageMachinesButton,
-} from './styles';
 import type { ColumnsType } from 'antd/es/table';
 import type { TFunction } from 'i18next';
 
@@ -66,22 +60,27 @@ export const buildClusterColumns = ({
       render: (name: string, record: CephCluster, index) => {
         const isExpanded = expandedRowKeys.includes(record.clusterName);
         return (
-          <ClusterNameCell>
-            <ExpandIcon $expanded={isExpanded} />
-            <ClusterIcon />
-            <ClusterNameText>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <RightOutlined
+              style={{
+                transform: isExpanded ? 'rotate(90deg)' : undefined,
+                transition: 'transform 0.2s ease',
+              }}
+            />
+            <CloudServerOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
+            <span style={{ fontWeight: 400 }}>
               {clusterNameColumn.render?.(name, record, index) as React.ReactNode}
-            </ClusterNameText>
-          </ClusterNameCell>
+            </span>
+          </span>
         );
       },
     },
     {
       ...teamColumn,
       render: (teamName: string, record: CephCluster, index) => (
-        <RediaccTag preset="team" compact borderless>
+        <Tag bordered={false} color="success">
           {teamColumn.render?.(teamName, record, index) as React.ReactNode}
-        </RediaccTag>
+        </Tag>
       ),
     },
     {
@@ -90,9 +89,9 @@ export const buildClusterColumns = ({
       width: 160,
       align: 'center',
       render: (_: unknown, record: CephCluster) => (
-        <MachineManageCell>
+        <Flex align="center" gap={8}>
           <MachineCountBadge cluster={record} />
-          <ManageMachinesButton
+          <Button
             data-testid={`ds-cluster-manage-machines-${record.clusterName}`}
             onClick={(event) => {
               event.stopPropagation();
@@ -100,8 +99,8 @@ export const buildClusterColumns = ({
             }}
           >
             {t('machines:manage')}
-          </ManageMachinesButton>
-        </MachineManageCell>
+          </Button>
+        </Flex>
       ),
     },
     createVersionColumn<CephCluster>({

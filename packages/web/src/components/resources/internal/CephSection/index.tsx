@@ -1,9 +1,9 @@
+import { Alert, Button, Card, Divider, Flex, Typography } from 'antd';
 import React, { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMachineAssignmentStatus } from '@/api/queries/ceph';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
-import { IconWrapper, RediaccDivider, RediaccStack, RediaccText } from '@/components/ui';
 import type { Machine, MachineAssignmentType } from '@/types';
 import {
   CloudServerOutlined,
@@ -13,16 +13,6 @@ import {
   HistoryOutlined,
   RightOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  ActionButton,
-  ActionsRow,
-  AlertWrapper,
-  DividerContent,
-  LabelBlock,
-  LoadingState,
-  SectionCard,
-  SectionTitle,
-} from './styles';
 
 interface CephSectionProps {
   machine: Machine;
@@ -69,11 +59,11 @@ export const CephSection: React.FC<CephSectionProps> = ({
 
   if (isLoading) {
     return (
-      <LoadingState data-testid="ds-section-loading">
+      <Flex align="center" justify="center" style={{ paddingBlock: 20 }} data-testid="ds-section-loading">
         <LoadingWrapper loading centered minHeight={120}>
           <div />
         </LoadingWrapper>
-      </LoadingState>
+      </Flex>
     );
   }
 
@@ -81,21 +71,19 @@ export const CephSection: React.FC<CephSectionProps> = ({
 
   return (
     <>
-      <RediaccDivider spacing="lg" data-testid="ds-section-divider">
-        <DividerContent>
-          <IconWrapper $size="lg">
-            <CloudServerOutlined />
-          </IconWrapper>
-          <SectionTitle>{t('machineSection.title')}</SectionTitle>
-        </DividerContent>
-      </RediaccDivider>
+      <Divider style={{ margin: '24px 0' }} data-testid="ds-section-divider">
+        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+          <CloudServerOutlined />
+          <span style={{ fontSize: 16, fontWeight: 600 }}>{t('machineSection.title')}</span>
+        </div>
+      </Divider>
 
-      <SectionCard size="sm" data-testid="ds-section-card">
-        <RediaccStack variant="spaced-column" fullWidth>
+      <Card size="small" data-testid="ds-section-card">
+        <Flex vertical gap={24} style={{ width: '100%' }}>
           <div>
-            <LabelBlock data-testid="ds-section-assignment-label">
-              <RediaccText variant="label">{t('assignment.currentAssignment')}</RediaccText>
-            </LabelBlock>
+            <div style={{ display: 'block' }} data-testid="ds-section-assignment-label">
+              <Typography.Text type="secondary">{t('assignment.currentAssignment')}</Typography.Text>
+            </div>
             <MachineAssignmentStatusBadge
               assignmentType={assignmentType}
               assignmentDetails={assignmentDetails}
@@ -105,69 +93,61 @@ export const CephSection: React.FC<CephSectionProps> = ({
           </div>
 
           {showAssignmentAlert && assignmentDetails && (
-            <AlertWrapper
-              message={<RediaccText variant="value">{assignmentDetails}</RediaccText>}
-              variant="info"
+            <Alert
+              message={<Typography.Text type="secondary">{assignmentDetails}</Typography.Text>}
+              type="info"
               showIcon
               icon={
-                <IconWrapper $size="sm" $tone="info">
-                  {getAssignmentIcon(assignmentType)}
-                </IconWrapper>
+                getAssignmentIcon(assignmentType)
               }
               data-testid="ds-section-assignment-alert"
             />
           )}
 
-          <ActionsRow>
+          <Flex align="center" wrap>
             {onViewDetails && (
-              <ActionButton
+              <Button
                 icon={
-                  <IconWrapper $size="sm" $tone="muted">
-                    <HistoryOutlined />
-                  </IconWrapper>
+                  <HistoryOutlined />
                 }
                 onClick={onViewDetails}
                 data-testid="ds-section-history-button"
               >
-                <RediaccText variant="caption" weight="medium">
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   {t('assignment.history')}
-                </RediaccText>
-              </ActionButton>
+                </Typography.Text>
+              </Button>
             )}
 
             {onManageAssignment && assignmentType !== 'AVAILABLE' && (
-              <ActionButton
-                variant="primary"
+              <Button
+                type="primary"
                 icon={
-                  <IconWrapper $size="sm">
-                    <RightOutlined />
-                  </IconWrapper>
+                  <RightOutlined />
                 }
                 onClick={onManageAssignment}
                 data-testid="ds-section-manage-button"
               >
-                <RediaccText variant="caption" weight="medium">
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   {t('machineSection.manageAssignment')}
-                </RediaccText>
-              </ActionButton>
+                </Typography.Text>
+              </Button>
             )}
-          </ActionsRow>
+          </Flex>
 
           {assignmentType !== 'AVAILABLE' && (
-            <AlertWrapper
-              message={<RediaccText variant="value">{t('warnings.exclusivity')}</RediaccText>}
-              variant="warning"
+            <Alert
+              message={<Typography.Text type="secondary">{t('warnings.exclusivity')}</Typography.Text>}
+              type="warning"
               showIcon
               icon={
-                <IconWrapper $size="sm" $tone="warning">
-                  <CloudServerOutlined />
-                </IconWrapper>
+                <CloudServerOutlined />
               }
               data-testid="ds-section-exclusivity-warning"
             />
           )}
-        </RediaccStack>
-      </SectionCard>
+        </Flex>
+      </Card>
     </>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Space, type MenuProps } from 'antd';
+import { Alert, Space, Table, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useRepositories } from '@/api/queries/repositories';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
@@ -10,7 +10,6 @@ import {
 } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
-import { RediaccTable, RediaccText } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useTableStyles } from '@/hooks/useComponentStyles';
 import { useQueueAction } from '@/hooks/useQueueAction';
@@ -36,7 +35,6 @@ import {
 } from '@/utils/optimizedIcons';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
-import * as S from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
 interface PortMapping {
@@ -541,9 +539,9 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
           {stateColumn.render?.(state, record, index) as React.ReactNode}
 
           {record.status && (
-            <RediaccText variant="caption" muted>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {record.status}
-            </RediaccText>
+            </Typography.Text>
           )}
         </Space>
       ),
@@ -564,21 +562,21 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
 
       render: (_: unknown, record: Container) => {
         if (!record.port_mappings || record.port_mappings.length === 0) {
-          return <RediaccText color="secondary">-</RediaccText>;
+          return <Typography.Text type="secondary">-</Typography.Text>;
         }
 
         return (
           <Space direction="vertical" size={4}>
             {record.port_mappings.slice(0, 2).map((pm, idx) => (
-              <RediaccText key={idx} variant="caption">
+              <Typography.Text key={idx} type="secondary" style={{ fontSize: 12 }}>
                 {pm.host_port}:{pm.container_port}/{pm.protocol}
-              </RediaccText>
+              </Typography.Text>
             ))}
 
             {record.port_mappings.length > 2 && (
-              <RediaccText variant="caption" muted size="xs">
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 +{record.port_mappings.length - 2} more
-              </RediaccText>
+              </Typography.Text>
             )}
           </Space>
         );
@@ -757,49 +755,49 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
       {/* Regular Containers */}
 
       {containers.length > 0 ? (
-        <S.ContainersSection data-testid="regular-containers-section">
-          <S.TableStyleWrapper>
-            <RediaccTable<Container>
+        <div data-testid="regular-containers-section">
+          <div>
+            <Table<Container>
               columns={containerColumns}
               dataSource={containers}
               rowKey="id"
-              size="sm"
-              removeMargins
+              size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
               style={tableStyles.tableContainer}
               data-testid="regular-containers-table"
               onRow={(container) => buildRowHandlers(container)}
             />
-          </S.TableStyleWrapper>
-        </S.ContainersSection>
+          </div>
+        </div>
       ) : (
-        <S.EmptyState data-testid="no-containers">
-          <RediaccText color="secondary">{t('resources:containers.noContainers')}</RediaccText>
-        </S.EmptyState>
+        <div data-testid="no-containers" style={{ textAlign: 'center' }}>
+          <Typography.Text type="secondary">{t('resources:containers.noContainers')}</Typography.Text>
+        </div>
       )}
 
       {/* Plugin Containers */}
 
       {featureFlags.isEnabled('plugins') && pluginContainers.length > 0 && (
-        <S.PluginContainersSection data-testid="plugin-containers-section">
-          <S.SectionTitle level={5}>{t('resources:containers.pluginContainers')}</S.SectionTitle>
+        <div data-testid="plugin-containers-section">
+          <Typography.Title level={5}>
+            {t('resources:containers.pluginContainers')}
+          </Typography.Title>
 
-          <S.TableStyleWrapper>
-            <RediaccTable<Container>
+          <div>
+            <Table<Container>
               columns={containerColumns}
               dataSource={pluginContainers}
               rowKey="id"
-              size="sm"
-              removeMargins
+              size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
               style={tableStyles.tableContainer}
               data-testid="plugin-containers-table"
               onRow={(container) => buildRowHandlers(container)}
             />
-          </S.TableStyleWrapper>
-        </S.PluginContainersSection>
+          </div>
+        </div>
       )}
     </div>
   );

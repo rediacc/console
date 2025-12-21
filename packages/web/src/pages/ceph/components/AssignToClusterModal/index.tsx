@@ -1,3 +1,4 @@
+import { Alert, Flex, Modal, Select, Table, Tag, Typography } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type CephCluster, useCephClusters } from '@/api/queries/ceph';
@@ -7,24 +8,10 @@ import {
 } from '@/api/queries/cephMutations';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccStack, RediaccTable, RediaccText } from '@/components/ui';
-import { AlertCard } from '@/styles/primitives';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
-import {
-  AssignmentTag,
-  ClusterAlert,
-  DetailRow,
-  FieldGroup,
-  MachineDetailsSection,
-  MachineNameRow,
-  StyledModal,
-  StyledSelect,
-  TeamTag,
-  TitleStack,
-} from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
 interface AssignToClusterModalProps {
@@ -147,10 +134,10 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       dataIndex: 'machineName',
       key: 'machineName',
       renderWrapper: (content) => (
-        <MachineNameRow>
+        <Flex align="center" gap={8}>
           <CloudServerOutlined />
-          <RediaccText weight="medium">{content}</RediaccText>
-        </MachineNameRow>
+          <Typography.Text style={{ fontWeight: 500 }}>{content}</Typography.Text>
+        </Flex>
       ),
     });
 
@@ -158,7 +145,11 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       title: t('machines:team'),
       dataIndex: 'teamName',
       key: 'teamName',
-      renderWrapper: (content) => <TeamTag>{content}</TeamTag>,
+      renderWrapper: (content) => (
+        <Tag bordered={false} color="success" style={{ fontSize: 12 }}>
+          {content}
+        </Tag>
+      ),
     });
 
     return [
@@ -169,11 +160,13 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
         key: 'currentCluster',
         render: (_: unknown, record: Machine) =>
           record.cephClusterName ? (
-            <AssignmentTag variant="primary">{record.cephClusterName}</AssignmentTag>
+            <Tag bordered={false} color="processing" style={{ fontSize: 12 }}>
+              {record.cephClusterName}
+            </Tag>
           ) : (
-            <AssignmentTag variant="success">
+            <Tag bordered={false} color="success" style={{ fontSize: 12 }}>
               {t('machines:assignmentStatus.available')}
-            </AssignmentTag>
+            </Tag>
           ),
       },
     ];
@@ -191,17 +184,17 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
   );
 
   return (
-    <StyledModal
-      $size={modalSize}
+    <Modal
+      className={`${modalSize} assign-to-cluster-modal`}
       title={
-        <TitleStack>
+        <Flex align="center" gap={8} wrap>
           <CloudServerOutlined />
           {isBulkMode
             ? t('machines:bulkActions.assignToCluster')
             : machine?.cephClusterName
               ? t('machines:changeClusterAssignment')
               : t('machines:assignToCluster')}
-        </TitleStack>
+        </Flex>
       }
       open={open}
       onCancel={onCancel}
@@ -218,21 +211,20 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       }}
       data-testid="ds-assign-cluster-modal"
     >
-      <RediaccStack variant="spaced-column" fullWidth>
+      <Flex vertical gap={24} style={{ width: '100%' }}>
         {isBulkMode ? (
           <>
-            <AlertCard
-              $variant="info"
+            <Alert
               message={t('machines:bulkOperations.selectedCount', { count: targetMachines.length })}
               description={t('machines:bulkAssignDescription')}
-              variant="info"
+              type="info"
               showIcon
             />
-            <RediaccTable<Machine>
+            <Table<Machine>
               columns={bulkColumns}
               dataSource={targetMachines}
               rowKey="machineName"
-              size="sm"
+              size="small"
               pagination={false}
               scroll={{ y: 200 }}
               data-testid="ds-assign-cluster-bulk-table"
@@ -241,23 +233,23 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
         ) : (
           machine && (
             <>
-              <MachineDetailsSection>
-                <DetailRow>
-                  <RediaccText weight="semibold">{t('machines:machine')}:</RediaccText>
-                  <RediaccText color="muted">{machine.machineName}</RediaccText>
-                </DetailRow>
-                <DetailRow>
-                  <RediaccText weight="semibold">{t('machines:team')}:</RediaccText>
-                  <RediaccText color="muted">{machine.teamName}</RediaccText>
-                </DetailRow>
-              </MachineDetailsSection>
+              <Flex vertical gap={8}>
+                <Flex align="flex-start" wrap gap={8}>
+                  <Typography.Text strong>{t('machines:machine')}:</Typography.Text>
+                  <Typography.Text type="secondary">{machine.machineName}</Typography.Text>
+                </Flex>
+                <Flex align="flex-start" wrap gap={8}>
+                  <Typography.Text strong>{t('machines:team')}:</Typography.Text>
+                  <Typography.Text type="secondary">{machine.teamName}</Typography.Text>
+                </Flex>
+              </Flex>
 
               {machine.cephClusterName && (
-                <ClusterAlert
+                <Alert
                   message={t('machines:currentClusterAssignment', {
                     cluster: machine.cephClusterName,
                   })}
-                  variant="info"
+                  type="info"
                   showIcon
                 />
               )}
@@ -265,35 +257,35 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
           )
         )}
 
-        <FieldGroup>
-          <RediaccText weight="medium" size="sm">
+        <Flex vertical gap={8} style={{ width: '100%' }}>
+          <Typography.Text style={{ fontWeight: 500 }}>
             {t('ceph:clusters.cluster')}:
-          </RediaccText>
+          </Typography.Text>
           {clustersLoading ? (
             <LoadingWrapper loading centered minHeight={80}>
               <div />
             </LoadingWrapper>
           ) : (
             <>
-              <StyledSelect
-                fullWidth
+              <Select
                 placeholder={t('machines:selectCluster')}
                 value={selectedCluster}
                 onChange={(value) => setSelectedCluster(value as string | null)}
                 showSearch
                 optionFilterProp="children"
                 options={clusterOptions}
+                style={{ width: '100%' }}
                 data-testid="ds-assign-cluster-select"
               />
               {!isBulkMode && (
-                <RediaccText size="xs" color="muted">
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   {t('machines:clusterAssignmentHelp')}
-                </RediaccText>
+                </Typography.Text>
               )}
             </>
           )}
-        </FieldGroup>
-      </RediaccStack>
-    </StyledModal>
+        </Flex>
+      </Flex>
+    </Modal>
   );
 };

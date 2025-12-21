@@ -1,3 +1,4 @@
+import { Alert, Flex, Modal, Select, Typography } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -7,19 +8,8 @@ import {
 } from '@/api/queries/ceph';
 import { useUpdateImageMachineAssignment } from '@/api/queries/cephMutations';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccStack, RediaccText } from '@/components/ui';
-import { AlertCard } from '@/styles/primitives';
-import {
-  DisabledOptionText,
-  FieldRow,
-  LoadingContainer,
-  MachineIcon,
-  SelectOptionText,
-  StyledModal,
-  StyledSelect,
-  TitleIcon,
-  TitleStack,
-} from './styles';
+import { ModalSize } from '@/types/modal';
+import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons';
 
 interface ImageMachineReassignmentModalProps {
   open: boolean;
@@ -63,9 +53,9 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       options.push({
         value: image.machineName,
         label: (
-          <DisabledOptionText>
+          <span style={{ fontSize: 14, cursor: 'not-allowed' }}>
             {image.machineName} ({t('common:current')})
-          </DisabledOptionText>
+          </span>
         ),
         disabled: true,
       });
@@ -75,7 +65,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
     availableMachines.forEach((machine) => {
       options.push({
         value: machine.machineName,
-        label: <SelectOptionText>{machine.machineName}</SelectOptionText>,
+        label: <span style={{ fontSize: 14 }}>{machine.machineName}</span>,
       });
     });
 
@@ -101,13 +91,14 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   };
 
   return (
-    <StyledModal
+    <Modal
       title={
-        <TitleStack>
-          <TitleIcon />
+        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+          <FileImageOutlined style={{ fontSize: 16, color: 'var(--ant-color-primary)' }} />
           {t('ceph:images.reassignMachine')}
-        </TitleStack>
+        </Flex>
       }
+      className={`${ModalSize.Medium} image-machine-reassignment-modal`}
       open={open}
       onOk={handleOk}
       onCancel={onCancel}
@@ -124,72 +115,71 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       data-testid="image-reassign-modal"
     >
       {image && (
-        <RediaccStack variant="spaced-column" fullWidth>
-          <FieldRow>
-            <RediaccText weight="semibold" size="sm">
+        <Flex vertical gap={24} style={{ width: '100%' }}>
+          <Flex align="flex-start" wrap gap={8}>
+            <Typography.Text strong>
               {t('ceph:images.image')}:
-            </RediaccText>
-            <RediaccText color="muted">{image.imageName}</RediaccText>
-          </FieldRow>
+            </Typography.Text>
+            <Typography.Text type="secondary">{image.imageName}</Typography.Text>
+          </Flex>
 
-          <FieldRow>
-            <RediaccText weight="semibold" size="sm">
+          <Flex align="flex-start" wrap gap={8}>
+            <Typography.Text strong>
               {t('ceph:pools.pool')}:
-            </RediaccText>
-            <RediaccText color="muted">{poolName}</RediaccText>
-          </FieldRow>
+            </Typography.Text>
+            <Typography.Text type="secondary">{poolName}</Typography.Text>
+          </Flex>
 
           {image.machineName && (
-            <AlertCard
-              $variant="info"
+            <Alert
               message={t('machines:currentMachineAssignment', { machine: image.machineName })}
-              variant="info"
-              icon={<MachineIcon />}
+              type="info"
+              icon={<CloudServerOutlined style={{ fontSize: 14, color: 'var(--ant-color-primary)' }} />}
               data-testid="image-reassign-current-machine-info"
+              showIcon
             />
           )}
 
           <div>
-            <RediaccText as="label" weight="medium" size="sm">
+            <Typography.Text>
               {t('ceph:images.selectNewMachine')}:
-            </RediaccText>
-            <LoadingContainer>
+            </Typography.Text>
+            <div>
               <LoadingWrapper loading={loadingMachines} centered minHeight={120}>
                 <>
-                  <StyledSelect
-                    fullWidth
+                  <Select
                     placeholder={t('machines:selectMachine')}
                     value={selectedMachine}
                     onChange={(value) => setSelectedMachine(value as string)}
                     showSearch
                     optionFilterProp="children"
+                    style={{ width: '100%' }}
                     notFoundContent={
                       availableMachines.length === 0 ? (
-                        <SelectOptionText>{t('machines:noAvailableMachines')}</SelectOptionText>
+                        <span style={{ fontSize: 14 }}>{t('machines:noAvailableMachines')}</span>
                       ) : (
-                        <SelectOptionText>{t('common:noMatchingResults')}</SelectOptionText>
+                        <span style={{ fontSize: 14 }}>{t('common:noMatchingResults')}</span>
                       )
                     }
                     options={selectOptions}
                     data-testid="image-reassign-machine-select"
                   />
 
-                  <RediaccText variant="caption">{t('ceph:images.reassignmentInfo')}</RediaccText>
+                  <Typography.Text type="secondary">{t('ceph:images.reassignmentInfo')}</Typography.Text>
                 </>
               </LoadingWrapper>
-            </LoadingContainer>
+            </div>
           </div>
 
-          <AlertCard
-            $variant="warning"
-            message={<RediaccText>{t('common:important')}</RediaccText>}
-            description={<RediaccText>{t('ceph:images.reassignmentWarning')}</RediaccText>}
-            variant="warning"
+          <Alert
+            message={<Typography.Text type="warning">{t('common:important')}</Typography.Text>}
+            description={<Typography.Text>{t('ceph:images.reassignmentWarning')}</Typography.Text>}
+            type="warning"
             showIcon
             data-testid="image-reassign-warning"
           />
-        </RediaccStack>
+        </Flex>
       )}
-    </StyledModal>
+    </Modal>
   );
 };

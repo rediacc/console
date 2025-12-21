@@ -1,9 +1,8 @@
+import { Alert, Typography } from 'antd';
 import React from 'react';
 import { LockOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { RediaccAlert, RediaccText } from '@/components/ui';
 import { getSecurityContextInfo } from '@/utils/secureContext';
-import { ResolutionText, StyledAlert, WarningDescription } from './styles';
 
 interface InsecureConnectionWarningProps {
   onClose?: () => void;
@@ -14,31 +13,30 @@ const InsecureConnectionWarning: React.FC<InsecureConnectionWarningProps> = ({ o
   const securityInfo = getSecurityContextInfo();
 
   return (
-    <StyledAlert>
-      <RediaccAlert
-        spacing="default"
-        variant="error"
+    <div>
+      <Alert
+        type="error"
         showIcon
         icon={<LockOutlined />}
         closable={!!onClose}
         onClose={onClose}
         message={
-          <RediaccText as="span" weight="semibold" color="danger">
+          <Typography.Text type="danger" strong>
             {t('login.insecureConnection.title')}
-          </RediaccText>
+          </Typography.Text>
         }
         description={
-          <WarningDescription>
+          <div style={{ fontSize: 14 }}>
             <p>{t('login.insecureConnection.message')}</p>
-            <ResolutionText>
+            <p style={{ fontSize: 12 }}>
               <strong>{t('login.insecureConnection.howToFix')}:</strong>{' '}
               {securityInfo.suggestion || t('login.insecureConnection.resolution')}
-            </ResolutionText>
-          </WarningDescription>
+            </p>
+          </div>
         }
         data-testid="insecure-connection-warning"
       />
-    </StyledAlert>
+    </div>
   );
 };
 

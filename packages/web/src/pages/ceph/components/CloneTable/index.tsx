@@ -1,3 +1,4 @@
+import { Button, Flex, Table, Tooltip, Typography } from 'antd';
 import { useCallback, useMemo, useState } from 'react';
 import {
   CloudUploadOutlined,
@@ -25,7 +26,6 @@ import {
 } from '@/api/queries/cephMutations';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccButton, RediaccTable, RediaccTooltip } from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import { useFormModal } from '@/hooks/useFormModal';
@@ -35,7 +35,6 @@ import { AssignMachinesToCloneModal } from '@/pages/ceph/components/AssignMachin
 import { buildCloneColumns } from './columns';
 import { CloneMachineTable } from './components/CloneMachineTable';
 import { MachineCountBadge } from './components/MachineCountBadge';
-import { ActionsRow, Container, ExpandButton, TableWrapper, Title } from './styles';
 import type { MenuProps } from 'antd';
 
 interface CloneTableProps {
@@ -253,27 +252,29 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
 
   return (
     <>
-      <Container data-testid="clone-list-container">
-        <Title>{t('clones.title')}</Title>
-        <ActionsRow>
-          <RediaccTooltip title={t('clones.create')}>
-            <RediaccButton
+      <Flex vertical gap={16} data-testid="clone-list-container">
+        <Typography.Title level={5} style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
+          {t('clones.title')}
+        </Typography.Title>
+        <Flex align="center" wrap>
+          <Tooltip title={t('clones.create')}>
+            <Button
               icon={<PlusOutlined />}
               onClick={handleCreate}
               data-testid="clone-list-create-button"
             >
               {t('clones.create')}
-            </RediaccButton>
-          </RediaccTooltip>
-        </ActionsRow>
+            </Button>
+          </Tooltip>
+        </Flex>
 
-        <TableWrapper>
-          <RediaccTable<CephRbdClone>
+        <div style={{ overflow: 'hidden' }}>
+          <Table<CephRbdClone>
             columns={columns}
             dataSource={clones}
             rowKey="cloneGuid"
             loading={isLoading}
-            size="sm"
+            size="small"
             pagination={false}
             data-testid="clone-list-table"
             expandable={{
@@ -282,7 +283,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
               expandedRowKeys,
               onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
               expandIcon: ({ onExpand, record }) => (
-                <ExpandButton
+                <Button
                   icon={<CopyOutlined />}
                   onClick={(event) => onExpand(record, event)}
                   data-testid={`clone-list-expand-${record.cloneName}`}
@@ -290,8 +291,8 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
               ),
             }}
           />
-        </TableWrapper>
-      </Container>
+        </div>
+      </Flex>
 
       <UnifiedResourceModal
         open={cloneModal.isOpen}

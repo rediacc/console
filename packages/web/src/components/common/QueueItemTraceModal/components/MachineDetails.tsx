@@ -1,7 +1,6 @@
 import React from 'react';
-import { Card, Col, Collapse, Descriptions, Row, Space } from 'antd';
+import { Card, Col, Collapse, Descriptions, Flex, Row, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
 import {
   CodeOutlined,
   RightOutlined,
@@ -45,23 +44,23 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
     <Row gutter={[24, 16]}>
       {/* Left Column - Task Details */}
       <Col xs={24} lg={12}>
-        <RediaccStack variant="column" fullWidth gap="md">
+        <Flex vertical gap={16} style={{ width: '100%' }}>
           <Card size="small" title={t('trace.taskInfo')} data-testid="queue-trace-task-info">
             <Descriptions column={1} size="small">
               <Descriptions.Item label="Task ID">
-                <RediaccText code>{queueDetails.taskId}</RediaccText>
+                <Typography.Text code>{queueDetails.taskId}</Typography.Text>
               </Descriptions.Item>
               <Descriptions.Item label="Created By">
                 <Space>
                   <UserOutlined />
-                  <RediaccText>{queueDetails.createdBy || 'System'}</RediaccText>
+                  <Typography.Text>{queueDetails.createdBy || 'System'}</Typography.Text>
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Retry Status">
                 <Space>
                   <RetweetOutlined />
-                  <RediaccTag
-                    variant={
+                  <Tag
+                    color={
                       (queueDetails.retryCount ?? 0) === 0
                         ? 'success'
                         : (queueDetails.retryCount ?? 0) < 2
@@ -70,20 +69,18 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
                     }
                   >
                     {queueDetails.retryCount ?? 0} / 2 retries
-                  </RediaccTag>
+                  </Tag>
                   {queueDetails.permanentlyFailed && (
-                    <RediaccTag variant="error">Permanently Failed</RediaccTag>
+                    <Tag color="error">Permanently Failed</Tag>
                   )}
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Priority">
                 <Space>
                   {getPriorityInfo(queueDetails.priority ?? undefined).icon}
-                  <RediaccTag
-                    variant={getPriorityInfo(queueDetails.priority ?? undefined).color as 'neutral'}
-                  >
+                  <Tag color="default">
                     {getPriorityInfo(queueDetails.priority ?? undefined).label}
-                  </RediaccTag>
+                  </Tag>
                 </Space>
               </Descriptions.Item>
             </Descriptions>
@@ -98,17 +95,17 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
               <Descriptions.Item label="Machine">
                 <Space>
                   <TeamOutlined />
-                  <RediaccText>{queueDetails.machineName}</RediaccText>
+                  <Typography.Text>{queueDetails.machineName}</Typography.Text>
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Team">
-                <RediaccText>{queueDetails.teamName}</RediaccText>
+                <Typography.Text>{queueDetails.teamName}</Typography.Text>
               </Descriptions.Item>
               <Descriptions.Item label="Bridge">
-                <RediaccText>{queueDetails.bridgeName}</RediaccText>
+                <Typography.Text>{queueDetails.bridgeName}</Typography.Text>
               </Descriptions.Item>
               <Descriptions.Item label="Region">
-                <RediaccText>{queueDetails.regionName}</RediaccText>
+                <Typography.Text>{queueDetails.regionName}</Typography.Text>
               </Descriptions.Item>
             </Descriptions>
           </Card>
@@ -119,7 +116,7 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
             processingDurationSeconds={processingDurationSeconds}
             isTaskStale={isTaskStale}
           />
-        </RediaccStack>
+        </Flex>
       </Col>
 
       {/* Right Column - Response Console */}
@@ -135,11 +132,11 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
               label: (
                 <Space>
                   <CodeOutlined />
-                  <RediaccText>Response (Console)</RediaccText>
+                  <Typography.Text>Response (Console)</Typography.Text>
                   {queueDetails?.status === 'PROCESSING' && (
-                    <RediaccTag icon={<CodeOutlined />} variant="primary">
+                    <Tag color="processing" icon={<CodeOutlined />}>
                       Live Output
-                    </RediaccTag>
+                    </Tag>
                   )}
                 </Space>
               ),

@@ -1,6 +1,5 @@
 import React from 'react';
-import { Descriptions } from 'antd';
-import { RediaccTag, RediaccText } from '@/components/ui';
+import { Descriptions, Tag, Typography } from 'antd';
 import {
   normalizeToNumber,
   normalizeToString,
@@ -28,34 +27,34 @@ export const QueueItemDetails: React.FC<QueueItemDetailsProps> = ({
     'LastFailureReason'
   );
 
-  const getStatusVariant = () => {
+  const getStatusColor = () => {
     if (status === 'COMPLETED') return 'success';
     if (status === 'CANCELLED' || status === 'FAILED') return 'error';
     if (status === 'CANCELLING') return 'warning';
-    if (status === 'PROCESSING' || status === 'ASSIGNED') return 'primary';
-    return 'neutral';
+    if (status === 'PROCESSING' || status === 'ASSIGNED') return 'processing';
+    return 'default';
   };
 
   return (
     <Descriptions column={2} size="small">
       <Descriptions.Item label="Task ID">
-        <RediaccText code>{normalizeToString(queueDetails, 'taskId', 'TaskId')}</RediaccText>
+        <Typography.Text code>{normalizeToString(queueDetails, 'taskId', 'TaskId')}</Typography.Text>
       </Descriptions.Item>
       <Descriptions.Item label="Status">
-        <RediaccTag variant={getStatusVariant()}>{status}</RediaccTag>
+        <Tag color={getStatusColor()}>{status}</Tag>
       </Descriptions.Item>
       <Descriptions.Item label="Priority">{queueDetails.priorityLabel || '-'}</Descriptions.Item>
       <Descriptions.Item label="Machine">
-        <RediaccText>{queueDetails.machineName}</RediaccText>
+        <Typography.Text>{queueDetails.machineName}</Typography.Text>
       </Descriptions.Item>
       <Descriptions.Item label="Team">
-        <RediaccText>{queueDetails.teamName}</RediaccText>
+        <Typography.Text>{queueDetails.teamName}</Typography.Text>
       </Descriptions.Item>
       <Descriptions.Item label="Bridge">
-        <RediaccText>{queueDetails.bridgeName}</RediaccText>
+        <Typography.Text>{queueDetails.bridgeName}</Typography.Text>
       </Descriptions.Item>
       <Descriptions.Item label="Region">
-        <RediaccText>{queueDetails.regionName}</RediaccText>
+        <Typography.Text>{queueDetails.regionName}</Typography.Text>
       </Descriptions.Item>
       <Descriptions.Item label="Created">
         {formatTimestampAsIs(queueDetails.createdTime, 'datetime')}
@@ -82,13 +81,13 @@ export const QueueItemDetails: React.FC<QueueItemDetailsProps> = ({
         {normalizeToString(queueDetails, 'createdBy', 'CreatedBy') || '-'}
       </Descriptions.Item>
       <Descriptions.Item label="Retry Count">
-        <RediaccTag variant={retryCount === 0 ? 'success' : retryCount < 3 ? 'warning' : 'error'}>
+        <Tag color={retryCount === 0 ? 'success' : retryCount < 3 ? 'warning' : 'error'}>
           {retryCount}/2
-        </RediaccTag>
+        </Tag>
       </Descriptions.Item>
       {lastFailureReason && (
         <Descriptions.Item label="Last Failure Reason" span={2}>
-          <RediaccText color="warning">{lastFailureReason}</RediaccText>
+          <Typography.Text type="warning">{lastFailureReason}</Typography.Text>
         </Descriptions.Item>
       )}
     </Descriptions>

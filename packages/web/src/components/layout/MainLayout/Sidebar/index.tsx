@@ -1,24 +1,12 @@
+import { Flex, Layout, Tooltip } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { MenuItem } from '@/components/layout/MainLayout/helpers';
 import { SIDEBAR_COLLAPSED_WIDTH } from '@/components/layout/MainLayout/types';
-import { RediaccTooltip } from '@/components/ui';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { formatKeyForTestId } from '@/utils/testIdHelpers';
-import {
-  MenuIcon,
-  MenuLabel,
-  MenuScrollArea,
-  SidebarContent,
-  MenuItem as StyledMenuItem,
-  StyledSider,
-  SubMenuContainer,
-  SubMenuItem,
-  TooltipContent,
-  TooltipItem,
-  TooltipLabel,
-} from './styles';
+const { Sider } = Layout;
 
 type SidebarProps = {
   collapsed: boolean;
@@ -74,20 +62,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <StyledSider
+    <Sider
       trigger={null}
       collapsible
       collapsed={collapsed}
       collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
       width={sidebarWidth}
-      $sidebarWidth={sidebarWidth}
-      $isDrawer={isDrawer}
+      style={{
+        position: isDrawer ? 'static' : 'fixed',
+        left: 0,
+        top: isDrawer ? 0 : 64,
+        height: isDrawer ? '100%' : 'calc(100vh - 64px)',
+        overflow: 'hidden',
+        zIndex: 1000,
+        width: sidebarWidth,
+      }}
       role="navigation"
       aria-label={t('navigation.mainNavigation')}
       data-testid="main-sidebar"
     >
-      <SidebarContent $isDrawer={isDrawer}>
-        <MenuScrollArea>
+      <Flex
+        vertical
+        style={{ height: '100%', overflow: 'hidden', paddingTop: isDrawer ? 80 : 16 }}
+      >
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 24 }}>
           {menuItems.map((item) => {
             const visibleChildren = item.children || [];
             const hasChildren = visibleChildren.length > 0;
@@ -103,54 +101,94 @@ export const Sidebar: React.FC<SidebarProps> = ({
             const itemKey = item.key || item.label;
 
             const parentContent = (
-              <StyledMenuItem
+              <div
                 key={itemKey}
-                $isActive={isParentActive}
-                $padding={padding}
-                $collapsed={collapsed}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding,
+                  cursor: 'pointer',
+                  minHeight: 40,
+                  justifyContent: collapsed ? 'center' : 'flex-start',
+                  fontWeight: isParentActive ? 600 : 500,
+                }}
                 onClick={() => handleParentClick(item, visibleChildren)}
                 data-testid={`sidebar-menu-${formatKeyForTestId(item.key)}`}
               >
-                <MenuIcon $isActive={isParentActive} $collapsed={collapsed}>
+                <span
+                  style={{
+                    fontSize: 16,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 16,
+                    height: 16,
+                    flexShrink: 0,
+                  }}
+                >
                   {item.icon}
-                </MenuIcon>
-                <MenuLabel $isActive={isParentActive} $collapsed={collapsed}>
+                </span>
+                <span
+                  style={{
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis',
+                    display: collapsed ? 'none' : 'block',
+                    flex: 1,
+                  }}
+                >
                   {item.label}
-                </MenuLabel>
-              </StyledMenuItem>
+                </span>
+              </div>
             );
 
             if (collapsed) {
               const tooltipContent = hasChildren ? (
-                <TooltipContent>
+                <Flex vertical style={{ padding: 12 }}>
                   {visibleChildren.map((child) => {
                     const childActive = isChildActive(child.key);
                     return (
-                      <TooltipItem
+                      <div
                         key={child.key}
-                        $isActive={childActive}
+                        style={{
+                          padding: '12px 16px',
+                          fontWeight: childActive ? 600 : 500,
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          minWidth: 160,
+                        }}
                         onClick={(event) => handleChildClick(child, event)}
                       >
                         {child.label}
-                      </TooltipItem>
+                      </div>
                     );
                   })}
-                </TooltipContent>
+                </Flex>
               ) : (
-                <TooltipContent>
-                  <TooltipLabel $isActive={isParentActive}>{item.label}</TooltipLabel>
-                </TooltipContent>
+                <Flex vertical style={{ padding: 12 }}>
+                  <div
+                    style={{
+                      padding: '12px 16px',
+                      fontWeight: isParentActive ? 600 : 500,
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      minWidth: 160,
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                </Flex>
               );
 
               return (
-                <RediaccTooltip
+                <Tooltip
                   key={itemKey}
                   title={tooltipContent}
                   placement="right"
-                  overlayInnerStyle={{ padding: 0, background: 'var(--color-bg-primary)' }}
+                  overlayInnerStyle={{ padding: 0, background: 'var(--ant-color-bg-container)' }}
                 >
                   {parentContent}
-                </RediaccTooltip>
+                </Tooltip>
               );
             }
 
@@ -158,27 +196,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div key={itemKey}>
                 {parentContent}
                 {hasChildren && (
-                  <SubMenuContainer $isExpanded={isExpanded}>
+                  <div
+                    style={{
+                      padding: '8px 0',
+                      overflow: 'hidden',
+                      maxHeight: isExpanded ? 320 : 0,
+                    }}
+                  >
                     {visibleChildren.map((child) => {
                       const childActive = isChildActive(child.key);
                       return (
-                        <SubMenuItem
+                        <div
                           key={child.key}
-                          $isActive={childActive}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '12px 24px',
+                            fontSize: 14,
+                            fontWeight: childActive ? 600 : 500,
+                            cursor: 'pointer',
+                          }}
                           onClick={() => handleChildClick(child)}
                           data-testid={`sidebar-submenu-${formatKeyForTestId(child.key)}`}
                         >
                           {child.label}
-                        </SubMenuItem>
+                        </div>
                       );
                     })}
-                  </SubMenuContainer>
+                  </div>
                 )}
               </div>
             );
           })}
-        </MenuScrollArea>
-      </SidebarContent>
-    </StyledSider>
+        </div>
+      </Flex>
+    </Sider>
   );
 };

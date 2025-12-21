@@ -1,8 +1,6 @@
 import { useCallback } from 'react';
-import { Form } from 'antd';
+import { Button, Flex, Form, Input, Select } from 'antd';
 import { Controller, FieldValues } from 'react-hook-form';
-import { RediaccButton, RediaccStack } from '@/components/ui';
-import { FieldSelect, FormActions, PasswordInput, StyledForm, TextInput } from './styles';
 import { FormFieldConfig, ResourceFormProps } from './types';
 
 function ResourceForm<T extends FieldValues = FieldValues>({
@@ -29,7 +27,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
             name={field.name}
             control={control}
             render={({ field: controllerField }) => (
-              <FieldSelect
+              <Select
                 {...controllerField}
                 placeholder={field.placeholder}
                 options={field.options}
@@ -40,6 +38,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
                 data-testid={`resource-form-field-${field.name}`}
+                style={{ width: '100%' }}
               />
             )}
           />
@@ -51,12 +50,13 @@ function ResourceForm<T extends FieldValues = FieldValues>({
             name={field.name}
             control={control}
             render={({ field: controllerField }) => (
-              <PasswordInput
+              <Input.Password
                 {...controllerField}
                 placeholder={field.placeholder}
                 disabled={field.disabled}
                 autoComplete="off"
                 data-testid={`resource-form-field-${field.name}`}
+                style={{ width: '100%' }}
               />
             )}
           />
@@ -68,13 +68,14 @@ function ResourceForm<T extends FieldValues = FieldValues>({
             name={field.name}
             control={control}
             render={({ field: controllerField }) => (
-              <TextInput
+              <Input
                 {...controllerField}
                 type={field.type === 'email' ? 'email' : 'text'}
                 placeholder={field.placeholder}
                 disabled={field.disabled}
                 autoComplete="off"
                 data-testid={`resource-form-field-${field.name}`}
+                style={{ width: '100%' }}
               />
             )}
           />
@@ -91,7 +92,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
   }, [handleSubmit, onSubmit]);
 
   return (
-    <StyledForm
+    <Form
       layout={formLayout}
       onFinish={onFormFinish}
       labelCol={labelCol}
@@ -99,6 +100,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
       labelAlign="right"
       colon
       data-testid="resource-form"
+      style={{ width: '100%' }}
     >
       {fields.map((field) => {
         if (field.hidden) return null;
@@ -118,28 +120,28 @@ function ResourceForm<T extends FieldValues = FieldValues>({
         );
       })}
 
-      <FormActions wrapperCol={{ offset: labelCol.span, span: wrapperCol.span }}>
-        <RediaccStack direction="horizontal" justify="end" fullWidth>
+      <Form.Item wrapperCol={{ offset: labelCol.span, span: wrapperCol.span }}>
+        <Flex justify="flex-end" style={{ width: '100%' }}>
           {onCancel && (
-            <RediaccButton
+            <Button
               onClick={onCancel}
               disabled={loading}
               data-testid="resource-form-cancel-button"
             >
               {cancelText}
-            </RediaccButton>
+            </Button>
           )}
-          <RediaccButton
-            variant="primary"
+          <Button
+            type="primary"
             htmlType="submit"
             loading={loading}
             data-testid="resource-form-submit-button"
           >
             {submitText}
-          </RediaccButton>
-        </RediaccStack>
-      </FormActions>
-    </StyledForm>
+          </Button>
+        </Flex>
+      </Form.Item>
+    </Form>
   );
 }
 

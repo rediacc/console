@@ -1,39 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Form, Modal } from 'antd';
+import { Button, Flex, Form, Input, Modal, Select, Typography } from 'antd';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
 import apiClient from '@/api/client';
-import { RediaccButton, RediaccInput, RediaccOption, RediaccStack } from '@/components/ui';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { apiConnectionService } from '@/services/apiConnectionService';
 import { Endpoint, endpointService } from '@/services/endpointService';
 import { showMessage } from '@/utils/messages';
-import { PlusOutlined } from '@/utils/optimizedIcons';
-import {
-  AddCustomOption,
-  CheckingSpinner,
-  DeleteEndpointIcon,
-  EmojiIcon,
-  EndpointName,
-  EndpointNameText,
-  EndpointSuffixIcon,
-  EndpointUrlText,
-  HealthIndicator,
-  LabelContent,
-  LoadingText,
-  OptionLeft,
-  OptionRight,
-  OptionWrapper,
-  SelectorWrapper,
-  SpinnerWrapper,
-  StyledSelect,
-  VersionLabel,
-} from './styles';
+import { ApiOutlined, DeleteOutlined, LoadingOutlined, PlusOutlined } from '@/utils/optimizedIcons';
 
-const FormActionsRow = styled(Form.Item)`
-`;
 
 interface EndpointHealth {
   isHealthy: boolean;
@@ -319,7 +295,11 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
   // Show loading state
   if (loading) {
-    return <LoadingText color="secondary">{t('endpointSelector.loading')}</LoadingText>;
+    return (
+      <Typography.Text style={{ fontSize: 12 }} type="secondary">
+        {t('endpointSelector.loading')}
+      </Typography.Text>
+    );
   }
 
   // If no endpoint selected and we have endpoints, show the first one
@@ -327,8 +307,8 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
   return (
     <>
-      <SelectorWrapper>
-        <StyledSelect
+      <div style={{ display: 'inline-block', width: '100%' }}>
+        <Select
           value={displayValue}
           onChange={handleEndpointChange}
           // onDropdownVisibleChange={(open) => {
@@ -337,7 +317,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           // checkAllEndpointsHealth(endpoints);
           // }
           // }}
-          suffixIcon={<EndpointSuffixIcon />}
+          suffixIcon={<ApiOutlined style={{ fontSize: 18, alignSelf: 'flex-end' }} />}
           popupMatchSelectWidth={false}
           data-testid="endpoint-selector"
         >
@@ -353,86 +333,150 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
             // Label for selected value (with health indicator but without version)
             const labelContent = (
-              <LabelContent>
+              <Flex align="center" gap={8}>
                 {isChecking ? (
-                  <CheckingSpinner />
+                  <LoadingOutlined style={{ fontSize: 12, color: 'var(--ant-color-warning)' }} />
                 ) : (
-                  <HealthIndicator $isHealthy={isHealthy}>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: isHealthy ? 'var(--ant-color-success)' : 'var(--ant-color-error)',
+                    }}
+                  >
                     {HEALTH_INDICATOR_SYMBOL}
-                  </HealthIndicator>
+                  </span>
                 )}
                 <span>
-                  {endpoint.icon && <EmojiIcon>{endpoint.icon}</EmojiIcon>}
+                  {endpoint.icon && (
+                    <span
+                      style={{
+                        fontSize: 16,
+                        lineHeight: 1,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontFamily:
+                          "'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji',sans-serif",
+                      }}
+                    >
+                      {endpoint.icon}
+                    </span>
+                  )}
                   {endpoint.name}
                 </span>
-              </LabelContent>
+              </Flex>
             );
 
             return (
-              <RediaccOption
+              <Select.Option
                 key={endpoint.id}
                 value={endpoint.id}
                 data-testid={`endpoint-option-${endpoint.id}`}
                 disabled={isDisabled}
                 label={labelContent}
               >
-                <OptionWrapper>
-                  <OptionLeft>
+                <Flex justify="space-between">
+                  <Flex align="center" gap={8}>
                     {/* Health indicator */}
                     {isChecking ? (
-                      <CheckingSpinner />
+                      <LoadingOutlined style={{ fontSize: 12, color: 'var(--ant-color-warning)' }} />
                     ) : (
-                      <HealthIndicator $isHealthy={isHealthy} $isChecking={isChecking}>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: isChecking
+                            ? 'var(--ant-color-warning)'
+                            : isHealthy
+                              ? 'var(--ant-color-success)'
+                              : 'var(--ant-color-error)',
+                        }}
+                      >
                         {HEALTH_INDICATOR_SYMBOL}
-                      </HealthIndicator>
+                      </span>
                     )}
 
-                    <EndpointName $disabled={isDisabled}>
-                      {endpoint.icon && <EmojiIcon>{endpoint.icon}</EmojiIcon>}
-                      <EndpointNameText>{endpoint.name}</EndpointNameText>
-                    </EndpointName>
-                  </OptionLeft>
+                    <span style={{ display: 'flex', opacity: isDisabled ? 0.5 : 1 }}>
+                      {endpoint.icon && (
+                        <span
+                          style={{
+                            fontSize: 16,
+                            lineHeight: 1,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontFamily:
+                              "'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji',sans-serif",
+                          }}
+                        >
+                          {endpoint.icon}
+                        </span>
+                      )}
+                      <p
+                        style={{
+                          fontSize: 12,
+                          maxWidth: 120,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {endpoint.name}
+                      </p>
+                    </span>
+                  </Flex>
 
-                  <OptionRight>
+                  <Flex align="center" gap={8}>
                     {/* Version display */}
-                    {health?.version && <VersionLabel>v{health.version}</VersionLabel>}
+                    {health?.version && (
+                      <span style={{ fontSize: 12, color: 'var(--ant-color-text-tertiary)' }}>
+                        v{health.version}
+                      </span>
+                    )}
 
                     {/* Delete button for custom endpoints */}
                     {endpoint.type === 'custom' && (
-                      <DeleteEndpointIcon
+                      <DeleteOutlined
+                        style={{ fontSize: 12, cursor: 'pointer' }}
                         onClick={(e) => handleRemoveCustomEndpoint(endpoint.id, e)}
                       />
                     )}
-                  </OptionRight>
-                </OptionWrapper>
-              </RediaccOption>
+                  </Flex>
+                </Flex>
+              </Select.Option>
             );
           })}
 
           {/* Add custom endpoint option */}
-          <RediaccOption
+          <Select.Option
             key="__add_custom__"
             value="__add_custom__"
             data-testid="endpoint-option-add-custom"
           >
-            <AddCustomOption>
+            <span style={{ fontSize: 12 }}>
               <PlusOutlined /> {t('endpointSelector.addCustom')}
-            </AddCustomOption>
-          </RediaccOption>
-        </StyledSelect>
+            </span>
+          </Select.Option>
+        </Select>
 
         {/* Display selected endpoint URL */}
         {selectedEndpoint && (
-          <EndpointUrlText>
+          <Typography.Text
+            style={{
+              fontSize: 12,
+              color: 'var(--ant-color-text-tertiary)',
+              textAlign: 'center',
+              display: 'block',
+            }}
+          >
             {selectedEndpoint.url}
             {isCheckingHealth && (
-              <SpinnerWrapper>
-                <CheckingSpinner />
-              </SpinnerWrapper>
+              <Flex inline align="center">
+                <LoadingOutlined style={{ fontSize: 12, color: 'var(--ant-color-warning)' }} />
+              </Flex>
             )}
-          </EndpointUrlText>
+          </Typography.Text>
         )}
-      </SelectorWrapper>
+      </div>
 
       {/* Add Custom Endpoint Modal */}
       <Modal
@@ -453,7 +497,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
               { min: 2, message: t('endpointSelector.nameMinLength') },
             ]}
           >
-            <RediaccInput
+            <Input
               placeholder={t('endpointSelector.namePlaceholder')}
               data-testid="custom-endpoint-name-input"
             />
@@ -471,31 +515,31 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             ]}
             extra={t('endpointSelector.urlHelp')}
           >
-            <RediaccInput
+            <Input
               placeholder={t('endpointSelector.urlPlaceholder')}
               data-testid="custom-endpoint-url-input"
             />
           </Form.Item>
 
-          <FormActionsRow>
-            <RediaccStack direction="horizontal" justify="end" fullWidth>
-              <RediaccButton
+          <Form.Item>
+            <Flex justify="flex-end" gap={8} style={{ width: '100%' }}>
+              <Button
                 onClick={() => {
                   customModal.close();
                   customForm.resetFields();
                 }}
               >
                 Cancel
-              </RediaccButton>
-              <RediaccButton
-                variant="primary"
+              </Button>
+              <Button
+                type="primary"
                 htmlType="submit"
                 data-testid="custom-endpoint-submit-button"
               >
                 Add Endpoint
-              </RediaccButton>
-            </RediaccStack>
-          </FormActionsRow>
+              </Button>
+            </Flex>
+          </Form.Item>
         </Form>
       </Modal>
       {contextHolder}

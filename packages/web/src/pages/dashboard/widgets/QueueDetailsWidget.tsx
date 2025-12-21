@@ -1,7 +1,6 @@
 import React from 'react';
-import { Col, Row } from 'antd';
+import { Badge, Card, Col, Flex, List, Row, Table, Tag, Typography } from 'antd';
 import { createTruncatedColumn } from '@/components/common/columns';
-import { RediaccCard, RediaccStack, RediaccTable, RediaccTag, RediaccText } from '@/components/ui';
 import { createSorter } from '@/platform';
 import {
   DesktopOutlined,
@@ -15,19 +14,6 @@ import type {
   QueueMachineIssue,
   QueueTeamIssue,
 } from '@rediacc/shared/types';
-import {
-  BorderlessList,
-  BorderlessListItem,
-  FlexBetween,
-  HorizontalScroll,
-  InlineStack,
-  QueueBadge,
-  QueueBadgeRow,
-  ResourceTile,
-  SectionTitle,
-  StatRow,
-  StatValue,
-} from '../styles';
 import type { ColumnsType } from 'antd/es/table';
 
 const machineNameColumn = createTruncatedColumn<QueueMachineIssue>({
@@ -52,13 +38,13 @@ const machineIssueColumns: ColumnsType<QueueMachineIssue> = [
     key: 'status',
     width: 200,
     render: (_: unknown, record: QueueMachineIssue) => (
-      <InlineStack>
+      <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
         {(record.staleItems || 0) > 0 && (
-          <RediaccTag variant="warning">{record.staleItems} stale</RediaccTag>
+          <Tag color="warning">{record.staleItems} stale</Tag>
         )}
-        <RediaccTag variant="info">{record.pendingItems || 0} pending</RediaccTag>
-        <RediaccTag variant="info">{record.activeItems || 0} active</RediaccTag>
-      </InlineStack>
+        <Tag color="processing">{record.pendingItems || 0} pending</Tag>
+        <Tag color="processing">{record.activeItems || 0} active</Tag>
+      </Flex>
     ),
   },
 ];
@@ -77,89 +63,97 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
     : [];
 
   return (
-    <RediaccCard
-      fullWidth
+    <Card
       title={
-        <InlineStack>
+        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <RobotOutlined />
           <span>Queue Details</span>
-        </InlineStack>
+        </Flex>
       }
       data-testid="dashboard-card-queue-details"
     >
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={8}>
-          <ResourceTile>
-            <RediaccText weight="bold">Today&apos;s Activity</RediaccText>
-            <RediaccStack direction="vertical" gap="md" fullWidth>
-              <StatRow>
-                <RediaccText variant="caption" color="secondary">
+          <div>
+            <Typography.Text strong>Today&apos;s Activity</Typography.Text>
+            <Flex vertical gap={16} style={{ width: '100%' }}>
+              <Flex align="center" justify="space-between">
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   Created
-                </RediaccText>
-                <StatValue data-testid="dashboard-stat-created-today">
+                </Typography.Text>
+                <Typography.Text data-testid="dashboard-stat-created-today">
                   {queueStats.createdToday || 0}
-                </StatValue>
-              </StatRow>
-              <StatRow>
-                <RediaccText variant="caption" color="secondary">
+                </Typography.Text>
+              </Flex>
+              <Flex align="center" justify="space-between">
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   Completed
-                </RediaccText>
-                <StatValue $variant="success" data-testid="dashboard-stat-completed-today">
+                </Typography.Text>
+                <Typography.Text
+                  style={{ color: 'var(--ant-color-success)' }}
+                  data-testid="dashboard-stat-completed-today"
+                >
                   {queueStats.completedToday || 0}
-                </StatValue>
-              </StatRow>
-              <StatRow>
-                <RediaccText variant="caption" color="secondary">
+                </Typography.Text>
+              </Flex>
+              <Flex align="center" justify="space-between">
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   Cancelled
-                </RediaccText>
-                <StatValue $variant="error" data-testid="dashboard-stat-cancelled-today">
+                </Typography.Text>
+                <Typography.Text
+                  style={{ color: 'var(--ant-color-error)' }}
+                  data-testid="dashboard-stat-cancelled-today"
+                >
                   {queueStats.cancelledToday || 0}
-                </StatValue>
-              </StatRow>
-              <StatRow>
-                <RediaccText variant="caption" color="secondary">
+                </Typography.Text>
+              </Flex>
+              <Flex align="center" justify="space-between">
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   Failed
-                </RediaccText>
-                <StatValue $variant="error" data-testid="dashboard-stat-failed-today">
+                </Typography.Text>
+                <Typography.Text
+                  style={{ color: 'var(--ant-color-error)' }}
+                  data-testid="dashboard-stat-failed-today"
+                >
                   {queueStats.failedToday || 0}
-                </StatValue>
-              </StatRow>
-            </RediaccStack>
-          </ResourceTile>
+                </Typography.Text>
+              </Flex>
+            </Flex>
+          </div>
         </Col>
 
         <Col xs={24} lg={16}>
-          <RediaccStack direction="vertical" gap="md" fullWidth>
+          <Flex vertical gap={16} style={{ width: '100%' }}>
             {teamIssues.length > 0 && (
               <div>
-                <SectionTitle weight="bold">
+                <Typography.Text strong>
                   <TeamOutlined /> Team Queue Status
-                </SectionTitle>
-                <BorderlessList
-                  size="sm"
+                </Typography.Text>
+                <List
+                  size="small"
                   dataSource={teamIssues}
                   data-testid="dashboard-list-team-issues"
                   renderItem={(team) => {
                     const teamIssue = team as QueueTeamIssue;
                     return (
-                      <BorderlessListItem>
-                        <FlexBetween>
-                          <RediaccText weight="bold">{teamIssue.teamName}</RediaccText>
-                          <InlineStack>
+                      <List.Item>
+                        <Flex align="center" justify="space-between">
+                          <Typography.Text strong>{teamIssue.teamName}</Typography.Text>
+                          <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
                             {(teamIssue.staleItems || 0) > 0 && (
-                              <RediaccTag variant="warning">
+                              <Tag color="warning">
                                 <WarningOutlined /> {teamIssue.staleItems} stale
-                              </RediaccTag>
+                              </Tag>
                             )}
-                            <RediaccTag variant="info">
+                            <Tag color="processing">
                               {teamIssue.pendingItems || 0} pending
-                            </RediaccTag>
-                            <RediaccTag variant="info">
+                            </Tag>
+                            <Tag color="processing">
                               {teamIssue.activeItems || 0} active
-                            </RediaccTag>
-                          </InlineStack>
-                        </FlexBetween>
-                      </BorderlessListItem>
+                            </Tag>
+                          </Flex>
+                        </Flex>
+                      </List.Item>
                     );
                   }}
                 />
@@ -168,68 +162,72 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
 
             {machineIssues.length > 0 && (
               <div>
-                <SectionTitle weight="bold">
+                <Typography.Text strong>
                   <DesktopOutlined /> Machine Queue Status
-                </SectionTitle>
-                <HorizontalScroll>
-                  <RediaccTable<QueueMachineIssue>
-                    size="sm"
+                </Typography.Text>
+                <div style={{ width: '100%', overflowX: 'auto' }}>
+                  <Table<QueueMachineIssue>
+                    size="small"
                     dataSource={machineIssues}
                     pagination={false}
                     columns={machineIssueColumns}
                     data-testid="dashboard-table-machine-issues"
                     rowKey={(record) => `${record.teamName}-${record.machineName}`}
                   />
-                </HorizontalScroll>
+                </div>
               </div>
             )}
 
             {featureAccess?.hasAdvancedAnalytics === 1 &&
               queueStats.highestPriorityPending !== null && (
-                <ResourceTile>
-                  <RediaccText weight="bold">
+                <div>
+                  <Typography.Text strong>
                     <ThunderboltOutlined /> Priority Breakdown
-                  </RediaccText>
-                  <QueueBadgeRow>
-                    <FlexBetween>
-                      <RediaccText>Highest Priority</RediaccText>
-                      <QueueBadge
-                        $variant="error"
+                  </Typography.Text>
+                  <Flex vertical style={{ width: '100%' }}>
+                    <Flex align="center" justify="space-between">
+                      <Typography.Text>Highest Priority</Typography.Text>
+                      <Badge
+                        color="error"
                         count={queueStats.highestPriorityPending ?? 0}
+                        showZero
                         data-testid="dashboard-badge-highest-priority"
                       />
-                    </FlexBetween>
-                    <FlexBetween>
-                      <RediaccText>High Priority</RediaccText>
-                      <QueueBadge
-                        $variant="warning"
+                    </Flex>
+                    <Flex align="center" justify="space-between">
+                      <Typography.Text>High Priority</Typography.Text>
+                      <Badge
+                        color="warning"
                         count={queueStats.highPriorityPending ?? 0}
+                        showZero
                         data-testid="dashboard-badge-high-priority"
                       />
-                    </FlexBetween>
-                    <FlexBetween>
-                      <RediaccText>Normal Priority</RediaccText>
-                      <QueueBadge
-                        $variant="info"
+                    </Flex>
+                    <Flex align="center" justify="space-between">
+                      <Typography.Text>Normal Priority</Typography.Text>
+                      <Badge
+                        color="processing"
                         count={queueStats.normalPriorityPending ?? 0}
+                        showZero
                         data-testid="dashboard-badge-normal-priority"
                       />
-                    </FlexBetween>
-                    <FlexBetween>
-                      <RediaccText>Low Priority</RediaccText>
-                      <QueueBadge
-                        $variant="default"
+                    </Flex>
+                    <Flex align="center" justify="space-between">
+                      <Typography.Text>Low Priority</Typography.Text>
+                      <Badge
+                        color="default"
                         count={queueStats.lowPriorityPending ?? 0}
+                        showZero
                         data-testid="dashboard-badge-low-priority"
                       />
-                    </FlexBetween>
-                  </QueueBadgeRow>
-                </ResourceTile>
+                    </Flex>
+                  </Flex>
+                </div>
               )}
-          </RediaccStack>
+          </Flex>
         </Col>
       </Row>
-    </RediaccCard>
+    </Card>
   );
 };
 

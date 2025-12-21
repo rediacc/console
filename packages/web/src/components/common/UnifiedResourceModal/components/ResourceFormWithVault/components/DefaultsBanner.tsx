@@ -1,8 +1,5 @@
 import React, { type ReactNode } from 'react';
-import {
-  DefaultsAlert,
-  DefaultsWrapper,
-} from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/styles';
+import { Alert } from 'antd';
 
 interface DefaultsBannerProps {
   title: string;
@@ -10,7 +7,7 @@ interface DefaultsBannerProps {
 }
 
 export const DefaultsBanner: React.FC<DefaultsBannerProps> = ({ title, content }) => (
-  <DefaultsWrapper>
-    <DefaultsAlert message={title} description={content} variant="info" showIcon />
-  </DefaultsWrapper>
+  <div>
+    <Alert message={title} description={content} type="info" showIcon />
+  </div>
 );

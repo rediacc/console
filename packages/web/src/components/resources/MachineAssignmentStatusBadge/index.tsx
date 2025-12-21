@@ -1,3 +1,4 @@
+import { Tag, Tooltip } from 'antd';
 import React from 'react';
 import {
   CheckCircleOutlined,
@@ -6,10 +7,7 @@ import {
   FileImageOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { IconWrapper, RediaccTooltip } from '@/components/ui';
-import type { TagVariant } from '@/components/ui/Tag';
 import type { MachineAssignmentType } from '@/types';
-import { AssignmentBadge, AssignmentTag, TooltipText } from './styles';
 
 interface MachineAssignmentStatusBadgeProps {
   assignmentType: MachineAssignmentType;
@@ -28,25 +26,25 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
 
   const STATUS_CONFIG_MAP: Record<
     MachineAssignmentType,
-    { variant: TagVariant; icon: React.ReactNode; textKey: string }
+    { color: 'success' | 'processing' | 'warning' | 'default'; icon: React.ReactNode; textKey: string }
   > = {
     AVAILABLE: {
-      variant: 'success',
+      color: 'success',
       icon: <CheckCircleOutlined />,
       textKey: 'assignmentStatus.available',
     },
     CLUSTER: {
-      variant: 'primary',
+      color: 'processing',
       icon: <CloudServerOutlined />,
       textKey: 'assignmentStatus.cluster',
     },
     IMAGE: {
-      variant: 'info',
+      color: 'processing',
       icon: <FileImageOutlined />,
       textKey: 'assignmentStatus.image',
     },
     CLONE: {
-      variant: 'warning',
+      color: 'warning',
       icon: <CopyOutlined />,
       textKey: 'assignmentStatus.clone',
     },
@@ -61,7 +59,7 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
       };
     }
     return {
-      variant: 'neutral' as TagVariant,
+      color: 'default' as const,
       icon: null,
       text: 'Unknown',
     };
@@ -71,51 +69,40 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
 
   if (size === 'small') {
     const content = (
-      <AssignmentTag
-        variant={config.variant}
-        size="sm"
-        icon={
-          showIcon ? (
-            <IconWrapper $size="sm" $tone="inherit">
-              {config.icon}
-            </IconWrapper>
-          ) : undefined
-        }
+      <Tag
+        color={config.color}
+        style={{ fontSize: 12, textTransform: 'none' }}
+        icon={showIcon ? config.icon : undefined}
         data-testid={`machine-status-badge-tag-${assignmentType.toLowerCase()}`}
       >
         {config.text}
-      </AssignmentTag>
+      </Tag>
     );
 
     return assignmentDetails ? (
-      <RediaccTooltip title={assignmentDetails}>
+      <Tooltip title={assignmentDetails}>
         <span data-testid="machine-status-badge-tooltip-wrapper">{content}</span>
-      </RediaccTooltip>
+      </Tooltip>
     ) : (
       content
     );
   }
 
   return (
-    <RediaccTooltip
-      title={assignmentDetails ? <TooltipText>{assignmentDetails}</TooltipText> : undefined}
+    <Tooltip
+      title={assignmentDetails ? <span style={{ fontSize: 12 }}>{assignmentDetails}</span> : undefined}
     >
       <span data-testid="machine-status-badge-tooltip-wrapper">
-        <AssignmentBadge
-          variant={config.variant}
-          icon={
-            showIcon ? (
-              <IconWrapper $size="sm" $tone="inherit">
-                {config.icon}
-              </IconWrapper>
-            ) : undefined
-          }
+        <Tag
+          color={config.color}
+          icon={showIcon ? config.icon : undefined}
+          style={{ textTransform: 'none' }}
           data-testid={`machine-status-badge-${assignmentType.toLowerCase()}`}
         >
           {config.text}
-        </AssignmentBadge>
+        </Tag>
       </span>
-    </RediaccTooltip>
+    </Tooltip>
   );
 };
 

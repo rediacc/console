@@ -1,20 +1,7 @@
 import type { Key, ReactNode } from 'react';
-import { Empty, type TableProps } from 'antd';
+import { Button, Card, Empty, Flex, Input, Table, Tooltip, Typography, type TableProps } from 'antd';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccButton, RediaccTable, RediaccText, RediaccTooltip } from '@/components/ui';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@/utils/optimizedIcons';
-import {
-  ActionsGroup,
-  ContainerCard,
-  ControlGroup,
-  EmptyActions,
-  EmptyDescriptionStack,
-  FiltersSlot,
-  HeaderRow,
-  HeaderSection,
-  RefreshButton,
-  SearchInput,
-} from './styles';
 
 export { COLUMN_RESPONSIVE, COLUMN_WIDTHS } from './columnConstants';
 
@@ -87,14 +74,14 @@ function ResourceListView<T extends object = Record<string, unknown>>({
   };
 
   return (
-    <ContainerCard data-testid="resource-list-container">
+    <Card data-testid="resource-list-container">
       {shouldRenderControls && (
-        <HeaderSection>
-          <HeaderRow>
-            <ControlGroup>
+        <div>
+          <Flex wrap justify="space-between" align="center">
+            <Flex align="center" style={{ flex: '1 1 auto', minWidth: 0 }}>
               {title}
               {onSearch && (
-                <SearchInput
+                <Input.Search
                   key={searchPlaceholder}
                   placeholder={searchPlaceholder}
                   onSearch={onSearch}
@@ -104,55 +91,62 @@ function ResourceListView<T extends object = Record<string, unknown>>({
                   data-testid="resource-list-search"
                 />
               )}
-              <FiltersSlot data-testid="resource-list-filters">{filters}</FiltersSlot>
-            </ControlGroup>
-            {actions && <ActionsGroup data-testid="resource-list-actions">{actions}</ActionsGroup>}
-          </HeaderRow>
-        </HeaderSection>
+              <Flex align="center" data-testid="resource-list-filters">
+                {filters}
+              </Flex>
+            </Flex>
+            {actions && (
+              <Flex align="center" wrap data-testid="resource-list-actions">
+                {actions}
+              </Flex>
+            )}
+          </Flex>
+        </div>
       )}
 
       <LoadingWrapper loading={loading} centered minHeight={240}>
         {data.length === 0 ? (
           <Empty
             description={
-              <EmptyDescriptionStack>
-                <RediaccText variant="title">{resolvedEmptyDescription}</RediaccText>
-                <RediaccText variant="description">
+              <Flex vertical align="center">
+                <Typography.Text strong>{resolvedEmptyDescription}</Typography.Text>
+                <Typography.Text type="secondary">
                   {onCreateNew
                     ? `Get started by creating your first ${singularResourceType}`
                     : `No ${resourceType} found. Try adjusting your search criteria.`}
-                </RediaccText>
+                </Typography.Text>
                 {(onCreateNew || onRefresh) && (
-                  <EmptyActions>
+                  <Flex align="center" justify="center">
                     {onCreateNew && (
-                      <RediaccTooltip title={createButtonText}>
-                        <RediaccButton
+                      <Tooltip title={createButtonText}>
+                        <Button
                           icon={<PlusOutlined />}
                           onClick={onCreateNew}
                           data-testid="resource-list-create-new"
                           aria-label={createButtonText}
                         />
-                      </RediaccTooltip>
+                      </Tooltip>
                     )}
                     {onRefresh && (
-                      <RediaccTooltip title="Refresh">
-                        <RefreshButton
+                      <Tooltip title="Refresh">
+                        <Button
+                          shape="circle"
                           icon={<ReloadOutlined />}
                           onClick={onRefresh}
                           data-testid="resource-list-refresh"
                           aria-label="Refresh"
                         />
-                      </RediaccTooltip>
+                      </Tooltip>
                     )}
-                  </EmptyActions>
+                  </Flex>
                 )}
-              </EmptyDescriptionStack>
+              </Flex>
             }
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             data-testid="resource-list-empty"
           />
         ) : (
-          <RediaccTable<T>
+          <Table<T>
             columns={columns}
             dataSource={data}
             rowKey={rowKey}
@@ -167,7 +161,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
           />
         )}
       </LoadingWrapper>
-    </ContainerCard>
+    </Card>
   );
 }
 

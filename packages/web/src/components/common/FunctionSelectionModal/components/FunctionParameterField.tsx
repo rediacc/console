@@ -1,18 +1,10 @@
 import React from 'react';
-import { Checkbox } from 'antd';
+import { Checkbox, Flex, Input, InputNumber, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { QueueFunction, QueueFunctionParameter } from '@/api/queries/queue';
 import TemplateSelector from '@/components/common/TemplateSelector';
-import { RediaccInput, RediaccSelect } from '@/components/ui';
 import type { Machine, Repository } from '@/types';
 import type { GetTeamStorages_ResultSet1 as Storage } from '@rediacc/shared/types';
-import {
-  AdditionalOptionsInput,
-  CheckboxGroupStack,
-  SizeInputGroup,
-  SizeUnitSelect,
-  SizeValueInput,
-} from '../styles';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;
@@ -57,8 +49,8 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
   // Size parameter renderer
   if (isSizeParam && paramInfo.units) {
     return (
-      <SizeInputGroup>
-        <SizeValueInput
+      <Flex align="center" gap={8} wrap>
+        <InputNumber
           value={
             typeof functionParams[`${paramName}_value`] === 'number'
               ? (functionParams[`${paramName}_value`] as number)
@@ -92,7 +84,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
           precision={0}
           data-testid={`function-modal-param-${paramName}-value`}
         />
-        <SizeUnitSelect
+        <Select
           value={
             (functionParams[`${paramName}_unit`] as string | undefined) ||
             (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0] || '')
@@ -120,15 +112,17 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
           })}
           data-testid={`function-modal-param-${paramName}-unit`}
         />
-      </SizeInputGroup>
+      </Flex>
     );
   }
 
   // Select dropdown (with options)
   if (paramInfo.options && paramInfo.options.length > 0) {
     return (
-      <RediaccSelect
-        value={getStringParam(paramName) || paramInfo.default || ''}
+      <Select
+        value={
+          getStringParam(paramName) || (typeof paramInfo.default === 'string' ? paramInfo.default : '')
+        }
         onChange={(value: string) => {
           const previousValue = functionParams[paramName];
           onParamChange(paramName, value);
@@ -137,7 +131,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
             onParamChange('to', '');
           }
         }}
-        placeholder={paramInfo.help || ''}
+        placeholder={typeof paramInfo.help === 'string' ? paramInfo.help : ''}
         options={paramInfo.options.map((option: string) => ({
           value: option,
           label: option,
@@ -150,7 +144,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
   // Repository dropdown
   if (paramInfo.ui === 'repo-dropdown') {
     return (
-      <RediaccSelect
+      <Select
         value={getStringParam(paramName)}
         onChange={(value) => onParamChange(paramName, value)}
         placeholder={t('resources:repositories.selectRepository')}
@@ -174,7 +168,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
   if (paramInfo.ui === 'destination-dropdown') {
     const destinationType = getStringParam('destinationType');
     return (
-      <RediaccSelect
+      <Select
         value={getStringParam(paramName)}
         onChange={(value) => onParamChange(paramName, value)}
         placeholder={
@@ -215,7 +209,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
   if (paramInfo.ui === 'source-dropdown') {
     const sourceType = getStringParam('sourceType');
     return (
-      <RediaccSelect
+      <Select
         value={getStringParam(paramName)}
         onChange={(value) => onParamChange(paramName, value)}
         placeholder={
@@ -255,7 +249,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
   // Machine multiselect
   if (paramInfo.ui === 'machine-multiselect') {
     return (
-      <RediaccSelect
+      <Select
         mode="multiple"
         value={getArrayParam(paramName)}
         onChange={(value) => onParamChange(paramName, value)}
@@ -282,7 +276,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
   // Storage multiselect
   if (paramInfo.ui === 'storage-multiselect') {
     return (
-      <RediaccSelect
+      <Select
         mode="multiple"
         value={getArrayParam(paramName)}
         onChange={(value) => onParamChange(paramName, value)}
@@ -322,7 +316,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
     const selectedValues = getStringParam(paramName).split(' ').filter(Boolean);
 
     return (
-      <CheckboxGroupStack>
+      <Flex vertical gap={8}>
         {paramInfo.checkboxOptions.map((option: { value: string; label: string }) => {
           const isChecked = selectedValues.includes(option.value);
 
@@ -343,23 +337,23 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
             </Checkbox>
           );
         })}
-        <AdditionalOptionsInput
+        <Input
           value={getStringParam(paramName)}
           onChange={(e) => onParamChange(paramName, e.target.value)}
           placeholder={t('functions:additionalOptions')}
           autoComplete="off"
           data-testid={`function-modal-param-${paramName}-additional`}
         />
-      </CheckboxGroupStack>
+      </Flex>
     );
   }
 
   // Default: text input
   return (
-    <RediaccInput
+    <Input
       value={getStringParam(paramName)}
       onChange={(e) => onParamChange(paramName, e.target.value)}
-      placeholder={paramInfo.help || ''}
+      placeholder={typeof paramInfo.help === 'string' ? paramInfo.help : ''}
       autoComplete="off"
       data-testid={`function-modal-param-${paramName}`}
     />

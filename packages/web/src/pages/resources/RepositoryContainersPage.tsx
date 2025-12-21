@@ -1,14 +1,12 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Space } from 'antd';
+import { Alert, Breadcrumb, Button, Card, Flex, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { ActionGroup, CenteredState } from '@/components/common/styled';
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel';
-import { RediaccButton, RediaccTag, RediaccText, RediaccTooltip } from '@/components/ui';
 import { DETAIL_PANEL } from '@/constants/layout';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
@@ -16,21 +14,6 @@ import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestM
 import { RepositoryContainerTable } from '@/pages/resources/components/RepositoryContainerTable';
 import { Machine, PluginContainer } from '@/types';
 import { DoubleLeftOutlined, InboxOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
-import {
-  ActionsRow,
-  BreadcrumbWrapper,
-  DetailBackdrop,
-  ErrorWrapper,
-  FlexColumnCard,
-  HeaderRow,
-  HeaderSection,
-  HeaderTitleText,
-  ListPanel,
-  PageWrapper,
-  SplitLayout,
-  TitleColumn,
-  TitleRow,
-} from './styles';
 
 // Repository interface from vaultStatus (runtime data)
 interface Repository {
@@ -185,77 +168,82 @@ const RepoContainersPage: React.FC = () => {
   // Loading state
   if (machinesLoading || repositoriesLoading) {
     return (
-      <PageWrapper>
-        <FlexColumnCard fullHeight>
-          <CenteredState>
+      <div>
+        <Card>
+          <Flex vertical align="center" style={{ width: '100%' }}>
             <LoadingWrapper loading centered minHeight={160}>
               <div />
             </LoadingWrapper>
-            <RediaccText color="secondary">{t('common:general.loading')}</RediaccText>
-          </CenteredState>
-        </FlexColumnCard>
-      </PageWrapper>
+            <Typography.Text type="secondary">{t('common:general.loading')}</Typography.Text>
+          </Flex>
+        </Card>
+      </div>
     );
   }
 
   // Error state - machine not found
   if (!actualMachine) {
     return (
-      <PageWrapper>
-        <FlexColumnCard fullHeight>
-          <Alert
-            message={t('machines:machineNotFound')}
-            description={
-              <ErrorWrapper>
-                <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
-                <RediaccButton variant="primary" onClick={handleBackToMachines}>
-                  {t('machines:backToMachines')}
-                </RediaccButton>
-              </ErrorWrapper>
-            }
-            type="error"
-            showIcon
-          />
-        </FlexColumnCard>
-      </PageWrapper>
+      <div>
+        <Card>
+          <Flex vertical>
+            <Alert
+              message={t('machines:machineNotFound')}
+              description={
+                <div style={{ maxWidth: 520 }}>
+                  <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
+                  <Button type="primary" onClick={handleBackToMachines}>
+                    {t('machines:backToMachines')}
+                  </Button>
+                </div>
+              }
+              type="error"
+              showIcon
+            />
+          </Flex>
+        </Card>
+      </div>
     );
   }
 
   // Error state - repository not found
   if (!actualRepository) {
     return (
-      <PageWrapper>
-        <FlexColumnCard fullHeight>
-          <Alert
-            message={t('machines:repoNotFound')}
-            description={
-              <ErrorWrapper>
-                <p>
-                  {t('machines:repoNotFoundDescription', {
-                    repositoryName: repositoryName,
-                    machineName,
-                  })}
-                </p>
-                <RediaccButton variant="primary" onClick={handleBackToRepos}>
-                  {t('machines:backToRepos')}
-                </RediaccButton>
-              </ErrorWrapper>
-            }
-            type="error"
-            showIcon
-          />
-        </FlexColumnCard>
-      </PageWrapper>
+      <div>
+        <Card>
+          <Flex vertical>
+            <Alert
+              message={t('machines:repoNotFound')}
+              description={
+                <div style={{ maxWidth: 520 }}>
+                  <p>
+                    {t('machines:repoNotFoundDescription', {
+                      repositoryName: repositoryName,
+                      machineName,
+                    })}
+                  </p>
+                  <Button type="primary" onClick={handleBackToRepos}>
+                    {t('machines:backToRepos')}
+                  </Button>
+                </div>
+              }
+              type="error"
+              showIcon
+            />
+          </Flex>
+        </Card>
+      </div>
     );
   }
 
   const actualRepositoryName = actualRepository.name;
 
   return (
-    <PageWrapper>
-      <FlexColumnCard fullHeight>
-        <HeaderSection>
-          <BreadcrumbWrapper
+    <div>
+      <Card>
+        <Flex vertical>
+          <div>
+            <Breadcrumb
             items={[
               {
                 title: <span>{t('machines:machines')}</span>,
@@ -285,62 +273,69 @@ const RepoContainersPage: React.FC = () => {
             data-testid="repository-containers-breadcrumb"
           />
 
-          <HeaderRow>
-            <TitleColumn>
-              <TitleRow>
-                <RediaccTooltip title={t('machines:backToRepos')}>
-                  <RediaccButton
-                    iconOnly
+          <Flex align="center" justify="space-between" wrap>
+            <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+              <Flex align="center" gap={8} wrap>
+                <Tooltip title={t('machines:backToRepos')}>
+                  <Button
+                    type="text"
                     icon={<DoubleLeftOutlined />}
                     onClick={handleBackToRepos}
                     aria-label={t('machines:backToRepos')}
                     data-testid="repository-containers-back-button"
                   />
-                </RediaccTooltip>
-                <HeaderTitleText level={4}>
+                </Tooltip>
+                <Typography.Title level={4}>
                   <Space>
                     <InboxOutlined />
                     <span>
                       {t('machines:repoContainers')}: {actualRepositoryName}
                     </span>
                   </Space>
-                </HeaderTitleText>
-              </TitleRow>
-              <ActionGroup>
-                <RediaccTag variant="neutral">
+                </Typography.Title>
+              </Flex>
+              <Flex align="center" wrap>
+                <Tag color="default">
                   {t('machines:machine')}: {actualMachine.machineName}
-                </RediaccTag>
-                <RediaccTag variant="success">
+                </Tag>
+                <Tag color="success">
                   {t('machines:team')}: {actualMachine.teamName}
-                </RediaccTag>
-                <RediaccTag variant="info">
+                </Tag>
+                <Tag color="processing">
                   {t('machines:bridge')}: {actualMachine.bridgeName}
-                </RediaccTag>
+                </Tag>
                 {actualMachine.regionName && (
-                  <RediaccTag variant="info">
+                  <Tag color="processing">
                     {t('machines:region')}: {actualMachine.regionName}
-                  </RediaccTag>
+                  </Tag>
                 )}
-              </ActionGroup>
-            </TitleColumn>
+              </Flex>
+            </div>
 
-            <ActionsRow>
-              <RediaccTooltip title={t('machines:checkAndRefresh')}>
-                <RediaccButton
-                  iconOnly
+            <Flex align="center" wrap>
+              <Tooltip title={t('machines:checkAndRefresh')}>
+                <Button
+                  type="text"
                   icon={<ReloadOutlined />}
                   onClick={() => connectivityTest.open()}
                   disabled={!actualMachine}
                   data-testid="repository-containers-test-and-refresh-button"
                   aria-label={t('machines:checkAndRefresh')}
                 />
-              </RediaccTooltip>
-            </ActionsRow>
-          </HeaderRow>
-        </HeaderSection>
+              </Tooltip>
+            </Flex>
+          </Flex>
+        </div>
 
-        <SplitLayout>
-          <ListPanel $showDetail={Boolean(selectedResource)} $detailWidth={actualPanelWidth}>
+        <Flex style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+          <div
+            style={{
+              width: selectedResource ? `calc(100% - ${actualPanelWidth}px)` : '100%',
+              height: '100%',
+              overflow: 'auto',
+              minWidth: 240,
+            }}
+          >
             <RepositoryContainerTable
               machine={actualMachine}
               repository={actualRepository}
@@ -352,13 +347,22 @@ const RepoContainersPage: React.FC = () => {
                 queueTrace.open(taskId, machineName);
               }}
             />
-          </ListPanel>
+          </div>
 
           {/* Backdrop must come BEFORE panel for correct z-index layering */}
           {selectedResource && !isPanelCollapsed && (
-            <DetailBackdrop
-              $right={actualPanelWidth}
-              $visible={true}
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: actualPanelWidth,
+                bottom: 0,
+                backgroundColor: '#404040',
+                display: 'block',
+                zIndex: 1000,
+                pointerEvents: 'auto',
+              }}
               onClick={() => {
                 setSelectedContainer(null);
                 setIsPanelCollapsed(true);
@@ -383,8 +387,9 @@ const RepoContainersPage: React.FC = () => {
               collapsedWidth={DETAIL_PANEL.COLLAPSED_WIDTH}
             />
           )}
-        </SplitLayout>
-      </FlexColumnCard>
+        </Flex>
+        </Flex>
+      </Card>
 
       {queueTrace.state.open && (
         <QueueItemTraceModal
@@ -408,7 +413,7 @@ const RepoContainersPage: React.FC = () => {
         machines={actualMachine ? [actualMachine] : []}
         teamFilter={actualMachine?.teamName ? [actualMachine.teamName] : undefined}
       />
-    </PageWrapper>
+    </div>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Space, Typography } from 'antd';
+import { Alert, Button, Flex, Input, Space, Table, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -15,16 +15,6 @@ import { useTeams } from '@/api/queries/teams';
 import { createActionColumn } from '@/components/common/columns';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import {
-  RediaccAlert,
-  RediaccButton,
-  RediaccInput,
-  RediaccStack,
-  RediaccTable,
-  RediaccTag,
-  RediaccText,
-  RediaccTooltip,
-} from '@/components/ui';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { useQueueAction } from '@/hooks/useQueueAction';
@@ -46,8 +36,6 @@ import { useConfirmForkDeletion } from './hooks/useConfirmForkDeletion';
 import { useConfirmRepositoryDeletion } from './hooks/useConfirmRepositoryDeletion';
 import { useQuickRepositoryAction } from './hooks/useQuickRepositoryAction';
 import { useRepositoryTableState } from './hooks/useRepositoryTableState';
-import { ModalContent, SmallText, TableStateContainer } from './styledComponents';
-import * as S from './styles';
 import { getAxiosErrorMessage } from './utils';
 import type { FunctionExecutionContext, FunctionData } from './hooks/useFunctionExecution';
 import type {
@@ -246,7 +234,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     confirm({
       title: t('resources:repositories.promoteToGrandTitle'),
       content: (
-        <ModalContent>
+        <Flex vertical>
           <Typography.Paragraph>
             {t('resources:repositories.promoteToGrandMessage', {
               name: Repository.name,
@@ -268,7 +256,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             </>
           )}
           <Alert message={t('resources:repositories.promoteWarning')} type="warning" showIcon />
-        </ModalContent>
+        </Flex>
       ),
       okText: t('resources:repositories.promoteButton'),
       okType: 'primary',
@@ -304,7 +292,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           <Typography.Paragraph>
             {t('resources:repositories.renameMessage', { name: Repository.name })}
           </Typography.Paragraph>
-          <RediaccInput
+          <Input
             defaultValue={Repository.name}
             placeholder={t('resources:repositories.newRepoName')}
             onChange={(e) => {
@@ -383,7 +371,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
               tag: Repository.repositoryTag,
             })}
           </Typography.Paragraph>
-          <RediaccInput
+          <Input
             defaultValue={Repository.repositoryTag}
             placeholder={t('resources:repositories.newTagName')}
             onChange={(e) => {
@@ -559,7 +547,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
   if (loading) {
     return (
-      <TableStateContainer data-testid="machine-repo-list-loading">
+      <div data-testid="machine-repo-list-loading">
         <LoadingWrapper
           loading
           centered
@@ -568,71 +556,77 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         >
           <div />
         </LoadingWrapper>
-      </TableStateContainer>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <TableStateContainer data-testid="machine-repo-list-error">
+      <div data-testid="machine-repo-list-error">
         <Alert
           message={t('common:messages.error')}
           description={error}
           type="error"
           showIcon
           action={
-            <RediaccTooltip title={t('common:actions.retry')}>
-              <RediaccButton
+            <Tooltip title={t('common:actions.retry')}>
+              <Button
                 onClick={handleRefresh}
                 data-testid="machine-repo-list-retry"
                 aria-label={t('common:actions.retry')}
               />
-            </RediaccTooltip>
+            </Tooltip>
           }
         />
-      </TableStateContainer>
+      </div>
     );
   }
 
   return (
-    <S.Container data-testid="machine-repo-list">
+    <div style={{ overflowX: 'auto', position: 'relative' }} data-testid="machine-repo-list">
       {isLoading && (
-        <S.LoadingOverlay>
+        <Flex
+          align="center"
+          justify="center"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1000,
+          }}
+        >
           <LoadingWrapper loading centered minHeight={120} tip={t('common:general.refreshing')}>
             <div />
           </LoadingWrapper>
-        </S.LoadingOverlay>
+        </Flex>
       )}
 
       {hideSystemInfo && (
-        <S.MachineHeader data-testid="machine-repo-list-machine-header">
+        <div data-testid="machine-repo-list-machine-header">
           <Space direction="vertical" size="small">
             <Space>
-              <S.MachineIcon as={DesktopOutlined} />
-              <S.MachineTitle
-                as={Typography.Title}
-                level={4}
-                data-testid="machine-repo-list-machine-name"
-              >
+              <span style={{ fontSize: 16 }}>
+                <DesktopOutlined />
+              </span>
+              <Typography.Title level={4} data-testid="machine-repo-list-machine-name">
                 {machine.machineName}
-              </S.MachineTitle>
+              </Typography.Title>
             </Space>
             <Space wrap size={8}>
-              <RediaccTag data-testid="machine-repo-list-team-tag">{machine.teamName}</RediaccTag>
-              <RediaccTag data-testid="machine-repo-list-bridge-tag">
+              <Tag data-testid="machine-repo-list-team-tag">{machine.teamName}</Tag>
+              <Tag data-testid="machine-repo-list-bridge-tag">
                 {machine.bridgeName}
-              </RediaccTag>
+              </Tag>
               {machine.regionName && (
-                <RediaccTag data-testid="machine-repo-list-region-tag">
+                <Tag data-testid="machine-repo-list-region-tag">
                   {machine.regionName}
-                </RediaccTag>
+                </Tag>
               )}
-              <RediaccTag data-testid="machine-repo-list-queue-tag">
+              <Tag data-testid="machine-repo-list-queue-tag">
                 {machine.queueCount} {t('machines:queueItems')}
-              </RediaccTag>
+              </Tag>
             </Space>
           </Space>
-        </S.MachineHeader>
+        </div>
       )}
 
       {(() => {
@@ -648,9 +642,8 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         }
 
         return missingSSHKeys ? (
-          <RediaccAlert
-            spacing="default"
-            variant="warning"
+          <Alert
+            type="warning"
             showIcon
             closable
             message={t('common:vaultEditor.missingSshKeysWarning')}
@@ -659,12 +652,12 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         ) : null;
       })()}
 
-      <S.TableStyleWrapper>
-        <RediaccTable<RepositoryTableRow>
+      <div>
+        <Table<RepositoryTableRow>
           columns={columns}
           dataSource={getTableDataSource()}
           rowKey={(record) => record.key || `${record.name}-${record.repositoryTag || 'latest'}`}
-          size="sm"
+          size="small"
           pagination={false}
           scroll={{ x: 'max-content' }}
           data-testid="machine-repo-list-table"
@@ -697,27 +690,23 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             },
           })}
         />
-      </S.TableStyleWrapper>
+      </div>
 
       {systemContainers.length > 0 && !hideSystemInfo && (
-        <S.SystemContainersWrapper data-testid="machine-repo-list-system-containers">
-          <S.SystemContainersTitle
-            as={Typography.Title}
-            level={5}
-            data-testid="machine-repo-list-system-containers-title"
-          >
+        <div data-testid="machine-repo-list-system-containers">
+          <Typography.Title level={5} data-testid="machine-repo-list-system-containers-title">
             {t('resources:repositories.systemContainers')}
-          </S.SystemContainersTitle>
-          <RediaccTable<Container>
+          </Typography.Title>
+          <Table<Container>
             columns={systemContainerColumns}
             dataSource={systemContainers}
             rowKey="id"
-            size="sm"
+            size="small"
             pagination={false}
             scroll={{ x: 'max-content' }}
             data-testid="machine-repo-list-system-containers-table"
           />
-        </S.SystemContainersWrapper>
+        </div>
       )}
 
       <FunctionSelectionModal
@@ -730,15 +719,15 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         onSubmit={handleFunctionSubmit}
         title={t('machines:runFunction')}
         data-testid="machine-repo-list-function-modal"
-        subtitle={
-          selectedRepository && (
-            <RediaccStack direction="vertical" gap="sm" fullWidth>
+          subtitle={
+            selectedRepository && (
+            <Flex vertical gap={8} style={{ width: '100%' }}>
               <Space>
-                <RediaccText>{t('resources:repositories.Repository')}:</RediaccText>
-                <RediaccTag>{selectedRepository.name}</RediaccTag>
-                <RediaccText>•</RediaccText>
-                <RediaccText>{t('machines:machine')}:</RediaccText>
-                <RediaccTag>{machine.machineName}</RediaccTag>
+                <Typography.Text>{t('resources:repositories.Repository')}:</Typography.Text>
+                <Tag>{selectedRepository.name}</Tag>
+                <Typography.Text>•</Typography.Text>
+                <Typography.Text>{t('machines:machine')}:</Typography.Text>
+                <Tag>{machine.machineName}</Tag>
               </Space>
               {selectedFunction === 'push' &&
                 (() => {
@@ -754,23 +743,27 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
                     if (parentRepo) {
                       return (
                         <Space>
-                          <SmallText color="secondary">
+                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                             {t('resources:repositories.parentRepo', {
                               defaultValue: 'Parent Repository',
                             })}
                             :
-                          </SmallText>
-                          <RediaccTag>{parentRepo.repositoryName}</RediaccTag>
-                          <SmallText color="secondary">→</SmallText>
-                          <SmallText color="secondary">{t('common:current')}:</SmallText>
-                          <RediaccTag>{selectedRepository.name}</RediaccTag>
+                          </Typography.Text>
+                          <Tag>{parentRepo.repositoryName}</Tag>
+                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                            →
+                          </Typography.Text>
+                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                            {t('common:current')}:
+                          </Typography.Text>
+                          <Tag>{selectedRepository.name}</Tag>
                         </Space>
                       );
                     }
                   }
                   return null;
                 })()}
-            </RediaccStack>
+            </Flex>
           )
         }
         allowedCategories={['Repository', 'backup', 'network']}
@@ -836,6 +829,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       />
 
       {contextHolder}
-    </S.Container>
+    </div>
   );
 };

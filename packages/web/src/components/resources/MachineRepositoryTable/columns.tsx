@@ -1,9 +1,7 @@
 import React from 'react';
-import { Space } from 'antd';
+import { Space, Tag, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useTheme as useStyledTheme } from 'styled-components';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
-import { StatusIcon } from '@/components/common/styled';
 import {
   isCredential as coreIsCredential,
   createArrayLengthSorter,
@@ -23,14 +21,13 @@ import {
   StopOutlined,
 } from '@/utils/optimizedIcons';
 import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
-import { GrandTag, SmallText } from './styledComponents';
 import { getRepositoryDisplayName } from './utils';
 import type { Container, PortMapping, RepositoryTableRow } from './types';
 import type { ColumnsType } from 'antd/es/table';
 
 export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
   const { t } = useTranslation(['resources', 'common']);
-  const theme = useStyledTheme();
+  const { token } = theme.useToken();
 
   const RepoStatusColumn = createStatusColumn<RepositoryTableRow>({
     title: t('resources:repositories.status'),
@@ -79,11 +76,17 @@ export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
 
       return (
         <Space>
-          <StatusIcon $color={isGrand ? theme.colors.iconGrand : theme.colors.iconFork} $size="LG">
+          <span
+            style={{
+              display: 'inline-flex',
+              fontSize: 20,
+              color: isGrand ? token.colorWarning : token.colorTextSecondary,
+            }}
+          >
             {isGrand ? <StarOutlined /> : <CopyOutlined />}
-          </StatusIcon>
+          </span>
           <strong>{getRepositoryDisplayName(record)}</strong>
-          {isGrand && <GrandTag>Grand</GrandTag>}
+          {isGrand && <Tag>Grand</Tag>}
         </Space>
       );
     },
@@ -113,7 +116,7 @@ export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
 
 export const useSystemContainerColumns = () => {
   const { t } = useTranslation(['resources', 'common']);
-  const theme = useStyledTheme();
+  const { token } = theme.useToken();
 
   const systemStatusColumn = createStatusColumn<Container>({
     title: t('resources:containers.status'),
@@ -217,7 +220,7 @@ export const useSystemContainerColumns = () => {
       ...systemNameColumn,
       render: (name: string, record: Container, index) => (
         <Space>
-          <StatusIcon $color={theme.colors.iconSystem} $size="LG">
+          <StatusIcon $color={token.colorInfo} $size="LG">
             <CloudServerOutlined />
           </StatusIcon>
           <strong>{systemNameColumn.render?.(name, record, index) as React.ReactNode}</strong>
@@ -236,7 +239,11 @@ export const useSystemContainerColumns = () => {
               index
             ) as React.ReactNode
           }
-          {record.status && <SmallText color="secondary">{record.status}</SmallText>}
+          {record.status && (
+            <Typography.Text color="secondary" style={{ fontSize: 12 }}>
+              {record.status}
+            </Typography.Text>
+          )}
         </Space>
       ),
     },
@@ -265,7 +272,7 @@ export const useSystemContainerColumns = () => {
           return (
             <Space direction="vertical" size={4}>
               {portMappings.map((mapping, index) => (
-                <SmallText key={index}>
+                <Typography.Text key={index} style={{ fontSize: 12 }}>
                   {mapping.host_port ? (
                     <span>
                       {mapping.host}:{mapping.host_port} → {mapping.container_port}/
@@ -276,12 +283,12 @@ export const useSystemContainerColumns = () => {
                       {mapping.container_port}/{mapping.protocol}
                     </span>
                   )}
-                </SmallText>
+                </Typography.Text>
               ))}
             </Space>
           );
         } else if (record.ports) {
-          return <SmallText>{record.ports}</SmallText>;
+          return <Typography.Text style={{ fontSize: 12 }}>{record.ports}</Typography.Text>;
         }
         return '-';
       },

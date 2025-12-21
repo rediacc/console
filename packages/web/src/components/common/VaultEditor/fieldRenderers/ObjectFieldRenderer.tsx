@@ -1,7 +1,7 @@
 import React from 'react';
+import { Form } from 'antd';
 import { FieldLabel } from '../components/FieldLabel';
 import { NestedObjectEditor } from '../components/NestedObjectEditor';
-import { FieldItem } from '../styles';
 import { JsonFieldRenderer } from './JsonFieldRenderer';
 import type { FieldRendererProps } from './types';
 
@@ -16,7 +16,7 @@ export const ObjectFieldRenderer: React.FC<FieldRendererProps> = (props) => {
 
   if (hasStructure) {
     return (
-      <FieldItem
+      <Form.Item
         name={fieldName}
         label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
         rules={rules}
@@ -27,7 +27,7 @@ export const ObjectFieldRenderer: React.FC<FieldRendererProps> = (props) => {
           description={fieldDescription}
           data-testid={`vault-editor-field-${fieldName}`}
         />
-      </FieldItem>
+      </Form.Item>
     );
   }
 

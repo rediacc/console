@@ -52,7 +52,6 @@
     "react-syntax-highlighter": "^16.1.0",
     "react-window": "^2.2.3",
     "react-window-infinite-loader": "^2.0.0",
-    "styled-components": "^6.1.19",
     "zod": "^4.1.13"
   },
   "devDependencies": {
@@ -62,7 +61,6 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/react-window": "^2.0.0",
-    "@types/styled-components": "^5.1.36",
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",
     "@vitejs/plugin-react": "^5.1.2",

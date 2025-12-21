@@ -1,22 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Col, Row, Space } from 'antd';
+import { Alert, Button, Card, Col, Flex, Radio, Row, Select, Space, Statistic, Tooltip, Typography, theme as antdTheme } from 'antd';
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { useCompanyArchitecture } from '@/api/queries/architecture';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import {
-  PageCard,
-  RediaccButton,
-  RediaccRadio,
-  RediaccSelect,
-  RediaccStack,
-  RediaccStatistic,
-  RediaccText,
-  RediaccTooltip,
-} from '@/components/ui';
 import { useTheme } from '@/context/ThemeContext';
-import { createThemePalette } from '@/styles/colorSystem';
-import { PageContainer, SectionHeaderRow } from '@/styles/primitives';
 import {
   ApiOutlined,
   CheckOutlined,
@@ -33,22 +21,6 @@ import {
 } from '@/utils/optimizedIcons';
 import type { CompanyDataGraph, CompanyGraphNode } from '@rediacc/shared/types';
 import { getArchitecturePalette } from './architectureTheme';
-import {
-  ActionGroup,
-  CenteredState,
-  FilterActions,
-  FilterLabel,
-  FilterSelectWrapper,
-  FiltersRow,
-  LegendGrid,
-  LegendIcon,
-  LegendItem,
-  LoadingMessage,
-  LoadingOverlay,
-  PageTitle,
-  VisualizationCanvas,
-  VisualizationContainer,
-} from './styles';
 
 interface GraphNode extends CompanyGraphNode, d3.SimulationNodeDatum {
   memberCount?: number;
@@ -90,7 +62,8 @@ const ArchitecturePage: React.FC = () => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { theme } = useTheme();
-  const themeColors = useMemo(() => createThemePalette(theme), [theme]);
+  const { token } = antdTheme.useToken();
+  const borderColor = token.colorBorderSecondary ?? token.colorBorder;
   const architecturePalette = useMemo(() => getArchitecturePalette(theme), [theme]);
 
   // Available entity types for filtering
@@ -280,7 +253,7 @@ const ArchitecturePage: React.FC = () => {
         .selectAll<SVGLineElement, GraphLink>('line')
         .data(simulationLinks)
         .join('line')
-        .attr('stroke', themeColors.borderSecondary)
+        .attr('stroke', borderColor)
         .attr('stroke-width', 2)
         .attr('marker-end', 'url(#arrowhead)');
 
@@ -575,7 +548,7 @@ const ArchitecturePage: React.FC = () => {
         .attr('y1', (d) => d.source.y ?? 0)
         .attr('x2', (d) => d.target.x ?? 0)
         .attr('y2', (d) => d.target.y ?? 0)
-        .attr('stroke', themeColors.borderSecondary)
+        .attr('stroke', borderColor)
         .attr('stroke-width', 2);
 
       // Draw nodes
@@ -662,7 +635,7 @@ const ArchitecturePage: React.FC = () => {
     t,
     architecturePalette,
     getNodeColor,
-    themeColors.borderSecondary,
+    borderColor,
   ]);
 
   const toggleFullscreen = () => {
@@ -679,43 +652,43 @@ const ArchitecturePage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <CenteredState>
+      <Flex vertical align="center" style={{ width: '100%' }}>
         <LoadingWrapper loading centered minHeight={160}>
           <div />
         </LoadingWrapper>
-        <div style={{ textAlign: 'center' }}>{t('messages.loading', { ns: 'common' })}</div>
-      </CenteredState>
+        <Typography.Text>{t('messages.loading', { ns: 'common' })}</Typography.Text>
+      </Flex>
     );
   }
 
   if (error) {
     return (
-      <PageContainer>
+      <div>
         <Alert
           message={t('messages.error', { ns: 'common' })}
           description={error instanceof Error ? error.message : t('architecture.fetchError')}
           type="error"
           showIcon
           action={
-            <RediaccTooltip title={t('actions.retry', { ns: 'common' })}>
-              <RediaccButton
-                iconOnly
+            <Tooltip title={t('actions.retry', { ns: 'common' })}>
+              <Button
+                type="text"
                 icon={<ReloadOutlined />}
                 onClick={() => refetch()}
                 aria-label={t('actions.retry', { ns: 'common' })}
               />
-            </RediaccTooltip>
+            </Tooltip>
           }
         />
-      </PageContainer>
+      </div>
     );
   }
 
   if (!data) {
     return (
-      <PageContainer>
+      <div>
         <Alert message={t('architecture.noData')} type="info" showIcon />
-      </PageContainer>
+      </div>
     );
   }
 
@@ -731,67 +704,67 @@ const ArchitecturePage: React.FC = () => {
   };
 
   return (
-    <PageContainer data-testid="architecture-page">
-      <RediaccStack variant="spaced-column" fullWidth>
+    <div data-testid="architecture-page">
+      <Flex vertical gap={24} style={{ width: '100%' }}>
         {/* Header */}
-        <PageCard>
-          <RediaccStack direction="vertical" gap="md" fullWidth>
-            <SectionHeaderRow>
-              <PageTitle>
-                <RediaccText size="xl" weight="semibold">
+        <Card>
+          <Flex vertical gap={16} style={{ width: '100%' }}>
+            <Flex align="center" justify="space-between" wrap>
+              <div>
+                <Typography.Title level={4} style={{ margin: 0 }}>
                   {t('architecture.title')}
-                </RediaccText>
-              </PageTitle>
-              <ActionGroup>
-                <RediaccRadio.Group
+                </Typography.Title>
+              </div>
+              <Flex align="center" wrap>
+                <Radio.Group
                   value={viewMode}
                   onChange={(e) => setViewMode(e.target.value)}
                   data-testid="architecture-view-mode-selector"
                 >
-                  <RediaccRadio.Button value="hierarchy" data-testid="architecture-view-hierarchy">
+                  <Radio.Button value="hierarchy" data-testid="architecture-view-hierarchy">
                     {t('architecture.viewHierarchy')}
-                  </RediaccRadio.Button>
-                  <RediaccRadio.Button value="force" data-testid="architecture-view-force">
+                  </Radio.Button>
+                  <Radio.Button value="force" data-testid="architecture-view-force">
                     {t('architecture.viewForce')}
-                  </RediaccRadio.Button>
-                  <RediaccRadio.Button value="radial" data-testid="architecture-view-radial">
+                  </Radio.Button>
+                  <Radio.Button value="radial" data-testid="architecture-view-radial">
                     {t('architecture.viewRadial')}
-                  </RediaccRadio.Button>
-                </RediaccRadio.Group>
-                <RediaccTooltip title={t('actions.refresh', { ns: 'common' })}>
-                  <RediaccButton
-                    iconOnly
+                  </Radio.Button>
+                </Radio.Group>
+                <Tooltip title={t('actions.refresh', { ns: 'common' })}>
+                  <Button
+                    type="text"
                     icon={<ReloadOutlined />}
                     onClick={() => refetch()}
                     data-testid="architecture-refresh-button"
                   />
-                </RediaccTooltip>
-                <RediaccTooltip
+                </Tooltip>
+                <Tooltip
                   title={
                     isFullscreen
                       ? t('actions.exitFullscreen', { ns: 'common' })
                       : t('actions.fullscreen', { ns: 'common' })
                   }
                 >
-                  <RediaccButton
-                    iconOnly
+                  <Button
+                    type="text"
                     icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
                     onClick={toggleFullscreen}
                     data-testid="architecture-fullscreen-button"
                   />
-                </RediaccTooltip>
-              </ActionGroup>
-            </SectionHeaderRow>
+                </Tooltip>
+              </Flex>
+            </Flex>
 
-            <FiltersRow>
-              <FilterLabel>
+            <Flex align="center">
+              <Flex align="center" style={{ fontWeight: 500 }}>
                 <FilterOutlined />
-                <RediaccText weight="bold">
+                <Typography.Text strong>
                   {t('architecture.filterEntities', { ns: 'system' })}
-                </RediaccText>
-              </FilterLabel>
-              <FilterSelectWrapper>
-                <RediaccSelect
+                </Typography.Text>
+              </Flex>
+              <div style={{ width: '100%', minWidth: 320 }}>
+                <Select
                   mode="multiple"
                   allowClear
                   placeholder={t('architecture.selectEntities', { ns: 'system' })}
@@ -810,105 +783,120 @@ const ArchitecturePage: React.FC = () => {
                   }))}
                   data-testid="architecture-entity-filter"
                 />
-              </FilterSelectWrapper>
-              <FilterActions>
-                <RediaccTooltip title={t('architecture.selectAll', { ns: 'system' })}>
-                  <RediaccButton
-                    iconOnly
+              </div>
+              <Flex style={{ width: 'auto' }}>
+                <Tooltip title={t('architecture.selectAll', { ns: 'system' })}>
+                  <Button
+                    type="text"
                     icon={<CheckOutlined />}
                     onClick={() => setSelectedEntityTypes(entityTypes.map((t) => t.value))}
                     data-testid="architecture-select-all-button"
                     aria-label={t('architecture.selectAll', { ns: 'system' })}
                   />
-                </RediaccTooltip>
-                <RediaccTooltip title={t('architecture.clearAll', { ns: 'system' })}>
-                  <RediaccButton
-                    iconOnly
+                </Tooltip>
+                <Tooltip title={t('architecture.clearAll', { ns: 'system' })}>
+                  <Button
+                    type="text"
                     icon={<MinusCircleOutlined />}
                     onClick={() => setSelectedEntityTypes([])}
                     data-testid="architecture-clear-all-button"
                     aria-label={t('architecture.clearAll', { ns: 'system' })}
                   />
-                </RediaccTooltip>
-              </FilterActions>
-            </FiltersRow>
+                </Tooltip>
+              </Flex>
+            </Flex>
 
             {/* Summary Stats */}
             <Row gutter={16}>
               <Col span={3}>
-                <RediaccStatistic
+                <Statistic
                   title={t('architecture.users')}
                   value={nodeCounts.users}
                   prefix={<UserOutlined />}
                 />
               </Col>
               <Col span={3}>
-                <RediaccStatistic
+                <Statistic
                   title={t('architecture.teams')}
                   value={nodeCounts.teams}
                   prefix={<TeamOutlined />}
                 />
               </Col>
               <Col span={3}>
-                <RediaccStatistic
+                <Statistic
                   title={t('architecture.machines')}
                   value={nodeCounts.machines}
                   prefix={<CloudOutlined />}
                 />
               </Col>
               <Col span={3}>
-                <RediaccStatistic
+                <Statistic
                   title={t('architecture.regions')}
                   value={nodeCounts.regions}
                   prefix={<GlobalOutlined />}
                 />
               </Col>
               <Col span={3}>
-                <RediaccStatistic
+                <Statistic
                   title={t('architecture.bridges')}
                   value={nodeCounts.bridges}
                   prefix={<ApiOutlined />}
                 />
               </Col>
               <Col span={3}>
-                <RediaccStatistic
+                <Statistic
                   title={t('architecture.repositories')}
                   value={nodeCounts.repositories}
                   prefix={<InboxOutlined />}
                 />
               </Col>
               <Col span={3}>
-                <RediaccStatistic
+                <Statistic
                   title={t('architecture.storages')}
                   value={nodeCounts.storages}
                   prefix={<CloudOutlined />}
                 />
               </Col>
             </Row>
-          </RediaccStack>
-        </PageCard>
+          </Flex>
+        </Card>
 
         {/* Visualization */}
-        <PageCard>
-          <VisualizationContainer
+        <Card>
+          <div
             ref={containerRef}
             data-testid="architecture-visualization-container"
+            style={{ width: '100%', height: 360, overflow: 'hidden', position: 'relative' }}
           >
             {isVisualizationLoading && (
-              <LoadingOverlay>
+              <Flex
+                vertical
+                align="center"
+                justify="center"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 1000,
+                }}
+              >
                 <LoadingWrapper loading centered minHeight={160}>
                   <div />
                 </LoadingWrapper>
-                <LoadingMessage>{t('messages.loading', { ns: 'common' })}</LoadingMessage>
-              </LoadingOverlay>
+                <Typography.Text>{t('messages.loading', { ns: 'common' })}</Typography.Text>
+              </Flex>
             )}
-            <VisualizationCanvas ref={svgRef} data-testid="architecture-svg" />
-          </VisualizationContainer>
-        </PageCard>
+            <svg ref={svgRef} width="100%" height="100%" data-testid="architecture-svg" />
+          </div>
+        </Card>
 
         {/* Legend */}
-        <PageCard title={t('architecture.legend')}>
-          <LegendGrid>
+        <Card title={t('architecture.legend')}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            }}
+          >
             {Object.entries({
               company: t('architecture.nodeCompany'),
               user: t('architecture.nodeUser'),
@@ -919,15 +907,30 @@ const ArchitecturePage: React.FC = () => {
               repository: t('architecture.nodeRepository'),
               storage: t('architecture.nodeStorage'),
             }).map(([type, label]) => (
-              <LegendItem key={type} data-testid={`architecture-legend-${type}`}>
-                <LegendIcon $color={getNodeColor(type)}>{getNodeIcon(type)}</LegendIcon>
-                <RediaccText>{label}</RediaccText>
-              </LegendItem>
+              <Flex
+                key={type}
+                align="center"
+                data-testid={`architecture-legend-${type}`}
+              >
+                <Flex
+                  align="center"
+                  justify="center"
+                  style={{
+                    width: 24,
+                    height: 24,
+                    fontSize: 12,
+                    backgroundColor: getNodeColor(type),
+                  }}
+                >
+                  {getNodeIcon(type)}
+                </Flex>
+                <Typography.Text>{label}</Typography.Text>
+              </Flex>
             ))}
-          </LegendGrid>
-        </PageCard>
-      </RediaccStack>
-    </PageContainer>
+          </div>
+        </Card>
+      </Flex>
+    </div>
   );
 };
 

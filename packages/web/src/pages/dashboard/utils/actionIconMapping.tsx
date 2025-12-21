@@ -7,7 +7,6 @@ import {
   LoginOutlined,
   SwapOutlined,
 } from '@/utils/optimizedIcons';
-import { ActionIcon } from '../styles';
 
 type ActionIconColor = 'success' | 'error' | 'warning' | 'info' | 'primary' | 'textSecondary';
 
@@ -39,17 +38,49 @@ export const getActionIcon = (action: string): React.ReactNode => {
     if (actionLower.includes(keyword)) {
       const { color, Icon } = config;
       return (
-        <ActionIcon $color={color}>
+        <span
+          style={{
+            display: 'inline-flex',
+            color:
+              color === 'success'
+                ? 'var(--ant-color-success)'
+                : color === 'error'
+                  ? 'var(--ant-color-error)'
+                  : color === 'warning'
+                    ? 'var(--ant-color-warning)'
+                    : color === 'info'
+                      ? 'var(--ant-color-info)'
+                      : color === 'primary'
+                        ? 'var(--ant-color-primary)'
+                        : 'var(--ant-color-text-secondary)',
+          }}
+        >
           <Icon />
-        </ActionIcon>
+        </span>
       );
     }
   }
 
   const { color, Icon } = DEFAULT_ICON_CONFIG;
   return (
-    <ActionIcon $color={color}>
+    <span
+      style={{
+        display: 'inline-flex',
+        color:
+          color === 'success'
+            ? 'var(--ant-color-success)'
+            : color === 'error'
+              ? 'var(--ant-color-error)'
+              : color === 'warning'
+                ? 'var(--ant-color-warning)'
+                : color === 'info'
+                  ? 'var(--ant-color-info)'
+                  : color === 'primary'
+                    ? 'var(--ant-color-primary)'
+                    : 'var(--ant-color-text-secondary)',
+      }}
+    >
       <Icon />
-    </ActionIcon>
+    </span>
   );
 };
