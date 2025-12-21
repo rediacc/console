@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Alert, Flex, Modal, Table, Tag, Typography } from 'antd';
+import { Alert, Flex, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useUpdateMachineClusterAssignment } from '@/api/queries/cephMutations';
+import { SizedModal } from '@/components/common';
 import { createTruncatedColumn } from '@/components/common/columns';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
@@ -119,14 +120,15 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
   const columns: ColumnsType<Machine> = [machineColumn, clusterColumn];
 
   return (
-    <Modal
+    <SizedModal
       title={
         <Flex align="center" gap={8} wrap>
           <WarningOutlined style={{ fontSize: 16 }} />
           {t('machines:bulkActions.removeFromCluster')}
         </Flex>
       }
-      className={`${ModalSize.Medium} remove-from-cluster-modal`}
+      className="remove-from-cluster-modal"
+      size={ModalSize.Medium}
       open={open}
       onOk={handleOk}
       onCancel={onCancel}
@@ -166,6 +168,6 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
           />
         </>
       )}
-    </Modal>
+    </SizedModal>
   );
 };

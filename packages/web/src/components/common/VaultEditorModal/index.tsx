@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
-import { Button, Flex, Modal, Space, Tag, Tooltip, Typography, Upload } from 'antd';
+import { Button, Flex, Space, Tag, Tooltip, Typography, Upload } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { SizedModal } from '@/components/common';
 import VaultEditor from '@/components/common/VaultEditor';
 import { useMessage } from '@/hooks';
 import type { BaseModalProps } from '@/types';
@@ -100,11 +101,11 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   }, [showValidationErrors]);
 
   return (
-    <Modal
+    <SizedModal
       title={`${title} - ${entityType}`}
       open={open}
       onCancel={onCancel}
-      className={ModalSize.Fullscreen}
+      size={ModalSize.Fullscreen}
       footer={null}
       data-testid="vault-modal"
       destroyOnClose
@@ -222,7 +223,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
           </Flex>
         </Flex>
       </Flex>
-    </Modal>
+    </SizedModal>
   );
 };
 

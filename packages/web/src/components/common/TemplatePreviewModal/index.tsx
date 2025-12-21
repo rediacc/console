@@ -1,22 +1,10 @@
 import React, { useEffect, useState, type ComponentPropsWithoutRef } from 'react';
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Divider,
-  Flex,
-  List,
-  Modal,
-  Row,
-  Tabs,
-  Tag,
-  Typography,
-} from 'antd';
+import { Alert, Button, Card, Col, Divider, Flex, List, Row, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown, { type Components as MarkdownComponents } from 'react-markdown';
 import { Prism as SyntaxHighlighter, type SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { SizedModal } from '@/components/common';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { templateService } from '@/services/templateService';
 import { ModalSize } from '@/types/modal';
@@ -455,7 +443,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   ];
 
   return (
-    <Modal
+    <SizedModal
       data-testid={
         context === 'marketplace' ? 'marketplace-preview-modal' : 'template-details-modal'
       }
@@ -492,7 +480,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       }
       open={open}
       onCancel={onClose}
-      className={ModalSize.Large}
+      size={ModalSize.Large}
       footer={[
         <Button
           key="close"
@@ -528,7 +516,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           context === 'marketplace' ? 'marketplace-preview-tabs' : 'template-details-tabs'
         }
       />
-    </Modal>
+    </SizedModal>
   );
 };
 

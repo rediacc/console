@@ -26,6 +26,20 @@ export enum ModalSize {
 }
 
 /**
+ * Modal width values for use with Ant Design Modal's width prop
+ * Use these with className to get proper sizing without !important
+ *
+ * Usage:
+ * <Modal width={MODAL_WIDTHS[ModalSize.Large]} className={ModalSize.Large} />
+ */
+export const MODAL_WIDTHS: Record<ModalSize, number | string> = {
+  [ModalSize.Small]: 560,
+  [ModalSize.Medium]: 768,
+  [ModalSize.Large]: 1024,
+  [ModalSize.Fullscreen]: 'calc(100vw - 32px)',
+};
+
+/**
  * Helper type for modal size values
  */
 export type ModalSizeValue = `${ModalSize}`;

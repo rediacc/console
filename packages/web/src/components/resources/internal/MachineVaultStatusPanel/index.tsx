@@ -1,16 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import {
-  Card,
-  Col,
-  Empty,
-  Flex,
-  List,
-  Progress,
-  Row,
-  Tag,
-  Typography,
-  type ListProps,
-} from 'antd';
+import { Card, Col, Empty, Flex, List, Progress, Row, Tag, Typography, type ListProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import {
@@ -24,6 +13,7 @@ import {
   DetailPanelSectionHeader,
   DetailPanelSectionTitle,
   DetailPanelSurface,
+  DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import { useTraceModal } from '@/hooks/useDialogState';
 import { calculateResourcePercent } from '@/platform';
@@ -216,7 +206,6 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
               {vaultData.system_containers && vaultData.system_containers.length > 0 && (
                 <SystemContainersSection containers={vaultData.system_containers} t={t} />
               )}
-
             </>
           )}
         </DetailPanelBody>

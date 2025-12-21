@@ -5,13 +5,14 @@ import {
   FolderOpenOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, Empty, Flex, Input, Modal, Select, Space, Tooltip, Typography } from 'antd';
+import { Alert, Button, Empty, Flex, Input, Select, Space, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import { useTeams } from '@/api/queries/teams';
 import { useDropdownData } from '@/api/queries/useDropdownData';
+import { SizedModal } from '@/components/common';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
@@ -212,7 +213,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   };
 
   return (
-    <Modal
+    <SizedModal
       data-testid="file-browser-modal"
       title={
         <Space>
@@ -222,7 +223,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       }
       open={open}
       onCancel={onCancel}
-      className={ModalSize.Large}
+      size={ModalSize.Large}
       footer={[
         <Tooltip key="cancel" title={t('common:actions.cancel')}>
           <Button
@@ -334,6 +335,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           data-testid="file-browser-info-alert"
         />
       </Flex>
-    </Modal>
+    </SizedModal>
   );
 };

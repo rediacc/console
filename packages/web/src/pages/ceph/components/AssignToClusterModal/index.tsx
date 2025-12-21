@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Flex, Modal, Select, Table, Tag, Typography } from 'antd';
+import { Alert, Flex, Select, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { type CephCluster, useCephClusters } from '@/api/queries/ceph';
 import {
   useUpdateMachineCeph,
   useUpdateMachineClusterAssignment,
 } from '@/api/queries/cephMutations';
+import { SizedModal } from '@/components/common';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import type { Machine } from '@/types';
@@ -172,8 +173,6 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
     ];
   }, [t]);
 
-  const modalSize = isBulkMode ? ModalSize.Large : ModalSize.Medium;
-
   const clusterOptions = useMemo(
     () =>
       clusters.map((cluster) => ({
@@ -184,8 +183,9 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
   );
 
   return (
-    <Modal
-      className={`${modalSize} assign-to-cluster-modal`}
+    <SizedModal
+      className="assign-to-cluster-modal"
+      size={isBulkMode ? ModalSize.Large : ModalSize.Medium}
       title={
         <Flex align="center" gap={8} wrap>
           <CloudServerOutlined />
@@ -286,6 +286,6 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
           )}
         </Flex>
       </Flex>
-    </Modal>
+    </SizedModal>
   );
 };

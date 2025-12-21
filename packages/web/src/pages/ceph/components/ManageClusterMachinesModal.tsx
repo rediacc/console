@@ -10,6 +10,7 @@ import {
   useUpdateMachineClusterAssignment,
   useUpdateMachineClusterRemoval,
 } from '@/api/queries/cephMutations';
+import { SizedModal } from '@/components/common';
 import { createDateColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector';
@@ -289,7 +290,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
   };
 
   return (
-    <Modal
+    <SizedModal
       title={
         <Space>
           <CloudServerOutlined />
@@ -298,7 +299,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       }
       open={open}
       onCancel={onCancel}
-      className={ModalSize.Large}
+      size={ModalSize.Large}
       data-testid="ds-manage-cluster-machines-modal"
       footer={[
         <Button key="cancel" onClick={onCancel} data-testid="ds-manage-machines-cancel">
@@ -345,6 +346,6 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
           },
         ]}
       />
-    </Modal>
+    </SizedModal>
   );
 };

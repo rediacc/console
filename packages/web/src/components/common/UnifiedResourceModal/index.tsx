@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Checkbox, Collapse, Flex, Modal, Space, Tag, Typography, Upload } from 'antd';
+import { Button, Checkbox, Collapse, Flex, Space, Tag, Typography, Upload } from 'antd';
 import { type Resolver, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import type { QueueFunction } from '@/api/queries/queue';
 import { useDropdownData } from '@/api/queries/useDropdownData';
+import { SizedModal } from '@/components/common';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import TemplateSelector from '@/components/common/TemplateSelector';
 import ResourceFormWithVault, {
@@ -375,12 +376,13 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
   return (
     <>
-      <Modal
+      <SizedModal
         data-testid="resource-modal"
         title={renderModalTitle(modalHeaderProps)}
         open={open}
         onCancel={onCancel}
         destroyOnClose
+        size={ModalSize.Fullscreen}
         footer={[
           <Flex align="center" justify="space-between" gap={16} key="footer-container">
             <Flex align="center" gap={8}>
@@ -459,7 +461,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             </Flex>
           </Flex>,
         ]}
-        className={ModalSize.Fullscreen}
       >
         <ResourceFormWithVault
           ref={formRef}
@@ -535,7 +536,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             </Space>
           }
         />
-      </Modal>
+      </SizedModal>
 
       {/* Sub-modals */}
       <ResourceModalDialogs

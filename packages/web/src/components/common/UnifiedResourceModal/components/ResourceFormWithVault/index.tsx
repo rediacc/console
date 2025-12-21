@@ -111,7 +111,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const wrapperCol = { span: 18 };
 
     return (
-      <Flex vertical style={{ height: '100%' }}>
+      <Flex vertical>
         <Form
           data-testid="resource-modal-form"
           layout={formLayout}
@@ -155,7 +155,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
         <Divider style={{ margin: '16px 0' }}>{t('vaultEditor.vaultConfiguration')}</Divider>
 
-        <Flex style={{ flexShrink: 0 }} data-testid="resource-modal-vault-editor-section">
+        <Flex data-testid="resource-modal-vault-editor-section">
           <VaultEditor
             entityType={entityType}
             initialData={initialVaultData}

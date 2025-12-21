@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Empty, Flex, Modal, Select, Table, Tabs, Tag, Typography } from 'antd';
+import { Alert, Button, Empty, Flex, Select, Table, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type AvailableMachine,
@@ -12,6 +12,7 @@ import {
   useUpdateCloneMachineAssignments,
   useUpdateCloneMachineRemovals,
 } from '@/api/queries/cephMutations';
+import { SizedModal } from '@/components/common';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { ModalSize } from '@/types/modal';
@@ -271,7 +272,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
         ];
 
   return (
-    <Modal
+    <SizedModal
       data-testid="assign-clone-modal"
       title={
         <Flex align="center" gap={8} wrap>
@@ -284,7 +285,8 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           )}
         </Flex>
       }
-      className={`${ModalSize.Large} assign-clone-machines-modal`}
+      className="assign-clone-machines-modal"
+      size={ModalSize.Large}
       open={open}
       onCancel={onCancel}
       footer={footerButtons}
@@ -306,6 +308,6 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           },
         ]}
       />
-    </Modal>
+    </SizedModal>
   );
 };

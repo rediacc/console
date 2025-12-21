@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Flex, Modal, Select, Typography } from 'antd';
+import { Alert, Flex, Select, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type AvailableMachine,
@@ -7,6 +7,7 @@ import {
   useAvailableMachinesForClone,
 } from '@/api/queries/ceph';
 import { useUpdateImageMachineAssignment } from '@/api/queries/cephMutations';
+import { SizedModal } from '@/components/common';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { ModalSize } from '@/types/modal';
 import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons';
@@ -91,14 +92,15 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   };
 
   return (
-    <Modal
+    <SizedModal
       title={
         <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <FileImageOutlined style={{ fontSize: 16 }} />
           {t('ceph:images.reassignMachine')}
         </Flex>
       }
-      className={`${ModalSize.Medium} image-machine-reassignment-modal`}
+      className="image-machine-reassignment-modal"
+      size={ModalSize.Medium}
       open={open}
       onOk={handleOk}
       onCancel={onCancel}
@@ -178,6 +180,6 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
           />
         </Flex>
       )}
-    </Modal>
+    </SizedModal>
   );
 };

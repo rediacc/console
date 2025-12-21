@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Button, Checkbox, Collapse, Flex, Modal, Space, Tabs, Tag, Typography } from 'antd';
+import { Alert, Button, Checkbox, Collapse, Flex, Space, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { SizedModal } from '@/components/common';
 import { useCopyToClipboard, useMessage } from '@/hooks';
 import { InstallOptions, pipInstallationService } from '@/services/pipInstallationService';
 import { ModalSize } from '@/types/modal';
@@ -348,7 +349,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   };
 
   return (
-    <Modal
+    <SizedModal
       title={
         <Space>
           <RocketOutlined />
@@ -362,7 +363,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           {t('common:close')}
         </Button>,
       ]}
-      className={ModalSize.Large}
+      size={ModalSize.Large}
       data-testid="pip-install-modal"
     >
       <Tabs
@@ -402,6 +403,6 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           },
         ]}
       />
-    </Modal>
+    </SizedModal>
   );
 };

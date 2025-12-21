@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Card, Flex, Modal, Typography } from 'antd';
+import { Button, Card, Flex, Typography } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
+import { SizedModal } from '@/components/common';
 import { hideSessionExpiredDialog, setStayLoggedOutMode } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
@@ -62,7 +63,7 @@ export const SessionExpiredDialog: React.FC = () => {
   };
 
   return (
-    <Modal
+    <SizedModal
       title={
         <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
           <ClockCircleOutlined />
@@ -76,7 +77,7 @@ export const SessionExpiredDialog: React.FC = () => {
       closable
       maskClosable={false}
       centered
-      className={ModalSize.Small}
+      size={ModalSize.Small}
       data-testid="session-expired-modal"
       footer={[
         <Button
@@ -108,6 +109,6 @@ export const SessionExpiredDialog: React.FC = () => {
           </Typography.Text>
         </Card>
       </Flex>
-    </Modal>
+    </SizedModal>
   );
 };

@@ -1,16 +1,5 @@
 import React, { useEffect } from 'react';
-import {
-  Badge,
-  Collapse,
-  Empty,
-  Flex,
-  Modal,
-  Segmented,
-  Space,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Badge, Collapse, Empty, Flex, Segmented, Space, Tag, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +8,7 @@ import {
   useQueueItemTrace,
   useRetryFailedQueueItem,
 } from '@/api/queries/queue';
+import { SizedModal } from '@/components/common';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { normalizeToString } from '@/platform';
 import { ModalSize } from '@/types/modal';
@@ -142,8 +132,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   })();
 
   return (
-    <Modal
-      className={ModalSize.Large}
+    <SizedModal
+      size={ModalSize.Large}
       data-testid="queue-trace-modal"
       title={
         <Flex align="center" justify="space-between" wrap>
@@ -392,7 +382,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
       ) : (
         <Empty description="No trace data available" />
       )}
-    </Modal>
+    </SizedModal>
   );
 };
 

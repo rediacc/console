@@ -1,6 +1,7 @@
 import React from 'react';
-import { Flex, Modal, Table, Tag, Typography } from 'antd';
+import { Flex, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { SizedModal } from '@/components/common';
 import { createTruncatedColumn } from '@/components/common/columns';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
@@ -104,14 +105,15 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
   const totalMachines = targetMachines.length;
 
   return (
-    <Modal
+    <SizedModal
       title={
         <Flex align="center" gap={8} wrap>
           <InfoCircleOutlined />
           {t('machines:bulkActions.viewAssignmentStatus')}
         </Flex>
       }
-      className={`${ModalSize.Large} view-assignment-status-modal`}
+      className="view-assignment-status-modal"
+      size={ModalSize.Large}
       open={open}
       onCancel={onCancel}
       footer={null}
@@ -144,6 +146,6 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
         scroll={{ y: 400 }}
         data-testid="ds-view-assignment-status-table"
       />
-    </Modal>
+    </SizedModal>
   );
 };

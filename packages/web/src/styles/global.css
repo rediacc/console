@@ -19,12 +19,55 @@ body {
   width: 100%;
 }
 
-/* Fix vertical Flex containers to stretch horizontally */
-.ant-flex-vertical {
+/* Fix all Flex containers to stretch horizontally */
+.ant-flex {
+  width: 100%;
+}
+
+/* Fix table wrapper to fill available width */
+.ant-table-wrapper {
   width: 100%;
 }
 
 /* Center sidebar logo */
 .ant-pro-layout .ant-pro-sider-logo {
   justify-content: center;
+}
+
+/* ==========================================================================
+   Modal Sizing System
+   Matches ModalSize enum in types/modal.ts
+   ========================================================================== */
+
+/* Modal sizing - height and layout helpers
+   Width is set via Modal's width prop to avoid !important
+   See MODAL_WIDTHS in types/modal.ts for width values */
+
+/* Prevent page scroll when modal is open */
+.modal-sm.ant-modal-wrap,
+.modal-md.ant-modal-wrap,
+.modal-lg.ant-modal-wrap,
+.modal-fullscreen.ant-modal-wrap {
+  overflow: hidden;
+}
+
+/* All sized modals: establish flex layout with bounded height */
+.modal-sm .ant-modal-content,
+.modal-md .ant-modal-content,
+.modal-lg .ant-modal-content,
+.modal-fullscreen .ant-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 100px);
+}
+
+/* Modal body is the ONLY scroll container */
+.modal-sm .ant-modal-body,
+.modal-md .ant-modal-body,
+.modal-lg .ant-modal-body,
+.modal-fullscreen .ant-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }

@@ -8,7 +8,6 @@ import {
   Flex,
   Form,
   Input,
-  Modal,
   Row,
   Select,
   Space,
@@ -20,6 +19,7 @@ import { useMachines } from '@/api/queries/machines';
 import type { QueueFunction } from '@/api/queries/queue';
 import { useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
+import { SizedModal } from '@/components/common';
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
 import { useLocalizedFunctions } from '@/services/functionsService';
 import { ModalSize } from '@/types/modal';
@@ -242,7 +242,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 
   return (
     <>
-      <Modal
+      <SizedModal
         title={
           <Flex vertical>
             <Typography.Text>{title || t('functions:selectFunction')}</Typography.Text>
@@ -251,7 +251,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
         }
         open={open}
         onCancel={handleCancel}
-        className={ModalSize.Large}
+        size={ModalSize.Large}
         footer={[
           <Button key="cancel" onClick={handleCancel} data-testid="function-modal-cancel">
             {t('common:actions.cancel')}
@@ -491,7 +491,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
             )}
           </Col>
         </Row>
-      </Modal>
+      </SizedModal>
 
       {/* Template Preview Modal */}
       <TemplatePreviewModal

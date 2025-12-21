@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Flex, Modal, Progress, Table, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Flex, Progress, Table, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { SizedModal } from '@/components/common';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
 import type { QueueItemCompletionResult } from '@/services/helloService';
 import { usePingFunction } from '@/services/pingService';
@@ -292,7 +293,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
   ];
 
   return (
-    <Modal
+    <SizedModal
       data-testid="connectivity-modal"
       title={
         <Flex gap={8} align="center">
@@ -302,7 +303,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       }
       open={open}
       onCancel={onClose}
-      className={ModalSize.Large}
+      size={ModalSize.Large}
       destroyOnClose
       footer={
         <Flex justify="flex-end" wrap>
@@ -428,7 +429,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           )}
         </Flex>
       </Flex>
-    </Modal>
+    </SizedModal>
   );
 };
 

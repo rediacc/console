@@ -62,7 +62,7 @@ interface ContainerDetailPanelProps {
 export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
   container,
   visible,
-  onClose,
+  onClose: _onClose,
   splitView = false,
 }) => {
   const { t } = useTranslation(['resources', 'common']);

@@ -1,17 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Card,
-  Flex,
-  Form,
-  Input,
-  Modal,
-  Result,
-  Space,
-  Tabs,
-  Typography,
-} from 'antd';
+import { Alert, Button, Card, Flex, Form, Input, Result, Space, Tabs, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
 import { useSelector } from 'react-redux';
@@ -21,6 +9,7 @@ import {
   useTFAStatus,
   type EnableTwoFactorResponse,
 } from '@/api/queries/twoFactor';
+import { SizedModal } from '@/components/common';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { useCopyToClipboard } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
@@ -185,7 +174,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
 
   return (
     <>
-      <Modal
+      <SizedModal
         title={
           <Typography.Text style={{ display: 'inline-flex', alignItems: 'center' }}>
             <SafetyCertificateOutlined style={{ fontSize: 16 }} />
@@ -195,11 +184,11 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         open={open}
         onCancel={onCancel}
         footer={null}
-        className={ModalSize.Medium}
+        size={ModalSize.Medium}
         data-testid="tfa-settings-main-modal"
       >
         {mainContent}
-      </Modal>
+      </SizedModal>
 
       <EnableTwoFactorModal
         open={enableModal.isOpen}
@@ -460,12 +449,12 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
   isSubmitting,
   t,
 }) => (
-  <Modal
+  <SizedModal
     title={t('twoFactorAuth.enableModal.title')}
     open={open}
     onCancel={onCancel}
     footer={null}
-    className={ModalSize.Medium}
+    size={ModalSize.Medium}
     data-testid="tfa-settings-enable-modal"
   >
     <Form form={form} layout="vertical" onFinish={onSubmit}>
@@ -505,7 +494,7 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
         </Flex>
       </Form.Item>
     </Form>
-  </Modal>
+  </SizedModal>
 );
 
 interface DisableModalProps {
@@ -525,12 +514,12 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
   isSubmitting,
   t,
 }) => (
-  <Modal
+  <SizedModal
     title={t('twoFactorAuth.disableModal.title')}
     open={open}
     onCancel={onCancel}
     footer={null}
-    className={ModalSize.Medium}
+    size={ModalSize.Medium}
     data-testid="tfa-settings-disable-modal"
   >
     <Form form={form} layout="vertical" onFinish={onSubmit}>
@@ -582,5 +571,5 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
         </Flex>
       </Form.Item>
     </Form>
-  </Modal>
+  </SizedModal>
 );

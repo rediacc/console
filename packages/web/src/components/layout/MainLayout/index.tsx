@@ -101,9 +101,7 @@ const MainLayout: React.FC = () => {
     const currentPath = location.pathname;
     const nextRoutes = filterRouteItems(routes.routes, newMode, companyData);
     const visiblePaths = flattenRoutePaths(nextRoutes);
-    const isCurrentPageVisibleInNewMode = visiblePaths.some((path) =>
-      currentPath.startsWith(path)
-    );
+    const isCurrentPageVisibleInNewMode = visiblePaths.some((path) => currentPath.startsWith(path));
 
     if (!isCurrentPageVisibleInNewMode) {
       const firstVisiblePath = visiblePaths[0];

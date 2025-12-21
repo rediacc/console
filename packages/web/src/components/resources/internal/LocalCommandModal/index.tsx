@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Checkbox, Flex, Form, Input, Modal, Radio, Tabs, Typography } from 'antd';
+import { Button, Checkbox, Flex, Form, Input, Radio, Tabs, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { SizedModal } from '@/components/common';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import { useMessage } from '@/hooks';
 import { createFreshForkToken } from '@/services/forkTokenService';
@@ -198,9 +199,10 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   };
 
   return (
-    <Modal
+    <SizedModal
       title={t('resources:localCommandBuilder.title')}
-      className={`${ModalSize.Large} local-command-modal`}
+      className="local-command-modal"
+      size={ModalSize.Large}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -357,6 +359,6 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
           {t('resources:localCommandBuilder.copyCommand')}
         </Button>
       </Flex>
-    </Modal>
+    </SizedModal>
   );
 };
