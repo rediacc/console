@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Breadcrumb,
@@ -73,7 +73,7 @@ const RepoContainersPage: React.FC = () => {
 
   const [selectedContainer, setSelectedContainer] = useState<PluginContainer | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+  const hasInitiallyLoadedRef = useRef(false);
   const queueTrace = useQueueTraceModal();
   const connectivityTest = useDialogState();
 
@@ -137,12 +137,13 @@ const RepoContainersPage: React.FC = () => {
 
   // Auto-refresh data on mount (query existing data, no queue items)
   useEffect(() => {
-    if (actualMachine && !hasInitiallyLoaded) {
-      setHasInitiallyLoaded(true);
+    if (actualMachine && !hasInitiallyLoadedRef.current) {
+      hasInitiallyLoadedRef.current = true;
       // Just refresh existing data from database
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional initial data load on mount
       handleRefresh();
     }
-  }, [actualMachine, hasInitiallyLoaded, handleRefresh]);
+  }, [actualMachine, handleRefresh]);
 
   // Navigation handlers
   const handleBackToRepos = () => {

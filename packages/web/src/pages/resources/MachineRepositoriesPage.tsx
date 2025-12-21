@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Breadcrumb,
@@ -81,7 +81,6 @@ const MachineReposPage: React.FC = () => {
 
   // State for machine data - can come from route state or API
   const routeState = location.state;
-  const [machine, setMachine] = useState<Machine | null>(routeState?.machine ?? null);
 
   // Use shared panel width hook (33% of window, min 300px, max 700px)
   const panelWidth = usePanelWidth();
@@ -94,8 +93,8 @@ const MachineReposPage: React.FC = () => {
   // Refresh key for forcing MachineRepositoryTable updates
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Auto-load state
-  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+  // Auto-load ref (not state to avoid re-renders)
+  const hasInitiallyLoadedRef = useRef(false);
 
   // Queue trace modal state
   const queueTrace = useQueueTraceModal();
@@ -113,13 +112,27 @@ const MachineReposPage: React.FC = () => {
   // Connectivity test modal state
   const connectivityTest = useDialogState();
 
+  // Get team name from route state for initial queries
+  const initialTeamName = routeState?.machine?.teamName;
+
   // Fetch all machines to find our specific machine if not passed via state
   const {
     data: machines = [],
     isLoading: machinesLoading,
     error: machinesError,
     refetch: refetchMachines,
-  } = useMachines(machine?.teamName ? [machine.teamName] : undefined, true);
+  } = useMachines(initialTeamName ? [initialTeamName] : undefined, true);
+
+  // Derive machine from route state or API data (no setState needed)
+  const machine = useMemo(() => {
+    // First try to find fresh data from API
+    if (machines.length > 0 && machineName) {
+      const foundMachine = machines.find((m) => m.machineName === machineName);
+      if (foundMachine) return foundMachine;
+    }
+    // Fall back to route state
+    return routeState?.machine ?? null;
+  }, [machines, machineName, routeState?.machine]);
 
   // Repository creation hook (handles credentials + queue item)
   const { createRepository } = useRepositoryCreation(machines);
@@ -129,17 +142,6 @@ const MachineReposPage: React.FC = () => {
     machine?.teamName ? [machine.teamName] : undefined
   );
 
-  // Find the machine from API if not already set OR update it when machines data changes
-  useEffect(() => {
-    if (machines.length > 0 && machineName) {
-      const foundMachine = machines.find((m) => m.machineName === machineName);
-      if (foundMachine) {
-        // Update machine state with fresh data (including updated vaultStatus)
-        setMachine(foundMachine);
-      }
-    }
-  }, [machines, machineName]);
-
   const handleRefresh = useCallback(async () => {
     setRefreshKey((prev) => prev + 1);
     // Refetch both repositories AND machines to get updated vaultStatus
@@ -148,12 +150,13 @@ const MachineReposPage: React.FC = () => {
 
   // Auto-refresh data on mount (query existing data, no queue items)
   useEffect(() => {
-    if (machine && !hasInitiallyLoaded) {
-      setHasInitiallyLoaded(true);
+    if (machine && !hasInitiallyLoadedRef.current) {
+      hasInitiallyLoadedRef.current = true;
       // Just refresh existing data from database
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional initial data load on mount
       handleRefresh();
     }
-  }, [machine, hasInitiallyLoaded, handleRefresh]);
+  }, [machine, handleRefresh]);
 
   const handleBackToMachines = () => {
     navigate('/machines');
