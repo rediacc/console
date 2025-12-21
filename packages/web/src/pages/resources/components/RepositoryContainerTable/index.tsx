@@ -580,7 +580,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     createActionColumn<Container>({
       title: t('common:table.actions'),
 
-      fixed: 'end',
+      fixed: 'right',
 
       renderActions: (container) => {
         // Helper to create menu labels with consistent data-testid

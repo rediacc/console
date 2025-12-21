@@ -519,7 +519,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     repositoryNameColumn,
     createActionColumn<RepositoryTableRow>({
       title: t('common:table.actions'),
-      fixed: 'end',
+      fixed: 'right',
       renderActions: (record) => (
         <RepositoryActionsMenu
           record={record}
