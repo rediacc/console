@@ -581,7 +581,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   }
 
   return (
-    <Flex className="overflow-auto relative" data-testid="machine-repo-list">
+    <Flex vertical className="overflow-auto relative w-full" data-testid="machine-repo-list">
       {isLoading && (
         <Flex
           align="center"
@@ -650,7 +650,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         ) : null;
       })()}
 
-      <Flex>
+      <Flex className="w-full">
         <Table<RepositoryTableRow>
           columns={columns}
           dataSource={getTableDataSource()}
