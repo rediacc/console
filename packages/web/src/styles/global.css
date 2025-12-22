@@ -160,3 +160,28 @@ body {
 .absolute {
   position: absolute;
 }
+
+/* ==========================================================================
+   Auth Layout - Split Screen
+   ========================================================================== */
+
+/* Desktop: side-by-side content */
+@media (min-width: 768px) {
+  .auth-content {
+    flex-direction: row;
+  }
+  .auth-branding-panel {
+    flex: 1;
+    background-color: #F5F5F5;
+  }
+}
+
+/* Mobile: single column */
+@media (max-width: 767px) {
+  .auth-branding-panel {
+    display: none;
+  }
+  .auth-form-panel {
+    padding: 24px;
+  }
+}

@@ -7,6 +7,7 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { apiConnectionService } from '@/services/apiConnectionService';
 import { Endpoint, endpointService } from '@/services/endpointService';
+import { versionService } from '@/services/versionService';
 import { showMessage } from '@/utils/messages';
 import { ApiOutlined, DeleteOutlined, LoadingOutlined, PlusOutlined } from '@/utils/optimizedIcons';
 
@@ -17,13 +18,9 @@ interface EndpointHealth {
   checking?: boolean;
 }
 
-interface EndpointSelectorProps {
-  onHealthCheckComplete?: (hasHealthyEndpoint: boolean) => void;
-}
-
 const HEALTH_INDICATOR_SYMBOL = '●';
 
-const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComplete }) => {
+const EndpointSelector: React.FC = () => {
   const { t } = useTranslation('auth');
   const { confirm, contextHolder } = useConfirmDialog();
   const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
@@ -34,9 +31,33 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
   const [healthStatus, setHealthStatus] = useState<Record<string, EndpointHealth>>({});
   const healthStatusRef = useRef(healthStatus);
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
+  const [versionDisplay, setVersionDisplay] = useState<string>('');
 
   const HEALTH_CACHE_DURATION = 10000; // 10 seconds
   const HEALTH_CHECK_TIMEOUT = 2500; // 2.5 seconds
+
+  // Fetch version info on mount
+  useEffect(() => {
+    const fetchVersion = async () => {
+      try {
+        const versionInfo = await versionService.getVersion();
+        const formattedVersion = versionService.formatVersion(versionInfo.version);
+
+        if (formattedVersion === 'Development') {
+          setVersionDisplay('Development');
+        } else {
+          const buildType = import.meta.env.VITE_BUILD_TYPE || 'DEBUG';
+          const buildLabel = buildType === 'RELEASE' ? 'Release' : 'Development';
+          setVersionDisplay(`${buildLabel} - ${formattedVersion}`);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch version information', error);
+        setVersionDisplay('Development');
+      }
+    };
+
+    fetchVersion();
+  }, []);
 
   /**
    * Check health for a single endpoint
@@ -206,12 +227,6 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           apiClient.updateApiUrl(selected.url);
           console.warn(`[EndpointSelector] Applied endpoint: ${selected.name} (${selected.url})`);
         }
-
-        // Notify parent about health check completion
-        if (onHealthCheckComplete) {
-          const hasHealthyEndpoint = Object.values(healthChecks).some((h) => h.isHealthy);
-          onHealthCheckComplete(hasHealthyEndpoint);
-        }
       } catch (error) {
         console.warn('Failed to fetch endpoints', error);
       } finally {
@@ -220,7 +235,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
     };
 
     fetchEndpointsAndSelection();
-  }, [onHealthCheckComplete, checkAllEndpointsHealth]);
+  }, [checkAllEndpointsHealth]);
 
   const handleEndpointChange = async (value: unknown) => {
     if (typeof value !== 'string') {
@@ -302,16 +317,23 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
   return (
     <>
-      <Flex className="inline-block w-full">
+      <Flex vertical gap={4} align="center">
+        {/* Display selected endpoint URL with version */}
+        {selectedEndpoint && (
+          <Typography.Text>
+            {selectedEndpoint.url}
+            {versionDisplay && ` - ${versionDisplay}`}
+            {isCheckingHealth && (
+              <Flex align="center" className="inline-flex">
+                <LoadingOutlined />
+              </Flex>
+            )}
+          </Typography.Text>
+        )}
+
         <Select
           value={displayValue}
           onChange={handleEndpointChange}
-          // onDropdownVisibleChange={(open) => {
-          // if (open && endpoints.length > 0) {
-          // // Check health when dropdown opens
-          // checkAllEndpointsHealth(endpoints);
-          // }
-          // }}
           suffixIcon={<ApiOutlined />}
           popupMatchSelectWidth={false}
           data-testid="endpoint-selector"
@@ -324,7 +346,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             const isDisabled =
               (!health || (!health.isHealthy && !health.checking)) && endpoint.type !== 'localhost';
 
-            // Label for selected value (with health indicator but without version)
+            // Label for selected value (with health indicator)
             const labelContent = (
               <Flex align="center" gap={8}>
                 {isChecking ? (
@@ -332,14 +354,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                 ) : (
                   <Typography.Text>{HEALTH_INDICATOR_SYMBOL}</Typography.Text>
                 )}
-                <Typography.Text>
-                  {endpoint.icon && (
-                    <Typography.Text className="inline-flex items-center justify-center">
-                      {endpoint.icon}
-                    </Typography.Text>
-                  )}
-                  {endpoint.name}
-                </Typography.Text>
+                <Typography.Text>{endpoint.name}</Typography.Text>
               </Flex>
             );
 
@@ -351,7 +366,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                 disabled={isDisabled}
                 label={labelContent}
               >
-                <Flex justify="space-between">
+                <Flex justify="space-between" align="center">
                   <Flex align="center" gap={8}>
                     {/* Health indicator */}
                     {isChecking ? (
@@ -360,38 +375,21 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                       <Typography.Text>{HEALTH_INDICATOR_SYMBOL}</Typography.Text>
                     )}
 
-                    <Flex
-                      className="flex"
+                    <Typography.Text
                       // eslint-disable-next-line no-restricted-syntax
                       style={{ opacity: isDisabled ? 0.5 : 1 }}
                     >
-                      {endpoint.icon && (
-                        <Typography.Text className="inline-flex items-center justify-center">
-                          {endpoint.icon}
-                        </Typography.Text>
-                      )}
-                      <Typography.Paragraph
-                        className="overflow-hidden"
-                        // eslint-disable-next-line no-restricted-syntax
-                        style={{ maxWidth: 120 }}
-                      >
-                        {endpoint.name}
-                      </Typography.Paragraph>
-                    </Flex>
+                      {endpoint.name}
+                    </Typography.Text>
                   </Flex>
 
-                  <Flex align="center" gap={8}>
-                    {/* Version display */}
-                    {health?.version && <Typography.Text>v{health.version}</Typography.Text>}
-
-                    {/* Delete button for custom endpoints */}
-                    {endpoint.type === 'custom' && (
-                      <DeleteOutlined
-                        className="cursor-pointer"
-                        onClick={(e) => handleRemoveCustomEndpoint(endpoint.id, e)}
-                      />
-                    )}
-                  </Flex>
+                  {/* Delete button for custom endpoints */}
+                  {endpoint.type === 'custom' && (
+                    <DeleteOutlined
+                      className="cursor-pointer"
+                      onClick={(e) => handleRemoveCustomEndpoint(endpoint.id, e)}
+                    />
+                  )}
                 </Flex>
               </Select.Option>
             );
@@ -408,18 +406,6 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             </Typography.Text>
           </Select.Option>
         </Select>
-
-        {/* Display selected endpoint URL */}
-        {selectedEndpoint && (
-          <Typography.Text className="block">
-            {selectedEndpoint.url}
-            {isCheckingHealth && (
-              <Flex align="center" className="inline-flex">
-                <LoadingOutlined />
-              </Flex>
-            )}
-          </Typography.Text>
-        )}
       </Flex>
 
       {/* Add Custom Endpoint Modal */}

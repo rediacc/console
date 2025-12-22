@@ -5,14 +5,12 @@ import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '@/api/client';
 import { useVerifyTFA } from '@/api/queries/twoFactor';
-import logoBlack from '@/assets/logo_black.png';
 import InsecureConnectionWarning from '@/components/common/InsecureConnectionWarning';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
 import { featureFlags } from '@/config/featureFlags';
 import EndpointSelector from '@/pages/login/components/EndpointSelector';
 import RegistrationModal from '@/pages/login/components/RegistrationModal';
-import VersionSelector from '@/pages/login/components/VersionSelector';
 import { apiConnectionService } from '@/services/apiConnectionService';
 import { masterPasswordService } from '@/services/masterPasswordService';
 import { loginSuccess } from '@/store/auth/authSlice';
@@ -114,10 +112,6 @@ const LoginPage: React.FC = () => {
   const [twoFACode, setTwoFACode] = useState('');
   const [showRegistration, setShowRegistration] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
-  const [endpointSelectorVisible, setEndpointSelectorVisible] = useState(() => {
-    // Default visibility based on build type
-    return featureFlags.getBuildType() === 'DEBUG';
-  });
   const [quickRegistrationData, setQuickRegistrationData] = useState<
     | {
         email: string;
@@ -232,29 +226,6 @@ const LoginPage: React.FC = () => {
       console.warn('[LoginPage] Insecure connection detected. Web Crypto API unavailable.');
     }
   }, []);
-
-  // Health check completion callback
-  const handleHealthCheckComplete = (hasHealthyEndpoint: boolean) => {
-    const buildType = featureFlags.getBuildType();
-    const powerModeEnabled = featureFlags.isPowerModeEnabled();
-
-    // Determine visibility based on build type and health status
-    if (buildType === 'DEBUG') {
-      // DEBUG: Always show endpoint selector
-      setEndpointSelectorVisible(true);
-    } else if (buildType === 'RELEASE') {
-      if (powerModeEnabled) {
-        // Power mode overrides everything
-        setEndpointSelectorVisible(true);
-      } else if (hasHealthyEndpoint) {
-        // Hide when healthy and no power mode
-        setEndpointSelectorVisible(false);
-      } else {
-        // Fallback: show when endpoint health fails
-        setEndpointSelectorVisible(true);
-      }
-    }
-  };
 
   const handleLogin = async (values: LoginForm) => {
     setLoading(true);
@@ -450,23 +421,9 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      <Flex className="w-full">
+      {/* eslint-disable-next-line no-restricted-syntax */}
+      <Flex className="w-full" style={{ maxWidth: 400 }}>
         <Flex vertical gap={24} className="w-full">
-          <Flex
-            justify="center"
-            align="center"
-            className="flex"
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ height: 64 }}
-          >
-            <img
-              src={logoBlack}
-              alt="Rediacc Logo"
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ height: 40, width: 'auto', objectFit: 'contain' }}
-            />
-          </Flex>
-
           {error && (
             <Alert
               type="error"
@@ -572,29 +529,6 @@ const LoginPage: React.FC = () => {
               </Flex>
             )}
 
-            {/* Show advanced options toggle when master password is not yet shown */}
-            {featureFlags.isEnabled('loginAdvancedOptions') &&
-              !(
-                vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
-                vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
-                showAdvancedOptions
-              ) && (
-                <Flex justify="center">
-                  <Button
-                    type="text"
-                    size="small"
-                    onClick={() => {
-                      setShowAdvancedOptions(true);
-                      setTimeout(() => {
-                        form.getFieldInstance('masterPassword')?.focus();
-                      }, 100);
-                    }}
-                  >
-                    {t('auth:login.needMasterPassword')} →
-                  </Button>
-                </Flex>
-              )}
-
             <Form.Item>
               <Tooltip
                 title={
@@ -633,17 +567,26 @@ const LoginPage: React.FC = () => {
             </Typography.Text>
           </Flex>
 
-          {/* Endpoint selector and version display */}
-          <Flex vertical align="center">
-            {/* Endpoint Selector - Power Mode Feature */}
-            {endpointSelectorVisible && (
-              <Flex justify="center">
-                <EndpointSelector onHealthCheckComplete={handleHealthCheckComplete} />
+          {/* Advanced options section */}
+          <Flex vertical align="center" gap={8}>
+            {!showAdvancedOptions &&
+              vaultProtocolState !== VaultProtocolState.PASSWORD_REQUIRED &&
+              vaultProtocolState !== VaultProtocolState.INVALID_PASSWORD && (
+                <Button
+                  type="text"
+                  size="small"
+                  onClick={() => setShowAdvancedOptions(true)}
+                  data-testid="login-advanced-options-toggle"
+                >
+                  {t('auth:login.advancedOptions')} →
+                </Button>
+              )}
+
+            {showAdvancedOptions && (
+              <Flex vertical gap={8} className="w-full" align="center">
+                <EndpointSelector />
               </Flex>
             )}
-
-            {/* Always-visible version display */}
-            <VersionSelector />
           </Flex>
         </Flex>
       </Flex>
