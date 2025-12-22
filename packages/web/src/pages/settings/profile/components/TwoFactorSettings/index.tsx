@@ -1,7 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Card, Flex, Form, Input, Result, Space, Tabs, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Flex,
+  Form,
+  Input,
+  QRCode,
+  Result,
+  Space,
+  Tabs,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
-import QRCode from 'react-qr-code';
 import { useSelector } from 'react-redux';
 import {
   useDisableTFA,
@@ -176,10 +187,10 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
     <>
       <SizedModal
         title={
-          <Typography.Text style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <SafetyCertificateOutlined style={{ fontSize: 16 }} />
+          <Flex align="center" gap={8} className="inline-flex">
+            <SafetyCertificateOutlined />
             <Typography.Text>{t('twoFactorAuth.title')}</Typography.Text>
-          </Typography.Text>
+          </Flex>
         }
         open={open}
         onCancel={onCancel}
@@ -255,13 +266,8 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
       key: 'qrcode',
       label: t('twoFactorAuth.setupMethods.qrCode'),
       children: (
-        <Flex
-          vertical
-          align="center"
-          style={{ textAlign: 'center', alignItems: 'center' }}
-          data-testid="tfa-settings-qr-tab"
-        >
-          <Flex style={{ display: 'inline-flex' }}>
+        <Flex vertical align="center" className="text-center" data-testid="tfa-settings-qr-tab">
+          <Flex className="inline-flex">
             <QRCode value={otpUrl} size={200} data-testid="tfa-settings-qr-code" />
           </Flex>
           <Typography.Text>{t('twoFactorAuth.scanQRCode')}</Typography.Text>
@@ -273,18 +279,13 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
       label: t('twoFactorAuth.setupMethods.manual'),
       children: (
         <Alert
-          style={{ width: '100%' }}
+          className="w-full"
           message={t('twoFactorAuth.manualSetup.title')}
           description={
-            <Flex vertical gap={8} style={{ width: '100%' }}>
+            <Flex vertical gap={8} className="w-full">
               <Typography.Text>{t('twoFactorAuth.manualSetup.instructions')}</Typography.Text>
-              <Space.Compact style={{ width: '100%' }}>
-                <Input
-                  style={{ fontFamily: 'monospace' }}
-                  value={secret}
-                  readOnly
-                  data-testid="tfa-settings-secret-key-input"
-                />
+              <Space.Compact className="w-full">
+                <Input value={secret} readOnly data-testid="tfa-settings-secret-key-input" />
                 <Button
                   icon={<CopyOutlined />}
                   onClick={() => copySecret(secret)}
@@ -301,11 +302,11 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
   ];
 
   return (
-    <Flex vertical gap={24} style={{ width: '100%' }}>
-      <Flex vertical align="center" style={{ textAlign: 'center', alignItems: 'center' }}>
-        <SafetyCertificateOutlined style={{ fontSize: 32 }} />
+    <Flex vertical gap={24} className="w-full">
+      <Flex vertical align="center" className="text-center">
+        <SafetyCertificateOutlined />
         <Title level={4}>{t('twoFactorAuth.verification.title')}</Title>
-        <Paragraph color="secondary">{t('twoFactorAuth.verification.subtitle')}</Paragraph>
+        <Paragraph>{t('twoFactorAuth.verification.subtitle')}</Paragraph>
       </Flex>
 
       <Tabs data-testid="tfa-settings-setup-tabs" items={tabItems} />
@@ -321,8 +322,8 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
           data-testid="tfa-settings-verification-input"
         />
 
-        <Form.Item style={{ marginBottom: 0 }}>
-          <Flex justify="space-between" style={{ width: '100%' }}>
+        <Form.Item>
+          <Flex justify="space-between" className="w-full">
             <Button onClick={onCancel} data-testid="tfa-settings-verification-cancel-button">
               {t('common:general.cancel')}
             </Button>
@@ -352,7 +353,7 @@ const SuccessContent: React.FC<SuccessContentProps> = ({ t, onDone }) => (
     subTitle={t('twoFactorAuth.enableSuccess.subtitle')}
     data-testid="tfa-settings-success-result"
     extra={
-      <Flex vertical gap={24} style={{ width: '100%' }}>
+      <Flex vertical gap={24} className="w-full">
         <Alert
           message={t('twoFactorAuth.enableSuccess.verified')}
           description={t('twoFactorAuth.enableSuccess.verifiedDescription')}
@@ -378,17 +379,13 @@ interface StatusOverviewProps {
 }
 
 const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, onDisable, t }) => (
-  <Flex vertical gap={24} style={{ width: '100%' }}>
-    <Flex vertical align="center" style={{ textAlign: 'center', alignItems: 'center' }}>
-      <SafetyCertificateOutlined
-        style={{
-          fontSize: 64,
-        }}
-      />
+  <Flex vertical gap={24} className="w-full">
+    <Flex vertical align="center" className="text-center">
+      <SafetyCertificateOutlined />
       <Title level={4}>
         {isEnabled ? t('twoFactorAuth.status.enabled') : t('twoFactorAuth.status.disabled')}
       </Title>
-      <Paragraph color="secondary">
+      <Paragraph>
         {isEnabled
           ? t('twoFactorAuth.status.enabledDescription')
           : t('twoFactorAuth.status.disabledDescription')}
@@ -479,8 +476,8 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
         />
       </Form.Item>
 
-      <Form.Item style={{ marginBottom: 0 }}>
-        <Flex justify="flex-end" style={{ width: '100%' }}>
+      <Form.Item>
+        <Flex justify="flex-end" className="w-full">
           <Button onClick={onCancel} data-testid="tfa-settings-enable-cancel-button">
             {t('common:general.cancel')}
           </Button>
@@ -554,8 +551,8 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
         data-testid="tfa-settings-disable-code-input"
       />
 
-      <Form.Item style={{ marginBottom: 0 }}>
-        <Flex justify="flex-end" style={{ width: '100%' }}>
+      <Form.Item>
+        <Flex justify="flex-end" className="w-full">
           <Button onClick={onCancel} data-testid="tfa-settings-disable-cancel-button">
             {t('common:general.cancel')}
           </Button>

@@ -27,14 +27,6 @@ export const QueueItemDetails: React.FC<QueueItemDetailsProps> = ({
     'LastFailureReason'
   );
 
-  const getStatusColor = () => {
-    if (status === 'COMPLETED') return 'success';
-    if (status === 'CANCELLED' || status === 'FAILED') return 'error';
-    if (status === 'CANCELLING') return 'warning';
-    if (status === 'PROCESSING' || status === 'ASSIGNED') return 'processing';
-    return 'default';
-  };
-
   return (
     <Descriptions column={2} size="small">
       <Descriptions.Item label="Task ID">
@@ -43,7 +35,7 @@ export const QueueItemDetails: React.FC<QueueItemDetailsProps> = ({
         </Typography.Text>
       </Descriptions.Item>
       <Descriptions.Item label="Status">
-        <Tag color={getStatusColor()}>{status}</Tag>
+        <Tag>{status}</Tag>
       </Descriptions.Item>
       <Descriptions.Item label="Priority">{queueDetails.priorityLabel || '-'}</Descriptions.Item>
       <Descriptions.Item label="Machine">
@@ -83,9 +75,7 @@ export const QueueItemDetails: React.FC<QueueItemDetailsProps> = ({
         {normalizeToString(queueDetails, 'createdBy', 'CreatedBy') || '-'}
       </Descriptions.Item>
       <Descriptions.Item label="Retry Count">
-        <Tag color={retryCount === 0 ? 'success' : retryCount < 3 ? 'warning' : 'error'}>
-          {retryCount}/2
-        </Tag>
+        <Tag>{retryCount}/2</Tag>
       </Descriptions.Item>
       {lastFailureReason && (
         <Descriptions.Item label="Last Failure Reason" span={2}>

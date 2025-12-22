@@ -126,15 +126,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <Flex
       vertical
+      // eslint-disable-next-line no-restricted-syntax
       style={{
         position: isDrawer ? 'static' : 'fixed',
         left: 0,
         top: isDrawer ? 0 : 64,
         width: currentWidth,
         height: isDrawer ? '100%' : 'calc(100vh - 64px)',
-        overflow: 'hidden',
         zIndex: 1000,
       }}
+      className="overflow-hidden"
       role="navigation"
       aria-label={t('navigation.mainNavigation')}
       data-testid="main-sidebar"
@@ -146,11 +147,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         items={antMenuItems}
         onClick={handleClick}
         inlineCollapsed={collapsed}
+        // eslint-disable-next-line no-restricted-syntax
         style={{
-          height: '100%',
           paddingTop: isDrawer ? 80 : 16,
           borderRight: 0,
         }}
+        className="h-full"
       />
     </Flex>
   );

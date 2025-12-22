@@ -139,20 +139,18 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     }
 
     return (
-      <Flex vertical gap={16} style={{ width: '100%' }}>
+      <Flex vertical gap={16} className="w-full">
         <Alert message={t('ceph:clones.assignMachinesInfo')} type="info" showIcon />
 
-        <Flex vertical gap={8} style={{ width: '100%' }}>
-          <Typography.Text style={{ fontWeight: 500 }}>
-            {t('ceph:machines.selectMachines')}:
-          </Typography.Text>
+        <Flex vertical gap={8} className="w-full">
+          <Typography.Text>{t('ceph:machines.selectMachines')}:</Typography.Text>
           <Select
             mode="multiple"
             placeholder={t('machines:selectMachines')}
             value={selectedMachines}
             onChange={(value) => setSelectedMachines(value as string[])}
             showSearch
-            style={{ width: '100%' }}
+            className="w-full"
             filterOption={(input, option) =>
               (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
             }
@@ -162,7 +160,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             }))}
             data-testid="assign-clone-machine-select"
           />
-          <Typography.Text data-testid="assign-clone-selected-count" style={{ fontSize: 12 }}>
+          <Typography.Text data-testid="assign-clone-selected-count">
             {t('machines:bulkOperations.selectedCount', { count: selectedMachines.length })}
           </Typography.Text>
         </Flex>
@@ -190,7 +188,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       renderWrapper: (content) => (
         <Flex align="center" gap={8}>
           <CloudServerOutlined />
-          <Typography.Text style={{ fontWeight: 500 }}>{content}</Typography.Text>
+          <Typography.Text>{content}</Typography.Text>
         </Flex>
       ),
     });
@@ -199,11 +197,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       title: t('machines:bridge'),
       dataIndex: 'bridgeName',
       key: 'bridgeName',
-      renderWrapper: (content) => (
-        <Tag bordered={false} color="processing" style={{ fontSize: 12 }}>
-          {content}
-        </Tag>
-      ),
+      renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
     });
 
     const columns: ColumnsType<CloneMachine> = [machineColumn, bridgeColumn];
@@ -217,7 +211,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     } as TableRowSelection<CloneMachine>;
 
     return (
-      <Flex vertical gap={16} style={{ width: '100%' }}>
+      <Flex vertical gap={16} className="w-full">
         <Alert message={t('ceph:clones.removeMachinesInfo')} type="warning" showIcon />
 
         <Table<CloneMachine>
@@ -231,7 +225,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           data-testid="assign-clone-machines-table"
         />
 
-        <Typography.Text data-testid="assign-clone-remove-selected-count" style={{ fontSize: 12 }}>
+        <Typography.Text data-testid="assign-clone-remove-selected-count">
           {t('machines:bulkOperations.selectedCount', { count: removingMachines.length })}
         </Typography.Text>
       </Flex>
@@ -278,11 +272,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
         <Flex align="center" gap={8} wrap>
           <CopyOutlined />
           {t('ceph:clones.manageMachines')}
-          {clone && (
-            <Tag bordered={false} color="warning">
-              {clone.cloneName}
-            </Tag>
-          )}
+          {clone && <Tag bordered={false}>{clone.cloneName}</Tag>}
         </Flex>
       }
       className="assign-clone-machines-modal"

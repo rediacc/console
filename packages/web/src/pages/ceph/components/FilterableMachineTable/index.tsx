@@ -61,7 +61,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
   );
 
   return (
-    <Flex style={{ width: '100%', overflow: 'hidden' }}>
+    <Flex className="w-full overflow-hidden">
       <Table<Machine>
         columns={columns}
         dataSource={machines}

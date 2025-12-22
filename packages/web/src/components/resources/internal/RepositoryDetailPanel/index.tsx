@@ -83,9 +83,6 @@ interface RepositoryPanelData {
   services: ServiceData[];
 }
 
-const getStatusColor = (tone?: 'success' | 'warning' | 'error' | 'info' | 'neutral') =>
-  tone === 'neutral' ? 'default' : tone === 'info' ? 'processing' : tone;
-
 export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
   repository,
   visible,
@@ -247,7 +244,7 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
       </DetailPanelSectionHeader>
 
       <DetailPanelSectionCard size="small" data-testid="repository-detail-info-card">
-        <Flex vertical style={{ width: '100%' }}>
+        <Flex vertical className="w-full">
           <DetailPanelFieldRow>
             <DetailPanelFieldLabel>
               {t('resources:repositories.repositoryGuid')}:
@@ -266,7 +263,6 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
               {repositoryData.mounted ? (
                 <Tag
                   bordered={false}
-                  color={getStatusColor('success')}
                   icon={<CheckCircleOutlined />}
                   data-testid={`repo-detail-status-mounted-${repository.repositoryName}`}
                 >
@@ -275,7 +271,6 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
               ) : (
                 <Tag
                   bordered={false}
-                  color={getStatusColor('neutral')}
                   data-testid={`repo-detail-status-unmounted-${repository.repositoryName}`}
                   icon={<StopOutlined />}
                 >
@@ -285,7 +280,6 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
               {repositoryData.accessible && (
                 <Tag
                   bordered={false}
-                  color={getStatusColor('success')}
                   data-testid={`repo-detail-status-accessible-${repository.repositoryName}`}
                 >
                   {t('resources:repositories.accessible')}
@@ -301,7 +295,6 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
               </DetailPanelFieldLabel>
               <Tag
                 bordered={false}
-                color={getStatusColor('info')}
                 data-testid={`repo-detail-rediaccfile-${repository.repositoryName}`}
               >
                 {t('resources:repositories.hasRediaccfile')}
@@ -317,7 +310,6 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                 {repositoryData.volume_status === 'safe' ? (
                   <Tag
                     bordered={false}
-                    color={getStatusColor('success')}
                     icon={<CheckCircleOutlined />}
                     data-testid={`repo-detail-volume-safe-${repository.repositoryName}`}
                   >
@@ -327,7 +319,6 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                 ) : (
                   <Tag
                     bordered={false}
-                    color={getStatusColor('warning')}
                     icon={<WarningOutlined />}
                     data-testid={`repo-detail-volume-warning-${repository.repositoryName}`}
                   >
@@ -372,7 +363,7 @@ const ExternalVolumeWarning: React.FC<SectionProps> = ({ repository, panelData }
               </li>
             ))}
           </ul>
-          <DetailPanelFieldValue color="secondary">
+          <DetailPanelFieldValue>
             <strong>Warning:</strong> If this repository is cloned, these volumes will be orphaned.
             Use bind mounts to <DetailPanelFieldValue code>$REPOSITORY_PATH</DetailPanelFieldValue>{' '}
             instead.
@@ -403,7 +394,7 @@ const StorageSection: React.FC<SectionProps> = ({ repository, panelData, t }) =>
             size="small"
             data-testid={`repo-detail-storage-info-card-${repository.repositoryName}`}
           >
-            <Flex vertical style={{ width: '100%' }}>
+            <Flex vertical className="w-full">
               <DetailPanelFieldRow>
                 <DetailPanelFieldLabel>
                   {t('resources:repositories.imageSize')}:
@@ -426,7 +417,7 @@ const StorageSection: React.FC<SectionProps> = ({ repository, panelData, t }) =>
               size="small"
               data-testid={`repo-detail-disk-usage-card-${repository.repositoryName}`}
             >
-              <Flex vertical style={{ width: '100%' }}>
+              <Flex vertical className="w-full">
                 <DetailPanelFieldRow>
                   <Space>
                     <DatabaseOutlined />
@@ -443,7 +434,7 @@ const StorageSection: React.FC<SectionProps> = ({ repository, panelData, t }) =>
                   status={diskPercent > 90 ? 'exception' : 'normal'}
                   data-testid={`repo-detail-disk-usage-progress-${repository.repositoryName}`}
                 />
-                <Typography.Text style={{ fontSize: 12 }}>
+                <Typography.Text>
                   {t('resources:repositories.available')}: {repositoryData.disk_space.available}
                 </Typography.Text>
               </Flex>
@@ -469,7 +460,7 @@ const FilePathsSection: React.FC<SectionProps> = ({ repository, panelData, t }) 
         size="small"
         data-testid={`repo-detail-file-paths-card-${repository.repositoryName}`}
       >
-        <Flex vertical style={{ width: '100%' }}>
+        <Flex vertical className="w-full">
           <DetailPanelFieldRow>
             <DetailPanelFieldLabel>{t('resources:repositories.imagePath')}:</DetailPanelFieldLabel>
             <DetailPanelFieldMonospaceValue
@@ -542,7 +533,7 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
 
     <Flex vertical data-testid="repository-detail-services-list">
       {panelData.services.map((service, index) => {
-        const state: 'active' | 'failed' | 'other' =
+        const _state: 'active' | 'failed' | 'other' =
           service.active_state === 'active'
             ? 'active'
             : service.active_state === 'failed'
@@ -566,9 +557,6 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                   </DetailPanelFieldValue>
                   <Tag
                     bordered={false}
-                    color={getStatusColor(
-                      state === 'active' ? 'success' : state === 'failed' ? 'error' : 'neutral'
-                    )}
                     data-testid={`repo-detail-service-status-${repository.repositoryName}-${service.name}`}
                   >
                     {service.active_state}
@@ -583,34 +571,26 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                   <Flex wrap>
                     {service.memory_human && (
                       <Flex vertical>
-                        <Typography.Text style={{ fontSize: 12 }}>Memory</Typography.Text>
-                        <Typography.Text style={{ fontSize: 12 }}>
-                          {service.memory_human}
-                        </Typography.Text>
+                        <Typography.Text>Memory</Typography.Text>
+                        <Typography.Text>{service.memory_human}</Typography.Text>
                       </Flex>
                     )}
                     {service.main_pid && (
                       <Flex vertical>
-                        <Typography.Text style={{ fontSize: 12 }}>PID</Typography.Text>
-                        <Typography.Text style={{ fontSize: 12 }}>
-                          {service.main_pid}
-                        </Typography.Text>
+                        <Typography.Text>PID</Typography.Text>
+                        <Typography.Text>{service.main_pid}</Typography.Text>
                       </Flex>
                     )}
                     {service.uptime_human && (
                       <Flex vertical>
-                        <Typography.Text style={{ fontSize: 12 }}>Uptime</Typography.Text>
-                        <Typography.Text style={{ fontSize: 12 }}>
-                          {service.uptime_human}
-                        </Typography.Text>
+                        <Typography.Text>Uptime</Typography.Text>
+                        <Typography.Text>{service.uptime_human}</Typography.Text>
                       </Flex>
                     )}
                     {service.restarts !== undefined && (
                       <Flex vertical>
-                        <Typography.Text style={{ fontSize: 12 }}>Restarts</Typography.Text>
-                        <Typography.Text style={{ fontSize: 12 }}>
-                          {service.restarts}
-                        </Typography.Text>
+                        <Typography.Text>Restarts</Typography.Text>
+                        <Typography.Text>{service.restarts}</Typography.Text>
                       </Flex>
                     )}
                   </Flex>

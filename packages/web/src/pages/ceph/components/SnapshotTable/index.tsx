@@ -244,9 +244,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
   return (
     <>
       <Flex vertical gap={16} data-testid="snapshot-list-container">
-        <Typography.Title level={4} style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
-          {t('snapshots.title')}
-        </Typography.Title>
+        <Typography.Title level={4}>{t('snapshots.title')}</Typography.Title>
         <Flex align="center" wrap>
           <Tooltip title={t('snapshots.create')}>
             <Button
@@ -258,7 +256,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
           </Tooltip>
         </Flex>
 
-        <Flex style={{ overflow: 'hidden' }}>
+        <Flex className="overflow-hidden">
           <Table<CephRbdSnapshot>
             columns={columns}
             dataSource={snapshots}

@@ -363,9 +363,7 @@ const InfrastructurePage: React.FC = () => {
           <ApiOutlined />
           <strong>{text}</strong>
           {Number(record.hasAccess || 0) === 1 && (
-            <Tag color="success" icon={<CheckCircleOutlined />}>
-              {t('bridges.access')}
-            </Tag>
+            <Tag icon={<CheckCircleOutlined />}>{t('bridges.access')}</Tag>
           )}
         </Space>
       ),
@@ -391,13 +389,9 @@ const InfrastructurePage: React.FC = () => {
       sorter: createSorter<Bridge>('isGlobalBridge'),
       render: (isGlobal: boolean) =>
         isGlobal ? (
-          <Tag color="default" icon={<CloudServerOutlined />}>
-            {t('bridges.global')}
-          </Tag>
+          <Tag icon={<CloudServerOutlined />}>{t('bridges.global')}</Tag>
         ) : (
-          <Tag color="processing" icon={<ApiOutlined />}>
-            {t('bridges.regular')}
-          </Tag>
+          <Tag icon={<ApiOutlined />}>{t('bridges.regular')}</Tag>
         ),
     },
     {
@@ -407,14 +401,9 @@ const InfrastructurePage: React.FC = () => {
       width: 140,
       sorter: createSorter<Bridge>('managementMode'),
       render: (mode: string) => {
-        if (!mode) return <Tag color="default">{t('bridges.local')}</Tag>;
-        const variant = mode === 'Cloud' ? 'success' : 'neutral';
+        if (!mode) return <Tag>{t('bridges.local')}</Tag>;
         const icon = mode === 'Cloud' ? <CloudServerOutlined /> : <DesktopOutlined />;
-        return (
-          <Tag color={variant === 'success' ? 'success' : 'default'} icon={icon}>
-            {mode}
-          </Tag>
-        );
+        return <Tag icon={icon}>{mode}</Tag>;
       },
     },
     ...(featureFlags.isEnabled('vaultVersionColumns')
@@ -592,7 +581,7 @@ const InfrastructurePage: React.FC = () => {
               <Card>
                 <Flex wrap align="center" justify="space-between" gap={8}>
                   <Flex vertical>
-                    <Typography.Title level={4} style={{ margin: 0 }}>
+                    <Typography.Title level={4}>
                       {effectiveRegion
                         ? t('regions.bridgesInRegion', { region: effectiveRegion })
                         : t('bridges.title')}
@@ -668,6 +657,7 @@ const InfrastructurePage: React.FC = () => {
 
             if (bridge.hasAccess === 0) {
               return (
+                /* eslint-disable-next-line no-restricted-syntax */
                 <Flex style={{ maxWidth: 600, width: '100%' }}>
                   <Alert
                     message={t('bridges.accessDenied')}
@@ -681,6 +671,7 @@ const InfrastructurePage: React.FC = () => {
 
             if (!token) {
               return (
+                /* eslint-disable-next-line no-restricted-syntax */
                 <Flex style={{ maxWidth: 600, width: '100%' }}>
                   <Alert
                     message={t('bridges.noToken')}
@@ -693,7 +684,7 @@ const InfrastructurePage: React.FC = () => {
             }
 
             return (
-              <Flex vertical gap={16} style={{ width: '100%' }}>
+              <Flex vertical gap={16} className="w-full">
                 <Alert
                   message={t('bridges.tokenHeading')}
                   description={t('bridges.tokenDescription')}
@@ -703,8 +694,8 @@ const InfrastructurePage: React.FC = () => {
 
                 <Flex vertical>
                   <Typography.Text strong>{t('bridges.tokenLabel')}</Typography.Text>
-                  <Space.Compact style={{ width: '100%' }}>
-                    <Input style={{ width: '100%' }} value={token} readOnly autoComplete="off" />
+                  <Space.Compact className="w-full">
+                    <Input className="w-full" value={token} readOnly autoComplete="off" />
                     <Button
                       icon={tokenCopied ? <CheckCircleOutlined /> : <KeyOutlined />}
                       onClick={() => copyToken(token)}
@@ -781,7 +772,7 @@ const InfrastructurePage: React.FC = () => {
           ]}
         >
           {resetAuthModal.state.data && (
-            <Flex vertical gap={16} style={{ width: '100%' }}>
+            <Flex vertical gap={16} className="w-full">
               <Alert
                 message={tCommon('general.warning')}
                 description={t('bridges.resetAuthWarning', {

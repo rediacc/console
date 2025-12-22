@@ -157,6 +157,7 @@ const CredentialsPage: React.FC = () => {
               {forks.length > 0 && (
                 <Flex vertical>
                   <Typography.Text strong>{t('repositories.affectedForks')}</Typography.Text>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <ul style={{ paddingLeft: 24 }}>
                     {forks.map((fork) => (
                       <li key={fork.repositoryGuid}>
@@ -170,6 +171,7 @@ const CredentialsPage: React.FC = () => {
 
               <Flex vertical>
                 <Typography.Text strong>{t('repositories.affectedMachines')}</Typography.Text>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <ul style={{ paddingLeft: 24 }}>
                   {affectedMachines.map((machine) => (
                     <li key={machine.machineName}>
@@ -207,6 +209,7 @@ const CredentialsPage: React.FC = () => {
                 type="warning"
                 message={t('repositories.machinesWillLoseAccess')}
                 description={
+                  // eslint-disable-next-line no-restricted-syntax
                   <ul style={{ paddingLeft: 24 }}>
                     {affectedMachines.map((machine) => (
                       <li key={machine.machineName}>
@@ -506,7 +509,7 @@ const CredentialsPage: React.FC = () => {
         key: 'teamName',
         width: COLUMN_WIDTHS.TAG,
         ellipsis: true,
-        render: (teamName: string) => <Tag color="default">{teamName}</Tag>,
+        render: (teamName: string) => <Tag>{teamName}</Tag>,
       },
       ...(featureFlags.isEnabled('vaultVersionColumns')
         ? [
@@ -582,6 +585,7 @@ const CredentialsPage: React.FC = () => {
     <>
       <Flex vertical>
         <Flex vertical>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <Flex style={{ width: '100%', maxWidth: 360 }}>
             <TeamSelector
               data-testid="resources-team-selector"

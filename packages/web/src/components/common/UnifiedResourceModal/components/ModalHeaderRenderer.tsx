@@ -201,13 +201,17 @@ export const renderModalTitle = (props: ModalHeaderRendererProps): React.ReactNo
     const subtitle = getModalSubtitle(props);
     return (
       <Flex vertical gap={4}>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <Typography.Text strong style={{ fontSize: 16 }}>
           {baseTitle}
         </Typography.Text>
         {subtitle && (
-          <Typography.Text style={{ fontSize: 12 }}>
-            {props.t('general.team')}: {subtitle}
-          </Typography.Text>
+          <>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <Typography.Text style={{ fontSize: 12 }}>
+              {props.t('general.team')}: {subtitle}
+            </Typography.Text>
+          </>
         )}
       </Flex>
     );

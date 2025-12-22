@@ -5,7 +5,6 @@ import {
   DesktopOutlined,
   HistoryOutlined,
   InboxOutlined,
-  PartitionOutlined,
   SettingOutlined,
   ShopOutlined,
   TeamOutlined,
@@ -155,14 +154,6 @@ export const getRoutes = (t: TFunction): { path: string; routes: RouteItem[] } =
       showInSimple: false,
       featureFlag: 'auditLogs',
       'data-testid': 'main-nav-audit',
-    },
-    {
-      path: '/architecture',
-      name: t('navigation.architecture'),
-      icon: <PartitionOutlined />,
-      showInSimple: false,
-      featureFlag: 'architecture',
-      'data-testid': 'main-nav-architecture',
     },
     {
       path: '/marketplace',

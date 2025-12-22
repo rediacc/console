@@ -113,7 +113,7 @@ export default tseslint.config(
       // Ban styled-components and Layout to enforce Ant Design best practices
       'no-restricted-imports': ['error', {
         paths: [
-          { name: 'styled-components', message: 'Use Ant Design components with inline styles or className instead.' },
+          { name: 'styled-components', message: 'Use Ant Design components with CSS utility classes (className) instead.' },
           {
             name: 'antd',
             importNames: ['Layout'],
@@ -150,6 +150,10 @@ export default tseslint.config(
         {
           selector: "CallExpression[callee.name=/^t$|^tSystem$|^tCommon$/] ObjectExpression Property[key.name='defaultValue']",
           message: 'Do not use defaultValue in translation calls. Add the key to English translation JSON files instead.',
+        },
+        {
+          selector: 'JSXAttribute[name.name="style"]',
+          message: 'Inline styles are not allowed. Use CSS utility classes from global.css instead (e.g., className="w-full inline-flex"). For dynamic styles, use // eslint-disable-next-line no-restricted-syntax',
         },
       ],
     }

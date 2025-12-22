@@ -315,8 +315,12 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
       <Card>
         <Flex vertical>
           <Flex align="center" justify="space-between" wrap>
-            <Flex align="center" style={{ flex: '1 1 auto', minWidth: 0 }}>
-              <Flex style={{ flex: '1 1 auto', minWidth: 320, maxWidth: 520 }}>
+            <Flex align="center" className="flex-1 min-w-0">
+              <Flex
+                className="flex-1"
+                // eslint-disable-next-line no-restricted-syntax
+                style={{ minWidth: 320, maxWidth: 520 }}
+              >
                 <TeamSelector
                   teams={teams}
                   selectedTeams={selectedTeams}

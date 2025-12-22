@@ -140,14 +140,13 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
 
   return (
     <Flex
+      className="fixed flex flex-shrink-0"
+      // eslint-disable-next-line no-restricted-syntax
       style={{
-        position: 'fixed',
         top: 0,
         right: 0,
         bottom: 0,
         width: actualWidth,
-        display: 'flex',
-        flexShrink: 0,
         zIndex: 1000,
       }}
       data-testid="unified-detail-panel"
@@ -156,17 +155,21 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
         <Flex
           onMouseDown={handleMouseDown}
           data-testid="unified-detail-resize-handle"
+          className="absolute cursor-ew-resize"
+          // eslint-disable-next-line no-restricted-syntax
           style={{
-            position: 'absolute',
             left: -3,
             top: 0,
             bottom: 0,
             width: 8,
-            cursor: 'ew-resize',
             zIndex: 10,
           }}
         >
-          <Flex style={{ position: 'absolute', left: 2, top: 0, bottom: 0, width: 2 }} />
+          <Flex
+            className="absolute"
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ left: 2, top: 0, bottom: 0, width: 2 }}
+          />
         </Flex>
       )}
 
@@ -176,9 +179,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
           align="center"
           justify="flex-start"
           data-testid="unified-detail-collapsed"
-          style={{
-            width: '100%',
-          }}
+          className="w-full"
         >
           <Tooltip title="Expand Panel" placement="left">
             <Button
@@ -189,11 +190,16 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
               aria-label="Expand Panel"
             />
           </Tooltip>
-          <Typography.Text style={{ fontSize: 16 }}>{getResourceIcon()}</Typography.Text>
+          <Typography.Text
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ fontSize: 16 }}
+          >
+            {getResourceIcon()}
+          </Typography.Text>
         </Flex>
       ) : (
         <Flex
-          style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}
+          className="flex-1 overflow-auto overflow-x-hidden"
           data-testid="unified-detail-content"
         >
           {actualType === 'machine' ? (

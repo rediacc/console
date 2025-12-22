@@ -37,12 +37,7 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({ onModeToggle, onLo
         )}
         overlayStyle={{ minWidth: 300 }}
       >
-        <Button
-          style={{ width: 40, height: 40 }}
-          type="text"
-          icon={<UserOutlined />}
-          data-testid="user-menu-button"
-        />
+        <Button type="text" icon={<UserOutlined />} data-testid="user-menu-button" />
       </Dropdown>
     </Flex>
   );

@@ -113,11 +113,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
           ? `${hostBinding} → ${mapping.container_port}/${mapping.protocol}`
           : `${mapping.container_port}/${mapping.protocol}`;
 
-        return (
-          <Tag key={`${mapping.container_port}-${mapping.protocol}-${index}`} color="default">
-            {tagText}
-          </Tag>
-        );
+        return <Tag key={`${mapping.container_port}-${mapping.protocol}-${index}`}>{tagText}</Tag>;
       });
     }
 
@@ -181,27 +177,19 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         </Flex>
 
         <DetailPanelDivider>
-          <Flex component="span" align="center" style={{ fontWeight: 600 }}>
+          <Flex component="span" align="center">
             <CloudServerOutlined />
             {t('resources:containers.resourceUsage')}
           </Flex>
         </DetailPanelDivider>
 
         <Flex
+          // eslint-disable-next-line no-restricted-syntax
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
         >
           <Card size="small" data-testid="container-detail-cpu-card">
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {t('resources:containers.cpuUsage')}
-            </Typography.Text>
-            <Typography.Text
-              strong
-              style={{
-                fontSize: 18,
-              }}
-            >
-              {resourceUsage?.cpu?.toFixed(2) ?? '0'}%
-            </Typography.Text>
+            <Typography.Text type="secondary">{t('resources:containers.cpuUsage')}</Typography.Text>
+            <Typography.Text strong>{resourceUsage?.cpu?.toFixed(2) ?? '0'}%</Typography.Text>
             <Progress
               percent={resourceUsage?.cpu || 0}
               showInfo={false}
@@ -209,15 +197,10 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             />
           </Card>
           <Card size="small" data-testid="container-detail-memory-card">
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text type="secondary">
               {t('resources:containers.memoryUsage')}
             </Typography.Text>
-            <Typography.Text
-              strong
-              style={{
-                fontSize: 18,
-              }}
-            >
+            <Typography.Text strong>
               {resourceUsage ? `${resourceUsage.memoryUsed} / ${resourceUsage.memoryTotal}` : '-'}
             </Typography.Text>
             <Progress
@@ -226,7 +209,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             />
           </Card>
           <Card size="small" data-testid="container-detail-network-card">
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text type="secondary">
               {t('resources:containers.networkIO')}
             </Typography.Text>
             <Typography.Text>
@@ -234,9 +217,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             </Typography.Text>
           </Card>
           <Card size="small" data-testid="container-detail-block-io-card">
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {t('resources:containers.blockIO')}
-            </Typography.Text>
+            <Typography.Text type="secondary">{t('resources:containers.blockIO')}</Typography.Text>
             <Typography.Text>
               <HddOutlined /> {resourceUsage?.blockRead} / {resourceUsage?.blockWrite}
             </Typography.Text>
@@ -254,9 +235,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             <DetailPanelFieldRow>
               <DetailPanelFieldLabel>{t('resources:containers.networks')}:</DetailPanelFieldLabel>
               <DetailPanelFieldValue>
-                <Tag data-testid="container-detail-network-tag" color="default">
-                  {container.networks}
-                </Tag>
+                <Tag data-testid="container-detail-network-tag">{container.networks}</Tag>
               </DetailPanelFieldValue>
             </DetailPanelFieldRow>
             <DetailPanelFieldRow>
@@ -268,7 +247,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             <DetailPanelFieldRow>
               <DetailPanelFieldLabel>{t('resources:containers.processes')}:</DetailPanelFieldLabel>
               <DetailPanelFieldValue>
-                <Tag data-testid="container-detail-pids" color="default">
+                <Tag data-testid="container-detail-pids">
                   {resourceUsage?.pids || 0} {t('resources:containers.pids')}
                 </Tag>
               </DetailPanelFieldValue>
@@ -277,7 +256,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         </DetailPanelSectionCard>
 
         <DetailPanelDivider>
-          <Flex component="span" align="center" style={{ fontWeight: 600 }}>
+          <Flex component="span" align="center">
             <FolderOutlined />
             {t('resources:containers.environment')}
           </Flex>
@@ -286,7 +265,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         <DetailPanelSectionCard data-testid="container-detail-environment">
           <Flex vertical>
             <Flex vertical>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text type="secondary">
                 {t('resources:containers.mounts')}:
               </Typography.Text>
               <DetailPanelFieldMonospaceValue data-testid="container-detail-mounts">
@@ -295,7 +274,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             </Flex>
             {container.labels && (
               <Flex vertical>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                <Typography.Text type="secondary">
                   {t('resources:containers.labels')}:
                 </Typography.Text>
                 <DetailPanelFieldMonospaceValue data-testid="container-detail-labels">

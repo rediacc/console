@@ -27,7 +27,6 @@ const MachineRepositoriesPage = lazy(() => import('@/pages/resources/MachineRepo
 const RepositoryContainersPage = lazy(() => import('@/pages/resources/RepositoryContainersPage'));
 const CephPage = lazy(() => import('@/pages/ceph/CephPage'));
 const QueuePage = lazy(() => import('@/pages/queue/QueuePage'));
-const ArchitecturePage = lazy(() => import('@/pages/architecture/ArchitecturePage'));
 const AuditPage = lazy(() => import('@/pages/audit/AuditPage'));
 const CredentialsPage = lazy(() => import('@/pages/credentials/CredentialsPage'));
 const StoragePage = lazy(() => import('@/pages/storage/StoragePage'));
@@ -41,13 +40,7 @@ const InfrastructurePage = lazy(() => import('@/pages/settings/infrastructure/In
 // Loading component
 const PageLoader: React.FC = () => {
   return (
-    <Flex
-      data-testid="page-loader"
-      align="center"
-      justify="center"
-      vertical
-      style={{ padding: 48 }}
-    >
+    <Flex data-testid="page-loader" align="center" justify="center" vertical>
       <LoadingWrapper loading centered minHeight={400}>
         <Flex />
       </LoadingWrapper>
@@ -315,16 +308,6 @@ const AppContent: React.FC = () => {
                     element={
                       <Suspense fallback={<PageLoader />}>
                         <AuditPage />
-                      </Suspense>
-                    }
-                  />
-
-                  {/* Architecture */}
-                  <Route
-                    path="/architecture"
-                    element={
-                      <Suspense fallback={<PageLoader />}>
-                        <ArchitecturePage />
                       </Suspense>
                     }
                   />

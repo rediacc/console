@@ -171,7 +171,7 @@ const RepoContainersPage: React.FC = () => {
     return (
       <Flex vertical>
         <Card>
-          <Flex vertical align="center" style={{ width: '100%' }}>
+          <Flex vertical align="center" className="w-full">
             <LoadingWrapper loading centered minHeight={160}>
               <Flex />
             </LoadingWrapper>
@@ -191,7 +191,7 @@ const RepoContainersPage: React.FC = () => {
             <Alert
               message={t('machines:machineNotFound')}
               description={
-                <Flex vertical style={{ maxWidth: 520 }}>
+                <Flex vertical>
                   <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
                   <Button type="primary" onClick={handleBackToMachines}>
                     {t('machines:backToMachines')}
@@ -216,7 +216,7 @@ const RepoContainersPage: React.FC = () => {
             <Alert
               message={t('machines:repoNotFound')}
               description={
-                <Flex vertical style={{ maxWidth: 520 }}>
+                <Flex vertical>
                   <p>
                     {t('machines:repoNotFoundDescription', {
                       repositoryName: repositoryName,
@@ -277,7 +277,7 @@ const RepoContainersPage: React.FC = () => {
             />
 
             <Flex align="center" justify="space-between" wrap>
-              <Flex vertical style={{ flex: '1 1 auto', minWidth: 0 }}>
+              <Flex vertical className="flex-1 min-w-0">
                 <Flex align="center" gap={8} wrap>
                   <Tooltip title={t('machines:backToRepos')}>
                     <Button
@@ -298,17 +298,17 @@ const RepoContainersPage: React.FC = () => {
                   </Typography.Title>
                 </Flex>
                 <Flex align="center" wrap>
-                  <Tag color="default">
+                  <Tag>
                     {t('machines:machine')}: {actualMachine.machineName}
                   </Tag>
-                  <Tag color="success">
+                  <Tag>
                     {t('machines:team')}: {actualMachine.teamName}
                   </Tag>
-                  <Tag color="processing">
+                  <Tag>
                     {t('machines:bridge')}: {actualMachine.bridgeName}
                   </Tag>
                   {actualMachine.regionName && (
-                    <Tag color="processing">
+                    <Tag>
                       {t('machines:region')}: {actualMachine.regionName}
                     </Tag>
                   )}
@@ -330,16 +330,8 @@ const RepoContainersPage: React.FC = () => {
             </Flex>
           </Flex>
 
-          <Flex style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-            <Flex
-              vertical
-              style={{
-                width: '100%',
-                height: '100%',
-                overflow: 'auto',
-                minWidth: 240,
-              }}
-            >
+          <Flex className="flex-1 overflow-hidden relative">
+            <Flex vertical className="w-full h-full overflow-auto">
               <RepositoryContainerTable
                 machine={actualMachine}
                 repository={actualRepository}

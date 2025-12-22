@@ -48,7 +48,7 @@ export const buildAuditColumns = ({
     title: (
       <Space>
         {t('system:audit.columns.action')}
-        <FilterOutlined style={{ fontSize: 12 }} />
+        <FilterOutlined />
       </Space>
     ),
     dataIndex: 'action',
@@ -64,19 +64,13 @@ export const buildAuditColumns = ({
       value: action,
     })) || [];
   actionColumn.onFilter = (value, record) => record.action === value;
-  actionColumn.filterIcon = (_filtered: boolean) => (
-    <FilterOutlined
-      style={{
-        fontSize: 14,
-      }}
-    />
-  );
+  actionColumn.filterIcon = (_filtered: boolean) => <FilterOutlined />;
 
   const entityNameColumn = createTruncatedColumn<GetAuditLogs_ResultSet1>({
     title: (
       <Space>
         {t('system:audit.columns.entityName')}
-        <FilterOutlined style={{ fontSize: 12 }} />
+        <FilterOutlined />
       </Space>
     ),
     dataIndex: 'entityName',
@@ -94,13 +88,7 @@ export const buildAuditColumns = ({
       value: name,
     })) || [];
   entityNameColumn.onFilter = (value, record) => record.entityName === value;
-  entityNameColumn.filterIcon = (_filtered: boolean) => (
-    <FilterOutlined
-      style={{
-        fontSize: 14,
-      }}
-    />
-  );
+  entityNameColumn.filterIcon = (_filtered: boolean) => <FilterOutlined />;
 
   const userColumnFilters =
     [
@@ -119,9 +107,7 @@ export const buildAuditColumns = ({
     key: 'details',
     maxLength: 48,
     renderText: (value) => value || '',
-    renderWrapper: (content) => (
-      <Typography.Text style={{ fontSize: 12 }}>{content}</Typography.Text>
-    ),
+    renderWrapper: (content) => <Typography.Text>{content}</Typography.Text>,
   });
 
   return [
@@ -131,7 +117,7 @@ export const buildAuditColumns = ({
       title: (
         <Space>
           {t('system:audit.columns.entityType')}
-          <FilterOutlined style={{ fontSize: 12 }} />
+          <FilterOutlined />
         </Space>
       ),
       dataIndex: 'entity',
@@ -144,20 +130,14 @@ export const buildAuditColumns = ({
           value: entity,
         })) || [],
       onFilter: (value, record) => record.entity === value,
-      filterIcon: (_filtered: boolean) => (
-        <FilterOutlined
-          style={{
-            fontSize: 14,
-          }}
-        />
-      ),
+      filterIcon: (_filtered: boolean) => <FilterOutlined />,
     },
     entityNameColumn,
     {
       title: (
         <Space>
           {t('system:audit.columns.user')}
-          <FilterOutlined style={{ fontSize: 12 }} />
+          <FilterOutlined />
         </Space>
       ),
       dataIndex: 'actionByUser',
@@ -165,13 +145,7 @@ export const buildAuditColumns = ({
       width: 200,
       filters: userColumnFilters,
       onFilter: (value, record) => record.actionByUser === value,
-      filterIcon: (_filtered: boolean) => (
-        <FilterOutlined
-          style={{
-            fontSize: 14,
-          }}
-        />
-      ),
+      filterIcon: (_filtered: boolean) => <FilterOutlined />,
     },
     detailsColumn,
   ];

@@ -253,9 +253,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   return (
     <>
       <Flex vertical gap={16} data-testid="clone-list-container">
-        <Typography.Title level={5} style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
-          {t('clones.title')}
-        </Typography.Title>
+        <Typography.Title level={5}>{t('clones.title')}</Typography.Title>
         <Flex align="center" wrap>
           <Tooltip title={t('clones.create')}>
             <Button
@@ -268,7 +266,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
           </Tooltip>
         </Flex>
 
-        <Flex style={{ overflow: 'hidden' }}>
+        <Flex className="overflow-hidden">
           <Table<CephRbdClone>
             columns={columns}
             dataSource={clones}

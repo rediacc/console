@@ -82,17 +82,19 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
       <Flex
         ref={containerRef}
         data-testid="lazy-status-loading-container"
+        align="center"
+        justify="center"
+        // eslint-disable-next-line no-restricted-syntax
         style={{
           height: 20,
           width: 120,
         }}
-        align="center"
-        justify="center"
       >
         <Skeleton.Input
           active
           size="small"
           data-testid="lazy-status-skeleton"
+          // eslint-disable-next-line no-restricted-syntax
           style={{ width: 120, height: 20 }}
         />
       </Flex>
@@ -126,6 +128,7 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
           active
           size="small"
           data-testid="lazy-status-api-skeleton"
+          // eslint-disable-next-line no-restricted-syntax
           style={{ width: 120, height: 20 }}
         />
       </Flex>

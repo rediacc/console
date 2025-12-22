@@ -9,6 +9,7 @@ export const DetailPanelSurface: React.FC<
 > = ({ $splitView, $visible = true, style, ...props }) => (
   <Flex
     vertical
+    // eslint-disable-next-line no-restricted-syntax
     style={{
       height: '100%',
       position: $splitView ? 'relative' : 'fixed',
@@ -25,11 +26,12 @@ export const DetailPanelSurface: React.FC<
 );
 
 export const DetailPanelHeader = (props: React.ComponentProps<typeof Flex>) => (
+  // eslint-disable-next-line no-restricted-syntax
   <Flex vertical style={{ position: 'sticky', top: 0, zIndex: 10 }} {...props} />
 );
 
 export const DetailPanelHeaderRow = (props: React.ComponentProps<typeof Flex>) => (
-  <Flex justify="space-between" align="center" style={{ width: '100%' }} {...props} />
+  <Flex justify="space-between" align="center" className="w-full" {...props} />
 );
 
 export const DetailPanelTitleGroup = (props: React.ComponentProps<typeof Flex>) => (
@@ -65,34 +67,39 @@ export const DetailPanelSectionCard = (props: React.ComponentProps<typeof Card>)
 );
 
 export const DetailPanelFieldList = (props: React.ComponentProps<typeof Flex>) => (
-  <Flex vertical style={{ width: '100%' }} {...props} />
+  <Flex vertical className="w-full" {...props} />
 );
 
 export const DetailPanelFieldRow = (props: React.ComponentProps<typeof Flex>) => (
-  <Flex justify="space-between" align="baseline" style={{ width: '100%' }} {...props} />
+  <Flex justify="space-between" align="baseline" className="w-full" {...props} />
 );
 
 export const DetailPanelFieldLabel: React.FC<
   React.ComponentProps<typeof Text> & { $minWidth?: number }
 > = ({ $minWidth = 160, style, ...props }) => (
   <Text
+    // eslint-disable-next-line no-restricted-syntax
     style={{ minWidth: $minWidth, flexShrink: 0, letterSpacing: '0.01em', ...style }}
     {...props}
   />
 );
 
 export const DetailPanelFieldValue = (props: React.ComponentProps<typeof Text>) => (
+  // eslint-disable-next-line no-restricted-syntax
   <Text style={{ wordBreak: 'break-word' }} {...props} />
 );
 
 export const DetailPanelFieldStrongValue = (props: React.ComponentProps<typeof Text>) => (
+  // eslint-disable-next-line no-restricted-syntax
   <Text strong style={{ wordBreak: 'break-word' }} {...props} />
 );
 
 export const DetailPanelFieldMonospaceValue = (props: React.ComponentProps<typeof Text>) => (
+  // eslint-disable-next-line no-restricted-syntax
   <Text code style={{ wordBreak: 'break-word' }} {...props} />
 );
 
 export const DetailPanelDivider = (props: React.ComponentProps<typeof Divider>) => (
+  // eslint-disable-next-line no-restricted-syntax
   <Divider style={{ margin: '24px 0' }} {...props} />
 );

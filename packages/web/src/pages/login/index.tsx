@@ -450,14 +450,19 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      <Flex style={{ width: '100%', maxWidth: 520 }}>
-        <Flex vertical gap={24} style={{ width: '100%' }}>
+      <Flex className="w-full">
+        <Flex vertical gap={24} className="w-full">
           <Flex
-            style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 64 }}
+            justify="center"
+            align="center"
+            className="flex"
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ height: 64 }}
           >
             <img
               src={logoBlack}
               alt="Rediacc Logo"
+              // eslint-disable-next-line no-restricted-syntax
               style={{ height: 40, width: 'auto', objectFit: 'contain' }}
             />
           </Flex>
@@ -465,7 +470,6 @@ const LoginPage: React.FC = () => {
           {error && (
             <Alert
               type="error"
-              style={{ fontSize: 14, fontWeight: 500 }}
               message={error}
               showIcon
               closable
@@ -488,10 +492,7 @@ const LoginPage: React.FC = () => {
             <Form.Item
               name="email"
               label={
-                <label
-                  htmlFor="login-email-input"
-                  style={{ fontSize: 14, fontWeight: 500, display: 'block' }}
-                >
+                <label htmlFor="login-email-input" className="block">
                   {t('auth:login.email')}
                 </label>
               }
@@ -515,10 +516,7 @@ const LoginPage: React.FC = () => {
             <Form.Item
               name="password"
               label={
-                <label
-                  htmlFor="login-password-input"
-                  style={{ fontSize: 14, fontWeight: 500, display: 'block' }}
-                >
+                <label htmlFor="login-password-input" className="block">
                   {t('auth:login.password')}
                 </label>
               }
@@ -544,14 +542,13 @@ const LoginPage: React.FC = () => {
                 <Form.Item
                   name="masterPassword"
                   label={
-                    <label
-                      htmlFor="login-master-password-input"
-                      style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                    >
-                      <Typography.Text>{t('auth:login.masterPassword')}</Typography.Text>
-                      <Tooltip title={t('auth:login.masterPasswordTooltip')}>
-                        <InfoCircleOutlined />
-                      </Tooltip>
+                    <label htmlFor="login-master-password-input">
+                      <Flex align="center" gap={8} className="flex">
+                        <Typography.Text>{t('auth:login.masterPassword')}</Typography.Text>
+                        <Tooltip title={t('auth:login.masterPasswordTooltip')}>
+                          <InfoCircleOutlined />
+                        </Tooltip>
+                      </Flex>
                     </label>
                   }
                   validateStatus={
@@ -582,11 +579,10 @@ const LoginPage: React.FC = () => {
                 vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
                 showAdvancedOptions
               ) && (
-                <Flex style={{ textAlign: 'center' }} justify="center">
+                <Flex justify="center">
                   <Button
                     type="text"
                     size="small"
-                    style={{ height: 'auto' }}
                     onClick={() => {
                       setShowAdvancedOptions(true);
                       setTimeout(() => {
@@ -621,7 +617,7 @@ const LoginPage: React.FC = () => {
             </Form.Item>
           </Form>
 
-          <Flex style={{ textAlign: 'center' }} justify="center">
+          <Flex justify="center">
             <Typography.Text>
               {t('auth:login.noAccount')}{' '}
               <a
@@ -630,12 +626,7 @@ const LoginPage: React.FC = () => {
                 role="button"
                 aria-label={t('auth:login.register')}
                 data-testid="login-register-link"
-                style={{
-                  fontWeight: 500,
-                  textDecoration: 'none',
-                  cursor: 'pointer',
-                  display: 'inline-block',
-                }}
+                className="cursor-pointer inline-block"
               >
                 {t('auth:login.register')}
               </a>
@@ -643,10 +634,10 @@ const LoginPage: React.FC = () => {
           </Flex>
 
           {/* Endpoint selector and version display */}
-          <Flex vertical style={{ textAlign: 'center' }} align="center">
+          <Flex vertical align="center">
             {/* Endpoint Selector - Power Mode Feature */}
             {endpointSelectorVisible && (
-              <Flex style={{ textAlign: 'center' }} justify="center">
+              <Flex justify="center">
                 <EndpointSelector onHealthCheckComplete={handleHealthCheckComplete} />
               </Flex>
             )}
@@ -674,7 +665,7 @@ const LoginPage: React.FC = () => {
         footer={null}
         className={ModalSize.Medium}
       >
-        <Flex vertical gap={16} style={{ width: '100%' }}>
+        <Flex vertical gap={16} className="w-full">
           <Alert
             message={t('login.twoFactorAuth.required')}
             description={t('login.twoFactorAuth.description')}
@@ -694,7 +685,6 @@ const LoginPage: React.FC = () => {
               ]}
             >
               <Input
-                style={{ fontSize: 16, letterSpacing: '0.5em', textAlign: 'center' }}
                 placeholder={t('login.twoFactorAuth.codePlaceholder')}
                 value={twoFACode}
                 onChange={(e) => setTwoFACode(e.target.value)}
@@ -704,8 +694,8 @@ const LoginPage: React.FC = () => {
               />
             </Form.Item>
 
-            <Form.Item style={{ marginBottom: 0 }}>
-              <Flex justify="flex-end" style={{ width: '100%' }}>
+            <Form.Item>
+              <Flex justify="flex-end" className="w-full">
                 <Button
                   onClick={() => {
                     setShowTFAModal(false);

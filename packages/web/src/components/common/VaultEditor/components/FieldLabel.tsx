@@ -8,7 +8,10 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({ label, description }) =>
     {label}
     {description && (
       <Tooltip title={description}>
-        <InfoCircleOutlined style={{ fontSize: 12 }} />
+        <InfoCircleOutlined
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ fontSize: 12 }}
+        />
       </Tooltip>
     )}
   </Flex>

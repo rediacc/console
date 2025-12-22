@@ -84,7 +84,7 @@ const AuditPage = () => {
     const IconComponent = config.icon;
 
     return (
-      <Typography.Text style={{ display: 'inline-flex' }}>
+      <Typography.Text className="inline-flex">
         <IconComponent />
       </Typography.Text>
     );
@@ -185,16 +185,14 @@ const AuditPage = () => {
 
   return (
     <Flex vertical>
-      <Flex vertical gap={24} style={{ width: '100%' }}>
+      <Flex vertical gap={24} className="w-full">
         {/* Filters */}
         <Card data-testid="audit-filter-card">
           <Space direction="vertical" size="large">
             <Row gutter={[24, 16]}>
               <Col xs={24} sm={24} md={8}>
-                <Flex vertical gap={8} style={{ width: '100%' }}>
-                  <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>
-                    {t('system:audit.filters.dateRange')}
-                  </Typography.Text>
+                <Flex vertical gap={8} className="w-full">
+                  <Typography.Text>{t('system:audit.filters.dateRange')}</Typography.Text>
                   <RangePicker
                     data-testid="audit-filter-date"
                     value={filters.dateRange}
@@ -243,10 +241,8 @@ const AuditPage = () => {
                 </Flex>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <Flex vertical gap={8} style={{ width: '100%' }}>
-                  <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>
-                    {t('system:audit.filters.entityType')}
-                  </Typography.Text>
+                <Flex vertical gap={8} className="w-full">
+                  <Typography.Text>{t('system:audit.filters.entityType')}</Typography.Text>
                   <Select
                     data-testid="audit-filter-entity"
                     placeholder={t('system:audit.filters.allEntities')}
@@ -261,10 +257,8 @@ const AuditPage = () => {
                 </Flex>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <Flex vertical gap={8} style={{ width: '100%' }}>
-                  <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>
-                    {t('system:audit.filters.search')}
-                  </Typography.Text>
+                <Flex vertical gap={8} className="w-full">
+                  <Typography.Text>{t('system:audit.filters.search')}</Typography.Text>
                   <Input
                     data-testid="audit-filter-search"
                     placeholder={t('system:audit.filters.searchPlaceholder')}
@@ -277,15 +271,14 @@ const AuditPage = () => {
                 </Flex>
               </Col>
               <Col xs={24} sm={12} md={2}>
-                <Flex vertical gap={8} style={{ width: '100%' }}>
-                  <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>
-                    {t('system:audit.filters.actions')}
-                  </Typography.Text>
+                <Flex vertical gap={8} className="w-full">
+                  <Typography.Text>{t('system:audit.filters.actions')}</Typography.Text>
                   <Button
                     data-testid="audit-refresh-button"
                     icon={<ReloadOutlined />}
                     onClick={() => refetch()}
                     loading={isLoading}
+                    // eslint-disable-next-line no-restricted-syntax
                     style={{
                       width: '100%',
                       minHeight: 48,
@@ -299,10 +292,8 @@ const AuditPage = () => {
                 </Flex>
               </Col>
               <Col xs={24} sm={12} md={2}>
-                <Flex vertical gap={8} style={{ width: '100%' }}>
-                  <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>
-                    {t('system:audit.filters.export')}
-                  </Typography.Text>
+                <Flex vertical gap={8} className="w-full">
+                  <Typography.Text>{t('system:audit.filters.export')}</Typography.Text>
                   <Tooltip
                     title={
                       !filteredLogs || filteredLogs.length === 0
@@ -317,6 +308,7 @@ const AuditPage = () => {
                       <Button
                         data-testid="audit-export-button"
                         icon={<DownloadOutlined />}
+                        // eslint-disable-next-line no-restricted-syntax
                         style={{
                           width: '100%',
                           minHeight: 48,
@@ -385,7 +377,7 @@ const AuditPage = () => {
                             : t('system:audit.empty.noLogsInRange')}
                       </Typography.Text>
                       {!isError && (
-                        <Button type="link" style={{ height: 'auto' }} onClick={clearAllFilters}>
+                        <Button type="link" onClick={clearAllFilters}>
                           {t('system:audit.empty.clearFilters')}
                         </Button>
                       )}

@@ -20,7 +20,7 @@ const DashboardAlertsWidget: React.FC<DashboardAlertsWidgetProps> = ({
   }
 
   return (
-    <Flex vertical gap={24} style={{ width: '100%' }}>
+    <Flex vertical gap={24} className="w-full">
       {showSubscriptionAlert && dashboard.activeSubscription && (
         <Alert
           message="Subscription Expiring Soon"

@@ -131,7 +131,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
     return (
       <Flex align="center" justify="space-between">
         <Space>
-          <Typography.Text style={{ fontWeight: 500 }}>
+          <Typography.Text>
             {t('machines:bulkActions.selected', { count: selectedMachines.length })}
           </Typography.Text>
           <Button onClick={() => setSelectedMachines([])} data-testid="ds-machines-clear-selection">
@@ -191,7 +191,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
               onChange={(value) => setAssignmentFilter(value as AssignmentFilter)}
               suffixIcon={<FilterOutlined />}
               data-testid="ds-machines-filter-assignment"
-              style={{ width: '100%' }}
+              className="w-full"
               options={[
                 { value: 'all', label: t('machines.filters.allStatuses') },
                 { value: 'available', label: t('assignment.available') },
@@ -203,7 +203,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
           </Col>
 
           <Col xs={24} lg={8}>
-            <Flex style={{ textAlign: 'right' }}>
+            <Flex>
               <Space>
                 <Button
                   icon={<ExportOutlined />}

@@ -31,8 +31,8 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
 
     return filtered.map((team) => ({
       label: (
-        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-          <Flex align="center" style={{ display: 'inline-flex' }}>
+        <Flex align="center" gap={8} wrap className="inline-flex">
+          <Flex align="center" className="inline-flex">
             <TeamOutlined />
           </Flex>
           <Typography.Text>{team.teamName}</Typography.Text>
@@ -46,7 +46,9 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
   return (
     <Select
       mode="multiple"
-      style={{ width: '100%', ...style }}
+      className="w-full"
+      // eslint-disable-next-line no-restricted-syntax
+      style={style}
       placeholder={placeholder}
       value={selectedTeams}
       onChange={(values) => onChange(values as string[])}
@@ -61,8 +63,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
         const { value, closable, onClose } = props;
         return (
           <Tag
-            color="processing"
-            style={{ display: 'inline-flex', alignItems: 'center' }}
+            className="inline-flex items-center"
             closable={closable}
             onClose={onClose}
             data-testid={`team-selector-tag-${value}`}
@@ -89,11 +90,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       )}
       maxTagCount="responsive"
       maxTagPlaceholder={(omittedValues: unknown[]) => (
-        <Tag
-          color="processing"
-          style={{ display: 'inline-flex', alignItems: 'center' }}
-          data-testid="team-selector-more-tag"
-        >
+        <Tag className="inline-flex items-center" data-testid="team-selector-more-tag">
           +{omittedValues.length} more
         </Tag>
       )}

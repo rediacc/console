@@ -49,7 +49,6 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
   return (
     <Space size={8} wrap>
       <Select
-        style={{ minWidth: 150 }}
         placeholder={t('filters.teamPlaceholder')}
         value={filters.teamName ?? undefined}
         onChange={(value) => {
@@ -62,7 +61,6 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         data-testid="queue-filter-team"
       />
       <Select
-        style={{ minWidth: 150 }}
         placeholder={t('filters.machinePlaceholder')}
         value={filters.machineName ?? undefined}
         onChange={(value) => onFilterChange('machineName', typeof value === 'string' ? value : '')}
@@ -74,7 +72,6 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         data-testid="queue-filter-machine"
       />
       <Select
-        style={{ minWidth: 130 }}
         placeholder={t('filters.regionPlaceholder')}
         value={filters.regionName ?? undefined}
         onChange={(value) => onFilterChange('regionName', typeof value === 'string' ? value : '')}
@@ -83,7 +80,6 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         data-testid="queue-filter-region"
       />
       <Select
-        style={{ minWidth: 130 }}
         placeholder={t('filters.bridgePlaceholder')}
         value={filters.bridgeName ?? undefined}
         onChange={(value) => onFilterChange('bridgeName', typeof value === 'string' ? value : '')}
@@ -100,7 +96,6 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
       />
       <Select
         mode="multiple"
-        style={{ minWidth: 160 }}
         placeholder={t('filters.statusPlaceholder')}
         value={filters.statusFilter}
         onChange={(values) => {

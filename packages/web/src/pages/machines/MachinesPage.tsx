@@ -449,6 +449,7 @@ const MachinesPage: React.FC = () => {
       <Flex vertical>
         <Card>
           <Flex justify="space-between" align="center" wrap gap={12}>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <Flex style={{ flex: 1, minWidth: 260 }}>
               <TeamSelector
                 data-testid="machines-team-selector"
@@ -484,13 +485,14 @@ const MachinesPage: React.FC = () => {
             )}
           </Flex>
 
-          <Flex vertical style={{ marginTop: 16 }}>
+          <Flex vertical>
             {selectedTeams.length === 0 ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={t('teams.selectTeamPrompt')}
-                style={{ padding: '24px 0' }}
-              />
+              <>
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={t('teams.selectTeamPrompt')}
+                />
+              </>
             ) : (
               <SplitResourceView
                 type="machine"

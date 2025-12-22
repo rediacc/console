@@ -21,12 +21,7 @@ export const buildMachineTableColumns = (
     key: 'teamName',
     width: 150,
     sorter: createSorter<Machine>('teamName'),
-    renderWrapper: (content) =>
-      content ? (
-        <Tag bordered={false} color="processing" style={{ fontSize: 14, lineHeight: 1.4 }}>
-          {content}
-        </Tag>
-      ) : null,
+    renderWrapper: (content) => (content ? <Tag bordered={false}>{content}</Tag> : null),
   }),
   createTruncatedColumn<Machine>({
     title: t('machines:bridge'),
@@ -34,12 +29,7 @@ export const buildMachineTableColumns = (
     key: 'bridgeName',
     width: 150,
     sorter: createSorter<Machine>('bridgeName'),
-    renderWrapper: (content) =>
-      content ? (
-        <Tag bordered={false} color="processing" style={{ fontSize: 14, lineHeight: 1.4 }}>
-          {content}
-        </Tag>
-      ) : null,
+    renderWrapper: (content) => (content ? <Tag bordered={false}>{content}</Tag> : null),
   }),
   {
     title: t('ceph:assignment.status'),

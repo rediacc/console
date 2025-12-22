@@ -53,10 +53,8 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
         </Flex>
       )}
       <Flex data-testid="pip-install-command-text" align="center" justify="space-between">
-        <Typography.Text style={{ fontFamily: 'monospace' }}>
-          <Typography.Text type={isComment ? 'secondary' : undefined} style={{ fontSize: 12 }}>
-            {command}
-          </Typography.Text>
+        <Typography.Text>
+          <Typography.Text type={isComment ? 'secondary' : undefined}>{command}</Typography.Text>
         </Typography.Text>
         {showCopy && (
           <Button
@@ -113,7 +111,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   };
 
   const renderQuickInstall = () => (
-    <Flex vertical gap={24} style={{ width: '100%' }}>
+    <Flex vertical gap={24} className="w-full">
       <Alert
         message={t('resources:pipInstall.quickInstallTitle')}
         description={t('resources:pipInstall.quickInstallDesc')}
@@ -196,9 +194,9 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         {
           key: 'venv',
           label: t('resources:pipInstall.virtualEnvironment'),
-          extra: <Tag color="green">{t('resources:pipInstall.recommended')}</Tag>,
+          extra: <Tag>{t('resources:pipInstall.recommended')}</Tag>,
           children: (
-            <Flex vertical style={{ width: '100%' }}>
+            <Flex vertical className="w-full">
               <Text>{virtualEnvInstructions.description}</Text>
               {virtualEnvInstructions.commands.map((cmd, index) => (
                 <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
@@ -210,7 +208,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           key: 'version',
           label: t('resources:pipInstall.specificVersion'),
           children: (
-            <Flex vertical style={{ width: '100%' }}>
+            <Flex vertical className="w-full">
               <Text>{t('resources:pipInstall.versionDesc')}</Text>
               <CommandDisplay command="pip install rediacc==1.0.0" />
               <CommandDisplay command="pip install rediacc>=1.0.0,<2.0.0" />
@@ -225,7 +223,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           key: 'uninstall',
           label: t('resources:pipInstall.uninstall'),
           children: (
-            <Flex vertical style={{ width: '100%' }}>
+            <Flex vertical className="w-full">
               <Text>{uninstallInstructions.description}</Text>
               {uninstallInstructions.commands.map((cmd, index) => (
                 <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
@@ -238,7 +236,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   );
 
   const renderTroubleshooting = () => (
-    <Flex vertical gap={24} style={{ width: '100%' }}>
+    <Flex vertical gap={24} className="w-full">
       <Alert
         message={t('resources:pipInstall.commonIssues')}
         type="info"
@@ -253,12 +251,12 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           {
             key: 'pip-not-found',
             label: t('resources:pipInstall.pipNotFound'),
-            extra: <Tag color="red">{t('resources:pipInstall.error')}</Tag>,
+            extra: <Tag>{t('resources:pipInstall.error')}</Tag>,
             children: (() => {
               const troubleshooting =
                 pipInstallationService.getTroubleshootingCommands('pip-not-found');
               return (
-                <Flex vertical style={{ width: '100%' }}>
+                <Flex vertical className="w-full">
                   <Text>{troubleshooting.description}</Text>
                   {troubleshooting.commands.map((cmd, index) => (
                     <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
@@ -270,12 +268,12 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           {
             key: 'permission',
             label: t('resources:pipInstall.permissionDenied'),
-            extra: <Tag color="warning">{t('resources:pipInstall.warning')}</Tag>,
+            extra: <Tag>{t('resources:pipInstall.warning')}</Tag>,
             children: (() => {
               const troubleshooting =
                 pipInstallationService.getTroubleshootingCommands('permission-denied');
               return (
-                <Flex vertical style={{ width: '100%' }}>
+                <Flex vertical className="w-full">
                   <Text>{troubleshooting.description}</Text>
                   {troubleshooting.commands.map((cmd, index) => (
                     <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
@@ -291,7 +289,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
               const troubleshooting =
                 pipInstallationService.getTroubleshootingCommands('python-version');
               return (
-                <Flex vertical style={{ width: '100%' }}>
+                <Flex vertical className="w-full">
                   <Text>{troubleshooting.description}</Text>
                   {troubleshooting.commands.map((cmd, index) => (
                     <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
@@ -306,7 +304,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
       <Alert
         message={t('resources:pipInstall.stillNeedHelp')}
         description={
-          <Flex vertical style={{ width: '100%' }}>
+          <Flex vertical className="w-full">
             <Text>
               {t('resources:pipInstall.checkDocs')}:{' '}
               <a

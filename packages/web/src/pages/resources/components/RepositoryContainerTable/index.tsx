@@ -419,31 +419,27 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     key: 'status',
 
     statusMap: {
-      running: { icon: <CheckCircleOutlined />, label: t('machines:connected'), color: 'success' },
+      running: { icon: <CheckCircleOutlined />, label: t('machines:connected') },
 
       paused: {
         icon: <PauseCircleOutlined />,
         label: t('resources:containers.containerStatusPaused'),
-        color: 'warning',
       },
 
       exited: {
         icon: <DisconnectOutlined />,
         label: t('machines:connectionFailed'),
-        color: 'default',
       },
 
       restarting: {
         icon: <ReloadOutlined />,
         label: t('resources:containers.containerStatusRestarting'),
-        color: 'blue',
       },
     },
 
     defaultConfig: {
       icon: <DisconnectOutlined />,
       label: t('machines:connectionFailed'),
-      color: 'default',
     },
   });
 
@@ -458,32 +454,27 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
       running: {
         icon: <PlayCircleOutlined />,
         label: t('resources:containers.containerStatusRunning'),
-        color: 'success',
       },
 
       paused: {
         icon: <PauseCircleOutlined />,
         label: t('resources:containers.containerStatusPaused'),
-        color: 'warning',
       },
 
       restarting: {
         icon: <ReloadOutlined />,
         label: t('resources:containers.containerStatusRestarting'),
-        color: 'blue',
       },
 
       exited: {
         icon: <StopOutlined />,
         label: t('resources:containers.containerStatusStopped'),
-        color: 'default',
       },
     },
 
     defaultConfig: {
       icon: <StopOutlined />,
       label: t('resources:containers.containerStatusStopped'),
-      color: 'default',
     },
   });
 
@@ -534,9 +525,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         <Space>
           {stateColumn.render?.(state, record, index) as React.ReactNode}
 
-          {record.status && (
-            <Typography.Text style={{ fontSize: 12 }}>{record.status}</Typography.Text>
-          )}
+          {record.status && <Typography.Text>{record.status}</Typography.Text>}
         </Space>
       ),
     },
@@ -562,15 +551,13 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         return (
           <Space direction="vertical" size={4}>
             {record.port_mappings.slice(0, 2).map((pm, idx) => (
-              <Typography.Text key={idx} style={{ fontSize: 12 }}>
+              <Typography.Text key={idx}>
                 {pm.host_port}:{pm.container_port}/{pm.protocol}
               </Typography.Text>
             ))}
 
             {record.port_mappings.length > 2 && (
-              <Typography.Text style={{ fontSize: 12 }}>
-                +{record.port_mappings.length - 2} more
-              </Typography.Text>
+              <Typography.Text>+{record.port_mappings.length - 2} more</Typography.Text>
             )}
           </Space>
         );
@@ -764,7 +751,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
           </Flex>
         </Flex>
       ) : (
-        <Flex data-testid="no-containers" style={{ textAlign: 'center' }} justify="center">
+        <Flex data-testid="no-containers" className="text-center" justify="center">
           <Typography.Text>{t('resources:containers.noContainers')}</Typography.Text>
         </Flex>
       )}

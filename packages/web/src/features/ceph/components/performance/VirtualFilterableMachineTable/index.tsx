@@ -110,7 +110,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
       {
         value: 'ALL',
         label: (
-          <Badge count={assignmentCounts.ALL} showZero color="blue">
+          <Badge count={assignmentCounts.ALL} showZero>
             <Typography.Text>All Machines</Typography.Text>
           </Badge>
         ),
@@ -118,7 +118,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
       {
         value: 'AVAILABLE',
         label: (
-          <Badge count={assignmentCounts.AVAILABLE} showZero color="green">
+          <Badge count={assignmentCounts.AVAILABLE} showZero>
             <Typography.Text>Available</Typography.Text>
           </Badge>
         ),
@@ -126,7 +126,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
       {
         value: 'CLUSTER',
         label: (
-          <Badge count={assignmentCounts.CLUSTER} showZero color="blue">
+          <Badge count={assignmentCounts.CLUSTER} showZero>
             <Typography.Text>Assigned to Cluster</Typography.Text>
           </Badge>
         ),
@@ -134,7 +134,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
       {
         value: 'IMAGE',
         label: (
-          <Badge count={assignmentCounts.IMAGE} showZero color="purple">
+          <Badge count={assignmentCounts.IMAGE} showZero>
             <Typography.Text>Assigned to Image</Typography.Text>
           </Badge>
         ),
@@ -142,7 +142,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
       {
         value: 'CLONE',
         label: (
-          <Badge count={assignmentCounts.CLONE} showZero color="orange">
+          <Badge count={assignmentCounts.CLONE} showZero>
             <Typography.Text>Assigned to Clone</Typography.Text>
           </Badge>
         ),
@@ -166,6 +166,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
       <Flex vertical gap={8}>
         <Flex align="center" wrap gap={8}>
           <Input
+            // eslint-disable-next-line no-restricted-syntax
             style={{ width: 'min(360px, 100%)', maxWidth: '100%' }}
             data-testid="filterable-machine-search"
             prefix={<SearchOutlined />}
@@ -176,6 +177,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           />
 
           <Select
+            // eslint-disable-next-line no-restricted-syntax
             style={{ width: 'min(200px, 100%)' }}
             data-testid="filterable-machine-filter-assignment"
             value={assignmentFilter}
@@ -185,6 +187,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           />
 
           <Select
+            // eslint-disable-next-line no-restricted-syntax
             style={{ width: 'min(200px, 100%)' }}
             data-testid="filterable-machine-page-size"
             value={pageSize}
@@ -194,10 +197,9 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
 
           {onRefresh && (
             <Button
+              className="inline-flex items-center justify-center"
+              // eslint-disable-next-line no-restricted-syntax
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
                 minWidth: 48,
                 minHeight: 40,
               }}
@@ -212,7 +214,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           )}
         </Flex>
 
-        <Typography.Text style={{ fontSize: 14 }} data-testid="filterable-machine-status">
+        <Typography.Text data-testid="filterable-machine-status">
           Showing {displayedMachines.length} of {filteredMachines.length} machines
           {hasMore && ' (scroll to load more)'}
         </Typography.Text>

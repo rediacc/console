@@ -93,11 +93,11 @@ export interface ActionButtonGroupProps<T> {
 // =============================================================================
 
 const Container: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
-  <Flex style={{ display: 'inline-flex', alignItems: 'center' }} {...props} />
+  <Flex align="center" className="inline-flex" {...props} />
 );
 
 const ButtonPlaceholder: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
-  <Flex style={{ width: 40, minHeight: 40, flexShrink: 0 }} {...props} />
+  <Flex className="flex-shrink-0" {...props} />
 );
 
 // =============================================================================

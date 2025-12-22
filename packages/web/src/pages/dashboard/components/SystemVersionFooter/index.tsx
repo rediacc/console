@@ -39,45 +39,35 @@ const SystemVersionFooter: React.FC = () => {
   }
 
   const environment = apiHealth?.environment || 'Unknown';
-  const isProduction = environment === 'Production';
+  const _isProduction = environment === 'Production';
   const uptime = apiHealth?.uptime;
 
   return (
-    <Flex align="center" justify="center" wrap data-testid="system-version-footer">
-      <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+    <Flex align="center" justify="center" gap={8} data-testid="system-version-footer">
+      <Flex align="center" gap={8} className="inline-flex">
         <DesktopOutlined />
-        <Typography.Text style={{ fontSize: 12 }}>Console</Typography.Text>
-        <Typography.Text style={{ fontSize: 12, fontWeight: 500 }} data-testid="ui-version">
-          {uiVersion}
-        </Typography.Text>
+        <Typography.Text>Console</Typography.Text>
+        <Typography.Text data-testid="ui-version">{uiVersion}</Typography.Text>
       </Flex>
 
-      <Typography.Text style={{ fontSize: 14 }}>|</Typography.Text>
+      <Typography.Text>|</Typography.Text>
 
-      <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+      <Flex align="center" gap={8} className="inline-flex">
         <CloudServerOutlined />
-        <Typography.Text style={{ fontSize: 12 }}>API</Typography.Text>
-        <Typography.Text style={{ fontSize: 12, fontWeight: 500 }} data-testid="api-version">
-          {apiVersion}
-        </Typography.Text>
-        <Tag
-          bordered={false}
-          color={isProduction ? 'success' : 'warning'}
-          data-testid="environment-tag"
-        >
+        <Typography.Text>API</Typography.Text>
+        <Typography.Text data-testid="api-version">{apiVersion}</Typography.Text>
+        <Tag bordered={false} data-testid="environment-tag">
           {environment}
         </Tag>
       </Flex>
 
       {uptime && (
         <>
-          <Typography.Text style={{ fontSize: 14 }}>|</Typography.Text>
+          <Typography.Text>|</Typography.Text>
           <Tooltip title="API Uptime">
-            <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+            <Flex align="center" gap={8} className="inline-flex">
               <ClockCircleOutlined />
-              <Typography.Text style={{ fontSize: 12 }} data-testid="api-uptime">
-                {formatUptime(uptime)}
-              </Typography.Text>
+              <Typography.Text data-testid="api-uptime">{formatUptime(uptime)}</Typography.Text>
             </Flex>
           </Tooltip>
         </>

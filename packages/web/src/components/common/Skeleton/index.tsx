@@ -27,6 +27,7 @@ export interface SkeletonTextProps {
 export const SkeletonText: React.FC<SkeletonTextProps> = ({ width, height }) => {
   return (
     <Flex
+      // eslint-disable-next-line no-restricted-syntax
       style={{
         ...baseStyle,
         width: width ?? '100%',
@@ -43,9 +44,19 @@ export interface SkeletonRowProps {
 
 export const SkeletonRow: React.FC<SkeletonRowProps> = ({ columns = 4 }) => {
   return (
-    <Flex align="center" style={{ padding: '12px 0', width: '100%' }}>
+    <Flex
+      align="center"
+      className="w-full"
+      // eslint-disable-next-line no-restricted-syntax
+      style={{ padding: '12px 0' }}
+    >
       {Array.from({ length: columns }).map((_, index) => (
-        <Flex key={index} style={{ ...baseStyle, height: 20, flex: 1 }} />
+        <Flex
+          key={index}
+          className="flex-1"
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ ...baseStyle, height: 20 }}
+        />
       ))}
     </Flex>
   );
@@ -60,6 +71,7 @@ export const SkeletonCard: React.FC<SkeletonCardProps> = ({ lines = 3 }) => {
   return (
     <Flex
       vertical
+      // eslint-disable-next-line no-restricted-syntax
       style={{
         borderRadius: 6,
         padding: 24,
@@ -73,13 +85,28 @@ export const SkeletonCard: React.FC<SkeletonCardProps> = ({ lines = 3 }) => {
 };
 
 export const SkeletonButton: React.FC = () => {
-  return <Flex style={{ ...baseStyle, height: 40, width: 120, borderRadius: 6 }} />;
+  return (
+    <Flex
+      // eslint-disable-next-line no-restricted-syntax
+      style={{ ...baseStyle, height: 40, width: 120, borderRadius: 6 }}
+    />
+  );
 };
 
 export const SkeletonInput: React.FC = () => {
-  return <Flex style={{ ...baseStyle, height: 40, width: '100%' }} />;
+  return (
+    <Flex
+      className="w-full"
+      // eslint-disable-next-line no-restricted-syntax
+      style={{ ...baseStyle, height: 40 }}
+    />
+  );
 };
 
 export const SkeletonBase = (props: React.HTMLAttributes<HTMLDivElement>) => (
-  <Flex style={{ ...baseStyle, ...props.style }} {...props} />
+  <Flex
+    // eslint-disable-next-line no-restricted-syntax
+    style={{ ...baseStyle, ...props.style }}
+    {...props}
+  />
 );

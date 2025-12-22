@@ -117,18 +117,9 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
     return (
       <Flex
         data-testid="split-resource-view-container"
-        style={{
-          display: 'flex',
-          height: '100%',
-          width: '100%',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
+        className="h-full w-full relative overflow-hidden"
       >
-        <Flex
-          data-testid="split-resource-view-left-panel"
-          style={{ width: '100%', height: '100%', overflow: 'auto', minWidth: 240 }}
-        >
+        <Flex data-testid="split-resource-view-left-panel" className="w-full h-full overflow-auto">
           <MachineTable
             {...props}
             onRowClick={handleMachineSelect}

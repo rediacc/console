@@ -22,8 +22,8 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
         sorter: createSorter<CephClusterMachine>('machineName'),
         render: (name: string) => (
           <Flex align="center" gap={8}>
-            <DesktopOutlined style={{ fontSize: 16 }} />
-            <Typography.Text style={{ fontWeight: 400 }}>{name}</Typography.Text>
+            <DesktopOutlined />
+            <Typography.Text>{name}</Typography.Text>
           </Flex>
         ),
       },
@@ -32,11 +32,7 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
         dataIndex: 'bridgeName',
         key: 'bridgeName',
         sorter: createSorter<CephClusterMachine>('bridgeName'),
-        render: (name: string) => (
-          <Tag bordered={false} color="processing">
-            {name}
-          </Tag>
-        ),
+        render: (name: string) => <Tag bordered={false}>{name}</Tag>,
       },
       {
         title: t('machines.assignedDate'),
@@ -52,13 +48,11 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
 
   return (
     <Flex vertical data-testid={`cluster-expanded-row-${cluster.clusterName}`}>
-      <Typography.Title level={4} style={{ fontSize: 16 }}>
-        {t('clusters.assignedMachines')}
-      </Typography.Title>
+      <Typography.Title level={4}>{t('clusters.assignedMachines')}</Typography.Title>
       {machines.length === 0 && !isLoading ? (
         <Empty description={t('clusters.noMachinesAssigned')} />
       ) : (
-        <Flex style={{ overflow: 'hidden' }}>
+        <Flex className="overflow-hidden">
           <Table<CephClusterMachine>
             data-testid={`ds-cluster-machines-table-${cluster.clusterName}`}
             columns={machineColumns}

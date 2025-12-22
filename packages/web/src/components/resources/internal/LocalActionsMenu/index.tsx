@@ -178,9 +178,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         key: 'container-terminal',
         icon: createMenuIcon(CodeOutlined),
         label: (
-          <Typography.Text style={{ fontSize: 14 }}>
-            {t('resources:localActions.openContainerTerminal')}
-          </Typography.Text>
+          <Typography.Text>{t('resources:localActions.openContainerTerminal')}</Typography.Text>
         ),
         onClick: () => handleOpenInDesktop(undefined, 'terminal'),
         'data-testid': `local-actions-container-terminal-${containerId}`,
@@ -194,11 +192,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
     items.push({
       key: 'container-logs',
       icon: createMenuIcon(BuildOutlined),
-      label: (
-        <Typography.Text style={{ fontSize: 14 }}>
-          {t('resources:localActions.viewContainerLogs')}
-        </Typography.Text>
-      ),
+      label: <Typography.Text>{t('resources:localActions.viewContainerLogs')}</Typography.Text>,
       onClick: () => handleOpenInDesktop(undefined, 'logs'),
       'data-testid': `local-actions-container-logs-${containerId}`,
     });
@@ -207,11 +201,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       items.push({
         key: 'container-stats',
         icon: createMenuIcon(BuildOutlined),
-        label: (
-          <Typography.Text style={{ fontSize: 14 }}>
-            {t('resources:localActions.containerStats')}
-          </Typography.Text>
-        ),
+        label: <Typography.Text>{t('resources:localActions.containerStats')}</Typography.Text>,
         onClick: () => handleOpenInDesktop(undefined, 'stats'),
         'data-testid': `local-actions-container-stats-${containerId}`,
       });
@@ -224,33 +214,21 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
     {
       key: 'open',
       icon: createMenuIcon(DesktopOutlined),
-      label: (
-        <Typography.Text style={{ fontSize: 14 }}>
-          {t('resources:localActions.openInDesktop')}
-        </Typography.Text>
-      ),
+      label: <Typography.Text>{t('resources:localActions.openInDesktop')}</Typography.Text>,
       onClick: () => handleOpenInDesktop(),
       'data-testid': `local-actions-open-${repository}`,
     },
     {
       key: 'vscode',
       icon: createMenuIcon(FileTextOutlined),
-      label: (
-        <Typography.Text style={{ fontSize: 14 }}>
-          {t('resources:localActions.openInVSCode')}
-        </Typography.Text>
-      ),
+      label: <Typography.Text>{t('resources:localActions.openInVSCode')}</Typography.Text>,
       onClick: () => handleOpenInDesktop('vscode'),
       'data-testid': `local-actions-vscode-${repository}`,
     },
     {
       key: 'terminal',
       icon: createMenuIcon(CodeOutlined),
-      label: (
-        <Typography.Text style={{ fontSize: 14 }}>
-          {t('resources:localActions.openTerminal')}
-        </Typography.Text>
-      ),
+      label: <Typography.Text>{t('resources:localActions.openTerminal')}</Typography.Text>,
       onClick: () => handleOpenInDesktop('terminal'),
       'data-testid': `local-actions-terminal-${repository}`,
     },
@@ -258,11 +236,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
     {
       key: 'cli-commands',
       icon: createMenuIcon(BuildOutlined),
-      label: (
-        <Typography.Text style={{ fontSize: 14 }}>
-          {t('resources:localActions.showCLICommands')}
-        </Typography.Text>
-      ),
+      label: <Typography.Text>{t('resources:localActions.showCLICommands')}</Typography.Text>,
       onClick: () => commandModal.open(),
       'data-testid': `local-actions-cli-commands-${repository}`,
     },
@@ -294,7 +268,9 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
             disabled={disabled || isCheckingProtocol}
             data-testid={triggerTestId}
             aria-label={tooltipLabel}
-            style={{ display: 'inline-flex', alignItems: 'center', minHeight: 40 }}
+            className="inline-flex items-center"
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ minHeight: 40 }}
           />
         </Tooltip>
       </Dropdown>

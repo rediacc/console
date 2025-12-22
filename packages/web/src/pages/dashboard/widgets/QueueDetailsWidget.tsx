@@ -38,10 +38,10 @@ const machineIssueColumns: ColumnsType<QueueMachineIssue> = [
     key: 'status',
     width: 200,
     render: (_: unknown, record: QueueMachineIssue) => (
-      <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-        {(record.staleItems || 0) > 0 && <Tag color="warning">{record.staleItems} stale</Tag>}
-        <Tag color="processing">{record.pendingItems || 0} pending</Tag>
-        <Tag color="processing">{record.activeItems || 0} active</Tag>
+      <Flex align="center" gap={8} wrap className="inline-flex">
+        {(record.staleItems || 0) > 0 && <Tag>{record.staleItems} stale</Tag>}
+        <Tag>{record.pendingItems || 0} pending</Tag>
+        <Tag>{record.activeItems || 0} active</Tag>
       </Flex>
     ),
   },
@@ -63,7 +63,7 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
   return (
     <Card
       title={
-        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+        <Flex align="center" gap={8} wrap className="inline-flex">
           <RobotOutlined />
           <Typography.Text>Queue Details</Typography.Text>
         </Flex>
@@ -74,27 +74,27 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
         <Col xs={24} lg={8}>
           <Flex vertical>
             <Typography.Text strong>Today&apos;s Activity</Typography.Text>
-            <Flex vertical gap={16} style={{ width: '100%' }}>
+            <Flex vertical gap={16} className="w-full">
               <Flex align="center" justify="space-between">
-                <Typography.Text style={{ fontSize: 12 }}>Created</Typography.Text>
+                <Typography.Text>Created</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-created-today">
                   {queueStats.createdToday || 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
-                <Typography.Text style={{ fontSize: 12 }}>Completed</Typography.Text>
+                <Typography.Text>Completed</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-completed-today">
                   {queueStats.completedToday || 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
-                <Typography.Text style={{ fontSize: 12 }}>Cancelled</Typography.Text>
+                <Typography.Text>Cancelled</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-cancelled-today">
                   {queueStats.cancelledToday || 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
-                <Typography.Text style={{ fontSize: 12 }}>Failed</Typography.Text>
+                <Typography.Text>Failed</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-failed-today">
                   {queueStats.failedToday || 0}
                 </Typography.Text>
@@ -104,7 +104,7 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
         </Col>
 
         <Col xs={24} lg={16}>
-          <Flex vertical gap={16} style={{ width: '100%' }}>
+          <Flex vertical gap={16} className="w-full">
             {teamIssues.length > 0 && (
               <Flex vertical>
                 <Typography.Text strong>
@@ -120,14 +120,14 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                       <List.Item>
                         <Flex align="center" justify="space-between">
                           <Typography.Text strong>{teamIssue.teamName}</Typography.Text>
-                          <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+                          <Flex align="center" gap={8} wrap className="inline-flex">
                             {(teamIssue.staleItems || 0) > 0 && (
-                              <Tag color="warning">
+                              <Tag>
                                 <WarningOutlined /> {teamIssue.staleItems} stale
                               </Tag>
                             )}
-                            <Tag color="processing">{teamIssue.pendingItems || 0} pending</Tag>
-                            <Tag color="processing">{teamIssue.activeItems || 0} active</Tag>
+                            <Tag>{teamIssue.pendingItems || 0} pending</Tag>
+                            <Tag>{teamIssue.activeItems || 0} active</Tag>
                           </Flex>
                         </Flex>
                       </List.Item>
@@ -142,6 +142,7 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                 <Typography.Text strong>
                   <DesktopOutlined /> Machine Queue Status
                 </Typography.Text>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <Flex style={{ width: '100%', overflowX: 'auto' }}>
                   <Table<QueueMachineIssue>
                     size="small"
@@ -161,11 +162,10 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                   <Typography.Text strong>
                     <ThunderboltOutlined /> Priority Breakdown
                   </Typography.Text>
-                  <Flex vertical style={{ width: '100%' }}>
+                  <Flex vertical className="w-full">
                     <Flex align="center" justify="space-between">
                       <Typography.Text>Highest Priority</Typography.Text>
                       <Badge
-                        color="error"
                         count={queueStats.highestPriorityPending ?? 0}
                         showZero
                         data-testid="dashboard-badge-highest-priority"
@@ -174,7 +174,6 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                     <Flex align="center" justify="space-between">
                       <Typography.Text>High Priority</Typography.Text>
                       <Badge
-                        color="warning"
                         count={queueStats.highPriorityPending ?? 0}
                         showZero
                         data-testid="dashboard-badge-high-priority"
@@ -183,7 +182,6 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                     <Flex align="center" justify="space-between">
                       <Typography.Text>Normal Priority</Typography.Text>
                       <Badge
-                        color="processing"
                         count={queueStats.normalPriorityPending ?? 0}
                         showZero
                         data-testid="dashboard-badge-normal-priority"
@@ -192,7 +190,6 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                     <Flex align="center" justify="space-between">
                       <Typography.Text>Low Priority</Typography.Text>
                       <Badge
-                        color="default"
                         count={queueStats.lowPriorityPending ?? 0}
                         showZero
                         data-testid="dashboard-badge-low-priority"

@@ -19,7 +19,7 @@ export const EnumFieldRenderer: React.FC<FieldRendererProps> = ({
     initialValue={fieldDef.default}
   >
     <Select
-      style={{ width: '100%' }}
+      className="w-full"
       placeholder={fieldPlaceholder}
       data-testid={`vault-editor-field-${fieldName}`}
     >

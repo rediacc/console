@@ -8,6 +8,7 @@ const CenteredContainer: React.FC<
     vertical
     justify="center"
     align="center"
+    // eslint-disable-next-line no-restricted-syntax
     style={{
       minHeight: $minHeight ?? 200,
       ...style,
@@ -17,20 +18,11 @@ const CenteredContainer: React.FC<
 );
 
 const FullHeightContainer: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
-  <Flex
-    vertical
-    justify="center"
-    align="center"
-    style={{
-      height: '100%',
-      width: '100%',
-    }}
-    {...props}
-  />
+  <Flex vertical justify="center" align="center" className="h-full w-full" {...props} />
 );
 
 const LoadingText: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
-  <Flex style={{ textAlign: 'center' }} {...props} />
+  <Flex className="text-center" {...props} />
 );
 
 export interface LoadingWrapperProps {

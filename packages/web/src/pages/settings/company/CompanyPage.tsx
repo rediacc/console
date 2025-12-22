@@ -311,17 +311,14 @@ const CompanyPage: React.FC = () => {
       <Flex vertical gap={24}>
         <Card>
           <Flex align="flex-start" justify="space-between" gap={16} wrap>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <Flex vertical gap={8} style={{ flex: 1, minWidth: 240 }}>
               <Flex align="center" gap={8}>
                 <BankOutlined />
-                <Typography.Title level={4} style={{ margin: 0 }}>
-                  {t('company.title')}
-                </Typography.Title>
+                <Typography.Title level={4}>{t('company.title')}</Typography.Title>
               </Flex>
 
-              <Typography.Paragraph style={{ margin: 0 }}>
-                {t('company.description')}
-              </Typography.Paragraph>
+              <Typography.Paragraph>{t('company.description')}</Typography.Paragraph>
             </Flex>
 
             {featureFlags.isEnabled('companyVaultConfiguration') && (
@@ -339,7 +336,7 @@ const CompanyPage: React.FC = () => {
 
         {featureFlags.isEnabled('dangerZone') && (
           <Flex vertical gap={16}>
-            <Typography.Title level={3} style={{ margin: 0 }}>
+            <Typography.Title level={3}>
               <WarningOutlined /> {tSystem('dangerZone.title')}
             </Typography.Title>
 
@@ -347,10 +344,10 @@ const CompanyPage: React.FC = () => {
               <Row gutter={[16, 16]} align="middle">
                 <Col xs={24} lg={16}>
                   <Space direction="vertical" size={8}>
-                    <Typography.Title level={5} style={{ margin: 0 }}>
+                    <Typography.Title level={5}>
                       {tSystem('dangerZone.blockUserRequests.title')}
                     </Typography.Title>
-                    <Typography.Paragraph style={{ margin: 0 }}>
+                    <Typography.Paragraph>
                       {tSystem('dangerZone.blockUserRequests.description')}
                     </Typography.Paragraph>
                   </Space>
@@ -409,15 +406,16 @@ const CompanyPage: React.FC = () => {
                 </Col>
               </Row>
 
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <Divider style={{ margin: '24px 0' }} />
 
               <Row gutter={[16, 16]} align="middle">
                 <Col xs={24} lg={16}>
                   <Space direction="vertical" size={8}>
-                    <Typography.Title level={5} style={{ margin: 0 }}>
+                    <Typography.Title level={5}>
                       {tSystem('dangerZone.exportVaults.title')}
                     </Typography.Title>
-                    <Typography.Paragraph style={{ margin: 0 }}>
+                    <Typography.Paragraph>
                       {tSystem('dangerZone.exportVaults.description')}
                     </Typography.Paragraph>
                   </Space>
@@ -437,15 +435,16 @@ const CompanyPage: React.FC = () => {
                 </Col>
               </Row>
 
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <Divider style={{ margin: '24px 0' }} />
 
               <Row gutter={[16, 16]} align="middle">
                 <Col xs={24} lg={16}>
                   <Space direction="vertical" size={8}>
-                    <Typography.Title level={5} style={{ margin: 0 }}>
+                    <Typography.Title level={5}>
                       {tSystem('dangerZone.exportData.title')}
                     </Typography.Title>
-                    <Typography.Paragraph style={{ margin: 0 }}>
+                    <Typography.Paragraph>
                       {tSystem('dangerZone.exportData.description')}
                     </Typography.Paragraph>
                   </Space>
@@ -465,15 +464,16 @@ const CompanyPage: React.FC = () => {
                 </Col>
               </Row>
 
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <Divider style={{ margin: '24px 0' }} />
 
               <Row gutter={[16, 16]} align="middle">
                 <Col xs={24} lg={16}>
                   <Space direction="vertical" size={8}>
-                    <Typography.Title level={5} style={{ margin: 0 }}>
+                    <Typography.Title level={5}>
                       {tSystem('dangerZone.importData.title')}
                     </Typography.Title>
-                    <Typography.Paragraph style={{ margin: 0 }}>
+                    <Typography.Paragraph>
                       {tSystem('dangerZone.importData.description')}
                     </Typography.Paragraph>
                   </Space>
@@ -493,15 +493,16 @@ const CompanyPage: React.FC = () => {
                 </Col>
               </Row>
 
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <Divider style={{ margin: '24px 0' }} />
 
               <Row gutter={[16, 16]} align="middle">
                 <Col xs={24} lg={16}>
                   <Space direction="vertical" size={8}>
-                    <Typography.Title level={5} style={{ margin: 0 }}>
+                    <Typography.Title level={5}>
                       {tSystem('dangerZone.updateMasterPassword.title')}
                     </Typography.Title>
-                    <Typography.Paragraph style={{ margin: 0 }}>
+                    <Typography.Paragraph>
                       {tSystem('dangerZone.updateMasterPassword.description')}
                     </Typography.Paragraph>
                     <ul className="requirements-list">
@@ -679,7 +680,7 @@ const CompanyPage: React.FC = () => {
             showIcon
           />
 
-          <Form.Item style={{ marginBottom: 0 }}>
+          <Form.Item>
             <Flex justify="flex-end" gap={8}>
               <Button
                 onClick={() => {
@@ -719,7 +720,7 @@ const CompanyPage: React.FC = () => {
             }`
           )}
           subTitle={
-            <Flex vertical gap={16} style={{ width: '100%' }}>
+            <Flex vertical gap={16} className="w-full">
               <Flex vertical>
                 <Typography.Paragraph>
                   {tSystem('dangerZone.updateMasterPassword.success.nextSteps')}
@@ -750,7 +751,7 @@ const CompanyPage: React.FC = () => {
                 </ol>
               </Flex>
 
-              <Flex vertical style={{ textAlign: 'center' }} align="center">
+              <Flex vertical className="text-center" align="center">
                 <Typography.Title level={4}>
                   {tSystem('dangerZone.updateMasterPassword.success.redirecting')}
                 </Typography.Title>

@@ -460,22 +460,18 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       pending: {
         icon: <ClockCircleOutlined />,
         label: t('resources:storage.import.pending'),
-        color: 'default',
       },
       success: {
         icon: <CheckCircleOutlined />,
         label: t('resources:storage.import.success'),
-        color: 'success',
       },
       error: {
         icon: <CloseCircleOutlined />,
         label: t('resources:storage.import.error'),
-        color: 'error',
       },
       skipped: {
         icon: <WarningOutlined />,
         label: t('resources:storage.import.skipped'),
-        color: 'warning',
       },
     },
   });
@@ -512,10 +508,10 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
         return (
           <Space>
             <CloudOutlined />
-            <Typography.Text style={{ fontWeight: 600 }}>{truncated}</Typography.Text>
+            <Typography.Text>{truncated}</Typography.Text>
             {record.exists && (
               <Tooltip title={t('resources:storage.import.alreadyExists')}>
-                <Tag color="warning">
+                <Tag>
                   <InfoCircleOutlined /> {t('resources:storage.import.exists')}
                 </Tag>
               </Tooltip>
@@ -534,7 +530,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
 
         // Capitalize provider name for display
         const displayName = config.type.charAt(0).toUpperCase() + config.type.slice(1);
-        return <Tag color="blue">{displayName}</Tag>;
+        return <Tag>{displayName}</Tag>;
       },
     },
     {
@@ -544,9 +540,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
         return (
           <Space direction="vertical" size={8}>
             {statusColumn.render?.(status, record, 0) as React.ReactNode}
-            {record.message && (
-              <Typography.Text style={{ fontSize: 12 }}>{record.message}</Typography.Text>
-            )}
+            {record.message && <Typography.Text>{record.message}</Typography.Text>}
           </Space>
         );
       },

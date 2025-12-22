@@ -99,9 +99,7 @@ const ProfilePage: React.FC = () => {
           <Flex vertical gap={16}>
             <Flex align="center" gap={8}>
               <UserOutlined />
-              <Typography.Title level={4} style={{ margin: 0 }}>
-                {t('personal.title')}
-              </Typography.Title>
+              <Typography.Title level={4}>{t('personal.title')}</Typography.Title>
             </Flex>
 
             <Typography.Text>{t('personal.description')}</Typography.Text>
@@ -199,7 +197,7 @@ const ProfilePage: React.FC = () => {
           />
 
           <Form.Item>
-            <Flex style={{ width: '100%' }} justify="flex-end" gap={8}>
+            <Flex className="w-full" justify="flex-end" gap={8}>
               <Button onClick={closeChangePassword}>{tCommon('actions.cancel')}</Button>
               <Button htmlType="submit" loading={updateUserPasswordMutation.isPending}>
                 {t('personal.changePassword.submit')}

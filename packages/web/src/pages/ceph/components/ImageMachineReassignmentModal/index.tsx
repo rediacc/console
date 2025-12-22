@@ -54,7 +54,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       options.push({
         value: image.machineName,
         label: (
-          <Typography.Text style={{ fontSize: 14, cursor: 'not-allowed' }}>
+          <Typography.Text>
             {image.machineName} ({t('common:current')})
           </Typography.Text>
         ),
@@ -66,7 +66,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
     availableMachines.forEach((machine) => {
       options.push({
         value: machine.machineName,
-        label: <Typography.Text style={{ fontSize: 14 }}>{machine.machineName}</Typography.Text>,
+        label: <Typography.Text>{machine.machineName}</Typography.Text>,
       });
     });
 
@@ -94,8 +94,8 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   return (
     <SizedModal
       title={
-        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-          <FileImageOutlined style={{ fontSize: 16 }} />
+        <Flex align="center" gap={8} wrap className="inline-flex">
+          <FileImageOutlined />
           {t('ceph:images.reassignMachine')}
         </Flex>
       }
@@ -117,7 +117,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       data-testid="image-reassign-modal"
     >
       {image && (
-        <Flex vertical gap={24} style={{ width: '100%' }}>
+        <Flex vertical gap={24} className="w-full">
           <Flex align="flex-start" wrap gap={8}>
             <Typography.Text strong>{t('ceph:images.image')}:</Typography.Text>
             <Typography.Text>{image.imageName}</Typography.Text>
@@ -132,7 +132,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
             <Alert
               message={t('machines:currentMachineAssignment', { machine: image.machineName })}
               type="info"
-              icon={<CloudServerOutlined style={{ fontSize: 14 }} />}
+              icon={<CloudServerOutlined />}
               data-testid="image-reassign-current-machine-info"
               showIcon
             />
@@ -149,16 +149,12 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                     onChange={(value) => setSelectedMachine(value as string)}
                     showSearch
                     optionFilterProp="children"
-                    style={{ width: '100%' }}
+                    className="w-full"
                     notFoundContent={
                       availableMachines.length === 0 ? (
-                        <Typography.Text style={{ fontSize: 14 }}>
-                          {t('machines:noAvailableMachines')}
-                        </Typography.Text>
+                        <Typography.Text>{t('machines:noAvailableMachines')}</Typography.Text>
                       ) : (
-                        <Typography.Text style={{ fontSize: 14 }}>
-                          {t('common:noMatchingResults')}
-                        </Typography.Text>
+                        <Typography.Text>{t('common:noMatchingResults')}</Typography.Text>
                       )
                     }
                     options={selectOptions}

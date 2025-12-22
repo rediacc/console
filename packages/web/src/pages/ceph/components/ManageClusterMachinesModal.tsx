@@ -184,7 +184,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     dataIndex: 'bridgeName',
     key: 'bridgeName',
     sorter: createSorter<CephClusterMachine>('bridgeName'),
-    renderWrapper: (content) => <Tag color="success">{content}</Tag>,
+    renderWrapper: (content) => <Tag>{content}</Tag>,
   });
 
   const assignedDateColumn = createDateColumn<CephClusterMachine>({
@@ -215,7 +215,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     }
 
     return (
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space direction="vertical" size="large" className="w-full">
         <Flex vertical>
           <Typography.Text>{t('machines:selectMachines')}</Typography.Text>
           <AvailableMachinesSelector
@@ -227,7 +227,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
 
         {selectedMachines.length > 0 && (
           <Flex>
-            <Tag color="blue">
+            <Tag>
               {t('machines:bulkOperations.selectedCount', { count: selectedMachines.length })}
             </Tag>
           </Flex>
@@ -257,10 +257,10 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     };
 
     return (
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space direction="vertical" size="large" className="w-full">
         {selectedRemoveMachines.length > 0 && (
           <Flex>
-            <Tag color="warning">
+            <Tag>
               {t('machines:bulkOperations.selectedCount', { count: selectedRemoveMachines.length })}
             </Tag>
             <Button

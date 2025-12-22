@@ -38,19 +38,15 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
       key={clusterName}
       title={
         <Flex align="center" gap={8} wrap>
-          <CloudServerOutlined style={{ fontSize: 16 }} />
-          <Typography.Text style={{ fontWeight: 600 }}>
+          <CloudServerOutlined />
+          <Typography.Text>
             {t('pools.clusterPrefix')}: {clusterName}
           </Typography.Text>
-          {teamName && (
-            <Tag bordered={false} color="processing">
-              {teamName}
-            </Tag>
-          )}
+          {teamName && <Tag bordered={false}>{teamName}</Tag>}
         </Flex>
       }
     >
-      <Flex style={{ overflow: 'hidden' }}>
+      <Flex className="overflow-hidden">
         <Table<CephPool>
           columns={columns}
           dataSource={pools}

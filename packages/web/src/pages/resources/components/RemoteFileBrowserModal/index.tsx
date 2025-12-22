@@ -254,15 +254,16 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         </Tooltip>,
       ]}
     >
-      <Flex vertical gap={16} style={{ width: '100%' }}>
+      <Flex vertical gap={16} className="w-full">
         <Flex vertical data-testid="file-browser-source-container">
-          <Typography.Text style={{ fontWeight: 500 }} data-testid="file-browser-source-label">
+          <Typography.Text data-testid="file-browser-source-label">
             {t('resources:remoteFiles.sourceLabel')}
           </Typography.Text>
-          <Flex justify="space-between" style={{ width: '100%' }}>
+          <Flex justify="space-between" className="w-full">
             <Space>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <Flex style={{ width: 240 }}>
-                <Flex style={{ width: '100%' }}>
+                <Flex className="w-full">
                   <Select
                     placeholder={t('resources:remoteFiles.selectSource')}
                     value={selectedSource}
@@ -305,6 +306,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                 />
               </Tooltip>
             </Space>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <Flex style={{ width: 200 }}>
               <Input
                 placeholder={t('common:actions.search')}

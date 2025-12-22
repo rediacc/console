@@ -40,7 +40,7 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
     <Row gutter={[24, 16]}>
       {/* Left Column - Task Details */}
       <Col xs={24} lg={12}>
-        <Flex vertical gap={16} style={{ width: '100%' }}>
+        <Flex vertical gap={16} className="w-full">
           <Card size="small" title={t('trace.taskInfo')} data-testid="queue-trace-task-info">
             <Descriptions column={1} size="small">
               <Descriptions.Item label="Task ID">
@@ -55,26 +55,14 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
               <Descriptions.Item label="Retry Status">
                 <Space>
                   <RetweetOutlined />
-                  <Tag
-                    color={
-                      (queueDetails.retryCount ?? 0) === 0
-                        ? 'success'
-                        : (queueDetails.retryCount ?? 0) < 2
-                          ? 'warning'
-                          : 'error'
-                    }
-                  >
-                    {queueDetails.retryCount ?? 0} / 2 retries
-                  </Tag>
-                  {queueDetails.permanentlyFailed && <Tag color="error">Permanently Failed</Tag>}
+                  <Tag>{queueDetails.retryCount ?? 0} / 2 retries</Tag>
+                  {queueDetails.permanentlyFailed && <Tag>Permanently Failed</Tag>}
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Priority">
                 <Space>
                   {getPriorityInfo(queueDetails.priority ?? undefined).icon}
-                  <Tag color="default">
-                    {getPriorityInfo(queueDetails.priority ?? undefined).label}
-                  </Tag>
+                  <Tag>{getPriorityInfo(queueDetails.priority ?? undefined).label}</Tag>
                 </Space>
               </Descriptions.Item>
             </Descriptions>
@@ -127,9 +115,7 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
                   <CodeOutlined />
                   <Typography.Text>Response (Console)</Typography.Text>
                   {queueDetails?.status === 'PROCESSING' && (
-                    <Tag color="processing" icon={<CodeOutlined />}>
-                      Live Output
-                    </Tag>
+                    <Tag icon={<CodeOutlined />}>Live Output</Tag>
                   )}
                 </Space>
               ),

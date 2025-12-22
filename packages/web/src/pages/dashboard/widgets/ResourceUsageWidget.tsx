@@ -29,15 +29,13 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
   return (
     <Card
       title={
-        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+        <Flex align="center" gap={8} wrap className="inline-flex">
           <ThunderboltOutlined />
           <Typography.Text>Resource Usage</Typography.Text>
         </Flex>
       }
       extra={
-        <Typography.Text style={{ fontSize: 12 }}>
-          Monitor your resource consumption against plan limits
-        </Typography.Text>
+        <Typography.Text>Monitor your resource consumption against plan limits</Typography.Text>
       }
       data-testid="dashboard-card-resource-usage"
     >
@@ -53,15 +51,13 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
             return (
               <Col key={resource.resourceType} xs={24} sm={12} md={8}>
                 <Flex vertical>
-                  <Flex vertical gap={16} style={{ width: '100%' }}>
-                    <Flex align="center" justify="space-between" style={{ width: '100%' }}>
-                      <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+                  <Flex vertical gap={16} className="w-full">
+                    <Flex align="center" justify="space-between" className="w-full">
+                      <Flex align="center" gap={8} wrap className="inline-flex">
                         {resourceIcons[resource.resourceType]}
                         <Typography.Text strong>{resource.resourceType}s</Typography.Text>
                       </Flex>
-                      <Typography.Text
-                        style={{ display: 'inline-block', fontWeight: 500, fontSize: 14 }}
-                      >
+                      <Typography.Text className="inline-block">
                         {resource.currentUsage} /{' '}
                         {resource.resourceLimit === 0 ? '∞' : resource.resourceLimit}
                       </Typography.Text>
@@ -73,9 +69,7 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
                       data-testid={`dashboard-progress-${resource.resourceType.toLowerCase()}`}
                     />
                     {resource.isLimitReached === 1 && (
-                      <Typography.Text type="danger" style={{ fontSize: 12 }}>
-                        Limit reached
-                      </Typography.Text>
+                      <Typography.Text type="danger">Limit reached</Typography.Text>
                     )}
                   </Flex>
                 </Flex>

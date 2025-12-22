@@ -81,15 +81,7 @@ const UserSessionsTab: React.FC = () => {
     key: 'userAgent',
     width: 300,
     renderText: (agent: string | null | undefined) => agent ?? userAgentFallback,
-    renderWrapper: (content) => (
-      <Typography.Text
-        style={{
-          fontSize: 14,
-        }}
-      >
-        {content}
-      </Typography.Text>
-    ),
+    renderWrapper: (content) => <Typography.Text>{content}</Typography.Text>,
   });
 
   const statusColumn = createStatusColumn<UserRequest>({
@@ -132,12 +124,15 @@ const UserSessionsTab: React.FC = () => {
     renderActions: (record) => (
       <Popconfirm
         title={
-          <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
+          <Typography.Text
+            /* eslint-disable-next-line no-restricted-syntax */
+            style={{ fontSize: 14, fontWeight: 500 }}
+          >
             {t('userSessions.confirmTerminate')}
           </Typography.Text>
         }
         description={
-          <Typography.Text style={{ fontSize: 14 }}>
+          <Typography.Text>
             {record.userEmail === user?.email
               ? t('userSessions.confirmTerminateSelf')
               : t('userSessions.confirmTerminateOther', { email: record.userEmail })}
@@ -171,10 +166,10 @@ const UserSessionsTab: React.FC = () => {
       width: 200,
       render: (email: string) => (
         <Space size="small">
-          <Typography.Text style={{ fontSize: 14 }}>{email}</Typography.Text>
+          <Typography.Text>{email}</Typography.Text>
           {email === user?.email && (
             <Tag
-              color="processing"
+              /* eslint-disable-next-line no-restricted-syntax */
               style={{ fontSize: 12, fontWeight: 500 }}
               data-testid="sessions-current-session-tag"
             >
@@ -196,12 +191,12 @@ const UserSessionsTab: React.FC = () => {
 
         return (
           <Space size="small">
-            <Typography.Text style={{ fontSize: 14 }}>{name}</Typography.Text>
+            <Typography.Text>{name}</Typography.Text>
             {record.parentRequestId && (
               <Tooltip title={t('userSessions.forkToken')}>
                 <Tag
-                  color="processing"
                   icon={<LinkOutlined />}
+                  /* eslint-disable-next-line no-restricted-syntax */
                   style={{ fontSize: 12, fontWeight: 500 }}
                   data-testid="sessions-fork-tag"
                 >
@@ -212,8 +207,8 @@ const UserSessionsTab: React.FC = () => {
             {childCount > 0 && (
               <Tooltip title={t('userSessions.hasChildren', { count: childCount })}>
                 <Tag
-                  color="warning"
                   icon={<BranchesOutlined />}
+                  /* eslint-disable-next-line no-restricted-syntax */
                   style={{ fontSize: 12, fontWeight: 500 }}
                   data-testid="sessions-child-tag"
                 >
@@ -231,13 +226,7 @@ const UserSessionsTab: React.FC = () => {
       key: 'ipAddress',
       width: 140,
       render: (ip: string | null) => (
-        <Typography.Text
-          style={{
-            fontSize: 14,
-          }}
-        >
-          {ip || t('userSessions.notAvailable')}
-        </Typography.Text>
+        <Typography.Text>{ip || t('userSessions.notAvailable')}</Typography.Text>
       ),
     },
     userAgentColumn,
@@ -267,7 +256,10 @@ const UserSessionsTab: React.FC = () => {
           <Card data-testid="sessions-stat-total">
             <Statistic
               title={
-                <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
+                <Typography.Text
+                  /* eslint-disable-next-line no-restricted-syntax */
+                  style={{ fontSize: 14, fontWeight: 500 }}
+                >
                   {t('userSessions.totalSessions')}
                 </Typography.Text>
               }
@@ -279,7 +271,10 @@ const UserSessionsTab: React.FC = () => {
           <Card data-testid="sessions-stat-active">
             <Statistic
               title={
-                <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
+                <Typography.Text
+                  /* eslint-disable-next-line no-restricted-syntax */
+                  style={{ fontSize: 14, fontWeight: 500 }}
+                >
                   {t('userSessions.activeSessions')}
                 </Typography.Text>
               }
@@ -291,7 +286,10 @@ const UserSessionsTab: React.FC = () => {
           <Card data-testid="sessions-stat-unique-users">
             <Statistic
               title={
-                <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
+                <Typography.Text
+                  /* eslint-disable-next-line no-restricted-syntax */
+                  style={{ fontSize: 14, fontWeight: 500 }}
+                >
                   {t('userSessions.uniqueUsers')}
                 </Typography.Text>
               }
@@ -303,7 +301,10 @@ const UserSessionsTab: React.FC = () => {
           <Card data-testid="sessions-stat-average-duration">
             <Statistic
               title={
-                <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
+                <Typography.Text
+                  /* eslint-disable-next-line no-restricted-syntax */
+                  style={{ fontSize: 14, fontWeight: 500 }}
+                >
                   {t('userSessions.averageDuration')}
                 </Typography.Text>
               }
@@ -320,11 +321,7 @@ const UserSessionsTab: React.FC = () => {
                     )
                   : 0
               }
-              suffix={
-                <Typography.Text style={{ fontSize: 12 }}>
-                  {t('userSessions.minutes')}
-                </Typography.Text>
-              }
+              suffix={<Typography.Text>{t('userSessions.minutes')}</Typography.Text>}
             />
           </Card>
         </Col>
@@ -334,11 +331,15 @@ const UserSessionsTab: React.FC = () => {
         title={
           <Flex justify="space-between" align="center">
             <Space size={8}>
-              <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>
+              <Typography.Text
+                /* eslint-disable-next-line no-restricted-syntax */
+                style={{ fontSize: 16, fontWeight: 600 }}
+              >
                 {t('userSessions.title')}
               </Typography.Text>
               <Tooltip title={t('common:actions.refresh')}>
                 <Button
+                  /* eslint-disable-next-line no-restricted-syntax */
                   style={{ minWidth: 40, minHeight: 40, fontSize: 16 }}
                   data-testid="sessions-refresh-button"
                   icon={<ReloadOutlined />}
@@ -349,6 +350,7 @@ const UserSessionsTab: React.FC = () => {
               </Tooltip>
             </Space>
             <Input
+              /* eslint-disable-next-line no-restricted-syntax */
               style={{ width: 'min(360px, 100%)', maxWidth: '100%' }}
               data-testid="sessions-search-input"
               placeholder={t('userSessions.searchPlaceholder')}
@@ -370,9 +372,7 @@ const UserSessionsTab: React.FC = () => {
             pageSize: 10,
             showSizeChanger: true,
             showTotal: (total) => (
-              <Typography.Text style={{ fontSize: 12 }}>
-                {t('userSessions.totalCount', { count: total })}
-              </Typography.Text>
+              <Typography.Text>{t('userSessions.totalCount', { count: total })}</Typography.Text>
             ),
           }}
           scroll={{ x: 1500 }}

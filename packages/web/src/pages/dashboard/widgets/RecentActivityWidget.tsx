@@ -18,17 +18,13 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ auditLogs, 
   return (
     <Card
       title={
-        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+        <Flex align="center" gap={8} wrap className="inline-flex">
           <HistoryOutlined />
           <Typography.Text>Recent Activity</Typography.Text>
         </Flex>
       }
       extra={
-        <RouterLink
-          to="/audit"
-          data-testid="dashboard-activity-viewall-link"
-          style={{ fontWeight: 500 }}
-        >
+        <RouterLink to="/audit" data-testid="dashboard-activity-viewall-link">
           View All
         </RouterLink>
       }
@@ -54,21 +50,19 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ auditLogs, 
               key: index,
               dot: getActionIcon(log.action),
               children: (
-                <Flex vertical gap={8} style={{ width: '100%' }}>
+                <Flex vertical gap={8} className="w-full">
                   <Flex align="center" justify="space-between">
-                    <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+                    <Flex align="center" gap={8} wrap className="inline-flex">
                       <Typography.Text strong>{log.action.replace(/_/g, ' ')}</Typography.Text>
                       <Tag bordered={false}>{log.entity}</Tag>
                     </Flex>
-                    <Typography.Text style={{ fontSize: 14 }}>
-                      {formatTimestamp(log.timestamp)}
-                    </Typography.Text>
+                    <Typography.Text>{formatTimestamp(log.timestamp)}</Typography.Text>
                   </Flex>
-                  <Typography.Text style={{ fontSize: 14 }}>
+                  <Typography.Text>
                     {log.entityName} {log.actionByUser && `• ${log.actionByUser}`}
                   </Typography.Text>
                   {log.details && log.details.trim() && (
-                    <Typography.Text style={{ fontSize: 14 }}>
+                    <Typography.Text>
                       {log.details.length > DESCRIPTION_TRUNCATE_LENGTH
                         ? `${log.details.substring(0, DESCRIPTION_TRUNCATE_LENGTH)}...`
                         : log.details}

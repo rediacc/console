@@ -55,6 +55,7 @@ export const useConfirmRepositoryDeletion = ({
                 count: context.childClones.length,
               })}
             </Typography.Paragraph>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <Typography.Text strong style={{ display: 'block' }}>
               {t('resources:repositories.clonesList')}
             </Typography.Text>
@@ -93,7 +94,7 @@ export const useConfirmRepositoryDeletion = ({
           <Input
             type="text"
             placeholder={repository.name}
-            style={{ width: '100%' }}
+            className="w-full"
             onChange={(e) => {
               confirmationInput = e.target.value;
             }}

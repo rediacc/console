@@ -399,16 +399,13 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                       return false;
                     }}
                   >
-                    <Button
-                      data-testid="resource-modal-import-button"
-                      icon={<UploadOutlined style={{ fontSize: 12 }} />}
-                    >
+                    <Button data-testid="resource-modal-import-button" icon={<UploadOutlined />}>
                       {t('common:vaultEditor.importJson')}
                     </Button>
                   </Upload>
                   <Button
                     data-testid="resource-modal-export-button"
-                    icon={<DownloadOutlined style={{ fontSize: 12 }} />}
+                    icon={<DownloadOutlined />}
                     onClick={() => {
                       if (importExportHandlers.current) {
                         importExportHandlers.current.handleExport();
@@ -497,9 +494,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                         <AppstoreOutlined />
                         <Typography.Text>{t('resources:templates.selectTemplate')}</Typography.Text>
                         {selectedTemplate && (
-                          <Tag color="processing">
-                            {selectedTemplate.replace(/^(db_|kick_|route_)/, '')}
-                          </Tag>
+                          <Tag>{selectedTemplate.replace(/^(db_|kick_|route_)/, '')}</Tag>
                         )}
                       </Space>
                     ),

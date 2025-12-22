@@ -33,7 +33,7 @@ export const VaultEditorTestConnection: React.FC<VaultEditorTestConnectionProps>
           />
         }
       >
-        <Flex vertical gap={8} style={{ width: '100%' }}>
+        <Flex vertical gap={8} className="w-full">
           {!testConnectionSuccess && (
             <Alert
               message={t('vaultEditor.testConnection.required')}
@@ -44,7 +44,7 @@ export const VaultEditorTestConnection: React.FC<VaultEditorTestConnectionProps>
             />
           )}
           <Button
-            style={{ width: '100%' }}
+            className="w-full"
             type="primary"
             icon={<WifiOutlined />}
             loading={isCreatingQueueItem || isTestingConnection}

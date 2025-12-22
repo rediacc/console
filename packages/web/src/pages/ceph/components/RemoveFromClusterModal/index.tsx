@@ -95,9 +95,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     renderWrapper: (content) => (
       <Flex align="center" gap={8}>
         <CloudServerOutlined />
-        <Typography.Text strong style={{ fontSize: 12 }}>
-          {content}
-        </Typography.Text>
+        <Typography.Text>{content}</Typography.Text>
       </Flex>
     ),
   });
@@ -109,11 +107,9 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     renderText: (cluster?: string | null) => cluster || noneLabel,
     renderWrapper: (content, fullText) =>
       fullText === noneLabel ? (
-        <Typography.Text style={{ fontSize: 12 }}>{fullText}</Typography.Text>
+        <Typography.Text>{fullText}</Typography.Text>
       ) : (
-        <Tag bordered={false} color="processing" style={{ fontSize: 12 }}>
-          {content}
-        </Tag>
+        <Tag bordered={false}>{content}</Tag>
       ),
   });
 
@@ -123,7 +119,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     <SizedModal
       title={
         <Flex align="center" gap={8} wrap>
-          <WarningOutlined style={{ fontSize: 16 }} />
+          <WarningOutlined />
           {t('machines:bulkActions.removeFromCluster')}
         </Flex>
       }
@@ -154,6 +150,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
             description={t('machines:removeFromClusterDescription')}
             type="warning"
             showIcon
+            // eslint-disable-next-line no-restricted-syntax
             style={{ marginBottom: 16 }}
           />
 

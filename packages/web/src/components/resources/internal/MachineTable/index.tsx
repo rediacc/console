@@ -32,21 +32,6 @@ import {
 } from '@/utils/optimizedIcons';
 import type { DeployedRepo } from '@rediacc/shared/services/machine';
 import { buildMachineTableColumns, type MachineFunctionAction } from './columns';
-const getTagColor = (variant?: 'team' | 'bridge' | 'region' | 'repository' | 'status' | 'grand') =>
-  variant === 'team'
-    ? 'success'
-    : variant === 'bridge'
-      ? 'processing'
-      : variant === 'region'
-        ? 'default'
-        : variant === 'repository'
-          ? 'processing'
-          : variant === 'grand'
-            ? 'warning'
-            : 'default';
-
-// Local type for group variants - maps to preset prop
-type GroupVariant = 'repository' | 'bridge' | 'team' | 'region' | 'status' | 'grand';
 
 type GroupByMode = 'machine' | 'bridge' | 'team' | 'region' | 'repository' | 'status' | 'grand';
 
@@ -266,7 +251,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     return (
       <Flex align="center" justify="space-between" wrap>
         <Space size="middle">
-          <Typography.Text style={{ fontWeight: 600 }}>
+          <Typography.Text>
             {t('machines:bulkActions.selected', { count: selectedRowKeys.length })}
           </Typography.Text>
           <Tooltip title={t('common:actions.clearSelection')}>
@@ -323,6 +308,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         <Space wrap size="small">
           <Tooltip title={t('machines:machine')}>
             <Button
+              // eslint-disable-next-line no-restricted-syntax
               style={{ minWidth: 42 }}
               type={groupBy === 'machine' ? 'primary' : 'default'}
               icon={<DesktopOutlined />}
@@ -332,10 +318,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             />
           </Tooltip>
 
-          <Typography.Text style={{ width: 1, height: 24 }} />
+          <Typography.Text
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ width: 1, height: 24 }}
+          />
 
           <Tooltip title={t('machines:groupByBridge')}>
             <Button
+              // eslint-disable-next-line no-restricted-syntax
               style={{ minWidth: 42 }}
               type={groupBy === 'bridge' ? 'primary' : 'default'}
               icon={<CloudServerOutlined />}
@@ -347,6 +337,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
           <Tooltip title={t('machines:groupByTeam')}>
             <Button
+              // eslint-disable-next-line no-restricted-syntax
               style={{ minWidth: 42 }}
               type={groupBy === 'team' ? 'primary' : 'default'}
               icon={<TeamOutlined />}
@@ -359,6 +350,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           {isExpertMode && (
             <Tooltip title={t('machines:groupByRegion')}>
               <Button
+                // eslint-disable-next-line no-restricted-syntax
                 style={{ minWidth: 42 }}
                 type={groupBy === 'region' ? 'primary' : 'default'}
                 icon={<GlobalOutlined />}
@@ -371,6 +363,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
           <Tooltip title={t('machines:groupByRepo')}>
             <Button
+              // eslint-disable-next-line no-restricted-syntax
               style={{ minWidth: 42 }}
               type={groupBy === 'repository' ? 'primary' : 'default'}
               icon={<InboxOutlined />}
@@ -382,6 +375,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
           <Tooltip title={t('machines:groupByStatus')}>
             <Button
+              // eslint-disable-next-line no-restricted-syntax
               style={{ minWidth: 42 }}
               type={groupBy === 'status' ? 'primary' : 'default'}
               icon={<DashboardOutlined />}
@@ -393,6 +387,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
           <Tooltip title={t('machines:groupByGrand')}>
             <Button
+              // eslint-disable-next-line no-restricted-syntax
               style={{ minWidth: 42 }}
               type={groupBy === 'grand' ? 'primary' : 'default'}
               icon={<BranchesOutlined />}
@@ -510,16 +505,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       );
     }
 
-    const variantMap: Record<GroupByMode, GroupVariant> = {
-      machine: 'repository',
-      bridge: 'bridge',
-      team: 'team',
-      region: 'region',
-      repository: 'repository',
-      status: 'status',
-      grand: 'grand',
-    };
-
     const iconMap: Partial<Record<GroupByMode, React.ReactNode>> = {
       bridge: <CloudServerOutlined />,
       team: <TeamOutlined />,
@@ -531,95 +516,75 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
     return (
       <Flex vertical>
-        {Object.entries(groupedMachinesForTable).map(([groupKey, machines], groupIndex) => {
-          const variant = variantMap[groupBy];
+        {Object.entries(groupedMachinesForTable).map(([groupKey, machines], groupIndex) => (
+          <Card key={groupKey}>
+            <Flex align="center" gap={8} wrap className="inline-flex">
+              <Space size="small">
+                <Typography.Text>#{groupIndex + 1}</Typography.Text>
+                <Tag bordered={false} icon={iconMap[groupBy]}>
+                  {groupKey}
+                </Tag>
+                <Typography.Text>
+                  {machines.length}{' '}
+                  {machines.length === 1 ? t('machines:machine') : t('machines:machines')}
+                </Typography.Text>
+              </Space>
+            </Flex>
 
-          return (
-            <Card key={groupKey}>
-              <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-                <Space size="small">
-                  <Typography.Text style={{ fontSize: 16, fontWeight: 700 }}>
-                    #{groupIndex + 1}
-                  </Typography.Text>
-                  <Tag bordered={false} color={getTagColor(variant)} icon={iconMap[groupBy]}>
-                    {groupKey}
-                  </Tag>
-                  <Typography.Text style={{ fontSize: 14 }}>
-                    {machines.length}{' '}
-                    {machines.length === 1 ? t('machines:machine') : t('machines:machines')}
-                  </Typography.Text>
-                </Space>
-              </Flex>
-
-              {machines.map((machine) => (
-                <Flex
-                  key={machine.machineName}
-                  justify="space-between"
-                  align="center"
-                  style={{
-                    cursor: 'pointer',
-                  }}
-                  onClick={() =>
-                    navigate(`/machines/${machine.machineName}/repositories`, {
-                      state: { machine },
-                    })
-                  }
-                  data-testid={`grouped-machine-row-${machine.machineName}`}
-                >
-                  <Flex align="center">
-                    <DesktopOutlined style={{ fontSize: 20 }} />
-                    <Flex vertical>
-                      <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>
-                        {machine.machineName}
-                      </Typography.Text>
-                      <Space size="small">
-                        <Tag bordered={false} color={getTagColor('team')}>
-                          {machine.teamName}
-                        </Tag>
-                        {machine.bridgeName && (
-                          <Tag bordered={false} color={getTagColor('bridge')}>
-                            {machine.bridgeName}
-                          </Tag>
-                        )}
-                        {machine.regionName && (
-                          <Tag bordered={false} color={getTagColor('region')}>
-                            {machine.regionName}
-                          </Tag>
-                        )}
-                      </Space>
-                    </Flex>
+            {machines.map((machine) => (
+              <Flex
+                key={machine.machineName}
+                justify="space-between"
+                align="center"
+                className="cursor-pointer"
+                onClick={() =>
+                  navigate(`/machines/${machine.machineName}/repositories`, {
+                    state: { machine },
+                  })
+                }
+                data-testid={`grouped-machine-row-${machine.machineName}`}
+              >
+                <Flex align="center">
+                  <DesktopOutlined />
+                  <Flex vertical>
+                    <Typography.Text>{machine.machineName}</Typography.Text>
+                    <Space size="small">
+                      <Tag bordered={false}>{machine.teamName}</Tag>
+                      {machine.bridgeName && <Tag bordered={false}>{machine.bridgeName}</Tag>}
+                      {machine.regionName && <Tag bordered={false}>{machine.regionName}</Tag>}
+                    </Space>
                   </Flex>
-
-                  <Tooltip title={t('machines:viewRepos')}>
-                    <Button
-                      type="primary"
-                      icon={<RightOutlined />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/machines/${machine.machineName}/repositories`, {
-                          state: { machine },
-                        });
-                      }}
-                    >
-                      {t('machines:viewRepos')}
-                    </Button>
-                  </Tooltip>
                 </Flex>
-              ))}
-            </Card>
-          );
-        })}
+
+                <Tooltip title={t('machines:viewRepos')}>
+                  <Button
+                    type="primary"
+                    icon={<RightOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/machines/${machine.machineName}/repositories`, {
+                        state: { machine },
+                      });
+                    }}
+                  >
+                    {t('machines:viewRepos')}
+                  </Button>
+                </Tooltip>
+              </Flex>
+            ))}
+          </Card>
+        ))}
       </Flex>
     );
   };
 
   return (
-    <Flex vertical style={{ height: '100%' }} className={className}>
+    <Flex vertical className={`h-full ${className}`}>
       {renderViewToggle()}
       {renderBulkActionsToolbar()}
 
       {groupBy === 'machine' ? (
-        <Flex vertical ref={tableContainerRef} style={{ flex: 1, overflow: 'hidden' }}>
+        <Flex vertical ref={tableContainerRef} className="flex-1 overflow-hidden">
           <Table
             columns={columns}
             dataSource={filteredMachines}

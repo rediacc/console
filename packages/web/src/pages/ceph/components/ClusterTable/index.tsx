@@ -123,7 +123,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   return (
     <>
       {contextHolder}
-      <Flex style={{ overflow: 'hidden' }}>
+      <Flex className="overflow-hidden">
         <Table<CephCluster>
           data-testid="ds-cluster-table"
           columns={columns}

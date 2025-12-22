@@ -409,6 +409,7 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
 
   return (
     <TelemetryContext.Provider value={contextValue}>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <Flex style={{ display: 'contents' }}>{children}</Flex>
     </TelemetryContext.Provider>
   );

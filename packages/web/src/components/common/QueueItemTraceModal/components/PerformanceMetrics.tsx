@@ -46,7 +46,7 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
               prefix={<SyncOutlined spin />}
               suffix="tasks"
             />
-            <Typography.Text color="secondary" type="secondary">
+            <Typography.Text type="secondary">
               Currently being processed on this machine
             </Typography.Text>
           </Card>

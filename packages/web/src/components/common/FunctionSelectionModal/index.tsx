@@ -246,7 +246,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
         title={
           <Flex vertical>
             <Typography.Text>{title || t('functions:selectFunction')}</Typography.Text>
-            {subtitle && <Typography.Text style={{ fontSize: 12 }}>{subtitle}</Typography.Text>}
+            {subtitle && <Typography.Text>{subtitle}</Typography.Text>}
           </Flex>
         }
         open={open}
@@ -313,17 +313,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             type="button"
                             onClick={() => handleSelectFunction(func)}
                             data-testid={`function-modal-item-${func.name}`}
-                            style={{
-                              width: '100%',
-                              cursor: 'pointer',
-                              textAlign: 'left',
-                            }}
+                            className="w-full cursor-pointer"
                           >
                             <Flex align="center" justify="space-between">
                               <Typography.Text strong>{func.name}</Typography.Text>
-                              {isQuickTask && (
-                                <Tag color="warning">⚡ {t('functions:quickTaskBadge')}</Tag>
-                              )}
+                              {isQuickTask && <Tag>⚡ {t('functions:quickTaskBadge')}</Tag>}
                             </Flex>
                             <Typography.Text>{func.description}</Typography.Text>
                           </Flex>
@@ -338,84 +332,87 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 
           <Col span={preselectedFunction ? 24 : 14}>
             {selectedFunction ? (
-              <Flex vertical gap={24} style={{ width: '100%' }}>
+              <Flex vertical gap={24} className="w-full">
                 <Card title={`${t('functions:configure')}: ${selectedFunction.name}`} size="small">
                   <Paragraph>{selectedFunction.description}</Paragraph>
 
                   <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }}>
                     {/* Show additional info for push function */}
                     {selectedFunction.name === 'push' && functionParams.dest && (
-                      <Flex
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns:
-                            functionParams.state === 'online' ? '1fr 0.8fr' : '1fr',
-                        }}
-                      >
-                        <Alert
-                          type="info"
-                          showIcon
-                          message="Push Operation Details"
-                          description={
-                            <Space direction="vertical" size="small">
-                              <Flex>
-                                <Typography.Text strong>Destination Filename: </Typography.Text>
-                                <Typography.Text code>{functionParams.dest}</Typography.Text>
-                              </Flex>
-                              {additionalContext?.parentRepo && (
-                                <Flex>
-                                  <Typography.Text strong>Repository Lineage: </Typography.Text>
-                                  <Space>
-                                    <Tag color="processing">{additionalContext.parentRepo}</Tag>
-                                    <Typography.Text>→</Typography.Text>
-                                    <Tag color="success">{additionalContext.sourceRepo}</Tag>
-                                    <Typography.Text>→</Typography.Text>
-                                    <Tag color="default">{functionParams.dest}</Tag>
-                                  </Space>
-                                </Flex>
-                              )}
-                              {!additionalContext?.parentRepo && additionalContext?.sourceRepo && (
-                                <Flex>
-                                  <Typography.Text strong>Source Repository: </Typography.Text>
-                                  <Tag color="success">{additionalContext.sourceRepo}</Tag>
-                                  <Typography.Text> (Original)</Typography.Text>
-                                </Flex>
-                              )}
-                              <Flex>
-                                <Typography.Text>
-                                  {functionParams.state === 'online'
-                                    ? 'The repository will be pushed in online state (mounted).'
-                                    : 'The repository will be pushed in offline state (unmounted).'}
-                                </Typography.Text>
-                              </Flex>
-                            </Space>
-                          }
-                        />
-                        {functionParams.state === 'online' && (
+                      <>
+                        <Flex
+                          // eslint-disable-next-line no-restricted-syntax
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns:
+                              functionParams.state === 'online' ? '1fr 0.8fr' : '1fr',
+                          }}
+                        >
                           <Alert
-                            type="warning"
+                            type="info"
                             showIcon
-                            message={t('functions:onlinePushWarningTitle')}
+                            message="Push Operation Details"
                             description={
                               <Space direction="vertical" size="small">
-                                <Typography.Text>
-                                  {t('functions:onlinePushWarningMessage')}
-                                </Typography.Text>
                                 <Flex>
-                                  <a
-                                    href="https://docs.rediacc.com/concepts/repo-push-operations"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{ fontSize: 12 }}
-                                  >
-                                    {t('functions:onlinePushLearnMore')}
-                                  </a>
+                                  <Typography.Text strong>Destination Filename: </Typography.Text>
+                                  <Typography.Text code>{functionParams.dest}</Typography.Text>
+                                </Flex>
+                                {additionalContext?.parentRepo && (
+                                  <Flex>
+                                    <Typography.Text strong>Repository Lineage: </Typography.Text>
+                                    <Space>
+                                      <Tag>{additionalContext.parentRepo}</Tag>
+                                      <Typography.Text>→</Typography.Text>
+                                      <Tag>{additionalContext.sourceRepo}</Tag>
+                                      <Typography.Text>→</Typography.Text>
+                                      <Tag>{functionParams.dest}</Tag>
+                                    </Space>
+                                  </Flex>
+                                )}
+                                {!additionalContext?.parentRepo &&
+                                  additionalContext?.sourceRepo && (
+                                    <Flex>
+                                      <Typography.Text strong>Source Repository: </Typography.Text>
+                                      <Tag>{additionalContext.sourceRepo}</Tag>
+                                      <Typography.Text> (Original)</Typography.Text>
+                                    </Flex>
+                                  )}
+                                <Flex>
+                                  <Typography.Text>
+                                    {functionParams.state === 'online'
+                                      ? 'The repository will be pushed in online state (mounted).'
+                                      : 'The repository will be pushed in offline state (unmounted).'}
+                                  </Typography.Text>
                                 </Flex>
                               </Space>
                             }
                           />
-                        )}
-                      </Flex>
+                          {functionParams.state === 'online' && (
+                            <Alert
+                              type="warning"
+                              showIcon
+                              message={t('functions:onlinePushWarningTitle')}
+                              description={
+                                <Space direction="vertical" size="small">
+                                  <Typography.Text>
+                                    {t('functions:onlinePushWarningMessage')}
+                                  </Typography.Text>
+                                  <Flex>
+                                    <a
+                                      href="https://docs.rediacc.com/concepts/repo-push-operations"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      {t('functions:onlinePushLearnMore')}
+                                    </a>
+                                  </Flex>
+                                </Space>
+                              }
+                            />
+                          )}
+                        </Flex>
+                      </>
                     )}
 
                     {/* Machine Selection */}

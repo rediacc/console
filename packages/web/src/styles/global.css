@@ -71,3 +71,92 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
 }
+
+/* ==========================================================================
+   UTILITY CLASSES (Tailwind-style naming)
+   Use these instead of inline styles. ESLint enforces this rule.
+   ========================================================================== */
+
+/* Display */
+.block {
+  display: block;
+}
+.inline-block {
+  display: inline-block;
+}
+.inline-flex {
+  display: inline-flex;
+}
+.flex {
+  display: flex;
+}
+.hidden {
+  display: none;
+}
+
+/* Flexbox */
+.items-center {
+  align-items: center;
+}
+.justify-center {
+  justify-content: center;
+}
+.flex-1 {
+  flex: 1 1 0%;
+}
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+.flex-col {
+  flex-direction: column;
+}
+
+/* Gap */
+.gap-2 {
+  gap: 8px;
+}
+
+/* Width */
+.w-full {
+  width: 100%;
+}
+.min-w-0 {
+  min-width: 0;
+}
+
+/* Height */
+.h-full {
+  height: 100%;
+}
+
+/* Text */
+.text-center {
+  text-align: center;
+}
+.text-ellipsis {
+  text-overflow: ellipsis;
+}
+.whitespace-nowrap {
+  white-space: nowrap;
+}
+
+/* Overflow */
+.overflow-hidden {
+  overflow: hidden;
+}
+.overflow-auto {
+  overflow: auto;
+}
+
+/* Cursor */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Position */
+.relative {
+  position: relative;
+}
+.absolute {
+  position: absolute;
+}

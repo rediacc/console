@@ -125,16 +125,16 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   if (error) {
     return (
-      <Flex style={{ textAlign: 'center' }}>
+      <Flex className="text-center">
         <Empty description={error} />
       </Flex>
     );
   }
 
   return (
-    <Flex vertical style={{ width: '100%' }}>
+    <Flex vertical className="w-full">
       <Flex vertical>
-        <Flex vertical gap={16} style={{ width: '100%' }}>
+        <Flex vertical gap={16} className="w-full">
           <Flex align="center" justify="space-between" wrap gap={12}>
             <Typography.Text>
               {multiple
@@ -162,7 +162,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       </Flex>
 
       {searchQuery.trim() && (
-        <Typography.Text style={{ display: 'block' }}>
+        <Typography.Text className="block">
           {t('resources:templates.showingResults', {
             count: filteredTemplates.length,
             total: templates.length,
@@ -215,21 +215,23 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               >
                 {isSelected && (
                   <Typography.Text
-                    style={{ position: 'absolute', top: 12, right: 12, fontSize: 16 }}
+                    className="absolute"
+                    // eslint-disable-next-line no-restricted-syntax
+                    style={{ top: 12, right: 12 }}
                   >
                     <CheckCircleOutlined />
                   </Typography.Text>
                 )}
 
-                <Flex vertical gap={8} style={{ width: '100%' }}>
-                  <Flex style={{ textAlign: 'center' }}>
+                <Flex vertical gap={8} className="w-full">
+                  <Flex className="text-center">
                     <TemplateIconComponent />
                   </Flex>
 
                   <Typography.Text strong>{getTemplateTitle(template.name)}</Typography.Text>
 
-                  <Typography.Text style={{ display: 'block' }}>
-                    <Typography.Paragraph ellipsis={{ rows: 2 }} style={{ margin: 0 }}>
+                  <Typography.Text className="block">
+                    <Typography.Paragraph ellipsis={{ rows: 2 }}>
                       {getTemplateDescription(template.readme)}
                     </Typography.Paragraph>
                   </Typography.Text>
@@ -260,13 +262,17 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               onClick={() => onChange?.(null)}
             >
               {!value && (
-                <Typography.Text style={{ position: 'absolute', top: 12, right: 12, fontSize: 16 }}>
+                <Typography.Text
+                  className="absolute"
+                  // eslint-disable-next-line no-restricted-syntax
+                  style={{ top: 12, right: 12 }}
+                >
                   <CheckCircleOutlined />
                 </Typography.Text>
               )}
 
-              <Flex vertical gap={8} style={{ width: '100%' }}>
-                <Flex style={{ textAlign: 'center' }}>
+              <Flex vertical gap={8} className="w-full">
+                <Flex className="text-center">
                   <AppstoreOutlined />
                 </Flex>
 
@@ -274,7 +280,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
                 <Typography.Text>{t('resources:templates.startEmpty')}</Typography.Text>
 
-                <Tag color="default">{t('resources:templates.default')}</Tag>
+                <Tag>{t('resources:templates.default')}</Tag>
               </Flex>
             </Card>
           </Col>

@@ -17,7 +17,7 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
           render={({ field: controllerField }) => (
             <Select
               {...controllerField}
-              style={{ width: '100%' }}
+              className="w-full"
               options={field.options}
               placeholder={field.placeholder}
               disabled={field.disabled}
@@ -73,7 +73,7 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
             }
 
             return (
-              <Space.Compact style={{ width: '100%' }}>
+              <Space.Compact className="w-full">
                 <InputNumber
                   data-testid={`resource-modal-field-${field.name}-size-input`}
                   value={parsedValue}
@@ -112,7 +112,7 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
                   keyboard
                   step={1}
                   precision={0}
-                  style={{ flex: 1 }}
+                  className="flex-1"
                 />
                 <Select
                   data-testid={`resource-modal-field-${field.name}-size-unit`}
@@ -134,7 +134,7 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
                     return { value, label };
                   })}
                   disabled={field.disabled}
-                  style={{ width: 80 }}
+                  style={{ width: 80 }} // eslint-disable-line no-restricted-syntax
                 />
               </Space.Compact>
             );

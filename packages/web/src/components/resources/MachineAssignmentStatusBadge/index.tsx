@@ -27,28 +27,23 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
   const STATUS_CONFIG_MAP: Record<
     MachineAssignmentType,
     {
-      color: 'success' | 'processing' | 'warning' | 'default';
       icon: React.ReactNode;
       textKey: string;
     }
   > = {
     AVAILABLE: {
-      color: 'success',
       icon: <CheckCircleOutlined />,
       textKey: 'assignmentStatus.available',
     },
     CLUSTER: {
-      color: 'processing',
       icon: <CloudServerOutlined />,
       textKey: 'assignmentStatus.cluster',
     },
     IMAGE: {
-      color: 'processing',
       icon: <FileImageOutlined />,
       textKey: 'assignmentStatus.image',
     },
     CLONE: {
-      color: 'warning',
       icon: <CopyOutlined />,
       textKey: 'assignmentStatus.clone',
     },
@@ -63,7 +58,6 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
       };
     }
     return {
-      color: 'default' as const,
       icon: null,
       text: 'Unknown',
     };
@@ -74,7 +68,7 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
   if (size === 'small') {
     const content = (
       <Tag
-        color={config.color}
+        // eslint-disable-next-line no-restricted-syntax
         style={{ fontSize: 12, textTransform: 'none' }}
         icon={showIcon ? config.icon : undefined}
         data-testid={`machine-status-badge-tag-${assignmentType.toLowerCase()}`}
@@ -98,14 +92,19 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
     <Tooltip
       title={
         assignmentDetails ? (
-          <Typography.Text style={{ fontSize: 12 }}>{assignmentDetails}</Typography.Text>
+          <Typography.Text
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ fontSize: 12 }}
+          >
+            {assignmentDetails}
+          </Typography.Text>
         ) : undefined
       }
     >
       <Typography.Text data-testid="machine-status-badge-tooltip-wrapper">
         <Tag
-          color={config.color}
           icon={showIcon ? config.icon : undefined}
+          // eslint-disable-next-line no-restricted-syntax
           style={{ textTransform: 'none' }}
           data-testid={`machine-status-badge-${assignmentType.toLowerCase()}`}
         >

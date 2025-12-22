@@ -246,12 +246,10 @@ const TeamsPage: React.FC = () => {
                           description={
                             <Space size="small">
                               {member.isMember && (
-                                <Tag color="success">{t('teams.manageMembers.memberStatus')}</Tag>
+                                <Tag>{t('teams.manageMembers.memberStatus')}</Tag>
                               )}
                               {member.hasAccess && (
-                                <Tag color="processing">
-                                  {t('teams.manageMembers.accessStatus')}
-                                </Tag>
+                                <Tag>{t('teams.manageMembers.accessStatus')}</Tag>
                               )}
                             </Space>
                           }
@@ -273,7 +271,7 @@ const TeamsPage: React.FC = () => {
                       placeholder={t('teams.manageMembers.selectUser')}
                       value={selectedMemberEmail ?? undefined}
                       onChange={(value) => setSelectedMemberEmail((value as string) || '')}
-                      style={{ flex: 1, minWidth: 260 }}
+                      className="flex-1"
                       filterOption={(input, option) =>
                         String(option?.label ?? '')
                           .toLowerCase()

@@ -31,35 +31,34 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   return (
     <Card styles={{ body: { padding: 0 } }}>
-      <Flex vertical style={{ width: 280, padding: 16 }}>
+      <Flex
+        vertical
+        // eslint-disable-next-line no-restricted-syntax
+        style={{ width: 280 }}
+      >
         <Flex align="center" gap={12} wrap data-testid="user-info">
           <Avatar icon={<UserOutlined />} size={48} />
-          <Flex vertical style={{ flex: 1, minWidth: 0 }}>
-            <Typography.Text strong style={{ display: 'block' }} data-testid="user-info-email">
+          <Flex vertical className="flex-1 min-w-0">
+            <Typography.Text strong className="block" data-testid="user-info-email">
               {user?.email}
             </Typography.Text>
             {company && (
-              <Typography.Text
-                type="secondary"
-                style={{ fontSize: 12, display: 'block' }}
-                data-testid="user-info-company"
-              >
+              <Typography.Text type="secondary" className="block" data-testid="user-info-company">
                 {company}
               </Typography.Text>
             )}
             {companyData?.activeSubscription && (
-              <Tag
-                color="processing"
-                style={{ fontSize: 12, fontWeight: 600 }}
-                data-testid="user-info-plan"
-              >
+              <Tag data-testid="user-info-plan">
                 {companyData.activeSubscription.planCode ?? 'UNKNOWN'}
               </Tag>
             )}
           </Flex>
         </Flex>
 
-        <Divider style={{ margin: '12px 0' }} />
+        <Divider
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ margin: '12px 0' }}
+        />
 
         <Flex vertical>
           <Typography.Text type="secondary">{t('uiMode.label')}</Typography.Text>
@@ -95,16 +94,22 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           />
         </Flex>
 
-        <Divider style={{ margin: '12px 0' }} />
+        <Divider
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ margin: '12px 0' }}
+        />
 
         <Flex vertical>
-          <Typography.Text strong style={{ display: 'block' }}>
+          <Typography.Text strong className="block">
             {t('language.label')}
           </Typography.Text>
           <LanguageSelector iconOnly={false} />
         </Flex>
 
-        <Divider style={{ margin: '12px 0' }} />
+        <Divider
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ margin: '12px 0' }}
+        />
 
         <Button
           type="text"
@@ -112,7 +117,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           icon={<LogoutOutlined />}
           onClick={onLogout}
           data-testid="main-logout-button"
-          style={{ width: '100%', justifyContent: 'flex-start' }}
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ justifyContent: 'flex-start' }}
+          className="w-full"
         >
           {t('navigation.logout')}
         </Button>

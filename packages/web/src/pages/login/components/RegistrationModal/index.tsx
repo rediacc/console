@@ -353,7 +353,6 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
               },
             },
           ]}
-          style={{ marginBottom: 0 }}
         >
           <Checkbox>
             {
@@ -387,7 +386,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
         {/* Cloudflare Turnstile - only render if enabled and not in CI mode */}
         {isCaptchaEnabled && !ciMode && (
-          <Flex style={{ flex: '0 0 auto' }}>
+          <Flex className="flex-shrink-0">
             <Turnstile
               sitekey={turnstileSiteKey}
               onVerify={onTurnstileSuccess}
@@ -398,7 +397,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         )}
       </Flex>
 
-      <Form.Item style={{ marginBottom: 0 }}>
+      <Form.Item>
         <Button
           type="primary"
           htmlType="submit"
@@ -421,7 +420,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       requiredMark={false}
       data-testid="registration-verification-form"
     >
-      <Flex vertical gap={16} style={{ width: '100%' }}>
+      <Flex vertical gap={16} className="w-full">
         <Alert
           message={t('auth:registration.verificationRequired')}
           description={t('auth:registration.verificationDescription')}
@@ -440,7 +439,6 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           ]}
         >
           <Input
-            style={{ fontSize: 16, letterSpacing: '0.5em', textAlign: 'center' }}
             placeholder={t('auth:registration.activationCodePlaceholder')}
             autoComplete="off"
             maxLength={6}
@@ -448,7 +446,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           />
         </Form.Item>
 
-        <Form.Item style={{ marginBottom: 0 }}>
+        <Form.Item>
           <Button
             type="primary"
             htmlType="submit"
@@ -464,11 +462,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   );
 
   const renderSuccess = () => (
-    <Flex vertical style={{ textAlign: 'center' }} data-testid="registration-success-container">
-      <Flex
-        style={{ display: 'inline-flex', fontSize: 40 }}
-        data-testid="registration-success-icon"
-      >
+    <Flex vertical data-testid="registration-success-container">
+      <Flex className="inline-flex" data-testid="registration-success-icon">
         <CheckCircleOutlined />
       </Flex>
       <Typography.Title level={4} data-testid="registration-success-title">
@@ -502,7 +497,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       destroyOnClose
       data-testid="registration-modal"
     >
-      <Flex vertical gap={16} style={{ width: '100%' }}>
+      <Flex vertical gap={16} className="w-full">
         <Steps
           current={currentStep}
           size="small"

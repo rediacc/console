@@ -28,11 +28,11 @@ export const buildSnapshotColumns = ({
       <Flex
         align="center"
         gap={8}
-        style={{ display: 'inline-flex' }}
+        className="inline-flex"
         data-testid={`snapshot-list-item-${record.snapshotName}`}
       >
-        <CameraOutlined style={{ fontSize: 16 }} />
-        <Typography.Text style={{ fontWeight: 400 }}>{text}</Typography.Text>
+        <CameraOutlined />
+        <Typography.Text>{text}</Typography.Text>
         {record.vaultContent && (
           <Tooltip title={t('common.hasVault')}>
             <Tag

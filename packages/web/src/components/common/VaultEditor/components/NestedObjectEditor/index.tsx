@@ -335,7 +335,9 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
     if (typeof entry.value === 'number') {
       return (
         <Input
-          style={{ width: '100%', maxWidth: 240 }}
+          className="w-full"
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ maxWidth: 240 }}
           value={String(entry.value)}
           onChange={(event) =>
             handleUpdateEntry(index, { value: Number(event.currentTarget.value) })
@@ -363,7 +365,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   };
 
   return (
-    <Flex vertical style={{ width: '100%' }}>
+    <Flex vertical className="w-full">
       {(title || description || structureInfo.isUniform) && (
         <Flex vertical>
           {title && <Typography.Text strong>{title}</Typography.Text>}
@@ -374,34 +376,36 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
           )}
           {structureInfo.isUniform && (
             <Flex wrap gap={8}>
-              <Tag color="success">{t('nestedObjectEditor.Uniform Structure')}</Tag>
+              <Tag>{t('nestedObjectEditor.Uniform Structure')}</Tag>
               {structureInfo.keys && (
-                <Typography.Text style={{ fontFamily: 'monospace' }}>
+                <Typography.Text>
                   {t('nestedObjectEditor.Fields')}: {structureInfo.keys.join(', ')}
                 </Typography.Text>
               )}
               {structureInfo.hasImagePattern && (
-                <Tag color="processing">{t('nestedObjectEditor.Container Images Detected')}</Tag>
+                <Tag>{t('nestedObjectEditor.Container Images Detected')}</Tag>
               )}
             </Flex>
           )}
         </Flex>
       )}
 
-      <Flex vertical gap={16} style={{ width: '100%' }}>
+      <Flex vertical gap={16} className="w-full">
         {!readOnly && (
           <Card
             size="small"
             title={
-              <Typography.Text strong style={{ fontSize: 12 }}>
-                {t('nestedObjectEditor.Add New Entry')}
-              </Typography.Text>
+              <Typography.Text strong>{t('nestedObjectEditor.Add New Entry')}</Typography.Text>
             }
           >
             <Flex align="center" wrap gap={8}>
-              <Flex style={{ flex: '1 1 60%', minWidth: 240, maxWidth: '100%' }}>
+              <Flex
+                className="max-w-full"
+                // eslint-disable-next-line no-restricted-syntax
+                style={{ flex: '1 1 60%', minWidth: 240 }}
+              >
                 <Input
-                  style={{ width: '100%' }}
+                  className="w-full"
                   placeholder={t('nestedObjectEditor.Enter key name')}
                   value={newKey}
                   onChange={(event) => setNewKey(event.target.value)}
@@ -447,15 +451,11 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               key: entry.key,
               label: (
                 <Flex align="center" wrap gap={8}>
-                  <Tag color="processing">{entry.key}</Tag>
-                  {isRecordLike(entry.value) && (
-                    <Tag color="success">{t('nestedObjectEditor.Object')}</Tag>
-                  )}
-                  {Array.isArray(entry.value) && (
-                    <Tag color="warning">{t('nestedObjectEditor.Array')}</Tag>
-                  )}
+                  <Tag>{entry.key}</Tag>
+                  {isRecordLike(entry.value) && <Tag>{t('nestedObjectEditor.Object')}</Tag>}
+                  {Array.isArray(entry.value) && <Tag>{t('nestedObjectEditor.Array')}</Tag>}
                   {typeof entry.value === 'boolean' && (
-                    <Tag color={entry.value ? 'success' : 'default'}>
+                    <Tag>
                       {entry.value ? t('nestedObjectEditor.True') : t('nestedObjectEditor.False')}
                     </Tag>
                   )}

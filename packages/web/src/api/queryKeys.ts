@@ -113,11 +113,6 @@ export const QUERY_KEYS = {
     all: 'repositories' as const,
   },
 
-  // Architecture
-  architecture: {
-    company: ['companyArchitecture'] as const,
-  },
-
   // Two Factor Authentication
   twoFactor: {
     status: (userEmail?: string) => ['tfa-status', userEmail] as const,

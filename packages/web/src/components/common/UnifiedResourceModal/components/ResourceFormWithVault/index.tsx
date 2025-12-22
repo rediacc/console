@@ -119,7 +119,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
           wrapperCol={wrapperCol}
           labelAlign="right"
           colon
-          style={{ flexShrink: 0 }}
+          className="flex-shrink-0"
         >
           <Row gutter={rowGutter} wrap>
             {fields.map((field) => {
@@ -153,6 +153,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
         {beforeVaultContent}
 
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <Divider style={{ margin: '16px 0' }}>{t('vaultEditor.vaultConfiguration')}</Divider>
 
         <Flex data-testid="resource-modal-vault-editor-section">

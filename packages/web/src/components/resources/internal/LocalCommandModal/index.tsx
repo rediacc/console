@@ -207,7 +207,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       onCancel={onClose}
       footer={null}
     >
-      <Typography.Text style={{ display: 'block' }}>
+      <Typography.Text className="block">
         {t('resources:localCommandBuilder.description', { machine, repository })}
       </Typography.Text>
 
@@ -226,9 +226,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         <Form.Item>
           <Checkbox checked={useDocker} onChange={handleDockerChange}>
             {t('resources:localCommandBuilder.useDocker')}
-            <Typography.Text style={{ fontSize: 12 }}>
-              {t('resources:localCommandBuilder.useDockerHelp')}
-            </Typography.Text>
+            <Typography.Text>{t('resources:localCommandBuilder.useDockerHelp')}</Typography.Text>
           </Checkbox>
         </Form.Item>
 
@@ -236,7 +234,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
           <Form.Item>
             <Checkbox checked={useNetworkHost} onChange={handleNetworkHostChange}>
               {t('resources:localCommandBuilder.useNetworkHost')}
-              <Typography.Text style={{ fontSize: 12 }}>
+              <Typography.Text>
                 {t('resources:localCommandBuilder.useNetworkHostHelp')}
               </Typography.Text>
             </Checkbox>
@@ -299,7 +297,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         ]}
       />
 
-      <Flex vertical gap={12} style={{ width: '100%' }}>
+      <Flex vertical gap={12} className="w-full">
         <Flex align="center" justify="space-between" wrap>
           <Typography.Text strong>
             {t('resources:localCommandBuilder.generatedCommand')}:
@@ -317,10 +315,8 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
 
         {tokenError && (
           <Flex vertical gap={4}>
-            <Typography.Text color="danger" type="danger">
-              Token generation failed: {tokenError}
-            </Typography.Text>
-            <Typography.Text style={{ fontSize: 12 }}>
+            <Typography.Text type="danger">Token generation failed: {tokenError}</Typography.Text>
+            <Typography.Text>
               Copy will attempt without secure token. You may need to login manually.
             </Typography.Text>
           </Flex>
@@ -332,18 +328,17 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             text: getCommand(),
             onCopy: copyToClipboard,
           }}
-          style={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', marginBottom: 0 }}
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ whiteSpace: 'pre-wrap' }}
         >
           {getCommand()}
         </Typography.Paragraph>
 
         <Flex justify="space-between" wrap>
-          <Typography.Text style={{ fontSize: 12 }}>
+          <Typography.Text>
             {t('resources:localCommandBuilder.apiUrl')}: {apiUrl}
           </Typography.Text>
-          <Typography.Text style={{ fontSize: 12 }}>
-            Token: Secure token will be generated on copy
-          </Typography.Text>
+          <Typography.Text>Token: Secure token will be generated on copy</Typography.Text>
         </Flex>
       </Flex>
 

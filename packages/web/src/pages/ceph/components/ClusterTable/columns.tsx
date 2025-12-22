@@ -62,13 +62,14 @@ export const buildClusterColumns = ({
         return (
           <Flex align="center" gap={8}>
             <RightOutlined
+              // eslint-disable-next-line no-restricted-syntax
               style={{
                 transform: isExpanded ? 'rotate(90deg)' : undefined,
                 transition: 'transform 0.2s ease',
               }}
             />
-            <CloudServerOutlined style={{ fontSize: 16 }} />
-            <Typography.Text style={{ fontWeight: 400 }}>
+            <CloudServerOutlined />
+            <Typography.Text>
               {clusterNameColumn.render?.(name, record, index) as React.ReactNode}
             </Typography.Text>
           </Flex>
@@ -78,7 +79,7 @@ export const buildClusterColumns = ({
     {
       ...teamColumn,
       render: (teamName: string, record: CephCluster, index) => (
-        <Tag bordered={false} color="success">
+        <Tag bordered={false}>
           {teamColumn.render?.(teamName, record, index) as React.ReactNode}
         </Tag>
       ),

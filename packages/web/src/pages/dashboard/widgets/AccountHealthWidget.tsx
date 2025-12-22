@@ -8,12 +8,6 @@ import {
 } from '@/utils/optimizedIcons';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
 
-const STATUS_TYPE_MAP: Record<string, 'success' | 'warning' | 'error'> = {
-  Critical: 'error',
-  Warning: 'warning',
-  Good: 'success',
-};
-
 interface AccountHealthWidgetProps {
   accountHealth?: CompanyDashboardData['accountHealth'];
 }
@@ -24,7 +18,7 @@ const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth
       <Card
         data-testid="dashboard-account-health-card"
         title={
-          <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+          <Flex align="center" gap={8} wrap className="inline-flex">
             <SafetyCertificateOutlined />
             <Typography.Text>Account Health</Typography.Text>
           </Flex>
@@ -39,39 +33,34 @@ const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth
     <Card
       data-testid="dashboard-account-health-card"
       title={
-        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+        <Flex align="center" gap={8} wrap className="inline-flex">
           <SafetyCertificateOutlined />
           <Typography.Text>Account Health</Typography.Text>
         </Flex>
       }
     >
-      <Flex vertical gap={16} style={{ width: '100%' }}>
+      <Flex vertical gap={16} className="w-full">
         <Flex align="center" justify="space-between">
           <Typography.Text>Overall Status</Typography.Text>
-          <Tag
-            bordered={false}
-            color={STATUS_TYPE_MAP[accountHealth.subscriptionStatus] || 'success'}
-          >
-            {accountHealth.subscriptionStatus}
-          </Tag>
+          <Tag bordered={false}>{accountHealth.subscriptionStatus}</Tag>
         </Flex>
 
-        <Flex vertical gap={8} style={{ width: '100%' }}>
-          <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+        <Flex vertical gap={8} className="w-full">
+          <Flex align="center" gap={8} wrap className="inline-flex">
             {accountHealth.resourcesAtLimit > 0 ? (
-              <Flex style={{ display: 'inline-flex' }}>
+              <Flex className="inline-flex">
                 <ExclamationCircleOutlined />
               </Flex>
             ) : (
-              <Flex style={{ display: 'inline-flex' }}>
+              <Flex className="inline-flex">
                 <CheckCircleOutlined />
               </Flex>
             )}
             <Typography.Text>{accountHealth.resourcesAtLimit} resources at limit</Typography.Text>
           </Flex>
 
-          <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-            <Flex style={{ display: 'inline-flex' }}>
+          <Flex align="center" gap={8} wrap className="inline-flex">
+            <Flex className="inline-flex">
               <ClockCircleOutlined />
             </Flex>
             <Typography.Text>
@@ -80,7 +69,7 @@ const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth
           </Flex>
         </Flex>
 
-        <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+        <Flex align="center" justify="space-between" className="w-full">
           <Typography.Text strong>{accountHealth.upgradeRecommendation}</Typography.Text>
         </Flex>
       </Flex>

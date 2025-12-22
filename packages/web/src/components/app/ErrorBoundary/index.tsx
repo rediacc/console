@@ -107,14 +107,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       // Default error UI
       return (
-        <Flex
-          justify="center"
-          align="center"
-          style={{
-            padding: 24,
-            minHeight: 320,
-          }}
-        >
+        <Flex justify="center" align="center">
           <Result
             status="error"
             title={i18n.t('common:errorBoundary.title')}
@@ -123,14 +116,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 <Typography.Text>{i18n.t('common:errorBoundary.description')}</Typography.Text>
                 {import.meta.env.DEV && this.state.error && (
                   <details
+                    // eslint-disable-next-line no-restricted-syntax
                     style={{
                       padding: 12,
-                      textAlign: 'left',
                       fontSize: 12,
                       fontFamily: 'monospace',
                     }}
                   >
-                    <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
+                    <summary className="cursor-pointer">
                       {i18n.t('common:errorBoundary.errorDetails')}
                     </summary>
                     <Flex vertical gap={8}>

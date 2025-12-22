@@ -33,6 +33,7 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
   // If machine already has cephClusterName, we know it's assigned to a cluster
   if (machine.cephClusterName) {
     return (
+      // eslint-disable-next-line no-restricted-syntax
       <Flex
         align="flex-start"
         justify="flex-start"
@@ -50,6 +51,7 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
 
   if (isLoading) {
     return (
+      // eslint-disable-next-line no-restricted-syntax
       <Flex align="center" justify="center" style={{ minHeight: 24 }}>
         <InlineLoadingIndicator width={140} height={22} data-testid="machine-status-cell-loading" />
       </Flex>
@@ -58,6 +60,7 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
 
   if (!data) {
     return (
+      // eslint-disable-next-line no-restricted-syntax
       <Flex
         align="flex-start"
         justify="flex-start"
@@ -82,6 +85,7 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
   );
 
   return (
+    // eslint-disable-next-line no-restricted-syntax
     <Flex
       align="flex-start"
       justify="flex-start"

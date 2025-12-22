@@ -104,7 +104,7 @@ export const InteractionTracker: React.FC<InteractionTrackerProps> = ({ children
   }, [isInitialized, trackUserAction]);
 
   return (
-    <Flex ref={containerRef} style={{ width: '100%', height: '100%' }}>
+    <Flex ref={containerRef} className="w-full h-full">
       {children}
     </Flex>
   );

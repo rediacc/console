@@ -37,6 +37,8 @@ const SandboxWarning: React.FC = () => {
       type="warning"
       showIcon={false}
       closable={false}
+      className="flex items-center justify-center"
+      // eslint-disable-next-line no-restricted-syntax
       style={{
         position: 'fixed',
         top: 0,
@@ -44,12 +46,16 @@ const SandboxWarning: React.FC = () => {
         right: 0,
         zIndex: 1000,
         minHeight: 40,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
       }}
       message={
-        <Flex align="center" gap={8} wrap style={{ textAlign: 'center', fontWeight: 500 }}>
+        <Flex
+          align="center"
+          gap={8}
+          wrap
+          className="text-center"
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ fontWeight: 500 }}
+        >
           <ExclamationCircleOutlined />
           <strong>{t('warnings.sandboxEnvironment')}:</strong> {t('warnings.sandboxMessage')}
         </Flex>

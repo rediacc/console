@@ -70,22 +70,18 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
       >
         <Flex
           data-testid={`available-machines-option-content-${machine.machineName}`}
-          style={{ alignItems: 'center', width: '100%' }}
+          align="center"
+          className="w-full"
         >
-          <Flex style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap' }}>
-            <Typography.Text style={{ display: 'inline-flex', alignItems: 'center', fontSize: 16 }}>
+          <Flex align="center" wrap className="inline-flex">
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <Typography.Text className="inline-flex items-center" style={{ fontSize: 16 }}>
               <CloudServerOutlined />
             </Typography.Text>
-            <Typography.Text
-              style={{
-                fontWeight: 600,
-              }}
-            >
-              {machine.machineName}
-            </Typography.Text>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <Typography.Text style={{ fontWeight: 600 }}>{machine.machineName}</Typography.Text>
             <Tag
               bordered={false}
-              color="success"
               data-testid={`available-machines-team-tag-${machine.machineName}`}
             >
               {machine.teamName}
@@ -93,7 +89,6 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
             {machine.bridgeName && (
               <Tag
                 bordered={false}
-                color="processing"
                 data-testid={`available-machines-bridge-tag-${machine.machineName}`}
               >
                 {machine.bridgeName}
@@ -104,38 +99,35 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
             <Flex align="center">
               {isAssigned ? (
                 machine.cephClusterName ? (
-                  <Tag
-                    data-testid={`available-machines-cluster-tag-${machine.machineName}`}
-                    color="processing"
-                  >
-                    <Typography.Text style={{ display: 'inline-flex', fontSize: 12 }}>
+                  <Tag data-testid={`available-machines-cluster-tag-${machine.machineName}`}>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <Typography.Text className="inline-flex" style={{ fontSize: 12 }}>
                       <WarningOutlined />
                     </Typography.Text>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <Typography.Text style={{ fontSize: 12 }}>
                       {t('machines:assignmentStatus.cluster')}: {machine.cephClusterName}
                     </Typography.Text>
                   </Tag>
                 ) : (
-                  <Tag
-                    data-testid={`available-machines-assigned-tag-${machine.machineName}`}
-                    color="warning"
-                  >
-                    <Typography.Text style={{ display: 'inline-flex', fontSize: 12 }}>
+                  <Tag data-testid={`available-machines-assigned-tag-${machine.machineName}`}>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <Typography.Text className="inline-flex" style={{ fontSize: 12 }}>
                       <WarningOutlined />
                     </Typography.Text>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <Typography.Text style={{ fontSize: 12 }}>
                       {t('machines:assignmentStatus.assigned', 'Assigned')}
                     </Typography.Text>
                   </Tag>
                 )
               ) : (
-                <Tag
-                  data-testid={`available-machines-available-tag-${machine.machineName}`}
-                  color="success"
-                >
-                  <Typography.Text style={{ display: 'inline-flex', fontSize: 12 }}>
+                <Tag data-testid={`available-machines-available-tag-${machine.machineName}`}>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <Typography.Text className="inline-flex" style={{ fontSize: 12 }}>
                     <CheckCircleOutlined />
                   </Typography.Text>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <Typography.Text style={{ fontSize: 12 }}>
                     {t('machines:assignmentStatus.available')}
                   </Typography.Text>
@@ -151,6 +143,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
   return (
     <Select
       mode="multiple"
+      // eslint-disable-next-line no-restricted-syntax
       style={{ width: '100%', ...style }}
       placeholder={placeholder || t('machines:selectMachines')}
       value={value}
@@ -196,6 +189,7 @@ export const SimpleMachineSelector: React.FC<{
       loading={isLoading}
       placeholder={placeholder}
       disabled={disabled}
+      // eslint-disable-next-line no-restricted-syntax
       style={style}
     />
   );

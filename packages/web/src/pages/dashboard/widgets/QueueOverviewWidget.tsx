@@ -24,7 +24,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
     return (
       <Card
         title={
-          <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+          <Flex align="center" gap={8} wrap className="inline-flex">
             <RobotOutlined />
             <Typography.Text>Queue Overview</Typography.Text>
           </Flex>
@@ -39,7 +39,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
   return (
     <Card
       title={
-        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+        <Flex align="center" gap={8} wrap className="inline-flex">
           <RobotOutlined />
           <Typography.Text>Queue Overview</Typography.Text>
         </Flex>
@@ -48,6 +48,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
         <RouterLink
           to="/queue"
           data-testid="dashboard-queue-manage-link"
+          // eslint-disable-next-line no-restricted-syntax
           style={{ fontWeight: 500 }}
         >
           Manage
@@ -55,7 +56,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
       }
       data-testid="dashboard-card-queue-overview"
     >
-      <Flex vertical gap={16} style={{ width: '100%' }}>
+      <Flex vertical gap={16} className="w-full">
         <Row gutter={[16, 16]}>
           <Col xs={12} md={6}>
             <Statistic
@@ -92,7 +93,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
         </Row>
 
         {(queueStats.hasStaleItems === 1 || queueStats.hasOldPendingItems === 1) && (
-          <Flex vertical gap={8} style={{ width: '100%' }}>
+          <Flex vertical gap={8} className="w-full">
             {queueStats.hasStaleItems === 1 && (
               <Alert
                 message={`${queueStats.staleCount || 0} stale items`}

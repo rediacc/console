@@ -38,7 +38,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
                 data-testid={`resource-form-field-${field.name}`}
-                style={{ width: '100%' }}
+                className="w-full"
               />
             )}
           />
@@ -56,7 +56,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
                 disabled={field.disabled}
                 autoComplete="off"
                 data-testid={`resource-form-field-${field.name}`}
-                style={{ width: '100%' }}
+                className="w-full"
               />
             )}
           />
@@ -75,7 +75,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
                 disabled={field.disabled}
                 autoComplete="off"
                 data-testid={`resource-form-field-${field.name}`}
-                style={{ width: '100%' }}
+                className="w-full"
               />
             )}
           />
@@ -100,7 +100,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
       labelAlign="right"
       colon
       data-testid="resource-form"
-      style={{ width: '100%' }}
+      className="w-full"
     >
       {fields.map((field) => {
         if (field.hidden) return null;
@@ -121,7 +121,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
       })}
 
       <Form.Item wrapperCol={{ offset: labelCol.span, span: wrapperCol.span }}>
-        <Flex justify="flex-end" style={{ width: '100%' }}>
+        <Flex justify="flex-end" className="w-full">
           {onCancel && (
             <Button onClick={onCancel} disabled={loading} data-testid="resource-form-cancel-button">
               {cancelText}

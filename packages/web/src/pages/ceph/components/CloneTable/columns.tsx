@@ -27,8 +27,8 @@ export const buildCloneColumns = ({
     key: 'cloneName',
     render: (text: string, record: CephRbdClone) => (
       <Flex align="center" gap={8} data-testid={`clone-list-item-${record.cloneName}`}>
-        <CopyOutlined style={{ fontSize: 16 }} />
-        <Typography.Text style={{ fontWeight: 400 }}>{text}</Typography.Text>
+        <CopyOutlined />
+        <Typography.Text>{text}</Typography.Text>
         {record.vaultContent && (
           <Tooltip title={t('common.hasVault')}>
             <Tag data-testid={`clone-list-vault-tag-${record.cloneName}`} bordered={false}>

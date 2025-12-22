@@ -26,7 +26,7 @@ export const QueueStatisticsBar: React.FC<QueueStatisticsBarProps> = ({
   return (
     <Flex wrap="wrap" align="center" gap={8}>
       <Flex align="center" gap={4}>
-        <Typography.Text style={{ display: 'inline-flex' }}>
+        <Typography.Text className="inline-flex">
           <ThunderboltOutlined />
         </Typography.Text>
         <Typography.Text>{t('queue:statistics.total')}:</Typography.Text>
@@ -34,7 +34,7 @@ export const QueueStatisticsBar: React.FC<QueueStatisticsBarProps> = ({
       </Flex>
       <Divider type="vertical" />
       <Flex align="center" gap={4}>
-        <Typography.Text style={{ display: 'inline-flex' }}>
+        <Typography.Text className="inline-flex">
           <PlayCircleOutlined />
         </Typography.Text>
         <Typography.Text>{t('queue:statistics.active')}:</Typography.Text>
@@ -42,7 +42,7 @@ export const QueueStatisticsBar: React.FC<QueueStatisticsBarProps> = ({
       </Flex>
       <Divider type="vertical" />
       <Flex align="center" gap={4}>
-        <Typography.Text style={{ display: 'inline-flex' }}>
+        <Typography.Text className="inline-flex">
           <ExclamationCircleOutlined />
         </Typography.Text>
         <Typography.Text>{t('queue:statistics.failed')}:</Typography.Text>
@@ -50,7 +50,7 @@ export const QueueStatisticsBar: React.FC<QueueStatisticsBarProps> = ({
       </Flex>
       <Divider type="vertical" />
       <Flex align="center" gap={4}>
-        <Typography.Text style={{ display: 'inline-flex' }}>
+        <Typography.Text className="inline-flex">
           <WarningOutlined />
         </Typography.Text>
         <Typography.Text>{t('queue:statistics.stale')}:</Typography.Text>

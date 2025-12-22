@@ -240,7 +240,7 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
     </DetailPanelSectionHeader>
 
     <Card size="small" data-testid="vault-status-system-info-card">
-      <Flex vertical gap={8} style={{ width: '100%' }}>
+      <Flex vertical gap={8} className="w-full">
         <DetailPanelFieldRow>
           <DetailPanelFieldLabel>{t('resources:repositories.hostname')}:</DetailPanelFieldLabel>
           <DetailPanelFieldValue data-testid="vault-status-hostname">
@@ -303,15 +303,13 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
           <Card size="small" data-testid="vault-status-memory-card">
             <Flex justify="space-between" align="center">
               <DatabaseOutlined />
-              <Typography.Title level={5} style={{ fontSize: 16 }}>
-                {t('resources:repositories.memory')}
-              </Typography.Title>
+              <Typography.Title level={5}>{t('resources:repositories.memory')}</Typography.Title>
             </Flex>
             <Progress percent={Math.round(memoryPercent)} />
-            <Typography.Text style={{ fontSize: 12 }}>
+            <Typography.Text>
               {t('resources:repositories.used')}: {system.memory.used} / {system.memory.total}
             </Typography.Text>
-            <Typography.Text style={{ fontSize: 12 }}>
+            <Typography.Text>
               {t('resources:repositories.available')}: {system.memory.available}
             </Typography.Text>
           </Card>
@@ -321,15 +319,13 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
           <Card size="small" data-testid="vault-status-disk-card">
             <Flex justify="space-between" align="center">
               <HddOutlined />
-              <Typography.Title level={5} style={{ fontSize: 16 }}>
-                {t('resources:repositories.disk')}
-              </Typography.Title>
+              <Typography.Title level={5}>{t('resources:repositories.disk')}</Typography.Title>
             </Flex>
             <Progress percent={diskPercent} />
-            <Typography.Text style={{ fontSize: 12 }}>
+            <Typography.Text>
               {t('resources:repositories.used')}: {system.disk.used} / {system.disk.total}
             </Typography.Text>
-            <Typography.Text style={{ fontSize: 12 }}>
+            <Typography.Text>
               {t('resources:repositories.available')}: {system.disk.available}
             </Typography.Text>
           </Card>
@@ -339,9 +335,7 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
           <Card size="small" data-testid="vault-status-datastore-card">
             <Flex justify="space-between" align="center">
               <DatabaseOutlined />
-              <Typography.Title level={5} style={{ fontSize: 16 }}>
-                {t('resources:repositories.datastore')}
-              </Typography.Title>
+              <Typography.Title level={5}>{t('resources:repositories.datastore')}</Typography.Title>
             </Flex>
             {system.datastore.path && (
               <DetailPanelFieldRow>
@@ -352,10 +346,10 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
               </DetailPanelFieldRow>
             )}
             <Progress percent={datastorePercent} />
-            <Typography.Text style={{ fontSize: 12 }}>
+            <Typography.Text>
               {t('resources:repositories.used')}: {system.datastore.used} / {system.datastore.total}
             </Typography.Text>
-            <Typography.Text style={{ fontSize: 12 }}>
+            <Typography.Text>
               {t('resources:repositories.available')}: {system.datastore.available}
             </Typography.Text>
           </Card>
@@ -383,7 +377,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
 
       {network.default_gateway && (
         <Card size="small" data-testid="vault-status-gateway-card">
-          <Flex vertical gap={8} style={{ width: '100%' }}>
+          <Flex vertical gap={8} className="w-full">
             <DetailPanelFieldRow>
               <DetailPanelFieldLabel>
                 {t('resources:repositories.defaultGateway')}:
@@ -421,11 +415,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
                     {iface.name}
                   </DetailPanelFieldStrongValue>
                 </DetailPanelTitleGroup>
-                <Tag
-                  bordered={false}
-                  color={iface.state === 'UP' ? 'success' : 'default'}
-                  data-testid={`vault-status-network-state-${iface.name}`}
-                >
+                <Tag bordered={false} data-testid={`vault-status-network-state-${iface.name}`}>
                   {iface.state}
                 </Tag>
               </Flex>
@@ -437,12 +427,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
                     </DetailPanelFieldLabel>
                     <Flex>
                       {iface.ipv4_addresses.map((ip: string) => (
-                        <Tag
-                          key={ip}
-                          color="processing"
-                          bordered={false}
-                          data-testid={`vault-status-ip-${ip}`}
-                        >
+                        <Tag key={ip} bordered={false} data-testid={`vault-status-ip-${ip}`}>
                           {ip}
                         </Tag>
                       ))}
@@ -499,18 +484,10 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
                 </DetailPanelFieldStrongValue>
               </DetailPanelTitleGroup>
               <Flex>
-                <Tag
-                  bordered={false}
-                  color="default"
-                  data-testid={`vault-status-device-type-${device.name}`}
-                >
+                <Tag bordered={false} data-testid={`vault-status-device-type-${device.name}`}>
                   {device.type}
                 </Tag>
-                <Tag
-                  bordered={false}
-                  color="processing"
-                  data-testid={`vault-status-device-size-${device.name}`}
-                >
+                <Tag bordered={false} data-testid={`vault-status-device-size-${device.name}`}>
                   {device.size_human}
                 </Tag>
               </Flex>
@@ -533,13 +510,9 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
                   </DetailPanelFieldLabel>
                   <Flex vertical>
                     {device.partitions.map((part: BlockDevicePartition) => (
-                      <Flex
-                        key={`${device.name}-${part.name}`}
-                        align="center"
-                        style={{ fontSize: 12 }}
-                      >
+                      <Flex key={`${device.name}-${part.name}`} align="center">
                         <CodeOutlined />
-                        <Typography.Text style={{ fontSize: 12 }}>
+                        <Typography.Text>
                           {part.name}: {part.size_human}
                           {part.filesystem && ` (${part.filesystem})`}
                           {part.mountpoint && ` • ${part.mountpoint}`}
@@ -583,21 +556,13 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
                   {container.name}
                 </DetailPanelFieldStrongValue>
               </DetailPanelTitleGroup>
-              <Tag
-                bordered={false}
-                color={container.state === 'running' ? 'success' : 'default'}
-                data-testid={`vault-status-container-state-${container.id}`}
-              >
+              <Tag bordered={false} data-testid={`vault-status-container-state-${container.id}`}>
                 {container.state}
               </Tag>
             </Flex>
 
             <Flex vertical>
-              {container.image && (
-                <Typography.Text ellipsis style={{ fontSize: 12 }}>
-                  {container.image}
-                </Typography.Text>
-              )}
+              {container.image && <Typography.Text ellipsis>{container.image}</Typography.Text>}
               {container.cpu_percent && (
                 <Flex justify="space-between" align="center">
                   <DetailPanelFieldLabel>CPU:</DetailPanelFieldLabel>

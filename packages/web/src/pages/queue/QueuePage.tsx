@@ -1,16 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import {
-  Badge,
-  Button,
-  Dropdown,
-  Flex,
-  Modal,
-  Space,
-  Tabs,
-  Tooltip,
-  Typography,
-  theme,
-} from 'antd';
+import { Badge, Button, Dropdown, Flex, Modal, Space, Tabs, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { QueueFilters, type QueueStatistics, useQueueItems } from '@/api/queries/queue';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -51,7 +40,6 @@ type QueuePageFilters = {
 const QueuePage: React.FC = () => {
   const { t } = useTranslation(['queue', 'common']);
   const [modal, contextHolder] = Modal.useModal();
-  const { token } = theme.useToken();
 
   // Filter state management with useFilters hook
   const {
@@ -264,7 +252,7 @@ const QueuePage: React.FC = () => {
     <Flex vertical data-testid="queue-page-container">
       {contextHolder}
       <Flex vertical data-testid="queue-filters-card">
-        <Flex vertical gap={8} style={{ width: '100%' }}>
+        <Flex vertical gap={8} className="w-full">
           <QueueFilterPanel
             filters={filters}
             dropdownData={dropdownData}
@@ -329,10 +317,10 @@ const QueuePage: React.FC = () => {
               <Tooltip title={t('queue:tabs.active.tooltip')}>
                 <Typography.Text
                   data-testid="queue-tab-active"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                  className="inline-flex items-center gap-2"
                 >
                   {t('queue:tabs.active.title')}
-                  <Badge count={activeItems.length} color={token.colorTextSecondary} />
+                  <Badge count={activeItems.length} />
                 </Typography.Text>
               </Tooltip>
             ),
@@ -362,14 +350,10 @@ const QueuePage: React.FC = () => {
               <Tooltip title={t('queue:tabs.completed.tooltip')}>
                 <Typography.Text
                   data-testid="queue-tab-completed"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                  className="inline-flex items-center gap-2"
                 >
                   {t('queue:tabs.completed.title')}
-                  <Badge
-                    count={completedCount || completedItems.length}
-                    showZero
-                    color={token.colorSuccess}
-                  />
+                  <Badge count={completedCount || completedItems.length} showZero />
                 </Typography.Text>
               </Tooltip>
             ),
@@ -399,14 +383,10 @@ const QueuePage: React.FC = () => {
               <Tooltip title={t('queue:tabs.cancelled.tooltip')}>
                 <Typography.Text
                   data-testid="queue-tab-cancelled"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                  className="inline-flex items-center gap-2"
                 >
                   {t('queue:tabs.cancelled.title')}
-                  <Badge
-                    count={cancelledCount || cancelledItems.length}
-                    showZero
-                    color={token.colorTextTertiary}
-                  />
+                  <Badge count={cancelledCount || cancelledItems.length} showZero />
                 </Typography.Text>
               </Tooltip>
             ),
@@ -436,14 +416,10 @@ const QueuePage: React.FC = () => {
               <Tooltip title={t('queue:tabs.failed.tooltip')}>
                 <Typography.Text
                   data-testid="queue-tab-failed"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                  className="inline-flex items-center gap-2"
                 >
                   {t('queue:tabs.failed.title')}
-                  <Badge
-                    count={failedCount || failedItems.length}
-                    showZero
-                    color={token.colorError}
-                  />
+                  <Badge count={failedCount || failedItems.length} showZero />
                 </Typography.Text>
               </Tooltip>
             ),

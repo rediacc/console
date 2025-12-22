@@ -73,23 +73,10 @@ const NotificationBell: React.FC = () => {
     })();
 
     return (
-      <Flex style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Flex align="center" justify="center" className="inline-flex">
         <IconComponent />
       </Flex>
     );
-  };
-
-  const getTypeColor = (type: NotificationType) => {
-    switch (type) {
-      case 'success':
-        return 'success';
-      case 'error':
-        return 'error';
-      case 'warning':
-        return 'warning';
-      case 'info':
-        return 'processing';
-    }
   };
 
   const handleMarkAsRead = (id: string) => {
@@ -111,17 +98,17 @@ const NotificationBell: React.FC = () => {
 
   const dropdownContent = (
     <Card styles={{ body: { padding: 0 } }} data-testid="notification-dropdown">
-      <Flex vertical style={{ maxHeight: 400, minWidth: 320 }} className="notification-dropdown">
-        <Flex
-          align="center"
-          justify="space-between"
-          style={{ padding: '16px 24px', fontWeight: 600 }}
-        >
+      <Flex
+        vertical
+        // eslint-disable-next-line no-restricted-syntax
+        style={{ maxHeight: 400, minWidth: 320 }}
+        className="notification-dropdown"
+      >
+        <Flex align="center" justify="space-between">
           <Typography.Text strong>{t('notifications.title', 'Notifications')}</Typography.Text>
           {notifications.length > 0 && (
             <Space>
               <Button
-                style={{ padding: '0 12px', fontSize: 12 }}
                 onClick={handleMarkAllAsRead}
                 disabled={unreadCount === 0}
                 data-testid="notification-mark-all-read"
@@ -131,7 +118,6 @@ const NotificationBell: React.FC = () => {
               <Button
                 type="text"
                 danger
-                style={{ padding: '0 12px', fontSize: 12 }}
                 onClick={handleClearAll}
                 data-testid="notification-clear-all"
               >
@@ -141,9 +127,17 @@ const NotificationBell: React.FC = () => {
           )}
         </Flex>
 
-        <Flex vertical style={{ maxHeight: 320, overflowY: 'auto' }}>
+        <Flex
+          vertical
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ maxHeight: 320 }}
+          className="overflow-auto"
+        >
           {notifications.length === 0 ? (
-            <Flex style={{ padding: '40px 0' }}>
+            <Flex
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ padding: '40px 0' }}
+            >
               <Empty description={t('notifications.empty', 'No notifications')} />
             </Flex>
           ) : (
@@ -152,23 +146,17 @@ const NotificationBell: React.FC = () => {
               renderItem={(notification: Notification, index: number) => (
                 <Flex
                   key={notification.id}
-                  style={{ padding: '16px 24px', cursor: 'pointer' }}
+                  className="cursor-pointer"
                   onClick={() => handleMarkAsRead(notification.id)}
                   data-testid={`notification-item-${index}`}
                 >
                   <List.Item.Meta
                     title={
-                      <Flex style={{ justifyContent: 'space-between', width: '100%' }}>
-                        <Flex
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flex: 1 }}
-                        >
-                          <Typography.Text style={{ fontWeight: notification.read ? 400 : 600 }}>
-                            {notification.title}
-                          </Typography.Text>
+                      <Flex justify="space-between" className="w-full">
+                        <Flex align="center" gap={8} className="inline-flex flex-1">
+                          <Typography.Text>{notification.title}</Typography.Text>
                           <Typography.Text>
-                            <Tag color={getTypeColor(notification.type)}>
-                              {t(`notifications.types.${notification.type}`).toUpperCase()}
-                            </Tag>
+                            <Tag>{t(`notifications.types.${notification.type}`).toUpperCase()}</Tag>
                           </Typography.Text>
                           {getIcon(notification.type)}
                         </Flex>
@@ -178,19 +166,16 @@ const NotificationBell: React.FC = () => {
                           onClick={(e) => handleClear(notification.id, e)}
                           data-testid={`notification-close-${index}`}
                           aria-label="Close notification"
-                          style={{ flexShrink: 0 }}
+                          className="flex-shrink-0"
                         />
                       </Flex>
                     }
                     description={
                       <Flex vertical>
-                        <Flex
-                          style={{ display: 'block', wordBreak: 'break-word' }}
-                          className="notification-message"
-                        >
+                        <Flex className="notification-message">
                           <Typography.Text type="secondary">{notification.message}</Typography.Text>
                         </Flex>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text type="secondary">
                           {dayjs(notification.timestamp).fromNow()}
                         </Typography.Text>
                       </Flex>
@@ -220,7 +205,6 @@ const NotificationBell: React.FC = () => {
           icon={<BellOutlined />}
           aria-label="Notifications"
           data-testid="notification-bell"
-          style={{ width: 40, height: 40 }}
         />
       </Dropdown>
     </Badge>

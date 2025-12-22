@@ -137,7 +137,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       renderWrapper: (content) => (
         <Flex align="center" gap={8}>
           <CloudServerOutlined />
-          <Typography.Text style={{ fontWeight: 500 }}>{content}</Typography.Text>
+          <Typography.Text>{content}</Typography.Text>
         </Flex>
       ),
     });
@@ -146,11 +146,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       title: t('machines:team'),
       dataIndex: 'teamName',
       key: 'teamName',
-      renderWrapper: (content) => (
-        <Tag bordered={false} color="success" style={{ fontSize: 12 }}>
-          {content}
-        </Tag>
-      ),
+      renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
     });
 
     return [
@@ -161,13 +157,9 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
         key: 'currentCluster',
         render: (_: unknown, record: Machine) =>
           record.cephClusterName ? (
-            <Tag bordered={false} color="processing" style={{ fontSize: 12 }}>
-              {record.cephClusterName}
-            </Tag>
+            <Tag bordered={false}>{record.cephClusterName}</Tag>
           ) : (
-            <Tag bordered={false} color="success" style={{ fontSize: 12 }}>
-              {t('machines:assignmentStatus.available')}
-            </Tag>
+            <Tag bordered={false}>{t('machines:assignmentStatus.available')}</Tag>
           ),
       },
     ];
@@ -211,7 +203,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       }}
       data-testid="ds-assign-cluster-modal"
     >
-      <Flex vertical gap={24} style={{ width: '100%' }}>
+      <Flex vertical gap={24} className="w-full">
         {isBulkMode ? (
           <>
             <Alert
@@ -257,10 +249,8 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
           )
         )}
 
-        <Flex vertical gap={8} style={{ width: '100%' }}>
-          <Typography.Text style={{ fontWeight: 500 }}>
-            {t('ceph:clusters.cluster')}:
-          </Typography.Text>
+        <Flex vertical gap={8} className="w-full">
+          <Typography.Text>{t('ceph:clusters.cluster')}:</Typography.Text>
           {clustersLoading ? (
             <LoadingWrapper loading centered minHeight={80}>
               <Flex />
@@ -274,13 +264,11 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
                 showSearch
                 optionFilterProp="children"
                 options={clusterOptions}
-                style={{ width: '100%' }}
+                className="w-full"
                 data-testid="ds-assign-cluster-select"
               />
               {!isBulkMode && (
-                <Typography.Text style={{ fontSize: 12 }}>
-                  {t('machines:clusterAssignmentHelp')}
-                </Typography.Text>
+                <Typography.Text>{t('machines:clusterAssignmentHelp')}</Typography.Text>
               )}
             </>
           )}

@@ -70,6 +70,7 @@ export const renderTruncatedId = (
 
   return (
     <Tooltip title={id}>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <Typography.Text style={truncatedMonoTextStyle}>{display}</Typography.Text>
     </Tooltip>
   );
@@ -115,10 +116,9 @@ export const renderVersionTag = (
 };
 
 /**
- * Status color configuration type
+ * Status configuration type
  */
 export interface StatusConfig {
-  color: string;
   icon?: React.ReactNode;
   label?: string;
 }
@@ -131,12 +131,13 @@ export interface StatusConfig {
  */
 export const createStatusRenderer = <T extends string>(
   statusMap: Record<T, StatusConfig>,
-  defaultConfig: StatusConfig = { color: 'default' }
+  defaultConfig: StatusConfig = {}
 ) => {
   function StatusRenderer(status: T): React.ReactNode {
     const config = statusMap[status] || defaultConfig;
     return (
       <Tooltip title={config.label || status}>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <Typography.Text style={statusIconWrapperStyle}>{config.icon}</Typography.Text>
       </Tooltip>
     );
@@ -184,5 +185,5 @@ export const renderBoolean = (
   if (value === null || value === undefined) {
     return <Typography.Text>-</Typography.Text>;
   }
-  return value ? <Tag color="success">{yesText}</Tag> : <Tag>{noText}</Tag>;
+  return value ? <Tag>{yesText}</Tag> : <Tag>{noText}</Tag>;
 };

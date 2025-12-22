@@ -85,7 +85,7 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
         }
         colon={false}
       >
-        <Flex vertical gap={8} style={{ width: '100%' }}>
+        <Flex vertical gap={8} className="w-full">
           <Descriptions bordered size="small" column={1}>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.operatingSystem')}>
               {osInfo.pretty_name || t('vaultEditor.systemCompatibility.unknown')}
@@ -95,19 +95,17 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
             </Descriptions.Item>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.btrfsAvailable')}>
               {kernelCompatibility.btrfs_available ? (
-                <Tag color="success">{t('vaultEditor.systemCompatibility.yes')}</Tag>
+                <Tag>{t('vaultEditor.systemCompatibility.yes')}</Tag>
               ) : (
-                <Tag color="warning">{t('vaultEditor.systemCompatibility.no')}</Tag>
+                <Tag>{t('vaultEditor.systemCompatibility.no')}</Tag>
               )}
             </Descriptions.Item>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.sudoAvailable')}>
-              <Tag color={sudoConfigValue.color === 'neutral' ? 'default' : sudoConfigValue.color}>
-                {sudoConfigValue.text}
-              </Tag>
+              <Tag>{sudoConfigValue.text}</Tag>
             </Descriptions.Item>
             {osSetupCompleted !== null && (
               <Descriptions.Item label={t('vaultEditor.systemCompatibility.osSetup')}>
-                <Tag color={osSetupCompleted ? 'success' : 'warning'}>
+                <Tag>
                   {osSetupCompleted
                     ? t('vaultEditor.systemCompatibility.setupCompleted')
                     : t('vaultEditor.systemCompatibility.setupRequired')}
@@ -124,11 +122,8 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
                 <Typography.Text strong>
                   {t('vaultEditor.systemCompatibility.compatibilityStatus')}:
                 </Typography.Text>
-                <Typography.Text
-                  style={{
-                    textTransform: 'capitalize',
-                  }}
-                >
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <Typography.Text style={{ textTransform: 'capitalize' }}>
                   {t(`vaultEditor.systemCompatibility.${status}`)}
                 </Typography.Text>
               </Space>

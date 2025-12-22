@@ -122,6 +122,7 @@ const MachineRow: React.FC<
   return (
     <Flex
       align="center"
+      // eslint-disable-next-line no-restricted-syntax
       style={{
         cursor: onRowClick ? 'pointer' : 'default',
         minHeight: 40,
@@ -130,9 +131,13 @@ const MachineRow: React.FC<
       onClick={handleRowClick}
       data-testid={`virtual-machine-row-${machine.machineName}`}
     >
-      <Flex align="center" style={{ width: '100%' }}>
+      <Flex align="center" className="w-full">
         {selectable && (
-          <Flex style={{ width: 32, flexShrink: 0 }}>
+          <Flex
+            className="flex-shrink-0"
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ width: 32 }}
+          >
             <Checkbox
               checked={isSelected}
               onClick={handleCheckboxChange}
@@ -142,33 +147,34 @@ const MachineRow: React.FC<
         )}
         <Typography.Text
           data-testid={`virtual-machine-name-${machine.machineName}`}
+          className="flex-1 overflow-hidden"
+          // eslint-disable-next-line no-restricted-syntax
           style={{
-            flex: 1,
             minWidth: 200,
-            fontWeight: 500,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
           }}
         >
           {machine.machineName}
         </Typography.Text>
         <Typography.Text
+          className="overflow-hidden"
+          // eslint-disable-next-line no-restricted-syntax
           style={{
             width: 200,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
           }}
         >
           {machine.teamName}
         </Typography.Text>
-        <Flex style={{ width: 160 }} data-testid={`virtual-machine-status-${machine.machineName}`}>
+        <Flex
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ width: 160 }}
+          data-testid={`virtual-machine-status-${machine.machineName}`}
+        >
           <MachineAssignmentStatusCell machine={machine} />
         </Flex>
         {renderActions && (
           <Flex
             justify="flex-end"
+            // eslint-disable-next-line no-restricted-syntax
             style={{ width: 120 }}
             data-testid={`virtual-machine-actions-${machine.machineName}`}
           >
@@ -231,6 +237,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
           <Flex
             align="center"
             justify="center"
+            // eslint-disable-next-line no-restricted-syntax
             style={style}
             data-testid="virtual-machine-row-loading"
           >
@@ -248,6 +255,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
         <MachineRow
           machine={machine}
           index={index}
+          // eslint-disable-next-line no-restricted-syntax
           style={style}
           selectable={rowSelectable}
           onRowClick={rowOnRowClick}
@@ -375,49 +383,57 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   return (
     <Flex
       vertical
-      style={{
-        overflow: 'hidden',
-      }}
+      className="overflow-hidden"
       onKeyDown={handleKeyDown}
       tabIndex={0}
       data-testid="virtual-machine-table"
     >
       <Flex
+        // eslint-disable-next-line no-restricted-syntax
         style={{
-          fontWeight: 500,
           position: 'sticky',
           top: 0,
-          zIndex: 10,
         }}
         data-testid="virtual-machine-header"
       >
-        <Flex align="center" style={{ width: '100%' }}>
-          {selectable && <Flex style={{ width: 32, flexShrink: 0 }} />}
+        <Flex align="center" className="w-full">
+          {selectable && (
+            <Flex
+              className="flex-shrink-0"
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ width: 32 }}
+            />
+          )}
           <Typography.Text
+            className="flex-1 overflow-hidden"
+            // eslint-disable-next-line no-restricted-syntax
             style={{
-              flex: 1,
               minWidth: 200,
-              fontWeight: 500,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
             }}
           >
             Machine Name
           </Typography.Text>
           <Typography.Text
+            className="overflow-hidden"
+            // eslint-disable-next-line no-restricted-syntax
             style={{
               width: 200,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
             }}
           >
             Team
           </Typography.Text>
-          <Typography.Text style={{ width: 160 }}>Assignment Status</Typography.Text>
+          <Typography.Text
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ width: 160 }}
+          >
+            Assignment Status
+          </Typography.Text>
           {renderActions && (
-            <Flex justify="flex-end" style={{ width: 120 }}>
+            <Flex
+              justify="flex-end"
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ width: 120 }}
+            >
               Actions
             </Flex>
           )}

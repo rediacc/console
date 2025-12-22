@@ -41,25 +41,21 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown;
 
   return (
-    <Flex vertical gap={16} style={{ width: '100%' }}>
+    <Flex vertical gap={16} className="w-full">
       {/* SSH Test Result Summary */}
       <Card size="small" title={t('trace.sshTestResult')}>
         <Descriptions column={2} size="small">
           <Descriptions.Item label="Status">
-            <Tag color="success">{result.status}</Tag>
+            <Tag>{result.status}</Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Machine">{result.machine || 'N/A'}</Descriptions.Item>
           <Descriptions.Item label="IP Address">{result.ip}</Descriptions.Item>
           <Descriptions.Item label="User">{result.user}</Descriptions.Item>
           <Descriptions.Item label="Auth Method">
-            <Tag color="default">{result.auth_method}</Tag>
+            <Tag>{result.auth_method}</Tag>
           </Descriptions.Item>
           <Descriptions.Item label="SSH Key">
-            {result.ssh_key_configured ? (
-              <Tag color="success">Configured</Tag>
-            ) : (
-              <Tag color="warning">Not Configured</Tag>
-            )}
+            {result.ssh_key_configured ? <Tag>Configured</Tag> : <Tag>Not Configured</Tag>}
           </Descriptions.Item>
         </Descriptions>
       </Card>
@@ -76,25 +72,21 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
           <Descriptions.Item label="OS ID">{osInfo.id || 'Unknown'}</Descriptions.Item>
           <Descriptions.Item label="Version">{osInfo.version_id || 'Unknown'}</Descriptions.Item>
           <Descriptions.Item label="BTRFS Support">
-            {compatibility.btrfs_available ? (
-              <Tag color="success">Available</Tag>
-            ) : (
-              <Tag color="warning">Not Available</Tag>
-            )}
+            {compatibility.btrfs_available ? <Tag>Available</Tag> : <Tag>Not Available</Tag>}
           </Descriptions.Item>
           <Descriptions.Item label="Sudo Support">
             {(() => {
               const sudoStatus = compatibility.sudo_available || 'unknown';
               if (sudoStatus === 'available') {
-                return <Tag color="success">Available</Tag>;
+                return <Tag>Available</Tag>;
               }
               if (sudoStatus === 'password_required') {
-                return <Tag color="warning">Password Required</Tag>;
+                return <Tag>Password Required</Tag>;
               }
               if (sudoStatus === 'not_installed') {
-                return <Tag color="error">Not Installed</Tag>;
+                return <Tag>Not Installed</Tag>;
               }
-              return <Tag color="default">Unknown</Tag>;
+              return <Tag>Unknown</Tag>;
             })()}
           </Descriptions.Item>
         </Descriptions>
@@ -109,9 +101,8 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
           <Space>
             <Typography.Text strong>Compatibility Status:</Typography.Text>
             <Typography.Text
-              style={{
-                textTransform: 'capitalize',
-              }}
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ textTransform: 'capitalize' }}
             >
               {status}
             </Typography.Text>
@@ -121,7 +112,11 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
           <>
             {compatibility.compatibility_issues &&
               compatibility.compatibility_issues.length > 0 && (
-                <Flex vertical style={{ marginTop: 8 }}>
+                <Flex
+                  vertical
+                  // eslint-disable-next-line no-restricted-syntax
+                  style={{ marginTop: 8 }}
+                >
                   <Typography.Text strong>Known Issues:</Typography.Text>
                   <ul>
                     {compatibility.compatibility_issues.map((issue: string, index: number) => (
@@ -131,7 +126,11 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
                 </Flex>
               )}
             {compatibility.recommendations && compatibility.recommendations.length > 0 && (
-              <Flex vertical style={{ marginTop: 16 }}>
+              <Flex
+                vertical
+                // eslint-disable-next-line no-restricted-syntax
+                style={{ marginTop: 16 }}
+              >
                 <Typography.Text strong>Recommendations:</Typography.Text>
                 <ul>
                   {compatibility.recommendations.map((rec: string, index: number) => (
@@ -146,7 +145,11 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
       />
 
       {/* Raw JSON fallback */}
-      <Flex vertical style={{ marginTop: 16 }}>
+      <Flex
+        vertical
+        // eslint-disable-next-line no-restricted-syntax
+        style={{ marginTop: 16 }}
+      >
         <Collapse
           items={[
             {

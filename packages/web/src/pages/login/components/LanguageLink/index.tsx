@@ -18,7 +18,8 @@ export function LanguageLink({ to, className, style, target, children }: Languag
     <Link
       to={localizedTo}
       className={className}
-      style={{ textDecoration: 'none', ...style }}
+      // eslint-disable-next-line no-restricted-syntax
+      style={style}
       target={target}
     >
       {children}

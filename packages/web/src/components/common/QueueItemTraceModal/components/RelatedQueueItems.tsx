@@ -19,16 +19,12 @@ export const RelatedQueueItems: React.FC<RelatedQueueItemsProps> = ({ queuePosit
       <Row gutter={[16, 16]}>
         <Col span={12}>
           <Card size="small" title={t('trace.tasksBefore')}>
-            <Flex vertical style={{ overflowY: 'auto' }}>
+            <Flex vertical className="overflow-auto">
               {tasksBefore.map((item, index) => (
                 <Flex key={index}>
                   <Space>
-                    <Typography.Text code style={{ fontFamily: 'monospace' }}>
-                      {item.taskId}
-                    </Typography.Text>
-                    <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'}>
-                      {item.status}
-                    </Tag>
+                    <Typography.Text code>{item.taskId}</Typography.Text>
+                    <Tag>{item.status}</Tag>
                     <Typography.Text>{dayjs(item.createdTime).fromNow()}</Typography.Text>
                   </Space>
                 </Flex>
@@ -41,16 +37,12 @@ export const RelatedQueueItems: React.FC<RelatedQueueItemsProps> = ({ queuePosit
         </Col>
         <Col span={12}>
           <Card size="small" title={t('trace.tasksAfter')}>
-            <Flex vertical style={{ overflowY: 'auto' }}>
+            <Flex vertical className="overflow-auto">
               {tasksAfter.map((item, index) => (
                 <Flex key={index}>
                   <Space>
-                    <Typography.Text code style={{ fontFamily: 'monospace' }}>
-                      {item.taskId}
-                    </Typography.Text>
-                    <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'}>
-                      {item.status}
-                    </Tag>
+                    <Typography.Text code>{item.taskId}</Typography.Text>
+                    <Tag>{item.status}</Tag>
                     <Typography.Text>{dayjs(item.createdTime).fromNow()}</Typography.Text>
                   </Space>
                 </Flex>

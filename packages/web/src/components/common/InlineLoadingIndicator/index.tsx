@@ -29,6 +29,7 @@ const InlineLoadingIndicator: React.FC<InlineLoadingIndicatorProps> = ({
   return (
     <Flex
       className={classes}
+      // eslint-disable-next-line no-restricted-syntax
       style={{
         width: typeof width === 'number' ? `${width}px` : width,
         height: typeof height === 'number' ? `${height}px` : height,

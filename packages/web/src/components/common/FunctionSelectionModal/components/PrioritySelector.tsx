@@ -33,7 +33,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
           {t('functions:priority')}
           <Popover
             content={
-              <Flex vertical style={{ maxWidth: 320 }}>
+              <Flex vertical>
                 <Flex>
                   <Typography.Text strong>{t('functions:priorityPopoverLevels')}</Typography.Text>
                 </Flex>
@@ -50,7 +50,11 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
             title={t('functions:priorityPopoverTitle')}
             trigger="click"
           >
-            <QuestionCircleOutlined style={{ fontSize: 16, cursor: 'pointer' }} />
+            <QuestionCircleOutlined
+              className="cursor-pointer"
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ fontSize: 16 }}
+            />
           </Popover>
         </Space>
       }
@@ -80,7 +84,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
         }}
         data-testid="function-modal-priority-slider"
       />
-      <Flex style={{ textAlign: 'center' }} justify="center">
+      <Flex className="text-center" justify="center">
         <Tag icon={priority === 1 ? <ExclamationCircleOutlined /> : undefined}>
           {t('functions:currentPriority')}: {getPriorityLabel(priority)} ({priority})
         </Tag>
@@ -102,7 +106,10 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
             priority === 1 ? (
               <Flex vertical>
                 <Typography.Text>{t('functions:priorityHighestTimeoutWarning')}</Typography.Text>
-                <Typography.Text style={{ fontStyle: 'italic' }}>
+                <Typography.Text
+                  // eslint-disable-next-line no-restricted-syntax
+                  style={{ fontStyle: 'italic' }}
+                >
                   {t('functions:priorityHighestDescription')}
                 </Typography.Text>
               </Flex>

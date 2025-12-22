@@ -44,6 +44,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         icon={<CloseCircleOutlined />}
         onClick={onCancel}
         loading={isCancelling}
+        // eslint-disable-next-line no-restricted-syntax
         style={{
           fontWeight: taskStaleness === 'critical' ? 600 : 500,
           fontSize: taskStaleness === 'critical' ? 14 : 12,

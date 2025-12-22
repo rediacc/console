@@ -1,5 +1,4 @@
 import { normalizeRecord } from '../normalizer';
-import { fixTripleEncodedFields, parseDoubleEncodedJson } from '../responseTransforms';
 import type { ApiClient } from './types';
 import type {
   CephTeamBreakdown,
@@ -7,7 +6,6 @@ import type {
   CompanyBlockUserRequestsResult,
   CompanyCephStats,
   CompanyDashboardData,
-  CompanyDataGraph,
   CompanyDropdownData,
   CompanyExportData,
   CompanyFeatureAccess,
@@ -42,11 +40,6 @@ export function createCompanyService(client: ApiClient) {
     getDashboard: async (): Promise<CompanyDashboardData> => {
       const response = await client.post('/GetCompanyDashboardJson', {});
       return parseDashboard(response);
-    },
-
-    getDataGraph: async (): Promise<CompanyDataGraph> => {
-      const response = await client.post('/GetCompanyDataGraphJson', {});
-      return parseCompanyDataGraph(response);
     },
 
     getVault: async (): Promise<CompanyVaultDetails> => {
@@ -266,25 +259,6 @@ function parseDashboard(response: ApiResponse): CompanyDashboardData {
     cephStats: cephStats ?? undefined,
     allActiveSubscriptions,
   };
-}
-
-function parseCompanyDataGraph(response: ApiResponse): CompanyDataGraph {
-  const row = getRowByIndex<{ companyDataGraph?: string }>(response, 1);
-  const graphJson = row?.companyDataGraph;
-
-  if (!graphJson) {
-    throw new Error('No company data graph available');
-  }
-
-  const graph = parseDoubleEncodedJson<CompanyDataGraph>(graphJson, [
-    'metadata',
-    'nodes',
-    'relationships',
-    'summary',
-  ]);
-  fixTripleEncodedFields(graph.nodes as unknown as Record<string, unknown>, ['users']);
-
-  return graph;
 }
 
 function getRowsByIndex<T>(response: ApiResponse, index: number): T[] {

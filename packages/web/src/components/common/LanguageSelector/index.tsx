@@ -85,7 +85,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
       options={languages.map((lang) => ({
         value: lang.code,
         label: (
-          <Flex style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <Flex align="center" gap={4} className="inline-flex">
             {lang.flag} {lang.name}
           </Flex>
         ),

@@ -35,7 +35,7 @@ export const getActionIcon = (action: string): React.ReactNode => {
     if (actionLower.includes(keyword)) {
       const { Icon } = config;
       return (
-        <Flex style={{ display: 'inline-flex' }}>
+        <Flex className="inline-flex">
           <Icon />
         </Flex>
       );
@@ -44,7 +44,7 @@ export const getActionIcon = (action: string): React.ReactNode => {
 
   const { Icon } = DEFAULT_ICON_CONFIG;
   return (
-    <Flex style={{ display: 'inline-flex' }}>
+    <Flex className="inline-flex">
       <Icon />
     </Flex>
   );

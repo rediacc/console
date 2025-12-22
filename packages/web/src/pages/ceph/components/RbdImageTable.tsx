@@ -304,13 +304,11 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       sorter: createSorter<CephRbdImage>('imageName'),
       render: (text: string, record: CephRbdImage) => (
         <Space data-testid={`rbd-image-name-${record.imageName}`}>
-          <FileImageOutlined style={{ fontSize: 16 }} />
+          <FileImageOutlined />
           <Typography.Text>{text}</Typography.Text>
           {record.vaultContent && (
             <Tooltip title={t('common.hasVault')}>
-              <Tag data-testid={`rbd-vault-tag-${record.imageName}`} color="processing">
-                {t('common.vault')}
-              </Tag>
+              <Tag data-testid={`rbd-vault-tag-${record.imageName}`}>{t('common.vault')}</Tag>
             </Tooltip>
           )}
         </Space>
@@ -336,7 +334,6 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           <Tag
             icon={<CloudServerOutlined />}
             bordered={false}
-            color="processing"
             data-testid={`rbd-machine-tag-${record.imageName}`}
           >
             {machineName}
@@ -391,13 +388,14 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           icon={<PlusOutlined />}
           onClick={handleCreate}
           data-testid="rbd-create-image-button"
+          // eslint-disable-next-line no-restricted-syntax
           style={{ minHeight: 40 }}
         >
           {t('images.create')}
         </Button>
       </Flex>
 
-      <Flex style={{ overflow: 'hidden' }}>
+      <Flex className="overflow-hidden">
         <Table<CephRbdImage>
           columns={columns}
           dataSource={images}

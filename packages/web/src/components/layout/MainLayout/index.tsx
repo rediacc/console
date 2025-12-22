@@ -208,7 +208,6 @@ const MainLayout: React.FC = () => {
               type="text"
               icon={<MenuOutlined />}
               onClick={() => handleCollapse(!collapsed)}
-              style={{ width: 40, height: 40, fontSize: 16 }}
               data-testid="sidebar-toggle-button"
               aria-label={
                 collapsed ? t('navigation.expandSidebar') : t('navigation.collapseSidebar')
@@ -216,7 +215,8 @@ const MainLayout: React.FC = () => {
               aria-pressed={collapsed}
             />
             <Flex
-              style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+              align="center"
+              className="inline-flex cursor-pointer"
               onClick={() => {
                 trackUserAction('navigation', '/dashboard', {
                   trigger: 'logo_click',
@@ -229,6 +229,7 @@ const MainLayout: React.FC = () => {
               <img
                 src={logoBlack}
                 alt="Rediacc Logo"
+                // eslint-disable-next-line no-restricted-syntax
                 style={{ height: 32, width: 'auto', objectFit: 'contain' }}
               />
             </Flex>
@@ -243,9 +244,6 @@ const MainLayout: React.FC = () => {
           header: {
             heightLayoutHeader: 64,
           },
-          sider: {
-            colorMenuBackground: '#fff',
-          },
         }}
       >
         {isTransitioning ? (
@@ -253,13 +251,12 @@ const MainLayout: React.FC = () => {
             vertical
             align="center"
             justify="center"
+            // eslint-disable-next-line no-restricted-syntax
             style={{ minHeight: 240 }}
             data-testid="main-content"
           >
-            <Flex style={{ fontSize: 32 }}>
-              {uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}
-            </Flex>
-            <Flex style={{ fontSize: 16 }}>
+            <Flex>{uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}</Flex>
+            <Flex>
               {t('uiMode.switching', {
                 mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple'),
               })}

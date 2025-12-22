@@ -65,11 +65,9 @@ export const SessionExpiredDialog: React.FC = () => {
   return (
     <SizedModal
       title={
-        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
+        <Flex align="center" gap={8} wrap className="inline-flex">
           <ClockCircleOutlined />
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            Session Expired
-          </Typography.Title>
+          <Typography.Title level={4}>Session Expired</Typography.Title>
         </Flex>
       }
       open={isVisible}
@@ -94,7 +92,7 @@ export const SessionExpiredDialog: React.FC = () => {
         </Button>,
       ]}
     >
-      <Flex vertical gap={24} style={{ width: '100%' }}>
+      <Flex vertical gap={24} className="w-full">
         <Typography.Text>
           Your session has expired for security reasons. You have been automatically logged out.
         </Typography.Text>

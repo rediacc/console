@@ -78,6 +78,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 
       if (!inline && match) {
         return (
+          // eslint-disable-next-line no-restricted-syntax
           <SyntaxHighlighter style={codeTheme} language={match[1]} PreTag="div">
             {String(children).replace(/\n$/, '')}
           </SyntaxHighlighter>
@@ -160,23 +161,11 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 
   // Use generic icon for all templates (backend provides proper names)
   const getTemplateIcon = () => (
-    <Typography.Text style={{ display: 'inline-flex', fontSize: 32 }}>
+    // eslint-disable-next-line no-restricted-syntax
+    <Typography.Text className="inline-flex" style={{ fontSize: 32 }}>
       <AppstoreOutlined />
     </Typography.Text>
   );
-
-  const getDifficultyColor = (difficulty?: string) => {
-    switch (difficulty) {
-      case 'beginner':
-        return 'success';
-      case 'intermediate':
-        return 'warning';
-      case 'advanced':
-        return 'error';
-      default:
-        return 'neutral';
-    }
-  };
 
   const renderFileContent = (file: TemplateFile) => {
     const language =
@@ -197,6 +186,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     }
 
     return (
+      // eslint-disable-next-line no-restricted-syntax
       <SyntaxHighlighter language={language} style={codeTheme}>
         {file.content}
       </SyntaxHighlighter>
@@ -231,7 +221,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     context === 'marketplace' ? effectiveTemplate.name : t('resources:templates.templateDetails');
 
   const overviewContent = (
-    <Flex style={{ overflow: 'auto' }}>
+    <Flex className="overflow-auto">
       <Row gutter={[24, 24]}>
         <Col xs={24} md={context === 'marketplace' ? 16 : 24}>
           <Card
@@ -244,6 +234,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             }
             data-testid={context === 'marketplace' ? undefined : 'template-details-readme-content'}
           >
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <Flex style={{ lineHeight: 1.5 }}>
               <ReactMarkdown>{templateDetails?.readme || effectiveTemplate.readme}</ReactMarkdown>
             </Flex>
@@ -252,10 +243,10 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         {context === 'marketplace' && (
           <Col xs={24} md={8}>
             <Card title={<Typography.Text strong>{t('marketplace:features')}</Typography.Text>}>
-              <Flex vertical gap={8} style={{ width: '100%' }}>
+              <Flex vertical gap={8} className="w-full">
                 {effectiveTemplate.tags?.map((tag) => (
-                  <Flex key={tag} gap={8} align="center" style={{ width: '100%' }}>
-                    <Flex align="center" style={{ display: 'inline-flex' }}>
+                  <Flex key={tag} gap={8} align="center" className="w-full">
+                    <Flex align="center" className="inline-flex">
                       <CheckCircleOutlined />
                     </Flex>
                     <Typography.Text>{tag}</Typography.Text>
@@ -274,7 +265,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       vertical
       align="center"
       gap={8}
-      style={{ width: '100%' }}
+      className="w-full"
       data-testid={context === 'marketplace' ? undefined : 'template-details-loading'}
     >
       <LoadingWrapper loading centered minHeight={160}>
@@ -287,11 +278,12 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       </Typography.Text>
     </Flex>
   ) : templateDetails && templateDetails.files.length > 0 ? (
-    <Flex gap={16} wrap style={{ width: '100%' }}>
+    <Flex gap={16} wrap className="w-full">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <Flex style={{ width: '32%' }}>
         <Card
           title={
-            <Flex align="center" gap={8} style={{ display: 'inline-flex' }}>
+            <Flex align="center" gap={8} className="inline-flex">
               <FileOutlined />
               {context === 'marketplace'
                 ? t('marketplace:fileList')
@@ -300,7 +292,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           }
           data-testid={context === 'marketplace' ? undefined : 'template-details-files-content'}
         >
-          <Flex style={{ height: '100%' }}>
+          <Flex className="h-full">
             <List
               dataSource={templateDetails.files}
               renderItem={(file, index) => (
@@ -313,7 +305,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                   }
                 >
                   <Flex vertical gap={4}>
-                    <Flex align="center" gap={8} style={{ display: 'inline-flex' }}>
+                    <Flex align="center" gap={8} className="inline-flex">
                       <CodeOutlined />
                       <Typography.Text code>{file.path || file.name}</Typography.Text>
                     </Flex>
@@ -324,12 +316,13 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           </Flex>
         </Card>
       </Flex>
-      <Flex style={{ flex: '1 1 auto' }}>
+      <Flex className="flex-1">
         <Card
           title={
             <Flex gap={8} align="center" justify="space-between">
-              <Flex align="center" gap={8} style={{ display: 'inline-flex' }}>
+              <Flex align="center" gap={8} className="inline-flex">
                 <CodeOutlined />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <Typography.Text style={{ fontFamily: 'monospace' }}>
                   {templateDetails.files[selectedFileIndex]?.path ||
                     templateDetails.files[selectedFileIndex]?.name}
@@ -343,7 +336,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
               : `template-details-file-content-${selectedFileIndex}`
           }
         >
-          <Flex style={{ flex: '1 1 auto', overflow: 'auto' }}>
+          <Flex className="flex-1 overflow-auto">
             {templateDetails.files[selectedFileIndex] &&
               renderFileContent(templateDetails.files[selectedFileIndex])}
           </Flex>
@@ -363,7 +356,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   );
 
   const securityContent = (
-    <Flex style={{ overflow: 'auto' }}>
+    <Flex className="overflow-auto">
       <Card>
         <Flex vertical gap={16}>
           <Alert
@@ -386,16 +379,19 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           <Typography.Title level={5}>
             {context === 'marketplace' ? t('marketplace:bestPractices') : 'Best Practices'}
           </Typography.Title>
-          <ul>
-            <li style={{ lineHeight: 1.5 }}>Review all configuration files before deployment</li>
-            <li style={{ lineHeight: 1.5 }}>Update default passwords and credentials</li>
-            <li style={{ lineHeight: 1.5 }}>Ensure proper network security configuration</li>
-            <li style={{ lineHeight: 1.5 }}>Keep software components up to date</li>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <ul style={{ lineHeight: 1.5 }}>
+            <li>Review all configuration files before deployment</li>
+            <li>Update default passwords and credentials</li>
+            <li>Ensure proper network security configuration</li>
+            <li>Keep software components up to date</li>
           </ul>
 
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <Divider style={{ margin: '24px 0' }} />
 
           <Typography.Title level={5}>Container Security</Typography.Title>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <Typography.Paragraph style={{ lineHeight: 1.5 }}>
             Always review container configurations and ensure they follow security best practices
             for your deployment environment.
@@ -450,24 +446,25 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       title={
         <Flex gap={16} align="center">
           {effectiveTemplate.iconUrl && !iconFailed ? (
-            <img
-              src={effectiveTemplate.iconUrl}
-              alt={effectiveTemplate.name}
-              onError={() => setIconFailed(true)}
-              style={{ width: 40, height: 40, objectFit: 'contain' }}
-            />
+            <>
+              <img
+                src={effectiveTemplate.iconUrl}
+                alt={effectiveTemplate.name}
+                onError={() => setIconFailed(true)}
+                // eslint-disable-next-line no-restricted-syntax
+                style={{ objectFit: 'contain' }}
+              />
+            </>
           ) : (
             getTemplateIcon()
           )}
           <Flex vertical>
             <Typography.Title level={4}>{modalTitle}</Typography.Title>
             {context === 'repository-creation' && (
-              <Tag data-testid="template-details-name-tag" color="processing">
-                {effectiveTemplate.name}
-              </Tag>
+              <Tag data-testid="template-details-name-tag">{effectiveTemplate.name}</Tag>
             )}
             {context === 'marketplace' && effectiveTemplate.difficulty && (
-              <Tag color={getDifficultyColor(effectiveTemplate.difficulty)}>
+              <Tag>
                 {t(
                   `difficulty${effectiveTemplate.difficulty?.charAt(0).toUpperCase()}${effectiveTemplate.difficulty?.slice(
                     1

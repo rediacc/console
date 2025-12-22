@@ -581,13 +581,14 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   }
 
   return (
-    <Flex style={{ overflowX: 'auto', position: 'relative' }} data-testid="machine-repo-list">
+    <Flex className="overflow-auto relative" data-testid="machine-repo-list">
       {isLoading && (
         <Flex
           align="center"
           justify="center"
+          className="absolute"
+          // eslint-disable-next-line no-restricted-syntax
           style={{
-            position: 'absolute',
             inset: 0,
             zIndex: 1000,
           }}
@@ -602,7 +603,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         <Flex data-testid="machine-repo-list-machine-header">
           <Space direction="vertical" size="small">
             <Space>
-              <Typography.Text style={{ fontSize: 16 }}>
+              <Typography.Text
+                // eslint-disable-next-line no-restricted-syntax
+                style={{ fontSize: 16 }}
+              >
                 <DesktopOutlined />
               </Typography.Text>
               <Typography.Title level={4} data-testid="machine-repo-list-machine-name">
@@ -715,7 +719,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         data-testid="machine-repo-list-function-modal"
         subtitle={
           selectedRepository && (
-            <Flex vertical gap={8} style={{ width: '100%' }}>
+            <Flex vertical gap={8} className="w-full">
               <Space>
                 <Typography.Text>{t('resources:repositories.Repository')}:</Typography.Text>
                 <Tag>{selectedRepository.name}</Tag>
@@ -737,12 +741,23 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
                     if (parentRepo) {
                       return (
                         <Space>
-                          <Typography.Text style={{ fontSize: 12 }}>
+                          <Typography.Text
+                            // eslint-disable-next-line no-restricted-syntax
+                            style={{ fontSize: 12 }}
+                          >
                             {t('resources:repositories.parentRepo')}:
                           </Typography.Text>
                           <Tag>{parentRepo.repositoryName}</Tag>
-                          <Typography.Text style={{ fontSize: 12 }}>→</Typography.Text>
-                          <Typography.Text style={{ fontSize: 12 }}>
+                          <Typography.Text
+                            // eslint-disable-next-line no-restricted-syntax
+                            style={{ fontSize: 12 }}
+                          >
+                            →
+                          </Typography.Text>
+                          <Typography.Text
+                            // eslint-disable-next-line no-restricted-syntax
+                            style={{ fontSize: 12 }}
+                          >
                             {t('common:current')}:
                           </Typography.Text>
                           <Tag>{selectedRepository.name}</Tag>

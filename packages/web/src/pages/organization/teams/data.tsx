@@ -100,7 +100,7 @@ export const getTeamColumns = ({
       width: 140,
       responsive: ['xs'],
       render: (_, record: Team) => (
-        <Flex style={{ width: '100%' }}>
+        <Flex className="w-full">
           <Space direction="vertical" size={4}>
             <Tooltip title={`${record.memberCount} ${tSystem('tables.teams.members')}`}>
               <Space size="small">

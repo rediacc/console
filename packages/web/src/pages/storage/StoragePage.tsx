@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { Button, Flex, Modal, Space, Tag, Tooltip, Typography, theme } from 'antd';
+import { Button, Flex, Modal, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
@@ -58,7 +58,12 @@ interface StorageFunctionData {
 }
 
 const TeamSelectorWrapper = (props: React.ComponentProps<typeof Flex>) => (
-  <Flex style={{ width: '100%', maxWidth: 360 }} {...props} />
+  <Flex
+    className="w-full"
+    // eslint-disable-next-line no-restricted-syntax
+    style={{ maxWidth: 360 }}
+    {...props}
+  />
 );
 
 const StorageLocationIcon = (props: React.ComponentProps<typeof CloudOutlined>) => (
@@ -67,7 +72,6 @@ const StorageLocationIcon = (props: React.ComponentProps<typeof CloudOutlined>) 
 
 const StoragePage: React.FC = () => {
   const { t } = useTranslation(['resources', 'common']);
-  const { token } = theme.useToken();
   const [modal, contextHolder] = Modal.useModal();
 
   // Custom hooks for common patterns
@@ -326,7 +330,7 @@ const StoragePage: React.FC = () => {
         key: 'teamName',
         width: COLUMN_WIDTHS.TAG,
         ellipsis: true,
-        render: (teamName: string) => <Tag color={token.colorTextSecondary}>{teamName}</Tag>,
+        render: (teamName: string) => <Tag>{teamName}</Tag>,
       },
       ...(featureFlags.isEnabled('vaultVersionColumns')
         ? [
@@ -402,14 +406,7 @@ const StoragePage: React.FC = () => {
         },
       }),
     ],
-    [
-      auditTrace,
-      handleDeleteStorage,
-      openUnifiedModal,
-      setCurrentResource,
-      t,
-      token.colorTextSecondary,
-    ]
+    [auditTrace, handleDeleteStorage, openUnifiedModal, setCurrentResource, t]
   );
 
   const hasTeamSelection = selectedTeams.length > 0;

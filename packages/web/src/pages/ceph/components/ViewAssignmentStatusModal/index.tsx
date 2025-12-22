@@ -44,9 +44,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     renderWrapper: (content) => (
       <Flex align="center" gap={8}>
         <CloudServerOutlined />
-        <Typography.Text strong style={{ fontSize: 12 }}>
-          {content}
-        </Typography.Text>
+        <Typography.Text>{content}</Typography.Text>
       </Flex>
     ),
   });
@@ -56,11 +54,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     dataIndex: 'teamName',
     key: 'teamName',
     width: 150,
-    renderWrapper: (content) => (
-      <Tag bordered={false} color="success" style={{ fontSize: 12 }}>
-        {content}
-      </Tag>
-    ),
+    renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
   });
 
   const clusterColumn = createTruncatedColumn<Machine>({
@@ -70,11 +64,9 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     renderText: (cluster?: string | null) => cluster || noneLabel,
     renderWrapper: (content, fullText) =>
       fullText === noneLabel ? (
-        <Typography.Text style={{ fontSize: 12 }}>{fullText}</Typography.Text>
+        <Typography.Text>{fullText}</Typography.Text>
       ) : (
-        <Tag bordered={false} color="processing" style={{ fontSize: 12 }}>
-          {content}
-        </Tag>
+        <Tag bordered={false}>{content}</Tag>
       ),
   });
 
@@ -119,18 +111,24 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
       footer={null}
       data-testid="ds-view-assignment-status-modal"
     >
-      <Flex align="center" gap={16} wrap style={{ marginBottom: 16 }}>
+      <Flex
+        align="center"
+        gap={16}
+        wrap
+        // eslint-disable-next-line no-restricted-syntax
+        style={{ marginBottom: 16 }}
+      >
         <Flex align="center" gap={8}>
-          <Typography.Text style={{ fontSize: 12 }}>{t('common:total')}:</Typography.Text>
-          <Typography.Text strong>{totalMachines}</Typography.Text>
+          <Typography.Text>{t('common:total')}:</Typography.Text>
+          <Typography.Text>{totalMachines}</Typography.Text>
         </Flex>
         <Flex align="center" gap={8}>
           <MachineAssignmentStatusBadge assignmentType="AVAILABLE" size="small" />
-          <Typography.Text strong>{stats.available}</Typography.Text>
+          <Typography.Text>{stats.available}</Typography.Text>
         </Flex>
         <Flex align="center" gap={8}>
           <MachineAssignmentStatusBadge assignmentType="CLUSTER" size="small" />
-          <Typography.Text strong>{stats.cluster}</Typography.Text>
+          <Typography.Text>{stats.cluster}</Typography.Text>
         </Flex>
       </Flex>
 

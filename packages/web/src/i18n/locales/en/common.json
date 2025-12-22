@@ -142,7 +142,6 @@
     "success": "Success"
   },
   "navigation": {
-    "architecture": "Architecture",
     "audit": "Audit",
     "ceph": "Ceph",
     "cephClusters": "Clusters",

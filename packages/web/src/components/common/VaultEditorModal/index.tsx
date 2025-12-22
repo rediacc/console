@@ -110,21 +110,21 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       data-testid="vault-modal"
       destroyOnClose
     >
-      <Flex vertical gap={24} style={{ width: '100%' }}>
+      <Flex vertical gap={24} className="w-full">
         <Flex align="center" justify="space-between">
           <Space size="small">
             <Typography.Text strong>{t('vaultEditor.vaultVersion')}</Typography.Text>
-            <Tag color="processing">{vaultVersion}</Tag>
+            <Tag>{vaultVersion}</Tag>
           </Space>
           <Typography.Text>{t('vaultEditor.versionAutoIncrement')}</Typography.Text>
         </Flex>
 
         {showValidationErrors && validationErrors.length > 0 && (
-          <Flex vertical ref={validationErrorsRef} style={{ fontSize: 14 }}>
-            <Flex style={{ display: 'block' }}>
+          <Flex vertical ref={validationErrorsRef}>
+            <Flex className="block">
               <Typography.Text strong>{t('vaultEditor.validationErrors')}</Typography.Text>
             </Flex>
-            <ul style={{ display: 'flex', flexDirection: 'column' }}>
+            <ul className="flex flex-col">
               {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>
               ))}
@@ -148,13 +148,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       </Flex>
 
       <Flex vertical>
-        <Flex
-          style={{
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-          }}
-        >
+        <Flex align="center" justify="space-between" wrap>
           <Flex align="center" wrap>
             <Upload
               accept=".json"
@@ -167,15 +161,12 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               }}
               data-testid="vault-modal-file-upload"
             >
-              <Button
-                icon={<UploadOutlined style={{ fontSize: 12 }} />}
-                data-testid="vault-modal-import-button"
-              >
+              <Button icon={<UploadOutlined />} data-testid="vault-modal-import-button">
                 {t('vaultEditor.importJson')}
               </Button>
             </Upload>
             <Button
-              icon={<DownloadOutlined style={{ fontSize: 12 }} />}
+              icon={<DownloadOutlined />}
               onClick={() => {
                 if (importExportHandlers.current) {
                   importExportHandlers.current.handleExport();
@@ -190,8 +181,8 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
           <Flex align="center" wrap>
             {hasChanges && (
               <>
-                <Typography.Text style={{ display: 'flex', alignItems: 'center', fontSize: 12 }}>
-                  <InfoCircleOutlined style={{ fontSize: 12 }} />
+                <Typography.Text className="flex items-center">
+                  <InfoCircleOutlined />
                   {t('vaultEditor.unsavedChanges')}
                 </Typography.Text>
                 <Typography.Text>

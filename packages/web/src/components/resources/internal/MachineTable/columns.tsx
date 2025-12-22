@@ -36,19 +36,6 @@ export interface MachineFunctionAction {
   showInMenu?: boolean;
 }
 
-const getTagColor = (variant?: 'team' | 'bridge' | 'region' | 'repository' | 'status' | 'grand') =>
-  variant === 'team'
-    ? 'success'
-    : variant === 'bridge'
-      ? 'processing'
-      : variant === 'region'
-        ? 'default'
-        : variant === 'repository'
-          ? 'processing'
-          : variant === 'grand'
-            ? 'warning'
-            : 'default';
-
 interface MachineColumnsParams {
   t: TFunction;
   isExpertMode: boolean;
@@ -96,7 +83,7 @@ export const buildMachineTableColumns = ({
     sorter: createSorter<Machine>('machineName'),
     renderWrapper: (content) => (
       <Space>
-        <DesktopOutlined style={{ fontSize: 16 }} />
+        <DesktopOutlined />
         <strong>{content}</strong>
       </Space>
     ),
@@ -144,11 +131,7 @@ export const buildMachineTableColumns = ({
         key: 'teamName',
         width: 150,
         sorter: createSorter<Machine>('teamName'),
-        renderWrapper: (content) => (
-          <Tag bordered={false} color={getTagColor('team')}>
-            {content}
-          </Tag>
-        ),
+        renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
       })
     );
   }
@@ -167,9 +150,7 @@ export const buildMachineTableColumns = ({
             fullText === '-' ? (
               <Typography.Text>-</Typography.Text>
             ) : (
-              <Tag bordered={false} color={getTagColor('region')}>
-                {content}
-              </Tag>
+              <Tag bordered={false}>{content}</Tag>
             ),
         }),
         createTruncatedColumn<Machine>({
@@ -178,11 +159,7 @@ export const buildMachineTableColumns = ({
           key: 'bridgeName',
           width: 150,
           sorter: createSorter<Machine>('bridgeName'),
-          renderWrapper: (content) => (
-            <Tag bordered={false} color={getTagColor('bridge')}>
-              {content}
-            </Tag>
-          ),
+          renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
         })
       );
     } else if (uiMode !== 'simple') {
@@ -193,11 +170,7 @@ export const buildMachineTableColumns = ({
           key: 'bridgeName',
           width: 150,
           sorter: createSorter<Machine>('bridgeName'),
-          renderWrapper: (content) => (
-            <Tag bordered={false} color={getTagColor('bridge')}>
-              {content}
-            </Tag>
-          ),
+          renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
         })
       );
     }

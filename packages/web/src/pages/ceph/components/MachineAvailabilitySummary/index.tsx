@@ -75,11 +75,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       icon: <CheckCircleOutlined />,
       testId: 'ds-machines-summary-available',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
-      suffix: (
-        <Typography.Text style={{ fontSize: 14 }}>
-          ({getPercentage(stats.available)}%)
-        </Typography.Text>
-      ),
+      suffix: <Typography.Text>({getPercentage(stats.available)}%)</Typography.Text>,
     },
     {
       key: 'clusters',
@@ -88,11 +84,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       icon: <CloudServerOutlined />,
       testId: 'ds-machines-summary-clusters',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
-      suffix: (
-        <Typography.Text style={{ fontSize: 14 }}>
-          ({getPercentage(stats.cluster)}%)
-        </Typography.Text>
-      ),
+      suffix: <Typography.Text>({getPercentage(stats.cluster)}%)</Typography.Text>,
     },
     {
       key: 'images',
@@ -101,9 +93,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       icon: <HddOutlined />,
       testId: 'ds-machines-summary-images',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
-      suffix: (
-        <Typography.Text style={{ fontSize: 14 }}>({getPercentage(stats.image)}%)</Typography.Text>
-      ),
+      suffix: <Typography.Text>({getPercentage(stats.image)}%)</Typography.Text>,
     },
     {
       key: 'clones',
@@ -112,9 +102,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       icon: <CopyOutlined />,
       testId: 'ds-machines-summary-clones',
       col: { xs: 24, sm: 12, md: 8, lg: 5 },
-      suffix: (
-        <Typography.Text style={{ fontSize: 14 }}>({getPercentage(stats.clone)}%)</Typography.Text>
-      ),
+      suffix: <Typography.Text>({getPercentage(stats.clone)}%)</Typography.Text>,
     },
   ];
 
@@ -135,7 +123,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
       <Row gutter={16}>
         {statCards.map((item) => (
           <Col key={item.key} {...item.col}>
-            <Card size="small" style={{ textAlign: 'center' }} data-testid={item.testId}>
+            <Card size="small" data-testid={item.testId}>
               <Statistic
                 title={item.label}
                 value={item.value}

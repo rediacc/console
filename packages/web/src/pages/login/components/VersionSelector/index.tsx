@@ -21,9 +21,7 @@ const VersionSelector: React.FC = () => {
     fetchVersion();
   }, []);
 
-  return (
-    <Typography.Text style={{ fontSize: 12 }}>{loading ? '...' : displayVersion}</Typography.Text>
-  );
+  return <Typography.Text>{loading ? '...' : displayVersion}</Typography.Text>;
 };
 
 export default VersionSelector;

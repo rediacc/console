@@ -152,13 +152,9 @@ const UsersPage: React.FC = () => {
       width: 120,
       render: (activated: boolean) =>
         activated ? (
-          <Tag icon={<CheckCircleOutlined />} color="success">
-            {t('users.status.active')}
-          </Tag>
+          <Tag icon={<CheckCircleOutlined />}>{t('users.status.active')}</Tag>
         ) : (
-          <Tag icon={<StopOutlined />} color="default">
-            {t('users.status.inactive')}
-          </Tag>
+          <Tag icon={<StopOutlined />}>{t('users.status.inactive')}</Tag>
         ),
     },
     {
@@ -167,11 +163,9 @@ const UsersPage: React.FC = () => {
       key: 'permissionGroupName',
       render: (group: string) =>
         group ? (
-          <Tag icon={<SafetyOutlined />} color="processing">
-            {group}
-          </Tag>
+          <Tag icon={<SafetyOutlined />}>{group}</Tag>
         ) : (
-          <Tag color="default">{t('users.permissionGroups.none')}</Tag>
+          <Tag>{t('users.permissionGroups.none')}</Tag>
         ),
     },
     {
@@ -269,9 +263,7 @@ const UsersPage: React.FC = () => {
         <ResourceListView
           title={
             <Flex vertical>
-              <Typography.Title level={4} style={{ margin: 0 }}>
-                {t('users.title')}
-              </Typography.Title>
+              <Typography.Title level={4}>{t('users.title')}</Typography.Title>
               <Typography.Text>{t('users.subtitle')}</Typography.Text>
             </Flex>
           }

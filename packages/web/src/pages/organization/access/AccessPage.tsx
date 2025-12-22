@@ -386,7 +386,7 @@ const AccessPage: React.FC = () => {
                       value={selectedPermission}
                       onChange={(value) => setSelectedPermission((value as string) || '')}
                       showSearch
-                      style={{ flex: 1, minWidth: 260 }}
+                      className="flex-1"
                       filterOption={(input, option) =>
                         String(option?.label ?? '')
                           .toLowerCase()
@@ -448,7 +448,7 @@ const AccessPage: React.FC = () => {
           value={selectedUser}
           onChange={(value) => setSelectedUser((value as string) || '')}
           showSearch
-          style={{ width: '100%' }}
+          className="w-full"
           filterOption={(input, option) =>
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }

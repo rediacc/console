@@ -1,12 +1,9 @@
-import { getSeverityLevel } from '../error-parser';
-import type { ErrorSeverity } from '../error-parser';
 import type { QueueHealthStatus, QueueStatus } from '../types';
 
 /**
  * Status configuration for display
  */
 export interface StatusConfig {
-  color: string;
   label?: string;
 }
 
@@ -14,22 +11,21 @@ export interface StatusConfig {
  * Status configuration map for queue health statuses
  */
 export const QUEUE_STATUS_CONFIG: Record<QueueHealthStatus, StatusConfig> = {
-  PENDING: { color: 'default' },
-  ACTIVE: { color: 'processing' },
-  STALE: { color: 'warning' },
-  STALE_PENDING: { color: 'orange' },
-  CANCELLING: { color: 'warning' },
-  COMPLETED: { color: 'success' },
-  FAILED: { color: 'error' },
-  CANCELLED: { color: 'error' },
-  UNKNOWN: { color: 'default' },
+  PENDING: {},
+  ACTIVE: {},
+  STALE: {},
+  STALE_PENDING: {},
+  CANCELLING: {},
+  COMPLETED: {},
+  FAILED: {},
+  CANCELLED: {},
+  UNKNOWN: {},
 };
 
 /**
  * Priority configuration
  */
 export interface PriorityConfig {
-  color: string;
   timeout?: string;
 }
 
@@ -37,11 +33,11 @@ export interface PriorityConfig {
  * Priority configuration map (1-5 scale)
  */
 export const PRIORITY_CONFIG: Record<number, PriorityConfig> = {
-  1: { color: 'red', timeout: '33s' },
-  2: { color: 'orange', timeout: 'Tier timeout' },
-  3: { color: 'gold', timeout: 'Tier timeout' },
-  4: { color: 'blue', timeout: 'Tier timeout' },
-  5: { color: 'green', timeout: 'Tier timeout' },
+  1: { timeout: '33s' },
+  2: { timeout: 'Tier timeout' },
+  3: { timeout: 'Tier timeout' },
+  4: { timeout: 'Tier timeout' },
+  5: { timeout: 'Tier timeout' },
 };
 
 /**
@@ -128,18 +124,6 @@ export function filterFailedItems<T extends { healthStatus: string }>(items: T[]
 
 export function filterCancelledItems<T extends { healthStatus: string }>(items: T[]): T[] {
   return items.filter((item) => item.healthStatus === 'CANCELLED');
-}
-
-export function getSeverityColor(severity: ErrorSeverity): string {
-  const level = getSeverityLevel(severity);
-  const colorMap: Record<string, string> = {
-    critical: 'red',
-    error: 'error',
-    warning: 'warning',
-    info: 'blue',
-    default: 'default',
-  };
-  return colorMap[level] || 'default';
 }
 
 export type { QueueHealthStatus, QueueStatus } from '../types';

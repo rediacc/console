@@ -18,7 +18,7 @@ export const NumberFieldRenderer: React.FC<FieldRendererProps> = ({
     initialValue={fieldDef.default}
   >
     <InputNumber
-      style={{ width: '100%' }}
+      className="w-full"
       placeholder={fieldPlaceholder}
       min={fieldDef.minimum}
       max={fieldDef.maximum}

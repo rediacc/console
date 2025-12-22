@@ -294,9 +294,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
   // Show loading state
   if (loading) {
-    return (
-      <Typography.Text style={{ fontSize: 12 }}>{t('endpointSelector.loading')}</Typography.Text>
-    );
+    return <Typography.Text>{t('endpointSelector.loading')}</Typography.Text>;
   }
 
   // If no endpoint selected and we have endpoints, show the first one
@@ -304,7 +302,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
   return (
     <>
-      <Flex style={{ display: 'inline-block', width: '100%' }}>
+      <Flex className="inline-block w-full">
         <Select
           value={displayValue}
           onChange={handleEndpointChange}
@@ -314,7 +312,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           // checkAllEndpointsHealth(endpoints);
           // }
           // }}
-          suffixIcon={<ApiOutlined style={{ fontSize: 18, alignSelf: 'flex-end' }} />}
+          suffixIcon={<ApiOutlined />}
           popupMatchSelectWidth={false}
           data-testid="endpoint-selector"
         >
@@ -330,29 +328,13 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             const labelContent = (
               <Flex align="center" gap={8}>
                 {isChecking ? (
-                  <LoadingOutlined style={{ fontSize: 12 }} />
+                  <LoadingOutlined />
                 ) : (
-                  <Typography.Text
-                    style={{
-                      fontSize: 12,
-                    }}
-                  >
-                    {HEALTH_INDICATOR_SYMBOL}
-                  </Typography.Text>
+                  <Typography.Text>{HEALTH_INDICATOR_SYMBOL}</Typography.Text>
                 )}
                 <Typography.Text>
                   {endpoint.icon && (
-                    <Typography.Text
-                      style={{
-                        fontSize: 16,
-                        lineHeight: 1,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontFamily:
-                          "'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji',sans-serif",
-                      }}
-                    >
+                    <Typography.Text className="inline-flex items-center justify-center">
                       {endpoint.icon}
                     </Typography.Text>
                   )}
@@ -373,42 +355,25 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
                   <Flex align="center" gap={8}>
                     {/* Health indicator */}
                     {isChecking ? (
-                      <LoadingOutlined style={{ fontSize: 12 }} />
+                      <LoadingOutlined />
                     ) : (
-                      <Typography.Text
-                        style={{
-                          fontSize: 12,
-                        }}
-                      >
-                        {HEALTH_INDICATOR_SYMBOL}
-                      </Typography.Text>
+                      <Typography.Text>{HEALTH_INDICATOR_SYMBOL}</Typography.Text>
                     )}
 
-                    <Flex style={{ display: 'flex', opacity: isDisabled ? 0.5 : 1 }}>
+                    <Flex
+                      className="flex"
+                      // eslint-disable-next-line no-restricted-syntax
+                      style={{ opacity: isDisabled ? 0.5 : 1 }}
+                    >
                       {endpoint.icon && (
-                        <Typography.Text
-                          style={{
-                            fontSize: 16,
-                            lineHeight: 1,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontFamily:
-                              "'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji',sans-serif",
-                          }}
-                        >
+                        <Typography.Text className="inline-flex items-center justify-center">
                           {endpoint.icon}
                         </Typography.Text>
                       )}
                       <Typography.Paragraph
-                        style={{
-                          fontSize: 12,
-                          maxWidth: 120,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          marginBottom: 0,
-                        }}
+                        className="overflow-hidden"
+                        // eslint-disable-next-line no-restricted-syntax
+                        style={{ maxWidth: 120 }}
                       >
                         {endpoint.name}
                       </Typography.Paragraph>
@@ -417,14 +382,12 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
                   <Flex align="center" gap={8}>
                     {/* Version display */}
-                    {health?.version && (
-                      <Typography.Text style={{ fontSize: 12 }}>v{health.version}</Typography.Text>
-                    )}
+                    {health?.version && <Typography.Text>v{health.version}</Typography.Text>}
 
                     {/* Delete button for custom endpoints */}
                     {endpoint.type === 'custom' && (
                       <DeleteOutlined
-                        style={{ fontSize: 12, cursor: 'pointer' }}
+                        className="cursor-pointer"
                         onClick={(e) => handleRemoveCustomEndpoint(endpoint.id, e)}
                       />
                     )}
@@ -440,7 +403,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
             value="__add_custom__"
             data-testid="endpoint-option-add-custom"
           >
-            <Typography.Text style={{ fontSize: 12 }}>
+            <Typography.Text>
               <PlusOutlined /> {t('endpointSelector.addCustom')}
             </Typography.Text>
           </Select.Option>
@@ -448,17 +411,11 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
 
         {/* Display selected endpoint URL */}
         {selectedEndpoint && (
-          <Typography.Text
-            style={{
-              fontSize: 12,
-              textAlign: 'center',
-              display: 'block',
-            }}
-          >
+          <Typography.Text className="block">
             {selectedEndpoint.url}
             {isCheckingHealth && (
-              <Flex style={{ display: 'inline-flex', alignItems: 'center' }}>
-                <LoadingOutlined style={{ fontSize: 12 }} />
+              <Flex align="center" className="inline-flex">
+                <LoadingOutlined />
               </Flex>
             )}
           </Typography.Text>
@@ -509,7 +466,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({ onHealthCheckComple
           </Form.Item>
 
           <Form.Item>
-            <Flex justify="flex-end" gap={8} style={{ width: '100%' }}>
+            <Flex justify="flex-end" gap={8} className="w-full">
               <Button
                 onClick={() => {
                   customModal.close();

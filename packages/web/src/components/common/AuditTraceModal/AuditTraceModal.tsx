@@ -80,18 +80,6 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
     }
   };
 
-  // Get action color based on type
-  // Using grayscale system - only 'error' for actual delete/cancel actions
-  const getActionColor = (actionType: string) => {
-    switch (actionType) {
-      case 'Deleted':
-      case 'Cancelled':
-        return 'error'; // Red for destructive actions only
-      default:
-        return 'default'; // Grayscale for all other actions
-    }
-  };
-
   // Export functions
   const exportToCSV = () => {
     if (!data?.records || data.records.length === 0) return;
@@ -169,12 +157,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       render: (_: unknown, record: AuditTraceRecord, index: number) => (
         <Space data-testid={`audit-trace-action-${index}`}>
           {getIcon(record.iconHint)}
-          <Tag
-            color={getActionColor(record.actionType)}
-            data-testid={`audit-trace-action-tag-${index}`}
-          >
-            {record.actionType}
-          </Tag>
+          <Tag data-testid={`audit-trace-action-tag-${index}`}>{record.actionType}</Tag>
         </Space>
       ),
     },
@@ -250,20 +233,20 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
         <>
           {/* Summary Section */}
           {data.summary && (
-            <Flex vertical style={{ width: '100%' }} data-testid="audit-trace-summary">
+            <Flex vertical className="w-full" data-testid="audit-trace-summary">
               <Flex align="center" justify="space-between" wrap>
                 <Flex gap={24} wrap>
                   <Flex vertical data-testid="audit-trace-total-records">
-                    <AntText color="secondary">{t('audit.totalRecords')}</AntText>
+                    <AntText type="secondary">{t('audit.totalRecords')}</AntText>
                     <Typography.Text strong>{data.summary.totalAuditRecords}</Typography.Text>
                   </Flex>
                   <Flex vertical data-testid="audit-trace-visible-records">
-                    <AntText color="secondary">{t('audit.visibleRecords')}</AntText>
+                    <AntText type="secondary">{t('audit.visibleRecords')}</AntText>
                     <Typography.Text strong>{data.summary.visibleAuditRecords}</Typography.Text>
                   </Flex>
                   {data.summary.lastActivity && (
                     <Flex vertical data-testid="audit-trace-last-activity">
-                      <AntText color="secondary">{t('audit.lastActivity')}</AntText>
+                      <AntText type="secondary">{t('audit.lastActivity')}</AntText>
                       <AntText strong>
                         {new Date(data.summary.lastActivity).toLocaleDateString()}
                       </AntText>

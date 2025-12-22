@@ -118,7 +118,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   const simplifiedStatus = traceData?.queueDetails
     ? getSimplifiedStatus(traceData.queueDetails)
     : { status: 'unknown', color: 'default' as const, icon: null };
-  const statusTagColor = (() => {
+  const _statusTagColor = (() => {
     const map = {
       neutral: 'default',
       success: 'success',
@@ -152,7 +152,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
               ]}
             />
             {lastTraceFetchTime && (
-              <Typography.Text style={{ fontSize: 12 }}>
+              <Typography.Text>
                 Last fetched: {lastTraceFetchTime.format('HH:mm:ss')}
               </Typography.Text>
             )}
@@ -205,6 +205,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                 consoleProgress={consoleProgress}
               />
 
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <Flex vertical style={{ marginTop: 16 }}>
                 <Collapse
                   data-testid="queue-trace-simple-console-collapse"
@@ -218,7 +219,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                         <Space>
                           <Typography.Text>Response (Console)</Typography.Text>
                           {traceData?.queueDetails?.status === 'PROCESSING' && (
-                            <Tag color="processing">Live Output</Tag>
+                            <Tag>Live Output</Tag>
                           )}
                         </Space>
                       ),
@@ -240,143 +241,144 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
           )}
 
           {!simpleMode && (
-            <Flex vertical style={{ marginTop: 16 }}>
-              <Collapse
-                data-testid="queue-trace-collapse"
-                className="queue-trace-collapse"
-                activeKey={activeKeys}
-                onChange={setActiveKeys}
-                expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
-                items={
-                  [
-                    traceData.queueDetails
-                      ? {
-                          key: 'overview',
-                          label: (
-                            <Space>
-                              <DashboardOutlined />
-                              <Typography.Text>Task Overview</Typography.Text>
-                              <Tag color={statusTagColor}>{simplifiedStatus.status}</Tag>
-                              {isTaskStale(traceData.queueDetails) && (
-                                <Tag color="warning" icon={<WarningOutlined />}>
-                                  Stale
-                                </Tag>
-                              )}
-                            </Space>
-                          ),
-                          extra:
-                            traceData.queueDetails.canBeCancelled &&
-                            normalizeToString(traceData.queueDetails, 'status', 'Status') !==
-                              'COMPLETED' &&
-                            normalizeToString(traceData.queueDetails, 'status', 'Status') !==
-                              'CANCELLED' &&
-                            normalizeToString(traceData.queueDetails, 'status', 'Status') !==
-                              'CANCELLING' &&
-                            normalizeToString(traceData.queueDetails, 'status', 'Status') !==
-                              'FAILED' ? (
-                              <Tooltip title={t('common:tooltips.taskCancellable')}>
-                                <Badge status="processing" text="Cancellable" />
-                              </Tooltip>
-                            ) : undefined,
-                          children: (
-                            <MachineDetails
-                              queueDetails={traceData.queueDetails}
-                              totalDurationSeconds={totalDurationSeconds}
-                              processingDurationSeconds={processingDurationSeconds}
-                              isDetailedConsoleExpanded={isDetailedConsoleExpanded}
-                              setIsDetailedConsoleExpanded={setIsDetailedConsoleExpanded}
-                              accumulatedOutput={accumulatedOutput}
-                              consoleOutputRef={consoleOutputRef}
-                              hasContent={!!traceData.responseVaultContent?.hasContent}
-                            />
-                          ),
-                        }
-                      : null,
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <Flex vertical style={{ marginTop: 16 }}>
+                <Collapse
+                  data-testid="queue-trace-collapse"
+                  className="queue-trace-collapse"
+                  activeKey={activeKeys}
+                  onChange={setActiveKeys}
+                  expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
+                  items={
+                    [
+                      traceData.queueDetails
+                        ? {
+                            key: 'overview',
+                            label: (
+                              <Space>
+                                <DashboardOutlined />
+                                <Typography.Text>Task Overview</Typography.Text>
+                                <Tag>{simplifiedStatus.status}</Tag>
+                                {isTaskStale(traceData.queueDetails) && (
+                                  <Tag icon={<WarningOutlined />}>Stale</Tag>
+                                )}
+                              </Space>
+                            ),
+                            extra:
+                              traceData.queueDetails.canBeCancelled &&
+                              normalizeToString(traceData.queueDetails, 'status', 'Status') !==
+                                'COMPLETED' &&
+                              normalizeToString(traceData.queueDetails, 'status', 'Status') !==
+                                'CANCELLED' &&
+                              normalizeToString(traceData.queueDetails, 'status', 'Status') !==
+                                'CANCELLING' &&
+                              normalizeToString(traceData.queueDetails, 'status', 'Status') !==
+                                'FAILED' ? (
+                                <Tooltip title={t('common:tooltips.taskCancellable')}>
+                                  <Badge status="processing" text="Cancellable" />
+                                </Tooltip>
+                              ) : undefined,
+                            children: (
+                              <MachineDetails
+                                queueDetails={traceData.queueDetails}
+                                totalDurationSeconds={totalDurationSeconds}
+                                processingDurationSeconds={processingDurationSeconds}
+                                isDetailedConsoleExpanded={isDetailedConsoleExpanded}
+                                setIsDetailedConsoleExpanded={setIsDetailedConsoleExpanded}
+                                accumulatedOutput={accumulatedOutput}
+                                consoleOutputRef={consoleOutputRef}
+                                hasContent={!!traceData.responseVaultContent?.hasContent}
+                              />
+                            ),
+                          }
+                        : null,
 
-                    traceData.queueDetails
-                      ? {
-                          key: 'details',
-                          label: (
-                            <Space>
-                              <FileTextOutlined />
-                              <Typography.Text>Queue Item Details</Typography.Text>
-                              <Typography.Text>(Result Set 1)</Typography.Text>
-                            </Space>
-                          ),
-                          children: (
-                            <QueueItemDetails
-                              queueDetails={traceData.queueDetails}
-                              totalDurationSeconds={totalDurationSeconds}
-                              processingDurationSeconds={processingDurationSeconds}
-                            />
-                          ),
-                        }
-                      : null,
+                      traceData.queueDetails
+                        ? {
+                            key: 'details',
+                            label: (
+                              <Space>
+                                <FileTextOutlined />
+                                <Typography.Text>Queue Item Details</Typography.Text>
+                                <Typography.Text>(Result Set 1)</Typography.Text>
+                              </Space>
+                            ),
+                            children: (
+                              <QueueItemDetails
+                                queueDetails={traceData.queueDetails}
+                                totalDurationSeconds={totalDurationSeconds}
+                                processingDurationSeconds={processingDurationSeconds}
+                              />
+                            ),
+                          }
+                        : null,
 
-                    traceData.traceLogs && traceData.traceLogs.length > 0
-                      ? {
-                          key: 'timeline',
-                          label: (
-                            <Space>
-                              <HistoryOutlined />
-                              <Typography.Text>Processing Timeline</Typography.Text>
-                              <Typography.Text>(Result Set 4 - Audit Log)</Typography.Text>
-                            </Space>
-                          ),
-                          children: <TimelineView traceLogs={traceData.traceLogs} />,
-                        }
-                      : null,
+                      traceData.traceLogs && traceData.traceLogs.length > 0
+                        ? {
+                            key: 'timeline',
+                            label: (
+                              <Space>
+                                <HistoryOutlined />
+                                <Typography.Text>Processing Timeline</Typography.Text>
+                                <Typography.Text>(Result Set 4 - Audit Log)</Typography.Text>
+                              </Space>
+                            ),
+                            children: <TimelineView traceLogs={traceData.traceLogs} />,
+                          }
+                        : null,
 
-                    traceData.vaultContent || traceData.responseVaultContent
-                      ? {
-                          key: 'vault',
-                          label: (
-                            <Space>
-                              <FileTextOutlined />
-                              <Typography.Text>Vault Content</Typography.Text>
-                              <Typography.Text>(Result Sets 2 & 3)</Typography.Text>
-                            </Space>
-                          ),
-                          children: (
-                            <ResponseVaultContent
-                              vaultContent={traceData.vaultContent}
-                              responseVaultContent={traceData.responseVaultContent}
-                            />
-                          ),
-                        }
-                      : null,
+                      traceData.vaultContent || traceData.responseVaultContent
+                        ? {
+                            key: 'vault',
+                            label: (
+                              <Space>
+                                <FileTextOutlined />
+                                <Typography.Text>Vault Content</Typography.Text>
+                                <Typography.Text>(Result Sets 2 & 3)</Typography.Text>
+                              </Space>
+                            ),
+                            children: (
+                              <ResponseVaultContent
+                                vaultContent={traceData.vaultContent}
+                                responseVaultContent={traceData.responseVaultContent}
+                              />
+                            ),
+                          }
+                        : null,
 
-                    traceData.queuePosition && traceData.queuePosition.length > 0
-                      ? {
-                          key: 'related',
-                          label: (
-                            <Space>
-                              <TeamOutlined />
-                              <Typography.Text>Related Queue Items</Typography.Text>
-                              <Typography.Text>(Result Set 5 - Nearby Tasks)</Typography.Text>
-                            </Space>
-                          ),
-                          children: <RelatedQueueItems queuePosition={traceData.queuePosition} />,
-                        }
-                      : null,
+                      traceData.queuePosition && traceData.queuePosition.length > 0
+                        ? {
+                            key: 'related',
+                            label: (
+                              <Space>
+                                <TeamOutlined />
+                                <Typography.Text>Related Queue Items</Typography.Text>
+                                <Typography.Text>(Result Set 5 - Nearby Tasks)</Typography.Text>
+                              </Space>
+                            ),
+                            children: <RelatedQueueItems queuePosition={traceData.queuePosition} />,
+                          }
+                        : null,
 
-                    traceData.machineStats
-                      ? {
-                          key: 'performance',
-                          label: (
-                            <Space>
-                              <DashboardOutlined />
-                              <Typography.Text>Performance Metrics</Typography.Text>
-                              <Typography.Text>(Result Set 6 - Machine Stats)</Typography.Text>
-                            </Space>
-                          ),
-                          children: <PerformanceMetrics machineStats={traceData.machineStats} />,
-                        }
-                      : null,
-                  ].filter(Boolean) as CollapseProps['items']
-                }
-              />
-            </Flex>
+                      traceData.machineStats
+                        ? {
+                            key: 'performance',
+                            label: (
+                              <Space>
+                                <DashboardOutlined />
+                                <Typography.Text>Performance Metrics</Typography.Text>
+                                <Typography.Text>(Result Set 6 - Machine Stats)</Typography.Text>
+                              </Space>
+                            ),
+                            children: <PerformanceMetrics machineStats={traceData.machineStats} />,
+                          }
+                        : null,
+                    ].filter(Boolean) as CollapseProps['items']
+                  }
+                />
+              </Flex>
+            </>
           )}
         </Flex>
       ) : (

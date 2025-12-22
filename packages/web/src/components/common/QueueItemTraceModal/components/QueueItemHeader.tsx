@@ -23,9 +23,9 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
 
   return (
     <Card data-testid="queue-trace-simple-overview">
-      <Flex vertical gap={24} style={{ width: '100%' }}>
+      <Flex vertical gap={24} className="w-full">
         {/* Status Summary */}
-        <Flex style={{ textAlign: 'center' }} justify="center">
+        <Flex className="text-center" justify="center">
           <Space size="large">
             <Typography.Text
               className={`queue-trace-status-icon ${simplifiedStatus.status === 'Processing' ? 'processing' : ''}`}
@@ -105,6 +105,7 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
           status !== 'FAILED' &&
           status !== 'CANCELLED' && (
             <Flex justify="center">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <Typography.Text style={{ fontStyle: 'italic', textAlign: 'center', fontSize: 12 }}>
                 {progressMessage}
               </Typography.Text>

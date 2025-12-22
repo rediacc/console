@@ -242,7 +242,7 @@ const MachineReposPage: React.FC = () => {
     return (
       <Flex vertical>
         <Card>
-          <Flex vertical align="center" style={{ width: '100%' }}>
+          <Flex vertical align="center" className="w-full">
             <LoadingWrapper loading centered minHeight={160}>
               <Flex />
             </LoadingWrapper>
@@ -262,7 +262,7 @@ const MachineReposPage: React.FC = () => {
             <Alert
               message={t('machines:machineNotFound')}
               description={
-                <Flex vertical style={{ maxWidth: 520 }}>
+                <Flex vertical>
                   <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
                   <Button type="primary" onClick={handleBackToMachines}>
                     {t('machines:backToMachines')}
@@ -300,7 +300,7 @@ const MachineReposPage: React.FC = () => {
             />
 
             <Flex align="center" justify="space-between" wrap>
-              <Flex vertical style={{ flex: '1 1 auto', minWidth: 0 }}>
+              <Flex vertical className="flex-1 min-w-0">
                 <Flex align="center" gap={8} wrap>
                   <Tooltip title={t('machines:backToMachines')}>
                     <Button
@@ -321,14 +321,14 @@ const MachineReposPage: React.FC = () => {
                   </Typography.Title>
                 </Flex>
                 <Flex align="center" wrap>
-                  <Tag color="success">
+                  <Tag>
                     {t('machines:team')}: {machine?.teamName}
                   </Tag>
-                  <Tag color="processing">
+                  <Tag>
                     {t('machines:bridge')}: {machine?.bridgeName}
                   </Tag>
                   {machine?.regionName && (
-                    <Tag color="default">
+                    <Tag>
                       {t('machines:region')}: {machine.regionName}
                     </Tag>
                   )}
@@ -366,16 +366,8 @@ const MachineReposPage: React.FC = () => {
             </Flex>
           </Flex>
 
-          <Flex style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-            <Flex
-              vertical
-              style={{
-                width: '100%',
-                height: '100%',
-                overflow: 'auto',
-                minWidth: 240,
-              }}
-            >
+          <Flex className="flex-1 overflow-hidden relative">
+            <Flex vertical className="w-full h-full overflow-auto">
               {machine && (
                 <MachineRepositoryTable
                   machine={machine}

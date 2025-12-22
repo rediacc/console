@@ -102,11 +102,10 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   return (
     <Flex
       vertical
-      className={className}
+      className={`relative overflow-hidden ${className}`}
+      // eslint-disable-next-line no-restricted-syntax
       style={{
-        position: 'relative',
         height: typeof height === 'number' ? `${height}px` : height,
-        overflow: 'hidden',
         fontFamily: 'monospace',
         fontSize: 14,
         lineHeight: 1.5,
@@ -122,9 +121,9 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
         autoCorrect="off"
         autoCapitalize="off"
         data-testid={dataTestId}
+        className="w-full h-full"
+        // eslint-disable-next-line no-restricted-syntax
         style={{
-          width: '100%',
-          height: '100%',
           outline: 'none',
           resize: 'none',
           fontFamily: 'inherit',
@@ -136,8 +135,9 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
 
       {error && (
         <Typography.Text
+          className="absolute"
+          // eslint-disable-next-line no-restricted-syntax
           style={{
-            position: 'absolute',
             bottom: 0,
             left: 0,
             right: 0,

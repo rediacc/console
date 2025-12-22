@@ -1,17 +1,5 @@
 import React from 'react';
-import {
-  Card,
-  Col,
-  Flex,
-  List,
-  Progress,
-  Row,
-  Statistic,
-  Tag,
-  Tooltip,
-  Typography,
-  theme,
-} from 'antd';
+import { Card, Col, Flex, List, Progress, Row, Statistic, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   CloudServerOutlined,
@@ -25,18 +13,10 @@ import { CephDashboardWidgetProps } from './types';
 
 const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
   const { t } = useTranslation(['common', 'ceph']);
-  const { token } = theme.useToken();
 
   if (!stats) {
     return null;
   }
-
-  const assignmentColors = {
-    available: token.colorSuccess,
-    cluster: token.colorInfo,
-    image: token.colorWarning,
-    clone: token.colorTextTertiary,
-  };
 
   const assignmentData = [
     {
@@ -45,7 +25,6 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
       count: stats.truly_available_machines,
       percentage: Math.round((stats.truly_available_machines / stats.total_machines) * 100),
       icon: <CloudServerOutlined />,
-      color: assignmentColors.available,
     },
     {
       type: 'cluster',
@@ -53,7 +32,6 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
       count: stats.cluster_assigned_machines,
       percentage: stats.cluster_percentage,
       icon: <DatabaseOutlined />,
-      color: assignmentColors.cluster,
     },
     {
       type: 'image',
@@ -61,7 +39,6 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
       count: stats.image_assigned_machines,
       percentage: stats.image_percentage,
       icon: <HddOutlined />,
-      color: assignmentColors.image,
     },
     {
       type: 'clone',
@@ -69,7 +46,6 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
       count: stats.clone_assigned_machines,
       percentage: stats.clone_percentage,
       icon: <CopyOutlined />,
-      color: assignmentColors.clone,
     },
   ];
 
@@ -87,36 +63,34 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
 
     return (
       <List.Item key={teamKey} data-testid={`ds-widget-team-item-${teamKey}`}>
-        <Flex vertical style={{ width: '100%' }}>
+        <Flex vertical className="w-full">
           <Flex align="center" justify="space-between">
             <Typography.Text strong>{team.teamName}</Typography.Text>
-            <Typography.Text style={{ fontSize: 14 }}>
-              {team.totalMachines} machines
-            </Typography.Text>
+            <Typography.Text>{team.totalMachines} machines</Typography.Text>
           </Flex>
           <Flex align="center" gap={8} wrap>
             <Tooltip title={t('ceph:assignmentStatus.available')}>
-              <Tag data-testid={`ds-widget-team-tag-available-${teamKey}`} color="success">
+              <Tag data-testid={`ds-widget-team-tag-available-${teamKey}`}>
                 {team.availableMachines} available
               </Tag>
             </Tooltip>
             {team.clusterMachines > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.cluster')}>
-                <Tag data-testid={`ds-widget-team-tag-cluster-${teamKey}`} color="processing">
+                <Tag data-testid={`ds-widget-team-tag-cluster-${teamKey}`}>
                   {team.clusterMachines} cluster
                 </Tag>
               </Tooltip>
             )}
             {team.imageMachines > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.image')}>
-                <Tag data-testid={`ds-widget-team-tag-image-${teamKey}`} color="default">
+                <Tag data-testid={`ds-widget-team-tag-image-${teamKey}`}>
                   {team.imageMachines} image
                 </Tag>
               </Tooltip>
             )}
             {team.cloneMachines > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.clone')}>
-                <Tag data-testid={`ds-widget-team-tag-clone-${teamKey}`} color="warning">
+                <Tag data-testid={`ds-widget-team-tag-clone-${teamKey}`}>
                   {team.cloneMachines} clone
                 </Tag>
               </Tooltip>
@@ -131,42 +105,31 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
     <Card
       data-testid="ds-widget-card"
       title={
-        <Flex align="center" gap={8} wrap style={{ display: 'inline-flex' }}>
-          <Flex align="center" style={{ display: 'inline-flex', fontSize: 16 }}>
+        <Flex align="center" gap={8} wrap className="inline-flex">
+          <Flex align="center" className="inline-flex">
             <CloudServerOutlined />
           </Flex>
-          <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>
-            {t('ceph:dashboard.title')}
-          </Typography.Text>
+          <Typography.Text>{t('ceph:dashboard.title')}</Typography.Text>
         </Flex>
       }
       extra={
-        <Typography.Text style={{ fontSize: 12 }}>
+        <Typography.Text>
           {t('ceph:dashboard.subtitle', { total: stats.total_machines })}
         </Typography.Text>
       }
     >
-      <Flex vertical gap={16} style={{ width: '100%' }}>
+      <Flex vertical gap={16} className="w-full">
         <Row gutter={[16, 16]}>
           {assignmentData.map((item) => (
             <Col key={item.type} xs={12} sm={12} md={6}>
-              <Card
-                data-testid={`ds-widget-stat-${item.type}`}
-                size="small"
-                style={{ borderColor: item.color }}
-              >
+              <Card data-testid={`ds-widget-stat-${item.type}`} size="small">
                 <Flex vertical align="center">
-                  <Flex style={{ fontSize: 24, color: item.color }}>{item.icon}</Flex>
+                  <Flex>{item.icon}</Flex>
                   <Statistic
                     data-testid={`ds-widget-stat-value-${item.type}`}
                     title={item.label}
                     value={item.count}
-                    suffix={
-                      <Typography.Text style={{ fontSize: 14 }}>
-                        ({item.percentage}%)
-                      </Typography.Text>
-                    }
-                    valueStyle={{ color: item.color }}
+                    suffix={<Typography.Text>({item.percentage}%)</Typography.Text>}
                   />
                 </Flex>
               </Card>
@@ -204,13 +167,9 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
               <Progress
                 data-testid="ds-widget-progress-utilization"
                 percent={utilizationPercent}
-                strokeColor={{
-                  '0%': token.colorPrimary,
-                  '100%': token.colorSuccess,
-                }}
                 format={(percent) => `${percent}% ${t('common:utilized')}`}
               />
-              <Typography.Text style={{ fontSize: 12 }}>
+              <Typography.Text>
                 {t('ceph:dashboard.utilizationDetails', {
                   used: stats.total_machines - stats.truly_available_machines,
                   total: stats.total_machines,
@@ -223,7 +182,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
         {stats.team_breakdown && stats.team_breakdown.length > 0 && (
           <Flex vertical gap={8} data-testid="ds-widget-team-breakdown">
             <Flex align="center" gap={8}>
-              <Flex align="center" style={{ display: 'inline-flex', fontSize: 16 }}>
+              <Flex align="center" className="inline-flex">
                 <TeamOutlined />
               </Flex>
               <Typography.Text strong>{t('ceph:dashboard.teamBreakdown')}</Typography.Text>

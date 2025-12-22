@@ -41,23 +41,19 @@ export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
     },
     statusMap: {
       'mounted-running': {
-        color: 'success',
         label: t('resources:repositories.statusMountedRunning'),
         icon: <CheckCircleOutlined />,
       },
       mounted: {
-        color: 'warning',
         label: t('resources:repositories.statusMountedNotRunning'),
         icon: <ClockCircleOutlined />,
       },
       unmounted: {
-        color: 'default',
         label: t('resources:repositories.statusUnmounted'),
         icon: <DisconnectOutlined />,
       },
     },
     defaultConfig: {
-      color: 'default',
       label: t('resources:repositories.statusUnmounted'),
       icon: <DisconnectOutlined />,
     },
@@ -77,6 +73,7 @@ export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
       return (
         <Space>
           <Typography.Text
+            // eslint-disable-next-line no-restricted-syntax
             style={{
               display: 'inline-flex',
               fontSize: 20,
@@ -125,28 +122,23 @@ export const useSystemContainerColumns = () => {
     width: 80,
     statusMap: {
       running: {
-        color: 'success',
         label: t('resources:containers.containerStatusRunning'),
         icon: <PlayCircleOutlined />,
       },
       paused: {
-        color: 'warning',
         label: t('resources:containers.containerStatusPaused'),
         icon: <PauseCircleOutlined />,
       },
       restarting: {
-        color: 'blue',
         label: t('resources:containers.containerStatusRestarting'),
         icon: <ReloadOutlined />,
       },
       stopped: {
-        color: 'default',
         label: t('resources:containers.containerStatusStopped'),
         icon: <StopOutlined />,
       },
     },
     defaultConfig: {
-      color: 'default',
       label: t('resources:containers.containerStatusStopped'),
       icon: <StopOutlined />,
     },
@@ -158,28 +150,23 @@ export const useSystemContainerColumns = () => {
     key: 'state',
     statusMap: {
       running: {
-        color: 'success',
         label: t('resources:containers.containerStatusRunning'),
         icon: <PlayCircleOutlined />,
       },
       paused: {
-        color: 'warning',
         label: t('resources:containers.containerStatusPaused'),
         icon: <PauseCircleOutlined />,
       },
       restarting: {
-        color: 'blue',
         label: t('resources:containers.containerStatusRestarting'),
         icon: <ReloadOutlined />,
       },
       stopped: {
-        color: 'default',
         label: t('resources:containers.containerStatusStopped'),
         icon: <StopOutlined />,
       },
     },
     defaultConfig: {
-      color: 'default',
       label: t('resources:containers.containerStatusStopped'),
       icon: <StopOutlined />,
     },
@@ -221,6 +208,7 @@ export const useSystemContainerColumns = () => {
       render: (name: string, record: Container, index) => (
         <Space>
           <Typography.Text
+            // eslint-disable-next-line no-restricted-syntax
             style={{
               display: 'inline-flex',
               fontSize: 20,
@@ -246,7 +234,11 @@ export const useSystemContainerColumns = () => {
             ) as React.ReactNode
           }
           {record.status && (
-            <Typography.Text color="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text
+              type="secondary"
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ fontSize: 12 }}
+            >
               {record.status}
             </Typography.Text>
           )}
@@ -278,7 +270,11 @@ export const useSystemContainerColumns = () => {
           return (
             <Space direction="vertical" size={4}>
               {portMappings.map((mapping, index) => (
-                <Typography.Text key={index} style={{ fontSize: 12 }}>
+                <Typography.Text
+                  key={index}
+                  // eslint-disable-next-line no-restricted-syntax
+                  style={{ fontSize: 12 }}
+                >
                   {mapping.host_port ? (
                     <Typography.Text>
                       {mapping.host}:{mapping.host_port} → {mapping.container_port}/
@@ -294,7 +290,14 @@ export const useSystemContainerColumns = () => {
             </Space>
           );
         } else if (record.ports) {
-          return <Typography.Text style={{ fontSize: 12 }}>{record.ports}</Typography.Text>;
+          return (
+            <Typography.Text
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ fontSize: 12 }}
+            >
+              {record.ports}
+            </Typography.Text>
+          );
         }
         return '-';
       },

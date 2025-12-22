@@ -194,10 +194,10 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     key: 'status',
     width: 140,
     statusMap: {
-      pending: { color: 'default', label: t('machines:pending'), icon: <ClockCircleOutlined /> },
-      testing: { color: 'blue', label: t('machines:testing'), icon: <SyncOutlined spin /> },
-      success: { color: 'success', label: t('machines:connected'), icon: <CheckCircleOutlined /> },
-      failed: { color: 'error', label: t('machines:failed'), icon: <CloseCircleOutlined /> },
+      pending: { label: t('machines:pending'), icon: <ClockCircleOutlined /> },
+      testing: { label: t('machines:testing'), icon: <SyncOutlined spin /> },
+      success: { label: t('machines:connected'), icon: <CheckCircleOutlined /> },
+      failed: { label: t('machines:failed'), icon: <CloseCircleOutlined /> },
     },
   });
 
@@ -240,16 +240,10 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             align="center"
             gap={8}
             wrap
-            style={{ display: 'inline-flex' }}
+            className="inline-flex"
             data-testid={`connectivity-machine-${name}`}
           >
-            <Typography.Text
-              style={{
-                display: 'inline-flex',
-              }}
-            >
-              {renderIcon()}
-            </Typography.Text>
+            <Typography.Text className="inline-flex">{renderIcon()}</Typography.Text>
             <Typography.Text strong>{name}</Typography.Text>
           </Flex>
         );
@@ -328,8 +322,8 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
         </Flex>
       }
     >
-      <Flex style={{ width: '100%' }}>
-        <Flex vertical gap={16} style={{ width: '100%' }}>
+      <Flex className="w-full">
+        <Flex vertical gap={16} className="w-full">
           {isRunning && (
             <Flex vertical data-testid="connectivity-progress-container">
               <Progress
@@ -338,11 +332,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
                 data-testid="connectivity-progress-bar"
               />
               {currentMachineIndex >= 0 && currentMachineIndex < machines.length && (
-                <Typography.Text
-                  data-testid="connectivity-progress-text"
-                  type="secondary"
-                  style={{ fontSize: 12 }}
-                >
+                <Typography.Text data-testid="connectivity-progress-text" type="secondary">
                   {t('machines:testingMachine', {
                     machineName: machines[currentMachineIndex].machineName,
                   })}
@@ -351,7 +341,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             </Flex>
           )}
 
-          <Flex style={{ fontSize: 14 }}>
+          <Flex>
             <Alert
               message={t('machines:connectivityTestDescription')}
               type="info"
@@ -377,35 +367,23 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           {!isRunning && testResults.some((r) => r.status !== 'pending') && (
             <Flex data-testid="connectivity-summary-statistics">
               <Flex align="center" wrap>
-                <Flex
-                  style={{ display: 'flex', alignItems: 'center', gap: 12 }}
-                  data-testid="connectivity-total-machines"
-                >
+                <Flex align="center" gap={12} data-testid="connectivity-total-machines">
                   <Typography.Text type="secondary">{t('machines:totalMachines')}:</Typography.Text>
                   <Typography.Text strong>{machines.length}</Typography.Text>
                 </Flex>
-                <Flex
-                  style={{ display: 'flex', alignItems: 'center', gap: 12 }}
-                  data-testid="connectivity-connected-count"
-                >
+                <Flex align="center" gap={12} data-testid="connectivity-connected-count">
                   <Typography.Text type="secondary">{t('machines:connected')}:</Typography.Text>
                   <Typography.Text strong type="success">
                     {testResults.filter((r) => r.status === 'success').length}
                   </Typography.Text>
                 </Flex>
-                <Flex
-                  style={{ display: 'flex', alignItems: 'center', gap: 12 }}
-                  data-testid="connectivity-failed-count"
-                >
+                <Flex align="center" gap={12} data-testid="connectivity-failed-count">
                   <Typography.Text type="secondary">{t('machines:failed')}:</Typography.Text>
                   <Typography.Text strong type="danger">
                     {testResults.filter((r) => r.status === 'failed').length}
                   </Typography.Text>
                 </Flex>
-                <Flex
-                  style={{ display: 'flex', alignItems: 'center', gap: 12 }}
-                  data-testid="connectivity-average-response"
-                >
+                <Flex align="center" gap={12} data-testid="connectivity-average-response">
                   <Typography.Text type="secondary">
                     {t('machines:averageResponse')}:
                   </Typography.Text>

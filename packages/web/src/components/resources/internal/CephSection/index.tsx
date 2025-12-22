@@ -63,6 +63,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
       <Flex
         align="center"
         justify="center"
+        // eslint-disable-next-line no-restricted-syntax
         style={{ paddingBlock: 20 }}
         data-testid="ds-section-loading"
       >
@@ -77,17 +78,21 @@ export const CephSection: React.FC<CephSectionProps> = ({
 
   return (
     <>
-      <Divider style={{ margin: '24px 0' }} data-testid="ds-section-divider">
-        <Flex align="center" style={{ display: 'inline-flex' }}>
+      <Divider
+        // eslint-disable-next-line no-restricted-syntax
+        style={{ margin: '24px 0' }}
+        data-testid="ds-section-divider"
+      >
+        <Flex align="center" className="inline-flex">
           <CloudServerOutlined />
-          <Text style={{ fontSize: 16, fontWeight: 600 }}>{t('machineSection.title')}</Text>
+          <Text>{t('machineSection.title')}</Text>
         </Flex>
       </Divider>
 
       <Card size="small" data-testid="ds-section-card">
-        <Flex vertical gap={24} style={{ width: '100%' }}>
+        <Flex vertical gap={24} className="w-full">
           <Flex vertical>
-            <Flex style={{ display: 'block' }} data-testid="ds-section-assignment-label">
+            <Flex className="block" data-testid="ds-section-assignment-label">
               <Typography.Text>{t('assignment.currentAssignment')}</Typography.Text>
             </Flex>
             <MachineAssignmentStatusBadge
@@ -115,9 +120,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
                 onClick={onViewDetails}
                 data-testid="ds-section-history-button"
               >
-                <Typography.Text style={{ fontSize: 12 }}>
-                  {t('assignment.history')}
-                </Typography.Text>
+                <Typography.Text>{t('assignment.history')}</Typography.Text>
               </Button>
             )}
 
@@ -128,9 +131,7 @@ export const CephSection: React.FC<CephSectionProps> = ({
                 onClick={onManageAssignment}
                 data-testid="ds-section-manage-button"
               >
-                <Typography.Text style={{ fontSize: 12 }}>
-                  {t('machineSection.manageAssignment')}
-                </Typography.Text>
+                <Typography.Text>{t('machineSection.manageAssignment')}</Typography.Text>
               </Button>
             )}
           </Flex>

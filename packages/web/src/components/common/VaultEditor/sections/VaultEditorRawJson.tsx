@@ -33,7 +33,10 @@ export const VaultEditorRawJson: React.FC<VaultEditorRawJsonProps> = ({
             <CodeOutlined />
             {t('vaultEditor.rawJsonEditor')}
             <Tooltip title={t('vaultEditor.rawJsonTooltip')}>
-              <ExclamationCircleOutlined style={{ fontSize: 16 }} />
+              <ExclamationCircleOutlined
+                // eslint-disable-next-line no-restricted-syntax
+                style={{ fontSize: 16 }}
+              />
             </Tooltip>
           </Space>
         }
@@ -46,7 +49,12 @@ export const VaultEditorRawJson: React.FC<VaultEditorRawJsonProps> = ({
           description={t('vaultEditor.expertModeDescription')}
           type="error"
           showIcon
-          icon={<ExclamationCircleOutlined style={{ fontSize: 16 }} />}
+          icon={
+            <ExclamationCircleOutlined
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ fontSize: 16 }}
+            />
+          }
         />
 
         {rawJsonError && (

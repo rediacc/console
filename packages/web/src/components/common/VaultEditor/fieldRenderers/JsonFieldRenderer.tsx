@@ -28,7 +28,7 @@ export const JsonFieldRenderer: React.FC<JsonFieldRendererProps> = ({
       getValueProps={getValueProps}
     >
       <Input.TextArea
-        style={{ width: '100%' }}
+        className="w-full"
         placeholder={
           fieldDef.example
             ? `${t('vaultEditor.example')} ${JSON.stringify(fieldDef.example, null, 2)}`

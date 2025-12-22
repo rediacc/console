@@ -24,6 +24,7 @@ const DashboardPage: React.FC = () => {
   if (isLoading) {
     return (
       <Flex>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <Flex style={{ width: '100%', textAlign: 'center' }}>
           <LoadingWrapper loading centered minHeight={200}>
             <Flex />
@@ -73,7 +74,7 @@ const DashboardPage: React.FC = () => {
 
   return (
     <Flex>
-      <Flex vertical gap={24} style={{ width: '100%' }}>
+      <Flex vertical gap={24} className="w-full">
         <DashboardAlertsWidget dashboard={dashboard} accountHealth={accountHealth} />
 
         <ResourceUsageWidget resources={dashboard.resources} />

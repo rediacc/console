@@ -27,7 +27,7 @@ export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
         initialValue={fieldDef.default}
       >
         <Input.Password
-          style={{ width: '100%' }}
+          className="w-full"
           placeholder={t('vaultEditor.sshPasswordPlaceholder')}
           autoComplete="new-password"
           data-testid={`vault-editor-field-${fieldName}`}
@@ -47,7 +47,7 @@ export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
         extra={t('vaultEditor.hostEntryHelp')}
       >
         <Input
-          style={{ width: '100%' }}
+          className="w-full"
           placeholder={t('vaultEditor.hostEntryPlaceholder')}
           data-testid={`vault-editor-field-${fieldName}`}
         />
@@ -66,7 +66,7 @@ export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
         initialValue={fieldDef.default}
       >
         <InputNumber
-          style={{ width: '100%' }}
+          className="w-full"
           placeholder={t('vaultEditor.portPlaceholder')}
           min={1}
           max={65535}
@@ -108,7 +108,7 @@ export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
       initialValue={fieldDef.default}
     >
       <Input
-        style={{ width: '100%' }}
+        className="w-full"
         placeholder={fieldPlaceholder}
         type={fieldDef.sensitive ? 'password' : 'text'}
         autoComplete={fieldDef.sensitive ? 'new-password' : 'off'}
