@@ -19,8 +19,8 @@ body {
   width: 100%;
 }
 
-/* Fix all Flex containers to stretch horizontally */
-.ant-flex {
+/* Fix vertical Flex containers to stretch horizontally */
+.ant-flex-vertical {
   width: 100%;
 }
 
