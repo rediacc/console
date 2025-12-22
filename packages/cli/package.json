@@ -30,7 +30,7 @@
     "build:exe:all": "bun run build:exe:win && bun run build:exe:mac && bun run build:exe:mac-arm && bun run build:exe:linux"
   },
   "dependencies": {
-    "inquirer": "^13.0.2"
+    "inquirer": "^13.1.0"
   },
   "devDependencies": {
     "@rediacc/shared": "^0.1.0",
