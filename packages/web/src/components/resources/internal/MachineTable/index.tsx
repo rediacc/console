@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Empty, Space } from 'antd';
+import { Button, Card, Empty, Flex, Space, Table, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +7,6 @@ import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
-import { RediaccButton, RediaccEmpty, RediaccTable, RediaccTooltip } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
@@ -32,35 +31,7 @@ import {
   TeamOutlined,
 } from '@/utils/optimizedIcons';
 import type { DeployedRepo } from '@rediacc/shared/services/machine';
-import { buildMachineTableColumns } from './columns';
-import {
-  BulkActionsBar,
-  BulkActionsSummary,
-  GroupCardContainer,
-  GroupCardCount,
-  GroupCardHeader,
-  GroupCardIndicator,
-  GroupCardRow,
-  GroupCardTitle,
-  GroupedCardStack,
-  GroupHeaderTag,
-  GroupRowActionButton,
-  GroupRowContent,
-  GroupRowIcon,
-  GroupRowInfo,
-  GroupRowName,
-  MachineTableWrapper,
-  StyledRediaccEmpty,
-  StyledTag,
-  TableContainer,
-  ViewToggleButton,
-  ViewToggleContainer,
-  ViewToggleDivider,
-} from './styles';
-import type { MachineFunctionAction } from './columns';
-
-// Local type for group variants - maps to preset prop
-type GroupVariant = 'repository' | 'bridge' | 'team' | 'region' | 'status' | 'grand';
+import { buildMachineTableColumns, type MachineFunctionAction } from './columns';
 
 type GroupByMode = 'machine' | 'bridge' | 'team' | 'region' | 'repository' | 'status' | 'grand';
 
@@ -278,49 +249,49 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     if (!canAssignToCluster || selectedRowKeys.length === 0) return null;
 
     return (
-      <BulkActionsBar>
+      <Flex align="center" justify="space-between" wrap>
         <Space size="middle">
-          <BulkActionsSummary>
+          <Typography.Text>
             {t('machines:bulkActions.selected', { count: selectedRowKeys.length })}
-          </BulkActionsSummary>
-          <RediaccTooltip title={t('common:actions.clearSelection')}>
-            <RediaccButton
+          </Typography.Text>
+          <Tooltip title={t('common:actions.clearSelection')}>
+            <Button
               onClick={() => setSelectedRowKeys([])}
               data-testid="machine-bulk-clear-selection"
               aria-label={t('common:actions.clearSelection')}
             >
               Clear
-            </RediaccButton>
-          </RediaccTooltip>
+            </Button>
+          </Tooltip>
         </Space>
         <Space size="middle">
-          <RediaccTooltip title={t('machines:bulkActions.assignToCluster')}>
-            <RediaccButton
-              variant="primary"
+          <Tooltip title={t('machines:bulkActions.assignToCluster')}>
+            <Button
+              type="primary"
               icon={<CloudServerOutlined />}
               onClick={() => setBulkAssignClusterModal(true)}
               data-testid="machine-bulk-assign-cluster"
               aria-label={t('machines:bulkActions.assignToCluster')}
             />
-          </RediaccTooltip>
-          <RediaccTooltip title={t('machines:bulkActions.removeFromCluster')}>
-            <RediaccButton
+          </Tooltip>
+          <Tooltip title={t('machines:bulkActions.removeFromCluster')}>
+            <Button
               icon={<CloudServerOutlined />}
               onClick={() => setRemoveFromClusterModal(true)}
               data-testid="machine-bulk-remove-cluster"
               aria-label={t('machines:bulkActions.removeFromCluster')}
             />
-          </RediaccTooltip>
-          <RediaccTooltip title={t('machines:bulkActions.viewAssignmentStatus')}>
-            <RediaccButton
+          </Tooltip>
+          <Tooltip title={t('machines:bulkActions.viewAssignmentStatus')}>
+            <Button
               icon={<InfoCircleOutlined />}
               onClick={() => setViewAssignmentStatusModal(true)}
               data-testid="machine-bulk-view-status"
               aria-label={t('machines:bulkActions.viewAssignmentStatus')}
             />
-          </RediaccTooltip>
+          </Tooltip>
         </Space>
-      </BulkActionsBar>
+      </Flex>
     );
   };
 
@@ -333,83 +304,100 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
     // In expert/normal mode, show all grouping buttons
     return (
-      <ViewToggleContainer>
+      <Flex>
         <Space wrap size="small">
-          <RediaccTooltip title={t('machines:machine')}>
-            <ViewToggleButton
-              variant={groupBy === 'machine' ? 'primary' : 'default'}
+          <Tooltip title={t('machines:machine')}>
+            <Button
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ minWidth: 42 }}
+              type={groupBy === 'machine' ? 'primary' : 'default'}
               icon={<DesktopOutlined />}
               onClick={() => setGroupBy('machine')}
               data-testid="machine-view-toggle-machine"
               aria-label={t('machines:machine')}
             />
-          </RediaccTooltip>
+          </Tooltip>
 
-          <ViewToggleDivider />
+          <Typography.Text
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ width: 1, height: 24 }}
+          />
 
-          <RediaccTooltip title={t('machines:groupByBridge')}>
-            <ViewToggleButton
-              variant={groupBy === 'bridge' ? 'primary' : 'default'}
+          <Tooltip title={t('machines:groupByBridge')}>
+            <Button
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ minWidth: 42 }}
+              type={groupBy === 'bridge' ? 'primary' : 'default'}
               icon={<CloudServerOutlined />}
               onClick={() => setGroupBy('bridge')}
               data-testid="machine-view-toggle-bridge"
               aria-label={t('machines:groupByBridge')}
             />
-          </RediaccTooltip>
+          </Tooltip>
 
-          <RediaccTooltip title={t('machines:groupByTeam')}>
-            <ViewToggleButton
-              variant={groupBy === 'team' ? 'primary' : 'default'}
+          <Tooltip title={t('machines:groupByTeam')}>
+            <Button
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ minWidth: 42 }}
+              type={groupBy === 'team' ? 'primary' : 'default'}
               icon={<TeamOutlined />}
               onClick={() => setGroupBy('team')}
               data-testid="machine-view-toggle-team"
               aria-label={t('machines:groupByTeam')}
             />
-          </RediaccTooltip>
+          </Tooltip>
 
           {isExpertMode && (
-            <RediaccTooltip title={t('machines:groupByRegion')}>
-              <ViewToggleButton
-                variant={groupBy === 'region' ? 'primary' : 'default'}
+            <Tooltip title={t('machines:groupByRegion')}>
+              <Button
+                // eslint-disable-next-line no-restricted-syntax
+                style={{ minWidth: 42 }}
+                type={groupBy === 'region' ? 'primary' : 'default'}
                 icon={<GlobalOutlined />}
                 onClick={() => setGroupBy('region')}
                 data-testid="machine-view-toggle-region"
                 aria-label={t('machines:groupByRegion')}
               />
-            </RediaccTooltip>
+            </Tooltip>
           )}
 
-          <RediaccTooltip title={t('machines:groupByRepo')}>
-            <ViewToggleButton
-              variant={groupBy === 'repository' ? 'primary' : 'default'}
+          <Tooltip title={t('machines:groupByRepo')}>
+            <Button
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ minWidth: 42 }}
+              type={groupBy === 'repository' ? 'primary' : 'default'}
               icon={<InboxOutlined />}
               onClick={() => setGroupBy('repository')}
               data-testid="machine-view-toggle-repo"
               aria-label={t('machines:groupByRepo')}
             />
-          </RediaccTooltip>
+          </Tooltip>
 
-          <RediaccTooltip title={t('machines:groupByStatus')}>
-            <ViewToggleButton
-              variant={groupBy === 'status' ? 'primary' : 'default'}
+          <Tooltip title={t('machines:groupByStatus')}>
+            <Button
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ minWidth: 42 }}
+              type={groupBy === 'status' ? 'primary' : 'default'}
               icon={<DashboardOutlined />}
               onClick={() => setGroupBy('status')}
               data-testid="machine-view-toggle-status"
               aria-label={t('machines:groupByStatus')}
             />
-          </RediaccTooltip>
+          </Tooltip>
 
-          <RediaccTooltip title={t('machines:groupByGrand')}>
-            <ViewToggleButton
-              variant={groupBy === 'grand' ? 'primary' : 'default'}
+          <Tooltip title={t('machines:groupByGrand')}>
+            <Button
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ minWidth: 42 }}
+              type={groupBy === 'grand' ? 'primary' : 'default'}
               icon={<BranchesOutlined />}
               onClick={() => setGroupBy('grand')}
               data-testid="machine-view-toggle-grand"
               aria-label={t('machines:groupByGrand')}
             />
-          </RediaccTooltip>
+          </Tooltip>
         </Space>
-      </ViewToggleContainer>
+      </Flex>
     );
   };
 
@@ -508,34 +496,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const renderGroupedTableView = () => {
     if (Object.keys(groupedMachinesForTable).length === 0) {
       return (
-        <StyledRediaccEmpty>
-          <RediaccEmpty
-            variant="minimal"
+        <Flex>
+          <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={t('resources:repositories.noRepositories')}
           />
-        </StyledRediaccEmpty>
+        </Flex>
       );
     }
-
-    const variantMap: Record<GroupByMode, GroupVariant> = {
-      machine: 'repository',
-      bridge: 'bridge',
-      team: 'team',
-      region: 'region',
-      repository: 'repository',
-      status: 'status',
-      grand: 'grand',
-    };
-
-    const indicatorColors: Record<GroupVariant, string> = {
-      team: 'var(--color-success)',
-      bridge: 'var(--color-primary)',
-      region: 'var(--color-info)',
-      repository: 'var(--color-secondary)',
-      status: 'var(--color-warning)',
-      grand: 'var(--color-secondary)',
-    };
 
     const iconMap: Partial<Record<GroupByMode, React.ReactNode>> = {
       bridge: <CloudServerOutlined />,
@@ -547,91 +515,81 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     };
 
     return (
-      <GroupedCardStack>
-        {Object.entries(groupedMachinesForTable).map(([groupKey, machines], groupIndex) => {
-          const variant = variantMap[groupBy];
-          const indicatorColor = indicatorColors[variant];
+      <Flex vertical>
+        {Object.entries(groupedMachinesForTable).map(([groupKey, machines], groupIndex) => (
+          <Card key={groupKey}>
+            <Flex align="center" gap={8} wrap className="inline-flex">
+              <Space size="small">
+                <Typography.Text>#{groupIndex + 1}</Typography.Text>
+                <Tag bordered={false} icon={iconMap[groupBy]}>
+                  {groupKey}
+                </Tag>
+                <Typography.Text>
+                  {machines.length}{' '}
+                  {machines.length === 1 ? t('machines:machine') : t('machines:machines')}
+                </Typography.Text>
+              </Space>
+            </Flex>
 
-          return (
-            <GroupCardContainer key={groupKey} $isAlternate={groupIndex % 2 === 0}>
-              <GroupCardHeader>
-                <GroupCardIndicator $color={indicatorColor} />
-                <Space size="small">
-                  <GroupCardTitle>#{groupIndex + 1}</GroupCardTitle>
-                  <GroupHeaderTag $variant={variant} icon={iconMap[groupBy]}>
-                    {groupKey}
-                  </GroupHeaderTag>
-                  <GroupCardCount>
-                    {machines.length}{' '}
-                    {machines.length === 1 ? t('machines:machine') : t('machines:machines')}
-                  </GroupCardCount>
-                </Space>
-              </GroupCardHeader>
+            {machines.map((machine) => (
+              <Flex
+                key={machine.machineName}
+                justify="space-between"
+                align="center"
+                className="cursor-pointer"
+                onClick={() =>
+                  navigate(`/machines/${machine.machineName}/repositories`, {
+                    state: { machine },
+                  })
+                }
+                data-testid={`grouped-machine-row-${machine.machineName}`}
+              >
+                <Flex align="center">
+                  <DesktopOutlined />
+                  <Flex vertical>
+                    <Typography.Text>{machine.machineName}</Typography.Text>
+                    <Space size="small">
+                      <Tag bordered={false}>{machine.teamName}</Tag>
+                      {machine.bridgeName && <Tag bordered={false}>{machine.bridgeName}</Tag>}
+                      {machine.regionName && <Tag bordered={false}>{machine.regionName}</Tag>}
+                    </Space>
+                  </Flex>
+                </Flex>
 
-              {machines.map((machine, index) => (
-                <GroupCardRow
-                  key={machine.machineName}
-                  $isStriped={index % 2 !== 0}
-                  onClick={() =>
-                    navigate(`/machines/${machine.machineName}/repositories`, {
-                      state: { machine },
-                    })
-                  }
-                  data-testid={`grouped-machine-row-${machine.machineName}`}
-                >
-                  <GroupRowContent>
-                    <GroupRowIcon />
-                    <GroupRowInfo>
-                      <GroupRowName>{machine.machineName}</GroupRowName>
-                      <Space size="small">
-                        <StyledTag $variant="team">{machine.teamName}</StyledTag>
-                        {machine.bridgeName && (
-                          <StyledTag $variant="bridge">{machine.bridgeName}</StyledTag>
-                        )}
-                        {machine.regionName && (
-                          <StyledTag $variant="region">{machine.regionName}</StyledTag>
-                        )}
-                      </Space>
-                    </GroupRowInfo>
-                  </GroupRowContent>
-
-                  <RediaccTooltip title={t('machines:viewRepos')}>
-                    <GroupRowActionButton
-                      variant="primary"
-                      icon={<RightOutlined />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/machines/${machine.machineName}/repositories`, {
-                          state: { machine },
-                        });
-                      }}
-                    >
-                      {t('machines:viewRepos')}
-                    </GroupRowActionButton>
-                  </RediaccTooltip>
-                </GroupCardRow>
-              ))}
-            </GroupCardContainer>
-          );
-        })}
-      </GroupedCardStack>
+                <Tooltip title={t('machines:viewRepos')}>
+                  <Button
+                    type="primary"
+                    icon={<RightOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/machines/${machine.machineName}/repositories`, {
+                        state: { machine },
+                      });
+                    }}
+                  >
+                    {t('machines:viewRepos')}
+                  </Button>
+                </Tooltip>
+              </Flex>
+            ))}
+          </Card>
+        ))}
+      </Flex>
     );
   };
 
   return (
-    <MachineTableWrapper className={className}>
+    <Flex vertical className={`h-full ${className}`}>
       {renderViewToggle()}
       {renderBulkActionsToolbar()}
 
       {groupBy === 'machine' ? (
-        <TableContainer ref={tableContainerRef}>
-          <RediaccTable
+        <Flex vertical ref={tableContainerRef} className="flex-1 overflow-hidden">
+          <Table
             columns={columns}
             dataSource={filteredMachines}
             rowKey="machineName"
             loading={isLoading}
-            interactive
-            selectable
             scroll={{ x: 'max-content' }}
             rowSelection={rowSelection}
             rowClassName={(record) => {
@@ -665,7 +623,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             })}
             sticky
           />
-        </TableContainer>
+        </Flex>
       ) : (
         renderGroupedTableView()
       )}
@@ -742,6 +700,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           onClose={handlePanelClose}
         />
       )}
-    </MachineTableWrapper>
+    </Flex>
   );
 };

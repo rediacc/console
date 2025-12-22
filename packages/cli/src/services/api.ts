@@ -28,7 +28,7 @@ function hasEncryptedVaultContent(value: unknown): boolean {
     if (!obj || typeof obj !== 'object') return false;
 
     if (Array.isArray(obj)) {
-      return obj.some(item => check(item));
+      return obj.some((item) => check(item));
     }
 
     for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {

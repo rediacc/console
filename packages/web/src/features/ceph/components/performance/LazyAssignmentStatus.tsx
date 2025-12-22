@@ -1,15 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Flex, Skeleton } from 'antd';
 import { useMachineAssignmentStatus } from '@/api/queries/ceph';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import { MachineAssignmentService } from '@/features/ceph/services';
 import type { Machine, MachineAssignmentType } from '@/types';
-import {
-  FlexCenterContainer,
-  LazyLoadingContainer,
-  LoadingMoreContainer,
-  StyledSkeletonButton,
-  StyledSkeletonInput,
-} from './styles';
 
 interface LazyAssignmentStatusProps {
   machine: Machine;
@@ -85,9 +79,25 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
   // Render loading skeleton
   if (!isVisible) {
     return (
-      <LazyLoadingContainer ref={containerRef} data-testid="lazy-status-loading-container">
-        <StyledSkeletonInput active size="small" data-testid="lazy-status-skeleton" />
-      </LazyLoadingContainer>
+      <Flex
+        ref={containerRef}
+        data-testid="lazy-status-loading-container"
+        align="center"
+        justify="center"
+        // eslint-disable-next-line no-restricted-syntax
+        style={{
+          height: 20,
+          width: 120,
+        }}
+      >
+        <Skeleton.Input
+          active
+          size="small"
+          data-testid="lazy-status-skeleton"
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ width: 120, height: 20 }}
+        />
+      </Flex>
     );
   }
 
@@ -96,21 +106,32 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
     const assignmentInfo = MachineAssignmentService.getAssignmentInfo(machine);
 
     return (
-      <div ref={containerRef} data-testid="lazy-status-immediate-container">
+      <Flex ref={containerRef} data-testid="lazy-status-immediate-container">
         <MachineAssignmentStatusBadge
           assignmentType={immediateStatus}
           assignmentDetails={assignmentInfo.resourceName}
         />
-      </div>
+      </Flex>
     );
   }
 
   // Loading state for API call
   if (isLoading && !hasLoaded) {
     return (
-      <FlexCenterContainer ref={containerRef} data-testid="lazy-status-api-loading-container">
-        <StyledSkeletonInput active size="small" data-testid="lazy-status-api-skeleton" />
-      </FlexCenterContainer>
+      <Flex
+        ref={containerRef}
+        data-testid="lazy-status-api-loading-container"
+        align="center"
+        justify="center"
+      >
+        <Skeleton.Input
+          active
+          size="small"
+          data-testid="lazy-status-api-skeleton"
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ width: 120, height: 20 }}
+        />
+      </Flex>
     );
   }
 
@@ -122,12 +143,12 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
     MachineAssignmentService.getAssignmentInfo(machine).resourceName;
 
   return (
-    <div ref={containerRef} data-testid="lazy-status-final-container">
+    <Flex ref={containerRef} data-testid="lazy-status-final-container">
       <MachineAssignmentStatusBadge
         assignmentType={finalAssignmentType}
         assignmentDetails={finalResourceName}
       />
-    </div>
+    </Flex>
   );
 };
 
@@ -169,7 +190,7 @@ export const ProgressiveMachineStatusLoader: React.FC<{
   }
 
   return (
-    <div data-testid="lazy-status-progressive-loader">
+    <Flex vertical data-testid="lazy-status-progressive-loader">
       {machines.slice(0, loadedCount).map((machine) => (
         <LazyAssignmentStatus
           key={machine.machineName}
@@ -179,10 +200,10 @@ export const ProgressiveMachineStatusLoader: React.FC<{
         />
       ))}
       {loadedCount < machines.length && (
-        <LoadingMoreContainer data-testid="lazy-status-loading-more">
-          <StyledSkeletonButton active size="small" data-testid="lazy-status-loading-button" />
-        </LoadingMoreContainer>
+        <Flex data-testid="lazy-status-loading-more" align="center" justify="center">
+          <Skeleton.Button active size="small" data-testid="lazy-status-loading-button" />
+        </Flex>
       )}
-    </div>
+    </Flex>
   );
 };

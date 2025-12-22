@@ -1,7 +1,5 @@
 import React from 'react';
-import { Tag } from 'antd';
-import styled from 'styled-components';
-import { RediaccButton } from '@/components/ui';
+import { Button, Flex, Tag } from 'antd';
 import type { Dayjs } from 'dayjs';
 
 type FilterTagValue = string | string[] | boolean | [Dayjs | null, Dayjs | null] | null;
@@ -10,7 +8,6 @@ export interface FilterTagConfig {
   key: string;
   value: FilterTagValue;
   label: string;
-  color?: string;
 }
 
 export interface FilterTagDisplayProps {
@@ -21,20 +18,13 @@ export interface FilterTagDisplayProps {
   clearAllText?: string;
 }
 
-const FilterTagBar = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`;
+const FilterTagBar = (props: React.ComponentProps<typeof Flex>) => (
+  <Flex wrap align="center" className="flex" {...props} />
+);
 
-const ClearButton = styled(RediaccButton)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.XS}px;
-    padding: 0 ${({ theme }) => theme.spacing.XS}px;
-    height: auto;
-  }
-`;
+const ClearButton = (props: React.ComponentProps<typeof Button>) => (
+  <Button size="small" {...props} />
+);
 
 const isStringArray = (value: FilterTagValue): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === 'string');
@@ -81,12 +71,12 @@ const FilterTagDisplay: React.FC<FilterTagDisplayProps> = ({
   }
 
   const renderFilterTag = (filter: FilterTagConfig) => {
-    const { key, value, label, color = 'blue' } = filter;
+    const { key, value, label } = filter;
 
     // Handle array values (e.g., multiple status selections)
     if (isStringArray(value)) {
       return value.map((item) => (
-        <Tag key={`${key}-${item}`} closable onClose={() => onClear(key, item)} color={color}>
+        <Tag key={`${key}-${item}`} closable onClose={() => onClear(key, item)}>
           {item}
         </Tag>
       ));
@@ -95,7 +85,7 @@ const FilterTagDisplay: React.FC<FilterTagDisplayProps> = ({
     // Handle date range (array with date objects)
     if (isDateRangeValue(value)) {
       return (
-        <Tag key={key} closable onClose={() => onClear(key)} color={color}>
+        <Tag key={key} closable onClose={() => onClear(key)}>
           {label}
         </Tag>
       );
@@ -103,7 +93,7 @@ const FilterTagDisplay: React.FC<FilterTagDisplayProps> = ({
 
     // Handle boolean and string values
     return (
-      <Tag key={key} closable onClose={() => onClear(key)} color={color}>
+      <Tag key={key} closable onClose={() => onClear(key)}>
         {label}
       </Tag>
     );

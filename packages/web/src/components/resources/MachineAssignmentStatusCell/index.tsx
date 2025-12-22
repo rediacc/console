@@ -1,9 +1,9 @@
 import React from 'react';
+import { Flex } from 'antd';
 import { useMachineAssignmentStatus } from '@/api/queries/ceph';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import type { Machine, MachineAssignmentType } from '@/types';
-import { StatusCellWrapper } from './styles';
 
 interface MachineAssignmentStatusCellProps {
   machine: Machine;
@@ -33,29 +33,29 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
   // If machine already has cephClusterName, we know it's assigned to a cluster
   if (machine.cephClusterName) {
     return (
-      <StatusCellWrapper data-testid="machine-status-cell-cluster">
+      <Flex align="flex-start" justify="flex-start" data-testid="machine-status-cell-cluster">
         <MachineAssignmentStatusBadge
           assignmentType="CLUSTER"
           assignmentDetails={`Assigned to cluster: ${machine.cephClusterName}`}
           size="small"
         />
-      </StatusCellWrapper>
+      </Flex>
     );
   }
 
   if (isLoading) {
     return (
-      <StatusCellWrapper $align="center">
+      <Flex align="center" justify="center">
         <InlineLoadingIndicator width={140} height={22} data-testid="machine-status-cell-loading" />
-      </StatusCellWrapper>
+      </Flex>
     );
   }
 
   if (!data) {
     return (
-      <StatusCellWrapper data-testid="machine-status-cell-available">
+      <Flex align="flex-start" justify="flex-start" data-testid="machine-status-cell-available">
         <MachineAssignmentStatusBadge assignmentType="AVAILABLE" size="small" />
-      </StatusCellWrapper>
+      </Flex>
     );
   }
 
@@ -72,13 +72,17 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
   );
 
   return (
-    <StatusCellWrapper data-testid={`machine-status-cell-${assignmentType.toLowerCase()}`}>
+    <Flex
+      align="flex-start"
+      justify="flex-start"
+      data-testid={`machine-status-cell-${assignmentType.toLowerCase()}`}
+    >
       <MachineAssignmentStatusBadge
         assignmentType={assignmentType}
         assignmentDetails={assignmentDetails}
         size="small"
       />
-    </StatusCellWrapper>
+    </Flex>
   );
 };
 

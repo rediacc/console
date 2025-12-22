@@ -1,6 +1,5 @@
 import React from 'react';
-import { Space, Timeline } from 'antd';
-import { RediaccText } from '@/components/ui';
+import { Space, Timeline, Typography } from 'antd';
 import { formatTimestampAsIs, normalizeToString } from '@/platform';
 import type { QueueTraceLog } from '@rediacc/shared/types';
 import type { TimelineViewProps } from '../types';
@@ -28,14 +27,12 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ traceLogs }) => {
           color,
           children: (
             <Space direction="vertical" size={0}>
-              <RediaccText weight="bold">
+              <Typography.Text strong>
                 {action.replace('QUEUE_ITEM_', '').replace(/_/g, ' ')}
-              </RediaccText>
-              <RediaccText color="secondary">
-                {formatTimestampAsIs(timestamp, 'datetime')}
-              </RediaccText>
-              {details && <RediaccText>{details}</RediaccText>}
-              {actionByUser && <RediaccText color="secondary">By: {actionByUser}</RediaccText>}
+              </Typography.Text>
+              <Typography.Text>{formatTimestampAsIs(timestamp, 'datetime')}</Typography.Text>
+              {details && <Typography.Text>{details}</Typography.Text>}
+              {actionByUser && <Typography.Text>By: {actionByUser}</Typography.Text>}
             </Space>
           ),
         };

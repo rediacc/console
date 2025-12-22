@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Col, Empty } from 'antd';
+import { Button, Card, Col, Empty, Flex, Input, Row, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccEmpty, RediaccStack, RediaccText } from '@/components/ui';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { templateService } from '@/services/templateService';
 import {
@@ -13,24 +12,6 @@ import {
   GlobalOutlined,
   InfoCircleOutlined,
 } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import {
-  ClearButton,
-  DefaultTag,
-  DetailsButton,
-  EmptyResultsContainer,
-  ErrorState,
-  HelperRow,
-  ResultCount,
-  SearchContainer,
-  SearchInput,
-  SelectionIndicator,
-  SelectorContainer,
-  TemplateCard,
-  TemplateDescription,
-  TemplateGrid,
-  TemplateIconWrapper,
-} from './styles';
 
 interface Template {
   id?: string;
@@ -45,7 +26,7 @@ interface TemplateSelectorProps {
   multiple?: boolean;
 }
 
-const GRID_GUTTER: [number, number] = [DESIGN_TOKENS.SPACING.MD, DESIGN_TOKENS.SPACING.MD];
+const GRID_GUTTER: [number, number] = [16, 16];
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   value,
@@ -137,76 +118,70 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         tip={t('resources:templates.loading')}
         showTextBelow
       >
-        <div />
+        <Flex />
       </LoadingWrapper>
     );
   }
 
   if (error) {
     return (
-      <ErrorState>
+      <Flex className="text-center">
         <Empty description={error} />
-      </ErrorState>
+      </Flex>
     );
   }
 
   return (
-    <SelectorContainer>
-      <SearchContainer>
-        <RediaccStack direction="vertical" gap="md" fullWidth>
-          <HelperRow>
-            <RediaccText variant="caption">
+    <Flex vertical className="w-full">
+      <Flex vertical>
+        <Flex vertical gap={16} className="w-full">
+          <Flex align="center" justify="space-between" wrap gap={12}>
+            <Typography.Text>
               {multiple
-                ? t('resources:templates.selectMultiple', {
-                    defaultValue: 'Select templates (optional, multiple allowed)',
-                  })
+                ? t('resources:templates.selectMultiple')
                 : t('resources:templates.selectOptional')}
-            </RediaccText>
+            </Typography.Text>
             {((multiple && Array.isArray(value) && value.length > 0) || (!multiple && value)) && (
-              <ClearButton
+              <Button
                 data-testid="resource-modal-template-clear-button"
                 onClick={() => onChange?.(multiple ? [] : null)}
               >
                 {t('resources:templates.clearSelection')}
-              </ClearButton>
+              </Button>
             )}
-          </HelperRow>
+          </Flex>
 
-          <SearchInput
-            placeholder={t('resources:templates.searchPlaceholder', {
-              defaultValue: 'Search templates by name or description...',
-            })}
+          <Input
+            placeholder={t('resources:templates.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             allowClear
             data-testid="resource-modal-template-search-input"
           />
-        </RediaccStack>
-      </SearchContainer>
+        </Flex>
+      </Flex>
 
       {searchQuery.trim() && (
-        <ResultCount>
+        <Typography.Text className="block">
           {t('resources:templates.showingResults', {
-            defaultValue: `Showing ${filteredTemplates.length} of ${templates.length} templates`,
             count: filteredTemplates.length,
             total: templates.length,
           })}
-        </ResultCount>
+        </Typography.Text>
       )}
 
       {searchQuery.trim() && filteredTemplates.length === 0 && (
-        <EmptyResultsContainer>
-          <RediaccEmpty
-            variant="minimal"
+        <Flex>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={t('resources:templates.noResults', {
-              defaultValue: `No templates found matching "${searchQuery}"`,
               query: searchQuery,
             })}
           />
-        </EmptyResultsContainer>
+        </Flex>
       )}
 
-      <TemplateGrid gutter={GRID_GUTTER}>
+      <Row gutter={GRID_GUTTER}>
         {filteredTemplates.map((template) => {
           const templateId = template.id || template.name;
           const isSelected = multiple
@@ -233,46 +208,47 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
           return (
             <Col key={template.name} xs={24} sm={12} md={6}>
-              <TemplateCard
+              <Card
                 hoverable
                 data-testid={`resource-modal-template-card-${template.name}`}
-                $selected={isSelected}
                 onClick={handleClick}
               >
                 {isSelected && (
-                  <SelectionIndicator>
+                  <Typography.Text
+                    className="absolute"
+                    // eslint-disable-next-line no-restricted-syntax
+                    style={{ top: 12, right: 12 }}
+                  >
                     <CheckCircleOutlined />
-                  </SelectionIndicator>
+                  </Typography.Text>
                 )}
 
-                <RediaccStack direction="vertical" gap="sm" fullWidth>
-                  <TemplateIconWrapper>
+                <Flex vertical gap={8} className="w-full">
+                  <Flex className="text-center">
                     <TemplateIconComponent />
-                  </TemplateIconWrapper>
+                  </Flex>
 
-                  <RediaccText variant="title" weight="bold">
-                    {getTemplateTitle(template.name)}
-                  </RediaccText>
+                  <Typography.Text strong>{getTemplateTitle(template.name)}</Typography.Text>
 
-                  <TemplateDescription>
-                    <RediaccText variant="description" truncate maxLines={2}>
+                  <Typography.Text className="block">
+                    <Typography.Paragraph ellipsis={{ rows: 2 }}>
                       {getTemplateDescription(template.readme)}
-                    </RediaccText>
-                  </TemplateDescription>
+                    </Typography.Paragraph>
+                  </Typography.Text>
 
-                  <DetailsButton
-                    variant="link"
+                  <Button
+                    type="link"
                     data-testid={`resource-modal-template-details-button-${template.name}`}
                     icon={<InfoCircleOutlined />}
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
                       onViewDetails?.(template.name);
                     }}
                   >
                     {t('resources:templates.viewDetails')}
-                  </DetailsButton>
-                </RediaccStack>
-              </TemplateCard>
+                  </Button>
+                </Flex>
+              </Card>
             </Col>
           );
         })}
@@ -280,39 +256,37 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         {/* No Template Option - only show when not filtering or when search returns results */}
         {!multiple && !searchQuery.trim() && (
           <Col xs={24} sm={12} md={6}>
-            <TemplateCard
+            <Card
               hoverable
               data-testid="resource-modal-template-card-none"
-              $selected={!value}
-              $variant="none"
               onClick={() => onChange?.(null)}
             >
               {!value && (
-                <SelectionIndicator $variant="none">
+                <Typography.Text
+                  className="absolute"
+                  // eslint-disable-next-line no-restricted-syntax
+                  style={{ top: 12, right: 12 }}
+                >
                   <CheckCircleOutlined />
-                </SelectionIndicator>
+                </Typography.Text>
               )}
 
-              <RediaccStack direction="vertical" gap="sm" fullWidth>
-                <TemplateIconWrapper $muted>
+              <Flex vertical gap={8} className="w-full">
+                <Flex className="text-center">
                   <AppstoreOutlined />
-                </TemplateIconWrapper>
+                </Flex>
 
-                <RediaccText variant="title" weight="bold">
-                  {t('resources:templates.noTemplate')}
-                </RediaccText>
+                <Typography.Text strong>{t('resources:templates.noTemplate')}</Typography.Text>
 
-                <RediaccText variant="description">
-                  {t('resources:templates.startEmpty')}
-                </RediaccText>
+                <Typography.Text>{t('resources:templates.startEmpty')}</Typography.Text>
 
-                <DefaultTag variant="default">{t('resources:templates.default')}</DefaultTag>
-              </RediaccStack>
-            </TemplateCard>
+                <Tag>{t('resources:templates.default')}</Tag>
+              </Flex>
+            </Card>
           </Col>
         )}
-      </TemplateGrid>
-    </SelectorContainer>
+      </Row>
+    </Flex>
   );
 };
 

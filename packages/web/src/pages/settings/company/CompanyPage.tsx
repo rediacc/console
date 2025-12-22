@@ -1,5 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Col, Form, Modal, Popconfirm, Radio, Result, Row, Space, Typography, Upload } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Divider,
+  Flex,
+  Form,
+  Modal,
+  Popconfirm,
+  Radio,
+  Result,
+  Row,
+  Space,
+  Tooltip,
+  Typography,
+  Upload,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -14,42 +31,8 @@ import {
 } from '@/api/queries/company';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
 import { PasswordConfirmField, PasswordField } from '@/components/forms/FormFields';
-import {
-  BulletedList,
-  CardActions,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CenteredBlock,
-  PageWrapper as CompanyPageWrapper,
-  SectionHeading as CompanySectionHeading,
-  SectionStack as CompanySectionStack,
-  DangerDivider,
-  DangerHeading,
-  DangerSection,
-  DangerStack,
-  IconWrapper,
-  ModalActions,
-  ModalStack,
-  ModalStackLarge,
-  OrderedList,
-  RediaccButton,
-  RediaccCard,
-  RediaccText,
-  RediaccTooltip,
-  RequirementsList,
-  RightAlign,
-} from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState } from '@/hooks/useDialogState';
-import {
-  DangerCard,
-  FormItemActionsLg,
-  FormItemNoMargin,
-  FormItemSpaced,
-  ModalAlert,
-} from '@/pages/system/styles';
 import { masterPasswordService } from '@/services/masterPasswordService';
 import { logout } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
@@ -313,248 +296,243 @@ const CompanyPage: React.FC = () => {
 
   if (uiMode === 'simple') {
     return (
-      <CompanyPageWrapper>
+      <Flex vertical>
         <Result
           status="403"
-          title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
-          subTitle={tSystem('accessControl.expertOnlyMessage', {
-            defaultValue: 'Switch to expert mode to manage company settings.',
-          })}
+          title={tSystem('accessControl.expertOnlyTitle')}
+          subTitle={tSystem('accessControl.expertOnlyMessage')}
         />
-      </CompanyPageWrapper>
+      </Flex>
     );
   }
 
   return (
-    <CompanyPageWrapper>
-      <CompanySectionStack>
-        <CompanySectionHeading level={3}>{t('company.title')}</CompanySectionHeading>
-
-        <RediaccCard fullHeight>
-          <CardContent>
-            <CardHeader>
-              <IconWrapper $size="md">
+    <Flex vertical>
+      <Flex vertical gap={24}>
+        <Card>
+          <Flex align="flex-start" justify="space-between" gap={16} wrap>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <Flex vertical gap={8} style={{ flex: 1, minWidth: 240 }}>
+              <Flex align="center" gap={8}>
                 <BankOutlined />
-              </IconWrapper>
-              <CardTitle level={4}>{t('company.title')}</CardTitle>
-            </CardHeader>
+                <Typography.Title level={4}>{t('company.title')}</Typography.Title>
+              </Flex>
 
-            <CardDescription>{t('company.description')}</CardDescription>
+              <Typography.Paragraph>{t('company.description')}</Typography.Paragraph>
+            </Flex>
 
             {featureFlags.isEnabled('companyVaultConfiguration') && (
-              <CardActions>
-                <RediaccTooltip title={t('company.configureVault')}>
-                  <RediaccButton
-                    icon={<SettingOutlined />}
-                    onClick={() => companyVaultModal.open()}
-                    data-testid="system-company-vault-button"
-                    aria-label={t('company.configureVault')}
-                  />
-                </RediaccTooltip>
-              </CardActions>
+              <Tooltip title={t('company.configureVault')}>
+                <Button
+                  icon={<SettingOutlined />}
+                  onClick={() => companyVaultModal.open()}
+                  data-testid="system-company-vault-button"
+                  aria-label={t('company.configureVault')}
+                />
+              </Tooltip>
             )}
-          </CardContent>
-        </RediaccCard>
+          </Flex>
+        </Card>
 
         {featureFlags.isEnabled('dangerZone') && (
-          <DangerSection>
-            <DangerHeading level={3}>
+          <Flex vertical gap={16}>
+            <Typography.Title level={3}>
               <WarningOutlined /> {tSystem('dangerZone.title')}
-            </DangerHeading>
+            </Typography.Title>
 
-            <DangerCard>
-              <DangerStack>
-                <Row gutter={[16, 16]} align="middle">
-                  <Col xs={24} lg={16}>
-                    <Space direction="vertical" size={8}>
-                      <CardTitle level={5}>
-                        {tSystem('dangerZone.blockUserRequests.title')}
-                      </CardTitle>
-                      <CardDescription>
-                        {tSystem('dangerZone.blockUserRequests.description')}
-                      </CardDescription>
-                    </Space>
-                  </Col>
-                  <Col xs={24} lg={8}>
-                    <RightAlign>
-                      <Popconfirm
-                        title={tSystem('dangerZone.blockUserRequests.confirmBlock.title')}
-                        description={
-                          <ModalStack>
-                            <Typography.Text>
-                              {tSystem('dangerZone.blockUserRequests.confirmBlock.description')}
-                            </Typography.Text>
-                            <BulletedList>
-                              <li>
-                                {tSystem('dangerZone.blockUserRequests.confirmBlock.effect1')}
-                              </li>
-                              <li>
-                                {tSystem('dangerZone.blockUserRequests.confirmBlock.effect2')}
-                              </li>
-                              <li>
-                                {tSystem('dangerZone.blockUserRequests.confirmBlock.effect3')}
-                              </li>
-                            </BulletedList>
-                            <RediaccText weight="bold">
-                              {tSystem('dangerZone.blockUserRequests.confirmBlock.confirm')}
-                            </RediaccText>
-                          </ModalStack>
-                        }
-                        onConfirm={() => blockUserRequestsMutation.mutate(true)}
-                        okText={tSystem('dangerZone.blockUserRequests.confirmBlock.okText')}
-                        cancelText={tCommon('general.cancel')}
-                        okButtonProps={{ danger: true }}
-                      >
-                        <RediaccTooltip title={tSystem('dangerZone.blockUserRequests.blockButton')}>
-                          <RediaccButton
-                            variant="danger"
-                            icon={<LockOutlined />}
-                            loading={blockUserRequestsMutation.isPending}
-                            aria-label={tSystem('dangerZone.blockUserRequests.blockButton')}
-                          />
-                        </RediaccTooltip>
-                      </Popconfirm>
-                      <Popconfirm
-                        title={tSystem('dangerZone.blockUserRequests.confirmUnblock.title')}
-                        description={tSystem(
-                          'dangerZone.blockUserRequests.confirmUnblock.description'
-                        )}
-                        onConfirm={() => blockUserRequestsMutation.mutate(false)}
-                        okText={tSystem('dangerZone.blockUserRequests.confirmUnblock.okText')}
-                        cancelText={tCommon('general.cancel')}
-                      >
-                        <RediaccTooltip
-                          title={tSystem('dangerZone.blockUserRequests.unblockButton')}
-                        >
-                          <RediaccButton
-                            icon={<UnlockOutlined />}
-                            loading={blockUserRequestsMutation.isPending}
-                            aria-label={tSystem('dangerZone.blockUserRequests.unblockButton')}
-                          />
-                        </RediaccTooltip>
-                      </Popconfirm>
-                    </RightAlign>
-                  </Col>
-                </Row>
-
-                <DangerDivider />
-
-                <Row gutter={[16, 16]} align="middle">
-                  <Col xs={24} lg={16}>
-                    <Space direction="vertical" size={8}>
-                      <CardTitle level={5}>{tSystem('dangerZone.exportVaults.title')}</CardTitle>
-                      <CardDescription>
-                        {tSystem('dangerZone.exportVaults.description')}
-                      </CardDescription>
-                    </Space>
-                  </Col>
-                  <Col xs={24} lg={8}>
-                    <RightAlign>
-                      <RediaccTooltip title={tSystem('dangerZone.exportVaults.button')}>
-                        <RediaccButton
-                          icon={<DownloadOutlined />}
-                          onClick={handleExportVaults}
-                          loading={exportVaultsQuery.isFetching}
-                          data-testid="system-export-vaults-button"
-                          aria-label={tSystem('dangerZone.exportVaults.button')}
+            <Card>
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} lg={16}>
+                  <Space direction="vertical" size={8}>
+                    <Typography.Title level={5}>
+                      {tSystem('dangerZone.blockUserRequests.title')}
+                    </Typography.Title>
+                    <Typography.Paragraph>
+                      {tSystem('dangerZone.blockUserRequests.description')}
+                    </Typography.Paragraph>
+                  </Space>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <Flex justify="flex-end">
+                    <Popconfirm
+                      title={tSystem('dangerZone.blockUserRequests.confirmBlock.title')}
+                      description={
+                        <Space direction="vertical" size="small">
+                          <Typography.Text>
+                            {tSystem('dangerZone.blockUserRequests.confirmBlock.description')}
+                          </Typography.Text>
+                          <ul>
+                            <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect1')}</li>
+                            <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect2')}</li>
+                            <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect3')}</li>
+                          </ul>
+                          <Typography.Text strong>
+                            {tSystem('dangerZone.blockUserRequests.confirmBlock.confirm')}
+                          </Typography.Text>
+                        </Space>
+                      }
+                      onConfirm={() => blockUserRequestsMutation.mutate(true)}
+                      okText={tSystem('dangerZone.blockUserRequests.confirmBlock.okText')}
+                      cancelText={tCommon('general.cancel')}
+                      okButtonProps={{ danger: true }}
+                    >
+                      <Tooltip title={tSystem('dangerZone.blockUserRequests.blockButton')}>
+                        <Button
+                          danger
+                          icon={<LockOutlined />}
+                          loading={blockUserRequestsMutation.isPending}
+                          aria-label={tSystem('dangerZone.blockUserRequests.blockButton')}
                         />
-                      </RediaccTooltip>
-                    </RightAlign>
-                  </Col>
-                </Row>
-
-                <DangerDivider />
-
-                <Row gutter={[16, 16]} align="middle">
-                  <Col xs={24} lg={16}>
-                    <Space direction="vertical" size={8}>
-                      <CardTitle level={5}>{tSystem('dangerZone.exportData.title')}</CardTitle>
-                      <CardDescription>
-                        {tSystem('dangerZone.exportData.description')}
-                      </CardDescription>
-                    </Space>
-                  </Col>
-                  <Col xs={24} lg={8}>
-                    <RightAlign>
-                      <RediaccTooltip title={tSystem('dangerZone.exportData.button')}>
-                        <RediaccButton
-                          icon={<ExportOutlined />}
-                          onClick={handleExportCompanyData}
-                          loading={exportCompanyDataQuery.isFetching}
-                          data-testid="system-export-data-button"
-                          aria-label={tSystem('dangerZone.exportData.button')}
+                      </Tooltip>
+                    </Popconfirm>
+                    <Popconfirm
+                      title={tSystem('dangerZone.blockUserRequests.confirmUnblock.title')}
+                      description={tSystem(
+                        'dangerZone.blockUserRequests.confirmUnblock.description'
+                      )}
+                      onConfirm={() => blockUserRequestsMutation.mutate(false)}
+                      okText={tSystem('dangerZone.blockUserRequests.confirmUnblock.okText')}
+                      cancelText={tCommon('general.cancel')}
+                    >
+                      <Tooltip title={tSystem('dangerZone.blockUserRequests.unblockButton')}>
+                        <Button
+                          icon={<UnlockOutlined />}
+                          loading={blockUserRequestsMutation.isPending}
+                          aria-label={tSystem('dangerZone.blockUserRequests.unblockButton')}
                         />
-                      </RediaccTooltip>
-                    </RightAlign>
-                  </Col>
-                </Row>
+                      </Tooltip>
+                    </Popconfirm>
+                  </Flex>
+                </Col>
+              </Row>
 
-                <DangerDivider />
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <Divider style={{ margin: '24px 0' }} />
 
-                <Row gutter={[16, 16]} align="middle">
-                  <Col xs={24} lg={16}>
-                    <Space direction="vertical" size={8}>
-                      <CardTitle level={5}>{tSystem('dangerZone.importData.title')}</CardTitle>
-                      <CardDescription>
-                        {tSystem('dangerZone.importData.description')}
-                      </CardDescription>
-                    </Space>
-                  </Col>
-                  <Col xs={24} lg={8}>
-                    <RightAlign>
-                      <RediaccTooltip title={tSystem('dangerZone.importData.button')}>
-                        <RediaccButton
-                          variant="danger"
-                          icon={<ImportOutlined />}
-                          onClick={() => importModal.open()}
-                          data-testid="system-import-data-button"
-                          aria-label={tSystem('dangerZone.importData.button')}
-                        />
-                      </RediaccTooltip>
-                    </RightAlign>
-                  </Col>
-                </Row>
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} lg={16}>
+                  <Space direction="vertical" size={8}>
+                    <Typography.Title level={5}>
+                      {tSystem('dangerZone.exportVaults.title')}
+                    </Typography.Title>
+                    <Typography.Paragraph>
+                      {tSystem('dangerZone.exportVaults.description')}
+                    </Typography.Paragraph>
+                  </Space>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <Flex justify="flex-end">
+                    <Tooltip title={tSystem('dangerZone.exportVaults.button')}>
+                      <Button
+                        icon={<DownloadOutlined />}
+                        onClick={handleExportVaults}
+                        loading={exportVaultsQuery.isFetching}
+                        data-testid="system-export-vaults-button"
+                        aria-label={tSystem('dangerZone.exportVaults.button')}
+                      />
+                    </Tooltip>
+                  </Flex>
+                </Col>
+              </Row>
 
-                <DangerDivider />
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <Divider style={{ margin: '24px 0' }} />
 
-                <Row gutter={[16, 16]} align="middle">
-                  <Col xs={24} lg={16}>
-                    <Space direction="vertical" size={8}>
-                      <CardTitle level={5}>
-                        {tSystem('dangerZone.updateMasterPassword.title')}
-                      </CardTitle>
-                      <CardDescription>
-                        {tSystem('dangerZone.updateMasterPassword.description')}
-                      </CardDescription>
-                      <RequirementsList>
-                        <li>{tSystem('dangerZone.updateMasterPassword.effect1')}</li>
-                        <li>{tSystem('dangerZone.updateMasterPassword.effect2')}</li>
-                        <li>{tSystem('dangerZone.updateMasterPassword.effect3')}</li>
-                      </RequirementsList>
-                      <RediaccText color="secondary" weight="bold">
-                        {tSystem('dangerZone.updateMasterPassword.warning')}
-                      </RediaccText>
-                    </Space>
-                  </Col>
-                  <Col xs={24} lg={8}>
-                    <RightAlign>
-                      <RediaccTooltip title={tSystem('dangerZone.updateMasterPassword.button')}>
-                        <RediaccButton
-                          variant="danger"
-                          icon={<KeyOutlined />}
-                          onClick={handleOpenMasterPasswordModal}
-                          data-testid="system-update-master-password-button"
-                          aria-label={tSystem('dangerZone.updateMasterPassword.button')}
-                        />
-                      </RediaccTooltip>
-                    </RightAlign>
-                  </Col>
-                </Row>
-              </DangerStack>
-            </DangerCard>
-          </DangerSection>
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} lg={16}>
+                  <Space direction="vertical" size={8}>
+                    <Typography.Title level={5}>
+                      {tSystem('dangerZone.exportData.title')}
+                    </Typography.Title>
+                    <Typography.Paragraph>
+                      {tSystem('dangerZone.exportData.description')}
+                    </Typography.Paragraph>
+                  </Space>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <Flex justify="flex-end">
+                    <Tooltip title={tSystem('dangerZone.exportData.button')}>
+                      <Button
+                        icon={<ExportOutlined />}
+                        onClick={handleExportCompanyData}
+                        loading={exportCompanyDataQuery.isFetching}
+                        data-testid="system-export-data-button"
+                        aria-label={tSystem('dangerZone.exportData.button')}
+                      />
+                    </Tooltip>
+                  </Flex>
+                </Col>
+              </Row>
+
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <Divider style={{ margin: '24px 0' }} />
+
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} lg={16}>
+                  <Space direction="vertical" size={8}>
+                    <Typography.Title level={5}>
+                      {tSystem('dangerZone.importData.title')}
+                    </Typography.Title>
+                    <Typography.Paragraph>
+                      {tSystem('dangerZone.importData.description')}
+                    </Typography.Paragraph>
+                  </Space>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <Flex justify="flex-end">
+                    <Tooltip title={tSystem('dangerZone.importData.button')}>
+                      <Button
+                        danger
+                        icon={<ImportOutlined />}
+                        onClick={() => importModal.open()}
+                        data-testid="system-import-data-button"
+                        aria-label={tSystem('dangerZone.importData.button')}
+                      />
+                    </Tooltip>
+                  </Flex>
+                </Col>
+              </Row>
+
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <Divider style={{ margin: '24px 0' }} />
+
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} lg={16}>
+                  <Space direction="vertical" size={8}>
+                    <Typography.Title level={5}>
+                      {tSystem('dangerZone.updateMasterPassword.title')}
+                    </Typography.Title>
+                    <Typography.Paragraph>
+                      {tSystem('dangerZone.updateMasterPassword.description')}
+                    </Typography.Paragraph>
+                    <ul className="requirements-list">
+                      <li>{tSystem('dangerZone.updateMasterPassword.effect1')}</li>
+                      <li>{tSystem('dangerZone.updateMasterPassword.effect2')}</li>
+                      <li>{tSystem('dangerZone.updateMasterPassword.effect3')}</li>
+                    </ul>
+                    <Typography.Text type="danger" strong>
+                      {tSystem('dangerZone.updateMasterPassword.warning')}
+                    </Typography.Text>
+                  </Space>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <Flex justify="flex-end">
+                    <Tooltip title={tSystem('dangerZone.updateMasterPassword.button')}>
+                      <Button
+                        danger
+                        icon={<KeyOutlined />}
+                        onClick={handleOpenMasterPasswordModal}
+                        data-testid="system-update-master-password-button"
+                        aria-label={tSystem('dangerZone.updateMasterPassword.button')}
+                      />
+                    </Tooltip>
+                  </Flex>
+                </Col>
+              </Row>
+            </Card>
+          </Flex>
         )}
-      </CompanySectionStack>
+      </Flex>
 
       <VaultEditorModal
         open={companyVaultModal.isOpen}
@@ -584,7 +562,7 @@ const CompanyPage: React.FC = () => {
       >
         <Form layout="vertical" form={masterPasswordForm} onFinish={handleUpdateMasterPassword}>
           {currentMasterPassword && (
-            <FormItemSpaced label={tSystem('dangerZone.updateMasterPassword.modal.operationType')}>
+            <Form.Item label={tSystem('dangerZone.updateMasterPassword.modal.operationType')}>
               <Radio.Group
                 value={masterPasswordOperation}
                 onChange={(e) => {
@@ -601,10 +579,10 @@ const CompanyPage: React.FC = () => {
                   </Radio>
                 </Space>
               </Radio.Group>
-            </FormItemSpaced>
+            </Form.Item>
           )}
 
-          <ModalAlert
+          <Alert
             message={
               <>
                 {'\u26A0\uFE0F'}{' '}
@@ -621,7 +599,7 @@ const CompanyPage: React.FC = () => {
                     }`
                   )}
                 </Typography.Text>
-                <BulletedList>
+                <ul>
                   <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect1')}</li>
                   <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect2')}</li>
                   <li>
@@ -635,20 +613,20 @@ const CompanyPage: React.FC = () => {
                   {masterPasswordOperation !== 'remove' && (
                     <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect4')}</li>
                   )}
-                </BulletedList>
-                <RediaccText weight="bold">
+                </ul>
+                <Typography.Text strong>
                   {tSystem('dangerZone.updateMasterPassword.modal.warningPermanent')}
-                </RediaccText>
-                <RediaccText color="danger" weight="bold">
+                </Typography.Text>
+                <Typography.Text type="danger" strong>
                   {tSystem(
                     masterPasswordOperation === 'remove'
                       ? 'dangerZone.updateMasterPassword.modal.warningSecureRemove'
                       : 'dangerZone.updateMasterPassword.modal.warningSecure'
                   )}
-                </RediaccText>
+                </Typography.Text>
               </Space>
             }
-            variant="warning"
+            type="warning"
             showIcon
           />
 
@@ -687,7 +665,7 @@ const CompanyPage: React.FC = () => {
             </>
           )}
 
-          <ModalAlert
+          <Alert
             message={tCommon('general.important')}
             description={tSystem(
               `dangerZone.updateMasterPassword.modal.importantNote${
@@ -698,13 +676,13 @@ const CompanyPage: React.FC = () => {
                     : ''
               }`
             )}
-            variant="info"
+            type="info"
             showIcon
           />
 
-          <FormItemNoMargin>
-            <ModalActions>
-              <RediaccButton
+          <Form.Item>
+            <Flex justify="flex-end" gap={8}>
+              <Button
                 onClick={() => {
                   masterPasswordModal.close();
                   masterPasswordForm.resetFields();
@@ -713,9 +691,9 @@ const CompanyPage: React.FC = () => {
                 data-testid="system-master-password-cancel-button"
               >
                 {tSystem('dangerZone.updateMasterPassword.modal.cancel')}
-              </RediaccButton>
-              <RediaccButton
-                variant="danger"
+              </Button>
+              <Button
+                danger
                 htmlType="submit"
                 loading={updateVaultsMutation.isPending}
                 disabled={updateVaultsMutation.isPending}
@@ -727,9 +705,9 @@ const CompanyPage: React.FC = () => {
                     masterPasswordOperation.slice(1)
                   }`
                 )}
-              </RediaccButton>
-            </ModalActions>
-          </FormItemNoMargin>
+              </Button>
+            </Flex>
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -742,12 +720,12 @@ const CompanyPage: React.FC = () => {
             }`
           )}
           subTitle={
-            <ModalStackLarge>
-              <div>
+            <Flex vertical gap={16} className="w-full">
+              <Flex vertical>
                 <Typography.Paragraph>
                   {tSystem('dangerZone.updateMasterPassword.success.nextSteps')}
                 </Typography.Paragraph>
-                <OrderedList>
+                <ol className="ordered-list">
                   <li>{tSystem('dangerZone.updateMasterPassword.success.step1')}</li>
                   <li>
                     {tSystem(
@@ -770,31 +748,31 @@ const CompanyPage: React.FC = () => {
                       }`
                     )}
                   </li>
-                </OrderedList>
-              </div>
+                </ol>
+              </Flex>
 
-              <CenteredBlock>
+              <Flex vertical className="text-center" align="center">
                 <Typography.Title level={4}>
                   {tSystem('dangerZone.updateMasterPassword.success.redirecting')}
                 </Typography.Title>
                 <Typography.Title level={1} type="danger">
                   {countdown}
                 </Typography.Title>
-                <RediaccText color="secondary">
+                <Typography.Text>
                   {tSystem('dangerZone.updateMasterPassword.success.seconds')}
-                </RediaccText>
-              </CenteredBlock>
+                </Typography.Text>
+              </Flex>
 
-              <RediaccButton
-                fullWidth
+              <Button
+                block
                 onClick={() => {
                   dispatch(logout());
                   navigate('/login');
                 }}
               >
                 {tSystem('dangerZone.updateMasterPassword.success.loginNow')}
-              </RediaccButton>
-            </ModalStackLarge>
+              </Button>
+            </Flex>
           }
         />
       </Modal>
@@ -812,10 +790,10 @@ const CompanyPage: React.FC = () => {
         className={ModalSize.Medium}
       >
         <Form form={importForm} layout="vertical" onFinish={handleImportCompanyData}>
-          <ModalAlert
+          <Alert
             message={tSystem('dangerZone.importData.modal.warning')}
             description={tSystem('dangerZone.importData.modal.warningText')}
-            variant="warning"
+            type="warning"
             showIcon
           />
 
@@ -829,42 +807,42 @@ const CompanyPage: React.FC = () => {
               maxCount={1}
               accept=".json"
             >
-              <RediaccButton icon={<UploadOutlined />}>
+              <Button icon={<UploadOutlined />}>
                 {importFile ? importFile.name : tSystem('dangerZone.importData.modal.selectFile')}
-              </RediaccButton>
+              </Button>
             </Upload>
           </Form.Item>
 
           <Form.Item label={tSystem('dangerZone.importData.modal.importMode')}>
             <Radio.Group value={importMode} onChange={(e) => setImportMode(e.target.value)}>
-              <Space orientation="vertical">
+              <Space direction="vertical">
                 <Radio value="skip">
-                  <Space orientation="vertical" size={4}>
-                    <RediaccText weight="bold">
+                  <Space direction="vertical" size={4}>
+                    <Typography.Text strong>
                       {tSystem('dangerZone.importData.modal.modeSkip')}
-                    </RediaccText>
-                    <RediaccText variant="caption" color="secondary">
+                    </Typography.Text>
+                    <Typography.Text>
                       {tSystem('dangerZone.importData.modal.modeSkipDesc')}
-                    </RediaccText>
+                    </Typography.Text>
                   </Space>
                 </Radio>
                 <Radio value="override">
-                  <Space orientation="vertical" size={4}>
-                    <RediaccText weight="bold">
+                  <Space direction="vertical" size={4}>
+                    <Typography.Text strong>
                       {tSystem('dangerZone.importData.modal.modeOverride')}
-                    </RediaccText>
-                    <RediaccText variant="caption" color="secondary">
+                    </Typography.Text>
+                    <Typography.Text>
                       {tSystem('dangerZone.importData.modal.modeOverrideDesc')}
-                    </RediaccText>
+                    </Typography.Text>
                   </Space>
                 </Radio>
               </Space>
             </Radio.Group>
           </Form.Item>
 
-          <FormItemActionsLg>
-            <ModalActions>
-              <RediaccButton
+          <Form.Item>
+            <Flex justify="flex-end" gap={8}>
+              <Button
                 onClick={() => {
                   importModal.close();
                   setImportFile(null);
@@ -873,19 +851,19 @@ const CompanyPage: React.FC = () => {
                 }}
               >
                 {tSystem('dangerZone.importData.modal.cancel')}
-              </RediaccButton>
-              <RediaccButton
+              </Button>
+              <Button
                 htmlType="submit"
                 loading={importCompanyDataMutation.isPending}
                 disabled={!importFile}
               >
                 {tSystem('dangerZone.importData.modal.import')}
-              </RediaccButton>
-            </ModalActions>
-          </FormItemActionsLg>
+              </Button>
+            </Flex>
+          </Form.Item>
         </Form>
       </Modal>
-    </CompanyPageWrapper>
+    </Flex>
   );
 };
 

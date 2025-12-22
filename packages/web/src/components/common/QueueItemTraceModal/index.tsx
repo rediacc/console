@@ -1,4 +1,5 @@
 import React, { lazy, Suspense } from 'react';
+import { Flex } from 'antd';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import type { QueueItemTraceModalProps } from './types';
 
@@ -8,7 +9,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = (props) => (
   <Suspense
     fallback={
       <LoadingWrapper loading centered minHeight={240}>
-        <div />
+        <Flex />
       </LoadingWrapper>
     }
   >

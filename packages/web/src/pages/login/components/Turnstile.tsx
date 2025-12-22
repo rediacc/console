@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { Flex } from 'antd';
 
 // Extend Window interface to include turnstile API
 // Official Cloudflare Turnstile API: https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/
@@ -288,7 +289,7 @@ export const Turnstile: React.FC<TurnstileProps> = ({
     onUnsupported,
   ]);
 
-  return <div ref={containerRef} />;
+  return <Flex ref={containerRef} />;
 };
 
 export default Turnstile;

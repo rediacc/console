@@ -178,10 +178,10 @@ export function formatError(failureReason: string | undefined, showAll: boolean 
 export function formatRetryCount(retryCount: number | undefined): string {
   if (retryCount === undefined || retryCount === null) return chalk.gray('-');
 
-  const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT;
-  if (retryCount === 0) return chalk.green(`${retryCount}/${maxRetries}`);
-  if (retryCount < maxRetries - 1) return chalk.yellow(`${retryCount}/${maxRetries}`);
-  return chalk.red.bold(`${retryCount}/${maxRetries}`);
+  if (retryCount === 0) return chalk.green(`${retryCount}/${STALE_TASK_CONSTANTS.MAX_RETRY_COUNT}`);
+  if (retryCount < STALE_TASK_CONSTANTS.MAX_RETRY_COUNT - 1)
+    return chalk.yellow(`${retryCount}/${STALE_TASK_CONSTANTS.MAX_RETRY_COUNT}`);
+  return chalk.red.bold(`${retryCount}/${STALE_TASK_CONSTANTS.MAX_RETRY_COUNT}`);
 }
 
 /**

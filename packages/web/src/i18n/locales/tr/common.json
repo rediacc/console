@@ -176,12 +176,6 @@
     "actions": "Eylemler",
     "showingRecords": "{{total}}'nin {{start}}-{{end}} kayıtları gösteriliyor"
   },
-  "theme": {
-    "dark": "Koyu",
-    "light": "Açık",
-    "switchToDark": "Koyu moda geç",
-    "switchToLight": "Açık moda geç"
-  },
   "thisMonth": "Bu Ay",
   "today": "Bugün",
   "total": "Toplam",

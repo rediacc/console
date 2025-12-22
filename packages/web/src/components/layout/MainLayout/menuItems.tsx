@@ -5,7 +5,6 @@ import {
   DesktopOutlined,
   HistoryOutlined,
   InboxOutlined,
-  PartitionOutlined,
   SettingOutlined,
   ShopOutlined,
   TeamOutlined,
@@ -156,14 +155,6 @@ export const getMenuItems = (t: TFunction): MenuConfig[] => [
     showInSimple: false,
     featureFlag: 'auditLogs',
     'data-testid': 'main-nav-audit',
-  },
-  {
-    key: '/architecture',
-    icon: <PartitionOutlined />,
-    label: t('navigation.architecture'),
-    showInSimple: false,
-    featureFlag: 'architecture',
-    'data-testid': 'main-nav-architecture',
   },
   {
     key: '/marketplace',

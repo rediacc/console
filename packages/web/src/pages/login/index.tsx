@@ -1,22 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Form, Modal } from 'antd';
+import { Alert, Button, Flex, Form, Input, Modal, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '@/api/client';
 import { useVerifyTFA } from '@/api/queries/twoFactor';
-import logoBlack from '@/assets/logo_black.png';
-import logoWhite from '@/assets/logo_white.png';
 import InsecureConnectionWarning from '@/components/common/InsecureConnectionWarning';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
-import { RediaccTooltip } from '@/components/ui';
-import { RediaccButton, RediaccStack, RediaccText } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
-import { useTheme } from '@/context/ThemeContext';
 import EndpointSelector from '@/pages/login/components/EndpointSelector';
 import RegistrationModal from '@/pages/login/components/RegistrationModal';
-import VersionSelector from '@/pages/login/components/VersionSelector';
 import { apiConnectionService } from '@/services/apiConnectionService';
 import { masterPasswordService } from '@/services/masterPasswordService';
 import { loginSuccess } from '@/store/auth/authSlice';
@@ -45,26 +39,6 @@ import {
 } from '@/utils/vaultProtocol';
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import type { ApiResponse, AuthLoginResult } from '@rediacc/shared/types';
-import {
-  AdvancedOptionsButton,
-  AdvancedOptionsContainer,
-  FormLabel,
-  LargeGapFormItem,
-  LoginContainer,
-  LogoContainer,
-  MasterPasswordFormItem,
-  MasterPasswordLabel,
-  NoMarginFormItem,
-  RegisterContainer,
-  RegisterLink,
-  SelectorsContainer,
-  StyledAlert,
-  StyledInput,
-  StyledPasswordInput,
-  TFAButtonContainer,
-  TFACodeInput,
-  TFAModalTitle,
-} from './styles';
 import type { FormInstance } from 'antd/es/form';
 
 interface LoginForm {
@@ -138,10 +112,6 @@ const LoginPage: React.FC = () => {
   const [twoFACode, setTwoFACode] = useState('');
   const [showRegistration, setShowRegistration] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
-  const [endpointSelectorVisible, setEndpointSelectorVisible] = useState(() => {
-    // Default visibility based on build type
-    return featureFlags.getBuildType() === 'DEBUG';
-  });
   const [quickRegistrationData, setQuickRegistrationData] = useState<
     | {
         email: string;
@@ -159,7 +129,6 @@ const LoginPage: React.FC = () => {
   const dispatch = useDispatch();
   const [form] = Form.useForm<LoginForm>();
   const [twoFAForm] = Form.useForm();
-  const { theme } = useTheme();
   const { t, i18n } = useTranslation(['auth', 'common']);
   const verifyTFAMutation = useVerifyTFA();
   const { trackUserAction } = useTelemetry();
@@ -228,7 +197,7 @@ const LoginPage: React.FC = () => {
         const newState = featureFlags.togglePowerMode();
 
         // Update visibility for endpoint selector
-        setEndpointSelectorVisible(newState);
+        setShowAdvancedOptions(newState);
 
         // Show toast with current state - different message for localhost vs non-localhost
         const message = onLocalhost
@@ -257,29 +226,6 @@ const LoginPage: React.FC = () => {
       console.warn('[LoginPage] Insecure connection detected. Web Crypto API unavailable.');
     }
   }, []);
-
-  // Health check completion callback
-  const handleHealthCheckComplete = (hasHealthyEndpoint: boolean) => {
-    const buildType = featureFlags.getBuildType();
-    const powerModeEnabled = featureFlags.isPowerModeEnabled();
-
-    // Determine visibility based on build type and health status
-    if (buildType === 'DEBUG') {
-      // DEBUG: Always show endpoint selector
-      setEndpointSelectorVisible(true);
-    } else if (buildType === 'RELEASE') {
-      if (powerModeEnabled) {
-        // Power mode overrides everything
-        setEndpointSelectorVisible(true);
-      } else if (!hasHealthyEndpoint) {
-        // Fallback: show when endpoint health fails
-        setEndpointSelectorVisible(true);
-      } else {
-        // Hide when healthy and no power mode
-        setEndpointSelectorVisible(false);
-      }
-    }
-  };
 
   const handleLogin = async (values: LoginForm) => {
     setLoading(true);
@@ -475,16 +421,13 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      <LoginContainer>
-        <RediaccStack direction="vertical" gap="xl" fullWidth>
-          <LogoContainer>
-            <img src={theme === 'dark' ? logoWhite : logoBlack} alt="Rediacc Logo" />
-          </LogoContainer>
-
+      {/* eslint-disable-next-line no-restricted-syntax */}
+      <Flex className="w-full" style={{ maxWidth: 400 }}>
+        <Flex vertical gap={24} className="w-full">
           {error && (
-            <StyledAlert
+            <Alert
+              type="error"
               message={error}
-              variant="error"
               showIcon
               closable
               onClose={() => setError(null)}
@@ -505,14 +448,18 @@ const LoginPage: React.FC = () => {
           >
             <Form.Item
               name="email"
-              label={<FormLabel htmlFor="login-email-input">{t('auth:login.email')}</FormLabel>}
+              label={
+                <label htmlFor="login-email-input" className="block">
+                  {t('auth:login.email')}
+                </label>
+              }
               rules={[
                 { required: true, message: t('common:messages.required') },
                 { type: 'email', message: t('common:messages.invalidEmail') },
               ]}
               validateStatus={error ? 'error' : undefined}
             >
-              <StyledInput
+              <Input
                 id="login-email-input"
                 prefix={<UserOutlined />}
                 placeholder={t('auth:login.emailPlaceholder')}
@@ -523,15 +470,17 @@ const LoginPage: React.FC = () => {
               />
             </Form.Item>
 
-            <LargeGapFormItem
+            <Form.Item
               name="password"
               label={
-                <FormLabel htmlFor="login-password-input">{t('auth:login.password')}</FormLabel>
+                <label htmlFor="login-password-input" className="block">
+                  {t('auth:login.password')}
+                </label>
               }
               rules={[{ required: true, message: t('common:messages.required') }]}
               validateStatus={error ? 'error' : undefined}
             >
-              <StyledPasswordInput
+              <Input.Password
                 id="login-password-input"
                 prefix={<LockOutlined />}
                 placeholder={t('auth:login.passwordPlaceholder')}
@@ -540,22 +489,24 @@ const LoginPage: React.FC = () => {
                 aria-label={t('auth:login.password')}
                 aria-describedby="password-error"
               />
-            </LargeGapFormItem>
+            </Form.Item>
 
             {/* Progressive disclosure: Show master password field only when needed */}
             {(vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
               vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
               (showAdvancedOptions && featureFlags.isEnabled('loginAdvancedOptions'))) && (
-              <MasterPasswordFormItem>
+              <Flex vertical>
                 <Form.Item
                   name="masterPassword"
                   label={
-                    <MasterPasswordLabel htmlFor="login-master-password-input">
-                      <span>{t('auth:login.masterPassword')}</span>
-                      <RediaccTooltip title={t('auth:login.masterPasswordTooltip')}>
-                        <InfoCircleOutlined />
-                      </RediaccTooltip>
-                    </MasterPasswordLabel>
+                    <label htmlFor="login-master-password-input">
+                      <Flex align="center" gap={8} className="flex">
+                        <Typography.Text>{t('auth:login.masterPassword')}</Typography.Text>
+                        <Tooltip title={t('auth:login.masterPasswordTooltip')}>
+                          <InfoCircleOutlined />
+                        </Tooltip>
+                      </Flex>
+                    </label>
                   }
                   validateStatus={
                     vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
@@ -565,7 +516,7 @@ const LoginPage: React.FC = () => {
                   }
                   required={vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED}
                 >
-                  <StyledPasswordInput
+                  <Input.Password
                     id="login-master-password-input"
                     prefix={<KeyOutlined />}
                     placeholder={t('auth:login.masterPasswordPlaceholder')}
@@ -575,90 +526,78 @@ const LoginPage: React.FC = () => {
                     aria-describedby="master-password-error"
                   />
                 </Form.Item>
-              </MasterPasswordFormItem>
+              </Flex>
             )}
 
-            {/* Show advanced options toggle when master password is not yet shown */}
-            {featureFlags.isEnabled('loginAdvancedOptions') &&
-              !(
-                vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
-                vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
-                showAdvancedOptions
-              ) && (
-                <AdvancedOptionsContainer>
-                  <AdvancedOptionsButton
-                    variant="text"
-                    onClick={() => {
-                      setShowAdvancedOptions(true);
-                      setTimeout(() => {
-                        form.getFieldInstance('masterPassword')?.focus();
-                      }, 100);
-                    }}
-                  >
-                    {t('auth:login.needMasterPassword')} →
-                  </AdvancedOptionsButton>
-                </AdvancedOptionsContainer>
-              )}
-
-            <LargeGapFormItem>
-              <RediaccTooltip
+            <Form.Item>
+              <Tooltip
                 title={
                   !isConnectionSecure
                     ? t('auth:login.insecureConnection.buttonDisabled')
                     : undefined
                 }
               >
-                <RediaccButton
-                  variant="primary"
+                <Button
+                  type="primary"
                   htmlType="submit"
-                  fullWidth
+                  block
                   loading={loading}
                   disabled={!isConnectionSecure}
                   data-testid="login-submit-button"
                 >
                   {loading ? t('auth:login.signingIn') : t('auth:login.signIn')}
-                </RediaccButton>
-              </RediaccTooltip>
-            </LargeGapFormItem>
+                </Button>
+              </Tooltip>
+            </Form.Item>
           </Form>
 
-          <RegisterContainer>
-            <RediaccText color="secondary">
+          <Flex justify="center">
+            <Typography.Text>
               {t('auth:login.noAccount')}{' '}
-              <RegisterLink
+              <a
                 onClick={() => setShowRegistration(true)}
                 tabIndex={0}
                 role="button"
                 aria-label={t('auth:login.register')}
                 data-testid="login-register-link"
+                className="cursor-pointer inline-block"
               >
                 {t('auth:login.register')}
-              </RegisterLink>
-            </RediaccText>
-          </RegisterContainer>
+              </a>
+            </Typography.Text>
+          </Flex>
 
-          {/* Endpoint selector and version display */}
-          <SelectorsContainer>
-            {/* Endpoint Selector - Power Mode Feature */}
-            {endpointSelectorVisible && (
-              <AdvancedOptionsContainer>
-                <EndpointSelector onHealthCheckComplete={handleHealthCheckComplete} />
-              </AdvancedOptionsContainer>
+          {/* Advanced options section */}
+          <Flex vertical align="center" gap={8}>
+            {!showAdvancedOptions &&
+              vaultProtocolState !== VaultProtocolState.PASSWORD_REQUIRED &&
+              vaultProtocolState !== VaultProtocolState.INVALID_PASSWORD && (
+                <Button
+                  type="text"
+                  size="small"
+                  onClick={() => setShowAdvancedOptions(true)}
+                  data-testid="login-advanced-options-toggle"
+                >
+                  {t('auth:login.advancedOptions')} →
+                </Button>
+              )}
+
+            {showAdvancedOptions && (
+              <Flex vertical gap={8} className="w-full" align="center">
+                <EndpointSelector />
+              </Flex>
             )}
-
-            {/* Always-visible version display */}
-            <VersionSelector />
-          </SelectorsContainer>
-        </RediaccStack>
-      </LoginContainer>
+          </Flex>
+        </Flex>
+      </Flex>
 
       {/* TFA Verification Modal */}
       <Modal
         title={
-          <TFAModalTitle>
+          <Flex align="center" gap={8}>
             <SafetyCertificateOutlined />
-            <span>{t('login.twoFactorAuth.title')}</span>
-          </TFAModalTitle>
+            <Typography.Text>{t('login.twoFactorAuth.title')}</Typography.Text>
+          </Flex>
         }
         open={showTFAModal}
         onCancel={() => {
@@ -669,7 +608,7 @@ const LoginPage: React.FC = () => {
         footer={null}
         className={ModalSize.Medium}
       >
-        <RediaccStack direction="vertical" gap="md" fullWidth>
+        <Flex vertical gap={16} className="w-full">
           <Alert
             message={t('login.twoFactorAuth.required')}
             description={t('login.twoFactorAuth.description')}
@@ -688,7 +627,7 @@ const LoginPage: React.FC = () => {
                 { pattern: /^\d{6}$/, message: t('login.twoFactorAuth.codeFormat') },
               ]}
             >
-              <TFACodeInput
+              <Input
                 placeholder={t('login.twoFactorAuth.codePlaceholder')}
                 value={twoFACode}
                 onChange={(e) => setTwoFACode(e.target.value)}
@@ -698,9 +637,9 @@ const LoginPage: React.FC = () => {
               />
             </Form.Item>
 
-            <NoMarginFormItem>
-              <TFAButtonContainer>
-                <RediaccButton
+            <Form.Item>
+              <Flex justify="flex-end" className="w-full">
+                <Button
                   onClick={() => {
                     setShowTFAModal(false);
                     setTwoFACode('');
@@ -708,20 +647,20 @@ const LoginPage: React.FC = () => {
                   }}
                 >
                   {t('common:general.cancel')}
-                </RediaccButton>
-                <RediaccButton
-                  variant="primary"
+                </Button>
+                <Button
+                  type="primary"
                   htmlType="submit"
                   loading={verifyTFAMutation.isPending}
                   disabled={twoFACode.length !== 6}
                   data-testid="tfa-verify-button"
                 >
                   {t('login.twoFactorAuth.verify')}
-                </RediaccButton>
-              </TFAButtonContainer>
-            </NoMarginFormItem>
+                </Button>
+              </Flex>
+            </Form.Item>
           </Form>
-        </RediaccStack>
+        </Flex>
       </Modal>
 
       {/* Registration Modal */}

@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useEffect, useState } from 'react';
-import { Modal } from 'antd';
+import { Button, Card, Empty, Flex, Modal, Space, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -14,34 +14,22 @@ import { QueueFunction } from '@/api/queries/queue';
 import { Repository, useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccTooltip } from '@/components/ui';
-import {
-  ActionBar as ButtonGroup,
-  ContentSection,
-  SectionHeaderRow as HeaderRow,
-  SectionStack as HeaderSection,
-  PageCard,
-  PageWrapper,
-  RediaccButton,
-  SectionHeading,
-  SectionStack,
-  ControlStack as TeamControls,
-  InputSlot as TeamSelectorWrapper,
-} from '@/components/ui';
 import { useDialogState, useQueueTraceModal, useTeamSelection, useUnifiedModal } from '@/hooks';
 import { useQueueAction } from '@/hooks/useQueueAction';
 import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
-import type { ContainerData } from '@/pages/machines/components/SplitResourceView';
-import { SplitResourceView } from '@/pages/machines/components/SplitResourceView';
+import {
+  SplitResourceView,
+  type ContainerData,
+} from '@/pages/machines/components/SplitResourceView';
 import { FUNCTION_DEFINITIONS } from '@/services/functionsService';
 import type { QueueActionParams } from '@/services/queueActionService';
 import { type Machine } from '@/types';
 import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
-import { PlusOutlined, ReloadOutlined, WifiOutlined } from '@/utils/optimizedIcons';
+import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import type { MachineFormValues as BaseMachineFormValues } from '@rediacc/shared/types';
-import { EmptyState, StyledTeamSelector } from './MachinesPage.styles';
 
 // Extend shared type with UI-specific field for auto-setup option
 type MachineFormValues = BaseMachineFormValues & { autoSetup?: boolean };
@@ -458,110 +446,95 @@ const MachinesPage: React.FC = () => {
 
   return (
     <>
-      <PageWrapper>
-        <SectionStack>
-          <SectionHeading level={3}>
-            {t('machines:heading', { defaultValue: 'Machines' })}
-          </SectionHeading>
-          <PageCard>
-            <HeaderSection>
-              <HeaderRow>
-                <TeamControls>
-                  <TeamSelectorWrapper>
-                    <StyledTeamSelector
-                      data-testid="machines-team-selector"
-                      teams={teams}
-                      selectedTeams={selectedTeams}
-                      onChange={setSelectedTeams}
-                      loading={teamsLoading}
-                      placeholder={t('teams.selectTeamToView')}
-                    />
-                  </TeamSelectorWrapper>
-                </TeamControls>
-                {selectedTeams.length > 0 && (
-                  <ButtonGroup>
-                    <RediaccTooltip title={t('machines:createMachine')}>
-                      <RediaccButton
-                        iconOnly
-                        icon={<PlusOutlined />}
-                        data-testid="machines-create-machine-button"
-                        onClick={() => openUnifiedModal('create')}
-                        aria-label={t('machines:createMachine')}
-                      />
-                    </RediaccTooltip>
-                    <RediaccTooltip title={t('machines:connectivityTest')}>
-                      <RediaccButton
-                        iconOnly
-                        icon={<WifiOutlined />}
-                        data-testid="machines-connectivity-test-button"
-                        onClick={() => connectivityTest.open()}
-                        disabled={machines.length === 0}
-                        aria-label={t('machines:connectivityTest')}
-                      />
-                    </RediaccTooltip>
-                    <RediaccTooltip title={t('common:actions.refresh')}>
-                      <RediaccButton
-                        iconOnly
-                        icon={<ReloadOutlined />}
-                        data-testid="machines-refresh-button"
-                        onClick={handleRefreshMachines}
-                        aria-label={t('common:actions.refresh')}
-                      />
-                    </RediaccTooltip>
-                  </ButtonGroup>
-                )}
-              </HeaderRow>
-            </HeaderSection>
+      <Flex vertical>
+        <Card>
+          <Flex justify="space-between" align="center" wrap gap={12}>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <Flex style={{ flex: 1, minWidth: 260 }}>
+              <TeamSelector
+                data-testid="machines-team-selector"
+                teams={teams}
+                selectedTeams={selectedTeams}
+                onChange={setSelectedTeams}
+                loading={teamsLoading}
+                placeholder={t('teams.selectTeamToView')}
+              />
+            </Flex>
+            {selectedTeams.length > 0 && (
+              <Space size="small">
+                <Tooltip title={t('machines:createMachine')}>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    data-testid="machines-create-machine-button"
+                    onClick={() => openUnifiedModal('create')}
+                    aria-label={t('machines:createMachine')}
+                  />
+                </Tooltip>
+                <Tooltip title={t('machines:checkAndRefresh')}>
+                  <Button
+                    type="text"
+                    icon={<ReloadOutlined />}
+                    data-testid="machines-test-and-refresh-button"
+                    onClick={() => connectivityTest.open()}
+                    disabled={machines.length === 0}
+                    aria-label={t('machines:checkAndRefresh')}
+                  />
+                </Tooltip>
+              </Space>
+            )}
+          </Flex>
 
-            <ContentSection>
-              {selectedTeams.length === 0 ? (
-                <EmptyState
-                  image={EmptyState.PRESENTED_IMAGE_SIMPLE}
+          <Flex vertical>
+            {selectedTeams.length === 0 ? (
+              <>
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={t('teams.selectTeamPrompt')}
                 />
-              ) : (
-                <SplitResourceView
-                  type="machine"
-                  teamFilter={selectedTeams}
-                  showFilters
-                  showActions
-                  onCreateMachine={() => openUnifiedModal('create')}
-                  onEditMachine={(machine) =>
-                    openUnifiedModal('edit', machine as Machine & Record<string, unknown>)
+              </>
+            ) : (
+              <SplitResourceView
+                type="machine"
+                teamFilter={selectedTeams}
+                showFilters
+                showActions
+                onCreateMachine={() => openUnifiedModal('create')}
+                onEditMachine={(machine) =>
+                  openUnifiedModal('edit', machine as Machine & Record<string, unknown>)
+                }
+                onVaultMachine={(machine) =>
+                  openUnifiedModal('vault', machine as Machine & Record<string, unknown>)
+                }
+                onFunctionsMachine={(machine, functionName) => {
+                  // WARNING: Do not change this pattern!
+                  // - Specific functions (functionName defined): Queue directly with defaults, NO modal
+                  // - "Advanced" (functionName undefined): Open modal with function list
+                  // This split behavior is intentional - users expect quick actions for specific
+                  // functions and full configuration only when clicking "Advanced".
+                  if (functionName) {
+                    handleDirectFunctionQueue(machine, functionName);
+                  } else {
+                    openUnifiedModal('create', machine as Machine & Record<string, unknown>);
                   }
-                  onVaultMachine={(machine) =>
-                    openUnifiedModal('vault', machine as Machine & Record<string, unknown>)
-                  }
-                  onFunctionsMachine={(machine, functionName) => {
-                    // WARNING: Do not change this pattern!
-                    // - Specific functions (functionName defined): Queue directly with defaults, NO modal
-                    // - "Advanced" (functionName undefined): Open modal with function list
-                    // This split behavior is intentional - users expect quick actions for specific
-                    // functions and full configuration only when clicking "Advanced".
-                    if (functionName) {
-                      handleDirectFunctionQueue(machine, functionName);
-                    } else {
-                      openUnifiedModal('create', machine as Machine & Record<string, unknown>);
-                    }
-                  }}
-                  onDeleteMachine={handleDeleteMachine}
-                  enabled={selectedTeams.length > 0}
-                  refreshKeys={refreshKeys}
-                  onQueueItemCreated={(taskId, machineName) => {
-                    openQueueTrace(taskId, machineName);
-                  }}
-                  selectedResource={
-                    selectedMachine || selectedRepositoryFromMachine || selectedContainerFromMachine
-                  }
-                  onResourceSelect={handleResourceSelection}
-                  isPanelCollapsed={isPanelCollapsed}
-                  onTogglePanelCollapse={handleTogglePanelCollapse}
-                />
-              )}
-            </ContentSection>
-          </PageCard>
-        </SectionStack>
-      </PageWrapper>
+                }}
+                onDeleteMachine={handleDeleteMachine}
+                enabled={selectedTeams.length > 0}
+                refreshKeys={refreshKeys}
+                onQueueItemCreated={(taskId, machineName) => {
+                  openQueueTrace(taskId, machineName);
+                }}
+                selectedResource={
+                  selectedMachine || selectedRepositoryFromMachine || selectedContainerFromMachine
+                }
+                onResourceSelect={handleResourceSelection}
+                isPanelCollapsed={isPanelCollapsed}
+                onTogglePanelCollapse={handleTogglePanelCollapse}
+              />
+            )}
+          </Flex>
+        </Card>
+      </Flex>
 
       <UnifiedResourceModal
         data-testid="machines-machine-modal"
@@ -608,7 +581,10 @@ const MachinesPage: React.FC = () => {
       <ConnectivityTestModal
         data-testid="machines-connectivity-test-modal"
         open={connectivityTest.isOpen}
-        onClose={connectivityTest.close}
+        onClose={() => {
+          connectivityTest.close();
+          handleRefreshMachines();
+        }}
         machines={machines}
         teamFilter={selectedTeams}
       />

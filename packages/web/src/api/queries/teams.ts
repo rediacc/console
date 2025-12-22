@@ -42,7 +42,7 @@ export type {
   GetCompanyTeams_ResultSet1 as Team,
   GetTeamMembers_ResultSet1,
   GetTeamMembers_ResultSet1 as TeamMember,
-};
+} from '@rediacc/shared/types';
 
 // Create team
 export const useCreateTeam = () => {

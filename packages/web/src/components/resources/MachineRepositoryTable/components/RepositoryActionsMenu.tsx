@@ -1,4 +1,5 @@
 import React from 'react';
+import { Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
@@ -72,7 +73,9 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
 }) => {
   // Helper to create menu labels with consistent data-testid
   const createActionLabel = (actionKey: string, label: React.ReactNode) => (
-    <span data-testid={`repo-action-${actionKey.replace(/_/g, '-')}`}>{label}</span>
+    <Typography.Text data-testid={`repo-action-${actionKey.replace(/_/g, '-')}`}>
+      {label}
+    </Typography.Text>
   );
 
   const RepoData = teamRepositories.find(

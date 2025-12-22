@@ -19,4 +19,3 @@ export type MenuConfig = MenuBaseConfig & {
 
 export const SIDEBAR_EXPANDED_WIDTH = 200;
 export const SIDEBAR_COLLAPSED_WIDTH = 64;
-export const HEADER_ACTION_SIZE = 48;

@@ -1,14 +1,11 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Col, Form, Row } from 'antd';
+import { Col, Divider, Flex, Form, Row, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useTheme as useStyledTheme } from 'styled-components';
 import VaultEditor from '@/components/common/VaultEditor';
-import { RediaccDivider } from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { DefaultsBanner } from './components/DefaultsBanner';
 import { FieldRenderer } from './components/FieldRenderer';
 import { ImportExportControls } from './components/ImportExportControls';
-import { FormWrapper, StyledForm, VaultSection } from './styles';
 import type {
   ImportExportHandlers,
   ResourceFormWithVaultProps,
@@ -45,8 +42,8 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
   ) {
     const { t } = useTranslation('common');
     const message = useMessage();
-    const theme = useStyledTheme();
-    const rowGutter: [number, number] = [theme.spacing.SM, theme.spacing.SM];
+    const { token } = theme.useToken();
+    const rowGutter: [number, number] = [token.marginSM ?? 12, token.marginSM ?? 12];
     const [vaultData, setVaultData] = useState<Record<string, unknown>>(initialVaultData);
     const [isVaultValid, setIsVaultValid] = useState(true);
     const [showVaultValidationErrors, setShowVaultValidationErrors] = useState(false);
@@ -114,14 +111,15 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const wrapperCol = { span: 18 };
 
     return (
-      <FormWrapper>
-        <StyledForm
+      <Flex vertical>
+        <Form
           data-testid="resource-modal-form"
           layout={formLayout}
           labelCol={labelCol}
           wrapperCol={wrapperCol}
           labelAlign="right"
           colon
+          className="flex-shrink-0"
         >
           <Row gutter={rowGutter} wrap>
             {fields.map((field) => {
@@ -151,13 +149,14 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
               );
             })}
           </Row>
-        </StyledForm>
+        </Form>
 
         {beforeVaultContent}
 
-        <RediaccDivider spacing="sm">{t('vaultEditor.vaultConfiguration')}</RediaccDivider>
+        {/* eslint-disable-next-line no-restricted-syntax */}
+        <Divider style={{ margin: '16px 0' }}>{t('vaultEditor.vaultConfiguration')}</Divider>
 
-        <VaultSection data-testid="resource-modal-vault-editor-section">
+        <Flex data-testid="resource-modal-vault-editor-section">
           <VaultEditor
             entityType={entityType}
             initialData={initialVaultData}
@@ -175,7 +174,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
               onImportExportRef?.(handlers);
             }}
           />
-        </VaultSection>
+        </Flex>
 
         {afterVaultContent}
 
@@ -191,7 +190,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
         {showDefaultsAlert && defaultsContent && (
           <DefaultsBanner title={t('general.defaultsApplied')} content={defaultsContent} />
         )}
-      </FormWrapper>
+      </Flex>
     );
   }
 );

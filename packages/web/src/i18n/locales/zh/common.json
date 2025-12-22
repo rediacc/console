@@ -179,12 +179,6 @@
     "actions": "操作",
     "showingRecords": "显示第 {{start}}-{{end}} 条记录，共 {{total}} 条"
   },
-  "theme": {
-    "dark": "深色",
-    "light": "浅色",
-    "switchToDark": "切换到深色模式",
-    "switchToLight": "切换到浅色模式"
-  },
   "thisMonth": "本月",
   "today": "今天",
   "total": "全部的",

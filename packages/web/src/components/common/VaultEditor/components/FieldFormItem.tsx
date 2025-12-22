@@ -1,5 +1,5 @@
 import React from 'react';
-import { FieldItem } from '../styles';
+import { Form } from 'antd';
 import { FieldLabel } from './FieldLabel';
 import type { FieldFormItemProps } from '../types';
 
@@ -12,7 +12,7 @@ export const FieldFormItem: React.FC<FieldFormItemProps> = ({
   valuePropName,
   children,
 }) => (
-  <FieldItem
+  <Form.Item
     name={name}
     label={<FieldLabel label={label} description={description} />}
     rules={rules}
@@ -20,5 +20,5 @@ export const FieldFormItem: React.FC<FieldFormItemProps> = ({
     valuePropName={valuePropName}
   >
     {children}
-  </FieldItem>
+  </Form.Item>
 );

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, Empty } from 'antd';
+import { Alert, Button, Card, Empty, Flex, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { CephCluster, CephPool } from '@/api/queries/ceph';
-import { useCephClusters, useCephPools } from '@/api/queries/ceph';
+import { useCephClusters, useCephPools, type CephCluster, type CephPool } from '@/api/queries/ceph';
 import {
   useCreateCephCluster,
   useCreateCephPool,
@@ -15,17 +14,9 @@ import { useCompanyInfo } from '@/api/queries/dashboard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccButton, RediaccTooltip } from '@/components/ui';
 import { useQueueTraceModal, useTeamSelection } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import {
-  EmptyStateWrapper,
-  PageCard,
-  PageContainer,
-  SectionHeaderRow,
-  SectionStack,
-} from '@/styles/primitives';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimizedIcons';
 import type {
@@ -35,7 +26,6 @@ import type {
 import { CephMachinesTab } from './components/CephMachinesTab';
 import { ClusterTable } from './components/ClusterTable';
 import { PoolTable } from './components/PoolTable';
-import { ActionGroup, HeaderTitle, TeamSelectorWrapper, TitleGroup } from './styles';
 
 type CephView = 'clusters' | 'pools' | 'machines';
 
@@ -110,11 +100,11 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
 
   if (!companyData) {
     return (
-      <PageContainer>
-        <PageCard>
+      <Flex>
+        <Card>
           <Alert message="Loading company data..." type="info" showIcon />
-        </PageCard>
-      </PageContainer>
+        </Card>
+      </Flex>
     );
   }
 
@@ -206,8 +196,8 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
 
   if (!hasCephAccess) {
     return (
-      <PageContainer>
-        <PageCard>
+      <Flex>
+        <Card>
           <Alert
             message={t('accessDenied.title')}
             description={
@@ -228,17 +218,17 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             showIcon
             icon={<SettingOutlined />}
           />
-        </PageCard>
-      </PageContainer>
+        </Card>
+      </Flex>
     );
   }
 
   const renderContent = () => {
     if (!hasSelectedTeam) {
       return (
-        <EmptyStateWrapper>
+        <Flex align="center" justify="center">
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('selectTeamPrompt')} />
-        </EmptyStateWrapper>
+        </Flex>
       );
     }
 
@@ -285,10 +275,10 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
     const createTestId = isClustersView ? 'ds-create-cluster-button' : 'ds-create-pool-button';
 
     return (
-      <ActionGroup>
-        <RediaccTooltip title={createLabel}>
-          <RediaccButton
-            iconOnly
+      <Flex align="center" wrap>
+        <Tooltip title={createLabel}>
+          <Button
+            type="primary"
             icon={<PlusOutlined />}
             onClick={() => {
               if (isClustersView) {
@@ -300,10 +290,10 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             data-testid={createTestId}
             aria-label={createLabel}
           />
-        </RediaccTooltip>
-        <RediaccTooltip title={t('common:actions.refresh')}>
-          <RediaccButton
-            iconOnly
+        </Tooltip>
+        <Tooltip title={t('common:actions.refresh')}>
+          <Button
+            type="text"
             icon={<ReloadOutlined />}
             onClick={() => {
               if (isClustersView) {
@@ -315,19 +305,22 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             data-testid="ds-refresh-button"
             aria-label={t('common:actions.refresh')}
           />
-        </RediaccTooltip>
-      </ActionGroup>
+        </Tooltip>
+      </Flex>
     );
   };
 
   return (
-    <PageContainer>
-      <PageCard>
-        <SectionStack>
-          <SectionHeaderRow>
-            <TitleGroup>
-              <HeaderTitle level={4}>{t('title')}</HeaderTitle>
-              <TeamSelectorWrapper>
+    <Flex vertical>
+      <Card>
+        <Flex vertical>
+          <Flex align="center" justify="space-between" wrap>
+            <Flex align="center" className="flex-1 min-w-0">
+              <Flex
+                className="flex-1"
+                // eslint-disable-next-line no-restricted-syntax
+                style={{ minWidth: 320, maxWidth: 520 }}
+              >
                 <TeamSelector
                   teams={teams}
                   selectedTeams={selectedTeams}
@@ -336,14 +329,14 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
                   placeholder={t('selectTeamToView')}
                   data-testid="ds-team-selector"
                 />
-              </TeamSelectorWrapper>
-            </TitleGroup>
+              </Flex>
+            </Flex>
             {renderActions()}
-          </SectionHeaderRow>
-        </SectionStack>
+          </Flex>
+        </Flex>
 
         {renderContent()}
-      </PageCard>
+      </Card>
 
       {!isMachinesView && (
         <>
@@ -422,7 +415,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
           />
         </>
       )}
-    </PageContainer>
+    </Flex>
   );
 };
 

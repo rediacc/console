@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyledLanguageLink } from './styles';
+import { Link } from 'react-router-dom';
 
 interface LanguageLinkProps {
   to: string;
@@ -15,8 +15,14 @@ export function LanguageLink({ to, className, style, target, children }: Languag
   const hasLanguage = /^\/[a-z]{2}(\/|$)/.test(to);
   const localizedTo = hasLanguage ? to : `/${i18n.language}${to}`;
   return (
-    <StyledLanguageLink to={localizedTo} className={className} style={style} target={target}>
+    <Link
+      to={localizedTo}
+      className={className}
+      // eslint-disable-next-line no-restricted-syntax
+      style={style}
+      target={target}
+    >
       {children}
-    </StyledLanguageLink>
+    </Link>
   );
 }

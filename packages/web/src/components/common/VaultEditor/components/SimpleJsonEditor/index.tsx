@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { EditorContainer, EditorTextarea, ErrorBanner } from './styles';
+import { Flex, Typography } from 'antd';
 
 interface SimpleJsonEditorProps {
   value: string;
@@ -100,8 +100,18 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   };
 
   return (
-    <EditorContainer className={className} $height={height}>
-      <EditorTextarea
+    <Flex
+      vertical
+      className={`relative overflow-hidden ${className}`}
+      // eslint-disable-next-line no-restricted-syntax
+      style={{
+        height: typeof height === 'number' ? `${height}px` : height,
+        fontFamily: 'monospace',
+        fontSize: 14,
+        lineHeight: 1.5,
+      }}
+    >
+      <textarea
         value={internalValue}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
@@ -111,9 +121,33 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
         autoCorrect="off"
         autoCapitalize="off"
         data-testid={dataTestId}
+        className="w-full h-full"
+        // eslint-disable-next-line no-restricted-syntax
+        style={{
+          outline: 'none',
+          resize: 'none',
+          fontFamily: 'inherit',
+          fontSize: 'inherit',
+          lineHeight: 'inherit',
+          tabSize: 2,
+        }}
       />
 
-      {error && <ErrorBanner>JSON Error: {error}</ErrorBanner>}
-    </EditorContainer>
+      {error && (
+        <Typography.Text
+          className="absolute"
+          // eslint-disable-next-line no-restricted-syntax
+          style={{
+            bottom: 0,
+            left: 0,
+            right: 0,
+            fontSize: 12,
+            fontWeight: 500,
+          }}
+        >
+          JSON Error: {error}
+        </Typography.Text>
+      )}
+    </Flex>
   );
 };

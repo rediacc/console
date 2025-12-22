@@ -1,22 +1,9 @@
 import React from 'react';
-import { Empty } from 'antd';
+import { Empty, Flex, Select, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAvailableMachinesForClone } from '@/api/queries/ceph';
-import { StatusIcon } from '@/components/common/styled';
-import { RediaccOption, RediaccSelect, RediaccTag, RediaccText } from '@/components/ui';
 import type { Machine } from '@/types';
 import { CheckCircleOutlined, CloudServerOutlined, WarningOutlined } from '@/utils/optimizedIcons';
-import {
-  BridgeTag,
-  EmptyDescription,
-  MachineIcon,
-  MachineMeta,
-  MachineName,
-  OptionContent,
-  StatusContainer,
-  StyledSelect,
-  TeamTag,
-} from './styles';
 import type { DefaultOptionType } from 'antd/es/select';
 
 interface AvailableMachinesSelectorProps {
@@ -74,73 +61,90 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
     const isDisabled = !allowSelectAssigned && isAssigned;
 
     return (
-      <RediaccOption
+      <Select.Option
         key={machine.machineName}
         value={machine.machineName}
         label={machine.machineName}
         disabled={isDisabled}
         data-testid={`available-machines-option-${machine.machineName}`}
       >
-        <OptionContent data-testid={`available-machines-option-content-${machine.machineName}`}>
-          <MachineMeta>
-            <MachineIcon as={CloudServerOutlined} />
-            <MachineName $dimmed={!!isDisabled}>{machine.machineName}</MachineName>
-            <TeamTag data-testid={`available-machines-team-tag-${machine.machineName}`}>
+        <Flex
+          data-testid={`available-machines-option-content-${machine.machineName}`}
+          align="center"
+          className="w-full"
+        >
+          <Flex align="center" wrap className="inline-flex">
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <Typography.Text className="inline-flex items-center" style={{ fontSize: 16 }}>
+              <CloudServerOutlined />
+            </Typography.Text>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <Typography.Text style={{ fontWeight: 600 }}>{machine.machineName}</Typography.Text>
+            <Tag
+              bordered={false}
+              data-testid={`available-machines-team-tag-${machine.machineName}`}
+            >
               {machine.teamName}
-            </TeamTag>
+            </Tag>
             {machine.bridgeName && (
-              <BridgeTag data-testid={`available-machines-bridge-tag-${machine.machineName}`}>
+              <Tag
+                bordered={false}
+                data-testid={`available-machines-bridge-tag-${machine.machineName}`}
+              >
                 {machine.bridgeName}
-              </BridgeTag>
+              </Tag>
             )}
-          </MachineMeta>
+          </Flex>
           {showAssignmentStatus && (
-            <StatusContainer>
+            <Flex align="center">
               {isAssigned ? (
                 machine.cephClusterName ? (
-                  <RediaccTag
-                    variant="primary"
-                    data-testid={`available-machines-cluster-tag-${machine.machineName}`}
-                  >
-                    <StatusIcon as={WarningOutlined} />
-                    <RediaccText variant="caption">
+                  <Tag data-testid={`available-machines-cluster-tag-${machine.machineName}`}>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <Typography.Text className="inline-flex" style={{ fontSize: 12 }}>
+                      <WarningOutlined />
+                    </Typography.Text>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <Typography.Text style={{ fontSize: 12 }}>
                       {t('machines:assignmentStatus.cluster')}: {machine.cephClusterName}
-                    </RediaccText>
-                  </RediaccTag>
+                    </Typography.Text>
+                  </Tag>
                 ) : (
-                  <RediaccTag
-                    variant="warning"
-                    data-testid={`available-machines-assigned-tag-${machine.machineName}`}
-                  >
-                    <StatusIcon as={WarningOutlined} />
-                    <RediaccText variant="caption">
+                  <Tag data-testid={`available-machines-assigned-tag-${machine.machineName}`}>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <Typography.Text className="inline-flex" style={{ fontSize: 12 }}>
+                      <WarningOutlined />
+                    </Typography.Text>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <Typography.Text style={{ fontSize: 12 }}>
                       {t('machines:assignmentStatus.assigned', 'Assigned')}
-                    </RediaccText>
-                  </RediaccTag>
+                    </Typography.Text>
+                  </Tag>
                 )
               ) : (
-                <RediaccTag
-                  variant="success"
-                  data-testid={`available-machines-available-tag-${machine.machineName}`}
-                >
-                  <StatusIcon as={CheckCircleOutlined} />
-                  <RediaccText variant="caption">
+                <Tag data-testid={`available-machines-available-tag-${machine.machineName}`}>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <Typography.Text className="inline-flex" style={{ fontSize: 12 }}>
+                    <CheckCircleOutlined />
+                  </Typography.Text>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <Typography.Text style={{ fontSize: 12 }}>
                     {t('machines:assignmentStatus.available')}
-                  </RediaccText>
-                </RediaccTag>
+                  </Typography.Text>
+                </Tag>
               )}
-            </StatusContainer>
+            </Flex>
           )}
-        </OptionContent>
-      </RediaccOption>
+        </Flex>
+      </Select.Option>
     );
   };
 
   return (
-    <StyledSelect
-      as={RediaccSelect}
+    <Select
       mode="multiple"
-      style={style}
+      // eslint-disable-next-line no-restricted-syntax
+      style={{ width: '100%', ...style }}
       placeholder={placeholder || t('machines:selectMachines')}
       value={value}
       onChange={handleChange}
@@ -153,17 +157,15 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
       notFoundContent={
         machines.length === 0 ? (
           <Empty
-            description={<EmptyDescription>{t('machines:noAvailableMachines')}</EmptyDescription>}
+            description={<Typography.Text>{t('machines:noAvailableMachines')}</Typography.Text>}
           />
         ) : (
-          <Empty
-            description={<EmptyDescription>{t('common:noMatchingResults')}</EmptyDescription>}
-          />
+          <Empty description={<Typography.Text>{t('common:noMatchingResults')}</Typography.Text>} />
         )
       }
     >
       {machines.map(renderMachineOption)}
-    </StyledSelect>
+    </Select>
   );
 };
 
@@ -187,6 +189,7 @@ export const SimpleMachineSelector: React.FC<{
       loading={isLoading}
       placeholder={placeholder}
       disabled={disabled}
+      // eslint-disable-next-line no-restricted-syntax
       style={style}
     />
   );

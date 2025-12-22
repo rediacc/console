@@ -168,16 +168,9 @@ class FeatureFlags {
       description: 'Assign machines to Ceph clusters',
     },
 
-    // Architecture - Expert mode feature
-    architecture: {
-      requiresExpertMode: true,
-      description: 'System architecture visualization and dependency management',
-    },
-
-    // Login Advanced Options - Beta feature (encryption password on login page)
+    // Login Advanced Options - Always available
     loginAdvancedOptions: {
-      requiresLocalhost: true, // Hide in production builds
-      description: 'Advanced login options including master password / encryption password field',
+      description: 'Advanced login options including master password and API endpoint selector',
     },
 
     // Plugins - Beta feature (vault-based plugin containers)

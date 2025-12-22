@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Space } from 'antd';
+import { Alert, Flex, Space, Table, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useRepositories } from '@/api/queries/repositories';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
@@ -10,9 +10,7 @@ import {
 } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
-import { RediaccTable, RediaccText } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
-import { useTableStyles } from '@/hooks/useComponentStyles';
 import { useQueueAction } from '@/hooks/useQueueAction';
 import {
   createArrayLengthSorter,
@@ -34,10 +32,7 @@ import {
   ReloadOutlined,
   StopOutlined,
 } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
-import * as S from './styles';
-import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 interface PortMapping {
@@ -176,8 +171,6 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions']);
 
   const userEmail = useAppSelector((state) => state.auth.user?.email || '');
-
-  const tableStyles = useTableStyles();
 
   const [loading, setLoading] = useState(false);
 
@@ -379,6 +372,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
 
       params: {
         repository: repositoryData?.repositoryGuid || repository.name,
+        repositoryName: repositoryData?.repositoryName || repository.name,
 
         container: container.id,
       },
@@ -425,31 +419,27 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     key: 'status',
 
     statusMap: {
-      running: { icon: <CheckCircleOutlined />, label: t('machines:connected'), color: 'success' },
+      running: { icon: <CheckCircleOutlined />, label: t('machines:connected') },
 
       paused: {
         icon: <PauseCircleOutlined />,
         label: t('resources:containers.containerStatusPaused'),
-        color: 'warning',
       },
 
       exited: {
         icon: <DisconnectOutlined />,
         label: t('machines:connectionFailed'),
-        color: 'default',
       },
 
       restarting: {
         icon: <ReloadOutlined />,
         label: t('resources:containers.containerStatusRestarting'),
-        color: 'blue',
       },
     },
 
     defaultConfig: {
       icon: <DisconnectOutlined />,
       label: t('machines:connectionFailed'),
-      color: 'default',
     },
   });
 
@@ -464,32 +454,27 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
       running: {
         icon: <PlayCircleOutlined />,
         label: t('resources:containers.containerStatusRunning'),
-        color: 'success',
       },
 
       paused: {
         icon: <PauseCircleOutlined />,
         label: t('resources:containers.containerStatusPaused'),
-        color: 'warning',
       },
 
       restarting: {
         icon: <ReloadOutlined />,
         label: t('resources:containers.containerStatusRestarting'),
-        color: 'blue',
       },
 
       exited: {
         icon: <StopOutlined />,
         label: t('resources:containers.containerStatusStopped'),
-        color: 'default',
       },
     },
 
     defaultConfig: {
       icon: <StopOutlined />,
       label: t('resources:containers.containerStatusStopped'),
-      color: 'default',
     },
   });
 
@@ -540,11 +525,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         <Space>
           {stateColumn.render?.(state, record, index) as React.ReactNode}
 
-          {record.status && (
-            <RediaccText variant="caption" muted>
-              {record.status}
-            </RediaccText>
-          )}
+          {record.status && <Typography.Text>{record.status}</Typography.Text>}
         </Space>
       ),
     },
@@ -564,21 +545,19 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
 
       render: (_: unknown, record: Container) => {
         if (!record.port_mappings || record.port_mappings.length === 0) {
-          return <RediaccText color="secondary">-</RediaccText>;
+          return <Typography.Text>-</Typography.Text>;
         }
 
         return (
           <Space direction="vertical" size={4}>
             {record.port_mappings.slice(0, 2).map((pm, idx) => (
-              <RediaccText key={idx} variant="caption">
+              <Typography.Text key={idx}>
                 {pm.host_port}:{pm.container_port}/{pm.protocol}
-              </RediaccText>
+              </Typography.Text>
             ))}
 
             {record.port_mappings.length > 2 && (
-              <RediaccText variant="caption" muted size="xs">
-                +{record.port_mappings.length - 2} more
-              </RediaccText>
+              <Typography.Text>+{record.port_mappings.length - 2} more</Typography.Text>
             )}
           </Space>
         );
@@ -588,14 +567,14 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     createActionColumn<Container>({
       title: t('common:table.actions'),
 
-      width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
-
-      fixed: 'end',
+      fixed: 'right',
 
       renderActions: (container) => {
         // Helper to create menu labels with consistent data-testid
         const createActionLabel = (actionKey: string, label: React.ReactNode) => (
-          <span data-testid={`container-action-${actionKey.replace(/_/g, '-')}`}>{label}</span>
+          <Typography.Text data-testid={`container-action-${actionKey.replace(/_/g, '-')}`}>
+            {label}
+          </Typography.Text>
         );
 
         const menuItems: MenuProps['items'] = [];
@@ -727,16 +706,16 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
 
   if (loading) {
     return (
-      <div data-testid="container-list-loading">
+      <Flex vertical data-testid="container-list-loading">
         <LoadingWrapper
           loading
           centered
           minHeight={200}
-          tip={t('resources:containers.fetchingContainers') as string}
+          tip={t('resources:containers.fetchingContainers')}
         >
-          <div />
+          <Flex />
         </LoadingWrapper>
-      </div>
+      </Flex>
     );
   }
 
@@ -753,54 +732,52 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
   }
 
   return (
-    <div data-testid="repository-container-list">
+    <Flex vertical data-testid="repository-container-list">
       {/* Regular Containers */}
 
       {containers.length > 0 ? (
-        <S.ContainersSection data-testid="regular-containers-section">
-          <S.TableStyleWrapper>
-            <RediaccTable<Container>
+        <Flex vertical data-testid="regular-containers-section">
+          <Flex>
+            <Table<Container>
               columns={containerColumns}
               dataSource={containers}
               rowKey="id"
-              size="sm"
-              removeMargins
+              size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
-              style={tableStyles.tableContainer}
               data-testid="regular-containers-table"
               onRow={(container) => buildRowHandlers(container)}
             />
-          </S.TableStyleWrapper>
-        </S.ContainersSection>
+          </Flex>
+        </Flex>
       ) : (
-        <S.EmptyState data-testid="no-containers">
-          <RediaccText color="secondary">{t('resources:containers.noContainers')}</RediaccText>
-        </S.EmptyState>
+        <Flex data-testid="no-containers" className="text-center" justify="center">
+          <Typography.Text>{t('resources:containers.noContainers')}</Typography.Text>
+        </Flex>
       )}
 
       {/* Plugin Containers */}
 
       {featureFlags.isEnabled('plugins') && pluginContainers.length > 0 && (
-        <S.PluginContainersSection data-testid="plugin-containers-section">
-          <S.SectionTitle level={5}>{t('resources:containers.pluginContainers')}</S.SectionTitle>
+        <Flex vertical data-testid="plugin-containers-section">
+          <Typography.Title level={5}>
+            {t('resources:containers.pluginContainers')}
+          </Typography.Title>
 
-          <S.TableStyleWrapper>
-            <RediaccTable<Container>
+          <Flex>
+            <Table<Container>
               columns={containerColumns}
               dataSource={pluginContainers}
               rowKey="id"
-              size="sm"
-              removeMargins
+              size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
-              style={tableStyles.tableContainer}
               data-testid="plugin-containers-table"
               onRow={(container) => buildRowHandlers(container)}
             />
-          </S.TableStyleWrapper>
-        </S.PluginContainersSection>
+          </Flex>
+        </Flex>
       )}
-    </div>
+    </Flex>
   );
 };

@@ -13,19 +13,18 @@ export interface QueueItemTraceModalProps extends BaseModalProps {
 
 export interface ConsoleOutputProps {
   content: string;
-  theme: string;
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
   isEmpty?: boolean;
 }
 
 export interface SimplifiedStatus {
   status: string;
-  color: 'default' | 'success' | 'error' | 'warning' | 'primary';
+  color: 'neutral' | 'success' | 'error' | 'warning' | 'primary';
   icon: React.ReactNode;
 }
 
 export interface PriorityInfo {
-  color: 'default';
+  color: 'neutral';
   icon: React.ReactNode;
   label: string;
 }
@@ -64,18 +63,12 @@ export interface StatsPanelProps {
   queueDetails: GetTeamQueueItems_ResultSet1;
   totalDurationSeconds: number;
   processingDurationSeconds: number;
-  isTaskStale: boolean;
 }
 
 export interface ResponseViewerProps {
   responseVaultContent: QueueVaultSnapshot | null;
   theme: string;
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
-}
-
-export interface ActionButtonStyles {
-  buttonPrimary?: React.CSSProperties;
-  buttonSecondary?: React.CSSProperties;
 }
 
 export interface ActionButtonsProps {
@@ -89,5 +82,7 @@ export interface ActionButtonsProps {
   onRetry: () => void;
   onRefresh: () => void;
   onClose: () => void;
-  styles: ActionButtonStyles;
 }
+
+export type TraceLog = QueueTraceLog;
+export type TaskStaleness = TaskStalenessLevel;

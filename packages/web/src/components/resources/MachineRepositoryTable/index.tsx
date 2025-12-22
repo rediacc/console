@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Alert, Space, Typography } from 'antd';
+import { Alert, Button, Flex, Input, Space, Table, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
-import { type QueueFunction } from '@/api/queries/queue';
 import {
   useCreateRepository,
   usePromoteRepositoryToGrand,
@@ -16,44 +15,28 @@ import { useTeams } from '@/api/queries/teams';
 import { createActionColumn } from '@/components/common/columns';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import {
-  RediaccAlert,
-  RediaccButton,
-  RediaccInput,
-  RediaccStack,
-  RediaccTable,
-  RediaccText,
-  RediaccTooltip,
-} from '@/components/ui';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { useQueueAction } from '@/hooks/useQueueAction';
-import {
-  canBackupToStorage,
-  isFork as coreIsFork,
-  getGrandVaultForOperation,
-  prepareForkDeletion,
-  prepareGrandDeletion,
-  preparePromotion,
-} from '@/platform';
+import { isFork as coreIsFork, getGrandVaultForOperation, preparePromotion } from '@/platform';
 import { useAppSelector } from '@/store/store';
 import { showMessage } from '@/utils/messages';
 import { DesktopOutlined } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { useRepositoryColumns, useSystemContainerColumns } from './columns';
 import { RepositoryActionsMenu } from './components/RepositoryActionsMenu';
-import { useRepositoryTableState } from './hooks/useRepositoryTableState';
 import {
-  ConfirmationInput,
-  InfoTag,
-  InlineTag,
-  MachineTag,
-  ModalContent,
-  SmallText,
-  TableStateContainer,
-} from './styledComponents';
-import * as S from './styles';
+  handleForkFunction,
+  handleDeployFunction,
+  handleBackupFunction,
+  handlePullFunction,
+  handleCustomFunction,
+} from './handlers';
+import { useConfirmForkDeletion } from './hooks/useConfirmForkDeletion';
+import { useConfirmRepositoryDeletion } from './hooks/useConfirmRepositoryDeletion';
+import { useQuickRepositoryAction } from './hooks/useQuickRepositoryAction';
+import { useRepositoryTableState } from './hooks/useRepositoryTableState';
 import { getAxiosErrorMessage } from './utils';
+import type { FunctionExecutionContext, FunctionData } from './hooks/useFunctionExecution';
 import type {
   Container,
   MachineRepositoryTableProps,
@@ -120,6 +103,87 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   const { repositoryStatusColumn, repositoryNameColumn } = useRepositoryColumns(teamRepositories);
   const { systemContainerColumns } = useSystemContainerColumns();
 
+  const { executeQuickAction } = useQuickRepositoryAction({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    teamRepositories: teamRepositories as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    machine: machine as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    executeAction: executeAction as any,
+    onQueueItemCreated,
+    t,
+  });
+
+  const { confirmForkDeletion } = useConfirmForkDeletion({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    teamRepositories: teamRepositories as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    machine: machine as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    confirm: confirm as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    executeAction: executeAction as any,
+    onQueueItemCreated,
+    t,
+  });
+
+  const { confirmDeletion: confirmRepositoryDeletion } = useConfirmRepositoryDeletion({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    teamRepositories: teamRepositories as any,
+    modal,
+    t,
+    onConfirm: async (context) => {
+      const grandRepoVault =
+        getGrandVaultForOperation(
+          context.repositoryGuid!,
+          context.repositoryGuid,
+          teamRepositories
+        ) || '{}';
+
+      const repoData = teamRepositories.find((r) => r.repositoryGuid === context.repositoryGuid);
+
+      const params: Record<string, unknown> = {
+        repository: context.repositoryGuid,
+        repositoryName: context.repositoryTag,
+        grand: context.repositoryGuid,
+      };
+
+      const result = await executeAction({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        functionName: 'rm',
+        params,
+        priority: 4,
+        addedVia: 'machine-Repository-list-delete-grand',
+        machineVault: machine.vaultContent || '{}',
+        repositoryGuid: context.repositoryGuid,
+        vaultContent: grandRepoVault,
+        repositoryNetworkId: context.repositoryNetworkId,
+      });
+
+      if (result.success) {
+        if (result.taskId) {
+          showMessage(
+            'success',
+            t('resources:repositories.deleteGrandQueued', {
+              name: repoData?.repositoryName || 'repository',
+            })
+          );
+          if (onQueueItemCreated) {
+            onQueueItemCreated(result.taskId, machine.machineName);
+          }
+          showMessage('success', t('resources:repositories.deleteGrandSuccess'));
+        } else if (result.isQueued) {
+          showMessage('info', t('resources:repositories.highestPriorityQueued'));
+        }
+      } else {
+        showMessage('error', result.error || t('resources:repositories.deleteGrandFailed'));
+        throw new Error(result.error || t('resources:repositories.deleteGrandFailed'));
+      }
+    },
+  });
+
   const handleRefresh = () => {
     if (onActionComplete) {
       onActionComplete();
@@ -152,176 +216,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     return newRepo;
   };
 
-  const getRequiredTag = (params: Record<string, unknown>, errorMsg: string): string | null => {
-    const tag = typeof params.tag === 'string' ? params.tag.trim() : '';
-    if (!tag) {
-      showMessage('error', errorMsg);
-      closeModalAndReset();
-      return null;
-    }
-    return tag;
-  };
-
-  const showMultiTargetSummary = (
-    taskIds: string[],
-    total: number,
-    keys: { success: string; partial: string; allFailed: string }
-  ) => {
-    if (taskIds.length === total) {
-      showMessage('success', t(keys.success, { count: taskIds.length }));
-    } else if (taskIds.length > 0) {
-      showMessage('warning', t(keys.partial, { success: taskIds.length, total }));
-    } else {
-      showMessage('error', t(keys.allFailed));
-    }
-    if (onQueueItemCreated && taskIds[0]) {
-      onQueueItemCreated(taskIds[0], machine.machineName);
-    }
-  };
-
-  const handleQuickAction = async (
-    Repository: Repository,
-    functionName: string,
-    priority: number = 4,
-    option?: string
-  ) => {
-    const RepoData = teamRepositories.find(
-      (r) => r.repositoryName === Repository.name && r.repositoryTag === Repository.repositoryTag
-    );
-
-    if (!RepoData || !RepoData.vaultContent) {
-      showMessage(
-        'error',
-        t('resources:repositories.noCredentialsFound', { name: Repository.name })
-      );
-      return;
-    }
-
-    const grandRepoVault =
-      getGrandVaultForOperation(RepoData.repositoryGuid, RepoData.grandGuid, teamRepositories) ||
-      RepoData.vaultContent;
-
-    const params: Record<string, unknown> = {
-      repository: RepoData.repositoryGuid,
-      grand: RepoData.grandGuid || '',
-    };
-
-    if (option) {
-      params.option = option;
-    }
-
-    const result = await executeAction({
-      teamName: machine.teamName,
-      machineName: machine.machineName,
-      bridgeName: machine.bridgeName,
-      functionName,
-      params,
-      priority,
-      addedVia: 'machine-Repository-list-quick',
-      machineVault: machine.vaultContent || '{}',
-      repositoryGuid: RepoData.repositoryGuid,
-      vaultContent: grandRepoVault,
-      repositoryNetworkId: RepoData.repositoryNetworkId,
-      repositoryNetworkMode: RepoData.repositoryNetworkMode,
-      repositoryTag: RepoData.repositoryTag,
-    });
-
-    if (result.success) {
-      if (result.taskId) {
-        showMessage('success', t('resources:repositories.queueItemCreated'));
-        if (onQueueItemCreated) {
-          onQueueItemCreated(result.taskId, machine.machineName);
-        }
-      } else if (result.isQueued) {
-        showMessage('info', t('resources:repositories.highestPriorityQueued'));
-      }
-    } else {
-      showMessage('error', result.error || t('resources:repositories.failedToCreateQueueItem'));
-    }
-  };
-
-  const handleDeleteFork = async (Repository: Repository) => {
-    const context = prepareForkDeletion(
-      Repository.name,
-      Repository.repositoryTag,
-      teamRepositories
-    );
-
-    if (context.status === 'error') {
-      const errorKey =
-        context.errorCode === 'NOT_FOUND'
-          ? 'resources:repositories.RepoNotFound'
-          : 'resources:repositories.cannotDeleteGrandRepo';
-      showMessage('error', t(errorKey));
-      return;
-    }
-
-    const parentName = context.parentName || Repository.name;
-
-    confirm({
-      title: t('resources:repositories.deleteCloneConfirmTitle'),
-      content: t('resources:repositories.deleteCloneConfirmMessage', {
-        name: Repository.name,
-        tag: Repository.repositoryTag || 'latest',
-        parentName,
-      }),
-      okText: t('common:delete'),
-      okType: 'danger',
-      cancelText: t('common:cancel'),
-      onOk: async () => {
-        try {
-          const grandRepoVault =
-            getGrandVaultForOperation(
-              context.repositoryGuid!,
-              context.grandGuid,
-              teamRepositories
-            ) || '{}';
-
-          const params: Record<string, unknown> = {
-            repository: context.repositoryGuid,
-            grand: context.grandGuid,
-          };
-
-          const result = await executeAction({
-            teamName: machine.teamName,
-            machineName: machine.machineName,
-            bridgeName: machine.bridgeName,
-            functionName: 'rm',
-            params,
-            priority: 4,
-            addedVia: 'machine-Repository-list-delete-clone',
-            machineVault: machine.vaultContent || '{}',
-            repositoryGuid: context.repositoryGuid,
-            vaultContent: grandRepoVault,
-            repositoryNetworkId: context.repositoryNetworkId,
-          });
-
-          if (result.success) {
-            if (result.taskId) {
-              showMessage(
-                'success',
-                t('resources:repositories.deleteCloneQueued', {
-                  name: Repository.name,
-                  tag: Repository.repositoryTag || 'latest',
-                })
-              );
-              if (onQueueItemCreated) {
-                onQueueItemCreated(result.taskId, machine.machineName);
-              }
-              showMessage('success', t('resources:repositories.deleteForkSuccess'));
-            } else if (result.isQueued) {
-              showMessage('info', t('resources:repositories.highestPriorityQueued'));
-            }
-          } else {
-            showMessage('error', result.error || t('resources:repositories.deleteCloneFailed'));
-          }
-        } catch {
-          showMessage('error', t('resources:repositories.deleteCloneFailed'));
-        }
-      },
-    });
-  };
-
   const handlePromoteToGrand = async (Repository: Repository) => {
     const context = preparePromotion(Repository.name, Repository.repositoryTag, teamRepositories);
 
@@ -339,7 +233,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     confirm({
       title: t('resources:repositories.promoteToGrandTitle'),
       content: (
-        <ModalContent>
+        <Flex vertical>
           <Typography.Paragraph>
             {t('resources:repositories.promoteToGrandMessage', {
               name: Repository.name,
@@ -361,7 +255,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             </>
           )}
           <Alert message={t('resources:repositories.promoteWarning')} type="warning" showIcon />
-        </ModalContent>
+        </Flex>
       ),
       okText: t('resources:repositories.promoteButton'),
       okType: 'primary',
@@ -393,11 +287,11 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     modal.confirm({
       title: t('resources:repositories.renameTitle'),
       content: (
-        <div>
+        <Flex vertical>
           <Typography.Paragraph>
             {t('resources:repositories.renameMessage', { name: Repository.name })}
           </Typography.Paragraph>
-          <RediaccInput
+          <Input
             defaultValue={Repository.name}
             placeholder={t('resources:repositories.newRepoName')}
             onChange={(e) => {
@@ -408,7 +302,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             }}
             autoFocus
           />
-        </div>
+        </Flex>
       ),
       okText: t('common:save'),
       cancelText: t('common:cancel'),
@@ -417,12 +311,12 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
         if (!trimmedName) {
           showMessage('error', t('resources:repositories.emptyNameError'));
-          return Promise.reject();
+          throw new Error(t('resources:repositories.emptyNameError'));
         }
 
         if (trimmedName === Repository.name) {
           showMessage('info', t('resources:repositories.nameUnchanged'));
-          return Promise.reject();
+          throw new Error(t('resources:repositories.nameUnchanged'));
         }
 
         const existingRepo = teamRepositories.find((r) => r.repositoryName === trimmedName);
@@ -431,7 +325,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             'error',
             t('resources:repositories.nameAlreadyExists', { name: trimmedName })
           );
-          return Promise.reject();
+          throw new Error(t('resources:repositories.nameAlreadyExists', { name: trimmedName }));
         }
 
         try {
@@ -457,7 +351,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             t('resources:repositories.renameFailed')
           );
           showMessage('error', errorMessage);
-          return Promise.reject();
+          throw error;
         }
       },
     });
@@ -469,14 +363,14 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     modal.confirm({
       title: t('resources:repositories.renameTagTitle'),
       content: (
-        <div>
+        <Flex vertical>
           <Typography.Paragraph>
             {t('resources:repositories.renameTagMessage', {
               name: Repository.name,
               tag: Repository.repositoryTag,
             })}
           </Typography.Paragraph>
-          <RediaccInput
+          <Input
             defaultValue={Repository.repositoryTag}
             placeholder={t('resources:repositories.newTagName')}
             onChange={(e) => {
@@ -487,7 +381,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             }}
             autoFocus
           />
-        </div>
+        </Flex>
       ),
       okText: t('common:save'),
       cancelText: t('common:cancel'),
@@ -496,12 +390,12 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
         if (!trimmedTag) {
           showMessage('error', t('resources:repositories.emptyTagError'));
-          return Promise.reject();
+          throw new Error(t('resources:repositories.emptyTagError'));
         }
 
         if (trimmedTag === Repository.repositoryTag) {
           showMessage('info', t('resources:repositories.tagUnchanged'));
-          return Promise.reject();
+          throw new Error(t('resources:repositories.tagUnchanged'));
         }
 
         const existingTag = teamRepositories.find(
@@ -509,7 +403,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         );
         if (existingTag) {
           showMessage('error', t('resources:repositories.tagAlreadyExists', { tag: trimmedTag }));
-          return Promise.reject();
+          throw new Error(t('resources:repositories.tagAlreadyExists', { tag: trimmedTag }));
         }
 
         try {
@@ -537,410 +431,58 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             t('resources:repositories.renameTagFailed')
           );
           showMessage('error', errorMessage);
-          return Promise.reject();
+          throw error;
         }
       },
     });
   };
 
-  const handleDeleteGrandRepo = async (Repository: Repository) => {
-    const context = prepareGrandDeletion(
-      Repository.name,
-      Repository.repositoryTag,
-      teamRepositories
-    );
-
-    if (context.status === 'error') {
-      const errorKey =
-        context.errorCode === 'NOT_FOUND'
-          ? 'resources:repositories.RepoNotFound'
-          : 'resources:repositories.notAGrandRepo';
-      showMessage('error', t(errorKey));
-      return;
-    }
-
-    if (context.status === 'blocked') {
-      modal.error({
-        title: t('resources:repositories.cannotDeleteHasClones'),
-        content: (
-          <div>
-            <Typography.Paragraph>
-              {t('resources:repositories.hasActiveClonesMessage', {
-                name: Repository.name,
-                count: context.childClones.length,
-              })}
-            </Typography.Paragraph>
-            <RediaccText as="p" weight="bold">
-              {t('resources:repositories.clonesList')}
-            </RediaccText>
-            <ul>
-              {context.childClones.map((clone) => (
-                <li key={clone.repositoryGuid}>{clone.repositoryName}</li>
-              ))}
-            </ul>
-            <Typography.Paragraph>
-              {t('resources:repositories.deleteOptionsMessage')}
-            </Typography.Paragraph>
-          </div>
-        ),
-        okText: t('common:close'),
-      });
-      return;
-    }
-
-    let confirmationInput = '';
-
-    modal.confirm({
-      title: t('resources:repositories.deleteGrandConfirmTitle'),
-      content: (
-        <ModalContent>
-          <Alert
-            message={t('resources:repositories.deleteGrandWarning')}
-            description={t('resources:repositories.deleteGrandWarningDesc', {
-              name: Repository.name,
-            })}
-            type="warning"
-            showIcon
-          />
-          <RediaccText weight="bold">
-            {t('resources:repositories.deleteGrandConfirmPrompt', { name: Repository.name })}
-          </RediaccText>
-          <ConfirmationInput
-            type="text"
-            placeholder={Repository.name}
-            onChange={(e) => {
-              confirmationInput = e.target.value;
-            }}
-          />
-        </ModalContent>
-      ),
-      okText: t('common:delete'),
-      okType: 'danger',
-      cancelText: t('common:cancel'),
-      onOk: async () => {
-        if (confirmationInput !== Repository.name) {
-          showMessage('error', t('resources:repositories.deleteGrandConfirmationMismatch'));
-          return Promise.reject();
-        }
-
-        try {
-          const grandRepoVault =
-            getGrandVaultForOperation(
-              context.repositoryGuid!,
-              context.repositoryGuid,
-              teamRepositories
-            ) || '{}';
-
-          const params: Record<string, unknown> = {
-            repository: context.repositoryGuid,
-            grand: context.repositoryGuid,
-          };
-
-          const result = await executeAction({
-            teamName: machine.teamName,
-            machineName: machine.machineName,
-            bridgeName: machine.bridgeName,
-            functionName: 'rm',
-            params,
-            priority: 4,
-            addedVia: 'machine-Repository-list-delete-grand',
-            machineVault: machine.vaultContent || '{}',
-            repositoryGuid: context.repositoryGuid,
-            vaultContent: grandRepoVault,
-            repositoryNetworkId: context.repositoryNetworkId,
-          });
-
-          if (result.success) {
-            if (result.taskId) {
-              showMessage(
-                'success',
-                t('resources:repositories.deleteGrandQueued', { name: Repository.name })
-              );
-              if (onQueueItemCreated) {
-                onQueueItemCreated(result.taskId, machine.machineName);
-              }
-              showMessage('success', t('resources:repositories.deleteGrandSuccess'));
-            } else if (result.isQueued) {
-              showMessage('info', t('resources:repositories.highestPriorityQueued'));
-            }
-          } else {
-            showMessage('error', result.error || t('resources:repositories.deleteGrandFailed'));
-            return Promise.reject();
-          }
-        } catch {
-          showMessage('error', t('resources:repositories.deleteGrandFailed'));
-          return Promise.reject();
-        }
-      },
-    });
-  };
-
-  const handleFunctionSubmit = async (functionData: {
-    function: QueueFunction;
-    params: Record<string, unknown>;
-    priority: number;
-    description: string;
-  }) => {
+  const handleFunctionSubmit = async (functionData: FunctionData) => {
     if (!selectedRepository) return;
 
     try {
-      const RepoData = teamRepositories.find(
-        (r) =>
-          r.repositoryName === selectedRepository.name &&
-          r.repositoryTag === selectedRepository.repositoryTag
-      );
+      const context: FunctionExecutionContext = {
+        selectedRepository,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        teamRepositories: teamRepositories as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        machine: machine as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        teamMachines: teamMachines as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        teamStorages: teamStorages as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        executeAction: executeAction as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        createRepositoryCredential: createRepositoryCredential as any,
+        onQueueItemCreated,
+        closeModal: closeModalAndReset,
+        t,
+      };
 
-      if (!RepoData || !RepoData.vaultContent) {
-        showMessage(
-          'error',
-          t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
-        );
-        functionModal.close();
-        setSelectedRepo(null);
+      const functionName = functionData.function.name;
+
+      if (functionName === 'fork') {
+        await handleForkFunction(functionData, context);
         return;
       }
 
-      let grandRepoVault = RepoData.vaultContent;
-      if (RepoData.grandGuid) {
-        const grandRepo = teamRepositories.find((r) => r.repositoryGuid === RepoData.grandGuid);
-        if (grandRepo && grandRepo.vaultContent) {
-          grandRepoVault = grandRepo.vaultContent;
-        }
-      }
-
-      const finalParams = { ...functionData.params };
-      const repositoryGuid = RepoData.repositoryGuid;
-      const vaultContent = grandRepoVault;
-
-      if (functionData.function.name === 'fork') {
-        const forkTag = getRequiredTag(functionData.params, 'Tag is required for fork');
-        if (!forkTag) return;
-
-        let newRepo;
-        try {
-          newRepo = await createRepositoryCredential(selectedRepository.name, forkTag);
-        } catch {
-          showMessage('error', t('resources:repositories.failedToCreateRepository'));
-          closeModalAndReset();
-          return;
-        }
-
-        try {
-          const result = await executeAction({
-            teamName: machine.teamName,
-            machineName: machine.machineName,
-            bridgeName: machine.bridgeName,
-            functionName: 'push',
-            params: {
-              repository: RepoData.repositoryGuid,
-              dest: newRepo.repositoryGuid,
-              destinationType: 'machine',
-              to: machine.machineName,
-              state: selectedRepository.mounted ? 'online' : 'offline',
-              grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
-            },
-            priority: functionData.priority,
-            addedVia: 'machine-Repository-list-fork',
-            machineVault: machine.vaultContent || '{}',
-            repositoryGuid: RepoData.repositoryGuid,
-            vaultContent: grandRepoVault,
-            repositoryNetworkId: newRepo.repositoryNetworkId,
-            repositoryNetworkMode: newRepo.repositoryNetworkMode,
-            repositoryTag: newRepo.repositoryTag,
-          });
-
-          closeModalAndReset();
-
-          if (result.success) {
-            if (result.taskId) {
-              showMessage(
-                'success',
-                t('resources:repositories.forkStarted', {
-                  dest: `${selectedRepository.name}:${forkTag}`,
-                })
-              );
-              if (onQueueItemCreated) onQueueItemCreated(result.taskId, machine.machineName);
-            } else if (result.isQueued) {
-              showMessage('info', t('resources:repositories.highestPriorityQueued'));
-            }
-          } else {
-            throw new Error(result.error || 'Failed to fork Repository');
-          }
-        } catch {
-          showMessage('error', t('resources:repositories.failedToForkRepository'));
-        }
+      if (functionName === 'deploy' && functionData.params.machines) {
+        await handleDeployFunction(functionData, context);
         return;
       }
 
-      if (functionData.function.name === 'deploy' && functionData.params.machines) {
-        const machinesArray = Array.isArray(functionData.params.machines)
-          ? functionData.params.machines
-          : [functionData.params.machines];
-        const deployTag = getRequiredTag(functionData.params, 'Tag is required for deploy');
-        if (!deployTag) return;
-
-        let newRepo;
-        try {
-          newRepo = await createRepositoryCredential(selectedRepository.name, deployTag);
-        } catch {
-          showMessage('error', t('resources:repositories.failedToCreateRepository'));
-          closeModalAndReset();
-          return;
-        }
-
-        const createdTaskIds: string[] = [];
-        for (const targetMachine of machinesArray) {
-          const destinationMachine = teamMachines.find((m) => m.machineName === targetMachine);
-          if (!destinationMachine) {
-            showMessage(
-              'error',
-              t('resources:repositories.destinationMachineNotFound', { machine: targetMachine })
-            );
-            continue;
-          }
-          try {
-            const result = await executeAction({
-              teamName: machine.teamName,
-              machineName: machine.machineName,
-              bridgeName: machine.bridgeName,
-              functionName: 'deploy',
-              params: {
-                ...functionData.params,
-                machines: machinesArray.join(','),
-                to: targetMachine,
-                dest: newRepo.repositoryGuid,
-                repository: RepoData.repositoryGuid,
-                grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
-                state: selectedRepository.mounted ? 'online' : 'offline',
-              },
-              priority: functionData.priority,
-              addedVia: 'machine-Repository-list',
-              machineVault: machine.vaultContent || '{}',
-              destinationMachineVault: destinationMachine.vaultContent || '{}',
-              repositoryGuid,
-              vaultContent,
-              repositoryNetworkId: newRepo.repositoryNetworkId,
-              repositoryNetworkMode: newRepo.repositoryNetworkMode,
-              repositoryTag: newRepo.repositoryTag,
-            });
-            if (result.success && result.taskId) createdTaskIds.push(result.taskId);
-          } catch {
-            showMessage(
-              'error',
-              t('resources:repositories.failedToDeployTo', { machine: targetMachine })
-            );
-          }
-        }
-
-        closeModalAndReset();
-        showMultiTargetSummary(createdTaskIds, machinesArray.length, {
-          success: 'resources:repositories.deploymentQueued',
-          partial: 'resources:repositories.deploymentPartialSuccess',
-          allFailed: 'resources:repositories.allDeploymentsFailed',
-        });
+      if (functionName === 'backup' && functionData.params.storages) {
+        await handleBackupFunction(functionData, context);
         return;
       }
 
-      if (functionData.function.name === 'backup' && functionData.params.storages) {
-        if (!canBackupToStorage(RepoData).canBackup) {
-          showMessage('error', t('resources:repositories.cannotBackupForkToStorage'));
-          closeModalAndReset();
-          return;
-        }
-
-        const storagesArray = Array.isArray(functionData.params.storages)
-          ? functionData.params.storages
-          : [functionData.params.storages];
-        const createdTaskIds: string[] = [];
-
-        for (const targetStorage of storagesArray) {
-          const destinationStorage = teamStorages.find((s) => s.storageName === targetStorage);
-          if (!destinationStorage) {
-            showMessage(
-              'error',
-              t('resources:repositories.destinationStorageNotFound', { storage: targetStorage })
-            );
-            continue;
-          }
-          try {
-            const result = await executeAction({
-              teamName: machine.teamName,
-              machineName: machine.machineName,
-              bridgeName: machine.bridgeName,
-              functionName: 'backup',
-              params: {
-                ...functionData.params,
-                storages: storagesArray.join(','),
-                to: targetStorage,
-                dest: RepoData.repositoryGuid,
-                repository: RepoData.repositoryGuid,
-                grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
-                state: selectedRepository.mounted ? 'online' : 'offline',
-              },
-              priority: functionData.priority,
-              addedVia: 'machine-Repository-list',
-              machineVault: machine.vaultContent || '{}',
-              destinationStorageVault: destinationStorage.vaultContent || '{}',
-              repositoryGuid,
-              vaultContent,
-              repositoryNetworkId: RepoData.repositoryNetworkId,
-              repositoryNetworkMode: RepoData.repositoryNetworkMode,
-              repositoryTag: RepoData.repositoryTag,
-            });
-            if (result.success && result.taskId) createdTaskIds.push(result.taskId);
-          } catch {
-            showMessage(
-              'error',
-              t('resources:repositories.failedToBackupTo', { storage: targetStorage })
-            );
-          }
-        }
-
-        closeModalAndReset();
-        showMultiTargetSummary(createdTaskIds, storagesArray.length, {
-          success: 'resources:repositories.backupQueued',
-          partial: 'resources:repositories.backupPartialSuccess',
-          allFailed: 'resources:repositories.allBackupsFailed',
-        });
+      if (functionName === 'pull') {
+        await handlePullFunction(functionData, context);
         return;
       }
 
-      if (functionData.function.name === 'pull') {
-        finalParams.repository = RepoData.repositoryGuid;
-        finalParams.grand = RepoData.grandGuid || RepoData.repositoryGuid || '';
-      }
-
-      const result = await executeAction({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        functionName: functionData.function.name,
-        params: finalParams,
-        priority: functionData.priority,
-        addedVia: 'machine-Repository-list',
-        machineVault: machine.vaultContent || '{}',
-        repositoryGuid,
-        vaultContent,
-        repositoryNetworkId: RepoData.repositoryNetworkId,
-        repositoryNetworkMode: RepoData.repositoryNetworkMode,
-        repositoryTag: RepoData.repositoryTag,
-      });
-
-      functionModal.close();
-      setSelectedRepo(null);
-
-      if (result.success) {
-        if (result.taskId) {
-          showMessage('success', t('resources:repositories.queueItemCreated'));
-          if (onQueueItemCreated) {
-            onQueueItemCreated(result.taskId, machine.machineName);
-          }
-        } else if (result.isQueued) {
-          showMessage('info', t('resources:repositories.highestPriorityQueued'));
-        }
-      } else {
-        throw new Error(result.error || t('resources:repositories.failedToCreateQueueItem'));
-      }
+      await handleCustomFunction(functionData, context);
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -958,14 +500,14 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         tableData.push({
           ...group.grandTag,
           key: `repo-${group.name}-${group.grandTag.repositoryTag || 'latest'}`,
-        } as RepositoryTableRow);
+        });
       }
 
       group.forkTags.forEach((fork) => {
         tableData.push({
           ...fork,
           key: `repo-${fork.name}-${fork.repositoryTag || 'latest'}`,
-        } as RepositoryTableRow);
+        });
       });
     });
 
@@ -977,8 +519,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     repositoryNameColumn,
     createActionColumn<RepositoryTableRow>({
       title: t('common:table.actions'),
-      width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
-      fixed: 'end',
+      fixed: 'right',
       renderActions: (record) => (
         <RepositoryActionsMenu
           record={record}
@@ -987,13 +528,13 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           userEmail={userEmail}
           containersData={containersData}
           isExecuting={isExecuting}
-          onQuickAction={handleQuickAction}
+          onQuickAction={executeQuickAction}
           onRunFunction={handleRunFunction}
           onPromoteToGrand={handlePromoteToGrand}
-          onDeleteFork={handleDeleteFork}
+          onDeleteFork={confirmForkDeletion}
           onRenameTag={handleRenameTag}
           onRenameRepository={handleRenameRepo}
-          onDeleteGrandRepository={handleDeleteGrandRepo}
+          onDeleteGrandRepository={confirmRepositoryDeletion}
           onRepositoryClick={onRepositoryClick}
           onCreateRepository={onCreateRepository}
           t={t}
@@ -1004,112 +545,117 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
   if (loading) {
     return (
-      <TableStateContainer data-testid="machine-repo-list-loading">
+      <Flex data-testid="machine-repo-list-loading">
         <LoadingWrapper
           loading
           centered
           minHeight={200}
-          tip={t('resources:repositories.fetchingRepos') as string}
+          tip={t('resources:repositories.fetchingRepos')}
         >
-          <div />
+          <Flex />
         </LoadingWrapper>
-      </TableStateContainer>
+      </Flex>
     );
   }
 
   if (error) {
     return (
-      <TableStateContainer data-testid="machine-repo-list-error">
+      <Flex data-testid="machine-repo-list-error">
         <Alert
           message={t('common:messages.error')}
           description={error}
           type="error"
           showIcon
           action={
-            <RediaccTooltip title={t('common:actions.retry')}>
-              <RediaccButton
+            <Tooltip title={t('common:actions.retry')}>
+              <Button
                 onClick={handleRefresh}
                 data-testid="machine-repo-list-retry"
                 aria-label={t('common:actions.retry')}
               />
-            </RediaccTooltip>
+            </Tooltip>
           }
         />
-      </TableStateContainer>
+      </Flex>
     );
   }
 
   return (
-    <S.Container data-testid="machine-repo-list">
+    <Flex vertical className="overflow-auto relative w-full" data-testid="machine-repo-list">
       {isLoading && (
-        <S.LoadingOverlay>
-          <LoadingWrapper
-            loading
-            centered
-            minHeight={120}
-            tip={t('common:general.refreshing') as string}
-          >
-            <div />
+        <Flex
+          align="center"
+          justify="center"
+          className="absolute"
+          // eslint-disable-next-line no-restricted-syntax
+          style={{
+            inset: 0,
+            zIndex: 1000,
+          }}
+        >
+          <LoadingWrapper loading centered minHeight={120} tip={t('common:general.refreshing')}>
+            <Flex />
           </LoadingWrapper>
-        </S.LoadingOverlay>
+        </Flex>
       )}
 
       {hideSystemInfo && (
-        <S.MachineHeader data-testid="machine-repo-list-machine-header">
+        <Flex data-testid="machine-repo-list-machine-header">
           <Space direction="vertical" size="small">
             <Space>
-              <S.MachineIcon as={DesktopOutlined} />
-              <S.MachineTitle
-                as={Typography.Title}
-                level={4}
-                data-testid="machine-repo-list-machine-name"
+              <Typography.Text
+                // eslint-disable-next-line no-restricted-syntax
+                style={{ fontSize: 16 }}
               >
+                <DesktopOutlined />
+              </Typography.Text>
+              <Typography.Title level={4} data-testid="machine-repo-list-machine-name">
                 {machine.machineName}
-              </S.MachineTitle>
+              </Typography.Title>
             </Space>
             <Space wrap size={8}>
-              <InfoTag data-testid="machine-repo-list-team-tag">{machine.teamName}</InfoTag>
-              <InfoTag data-testid="machine-repo-list-bridge-tag">{machine.bridgeName}</InfoTag>
+              <Tag data-testid="machine-repo-list-team-tag">{machine.teamName}</Tag>
+              <Tag data-testid="machine-repo-list-bridge-tag">{machine.bridgeName}</Tag>
               {machine.regionName && (
-                <InfoTag data-testid="machine-repo-list-region-tag">{machine.regionName}</InfoTag>
+                <Tag data-testid="machine-repo-list-region-tag">{machine.regionName}</Tag>
               )}
-              <InfoTag data-testid="machine-repo-list-queue-tag">
+              <Tag data-testid="machine-repo-list-queue-tag">
                 {machine.queueCount} {t('machines:queueItems')}
-              </InfoTag>
+              </Tag>
             </Space>
           </Space>
-        </S.MachineHeader>
+        </Flex>
       )}
 
       {(() => {
         const team = teams?.find((t) => t.teamName === machine.teamName);
         if (!team?.vaultContent) return null;
 
+        let missingSSHKeys = false;
         try {
           const teamVault = JSON.parse(team.vaultContent);
-          const missingSSHKeys = !teamVault.SSH_PRIVATE_KEY || !teamVault.SSH_PUBLIC_KEY;
-
-          return missingSSHKeys ? (
-            <RediaccAlert
-              spacing="default"
-              variant="warning"
-              showIcon
-              closable
-              message={t('common:vaultEditor.missingSshKeysWarning')}
-              description={t('common:vaultEditor.missingSshKeysDescription')}
-            />
-          ) : null;
+          missingSSHKeys = !teamVault.SSH_PRIVATE_KEY || !teamVault.SSH_PUBLIC_KEY;
         } catch {
           return null;
         }
+
+        return missingSSHKeys ? (
+          <Alert
+            type="warning"
+            showIcon
+            closable
+            message={t('common:vaultEditor.missingSshKeysWarning')}
+            description={t('common:vaultEditor.missingSshKeysDescription')}
+          />
+        ) : null;
       })()}
 
-      <S.TableStyleWrapper>
-        <RediaccTable<RepositoryTableRow>
+      <Flex className="w-full">
+        <Table<RepositoryTableRow>
           columns={columns}
           dataSource={getTableDataSource()}
           rowKey={(record) => record.key || `${record.name}-${record.repositoryTag || 'latest'}`}
-          size="sm"
+          size="small"
           pagination={false}
           scroll={{ x: 'max-content' }}
           data-testid="machine-repo-list-table"
@@ -1142,27 +688,23 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             },
           })}
         />
-      </S.TableStyleWrapper>
+      </Flex>
 
       {systemContainers.length > 0 && !hideSystemInfo && (
-        <S.SystemContainersWrapper data-testid="machine-repo-list-system-containers">
-          <S.SystemContainersTitle
-            as={Typography.Title}
-            level={5}
-            data-testid="machine-repo-list-system-containers-title"
-          >
+        <Flex vertical data-testid="machine-repo-list-system-containers">
+          <Typography.Title level={5} data-testid="machine-repo-list-system-containers-title">
             {t('resources:repositories.systemContainers')}
-          </S.SystemContainersTitle>
-          <RediaccTable<Container>
+          </Typography.Title>
+          <Table<Container>
             columns={systemContainerColumns}
             dataSource={systemContainers}
             rowKey="id"
-            size="sm"
+            size="small"
             pagination={false}
             scroll={{ x: 'max-content' }}
             data-testid="machine-repo-list-system-containers-table"
           />
-        </S.SystemContainersWrapper>
+        </Flex>
       )}
 
       <FunctionSelectionModal
@@ -1177,13 +719,13 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         data-testid="machine-repo-list-function-modal"
         subtitle={
           selectedRepository && (
-            <RediaccStack direction="vertical" gap="sm" fullWidth>
+            <Flex vertical gap={8} className="w-full">
               <Space>
-                <RediaccText>{t('resources:repositories.Repository')}:</RediaccText>
-                <InlineTag>{selectedRepository.name}</InlineTag>
-                <RediaccText>•</RediaccText>
-                <RediaccText>{t('machines:machine')}:</RediaccText>
-                <MachineTag>{machine.machineName}</MachineTag>
+                <Typography.Text>{t('resources:repositories.Repository')}:</Typography.Text>
+                <Tag>{selectedRepository.name}</Tag>
+                <Typography.Text>•</Typography.Text>
+                <Typography.Text>{t('machines:machine')}:</Typography.Text>
+                <Tag>{machine.machineName}</Tag>
               </Space>
               {selectedFunction === 'push' &&
                 (() => {
@@ -1199,23 +741,33 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
                     if (parentRepo) {
                       return (
                         <Space>
-                          <SmallText color="secondary">
-                            {t('resources:repositories.parentRepo', {
-                              defaultValue: 'Parent Repository',
-                            })}
-                            :
-                          </SmallText>
-                          <InlineTag>{parentRepo.repositoryName}</InlineTag>
-                          <SmallText color="secondary">→</SmallText>
-                          <SmallText color="secondary">{t('common:current')}:</SmallText>
-                          <InlineTag>{selectedRepository.name}</InlineTag>
+                          <Typography.Text
+                            // eslint-disable-next-line no-restricted-syntax
+                            style={{ fontSize: 12 }}
+                          >
+                            {t('resources:repositories.parentRepo')}:
+                          </Typography.Text>
+                          <Tag>{parentRepo.repositoryName}</Tag>
+                          <Typography.Text
+                            // eslint-disable-next-line no-restricted-syntax
+                            style={{ fontSize: 12 }}
+                          >
+                            →
+                          </Typography.Text>
+                          <Typography.Text
+                            // eslint-disable-next-line no-restricted-syntax
+                            style={{ fontSize: 12 }}
+                          >
+                            {t('common:current')}:
+                          </Typography.Text>
+                          <Tag>{selectedRepository.name}</Tag>
                         </Space>
                       );
                     }
                   }
                   return null;
                 })()}
-            </RediaccStack>
+            </Flex>
           )
         }
         allowedCategories={['Repository', 'backup', 'network']}
@@ -1281,6 +833,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       />
 
       {contextHolder}
-    </S.Container>
+    </Flex>
   );
 };

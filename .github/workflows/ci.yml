@@ -205,6 +205,41 @@ jobs:
       - name: Run TypeScript project references
         run: npm run typecheck
 
+  unit-tests:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared libraries
+        run: npm run build:packages
+
+      - name: Run unit tests
+        run: npm run test:run
+
+      - name: Generate coverage report
+        if: always()
+        run: npm run test:coverage
+
+      - name: Upload coverage to artifacts
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: coverage-report-${{ github.sha }}
+          path: packages/web/coverage/
+          retention-days: 30
+
   cli-check:
     name: 🔧 Code Quality - CLI
     runs-on: ubuntu-latest
@@ -293,27 +328,6 @@ jobs:
           path: packages/web/dist/
           retention-days: 90
 
-  test-api:
-    name: 🧪 Tests - API Integration
-    runs-on: ubuntu-latest
-    if: false  # Enable when test-api.mjs is implemented
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run API tests
-        run: node test-api.mjs
-
   security-scan:
     name: 🔒 Security - Vulnerability Scan
     runs-on: ubuntu-latest
@@ -401,7 +415,7 @@ jobs:
   ci-summary:
     name: ✅ CI Summary
     runs-on: ubuntu-latest
-    needs: [lint, format-check, type-check, cli-check, build, security-scan, bundle-size]
+    needs: [lint, format-check, type-check, unit-tests, cli-check, build, security-scan, bundle-size]
     if: always()
 
     steps:
@@ -412,6 +426,7 @@ jobs:
           echo "- Lint: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Format: ${{ needs.format-check.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Type Check: ${{ needs.type-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- CLI Check: ${{ needs.cli-check.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security Scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
@@ -420,6 +435,7 @@ jobs:
           if [ "${{ needs.lint.result }}" != "success" ] || \
              [ "${{ needs.format-check.result }}" != "success" ] || \
              [ "${{ needs.type-check.result }}" != "success" ] || \
+             [ "${{ needs.unit-tests.result }}" != "success" ] || \
              [ "${{ needs.cli-check.result }}" != "success" ] || \
              [ "${{ needs.build.result }}" != "success" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY

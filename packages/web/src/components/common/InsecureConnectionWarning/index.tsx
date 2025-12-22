@@ -1,9 +1,8 @@
 import React from 'react';
 import { LockOutlined } from '@ant-design/icons';
+import { Alert, Flex, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccAlert, RediaccText } from '@/components/ui';
 import { getSecurityContextInfo } from '@/utils/secureContext';
-import { ResolutionText, StyledAlert, WarningDescription } from './styles';
 
 interface InsecureConnectionWarningProps {
   onClose?: () => void;
@@ -14,31 +13,37 @@ const InsecureConnectionWarning: React.FC<InsecureConnectionWarningProps> = ({ o
   const securityInfo = getSecurityContextInfo();
 
   return (
-    <StyledAlert>
-      <RediaccAlert
-        spacing="default"
-        variant="error"
+    <Flex>
+      <Alert
+        type="error"
         showIcon
         icon={<LockOutlined />}
         closable={!!onClose}
         onClose={onClose}
         message={
-          <RediaccText as="span" weight="semibold" color="danger">
+          <Typography.Text type="danger" strong>
             {t('login.insecureConnection.title')}
-          </RediaccText>
+          </Typography.Text>
         }
         description={
-          <WarningDescription>
-            <p>{t('login.insecureConnection.message')}</p>
-            <ResolutionText>
-              <strong>{t('login.insecureConnection.howToFix')}:</strong>{' '}
+          <Flex
+            vertical
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ fontSize: 14 }}
+          >
+            <Typography.Text>{t('login.insecureConnection.message')}</Typography.Text>
+            <Typography.Text
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ fontSize: 12 }}
+            >
+              <Typography.Text strong>{t('login.insecureConnection.howToFix')}:</Typography.Text>{' '}
               {securityInfo.suggestion || t('login.insecureConnection.resolution')}
-            </ResolutionText>
-          </WarningDescription>
+            </Typography.Text>
+          </Flex>
         }
         data-testid="insecure-connection-warning"
       />
-    </StyledAlert>
+    </Flex>
   );
 };
 

@@ -7,7 +7,7 @@ import { showMessage } from '@/utils/messages';
  */
 export interface ExportColumn<T> {
   /** Key or path to extract value from row data */
-  key: keyof T | string;
+  key: string;
   /** Header label for the column */
   header: string;
   /** Optional formatter for the value */
@@ -72,7 +72,7 @@ export function useExportData<T extends object>(
    * Extract value from row using column key
    * Supports nested keys with dot notation (e.g., 'user.name')
    */
-  const extractValue = useCallback((row: T, key: keyof T | string): unknown => {
+  const extractValue = useCallback((row: T, key: string): unknown => {
     if (typeof key === 'string' && key.includes('.')) {
       // Handle nested keys
       const parts = key.split('.');

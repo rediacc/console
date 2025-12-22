@@ -1,5 +1,4 @@
-import type { Key } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type Key } from 'react';
 import {
   CopyOutlined,
   DeleteOutlined,
@@ -9,6 +8,7 @@ import {
   SecurityScanOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
+import { Button, Flex, Table, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -23,15 +23,12 @@ import {
 } from '@/api/queries/cephMutations';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccButton, RediaccTable, RediaccTooltip } from '@/components/ui';
-import { useMessage } from '@/hooks';
-import { useExpandableTable, useQueueTraceModal } from '@/hooks';
+import { useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import CloneTable from '@/pages/ceph/components/CloneTable';
 import type { SnapshotFormValues as FullSnapshotFormValues } from '@rediacc/shared/types';
 import { buildSnapshotColumns } from './columns';
-import { ActionsRow, Container, ExpandButton, TableWrapper, Title } from './styles';
 import type { MenuProps } from 'antd';
 
 interface SnapshotTableProps {
@@ -148,9 +145,9 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
       {
         key: 'edit',
         label: (
-          <span data-testid={`snapshot-list-edit-${snapshot.snapshotName}`}>
+          <Typography.Text data-testid={`snapshot-list-edit-${snapshot.snapshotName}`}>
             {t('snapshots.edit')}
-          </span>
+          </Typography.Text>
         ),
         icon: <SettingOutlined />,
         onClick: () => handleEdit(snapshot),
@@ -158,9 +155,9 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
       {
         key: 'vault',
         label: (
-          <span data-testid={`snapshot-list-vault-${snapshot.snapshotName}`}>
+          <Typography.Text data-testid={`snapshot-list-vault-${snapshot.snapshotName}`}>
             {t('snapshots.vault')}
-          </span>
+          </Typography.Text>
         ),
         icon: <SettingOutlined />,
         onClick: () =>
@@ -173,9 +170,9 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
       {
         key: 'rollback',
         label: (
-          <span data-testid={`snapshot-list-rollback-${snapshot.snapshotName}`}>
+          <Typography.Text data-testid={`snapshot-list-rollback-${snapshot.snapshotName}`}>
             {t('snapshots.rollback')}
-          </span>
+          </Typography.Text>
         ),
         icon: <RollbackOutlined />,
         onClick: () => handleRunFunction('ceph_rbd_snapshot_rollback', snapshot),
@@ -183,9 +180,9 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
       {
         key: 'diff',
         label: (
-          <span data-testid={`snapshot-list-diff-${snapshot.snapshotName}`}>
+          <Typography.Text data-testid={`snapshot-list-diff-${snapshot.snapshotName}`}>
             {t('snapshots.diff')}
-          </span>
+          </Typography.Text>
         ),
         icon: <InfoCircleOutlined />,
         onClick: () => handleRunFunction('ceph_rbd_diff', snapshot),
@@ -194,9 +191,9 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
       {
         key: 'protect',
         label: (
-          <span data-testid={`snapshot-list-protect-${snapshot.snapshotName}`}>
+          <Typography.Text data-testid={`snapshot-list-protect-${snapshot.snapshotName}`}>
             {t('snapshots.protect')}
-          </span>
+          </Typography.Text>
         ),
         icon: <SecurityScanOutlined />,
         onClick: () => handleRunFunction('ceph_rbd_snapshot_protect', snapshot),
@@ -204,9 +201,9 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
       {
         key: 'unprotect',
         label: (
-          <span data-testid={`snapshot-list-unprotect-${snapshot.snapshotName}`}>
+          <Typography.Text data-testid={`snapshot-list-unprotect-${snapshot.snapshotName}`}>
             {t('snapshots.unprotect')}
-          </span>
+          </Typography.Text>
         ),
         icon: <SecurityScanOutlined />,
         onClick: () => handleRunFunction('ceph_rbd_snapshot_unprotect', snapshot),
@@ -215,9 +212,9 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
       {
         key: 'delete',
         label: (
-          <span data-testid={`snapshot-list-delete-${snapshot.snapshotName}`}>
+          <Typography.Text data-testid={`snapshot-list-delete-${snapshot.snapshotName}`}>
             {t('snapshots.delete')}
-          </span>
+          </Typography.Text>
         ),
         icon: <DeleteOutlined />,
         danger: true,
@@ -246,26 +243,26 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
 
   return (
     <>
-      <Container data-testid="snapshot-list-container">
-        <Title>{t('snapshots.title')}</Title>
-        <ActionsRow>
-          <RediaccTooltip title={t('snapshots.create')}>
-            <RediaccButton
+      <Flex vertical gap={16} data-testid="snapshot-list-container">
+        <Typography.Title level={4}>{t('snapshots.title')}</Typography.Title>
+        <Flex align="center" wrap>
+          <Tooltip title={t('snapshots.create')}>
+            <Button
               icon={<PlusOutlined />}
               onClick={handleCreate}
               data-testid="snapshot-list-create-button"
               aria-label={t('snapshots.create')}
             />
-          </RediaccTooltip>
-        </ActionsRow>
+          </Tooltip>
+        </Flex>
 
-        <TableWrapper>
-          <RediaccTable<CephRbdSnapshot>
+        <Flex className="overflow-hidden">
+          <Table<CephRbdSnapshot>
             columns={columns}
             dataSource={snapshots}
             rowKey="snapshotGuid"
             loading={isLoading}
-            size="sm"
+            size="small"
             pagination={false}
             data-testid="snapshot-list-table"
             expandable={{
@@ -273,7 +270,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
               expandedRowKeys,
               onExpandedRowsChange: (keys: readonly Key[]) => setExpandedRowKeys(keys.map(String)),
               expandIcon: ({ onExpand, record }) => (
-                <ExpandButton
+                <Button
                   icon={<CopyOutlined />}
                   onClick={(event) => onExpand(record, event)}
                   data-testid={`snapshot-list-expand-${record.snapshotName}`}
@@ -281,8 +278,8 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
               ),
             }}
           />
-        </TableWrapper>
-      </Container>
+        </Flex>
+      </Flex>
 
       <UnifiedResourceModal
         open={modalState.open}

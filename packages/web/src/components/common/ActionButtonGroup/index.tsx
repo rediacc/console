@@ -1,8 +1,15 @@
 import React from 'react';
-import styled from 'styled-components';
-import { RediaccDropdown, RediaccTooltip } from '@/components/ui';
-// eslint-disable-next-line import/order -- False positive: no empty line exists
-import { TableActionButton } from '@/components/common/styled';
+import { Button, Dropdown, Flex, Tooltip } from 'antd';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  FunctionOutlined,
+  HistoryOutlined,
+  LockOutlined,
+} from '@/utils/optimizedIcons';
+import type { MenuProps } from 'antd';
+import type { TFunction } from 'i18next';
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -77,8 +84,6 @@ export interface ActionButtonGroupProps<T> {
   testIdPrefix?: string;
   /** Translation function */
   t?: TFunction;
-  /** Gap between buttons */
-  gap?: 'XS' | 'SM' | 'MD';
   /** Reserve space for hidden buttons to maintain consistent alignment across rows */
   reserveSpace?: boolean;
 }
@@ -87,20 +92,13 @@ export interface ActionButtonGroupProps<T> {
 // STYLED COMPONENTS
 // =============================================================================
 
-const Container = styled.div<{ $gap: 'XS' | 'SM' | 'MD' }>`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ $gap, theme }) => theme.spacing[$gap]}px;
-`;
+const Container: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
+  <Flex align="center" className="inline-flex" {...props} />
+);
 
-/**
- * Placeholder element that reserves space for hidden buttons
- */
-const ButtonPlaceholder = styled.div`
-  width: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-  min-height: ${({ theme }) => theme.dimensions.FORM_CONTROL_HEIGHT}px;
-  flex-shrink: 0;
-`;
+const ButtonPlaceholder: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
+  <Flex className="flex-shrink-0" {...props} />
+);
 
 // =============================================================================
 // COMPONENT
@@ -150,7 +148,6 @@ export function ActionButtonGroup<T>({
   idField,
   testIdPrefix = '',
   t,
-  gap = 'SM',
   reserveSpace = false,
 }: ActionButtonGroupProps<T>): React.ReactElement {
   // Type-safe access to record ID field
@@ -167,7 +164,7 @@ export function ActionButtonGroup<T>({
     : buttons.filter((btn) => isButtonVisible(btn, record));
 
   return (
-    <Container $gap={gap}>
+    <Container>
       {buttonsToRender.map((config, index) => {
         const isVisible = isButtonVisible(config, record);
 
@@ -200,8 +197,14 @@ export function ActionButtonGroup<T>({
         const labelText = config.label ? getTooltipText(config.label) : undefined;
 
         const buttonElement = (
-          <TableActionButton
-            variant={config.variant === 'primary' ? 'primary' : undefined}
+          <Button
+            type={
+              config.variant === 'primary'
+                ? 'primary'
+                : config.variant === 'link'
+                  ? 'link'
+                  : 'default'
+            }
             icon={config.icon}
             danger={config.danger}
             disabled={isDisabled}
@@ -209,16 +212,16 @@ export function ActionButtonGroup<T>({
             loading={isLoading}
             data-testid={testId}
             aria-label={ariaLabel}
-            $hasLabel={!!labelText}
+            shape={labelText ? 'default' : 'circle'}
           >
             {labelText}
-          </TableActionButton>
+          </Button>
         );
 
         // Wrap in dropdown if needed
         if (config.dropdownItems) {
           return (
-            <RediaccDropdown
+            <Dropdown
               key={config.type}
               menu={{
                 items: config.dropdownItems,
@@ -228,15 +231,15 @@ export function ActionButtonGroup<T>({
               }}
               trigger={['click']}
             >
-              <RediaccTooltip title={tooltipText}>{buttonElement}</RediaccTooltip>
-            </RediaccDropdown>
+              <Tooltip title={tooltipText}>{buttonElement}</Tooltip>
+            </Dropdown>
           );
         }
 
         return (
-          <RediaccTooltip key={config.type} title={tooltipText}>
+          <Tooltip key={config.type} title={tooltipText}>
             {buttonElement}
-          </RediaccTooltip>
+          </Tooltip>
         );
       })}
     </Container>
@@ -246,20 +249,6 @@ export function ActionButtonGroup<T>({
 // =============================================================================
 // PRESET FACTORIES
 // =============================================================================
-
-import {
-  DeleteOutlined,
-  EditOutlined,
-  EyeOutlined,
-  FunctionOutlined,
-  HistoryOutlined,
-  LockOutlined,
-} from '@/utils/optimizedIcons';
-import type { MenuProps } from 'antd';
-import type { TFunction } from 'i18next';
-/**
- * Common icon imports for presets
- */
 
 /**
  * Preset button configurations for common patterns

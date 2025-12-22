@@ -8,7 +8,6 @@ import type {
   CreatePermissionInGroupParams,
   DeletePermissionFromGroupParams,
   DeletePermissionGroupParams,
-  Permission,
   UpdateUserAssignedPermissionsParams,
 } from '@rediacc/shared/types';
 
@@ -113,8 +112,8 @@ export const useAssignUserToGroup = () => {
   });
 };
 
+export type { Permission } from '@rediacc/shared/types';
 export type {
   PermissionGroupWithParsedPermissions,
   PermissionGroupWithParsedPermissions as PermissionGroup,
-  Permission,
-};
+} from '@rediacc/shared/api';

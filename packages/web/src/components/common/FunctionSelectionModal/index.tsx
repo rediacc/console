@@ -1,14 +1,27 @@
 import React, { startTransition, useEffect, useMemo, useRef, useState } from 'react';
-import { Col, Empty, Form, Row, Space, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Empty,
+  Flex,
+  Form,
+  Input,
+  Row,
+  Select,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import type { QueueFunction } from '@/api/queries/queue';
 import { useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
+import { SizedModal } from '@/components/common';
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
-import { RediaccButton, RediaccSelect, RediaccStack, RediaccText } from '@/components/ui';
 import { useLocalizedFunctions } from '@/services/functionsService';
-import { ModalHeader, ModalSubtitle, ModalTitle } from '@/styles/primitives';
 import { ModalSize } from '@/types/modal';
 import FunctionParameterField from './components/FunctionParameterField';
 import PrioritySelector from './components/PrioritySelector';
@@ -16,24 +29,6 @@ import { useFunctionParameters } from './hooks/useFunctionParameters';
 import { useFunctionSelection } from './hooks/useFunctionSelection';
 import { useFunctionSubmission } from './hooks/useFunctionSubmission';
 import { usePriorityManagement } from './hooks/usePriorityManagement';
-import {
-  AlertLink,
-  AlertLinkWrapper,
-  CategorySection,
-  CategoryTitleBlock,
-  ConfigCard,
-  FunctionItemHeader,
-  FunctionList,
-  FunctionListCard,
-  FunctionOption,
-  LineageSeparator,
-  LineageTag,
-  PushAlertCard,
-  PushAlertsRow,
-  QuickTaskTag,
-  SearchInput,
-  StyledModal,
-} from './styles';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;
@@ -247,23 +242,21 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 
   return (
     <>
-      <StyledModal
+      <SizedModal
         title={
-          <ModalHeader>
-            <ModalTitle>
-              <span>{title || t('functions:selectFunction')}</span>
-              {subtitle && <ModalSubtitle as="div">{subtitle}</ModalSubtitle>}
-            </ModalTitle>
-          </ModalHeader>
+          <Flex vertical>
+            <Typography.Text>{title || t('functions:selectFunction')}</Typography.Text>
+            {subtitle && <Typography.Text>{subtitle}</Typography.Text>}
+          </Flex>
         }
         open={open}
         onCancel={handleCancel}
-        className={ModalSize.Large}
+        size={ModalSize.Large}
         footer={[
-          <RediaccButton key="cancel" onClick={handleCancel} data-testid="function-modal-cancel">
+          <Button key="cancel" onClick={handleCancel} data-testid="function-modal-cancel">
             {t('common:actions.cancel')}
-          </RediaccButton>,
-          <RediaccButton
+          </Button>,
+          <Button
             key="submit"
             htmlType="submit"
             onClick={handleSubmit}
@@ -276,32 +269,35 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
             data-testid="function-modal-submit"
           >
             {t('common:actions.addToQueue')}
-          </RediaccButton>,
+          </Button>,
         ]}
         data-testid="function-modal"
       >
         <Row gutter={24}>
           {!preselectedFunction && (
             <Col span={10}>
-              <FunctionListCard title={t('functions:availableFunctions')} size="sm">
-                <SearchInput
+              <Card title={t('functions:availableFunctions')} size="small">
+                <Input.Search
                   placeholder={t('functions:searchFunctions')}
                   value={functionSearchTerm}
-                  onChange={(e) => setFunctionSearchTerm(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFunctionSearchTerm(e.target.value)
+                  }
                   autoComplete="off"
                   data-testid="function-modal-search"
                 />
-                <FunctionList>
+                <Flex vertical>
                   {Object.entries(functionsByCategory).map(([category, funcs]) => (
-                    <CategorySection
+                    <Flex
+                      vertical
                       key={category}
                       data-testid={`function-modal-category-${category}`}
                     >
-                      <CategoryTitleBlock>
-                        <RediaccText variant="title">
+                      <Flex>
+                        <Typography.Text strong>
                           {categories[category]?.name || category}
-                        </RediaccText>
-                      </CategoryTitleBlock>
+                        </Typography.Text>
+                      </Flex>
                       {funcs.map((func) => {
                         const isQuickTask =
                           QUICK_TASK_NAMES.includes(func.name) ||
@@ -309,124 +305,120 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           func.name.includes('check');
 
                         return (
-                          <FunctionOption
+                          <Flex
+                            vertical
+                            component="button"
                             key={func.name}
+                            // @ts-expect-error - Flex component accepts button-specific props when component="button"
+                            type="button"
                             onClick={() => handleSelectFunction(func)}
-                            $selected={selectedFunction?.name === func.name}
                             data-testid={`function-modal-item-${func.name}`}
+                            className="w-full cursor-pointer"
                           >
-                            <FunctionItemHeader>
-                              <RediaccText weight="bold">{func.name}</RediaccText>
-                              {isQuickTask && (
-                                <QuickTaskTag>⚡ {t('functions:quickTaskBadge')}</QuickTaskTag>
-                              )}
-                            </FunctionItemHeader>
-                            <RediaccText variant="description">{func.description}</RediaccText>
-                          </FunctionOption>
+                            <Flex align="center" justify="space-between">
+                              <Typography.Text strong>{func.name}</Typography.Text>
+                              {isQuickTask && <Tag>⚡ {t('functions:quickTaskBadge')}</Tag>}
+                            </Flex>
+                            <Typography.Text>{func.description}</Typography.Text>
+                          </Flex>
                         );
                       })}
-                    </CategorySection>
+                    </Flex>
                   ))}
-                </FunctionList>
-              </FunctionListCard>
+                </Flex>
+              </Card>
             </Col>
           )}
 
           <Col span={preselectedFunction ? 24 : 14}>
             {selectedFunction ? (
-              <RediaccStack variant="spaced-column" fullWidth>
-                <ConfigCard
-                  title={`${t('functions:configure')}: ${selectedFunction.name}`}
-                  size="sm"
-                >
+              <Flex vertical gap={24} className="w-full">
+                <Card title={`${t('functions:configure')}: ${selectedFunction.name}`} size="small">
                   <Paragraph>{selectedFunction.description}</Paragraph>
 
                   <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }}>
                     {/* Show additional info for push function */}
                     {selectedFunction.name === 'push' && functionParams.dest && (
-                      <PushAlertsRow $hasWarning={functionParams.state === 'online'}>
-                        <PushAlertCard
-                          $variant="info"
-                          variant="info"
-                          showIcon
-                          message="Push Operation Details"
-                          description={
-                            <Space direction="vertical" size="small">
-                              <div>
-                                <RediaccText weight="bold">Destination Filename: </RediaccText>
-                                <RediaccText code>{functionParams.dest}</RediaccText>
-                              </div>
-                              {additionalContext?.parentRepo && (
-                                <div>
-                                  <RediaccText weight="bold">Repository Lineage: </RediaccText>
-                                  <Space>
-                                    <LineageTag $variant="parent">
-                                      {additionalContext.parentRepo}
-                                    </LineageTag>
-                                    <LineageSeparator>→</LineageSeparator>
-                                    <LineageTag $variant="source">
-                                      {additionalContext.sourceRepo}
-                                    </LineageTag>
-                                    <LineageSeparator>→</LineageSeparator>
-                                    <LineageTag $variant="destination">
-                                      {functionParams.dest}
-                                    </LineageTag>
-                                  </Space>
-                                </div>
-                              )}
-                              {!additionalContext?.parentRepo && additionalContext?.sourceRepo && (
-                                <div>
-                                  <RediaccText weight="bold">Source Repository: </RediaccText>
-                                  <LineageTag $variant="source">
-                                    {additionalContext.sourceRepo}
-                                  </LineageTag>
-                                  <RediaccText variant="description" as="span">
-                                    {' '}
-                                    (Original)
-                                  </RediaccText>
-                                </div>
-                              )}
-                              <div>
-                                <RediaccText variant="description">
-                                  {functionParams.state === 'online'
-                                    ? 'The repository will be pushed in online state (mounted).'
-                                    : 'The repository will be pushed in offline state (unmounted).'}
-                                </RediaccText>
-                              </div>
-                            </Space>
-                          }
-                        />
-                        {functionParams.state === 'online' && (
-                          <PushAlertCard
-                            $variant="warning"
-                            variant="warning"
+                      <>
+                        <Flex
+                          // eslint-disable-next-line no-restricted-syntax
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns:
+                              functionParams.state === 'online' ? '1fr 0.8fr' : '1fr',
+                          }}
+                        >
+                          <Alert
+                            type="info"
                             showIcon
-                            message={t('functions:onlinePushWarningTitle')}
+                            message="Push Operation Details"
                             description={
                               <Space direction="vertical" size="small">
-                                <RediaccText variant="description">
-                                  {t('functions:onlinePushWarningMessage')}
-                                </RediaccText>
-                                <AlertLinkWrapper>
-                                  <AlertLink
-                                    href="https://docs.rediacc.com/concepts/repo-push-operations"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    {t('functions:onlinePushLearnMore')}
-                                  </AlertLink>
-                                </AlertLinkWrapper>
+                                <Flex>
+                                  <Typography.Text strong>Destination Filename: </Typography.Text>
+                                  <Typography.Text code>{functionParams.dest}</Typography.Text>
+                                </Flex>
+                                {additionalContext?.parentRepo && (
+                                  <Flex>
+                                    <Typography.Text strong>Repository Lineage: </Typography.Text>
+                                    <Space>
+                                      <Tag>{additionalContext.parentRepo}</Tag>
+                                      <Typography.Text>→</Typography.Text>
+                                      <Tag>{additionalContext.sourceRepo}</Tag>
+                                      <Typography.Text>→</Typography.Text>
+                                      <Tag>{functionParams.dest}</Tag>
+                                    </Space>
+                                  </Flex>
+                                )}
+                                {!additionalContext?.parentRepo &&
+                                  additionalContext?.sourceRepo && (
+                                    <Flex>
+                                      <Typography.Text strong>Source Repository: </Typography.Text>
+                                      <Tag>{additionalContext.sourceRepo}</Tag>
+                                      <Typography.Text> (Original)</Typography.Text>
+                                    </Flex>
+                                  )}
+                                <Flex>
+                                  <Typography.Text>
+                                    {functionParams.state === 'online'
+                                      ? 'The repository will be pushed in online state (mounted).'
+                                      : 'The repository will be pushed in offline state (unmounted).'}
+                                  </Typography.Text>
+                                </Flex>
                               </Space>
                             }
                           />
-                        )}
-                      </PushAlertsRow>
+                          {functionParams.state === 'online' && (
+                            <Alert
+                              type="warning"
+                              showIcon
+                              message={t('functions:onlinePushWarningTitle')}
+                              description={
+                                <Space direction="vertical" size="small">
+                                  <Typography.Text>
+                                    {t('functions:onlinePushWarningMessage')}
+                                  </Typography.Text>
+                                  <Flex>
+                                    <a
+                                      href="https://docs.rediacc.com/concepts/repo-push-operations"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      {t('functions:onlinePushLearnMore')}
+                                    </a>
+                                  </Flex>
+                                </Space>
+                              }
+                            />
+                          )}
+                        </Flex>
+                      </>
                     )}
 
                     {/* Machine Selection */}
                     {showMachineSelection && (
                       <Form.Item label={t('machines:machine')} required>
-                        <RediaccSelect
+                        <Select
                           value={selectedMachine}
                           onChange={setSelectedMachine}
                           placeholder={t('machines:selectMachine')}
@@ -445,11 +437,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           label={
                             paramInfo.help ? (
                               <Space size={4}>
-                                <span>{paramInfo.label || paramName}</span>
+                                <Typography.Text>{paramInfo.label || paramName}</Typography.Text>
                                 {/* Help tooltip removed - handled in FunctionParameterField if needed */}
                               </Space>
                             ) : (
-                              <span>{paramInfo.label || paramName}</span>
+                              <Typography.Text>{paramInfo.label || paramName}</Typography.Text>
                             )
                           }
                           required={paramInfo.required}
@@ -487,16 +479,16 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       />
                     )}
                   </Form>
-                </ConfigCard>
-              </RediaccStack>
+                </Card>
+              </Flex>
             ) : (
-              <ConfigCard>
+              <Card>
                 <Empty description={t('functions:selectFunctionToConfigure')} />
-              </ConfigCard>
+              </Card>
             )}
           </Col>
         </Row>
-      </StyledModal>
+      </SizedModal>
 
       {/* Template Preview Modal */}
       <TemplatePreviewModal

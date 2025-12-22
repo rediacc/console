@@ -35,7 +35,10 @@ export const useRegionBridges = (regionName: string) => {
   });
 };
 
-export type { GetCompanyRegions_ResultSet1, GetCompanyRegions_ResultSet1 as Region };
+export type {
+  GetCompanyRegions_ResultSet1,
+  GetCompanyRegions_ResultSet1 as Region,
+} from '@rediacc/shared/types';
 
 // Create region
 export const useCreateRegion = () => {

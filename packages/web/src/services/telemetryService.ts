@@ -477,10 +477,20 @@ class TelemetryService {
           }
         });
         if (clsValue > 0) {
+          // Determine CLS rating based on thresholds
+          let clsRating: 'good' | 'needs-improvement' | 'poor';
+          if (clsValue <= 0.1) {
+            clsRating = 'good';
+          } else if (clsValue <= 0.25) {
+            clsRating = 'needs-improvement';
+          } else {
+            clsRating = 'poor';
+          }
+
           this.trackWebVitals({
             name: 'CLS',
             value: clsValue,
-            rating: clsValue <= 0.1 ? 'good' : clsValue <= 0.25 ? 'needs-improvement' : 'poor',
+            rating: clsRating,
             id: `cls-${Date.now()}`,
           });
         }

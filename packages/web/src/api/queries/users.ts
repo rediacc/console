@@ -218,7 +218,7 @@ export const useUpdateUserVault = () => {
 export type {
   GetCompanyUsers_ResultSet1,
   GetCompanyUsers_ResultSet1 as User,
-  PermissionGroupWithParsedPermissions,
   UserRequest,
   UserVault,
-};
+} from '@rediacc/shared/types';
+export type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';

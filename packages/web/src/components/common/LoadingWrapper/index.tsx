@@ -1,33 +1,29 @@
 import React from 'react';
-import { Empty, Spin } from 'antd';
-import styled from 'styled-components';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { Empty, Flex, Spin } from 'antd';
 
-const CenteredContainer = styled.div<{ $minHeight?: number }>`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-height: ${({ $minHeight }) => $minHeight || 200}px;
-  padding: ${DESIGN_TOKENS.SPACING.LG}px;
-  gap: ${DESIGN_TOKENS.SPACING.SM}px;
-`;
+const CenteredContainer: React.FC<
+  React.HTMLAttributes<HTMLDivElement> & { $minHeight?: number }
+> = ({ $minHeight, style, ...props }) => (
+  <Flex
+    vertical
+    justify="center"
+    align="center"
+    // eslint-disable-next-line no-restricted-syntax
+    style={{
+      minHeight: $minHeight ?? 200,
+      ...style,
+    }}
+    {...props}
+  />
+);
 
-const FullHeightContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  width: 100%;
-  gap: ${DESIGN_TOKENS.SPACING.SM}px;
-`;
+const FullHeightContainer: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
+  <Flex vertical justify="center" align="center" className="h-full w-full" {...props} />
+);
 
-const LoadingText = styled.div`
-  margin-top: ${DESIGN_TOKENS.SPACING.SM}px;
-  color: var(--color-text-secondary);
-  text-align: center;
-`;
+const LoadingText: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
+  <Flex className="text-center" {...props} />
+);
 
 export interface LoadingWrapperProps {
   /** Whether content is loading */

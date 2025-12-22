@@ -1,21 +1,14 @@
 import React from 'react';
+import { Flex, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { SizedModal } from '@/components/common';
 import { createTruncatedColumn } from '@/components/common/columns';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
-import { RediaccTable, RediaccText } from '@/components/ui';
 import type { Machine } from '@/types';
+import { ModalSize } from '@/types/modal';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
-import {
-  ClusterTag,
-  InfoIcon,
-  MachineNameRow,
-  StyledModal,
-  SummaryItem,
-  SummaryRow,
-  TeamTag,
-  TitleStack,
-} from './styles';
+import { InfoCircleOutlined } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ViewAssignmentStatusModalProps {
@@ -49,10 +42,10 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     key: 'machineName',
     width: 200,
     renderWrapper: (content) => (
-      <MachineNameRow>
+      <Flex align="center" gap={8}>
         <CloudServerOutlined />
-        <RediaccText weight="semibold">{content}</RediaccText>
-      </MachineNameRow>
+        <Typography.Text>{content}</Typography.Text>
+      </Flex>
     ),
   });
 
@@ -61,7 +54,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     dataIndex: 'teamName',
     key: 'teamName',
     width: 150,
-    renderWrapper: (content) => <TeamTag>{content}</TeamTag>,
+    renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
   });
 
   const clusterColumn = createTruncatedColumn<Machine>({
@@ -71,11 +64,9 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     renderText: (cluster?: string | null) => cluster || noneLabel,
     renderWrapper: (content, fullText) =>
       fullText === noneLabel ? (
-        <RediaccText variant="caption" color="muted">
-          {fullText}
-        </RediaccText>
+        <Typography.Text>{fullText}</Typography.Text>
       ) : (
-        <ClusterTag>{content}</ClusterTag>
+        <Tag bordered={false}>{content}</Tag>
       ),
   });
 
@@ -106,40 +97,46 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
   const totalMachines = targetMachines.length;
 
   return (
-    <StyledModal
+    <SizedModal
       title={
-        <TitleStack>
-          <InfoIcon />
+        <Flex align="center" gap={8} wrap>
+          <InfoCircleOutlined />
           {t('machines:bulkActions.viewAssignmentStatus')}
-        </TitleStack>
+        </Flex>
       }
+      className="view-assignment-status-modal"
+      size={ModalSize.Large}
       open={open}
       onCancel={onCancel}
       footer={null}
       data-testid="ds-view-assignment-status-modal"
     >
-      <SummaryRow>
-        <SummaryItem>
-          <RediaccText variant="caption" color="muted">
-            {t('common:total')}:
-          </RediaccText>
-          <RediaccText weight="semibold">{totalMachines}</RediaccText>
-        </SummaryItem>
-        <SummaryItem>
+      <Flex
+        align="center"
+        gap={16}
+        wrap
+        // eslint-disable-next-line no-restricted-syntax
+        style={{ marginBottom: 16 }}
+      >
+        <Flex align="center" gap={8}>
+          <Typography.Text>{t('common:total')}:</Typography.Text>
+          <Typography.Text>{totalMachines}</Typography.Text>
+        </Flex>
+        <Flex align="center" gap={8}>
           <MachineAssignmentStatusBadge assignmentType="AVAILABLE" size="small" />
-          <RediaccText weight="semibold">{stats.available}</RediaccText>
-        </SummaryItem>
-        <SummaryItem>
+          <Typography.Text>{stats.available}</Typography.Text>
+        </Flex>
+        <Flex align="center" gap={8}>
           <MachineAssignmentStatusBadge assignmentType="CLUSTER" size="small" />
-          <RediaccText weight="semibold">{stats.cluster}</RediaccText>
-        </SummaryItem>
-      </SummaryRow>
+          <Typography.Text>{stats.cluster}</Typography.Text>
+        </Flex>
+      </Flex>
 
-      <RediaccTable<Machine>
+      <Table<Machine>
         columns={columns}
         dataSource={targetMachines}
         rowKey="machineName"
-        size="sm"
+        size="small"
         pagination={{
           pageSize: 10,
           showSizeChanger: false,
@@ -147,6 +144,6 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
         scroll={{ y: 400 }}
         data-testid="ds-view-assignment-status-table"
       />
-    </StyledModal>
+    </SizedModal>
   );
 };

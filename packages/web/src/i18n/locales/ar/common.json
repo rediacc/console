@@ -178,12 +178,6 @@
     "actions": "الإجراءات",
     "showingRecords": "عرض السجلات {{start}}-{{end}} من {{total}}"
   },
-  "theme": {
-    "dark": "مظلم",
-    "light": "ضوء",
-    "switchToDark": "التبديل إلى الوضع المظلم",
-    "switchToLight": "التبديل إلى وضع الضوء"
-  },
   "thisMonth": "هذا الشهر",
   "today": "اليوم",
   "total": "المجموع",

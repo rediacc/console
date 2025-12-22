@@ -1,10 +1,8 @@
 import React, { Component, ReactNode } from 'react';
 import { BugOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Result } from 'antd';
-import { RediaccButton } from '@/components/ui';
+import { Button, Flex, Result, Typography } from 'antd';
 import i18n from '@/i18n/config';
 import { telemetryService } from '@/services/telemetryService';
-import { ErrorContent, ErrorDetails, ErrorSummary, FallbackContainer } from './styles';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -109,46 +107,56 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       // Default error UI
       return (
-        <FallbackContainer>
+        <Flex justify="center" align="center">
           <Result
             status="error"
             title={i18n.t('common:errorBoundary.title')}
             subTitle={
-              <div>
-                <p>{i18n.t('common:errorBoundary.description')}</p>
+              <Flex vertical>
+                <Typography.Text>{i18n.t('common:errorBoundary.description')}</Typography.Text>
                 {import.meta.env.DEV && this.state.error && (
-                  <ErrorDetails>
-                    <ErrorSummary>{i18n.t('common:errorBoundary.errorDetails')}</ErrorSummary>
-                    <ErrorContent>
-                      <strong>Error:</strong> {this.state.error.message}
+                  <details
+                    // eslint-disable-next-line no-restricted-syntax
+                    style={{
+                      padding: 12,
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    <summary className="cursor-pointer">
+                      {i18n.t('common:errorBoundary.errorDetails')}
+                    </summary>
+                    <Flex vertical gap={8}>
+                      <Typography.Text strong>Error:</Typography.Text> {this.state.error.message}
                       <br />
-                      <strong>Stack:</strong> {this.state.error.stack}
+                      <Typography.Text strong>Stack:</Typography.Text> {this.state.error.stack}
                       {this.state.errorInfo && (
                         <>
                           <br />
-                          <strong>Component Stack:</strong> {this.state.errorInfo.componentStack}
+                          <Typography.Text strong>Component Stack:</Typography.Text>{' '}
+                          {this.state.errorInfo.componentStack}
                         </>
                       )}
-                    </ErrorContent>
-                  </ErrorDetails>
+                    </Flex>
+                  </details>
                 )}
-              </div>
+              </Flex>
             }
             extra={[
-              <RediaccButton key="retry" onClick={this.handleRetry} icon={<BugOutlined />}>
+              <Button key="retry" onClick={this.handleRetry} icon={<BugOutlined />}>
                 {i18n.t('common:errorBoundary.tryAgain')}
-              </RediaccButton>,
-              <RediaccButton
+              </Button>,
+              <Button
                 key="reload"
-                variant="primary"
+                type="primary"
                 onClick={this.handleReload}
                 icon={<ReloadOutlined />}
               >
                 {i18n.t('common:errorBoundary.reloadPage')}
-              </RediaccButton>,
+              </Button>,
             ]}
           />
-        </FallbackContainer>
+        </Flex>
       );
     }
 

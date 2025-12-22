@@ -1,0 +1,187 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Fix ProLayout to fill available width in flex containers */
+.ant-pro-layout {
+  width: 100%;
+}
+
+/* Fix vertical Flex containers to stretch horizontally */
+.ant-flex-vertical {
+  width: 100%;
+}
+
+/* Fix table wrapper to fill available width */
+.ant-table-wrapper {
+  width: 100%;
+}
+
+/* Center sidebar logo */
+.ant-pro-layout .ant-pro-sider-logo {
+  justify-content: center;
+}
+
+/* ==========================================================================
+   Modal Sizing System
+   Matches ModalSize enum in types/modal.ts
+   ========================================================================== */
+
+/* Modal sizing - height and layout helpers
+   Width is set via Modal's width prop to avoid !important
+   See MODAL_WIDTHS in types/modal.ts for width values */
+
+/* Prevent page scroll when modal is open */
+.modal-sm.ant-modal-wrap,
+.modal-md.ant-modal-wrap,
+.modal-lg.ant-modal-wrap,
+.modal-fullscreen.ant-modal-wrap {
+  overflow: hidden;
+}
+
+/* All sized modals: establish flex layout with bounded height */
+.modal-sm .ant-modal-content,
+.modal-md .ant-modal-content,
+.modal-lg .ant-modal-content,
+.modal-fullscreen .ant-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 100px);
+}
+
+/* Modal body is the ONLY scroll container */
+.modal-sm .ant-modal-body,
+.modal-md .ant-modal-body,
+.modal-lg .ant-modal-body,
+.modal-fullscreen .ant-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ==========================================================================
+   UTILITY CLASSES (Tailwind-style naming)
+   Use these instead of inline styles. ESLint enforces this rule.
+   ========================================================================== */
+
+/* Display */
+.block {
+  display: block;
+}
+.inline-block {
+  display: inline-block;
+}
+.inline-flex {
+  display: inline-flex;
+}
+.flex {
+  display: flex;
+}
+.hidden {
+  display: none;
+}
+
+/* Flexbox */
+.items-center {
+  align-items: center;
+}
+.justify-center {
+  justify-content: center;
+}
+.flex-1 {
+  flex: 1 1 0%;
+}
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+.flex-col {
+  flex-direction: column;
+}
+
+/* Gap */
+.gap-2 {
+  gap: 8px;
+}
+
+/* Width */
+.w-full {
+  width: 100%;
+}
+.min-w-0 {
+  min-width: 0;
+}
+
+/* Height */
+.h-full {
+  height: 100%;
+}
+
+/* Text */
+.text-center {
+  text-align: center;
+}
+.text-ellipsis {
+  text-overflow: ellipsis;
+}
+.whitespace-nowrap {
+  white-space: nowrap;
+}
+
+/* Overflow */
+.overflow-hidden {
+  overflow: hidden;
+}
+.overflow-auto {
+  overflow: auto;
+}
+
+/* Cursor */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Position */
+.relative {
+  position: relative;
+}
+.absolute {
+  position: absolute;
+}
+
+/* ==========================================================================
+   Auth Layout - Split Screen
+   ========================================================================== */
+
+/* Desktop: side-by-side content */
+@media (min-width: 768px) {
+  .auth-content {
+    flex-direction: row;
+  }
+  .auth-branding-panel {
+    flex: 1;
+    background-color: #f5f5f5;
+  }
+}
+
+/* Mobile: single column */
+@media (max-width: 767px) {
+  .auth-branding-panel {
+    display: none;
+  }
+  .auth-form-panel {
+    padding: 24px;
+  }
+}

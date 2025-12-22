@@ -1,4 +1,4 @@
-import { Space } from 'antd';
+import { Badge, Space, Tag, Typography } from 'antd';
 import { TFunction } from 'i18next';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
@@ -16,6 +16,7 @@ import {
   CheckCircleOutlined,
   CloudServerOutlined,
   DeleteOutlined,
+  DesktopOutlined,
   DisconnectOutlined,
   EditOutlined,
   EyeOutlined,
@@ -23,8 +24,6 @@ import {
   HistoryOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { MachineNameIcon, StyledBadge, StyledTag } from './styles';
 import type { ColumnsType } from 'antd/es/table/interface';
 
 type ExecutePingForMachineAndWait = ReturnType<
@@ -84,7 +83,7 @@ export const buildMachineTableColumns = ({
     sorter: createSorter<Machine>('machineName'),
     renderWrapper: (content) => (
       <Space>
-        <MachineNameIcon />
+        <DesktopOutlined />
         <strong>{content}</strong>
       </Space>
     ),
@@ -96,16 +95,14 @@ export const buildMachineTableColumns = ({
       dataIndex: 'vaultStatusTime',
       key: 'status',
       statusMap: {
-        online: { icon: <CheckCircleOutlined />, label: t('machines:connected'), color: 'success' },
+        online: { icon: <CheckCircleOutlined />, label: t('machines:connected') },
         offline: {
           icon: <DisconnectOutlined />,
           label: t('machines:connectionFailed'),
-          color: 'error',
         },
         unknown: {
           icon: <DisconnectOutlined />,
           label: t('machines:statusUnknown'),
-          color: 'default',
         },
       },
       sorter: createCustomSorter<Machine>((m) => {
@@ -132,7 +129,7 @@ export const buildMachineTableColumns = ({
         key: 'teamName',
         width: 150,
         sorter: createSorter<Machine>('teamName'),
-        renderWrapper: (content) => <StyledTag $variant="team">{content}</StyledTag>,
+        renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
       })
     );
   }
@@ -148,7 +145,11 @@ export const buildMachineTableColumns = ({
           sorter: createSorter<Machine>('regionName'),
           renderText: (regionName?: string | null) => regionName || '-',
           renderWrapper: (content, fullText) =>
-            fullText === '-' ? <span>-</span> : <StyledTag $variant="region">{content}</StyledTag>,
+            fullText === '-' ? (
+              <Typography.Text>-</Typography.Text>
+            ) : (
+              <Tag bordered={false}>{content}</Tag>
+            ),
         }),
         createTruncatedColumn<Machine>({
           title: t('machines:bridge'),
@@ -156,7 +157,7 @@ export const buildMachineTableColumns = ({
           key: 'bridgeName',
           width: 150,
           sorter: createSorter<Machine>('bridgeName'),
-          renderWrapper: (content) => <StyledTag $variant="bridge">{content}</StyledTag>,
+          renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
         })
       );
     } else if (uiMode !== 'simple') {
@@ -167,7 +168,7 @@ export const buildMachineTableColumns = ({
           key: 'bridgeName',
           width: 150,
           sorter: createSorter<Machine>('bridgeName'),
-          renderWrapper: (content) => <StyledTag $variant="bridge">{content}</StyledTag>,
+          renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
         })
       );
     }
@@ -191,7 +192,7 @@ export const buildMachineTableColumns = ({
       width: 100,
       align: 'center' as const,
       sorter: createSorter<Machine>('queueCount'),
-      render: (count: number) => <StyledBadge $isPositive={count > 0} count={count} showZero />,
+      render: (count: number) => <Badge count={count} showZero />,
     });
   }
 
@@ -199,7 +200,6 @@ export const buildMachineTableColumns = ({
     baseColumns.push(
       createActionColumn<Machine>({
         title: t('common:table.actions'),
-        width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
         renderActions: (record) => (
           <ActionButtonGroup
             buttons={[
@@ -232,7 +232,9 @@ export const buildMachineTableColumns = ({
                         .map((func) => ({
                           key: `function-${func?.name || 'unknown'}`,
                           label: (
-                            <span title={func?.description || ''}>{func?.name || 'Unknown'}</span>
+                            <Typography.Text title={func?.description || ''}>
+                              {func?.name || 'Unknown'}
+                            </Typography.Text>
                           ),
                           onClick: () => onFunctionsMachine?.(record, func?.name),
                         })),

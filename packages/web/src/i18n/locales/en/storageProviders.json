@@ -21,7 +21,8 @@
       "helpText": "Extra rclone parameters for advanced configuration",
       "label": "Additional Parameters",
       "placeholder": "--transfers 4 --checkers 8"
-    }
+    },
+    "tips": "Tips"
   },
   "storageProviders": {
     "azureblob": {

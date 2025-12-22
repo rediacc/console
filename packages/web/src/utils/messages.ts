@@ -98,19 +98,9 @@ interface ToastConfig {
 const TOAST_STYLES = {
   warning: {
     icon: '⚠️',
-    style: {
-      background: 'var(--color-bg-secondary)',
-      color: 'var(--color-text-primary)',
-      border: '1px solid var(--color-border-secondary)',
-    },
   },
   info: {
     icon: 'ℹ️',
-    style: {
-      background: 'var(--color-bg-tertiary)',
-      color: 'var(--color-text-primary)',
-      border: '1px solid var(--color-border-secondary)',
-    },
   },
 };
 

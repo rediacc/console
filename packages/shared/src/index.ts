@@ -9,7 +9,6 @@ export {
   filterCompletedItems,
   filterFailedItems,
   getPriorityConfig,
-  getSeverityColor,
   getStatusConfig,
   isActiveStatus,
   isPermanentFailure,

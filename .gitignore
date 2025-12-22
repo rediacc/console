@@ -59,3 +59,4 @@ screenshots/
 playwright/*.py/
 playwright/**/*.png
 playwright_env/
+.playwright-mcp/

@@ -33,5 +33,4 @@ export {
   renderTruncatedId,
   renderVersionTag,
   type StatusConfig,
-  VersionTag,
 } from './renderers';

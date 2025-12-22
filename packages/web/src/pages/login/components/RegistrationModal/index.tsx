@@ -1,14 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, Form } from 'antd';
+import { Alert, Button, Checkbox, Flex, Form, Input, Modal, Steps, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import apiClient, { api } from '@/api/client';
-import {
-  RediaccButton,
-  RediaccCheckbox,
-  RediaccInput,
-  RediaccPasswordInput,
-  RediaccStack,
-} from '@/components/ui';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { LanguageLink } from '@/pages/login/components/LanguageLink';
 import { Turnstile } from '@/pages/login/components/Turnstile';
@@ -23,19 +16,6 @@ import {
   SafetyCertificateOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  CaptchaWrapper,
-  CodeInput,
-  FormField,
-  StepsWrapper,
-  StyledModal,
-  SuccessContainer,
-  SuccessDescription,
-  SuccessIcon,
-  SuccessTitle,
-  TermsField,
-  TermsRow,
-} from './styles';
 
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
 const isCaptchaEnabled = !!turnstileSiteKey;
@@ -179,7 +159,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           values.companyName,
           values.email,
           passwordHash,
-          turnstileToken || undefined,
+          turnstileToken ?? undefined,
           i18n.language || 'en'
         );
 
@@ -284,7 +264,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       requiredMark={false}
       data-testid="registration-form"
     >
-      <FormField
+      <Form.Item
         name="companyName"
         label={t('auth:registration.companyName')}
         rules={[
@@ -292,14 +272,14 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           { min: 3, message: t('auth:registration.companyNameMin') },
         ]}
       >
-        <RediaccInput
+        <Input
           prefix={<BankOutlined />}
           placeholder={t('auth:registration.companyNamePlaceholder')}
           data-testid="registration-company-input"
         />
-      </FormField>
+      </Form.Item>
 
-      <FormField
+      <Form.Item
         name="email"
         label={t('auth:registration.email')}
         rules={[
@@ -307,15 +287,15 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           { type: 'email', message: t('common:messages.invalidEmail') },
         ]}
       >
-        <RediaccInput
+        <Input
           prefix={<MailOutlined />}
           placeholder={t('auth:registration.emailPlaceholder')}
           autoComplete="email"
           data-testid="registration-email-input"
         />
-      </FormField>
+      </Form.Item>
 
-      <FormField
+      <Form.Item
         name="password"
         label={t('auth:registration.password')}
         rules={[
@@ -323,15 +303,15 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           { min: 8, message: t('auth:registration.passwordMin') },
         ]}
       >
-        <RediaccPasswordInput
+        <Input.Password
           prefix={<LockOutlined />}
           placeholder={t('auth:registration.passwordPlaceholder')}
           autoComplete="new-password"
           data-testid="registration-password-input"
         />
-      </FormField>
+      </Form.Item>
 
-      <FormField
+      <Form.Item
         name="passwordConfirm"
         label={t('auth:registration.passwordConfirm')}
         dependencies={['password']}
@@ -342,43 +322,39 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
               if (!value || getFieldValue('password') === value) {
                 return Promise.resolve();
               }
-              return Promise.reject(new Error(t('auth:registration.passwordMismatch')));
+              throw new Error(t('auth:registration.passwordMismatch'));
             },
           }),
         ]}
       >
-        <RediaccPasswordInput
+        <Input.Password
           prefix={<LockOutlined />}
           placeholder={t('auth:registration.passwordConfirmPlaceholder')}
           autoComplete="new-password"
           data-testid="registration-password-confirm-input"
         />
-      </FormField>
+      </Form.Item>
 
       {/* Terms and HCaptcha side by side */}
-      <TermsRow>
+      <Flex align="flex-start" wrap gap={16}>
         {/* Terms and Conditions */}
-        <TermsField
+        <Form.Item
           name="termsAccepted"
           valuePropName="checked"
           rules={[
             {
-              validator: (_, value) =>
-                value
-                  ? Promise.resolve()
-                  : Promise.reject(
-                      new Error(
-                        t(
-                          'auth:registration.termsRequired',
-                          'You must accept the terms and conditions'
-                        )
-                      )
-                    ),
+              validator: (_, value) => {
+                if (value) {
+                  return Promise.resolve();
+                }
+                throw new Error(
+                  t('auth:registration.termsRequired', 'You must accept the terms and conditions')
+                );
+              },
             },
           ]}
-          $noMargin
         >
-          <RediaccCheckbox>
+          <Checkbox>
             {
               t(
                 'auth:registration.termsText',
@@ -405,34 +381,34 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 'I accept the terms and conditions {terms} and {privacy}'
               ).split('{privacy}')[1]
             }
-          </RediaccCheckbox>
-        </TermsField>
+          </Checkbox>
+        </Form.Item>
 
         {/* Cloudflare Turnstile - only render if enabled and not in CI mode */}
         {isCaptchaEnabled && !ciMode && (
-          <CaptchaWrapper>
+          <Flex className="flex-shrink-0">
             <Turnstile
               sitekey={turnstileSiteKey}
               onVerify={onTurnstileSuccess}
               onExpire={onTurnstileExpire}
               onError={onTurnstileError}
-              theme="light"
             />
-          </CaptchaWrapper>
+          </Flex>
         )}
-      </TermsRow>
+      </Flex>
 
-      <FormField $noMargin>
-        <RediaccButton
+      <Form.Item>
+        <Button
+          type="primary"
           htmlType="submit"
-          fullWidth
+          block
           loading={loading}
           disabled={isCaptchaEnabled && !ciMode && !turnstileToken}
           data-testid="registration-submit-button"
         >
           {t('auth:registration.createAccount')}
-        </RediaccButton>
-      </FormField>
+        </Button>
+      </Form.Item>
     </Form>
   );
 
@@ -444,7 +420,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       requiredMark={false}
       data-testid="registration-verification-form"
     >
-      <RediaccStack direction="vertical" fullWidth>
+      <Flex vertical gap={16} className="w-full">
         <Alert
           message={t('auth:registration.verificationRequired')}
           description={t('auth:registration.verificationDescription')}
@@ -453,7 +429,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           data-testid="registration-verification-alert"
         />
 
-        <FormField
+        <Form.Item
           name="activationCode"
           label={t('auth:registration.activationCode')}
           rules={[
@@ -462,40 +438,41 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             { pattern: /^\d{6}$/, message: t('auth:registration.activationCodeFormat') },
           ]}
         >
-          <CodeInput
+          <Input
             placeholder={t('auth:registration.activationCodePlaceholder')}
             autoComplete="off"
             maxLength={6}
             data-testid="registration-activation-code-input"
           />
-        </FormField>
+        </Form.Item>
 
-        <FormField $noMargin>
-          <RediaccButton
+        <Form.Item>
+          <Button
+            type="primary"
             htmlType="submit"
-            fullWidth
+            block
             loading={loading}
             data-testid="registration-verify-button"
           >
             {t('auth:registration.verifyAccount')}
-          </RediaccButton>
-        </FormField>
-      </RediaccStack>
+          </Button>
+        </Form.Item>
+      </Flex>
     </Form>
   );
 
   const renderSuccess = () => (
-    <SuccessContainer data-testid="registration-success-container">
-      <SuccessIcon data-testid="registration-success-icon">
+    <Flex vertical data-testid="registration-success-container">
+      <Flex className="inline-flex" data-testid="registration-success-icon">
         <CheckCircleOutlined />
-      </SuccessIcon>
-      <SuccessTitle data-testid="registration-success-title">
+      </Flex>
+      <Typography.Title level={4} data-testid="registration-success-title">
         {t('auth:registration.successTitle')}
-      </SuccessTitle>
-      <SuccessDescription color="secondary" data-testid="registration-success-description">
+      </Typography.Title>
+      <Typography.Text data-testid="registration-success-description">
         {t('auth:registration.successDescription')}
-      </SuccessDescription>
-    </SuccessContainer>
+      </Typography.Text>
+    </Flex>
   );
 
   const renderContent = () => {
@@ -512,7 +489,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   };
 
   return (
-    <StyledModal
+    <Modal
       title={t('auth:registration.title')}
       open={open}
       onCancel={handleClose}
@@ -520,8 +497,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       destroyOnClose
       data-testid="registration-modal"
     >
-      <RediaccStack direction="vertical" fullWidth>
-        <StepsWrapper
+      <Flex vertical gap={16} className="w-full">
+        <Steps
           current={currentStep}
           size="small"
           data-testid="registration-steps"
@@ -547,8 +524,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         )}
 
         {renderContent()}
-      </RediaccStack>
-    </StyledModal>
+      </Flex>
+    </Modal>
   );
 };
 

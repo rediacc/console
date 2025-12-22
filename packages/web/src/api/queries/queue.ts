@@ -18,7 +18,7 @@ import type {
   UpdateQueueItemToCompletedParams,
 } from '@rediacc/shared/types';
 
-export type { QueueFilters };
+export type { QueueFilters } from '@rediacc/shared/types';
 
 export interface QueueFunctionParameter {
   type: string;

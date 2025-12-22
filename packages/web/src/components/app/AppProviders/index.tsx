@@ -1,5 +1,5 @@
 import React from 'react';
-import { App as AntApp, ConfigProvider } from 'antd';
+import { App as AntApp, ConfigProvider, Flex } from 'antd';
 import arEG from 'antd/locale/ar_EG';
 import deDE from 'antd/locale/de_DE';
 import enUS from 'antd/locale/en_US';
@@ -10,9 +10,9 @@ import ruRU from 'antd/locale/ru_RU';
 import trTR from 'antd/locale/tr_TR';
 import zhCN from 'antd/locale/zh_CN';
 import { useTranslation } from 'react-i18next';
-import { darkTheme, lightTheme } from '@/config/antdTheme';
-import { ThemeProvider, useTheme } from '@/context/ThemeContext';
-import { ProvidersContainer } from './styles';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
+import { getThemeConfig } from '@/theme';
 
 type AntdLocale = typeof enUS;
 
@@ -35,41 +35,14 @@ interface AppProvidersProps {
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   const { i18n } = useTranslation();
   const currentLocale: AntdLocale = antdLocales[i18n.language] || enUS;
+  const themeMode = useSelector((state: RootState) => state.ui.themeMode);
+  const themeConfig = getThemeConfig(themeMode === 'dark');
 
   return (
-    <ThemeProvider>
-      <AppProvidersContent currentLocale={currentLocale} language={i18n.language}>
-        {children}
-      </AppProvidersContent>
-    </ThemeProvider>
-  );
-};
-
-interface AppProvidersContentProps {
-  children: React.ReactNode;
-  currentLocale: AntdLocale;
-  language: string;
-}
-
-const AppProvidersContent: React.FC<AppProvidersContentProps> = ({
-  children,
-  currentLocale,
-  language,
-}) => {
-  const { theme: currentTheme } = useTheme();
-
-  // Select theme configuration based on current theme
-  const themeConfig = currentTheme === 'dark' ? darkTheme : lightTheme;
-
-  return (
-    <ProvidersContainer data-testid="app-providers-container">
-      <ConfigProvider
-        key={language} // Force re-render when language changes
-        locale={currentLocale}
-        theme={themeConfig}
-      >
+    <Flex vertical data-testid="app-providers-container">
+      <ConfigProvider key={i18n.language} locale={currentLocale} theme={themeConfig}>
         <AntApp>{children}</AntApp>
       </ConfigProvider>
-    </ProvidersContainer>
+    </Flex>
   );
 };

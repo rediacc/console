@@ -1,20 +1,14 @@
 import React, { useState } from 'react';
+import { Alert, Flex, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useUpdateMachineClusterAssignment } from '@/api/queries/cephMutations';
+import { SizedModal } from '@/components/common';
 import { createTruncatedColumn } from '@/components/common/columns';
-import { RediaccTable, RediaccText } from '@/components/ui';
-import { AlertCard } from '@/styles/primitives';
 import type { Machine } from '@/types';
+import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
-import {
-  ClusterTag,
-  DangerIcon,
-  MachineNameRow,
-  StyledAlertCard,
-  StyledModal,
-  TitleStack,
-} from './styles';
+import { WarningOutlined } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 
 interface RemoveFromClusterModalProps {
@@ -99,12 +93,10 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     dataIndex: 'machineName',
     key: 'machineName',
     renderWrapper: (content) => (
-      <MachineNameRow>
+      <Flex align="center" gap={8}>
         <CloudServerOutlined />
-        <RediaccText variant="caption" weight="semibold">
-          {content}
-        </RediaccText>
-      </MachineNameRow>
+        <Typography.Text>{content}</Typography.Text>
+      </Flex>
     ),
   });
 
@@ -115,24 +107,24 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     renderText: (cluster?: string | null) => cluster || noneLabel,
     renderWrapper: (content, fullText) =>
       fullText === noneLabel ? (
-        <RediaccText variant="caption" color="muted">
-          {fullText}
-        </RediaccText>
+        <Typography.Text>{fullText}</Typography.Text>
       ) : (
-        <ClusterTag>{content}</ClusterTag>
+        <Tag bordered={false}>{content}</Tag>
       ),
   });
 
   const columns: ColumnsType<Machine> = [machineColumn, clusterColumn];
 
   return (
-    <StyledModal
+    <SizedModal
       title={
-        <TitleStack>
-          <DangerIcon />
+        <Flex align="center" gap={8} wrap>
+          <WarningOutlined />
           {t('machines:bulkActions.removeFromCluster')}
-        </TitleStack>
+        </Flex>
       }
+      className="remove-from-cluster-modal"
+      size={ModalSize.Medium}
       open={open}
       onOk={handleOk}
       onCancel={onCancel}
@@ -150,34 +142,29 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
       data-testid="ds-remove-cluster-modal"
     >
       {machinesWithClusters.length === 0 ? (
-        <AlertCard
-          $variant="info"
-          message={t('machines:noMachinesWithClusters')}
-          variant="info"
-          showIcon
-        />
+        <Alert message={t('machines:noMachinesWithClusters')} type="info" showIcon />
       ) : (
         <>
-          <AlertCard
-            $variant="warning"
+          <Alert
             message={t('machines:removeFromClusterWarning', { count: machinesWithClusters.length })}
             description={t('machines:removeFromClusterDescription')}
-            variant="warning"
+            type="warning"
             showIcon
-            as={StyledAlertCard}
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ marginBottom: 16 }}
           />
 
-          <RediaccTable<Machine>
+          <Table<Machine>
             columns={columns}
             dataSource={machinesWithClusters}
             rowKey="machineName"
-            size="sm"
+            size="small"
             pagination={false}
             scroll={{ y: 300 }}
             data-testid="ds-remove-cluster-table"
           />
         </>
       )}
-    </StyledModal>
+    </SizedModal>
   );
 };

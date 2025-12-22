@@ -1,73 +1,48 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ProLayout } from '@ant-design/pro-components';
 import { useQueryClient } from '@tanstack/react-query';
-import { Drawer, Layout } from 'antd';
+import { Button, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '@/api/client';
 import { useCompanyInfo } from '@/api/queries/dashboard';
 import logoBlack from '@/assets/logo_black.png';
 import logoWhite from '@/assets/logo_white.png';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
-import NotificationBell from '@/components/layout/MainLayout/components/NotificationBell';
-import { RediaccDropdown } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
-import { useTheme } from '@/context/ThemeContext';
 import { useMessage } from '@/hooks';
 import { masterPasswordService } from '@/services/masterPasswordService';
-import { selectCompany, selectUser } from '@/store/auth/authSelectors';
+import { selectCompany } from '@/store/auth/authSelectors';
 import { logout, updateCompany } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
-import { toggleUiMode } from '@/store/ui/uiSlice';
+import { toggleThemeMode, toggleUiMode } from '@/store/ui/uiSlice';
 import { clearAuthData, getAuthData, saveAuthData } from '@/utils/auth';
-import {
-  MenuOutlined,
-  SafetyCertificateOutlined,
-  SmileOutlined,
-  UserOutlined,
-} from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { buildMenuItems, flattenMenuRoutes } from './helpers';
-import { getMenuItems } from './menuItems';
-import { Sidebar } from './Sidebar';
-import {
-  ContentWrapper,
-  HEADER_HEIGHT,
-  HeaderLeft,
-  HeaderRight,
-  Logo,
-  LogoWrapper,
-  MainLayoutContainer,
-  MenuToggleButton,
-  StyledContent,
-  StyledHeader,
-  TransitionIcon,
-  TransitionOverlay,
-  TransitionText,
-  UserMenuButton,
-} from './styles';
-import { SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_EXPANDED_WIDTH } from './types';
-import { UserMenu } from './UserMenu';
+import { MenuOutlined, SafetyCertificateOutlined, SmileOutlined } from '@/utils/optimizedIcons';
+import { HeaderActions } from './HeaderActions';
+import { filterRouteItems, flattenRoutePaths } from './helpers';
+import { getRoutes, RouteItem } from './routes';
+import { SIDEBAR_EXPANDED_WIDTH } from './types';
+import type { MenuDataItem } from '@ant-design/pro-components';
 
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [expandedParentKeys, setExpandedParentKeys] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
-  const user = useSelector(selectUser);
   const company = useSelector(selectCompany);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
-  const { theme } = useTheme();
+  const themeMode = useSelector((state: RootState) => state.ui.themeMode);
+  const logo = themeMode === 'dark' ? logoWhite : logoBlack;
   const { t } = useTranslation('common');
   const message = useMessage();
   const { data: companyData } = useCompanyInfo();
   const { trackUserAction } = useTelemetry();
 
+  // Update company data when it changes
   useEffect(() => {
     const updateCompanyData = async () => {
       const normalizedCompanyName = companyData?.companyInfo?.companyName;
@@ -82,6 +57,7 @@ const MainLayout: React.FC = () => {
     updateCompanyData();
   }, [companyData, company, dispatch]);
 
+  // Keyboard shortcut for power mode
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'E') {
@@ -103,10 +79,15 @@ const MainLayout: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [message]);
 
-  const allMenuItems = useMemo(() => getMenuItems(t), [t]);
-  const menuItems = useMemo(
-    () => buildMenuItems(allMenuItems, uiMode, companyData),
-    [allMenuItems, uiMode, companyData]
+  // Get routes configuration
+  const routes = useMemo(() => getRoutes(t), [t]);
+
+  // Filter menu based on uiMode, plan, feature flags
+  const menuDataRender = useCallback(
+    (menuData: MenuDataItem[]) => {
+      return filterRouteItems(menuData as RouteItem[], uiMode, companyData) as MenuDataItem[];
+    },
+    [uiMode, companyData]
   );
 
   const handleModeToggle = () => {
@@ -119,20 +100,23 @@ const MainLayout: React.FC = () => {
       current_page: location.pathname,
     });
 
+    // Check if current page is visible in new mode
     const currentPath = location.pathname;
-    const nextMenuItems = buildMenuItems(allMenuItems, newMode, companyData);
-    const visibleRoutes = flattenMenuRoutes(nextMenuItems);
-    const isCurrentPageVisibleInNewMode = visibleRoutes.some((route) =>
-      currentPath.startsWith(route)
-    );
+    const nextRoutes = filterRouteItems(routes.routes, newMode, companyData);
+    const visiblePaths = flattenRoutePaths(nextRoutes);
+    const isCurrentPageVisibleInNewMode = visiblePaths.some((path) => currentPath.startsWith(path));
 
     if (!isCurrentPageVisibleInNewMode) {
-      const firstVisibleRoute = visibleRoutes[0];
-      if (firstVisibleRoute) {
-        navigate(firstVisibleRoute);
+      const firstVisiblePath = visiblePaths[0];
+      if (firstVisiblePath) {
+        navigate(firstVisiblePath);
       }
     }
     setIsTransitioning(false);
+  };
+
+  const handleThemeToggle = () => {
+    dispatch(toggleThemeMode());
   };
 
   const handleLogout = async () => {
@@ -153,162 +137,146 @@ const MainLayout: React.FC = () => {
     navigate('/login');
   };
 
-  const handleSidebarToggle = () => {
-    // Toggle drawer on mobile, collapse sidebar on desktop
-    const isMobile = window.innerWidth <= 768;
-    if (isMobile) {
-      setMobileMenuOpen((prev) => !prev);
-      trackUserAction('ui_interaction', 'mobile_menu_toggle', {
-        current_page: location.pathname,
-      });
-    } else {
-      const action = collapsed ? 'sidebar_expand' : 'sidebar_collapse';
-      trackUserAction('ui_interaction', action, {
-        current_page: location.pathname,
-      });
-      setCollapsed((prev) => !prev);
-    }
+  const handleCollapse = (value: boolean) => {
+    const action = value ? 'sidebar_collapse' : 'sidebar_expand';
+    trackUserAction('ui_interaction', action, {
+      current_page: location.pathname,
+    });
+    setCollapsed(value);
   };
-
-  const handleMobileMenuClose = () => {
-    setMobileMenuOpen(false);
-  };
-
-  const handleNavigate = (route: string, metadata: Record<string, unknown>) => {
-    trackUserAction('navigation', route, metadata as Record<string, string | number | boolean>);
-  };
-
-  useEffect(() => {
-    const activeParents = menuItems
-      .filter((item) => item.children)
-      .filter((item) => item.children?.some((child) => location.pathname.startsWith(child.key)))
-      .map((item) => item.key);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setExpandedParentKeys(activeParents);
-  }, [location.pathname, menuItems]);
-
-  const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH;
-  const contentPaddingTop = HEADER_HEIGHT + DESIGN_TOKENS.SPACING.PAGE_SECTION_GAP;
 
   return (
     <>
       <SandboxWarning />
-      <MainLayoutContainer>
-        {/* Desktop Sidebar */}
-        <Sidebar
-          collapsed={collapsed}
-          sidebarWidth={sidebarWidth}
-          menuItems={menuItems}
-          expandedParentKeys={expandedParentKeys}
-          uiMode={uiMode}
-          onNavigate={handleNavigate}
-        />
-
-        {/* Mobile Drawer */}
-        <Drawer
-          title={null}
-          placement="left"
-          onClose={handleMobileMenuClose}
-          open={mobileMenuOpen}
-          width={280}
-          styles={{
-            body: { padding: 0, backgroundColor: 'var(--color-bg-primary)' },
-            header: { display: 'none' },
-          }}
-        >
-          <Sidebar
-            collapsed={false}
-            sidebarWidth={280}
-            menuItems={menuItems}
-            expandedParentKeys={expandedParentKeys}
-            uiMode={uiMode}
-            isDrawer={true}
-            onNavigate={(route, metadata) => {
-              handleNavigate(route, metadata);
-              handleMobileMenuClose();
-            }}
-          />
-        </Drawer>
-
-        <Layout>
-          <StyledHeader $isDark={theme === 'dark'} data-testid="main-header">
-            <HeaderLeft>
-              <MenuToggleButton
-                iconOnly
-                icon={<MenuOutlined />}
-                onClick={handleSidebarToggle}
-                data-testid="sidebar-toggle-button"
-                aria-label={
-                  collapsed
-                    ? t('navigation.expandSidebar', { defaultValue: 'Expand sidebar' })
-                    : t('navigation.collapseSidebar', { defaultValue: 'Collapse sidebar' })
-                }
-                aria-pressed={collapsed}
+      <ProLayout
+        layout="side"
+        fixSiderbar
+        fixedHeader
+        contentWidth="Fluid"
+        siderWidth={SIDEBAR_EXPANDED_WIDTH}
+        breakpoint="lg"
+        collapsed={collapsed}
+        onCollapse={handleCollapse}
+        collapsedButtonRender={false}
+        // Branding
+        logo={logo}
+        title={false}
+        onMenuHeaderClick={() => {
+          trackUserAction('navigation', '/dashboard', {
+            trigger: 'logo_click',
+            from_page: location.pathname,
+          });
+          navigate('/dashboard');
+        }}
+        // Menu
+        route={routes}
+        location={location}
+        menuDataRender={menuDataRender}
+        menuItemRender={(item, dom) => {
+          if (!item.path) return dom;
+          return (
+            <Link
+              to={item.path}
+              onClick={() => {
+                trackUserAction('navigation', item.path!, {
+                  menu_item: item.name as string,
+                  ui_mode: uiMode,
+                  sidebar_collapsed: collapsed,
+                  from_page: location.pathname,
+                });
+              }}
+            >
+              {dom}
+            </Link>
+          );
+        }}
+        subMenuItemRender={(item, dom) => {
+          if (!item.path || item.routes) return dom;
+          return (
+            <Link
+              to={item.path}
+              onClick={() => {
+                trackUserAction('navigation', item.path!, {
+                  menu_item: item.name as string,
+                  ui_mode: uiMode,
+                  sidebar_collapsed: collapsed,
+                  from_page: location.pathname,
+                });
+              }}
+            >
+              {dom}
+            </Link>
+          );
+        }}
+        // Header
+        headerTitleRender={() => (
+          <Flex align="center" gap={12}>
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={() => handleCollapse(!collapsed)}
+              data-testid="sidebar-toggle-button"
+              aria-label={
+                collapsed ? t('navigation.expandSidebar') : t('navigation.collapseSidebar')
+              }
+              aria-pressed={collapsed}
+            />
+            <Flex
+              align="center"
+              className="inline-flex cursor-pointer"
+              onClick={() => {
+                trackUserAction('navigation', '/dashboard', {
+                  trigger: 'logo_click',
+                  from_page: location.pathname,
+                });
+                navigate('/dashboard');
+              }}
+              data-testid="main-logo-home"
+            >
+              <img
+                src={logo}
+                alt="Rediacc Logo"
+                // eslint-disable-next-line no-restricted-syntax
+                style={{ height: 32, width: 'auto', objectFit: 'contain' }}
               />
-              <LogoWrapper
-                onClick={() => {
-                  trackUserAction('navigation', '/dashboard', {
-                    trigger: 'logo_click',
-                    from_page: location.pathname,
-                  });
-                  navigate('/dashboard');
-                }}
-                data-testid="main-logo-home"
-              >
-                <Logo src={theme === 'dark' ? logoWhite : logoBlack} alt="Rediacc Logo" />
-              </LogoWrapper>
-            </HeaderLeft>
-            <HeaderRight>
-              <NotificationBell />
-              <RediaccDropdown
-                trigger={['click']}
-                placement="bottomRight"
-                popupRender={() => (
-                  <UserMenu
-                    user={user}
-                    company={company}
-                    companyData={companyData}
-                    uiMode={uiMode}
-                    onModeToggle={handleModeToggle}
-                    onLogout={handleLogout}
-                  />
-                )}
-                overlayStyle={{ minWidth: 300 }}
-              >
-                <UserMenuButton
-                  variant="primary"
-                  iconOnly
-                  icon={<UserOutlined />}
-                  aria-label={t('navigation.userMenu', { defaultValue: 'Open user menu' })}
-                  data-testid="user-menu-button"
-                />
-              </RediaccDropdown>
-            </HeaderRight>
-          </StyledHeader>
-          <StyledContent
-            $marginLeft={sidebarWidth}
-            $paddingTop={contentPaddingTop}
+            </Flex>
+          </Flex>
+        )}
+        actionsRender={() => (
+          <HeaderActions
+            onModeToggle={handleModeToggle}
+            onThemeToggle={handleThemeToggle}
+            onLogout={handleLogout}
+          />
+        )}
+        // Content
+        contentStyle={{ padding: 24 }}
+        token={{
+          header: {
+            heightLayoutHeader: 64,
+          },
+        }}
+      >
+        {isTransitioning ? (
+          <Flex
+            vertical
+            align="center"
+            justify="center"
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ minHeight: 240 }}
             data-testid="main-content"
           >
-            {isTransitioning ? (
-              <TransitionOverlay>
-                <TransitionIcon>
-                  {uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}
-                </TransitionIcon>
-                <TransitionText>
-                  {t('uiMode.switching', {
-                    mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple'),
-                  })}
-                </TransitionText>
-              </TransitionOverlay>
-            ) : (
-              <ContentWrapper>
-                <Outlet />
-              </ContentWrapper>
-            )}
-          </StyledContent>
-        </Layout>
-      </MainLayoutContainer>
+            <Flex>{uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}</Flex>
+            <Flex>
+              {t('uiMode.switching', {
+                mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple'),
+              })}
+            </Flex>
+          </Flex>
+        ) : (
+          <Outlet />
+        )}
+      </ProLayout>
     </>
   );
 };

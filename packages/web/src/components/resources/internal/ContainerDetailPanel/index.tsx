@@ -1,43 +1,28 @@
 import React, { useMemo } from 'react';
-import { Progress, Tag } from 'antd';
+import { Card, Flex, Progress, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { IconWrapper, RediaccText } from '@/components/ui';
+import {
+  DetailPanelBody,
+  DetailPanelDivider,
+  DetailPanelFieldLabel,
+  DetailPanelFieldList,
+  DetailPanelFieldMonospaceValue,
+  DetailPanelFieldRow,
+  DetailPanelFieldStrongValue,
+  DetailPanelFieldValue,
+  DetailPanelSectionCard,
+  DetailPanelSectionHeader,
+  DetailPanelSectionTitle,
+  DetailPanelSurface,
+} from '@/components/resources/internal/detailPanelPrimitives';
 import {
   ApiOutlined,
-  AppstoreOutlined,
   CloudServerOutlined,
   ContainerOutlined,
-  DoubleRightOutlined,
   FolderOutlined,
   HddOutlined,
-  PauseCircleOutlined,
-  PlayCircleOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  CollapseButton,
-  ContentWrapper,
-  DividerLabel,
-  FieldLabel,
-  FieldList,
-  FieldRow,
-  FieldValue,
-  FieldValueMonospace,
-  FieldValueStrong,
-  Header,
-  HeaderRow,
-  MetricCard,
-  MetricsGrid,
-  PanelTitle,
-  PanelWrapper,
-  SectionCard,
-  SectionDivider,
-  SectionHeader,
-  SectionStack,
-  SectionTitle,
-  TagGroup,
-  TitleGroup,
-} from './styles';
 
 interface ContainerData {
   id: string;
@@ -77,7 +62,7 @@ interface ContainerDetailPanelProps {
 export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
   container,
   visible,
-  onClose,
+  onClose: _onClose,
   splitView = false,
 }) => {
   const { t } = useTranslation(['resources', 'common']);
@@ -115,7 +100,6 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
   }
 
   const isPlugin = container.name?.startsWith('plugin-');
-  const pluginName = isPlugin ? container.name.replace('plugin-', '') : null;
   const cpuWarning = (resourceUsage?.cpu || 0) > 80;
   const memoryWarning = (resourceUsage?.memoryPercent || 0) > 90;
 
@@ -135,9 +119,9 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
 
     if (container.ports) {
       return (
-        <RediaccText variant="value" data-testid="container-detail-ports-text">
+        <Typography.Text data-testid="container-detail-ports-text">
           {container.ports}
-        </RediaccText>
+        </Typography.Text>
       );
     }
 
@@ -145,181 +129,162 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
   };
 
   return (
-    <PanelWrapper
+    <DetailPanelSurface
       $splitView={splitView}
       $visible={visible}
       className="container-detail-panel"
       data-testid="container-detail-panel"
     >
-      <Header data-testid="container-detail-header">
-        <HeaderRow>
-          <TitleGroup>
-            <IconWrapper $tone={isPlugin ? 'info' : 'success'} $size="lg">
-              {isPlugin ? <ApiOutlined /> : <AppstoreOutlined />}
-            </IconWrapper>
-            <PanelTitle data-testid="container-detail-title">
-              {isPlugin ? pluginName : container.name}
-            </PanelTitle>
-          </TitleGroup>
-          <CollapseButton
-            variant="text"
-            icon={<DoubleRightOutlined />}
-            onClick={onClose}
-            data-testid="container-detail-collapse"
-            aria-label="Collapse Panel"
-          />
-        </HeaderRow>
-        <TagGroup>
-          <Tag
-            color={container.state === 'running' ? 'success' : 'default'}
-            icon={container.state === 'running' ? <PlayCircleOutlined /> : <PauseCircleOutlined />}
-            data-testid="container-detail-state-tag"
-          >
-            {container.state}
-          </Tag>
-          <Tag color="blue" icon={<FolderOutlined />} data-testid="container-detail-repo-tag">
-            {t('resources:containers.repositoryLabel', 'Repository')}: {container.repository}
-          </Tag>
-        </TagGroup>
-      </Header>
+      <DetailPanelBody data-testid="container-detail-content">
+        <Flex vertical>
+          <DetailPanelSectionHeader data-testid="container-detail-info-section">
+            {isPlugin ? <ApiOutlined /> : <ContainerOutlined />}
+            <DetailPanelSectionTitle>
+              {t('resources:containers.containerInfo')}
+            </DetailPanelSectionTitle>
+          </DetailPanelSectionHeader>
 
-      <ContentWrapper data-testid="container-detail-content">
-        <SectionStack>
-          <SectionHeader data-testid="container-detail-info-section">
-            <IconWrapper $tone="success" $size="md">
-              {isPlugin ? <ApiOutlined /> : <ContainerOutlined />}
-            </IconWrapper>
-            <SectionTitle>{t('resources:containers.containerInfo')}</SectionTitle>
-          </SectionHeader>
-
-          <SectionCard data-testid="container-detail-basic-info">
-            <FieldList>
-              <FieldRow>
-                <FieldLabel>{t('resources:containers.containerID')}:</FieldLabel>
-                <FieldValueMonospace copyable data-testid="container-detail-id">
+          <DetailPanelSectionCard data-testid="container-detail-basic-info">
+            <DetailPanelFieldList>
+              <DetailPanelFieldRow>
+                <DetailPanelFieldLabel>
+                  {t('resources:containers.containerID')}:
+                </DetailPanelFieldLabel>
+                <DetailPanelFieldMonospaceValue copyable data-testid="container-detail-id">
                   {container.id}
-                </FieldValueMonospace>
-              </FieldRow>
-              <FieldRow>
-                <FieldLabel>{t('resources:containers.image')}:</FieldLabel>
-                <FieldValue data-testid="container-detail-image">{container.image}</FieldValue>
-              </FieldRow>
-              <FieldRow>
-                <FieldLabel>{t('resources:containers.status')}:</FieldLabel>
-                <FieldValue data-testid="container-detail-status">{container.status}</FieldValue>
-              </FieldRow>
-              <FieldRow>
-                <FieldLabel>{t('resources:containers.created')}:</FieldLabel>
-                <FieldValue data-testid="container-detail-created">{container.created}</FieldValue>
-              </FieldRow>
-            </FieldList>
-          </SectionCard>
-        </SectionStack>
+                </DetailPanelFieldMonospaceValue>
+              </DetailPanelFieldRow>
+              <DetailPanelFieldRow>
+                <DetailPanelFieldLabel>{t('resources:containers.image')}:</DetailPanelFieldLabel>
+                <DetailPanelFieldValue data-testid="container-detail-image">
+                  {container.image}
+                </DetailPanelFieldValue>
+              </DetailPanelFieldRow>
+              <DetailPanelFieldRow>
+                <DetailPanelFieldLabel>{t('resources:containers.status')}:</DetailPanelFieldLabel>
+                <DetailPanelFieldValue data-testid="container-detail-status">
+                  {container.status}
+                </DetailPanelFieldValue>
+              </DetailPanelFieldRow>
+              <DetailPanelFieldRow>
+                <DetailPanelFieldLabel>{t('resources:containers.created')}:</DetailPanelFieldLabel>
+                <DetailPanelFieldValue data-testid="container-detail-created">
+                  {container.created}
+                </DetailPanelFieldValue>
+              </DetailPanelFieldRow>
+            </DetailPanelFieldList>
+          </DetailPanelSectionCard>
+        </Flex>
 
-        <SectionDivider>
-          <DividerLabel>
+        <DetailPanelDivider>
+          <Flex component="span" align="center">
             <CloudServerOutlined />
             {t('resources:containers.resourceUsage')}
-          </DividerLabel>
-        </SectionDivider>
+          </Flex>
+        </DetailPanelDivider>
 
-        <MetricsGrid>
-          <MetricCard data-testid="container-detail-cpu-card">
-            <RediaccText variant="label">{t('resources:containers.cpuUsage')}</RediaccText>
-            <RediaccText size="lg" weight="semibold" color={cpuWarning ? 'danger' : 'primary'}>
-              {resourceUsage?.cpu?.toFixed(2) ?? '0'}%
-            </RediaccText>
+        <Flex
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
+        >
+          <Card size="small" data-testid="container-detail-cpu-card">
+            <Typography.Text type="secondary">{t('resources:containers.cpuUsage')}</Typography.Text>
+            <Typography.Text strong>{resourceUsage?.cpu?.toFixed(2) ?? '0'}%</Typography.Text>
             <Progress
               percent={resourceUsage?.cpu || 0}
               showInfo={false}
               status={cpuWarning ? 'exception' : 'normal'}
             />
-          </MetricCard>
-          <MetricCard data-testid="container-detail-memory-card">
-            <RediaccText variant="label">{t('resources:containers.memoryUsage')}</RediaccText>
-            <RediaccText size="lg" weight="semibold" color={memoryWarning ? 'danger' : 'primary'}>
+          </Card>
+          <Card size="small" data-testid="container-detail-memory-card">
+            <Typography.Text type="secondary">
+              {t('resources:containers.memoryUsage')}
+            </Typography.Text>
+            <Typography.Text strong>
               {resourceUsage ? `${resourceUsage.memoryUsed} / ${resourceUsage.memoryTotal}` : '-'}
-            </RediaccText>
+            </Typography.Text>
             <Progress
               percent={resourceUsage?.memoryPercent || 0}
               status={memoryWarning ? 'exception' : 'normal'}
             />
-          </MetricCard>
-          <MetricCard data-testid="container-detail-network-card">
-            <RediaccText variant="label">{t('resources:containers.networkIO')}</RediaccText>
-            <RediaccText variant="value">
+          </Card>
+          <Card size="small" data-testid="container-detail-network-card">
+            <Typography.Text type="secondary">
+              {t('resources:containers.networkIO')}
+            </Typography.Text>
+            <Typography.Text>
               <WifiOutlined /> {resourceUsage?.netIn} / {resourceUsage?.netOut}
-            </RediaccText>
-          </MetricCard>
-          <MetricCard data-testid="container-detail-block-io-card">
-            <RediaccText variant="label">{t('resources:containers.blockIO')}</RediaccText>
-            <RediaccText variant="value">
+            </Typography.Text>
+          </Card>
+          <Card size="small" data-testid="container-detail-block-io-card">
+            <Typography.Text type="secondary">{t('resources:containers.blockIO')}</Typography.Text>
+            <Typography.Text>
               <HddOutlined /> {resourceUsage?.blockRead} / {resourceUsage?.blockWrite}
-            </RediaccText>
-          </MetricCard>
-        </MetricsGrid>
+            </Typography.Text>
+          </Card>
+        </Flex>
 
-        <SectionCard data-testid="container-detail-runtime">
-          <FieldList>
+        <DetailPanelSectionCard data-testid="container-detail-runtime">
+          <DetailPanelFieldList>
             {container.port_mappings || container.ports ? (
-              <FieldRow>
-                <FieldLabel>{t('resources:containers.ports')}:</FieldLabel>
-                <FieldValueStrong>{renderPortMappings()}</FieldValueStrong>
-              </FieldRow>
+              <DetailPanelFieldRow>
+                <DetailPanelFieldLabel>{t('resources:containers.ports')}:</DetailPanelFieldLabel>
+                <DetailPanelFieldStrongValue>{renderPortMappings()}</DetailPanelFieldStrongValue>
+              </DetailPanelFieldRow>
             ) : null}
-            <FieldRow>
-              <FieldLabel>{t('resources:containers.networks')}:</FieldLabel>
-              <FieldValue>
-                <Tag color="default" data-testid="container-detail-network-tag">
-                  {container.networks}
-                </Tag>
-              </FieldValue>
-            </FieldRow>
-            <FieldRow>
-              <FieldLabel>{t('resources:containers.size')}:</FieldLabel>
-              <FieldValue data-testid="container-detail-size">{container.size}</FieldValue>
-            </FieldRow>
-            <FieldRow>
-              <FieldLabel>{t('resources:containers.processes')}:</FieldLabel>
-              <FieldValue>
+            <DetailPanelFieldRow>
+              <DetailPanelFieldLabel>{t('resources:containers.networks')}:</DetailPanelFieldLabel>
+              <DetailPanelFieldValue>
+                <Tag data-testid="container-detail-network-tag">{container.networks}</Tag>
+              </DetailPanelFieldValue>
+            </DetailPanelFieldRow>
+            <DetailPanelFieldRow>
+              <DetailPanelFieldLabel>{t('resources:containers.size')}:</DetailPanelFieldLabel>
+              <DetailPanelFieldValue data-testid="container-detail-size">
+                {container.size}
+              </DetailPanelFieldValue>
+            </DetailPanelFieldRow>
+            <DetailPanelFieldRow>
+              <DetailPanelFieldLabel>{t('resources:containers.processes')}:</DetailPanelFieldLabel>
+              <DetailPanelFieldValue>
                 <Tag data-testid="container-detail-pids">
                   {resourceUsage?.pids || 0} {t('resources:containers.pids')}
                 </Tag>
-              </FieldValue>
-            </FieldRow>
-          </FieldList>
-        </SectionCard>
+              </DetailPanelFieldValue>
+            </DetailPanelFieldRow>
+          </DetailPanelFieldList>
+        </DetailPanelSectionCard>
 
-        <SectionDivider>
-          <DividerLabel>
+        <DetailPanelDivider>
+          <Flex component="span" align="center">
             <FolderOutlined />
             {t('resources:containers.environment')}
-          </DividerLabel>
-        </SectionDivider>
+          </Flex>
+        </DetailPanelDivider>
 
-        <SectionCard data-testid="container-detail-environment">
-          <SectionStack>
-            <div>
-              <RediaccText size="xs" color="muted">
+        <DetailPanelSectionCard data-testid="container-detail-environment">
+          <Flex vertical>
+            <Flex vertical>
+              <Typography.Text type="secondary">
                 {t('resources:containers.mounts')}:
-              </RediaccText>
-              <FieldValueMonospace data-testid="container-detail-mounts">
+              </Typography.Text>
+              <DetailPanelFieldMonospaceValue data-testid="container-detail-mounts">
                 {container.mounts}
-              </FieldValueMonospace>
-            </div>
+              </DetailPanelFieldMonospaceValue>
+            </Flex>
             {container.labels && (
-              <div>
-                <RediaccText size="xs" color="muted">
+              <Flex vertical>
+                <Typography.Text type="secondary">
                   {t('resources:containers.labels')}:
-                </RediaccText>
-                <FieldValueMonospace data-testid="container-detail-labels">
+                </Typography.Text>
+                <DetailPanelFieldMonospaceValue data-testid="container-detail-labels">
                   {container.labels}
-                </FieldValueMonospace>
-              </div>
+                </DetailPanelFieldMonospaceValue>
+              </Flex>
             )}
-          </SectionStack>
-        </SectionCard>
-      </ContentWrapper>
-    </PanelWrapper>
+          </Flex>
+        </DetailPanelSectionCard>
+      </DetailPanelBody>
+    </DetailPanelSurface>
   );
 };

@@ -1,4 +1,4 @@
-import { Space, Tag } from 'antd';
+import { Space, Tag, Typography } from 'antd';
 import { TFunction } from 'i18next';
 import { GetAuditLogs_ResultSet1 } from '@/api/queries/audit';
 import {
@@ -7,28 +7,24 @@ import {
   createTruncatedColumn,
   type StatusConfig,
 } from '@/components/common/columns';
-import { RediaccText } from '@/components/ui';
 import { createDateSorter } from '@/platform';
-import { ColumnFilterIcon, FilterHintIcon } from './styles';
+import { FilterOutlined } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ColumnBuilderParams {
   t: TFunction<'system' | 'common'>;
   auditLogs?: GetAuditLogs_ResultSet1[];
   getActionIcon: (action: string) => React.ReactNode;
-  getActionColor: (action: string) => string;
 }
 
 export const buildAuditColumns = ({
   t,
   auditLogs,
   getActionIcon,
-  getActionColor,
 }: ColumnBuilderParams): ColumnsType<GetAuditLogs_ResultSet1> => {
   const actionStatusMap = (auditLogs || []).reduce<Record<string, StatusConfig>>((acc, log) => {
     if (!acc[log.action]) {
       acc[log.action] = {
-        color: getActionColor(log.action),
         icon: getActionIcon(log.action),
         label: log.action.replace(/_/g, ' '),
       };
@@ -49,14 +45,14 @@ export const buildAuditColumns = ({
     title: (
       <Space>
         {t('system:audit.columns.action')}
-        <FilterHintIcon />
+        <FilterOutlined />
       </Space>
     ),
     dataIndex: 'action',
     key: 'action',
     width: 200,
     statusMap: actionStatusMap,
-    defaultConfig: { color: 'default' },
+    defaultConfig: {},
     sorter: (a, b) => a.action.localeCompare(b.action),
   });
   actionColumn.filters =
@@ -65,13 +61,13 @@ export const buildAuditColumns = ({
       value: action,
     })) || [];
   actionColumn.onFilter = (value, record) => record.action === value;
-  actionColumn.filterIcon = (filtered: boolean) => <ColumnFilterIcon $active={filtered} />;
+  actionColumn.filterIcon = (_filtered: boolean) => <FilterOutlined />;
 
   const entityNameColumn = createTruncatedColumn<GetAuditLogs_ResultSet1>({
     title: (
       <Space>
         {t('system:audit.columns.entityName')}
-        <FilterHintIcon />
+        <FilterOutlined />
       </Space>
     ),
     dataIndex: 'entityName',
@@ -89,7 +85,7 @@ export const buildAuditColumns = ({
       value: name,
     })) || [];
   entityNameColumn.onFilter = (value, record) => record.entityName === value;
-  entityNameColumn.filterIcon = (filtered: boolean) => <ColumnFilterIcon $active={filtered} />;
+  entityNameColumn.filterIcon = (_filtered: boolean) => <FilterOutlined />;
 
   const userColumnFilters =
     [
@@ -108,7 +104,7 @@ export const buildAuditColumns = ({
     key: 'details',
     maxLength: 48,
     renderText: (value) => value || '',
-    renderWrapper: (content) => <RediaccText variant="caption">{content}</RediaccText>,
+    renderWrapper: (content) => <Typography.Text>{content}</Typography.Text>,
   });
 
   return [
@@ -118,7 +114,7 @@ export const buildAuditColumns = ({
       title: (
         <Space>
           {t('system:audit.columns.entityType')}
-          <FilterHintIcon />
+          <FilterOutlined />
         </Space>
       ),
       dataIndex: 'entity',
@@ -131,14 +127,14 @@ export const buildAuditColumns = ({
           value: entity,
         })) || [],
       onFilter: (value, record) => record.entity === value,
-      filterIcon: (filtered: boolean) => <ColumnFilterIcon $active={filtered} />,
+      filterIcon: (_filtered: boolean) => <FilterOutlined />,
     },
     entityNameColumn,
     {
       title: (
         <Space>
           {t('system:audit.columns.user')}
-          <FilterHintIcon />
+          <FilterOutlined />
         </Space>
       ),
       dataIndex: 'actionByUser',
@@ -146,7 +142,7 @@ export const buildAuditColumns = ({
       width: 200,
       filters: userColumnFilters,
       onFilter: (value, record) => record.actionByUser === value,
-      filterIcon: (filtered: boolean) => <ColumnFilterIcon $active={filtered} />,
+      filterIcon: (_filtered: boolean) => <FilterOutlined />,
     },
     detailsColumn,
   ];

@@ -1,31 +1,14 @@
 import React from 'react';
-import { Form, Modal } from 'antd';
+import { Alert, Button, Card, Flex, Form, Modal, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useUpdateUserPassword, useUpdateUserVault, useUserVault } from '@/api/queries/users';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
 import { PasswordConfirmField, PasswordField } from '@/components/forms/FormFields';
-import { RediaccTooltip } from '@/components/ui';
-import {
-  CardActions,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  IconWrapper,
-  ModalActions,
-  PageWrapper,
-  RediaccButton,
-  RediaccCard,
-  RequirementsList,
-  SectionHeading,
-  SectionStack,
-} from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState, useModalForm } from '@/hooks';
 import TwoFactorSettings from '@/pages/settings/profile/components/TwoFactorSettings';
-import { FormItemActions, ModalAlert } from '@/pages/system/styles';
 import { logout } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
@@ -78,14 +61,11 @@ const ProfilePage: React.FC = () => {
 
       let countdown = 3;
       const modal = Modal.success({
-        title: tSystem('personal.changePassword.successTitle', {
-          defaultValue: 'Password Changed Successfully',
-        }),
+        title: tSystem('personal.changePassword.successTitle'),
         content: tSystem('personal.changePassword.successContent', {
-          defaultValue: `Your password has been changed. You will be logged out in ${countdown} seconds...`,
           seconds: countdown,
         }),
-        okText: tCommon('actions.logoutNow', { defaultValue: 'Logout Now' }),
+        okText: tCommon('actions.logoutNow'),
         onOk: () => {
           dispatch(logout());
           navigate('/login');
@@ -96,7 +76,6 @@ const ProfilePage: React.FC = () => {
         countdown -= 1;
         modal.update({
           content: tSystem('personal.changePassword.successContent', {
-            defaultValue: `Your password has been changed. You will be logged out in ${countdown} seconds...`,
             seconds: countdown,
           }),
         });
@@ -114,25 +93,21 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <PageWrapper>
-      <SectionStack>
-        <SectionHeading level={3}>{t('personal.title')}</SectionHeading>
+    <Flex vertical>
+      <Flex vertical>
+        <Card>
+          <Flex vertical gap={16}>
+            <Flex align="center" gap={8}>
+              <UserOutlined />
+              <Typography.Title level={4}>{t('personal.title')}</Typography.Title>
+            </Flex>
 
-        <RediaccCard fullHeight>
-          <CardContent>
-            <CardHeader>
-              <IconWrapper $size="md">
-                <UserOutlined />
-              </IconWrapper>
-              <CardTitle level={4}>{t('personal.title')}</CardTitle>
-            </CardHeader>
+            <Typography.Text>{t('personal.description')}</Typography.Text>
 
-            <CardDescription>{t('personal.description')}</CardDescription>
-
-            <CardActions>
+            <Flex wrap gap={8} align="center">
               {featureFlags.isEnabled('personalVaultConfiguration') && (
-                <RediaccTooltip title={t('personal.configureVault')}>
-                  <RediaccButton
+                <Tooltip title={t('personal.configureVault')}>
+                  <Button
                     icon={<SettingOutlined />}
                     onClick={() => {
                       refetchUserVault();
@@ -141,28 +116,28 @@ const ProfilePage: React.FC = () => {
                     data-testid="system-user-vault-button"
                     aria-label={t('personal.configureVault')}
                   />
-                </RediaccTooltip>
+                </Tooltip>
               )}
-              <RediaccTooltip title={tSystem('actions.changePassword')}>
-                <RediaccButton
+              <Tooltip title={tSystem('actions.changePassword')}>
+                <Button
                   icon={<KeyOutlined />}
                   onClick={openChangePassword}
                   data-testid="system-change-password-button"
                   aria-label={tSystem('actions.changePassword')}
                 />
-              </RediaccTooltip>
-              <RediaccTooltip title={tSystem('actions.twoFactorAuth')}>
-                <RediaccButton
+              </Tooltip>
+              <Tooltip title={tSystem('actions.twoFactorAuth')}>
+                <Button
                   icon={<SafetyCertificateOutlined />}
                   onClick={() => twoFactorModal.open()}
                   data-testid="system-two-factor-button"
                   aria-label={tSystem('actions.twoFactorAuth')}
                 />
-              </RediaccTooltip>
-            </CardActions>
-          </CardContent>
-        </RediaccCard>
-      </SectionStack>
+              </Tooltip>
+            </Flex>
+          </Flex>
+        </Card>
+      </Flex>
 
       <VaultEditorModal
         open={userVaultModal.isOpen}
@@ -176,7 +151,7 @@ const ProfilePage: React.FC = () => {
       />
 
       <Modal
-        title={t('personal.changePassword.title', { defaultValue: 'Change Password' })}
+        title={t('personal.changePassword.title')}
         open={isChangePasswordOpen}
         onCancel={closeChangePassword}
         footer={null}
@@ -188,89 +163,52 @@ const ProfilePage: React.FC = () => {
           onFinish={handleChangePassword}
           autoComplete="off"
         >
-          <ModalAlert
-            message={t('personal.changePassword.requirementsTitle', {
-              defaultValue: 'Password Requirements',
-            })}
+          <Alert
+            message={t('personal.changePassword.requirementsTitle')}
             description={
-              <RequirementsList>
-                <li>
-                  {t('personal.changePassword.requirement1', {
-                    defaultValue: 'At least 8 characters long',
-                  })}
-                </li>
-                <li>
-                  {t('personal.changePassword.requirement2', {
-                    defaultValue: 'Contains uppercase and lowercase letters',
-                  })}
-                </li>
-                <li>
-                  {t('personal.changePassword.requirement3', {
-                    defaultValue: 'Contains at least one number',
-                  })}
-                </li>
-                <li>
-                  {t('personal.changePassword.requirement4', {
-                    defaultValue: 'Contains at least one special character',
-                  })}
-                </li>
-              </RequirementsList>
+              <ul className="requirements-list">
+                <li>{t('personal.changePassword.requirement1')}</li>
+                <li>{t('personal.changePassword.requirement2')}</li>
+                <li>{t('personal.changePassword.requirement3')}</li>
+                <li>{t('personal.changePassword.requirement4')}</li>
+              </ul>
             }
-            variant="info"
+            type="info"
             showIcon
           />
 
           <PasswordField
             name="newPassword"
-            label={t('personal.changePassword.newPasswordLabel', { defaultValue: 'New Password' })}
-            placeholder={t('personal.changePassword.newPasswordPlaceholder', {
-              defaultValue: 'Enter new password',
-            })}
+            label={t('personal.changePassword.newPasswordLabel')}
+            placeholder={t('personal.changePassword.newPasswordPlaceholder')}
             minLength={8}
-            requiredMessage={t('personal.changePassword.newPasswordRequired', {
-              defaultValue: 'Please enter your new password',
-            })}
-            minLengthMessage={t('personal.changePassword.newPasswordMin', {
-              defaultValue: 'Password must be at least 8 characters long',
-            })}
-            patternMessage={t('personal.changePassword.newPasswordPattern', {
-              defaultValue:
-                'Password must contain uppercase, lowercase, number and special character',
-            })}
+            requiredMessage={t('personal.changePassword.newPasswordRequired')}
+            minLengthMessage={t('personal.changePassword.newPasswordMin')}
+            patternMessage={t('personal.changePassword.newPasswordPattern')}
           />
 
           <PasswordConfirmField
             name="confirmPassword"
-            label={t('personal.changePassword.confirmPasswordLabel', {
-              defaultValue: 'Confirm New Password',
-            })}
+            label={t('personal.changePassword.confirmPasswordLabel')}
             passwordFieldName="newPassword"
-            placeholder={t('personal.changePassword.confirmPasswordPlaceholder', {
-              defaultValue: 'Confirm new password',
-            })}
-            requiredMessage={t('personal.changePassword.confirmPasswordRequired', {
-              defaultValue: 'Please confirm your new password',
-            })}
-            mismatchMessage={t('personal.changePassword.confirmPasswordMismatch', {
-              defaultValue: 'Passwords do not match',
-            })}
+            placeholder={t('personal.changePassword.confirmPasswordPlaceholder')}
+            requiredMessage={t('personal.changePassword.confirmPasswordRequired')}
+            mismatchMessage={t('personal.changePassword.confirmPasswordMismatch')}
           />
 
-          <FormItemActions>
-            <ModalActions>
-              <RediaccButton onClick={closeChangePassword}>
-                {tCommon('actions.cancel')}
-              </RediaccButton>
-              <RediaccButton htmlType="submit" loading={updateUserPasswordMutation.isPending}>
-                {t('personal.changePassword.submit', { defaultValue: 'Change Password' })}
-              </RediaccButton>
-            </ModalActions>
-          </FormItemActions>
+          <Form.Item>
+            <Flex className="w-full" justify="flex-end" gap={8}>
+              <Button onClick={closeChangePassword}>{tCommon('actions.cancel')}</Button>
+              <Button htmlType="submit" loading={updateUserPasswordMutation.isPending}>
+                {t('personal.changePassword.submit')}
+              </Button>
+            </Flex>
+          </Form.Item>
         </Form>
       </Modal>
 
       <TwoFactorSettings open={twoFactorModal.isOpen} onCancel={twoFactorModal.close} />
-    </PageWrapper>
+    </Flex>
   );
 };
 

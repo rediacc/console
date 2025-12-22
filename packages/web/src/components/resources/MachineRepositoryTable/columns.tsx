@@ -1,9 +1,7 @@
 import React from 'react';
-import { Space } from 'antd';
+import { Space, Tag, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useTheme as useStyledTheme } from 'styled-components';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
-import { StatusIcon } from '@/components/common/styled';
 import {
   isCredential as coreIsCredential,
   createArrayLengthSorter,
@@ -23,39 +21,39 @@ import {
   StopOutlined,
 } from '@/utils/optimizedIcons';
 import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
-import { GrandTag, SmallText } from './styledComponents';
 import { getRepositoryDisplayName } from './utils';
 import type { Container, PortMapping, RepositoryTableRow } from './types';
 import type { ColumnsType } from 'antd/es/table';
 
 export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
   const { t } = useTranslation(['resources', 'common']);
-  const theme = useStyledTheme();
+  const { token } = theme.useToken();
 
   const RepoStatusColumn = createStatusColumn<RepositoryTableRow>({
     title: t('resources:repositories.status'),
-    dataIndex: 'status',
+    dataIndex: 'mounted',
     key: 'status',
     width: 80,
+    renderValue: (_value, record) => {
+      if (record.mounted && record.docker_running) return 'mounted-running';
+      if (record.mounted) return 'mounted';
+      return 'unmounted';
+    },
     statusMap: {
       'mounted-running': {
-        color: 'success',
         label: t('resources:repositories.statusMountedRunning'),
         icon: <CheckCircleOutlined />,
       },
       mounted: {
-        color: 'warning',
         label: t('resources:repositories.statusMountedNotRunning'),
         icon: <ClockCircleOutlined />,
       },
       unmounted: {
-        color: 'default',
         label: t('resources:repositories.statusUnmounted'),
         icon: <DisconnectOutlined />,
       },
     },
     defaultConfig: {
-      color: 'default',
       label: t('resources:repositories.statusUnmounted'),
       icon: <DisconnectOutlined />,
     },
@@ -74,11 +72,18 @@ export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
 
       return (
         <Space>
-          <StatusIcon $color={isGrand ? theme.colors.iconGrand : theme.colors.iconFork} $size="LG">
+          <Typography.Text
+            // eslint-disable-next-line no-restricted-syntax
+            style={{
+              display: 'inline-flex',
+              fontSize: 20,
+              color: isGrand ? token.colorWarning : token.colorTextSecondary,
+            }}
+          >
             {isGrand ? <StarOutlined /> : <CopyOutlined />}
-          </StatusIcon>
+          </Typography.Text>
           <strong>{getRepositoryDisplayName(record)}</strong>
-          {isGrand && <GrandTag>Grand</GrandTag>}
+          {isGrand && <Tag>Grand</Tag>}
         </Space>
       );
     },
@@ -108,7 +113,7 @@ export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
 
 export const useSystemContainerColumns = () => {
   const { t } = useTranslation(['resources', 'common']);
-  const theme = useStyledTheme();
+  const { token } = theme.useToken();
 
   const systemStatusColumn = createStatusColumn<Container>({
     title: t('resources:containers.status'),
@@ -117,28 +122,23 @@ export const useSystemContainerColumns = () => {
     width: 80,
     statusMap: {
       running: {
-        color: 'success',
         label: t('resources:containers.containerStatusRunning'),
         icon: <PlayCircleOutlined />,
       },
       paused: {
-        color: 'warning',
         label: t('resources:containers.containerStatusPaused'),
         icon: <PauseCircleOutlined />,
       },
       restarting: {
-        color: 'blue',
         label: t('resources:containers.containerStatusRestarting'),
         icon: <ReloadOutlined />,
       },
       stopped: {
-        color: 'default',
         label: t('resources:containers.containerStatusStopped'),
         icon: <StopOutlined />,
       },
     },
     defaultConfig: {
-      color: 'default',
       label: t('resources:containers.containerStatusStopped'),
       icon: <StopOutlined />,
     },
@@ -150,28 +150,23 @@ export const useSystemContainerColumns = () => {
     key: 'state',
     statusMap: {
       running: {
-        color: 'success',
         label: t('resources:containers.containerStatusRunning'),
         icon: <PlayCircleOutlined />,
       },
       paused: {
-        color: 'warning',
         label: t('resources:containers.containerStatusPaused'),
         icon: <PauseCircleOutlined />,
       },
       restarting: {
-        color: 'blue',
         label: t('resources:containers.containerStatusRestarting'),
         icon: <ReloadOutlined />,
       },
       stopped: {
-        color: 'default',
         label: t('resources:containers.containerStatusStopped'),
         icon: <StopOutlined />,
       },
     },
     defaultConfig: {
-      color: 'default',
       label: t('resources:containers.containerStatusStopped'),
       icon: <StopOutlined />,
     },
@@ -196,9 +191,11 @@ export const useSystemContainerColumns = () => {
     {
       ...systemStatusColumn,
       align: 'center',
-      sorter: createCustomSorter<Container>((c) =>
-        c.state === 'running' ? 0 : c.state === 'paused' ? 1 : 2
-      ),
+      sorter: createCustomSorter<Container>((c) => {
+        if (c.state === 'running') return 0;
+        if (c.state === 'paused') return 1;
+        return 2;
+      }),
       render: (state: string, record: Container, index) =>
         systemStatusColumn.render?.(
           state === 'exited' ? 'stopped' : state,
@@ -210,9 +207,16 @@ export const useSystemContainerColumns = () => {
       ...systemNameColumn,
       render: (name: string, record: Container, index) => (
         <Space>
-          <StatusIcon $color={theme.colors.iconSystem} $size="LG">
+          <Typography.Text
+            // eslint-disable-next-line no-restricted-syntax
+            style={{
+              display: 'inline-flex',
+              fontSize: 20,
+              color: token.colorInfo,
+            }}
+          >
             <CloudServerOutlined />
-          </StatusIcon>
+          </Typography.Text>
           <strong>{systemNameColumn.render?.(name, record, index) as React.ReactNode}</strong>
         </Space>
       ),
@@ -229,7 +233,15 @@ export const useSystemContainerColumns = () => {
               index
             ) as React.ReactNode
           }
-          {record.status && <SmallText color="secondary">{record.status}</SmallText>}
+          {record.status && (
+            <Typography.Text
+              type="secondary"
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ fontSize: 12 }}
+            >
+              {record.status}
+            </Typography.Text>
+          )}
         </Space>
       ),
     },
@@ -258,23 +270,34 @@ export const useSystemContainerColumns = () => {
           return (
             <Space direction="vertical" size={4}>
               {portMappings.map((mapping, index) => (
-                <SmallText key={index}>
+                <Typography.Text
+                  key={index}
+                  // eslint-disable-next-line no-restricted-syntax
+                  style={{ fontSize: 12 }}
+                >
                   {mapping.host_port ? (
-                    <span>
+                    <Typography.Text>
                       {mapping.host}:{mapping.host_port} → {mapping.container_port}/
                       {mapping.protocol}
-                    </span>
+                    </Typography.Text>
                   ) : (
-                    <span>
+                    <Typography.Text>
                       {mapping.container_port}/{mapping.protocol}
-                    </span>
+                    </Typography.Text>
                   )}
-                </SmallText>
+                </Typography.Text>
               ))}
             </Space>
           );
         } else if (record.ports) {
-          return <SmallText>{record.ports}</SmallText>;
+          return (
+            <Typography.Text
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ fontSize: 12 }}
+            >
+              {record.ports}
+            </Typography.Text>
+          );
         }
         return '-';
       },

@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { Card, List, Modal, Popconfirm, Space, Tabs } from 'antd';
+import {
+  Button,
+  Card,
+  Flex,
+  List,
+  Modal,
+  Popconfirm,
+  Select,
+  Space,
+  Tabs,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   Team,
@@ -19,20 +32,6 @@ import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal, {
   type ExistingResourceData,
 } from '@/components/common/UnifiedResourceModal';
-import { RediaccTooltip } from '@/components/ui';
-import {
-  InlineFormRow,
-  ListSubtitle,
-  ListTitle,
-  ListTitleRow,
-  ModalStack,
-  PageWrapper,
-  RediaccButton,
-  RediaccSelect,
-  RediaccTag,
-  SectionHeading,
-  SectionStack,
-} from '@/components/ui';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { useFormModal } from '@/hooks/useFormModal';
 import { ModalSize } from '@/types/modal';
@@ -165,43 +164,35 @@ const TeamsPage: React.FC = () => {
   });
 
   return (
-    <PageWrapper>
-      <SectionStack>
-        <SectionHeading level={3}>{t('teams.heading', { defaultValue: 'Teams' })}</SectionHeading>
-        <ResourceListView<Team>
-          title={
-            <ListTitleRow>
-              <ListTitle>{t('teams.title', { defaultValue: 'Teams' })}</ListTitle>
-              <ListSubtitle>
-                {t('teams.subtitle', { defaultValue: 'Manage teams and their members' })}
-              </ListSubtitle>
-            </ListTitleRow>
-          }
-          loading={teamsLoading}
-          data={teams}
-          columns={teamColumns}
-          rowKey="teamName"
-          searchPlaceholder={t('teams.searchPlaceholder', { defaultValue: 'Search teams...' })}
-          data-testid="system-team-table"
-          actions={
-            <RediaccTooltip title={tSystem('actions.createTeam')}>
-              <RediaccButton
-                variant="primary"
-                icon={<PlusOutlined />}
-                onClick={() => unifiedModal.openCreate()}
-                data-testid="system-create-team-button"
-                aria-label={tSystem('actions.createTeam')}
-              />
-            </RediaccTooltip>
-          }
-        />
-      </SectionStack>
+    <Flex vertical>
+      <ResourceListView<Team>
+        title={
+          <Space direction="vertical" size={0}>
+            <Typography.Text strong>{t('teams.title')}</Typography.Text>
+            <Typography.Text>{t('teams.subtitle')}</Typography.Text>
+          </Space>
+        }
+        loading={teamsLoading}
+        data={teams}
+        columns={teamColumns}
+        rowKey="teamName"
+        searchPlaceholder={t('teams.searchPlaceholder')}
+        data-testid="system-team-table"
+        actions={
+          <Tooltip title={tSystem('actions.createTeam')}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => unifiedModal.openCreate()}
+              data-testid="system-create-team-button"
+              aria-label={tSystem('actions.createTeam')}
+            />
+          </Tooltip>
+        }
+      />
 
       <Modal
-        title={t('teams.manageMembers.title', {
-          defaultValue: `Manage Team Members${manageTeamModal.state.data ? ` - ${manageTeamModal.state.data.teamName}` : ''}`,
-          teamName: manageTeamModal.state.data?.teamName,
-        })}
+        title={`${t('teams.manageMembers.title')}${manageTeamModal.state.data ? ` - ${manageTeamModal.state.data.teamName}` : ''}`}
         open={manageTeamModal.isOpen}
         onCancel={() => {
           manageTeamModal.close();
@@ -214,28 +205,22 @@ const TeamsPage: React.FC = () => {
           items={[
             {
               key: 'current',
-              label: t('teams.manageMembers.currentTab', { defaultValue: 'Current Members' }),
+              label: t('teams.manageMembers.currentTab'),
               children: (
                 <Card>
                   <List
                     dataSource={teamMembers}
                     loading={membersLoading}
                     locale={{
-                      emptyText: t('teams.manageMembers.empty', {
-                        defaultValue: 'No members in this team',
-                      }),
+                      emptyText: t('teams.manageMembers.empty'),
                     }}
                     renderItem={(member: TeamMember) => (
                       <List.Item
                         actions={[
                           <Popconfirm
                             key="remove"
-                            title={t('teams.manageMembers.removeTitle', {
-                              defaultValue: 'Remove Team Member',
-                            })}
+                            title={t('teams.manageMembers.removeTitle')}
                             description={t('teams.manageMembers.removeDescription', {
-                              defaultValue:
-                                'Are you sure you want to remove "{{email}}" from this team?',
                               email: member.userEmail,
                             })}
                             onConfirm={() => handleRemoveTeamMember(member.userEmail)}
@@ -243,15 +228,15 @@ const TeamsPage: React.FC = () => {
                             cancelText={tCommon('general.no')}
                             okButtonProps={{ danger: true }}
                           >
-                            <RediaccTooltip title={tCommon('actions.remove')}>
-                              <RediaccButton
-                                variant="primary"
+                            <Tooltip title={tCommon('actions.remove')}>
+                              <Button
+                                type="text"
                                 danger
                                 loading={removeTeamMemberMutation.isPending}
                                 icon={<DeleteOutlined />}
                                 aria-label={tCommon('actions.remove')}
                               />
-                            </RediaccTooltip>
+                            </Tooltip>
                           </Popconfirm>,
                         ]}
                       >
@@ -261,18 +246,10 @@ const TeamsPage: React.FC = () => {
                           description={
                             <Space size="small">
                               {member.isMember && (
-                                <RediaccTag variant="success">
-                                  {t('teams.manageMembers.memberStatus', {
-                                    defaultValue: 'Member',
-                                  })}
-                                </RediaccTag>
+                                <Tag>{t('teams.manageMembers.memberStatus')}</Tag>
                               )}
                               {member.hasAccess && (
-                                <RediaccTag variant="primary">
-                                  {t('teams.manageMembers.accessStatus', {
-                                    defaultValue: 'Has Access',
-                                  })}
-                                </RediaccTag>
+                                <Tag>{t('teams.manageMembers.accessStatus')}</Tag>
                               )}
                             </Space>
                           }
@@ -285,18 +262,16 @@ const TeamsPage: React.FC = () => {
             },
             {
               key: 'add',
-              label: t('teams.manageMembers.addTab', { defaultValue: 'Add Member' }),
+              label: t('teams.manageMembers.addTab'),
               children: (
-                <ModalStack>
-                  <InlineFormRow>
-                    <RediaccSelect
-                      fullWidth
+                <Flex vertical gap={16}>
+                  <Flex gap={12} align="center" wrap>
+                    <Select
                       showSearch
-                      placeholder={t('teams.manageMembers.selectUser', {
-                        defaultValue: 'Select user',
-                      })}
-                      value={selectedMemberEmail || undefined}
+                      placeholder={t('teams.manageMembers.selectUser')}
+                      value={selectedMemberEmail ?? undefined}
                       onChange={(value) => setSelectedMemberEmail((value as string) || '')}
+                      className="flex-1"
                       filterOption={(input, option) =>
                         String(option?.label ?? '')
                           .toLowerCase()
@@ -315,18 +290,18 @@ const TeamsPage: React.FC = () => {
                           })) || []
                       }
                     />
-                    <RediaccTooltip title={tSystem('actions.addMember')}>
-                      <RediaccButton
-                        variant="primary"
+                    <Tooltip title={tSystem('actions.addMember')}>
+                      <Button
+                        type="primary"
                         onClick={handleAddTeamMember}
                         loading={addTeamMemberMutation.isPending}
                         disabled={!selectedMemberEmail}
                         icon={<PlusOutlined />}
                         aria-label={tSystem('actions.addMember')}
                       />
-                    </RediaccTooltip>
-                  </InlineFormRow>
-                </ModalStack>
+                    </Tooltip>
+                  </Flex>
+                </Flex>
               ),
             },
           ]}
@@ -352,7 +327,7 @@ const TeamsPage: React.FC = () => {
         entityIdentifier={auditTrace.entityIdentifier}
         entityName={auditTrace.entityName}
       />
-    </PageWrapper>
+    </Flex>
   );
 };
 

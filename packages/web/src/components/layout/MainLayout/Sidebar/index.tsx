@@ -1,24 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { Flex, Menu, type MenuProps, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { MenuItem } from '@/components/layout/MainLayout/helpers';
 import { SIDEBAR_COLLAPSED_WIDTH } from '@/components/layout/MainLayout/types';
-import { RediaccTooltip } from '@/components/ui';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { formatKeyForTestId } from '@/utils/testIdHelpers';
-import {
-  MenuIcon,
-  MenuLabel,
-  MenuScrollArea,
-  SidebarContent,
-  MenuItem as StyledMenuItem,
-  StyledSider,
-  SubMenuContainer,
-  SubMenuItem,
-  TooltipContent,
-  TooltipItem,
-  TooltipLabel,
-} from './styles';
 
 type SidebarProps = {
   collapsed: boolean;
@@ -29,6 +15,8 @@ type SidebarProps = {
   onNavigate: (route: string, metadata: Record<string, unknown>) => void;
   isDrawer?: boolean;
 };
+
+type AntMenuItem = Required<MenuProps>['items'][number];
 
 export const Sidebar: React.FC<SidebarProps> = ({
   collapsed,
@@ -43,142 +31,129 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isChildActive = (childKey: string) => location.pathname.startsWith(childKey);
-
-  const handleParentClick = (item: MenuItem, visibleChildren: MenuItem[]) => {
-    const targetRoute = visibleChildren.length > 0 ? visibleChildren[0]?.key : item.key;
-    if (!targetRoute) return;
-
-    onNavigate(targetRoute, {
-      menu_item: item.label,
-      ui_mode: uiMode,
-      sidebar_collapsed: collapsed,
-      from_page: location.pathname,
+  // Compute selected keys based on current path
+  const selectedKeys = useMemo(() => {
+    const allKeys: string[] = [];
+    menuItems.forEach((item) => {
+      allKeys.push(item.key);
+      item.children?.forEach((child) => allKeys.push(child.key));
     });
-    navigate(targetRoute);
-  };
 
-  const handleChildClick = (child: MenuItem, event?: React.MouseEvent) => {
-    if (event) {
-      event.stopPropagation();
-      event.preventDefault();
+    // Find the most specific matching key
+    return allKeys
+      .filter((key) => location.pathname.startsWith(key))
+      .sort((a, b) => b.length - a.length)
+      .slice(0, 1);
+  }, [location.pathname, menuItems]);
+
+  // Convert menu items to Ant Design format
+  const antMenuItems: AntMenuItem[] = useMemo(() => {
+    return menuItems.map((item): AntMenuItem => {
+      const hasChildren = item.children && item.children.length > 0;
+
+      if (hasChildren) {
+        return {
+          key: item.key,
+          icon: item.icon,
+          label: (
+            <Typography.Text data-testid={`sidebar-menu-${formatKeyForTestId(item.key)}`}>
+              {item.label}
+            </Typography.Text>
+          ),
+          onTitleClick: () => {
+            const firstChild = item.children?.[0];
+            if (firstChild) {
+              onNavigate(firstChild.key, {
+                menu_item: item.label,
+                ui_mode: uiMode,
+                sidebar_collapsed: collapsed,
+                from_page: location.pathname,
+              });
+              navigate(firstChild.key);
+            }
+          },
+          children: item.children?.map((child) => ({
+            key: child.key,
+            label: (
+              <Typography.Text data-testid={`sidebar-submenu-${formatKeyForTestId(child.key)}`}>
+                {child.label}
+              </Typography.Text>
+            ),
+          })),
+        };
+      }
+
+      return {
+        key: item.key,
+        icon: item.icon,
+        label: (
+          <Typography.Text data-testid={`sidebar-menu-${formatKeyForTestId(item.key)}`}>
+            {item.label}
+          </Typography.Text>
+        ),
+      };
+    });
+  }, [menuItems, collapsed, uiMode, location.pathname, navigate, onNavigate]);
+
+  // Handle menu item clicks
+  const handleClick: MenuProps['onClick'] = ({ key }) => {
+    let clickedLabel = key;
+    for (const item of menuItems) {
+      if (item.key === key) {
+        clickedLabel = item.label;
+        break;
+      }
+      if (item.children) {
+        const child = item.children.find((c) => c.key === key);
+        if (child) {
+          clickedLabel = child.label;
+          break;
+        }
+      }
     }
 
-    onNavigate(child.key, {
-      menu_item: child.label,
+    onNavigate(key, {
+      menu_item: clickedLabel,
       ui_mode: uiMode,
       sidebar_collapsed: collapsed,
       from_page: location.pathname,
     });
-    navigate(child.key);
+    navigate(key);
   };
 
+  const currentWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : sidebarWidth;
+
   return (
-    <StyledSider
-      trigger={null}
-      collapsible
-      collapsed={collapsed}
-      collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
-      width={sidebarWidth}
-      $sidebarWidth={sidebarWidth}
-      $isDrawer={isDrawer}
+    <Flex
+      vertical
+      // eslint-disable-next-line no-restricted-syntax
+      style={{
+        position: isDrawer ? 'static' : 'fixed',
+        left: 0,
+        top: isDrawer ? 0 : 64,
+        width: currentWidth,
+        height: isDrawer ? '100%' : 'calc(100vh - 64px)',
+        zIndex: 1000,
+      }}
+      className="overflow-hidden"
       role="navigation"
       aria-label={t('navigation.mainNavigation')}
       data-testid="main-sidebar"
     >
-      <SidebarContent $isDrawer={isDrawer}>
-        <MenuScrollArea>
-          {menuItems.map((item) => {
-            const visibleChildren = item.children || [];
-            const hasChildren = visibleChildren.length > 0;
-            const isParentActive = hasChildren
-              ? visibleChildren.some((child) => isChildActive(child.key))
-              : location.pathname.startsWith(item.key);
-            const isExpanded = hasChildren
-              ? expandedParentKeys.includes(item.key) || isParentActive
-              : false;
-            const padding = collapsed
-              ? `${DESIGN_TOKENS.SPACING.SM_MD}px ${DESIGN_TOKENS.SPACING.SM_LG}px`
-              : `${DESIGN_TOKENS.SPACING.SM_MD}px ${DESIGN_TOKENS.SPACING.MD_LG}px`;
-            const itemKey = item.key || item.label;
-
-            const parentContent = (
-              <StyledMenuItem
-                key={itemKey}
-                $isActive={isParentActive}
-                $padding={padding}
-                $collapsed={collapsed}
-                onClick={() => handleParentClick(item, visibleChildren)}
-                data-testid={`sidebar-menu-${formatKeyForTestId(item.key)}`}
-              >
-                <MenuIcon $isActive={isParentActive} $collapsed={collapsed}>
-                  {item.icon}
-                </MenuIcon>
-                <MenuLabel $isActive={isParentActive} $collapsed={collapsed}>
-                  {item.label}
-                </MenuLabel>
-              </StyledMenuItem>
-            );
-
-            if (collapsed) {
-              const tooltipContent = hasChildren ? (
-                <TooltipContent>
-                  {visibleChildren.map((child) => {
-                    const childActive = isChildActive(child.key);
-                    return (
-                      <TooltipItem
-                        key={child.key}
-                        $isActive={childActive}
-                        onClick={(event) => handleChildClick(child, event)}
-                      >
-                        {child.label}
-                      </TooltipItem>
-                    );
-                  })}
-                </TooltipContent>
-              ) : (
-                <TooltipContent>
-                  <TooltipLabel $isActive={isParentActive}>{item.label}</TooltipLabel>
-                </TooltipContent>
-              );
-
-              return (
-                <RediaccTooltip
-                  key={itemKey}
-                  title={tooltipContent}
-                  placement="right"
-                  overlayInnerStyle={{ padding: 0, background: 'var(--color-bg-primary)' }}
-                >
-                  {parentContent}
-                </RediaccTooltip>
-              );
-            }
-
-            return (
-              <div key={itemKey}>
-                {parentContent}
-                {hasChildren && (
-                  <SubMenuContainer $isExpanded={isExpanded}>
-                    {visibleChildren.map((child) => {
-                      const childActive = isChildActive(child.key);
-                      return (
-                        <SubMenuItem
-                          key={child.key}
-                          $isActive={childActive}
-                          onClick={() => handleChildClick(child)}
-                          data-testid={`sidebar-submenu-${formatKeyForTestId(child.key)}`}
-                        >
-                          {child.label}
-                        </SubMenuItem>
-                      );
-                    })}
-                  </SubMenuContainer>
-                )}
-              </div>
-            );
-          })}
-        </MenuScrollArea>
-      </SidebarContent>
-    </StyledSider>
+      <Menu
+        mode="inline"
+        selectedKeys={selectedKeys}
+        openKeys={collapsed ? [] : expandedParentKeys}
+        items={antMenuItems}
+        onClick={handleClick}
+        inlineCollapsed={collapsed}
+        // eslint-disable-next-line no-restricted-syntax
+        style={{
+          paddingTop: isDrawer ? 80 : 16,
+          borderRight: 0,
+        }}
+        className="h-full"
+      />
+    </Flex>
   );
 };

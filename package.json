@@ -23,7 +23,11 @@
     "format:check": "biome format packages/",
     "format:imports": "biome check --write packages/",
     "lint:unused": "knip",
-    "lint:unused:fix": "knip --fix"
+    "lint:unused:fix": "knip --fix",
+    "test": "npm run test -w @rediacc/web",
+    "test:ui": "npm run test:ui -w @rediacc/web",
+    "test:run": "npm run test:run -w @rediacc/web",
+    "test:coverage": "npm run test:coverage -w @rediacc/web"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",

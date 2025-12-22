@@ -178,12 +178,6 @@
     "actions": "Actes",
     "showingRecords": "Affichage des enregistrements {{start}}-{{end}} sur {{total}}"
   },
-  "theme": {
-    "dark": "Sombre",
-    "light": "Lumière",
-    "switchToDark": "Passer en mode sombre",
-    "switchToLight": "Passer en mode lumière"
-  },
   "thisMonth": "Ce mois-ci",
   "today": "Aujourd'hui",
   "total": "Totale",
