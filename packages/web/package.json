@@ -52,7 +52,7 @@
     "react-syntax-highlighter": "^16.1.0",
     "react-window": "^2.2.3",
     "react-window-infinite-loader": "^2.0.0",
-    "zod": "^4.1.13"
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
