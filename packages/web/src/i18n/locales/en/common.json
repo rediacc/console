@@ -222,6 +222,11 @@
   "thisMonth": "This Month",
   "today": "Today",
   "total": "Total",
+  "theme": {
+    "dark": "Dark",
+    "label": "Theme",
+    "light": "Light"
+  },
   "uiMode": {
     "expert": "Expert",
     "label": "Interface Mode",

@@ -8,6 +8,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '@/api/client';
 import { useCompanyInfo } from '@/api/queries/dashboard';
 import logoBlack from '@/assets/logo_black.png';
+import logoWhite from '@/assets/logo_white.png';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
 import { featureFlags } from '@/config/featureFlags';
@@ -16,7 +17,7 @@ import { masterPasswordService } from '@/services/masterPasswordService';
 import { selectCompany } from '@/store/auth/authSelectors';
 import { logout, updateCompany } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
-import { toggleUiMode } from '@/store/ui/uiSlice';
+import { toggleThemeMode, toggleUiMode } from '@/store/ui/uiSlice';
 import { clearAuthData, getAuthData, saveAuthData } from '@/utils/auth';
 import { MenuOutlined, SafetyCertificateOutlined, SmileOutlined } from '@/utils/optimizedIcons';
 import { HeaderActions } from './HeaderActions';
@@ -34,6 +35,8 @@ const MainLayout: React.FC = () => {
   const queryClient = useQueryClient();
   const company = useSelector(selectCompany);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
+  const themeMode = useSelector((state: RootState) => state.ui.themeMode);
+  const logo = themeMode === 'dark' ? logoWhite : logoBlack;
   const { t } = useTranslation('common');
   const message = useMessage();
   const { data: companyData } = useCompanyInfo();
@@ -112,6 +115,10 @@ const MainLayout: React.FC = () => {
     setIsTransitioning(false);
   };
 
+  const handleThemeToggle = () => {
+    dispatch(toggleThemeMode());
+  };
+
   const handleLogout = async () => {
     trackUserAction('logout', 'logout_button', {
       current_page: location.pathname,
@@ -152,7 +159,7 @@ const MainLayout: React.FC = () => {
         onCollapse={handleCollapse}
         collapsedButtonRender={false}
         // Branding
-        logo={logoBlack}
+        logo={logo}
         title={false}
         onMenuHeaderClick={() => {
           trackUserAction('navigation', '/dashboard', {
@@ -227,7 +234,7 @@ const MainLayout: React.FC = () => {
               data-testid="main-logo-home"
             >
               <img
-                src={logoBlack}
+                src={logo}
                 alt="Rediacc Logo"
                 // eslint-disable-next-line no-restricted-syntax
                 style={{ height: 32, width: 'auto', objectFit: 'contain' }}
@@ -236,7 +243,11 @@ const MainLayout: React.FC = () => {
           </Flex>
         )}
         actionsRender={() => (
-          <HeaderActions onModeToggle={handleModeToggle} onLogout={handleLogout} />
+          <HeaderActions
+            onModeToggle={handleModeToggle}
+            onThemeToggle={handleThemeToggle}
+            onLogout={handleLogout}
+          />
         )}
         // Content
         contentStyle={{ padding: 24 }}

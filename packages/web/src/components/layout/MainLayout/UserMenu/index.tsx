@@ -2,10 +2,13 @@ import React from 'react';
 import { Avatar, Button, Card, Divider, Flex, Segmented, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '@/components/common/LanguageSelector';
+import type { ThemeMode } from '@/store/ui/uiSlice';
 import {
   LogoutOutlined,
+  MoonOutlined,
   SafetyCertificateOutlined,
   SmileOutlined,
+  SunOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
@@ -15,7 +18,9 @@ type UserMenuProps = {
   company: string | null;
   companyData?: Pick<CompanyDashboardData, 'companyInfo' | 'activeSubscription'>;
   uiMode: 'simple' | 'expert';
+  themeMode: ThemeMode;
   onModeToggle: () => void;
+  onThemeToggle: () => void;
   onLogout: () => void;
 };
 
@@ -24,7 +29,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   company,
   companyData,
   uiMode,
+  themeMode,
   onModeToggle,
+  onThemeToggle,
   onLogout,
 }) => {
   const { t } = useTranslation('common');
@@ -91,6 +98,45 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               },
             ]}
             data-testid="main-mode-toggle"
+          />
+        </Flex>
+
+        <Divider
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ margin: '12px 0' }}
+        />
+
+        <Flex vertical>
+          <Typography.Text type="secondary">{t('theme.label')}</Typography.Text>
+          <Segmented
+            block
+            value={themeMode}
+            onChange={(value) => {
+              if (value !== themeMode) {
+                onThemeToggle();
+              }
+            }}
+            options={[
+              {
+                label: (
+                  <Space size={4}>
+                    <SunOutlined />
+                    <Typography.Text>{t('theme.light')}</Typography.Text>
+                  </Space>
+                ),
+                value: 'light',
+              },
+              {
+                label: (
+                  <Space size={4}>
+                    <MoonOutlined />
+                    <Typography.Text>{t('theme.dark')}</Typography.Text>
+                  </Space>
+                ),
+                value: 'dark',
+              },
+            ]}
+            data-testid="main-theme-toggle"
           />
         </Flex>
 

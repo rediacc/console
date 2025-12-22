@@ -10,13 +10,19 @@ import { UserMenu } from './UserMenu';
 
 type HeaderActionsProps = {
   onModeToggle: () => void;
+  onThemeToggle: () => void;
   onLogout: () => void;
 };
 
-export const HeaderActions: React.FC<HeaderActionsProps> = ({ onModeToggle, onLogout }) => {
+export const HeaderActions: React.FC<HeaderActionsProps> = ({
+  onModeToggle,
+  onThemeToggle,
+  onLogout,
+}) => {
   const user = useSelector(selectUser);
   const company = useSelector(selectCompany);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
+  const themeMode = useSelector((state: RootState) => state.ui.themeMode);
   const { data: companyData } = useCompanyInfo();
 
   return (
@@ -31,7 +37,9 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({ onModeToggle, onLo
             company={company}
             companyData={companyData}
             uiMode={uiMode}
+            themeMode={themeMode}
             onModeToggle={onModeToggle}
+            onThemeToggle={onThemeToggle}
             onLogout={onLogout}
           />
         )}
