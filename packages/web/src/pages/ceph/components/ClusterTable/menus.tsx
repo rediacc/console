@@ -1,10 +1,13 @@
+import { Typography } from 'antd';
 import { ExpandOutlined, FunctionOutlined, KeyOutlined } from '@/utils/optimizedIcons';
 import type { MenuProps } from 'antd';
 import type { TFunction } from 'i18next';
 
 // Helper to create menu labels with consistent data-testid
 const createActionLabel = (actionKey: string, label: React.ReactNode) => (
-  <span data-testid={`cluster-action-${actionKey.replace(/_/g, '-')}`}>{label}</span>
+  <Typography.Text data-testid={`cluster-action-${actionKey.replace(/_/g, '-')}`}>
+    {label}
+  </Typography.Text>
 );
 
 export const getClusterFunctionMenuItems = (

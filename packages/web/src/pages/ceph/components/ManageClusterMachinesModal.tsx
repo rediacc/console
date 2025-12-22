@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Empty, Modal, Space, Tabs, Tag } from 'antd';
+import { Button, Empty, Flex, Modal, Space, Table, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   CephClusterMachine,
@@ -10,10 +10,10 @@ import {
   useUpdateMachineClusterAssignment,
   useUpdateMachineClusterRemoval,
 } from '@/api/queries/cephMutations';
+import { SizedModal } from '@/components/common';
 import { createDateColumn, createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector';
-import { RediaccButton, RediaccTable } from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { createSorter, formatTimestampAsIs } from '@/platform';
 import type { Machine } from '@/types';
@@ -25,7 +25,6 @@ import {
   DesktopOutlined,
   PlusOutlined,
 } from '@/utils/optimizedIcons';
-import { FullWidthSpace, RemoveButton } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ManageClusterMachinesModalProps {
@@ -185,7 +184,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     dataIndex: 'bridgeName',
     key: 'bridgeName',
     sorter: createSorter<CephClusterMachine>('bridgeName'),
-    renderWrapper: (content) => <Tag color="success">{content}</Tag>,
+    renderWrapper: (content) => <Tag>{content}</Tag>,
   });
 
   const assignedDateColumn = createDateColumn<CephClusterMachine>({
@@ -210,30 +209,30 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     if (loadingAvailable) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
-          <div />
+          <Flex />
         </LoadingWrapper>
       );
     }
 
     return (
-      <FullWidthSpace direction="vertical" size="large">
-        <div>
-          <p>{t('machines:selectMachines')}</p>
+      <Space direction="vertical" size="large" className="w-full">
+        <Flex vertical>
+          <Typography.Text>{t('machines:selectMachines')}</Typography.Text>
           <AvailableMachinesSelector
             machines={normalizedAvailableMachines}
             value={selectedMachines}
             onChange={setSelectedMachines}
           />
-        </div>
+        </Flex>
 
         {selectedMachines.length > 0 && (
-          <div>
-            <Tag color="blue">
+          <Flex>
+            <Tag>
               {t('machines:bulkOperations.selectedCount', { count: selectedMachines.length })}
             </Tag>
-          </div>
+          </Flex>
         )}
-      </FullWidthSpace>
+      </Space>
     );
   };
 
@@ -241,7 +240,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     if (loadingClusterMachines) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
-          <div />
+          <Flex />
         </LoadingWrapper>
       );
     }
@@ -258,39 +257,40 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     };
 
     return (
-      <FullWidthSpace direction="vertical" size="large">
+      <Space direction="vertical" size="large" className="w-full">
         {selectedRemoveMachines.length > 0 && (
-          <div>
-            <Tag color="warning">
+          <Flex>
+            <Tag>
               {t('machines:bulkOperations.selectedCount', { count: selectedRemoveMachines.length })}
             </Tag>
-            <RemoveButton
-              variant="danger"
+            <Button
+              type="primary"
+              danger
               icon={<DeleteOutlined />}
               onClick={handleRemoveMachines}
               loading={removingMachines}
               data-testid="ds-manage-machines-remove-button"
             >
               {t('machines:removeFromCluster')}
-            </RemoveButton>
-          </div>
+            </Button>
+          </Flex>
         )}
 
-        <RediaccTable<CephClusterMachine>
+        <Table<CephClusterMachine>
           rowSelection={rowSelection}
           columns={assignedColumns}
           dataSource={clusterMachines}
           rowKey="machineName"
-          size="sm"
+          size="small"
           pagination={false}
           data-testid="ds-manage-machines-assigned-table"
         />
-      </FullWidthSpace>
+      </Space>
     );
   };
 
   return (
-    <Modal
+    <SizedModal
       title={
         <Space>
           <CloudServerOutlined />
@@ -299,16 +299,16 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       }
       open={open}
       onCancel={onCancel}
-      className={ModalSize.Large}
+      size={ModalSize.Large}
       data-testid="ds-manage-cluster-machines-modal"
       footer={[
-        <RediaccButton key="cancel" onClick={onCancel} data-testid="ds-manage-machines-cancel">
+        <Button key="cancel" onClick={onCancel} data-testid="ds-manage-machines-cancel">
           {t('common:actions.cancel')}
-        </RediaccButton>,
+        </Button>,
         activeTab === 'assign' && (
-          <RediaccButton
+          <Button
             key="assign"
-            variant="primary"
+            type="primary"
             icon={<PlusOutlined />}
             loading={assigningMachines}
             disabled={selectedMachines.length === 0}
@@ -316,7 +316,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
             data-testid="ds-manage-machines-assign-button"
           >
             {t('machines:assignToCluster')}
-          </RediaccButton>
+          </Button>
         ),
       ].filter(Boolean)}
     >
@@ -329,23 +329,23 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
           {
             key: 'assign',
             label: (
-              <span data-testid="ds-manage-machines-tab-assign">
+              <Typography.Text data-testid="ds-manage-machines-tab-assign">
                 {t('machines:assignToCluster')}
-              </span>
+              </Typography.Text>
             ),
             children: renderAssignTab(),
           },
           {
             key: 'manage',
             label: (
-              <span data-testid="ds-manage-machines-tab-manage">
+              <Typography.Text data-testid="ds-manage-machines-tab-manage">
                 {t('clusters.assignedMachines')}
-              </span>
+              </Typography.Text>
             ),
             children: renderManageTab(),
           },
         ]}
       />
-    </Modal>
+    </SizedModal>
   );
 };

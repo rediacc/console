@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Button, Flex, Tooltip, Typography } from 'antd';
 import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
 import { RepositoryDetailPanel } from '@/components/resources/internal/RepositoryDetailPanel';
-import { RediaccTooltip } from '@/components/ui';
 import type { Machine, PluginContainer, Repository } from '@/types';
 import {
   ContainerOutlined,
@@ -10,15 +10,6 @@ import {
   DoubleLeftOutlined,
   InboxOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  CollapsedIcon,
-  CollapsedPanel,
-  ExpandedContent,
-  PanelContainer,
-  ResizeHandle,
-  ResizeIndicator,
-  ToggleButton,
-} from './styles';
 
 interface ContainerData {
   id: string;
@@ -148,28 +139,69 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   const actualWidth = isCollapsed ? collapsedWidth : splitWidth;
 
   return (
-    <PanelContainer $width={actualWidth} $opacity={1} data-testid="unified-detail-panel">
+    <Flex
+      className="fixed flex flex-shrink-0"
+      // eslint-disable-next-line no-restricted-syntax
+      style={{
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: actualWidth,
+        zIndex: 1000,
+      }}
+      data-testid="unified-detail-panel"
+    >
       {!isCollapsed && (
-        <ResizeHandle onMouseDown={handleMouseDown} data-testid="unified-detail-resize-handle">
-          <ResizeIndicator />
-        </ResizeHandle>
+        <Flex
+          onMouseDown={handleMouseDown}
+          data-testid="unified-detail-resize-handle"
+          className="absolute cursor-ew-resize"
+          // eslint-disable-next-line no-restricted-syntax
+          style={{
+            left: -3,
+            top: 0,
+            bottom: 0,
+            width: 8,
+            zIndex: 10,
+          }}
+        >
+          <Flex
+            className="absolute"
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ left: 2, top: 0, bottom: 0, width: 2 }}
+          />
+        </Flex>
       )}
 
       {isCollapsed ? (
-        <CollapsedPanel data-testid="unified-detail-collapsed">
-          <RediaccTooltip title="Expand Panel" placement="left">
-            <ToggleButton
-              variant="text"
+        <Flex
+          vertical
+          align="center"
+          justify="flex-start"
+          data-testid="unified-detail-collapsed"
+          className="w-full"
+        >
+          <Tooltip title="Expand Panel" placement="left">
+            <Button
+              type="text"
               icon={<DoubleLeftOutlined />}
               onClick={onToggleCollapse}
               data-testid="unified-detail-expand-button"
               aria-label="Expand Panel"
             />
-          </RediaccTooltip>
-          <CollapsedIcon $type={actualType}>{getResourceIcon()}</CollapsedIcon>
-        </CollapsedPanel>
+          </Tooltip>
+          <Typography.Text
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ fontSize: 16 }}
+          >
+            {getResourceIcon()}
+          </Typography.Text>
+        </Flex>
       ) : (
-        <ExpandedContent data-testid="unified-detail-content">
+        <Flex
+          className="flex-1 overflow-auto overflow-x-hidden"
+          data-testid="unified-detail-content"
+        >
           {actualType === 'machine' ? (
             <MachineVaultStatusPanel
               machine={currentData as Machine}
@@ -192,8 +224,8 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
               splitView
             />
           )}
-        </ExpandedContent>
+        </Flex>
       )}
-    </PanelContainer>
+    </Flex>
   );
 };

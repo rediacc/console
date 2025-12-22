@@ -1,3 +1,4 @@
+import { Flex, Typography } from 'antd';
 import type { CephPool } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn, createVersionColumn } from '@/components/common/columns';
@@ -7,9 +8,10 @@ import {
   EditOutlined,
   FunctionOutlined,
   HistoryOutlined,
+  RightOutlined,
+  DatabaseOutlined,
 } from '@/utils/optimizedIcons';
 import { getPoolFunctionMenuItems } from './menus';
-import { ExpandIcon, PoolIcon, PoolNameCell, PoolNameText } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 import type { TFunction } from 'i18next';
 
@@ -39,11 +41,17 @@ export const buildPoolColumns = ({
     render: (name: string, record: CephPool) => {
       const isExpanded = expandedRowKeys.includes(record.poolGuid || '');
       return (
-        <PoolNameCell>
-          <ExpandIcon $expanded={isExpanded} />
-          <PoolIcon />
-          <PoolNameText>{name}</PoolNameText>
-        </PoolNameCell>
+        <Flex align="center" gap={8} className="inline-flex">
+          <RightOutlined
+            // eslint-disable-next-line no-restricted-syntax
+            style={{
+              transform: isExpanded ? 'rotate(90deg)' : undefined,
+              transition: 'transform 0.2s ease',
+            }}
+          />
+          <DatabaseOutlined />
+          <Typography.Text>{name}</Typography.Text>
+        </Flex>
       );
     },
   },

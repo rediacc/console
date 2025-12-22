@@ -1,17 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { ClockCircleOutlined, CloudServerOutlined, DesktopOutlined } from '@ant-design/icons';
+import { Tag, Tooltip, Typography, Flex } from 'antd';
 import { useApiHealth } from '@/api/queries/health';
-import { RediaccTooltip } from '@/components/ui';
-import { RediaccText } from '@/components/ui';
 import { versionService } from '@/services/versionService';
-import {
-  ApiIcon,
-  ConsoleIcon,
-  EnvironmentTag,
-  FooterContainer,
-  Separator,
-  UptimeIcon,
-  VersionItem,
-} from './styles';
 
 const formatUptime = (uptime: { days: number; hours: number; minutes: number }): string => {
   const parts: string[] = [];
@@ -37,56 +28,50 @@ const SystemVersionFooter: React.FC = () => {
     fetchUiVersion();
   }, []);
 
-  const apiVersion = apiHealth?.version ? `v${apiHealth.version}` : apiLoading ? '...' : 'Unknown';
+  // Determine API version display
+  let apiVersion: string;
+  if (apiHealth?.version) {
+    apiVersion = `v${apiHealth.version}`;
+  } else if (apiLoading) {
+    apiVersion = '...';
+  } else {
+    apiVersion = 'Unknown';
+  }
+
   const environment = apiHealth?.environment || 'Unknown';
-  const isProduction = environment === 'Production';
   const uptime = apiHealth?.uptime;
 
   return (
-    <FooterContainer data-testid="system-version-footer">
-      <VersionItem>
-        <ConsoleIcon />
-        <RediaccText size="sm" color="muted">
-          Console
-        </RediaccText>
-        <RediaccText size="sm" color="secondary" weight="medium" data-testid="ui-version">
-          {uiVersion}
-        </RediaccText>
-      </VersionItem>
+    <Flex align="center" justify="center" gap={8} data-testid="system-version-footer">
+      <Flex align="center" gap={8} className="inline-flex">
+        <DesktopOutlined />
+        <Typography.Text>Console</Typography.Text>
+        <Typography.Text data-testid="ui-version">{uiVersion}</Typography.Text>
+      </Flex>
 
-      <Separator>|</Separator>
+      <Typography.Text>|</Typography.Text>
 
-      <VersionItem>
-        <ApiIcon />
-        <RediaccText size="sm" color="muted">
-          API
-        </RediaccText>
-        <RediaccText size="sm" color="secondary" weight="medium" data-testid="api-version">
-          {apiVersion}
-        </RediaccText>
-        <EnvironmentTag
-          $isProduction={isProduction}
-          variant={isProduction ? 'success' : 'warning'}
-          data-testid="environment-tag"
-        >
+      <Flex align="center" gap={8} className="inline-flex">
+        <CloudServerOutlined />
+        <Typography.Text>API</Typography.Text>
+        <Typography.Text data-testid="api-version">{apiVersion}</Typography.Text>
+        <Tag bordered={false} data-testid="environment-tag">
           {environment}
-        </EnvironmentTag>
-      </VersionItem>
+        </Tag>
+      </Flex>
 
       {uptime && (
         <>
-          <Separator>|</Separator>
-          <RediaccTooltip title="API Uptime">
-            <VersionItem>
-              <UptimeIcon />
-              <RediaccText size="xs" color="muted" data-testid="api-uptime">
-                {formatUptime(uptime)}
-              </RediaccText>
-            </VersionItem>
-          </RediaccTooltip>
+          <Typography.Text>|</Typography.Text>
+          <Tooltip title="API Uptime">
+            <Flex align="center" gap={8} className="inline-flex">
+              <ClockCircleOutlined />
+              <Typography.Text data-testid="api-uptime">{formatUptime(uptime)}</Typography.Text>
+            </Flex>
+          </Tooltip>
         </>
       )}
-    </FooterContainer>
+    </Flex>
   );
 };
 

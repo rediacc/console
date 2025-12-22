@@ -1,8 +1,8 @@
+import { Badge, Tag } from 'antd';
 import { createTruncatedColumn } from '@/components/common/columns';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
 import { createSorter } from '@/platform';
 import type { Machine } from '@/types';
-import { AssignmentTag, QueueBadge } from './styles';
 import type { ColumnsType } from 'antd/es/table/interface';
 import type { TFunction } from 'i18next';
 
@@ -21,7 +21,7 @@ export const buildMachineTableColumns = (
     key: 'teamName',
     width: 150,
     sorter: createSorter<Machine>('teamName'),
-    renderWrapper: (content) => (content ? <AssignmentTag>{content}</AssignmentTag> : null),
+    renderWrapper: (content) => (content ? <Tag bordered={false}>{content}</Tag> : null),
   }),
   createTruncatedColumn<Machine>({
     title: t('machines:bridge'),
@@ -29,7 +29,7 @@ export const buildMachineTableColumns = (
     key: 'bridgeName',
     width: 150,
     sorter: createSorter<Machine>('bridgeName'),
-    renderWrapper: (content) => (content ? <AssignmentTag>{content}</AssignmentTag> : null),
+    renderWrapper: (content) => (content ? <Tag bordered={false}>{content}</Tag> : null),
   }),
   {
     title: t('ceph:assignment.status'),
@@ -45,6 +45,6 @@ export const buildMachineTableColumns = (
     width: 100,
     align: 'center',
     sorter: createSorter<Machine>('queueCount'),
-    render: (count: number = 0) => <QueueBadge count={count} showZero $hasItems={count > 0} />,
+    render: (count: number = 0) => <Badge count={count} showZero />,
   },
 ];

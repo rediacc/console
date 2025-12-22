@@ -1,18 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { Alert, Button, Flex, Progress, Table, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { SizedModal } from '@/components/common';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
-import { InlineStack, StatusIcon } from '@/components/common/styled';
-import {
-  RediaccAlert,
-  RediaccButton,
-  RediaccStack,
-  RediaccTable,
-  RediaccText,
-  RediaccTooltip,
-} from '@/components/ui';
 import type { QueueItemCompletionResult } from '@/services/helloService';
 import { usePingFunction } from '@/services/pingService';
-import { ModalContentStack, ModalFooterActions } from '@/styles/primitives';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
@@ -23,25 +15,12 @@ import {
   SyncOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  MessageText,
-  ModalContent,
-  ProgressBar,
-  ProgressSection,
-  ResourceTag,
-  StatusTableWrapper,
-  StyledInfoAlert,
-  StyledModal,
-  SummaryContainer,
-  SummaryMetric,
-  SummaryMetrics,
-  SummaryValue,
-} from './styles';
 import type { ColumnsType } from 'antd/es/table/interface';
 
 interface ConnectivityTestModalProps {
   open: boolean;
   onClose: () => void;
+  onTestsComplete?: () => void;
   machines: Machine[];
   teamFilter?: string | string[];
 }
@@ -60,6 +39,7 @@ interface TestResult {
 const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
   open,
   onClose,
+  onTestsComplete,
   machines,
 }) => {
   const { t } = useTranslation(['machines', 'common']);
@@ -174,6 +154,11 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     setIsRunning(false);
     setCurrentMachineIndex(-1);
 
+    // Notify parent that tests completed
+    if (onTestsComplete) {
+      onTestsComplete();
+    }
+
     // Show summary
     const successCount = testResults.filter((r) => r.status === 'success').length;
     const failedCount = testResults.filter((r) => r.status === 'failed').length;
@@ -193,14 +178,14 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     title: t('machines:team'),
     dataIndex: 'teamName',
     key: 'teamName',
-    renderWrapper: (content) => <ResourceTag>{content}</ResourceTag>,
+    renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
   });
 
   const bridgeColumn = createTruncatedColumn<TestResult>({
     title: t('machines:bridge'),
     dataIndex: 'bridgeName',
     key: 'bridgeName',
-    renderWrapper: (content) => <ResourceTag>{content}</ResourceTag>,
+    renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
   });
 
   const statusColumn = createStatusColumn<TestResult>({
@@ -209,10 +194,10 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     key: 'status',
     width: 140,
     statusMap: {
-      pending: { color: 'default', label: t('machines:pending'), icon: <ClockCircleOutlined /> },
-      testing: { color: 'blue', label: t('machines:testing'), icon: <SyncOutlined spin /> },
-      success: { color: 'success', label: t('machines:connected'), icon: <CheckCircleOutlined /> },
-      failed: { color: 'error', label: t('machines:failed'), icon: <CloseCircleOutlined /> },
+      pending: { label: t('machines:pending'), icon: <ClockCircleOutlined /> },
+      testing: { label: t('machines:testing'), icon: <SyncOutlined spin /> },
+      success: { label: t('machines:connected'), icon: <CheckCircleOutlined /> },
+      failed: { label: t('machines:failed'), icon: <CloseCircleOutlined /> },
     },
   });
 
@@ -251,10 +236,16 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
         };
 
         return (
-          <InlineStack data-testid={`connectivity-machine-${name}`}>
-            <StatusIcon $variant={record.status}>{renderIcon()}</StatusIcon>
-            <RediaccText weight="semibold">{name}</RediaccText>
-          </InlineStack>
+          <Flex
+            align="center"
+            gap={8}
+            wrap
+            className="inline-flex"
+            data-testid={`connectivity-machine-${name}`}
+          >
+            <Typography.Text className="inline-flex">{renderIcon()}</Typography.Text>
+            <Typography.Text strong>{name}</Typography.Text>
+          </Flex>
         );
       },
     },
@@ -263,9 +254,9 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     {
       ...statusColumn,
       render: (status: TestResult['status'], record, index) => (
-        <span data-testid={`connectivity-status-tag-${record.machineName}-${status}`}>
+        <Typography.Text data-testid={`connectivity-status-tag-${record.machineName}-${status}`}>
           {statusColumn.render?.(status, record, index) as React.ReactNode}
-        </span>
+        </Typography.Text>
       ),
     },
     {
@@ -286,27 +277,31 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           return baseMessageColumn.render?.(message, record, index) as React.ReactNode;
         }
         const truncated = baseMessageColumn.render?.(message, record, index) as React.ReactNode;
-        return <MessageText $isError={record.status === 'failed'}>{truncated}</MessageText>;
+        return (
+          <Typography.Text type={record.status === 'failed' ? 'danger' : 'secondary'}>
+            {truncated}
+          </Typography.Text>
+        );
       },
     },
   ];
 
   return (
-    <StyledModal
+    <SizedModal
       data-testid="connectivity-modal"
       title={
-        <RediaccStack direction="horizontal" gap="sm" align="center">
+        <Flex gap={8} align="center">
           <WifiOutlined />
-          <span>{t('machines:connectivityTest')}</span>
-        </RediaccStack>
+          <Typography.Text>{t('machines:connectivityTest')}</Typography.Text>
+        </Flex>
       }
       open={open}
       onCancel={onClose}
-      className={ModalSize.Large}
+      size={ModalSize.Large}
       destroyOnClose
       footer={
-        <ModalFooterActions>
-          <RediaccButton
+        <Flex justify="flex-end" wrap>
+          <Button
             icon={<SyncOutlined />}
             onClick={runAllTests}
             disabled={isRunning || machines.length === 0}
@@ -314,50 +309,50 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             data-testid="connectivity-run-test-button"
           >
             {isRunning ? t('machines:testing') : t('machines:runTest')}
-          </RediaccButton>
-          <RediaccTooltip title="Close">
-            <RediaccButton
-              iconOnly
+          </Button>
+          <Tooltip title="Close">
+            <Button
+              type="text"
               icon={<CloseCircleOutlined />}
               onClick={onClose}
               data-testid="connectivity-close-button"
               aria-label="Close"
             />
-          </RediaccTooltip>
-        </ModalFooterActions>
+          </Tooltip>
+        </Flex>
       }
     >
-      <ModalContent>
-        <ModalContentStack>
+      <Flex className="w-full">
+        <Flex vertical gap={16} className="w-full">
           {isRunning && (
-            <ProgressSection data-testid="connectivity-progress-container">
-              <ProgressBar
+            <Flex vertical data-testid="connectivity-progress-container">
+              <Progress
                 percent={progress}
                 status="active"
                 data-testid="connectivity-progress-bar"
               />
               {currentMachineIndex >= 0 && currentMachineIndex < machines.length && (
-                <RediaccText size="xs" color="secondary" data-testid="connectivity-progress-text">
+                <Typography.Text data-testid="connectivity-progress-text" type="secondary">
                   {t('machines:testingMachine', {
                     machineName: machines[currentMachineIndex].machineName,
                   })}
-                </RediaccText>
+                </Typography.Text>
               )}
-            </ProgressSection>
+            </Flex>
           )}
 
-          <StyledInfoAlert>
-            <RediaccAlert
+          <Flex>
+            <Alert
               message={t('machines:connectivityTestDescription')}
-              variant="info"
+              type="info"
               showIcon
               icon={<WifiOutlined />}
               data-testid="connectivity-info-alert"
             />
-          </StyledInfoAlert>
+          </Flex>
 
-          <StatusTableWrapper>
-            <RediaccTable<TestResult>
+          <Flex>
+            <Table<TestResult>
               columns={columns}
               dataSource={testResults}
               rowKey="machineName"
@@ -367,30 +362,32 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
               rowClassName={(record) => `status-${record.status}`}
               data-testid="connectivity-results-table"
             />
-          </StatusTableWrapper>
+          </Flex>
 
           {!isRunning && testResults.some((r) => r.status !== 'pending') && (
-            <SummaryContainer data-testid="connectivity-summary-statistics">
-              <SummaryMetrics>
-                <SummaryMetric data-testid="connectivity-total-machines">
-                  <RediaccText color="secondary">{t('machines:totalMachines')}:</RediaccText>
-                  <SummaryValue>{machines.length}</SummaryValue>
-                </SummaryMetric>
-                <SummaryMetric data-testid="connectivity-connected-count">
-                  <RediaccText color="secondary">{t('machines:connected')}:</RediaccText>
-                  <SummaryValue $variant="success">
+            <Flex data-testid="connectivity-summary-statistics">
+              <Flex align="center" wrap>
+                <Flex align="center" gap={12} data-testid="connectivity-total-machines">
+                  <Typography.Text type="secondary">{t('machines:totalMachines')}:</Typography.Text>
+                  <Typography.Text strong>{machines.length}</Typography.Text>
+                </Flex>
+                <Flex align="center" gap={12} data-testid="connectivity-connected-count">
+                  <Typography.Text type="secondary">{t('machines:connected')}:</Typography.Text>
+                  <Typography.Text strong type="success">
                     {testResults.filter((r) => r.status === 'success').length}
-                  </SummaryValue>
-                </SummaryMetric>
-                <SummaryMetric data-testid="connectivity-failed-count">
-                  <RediaccText color="secondary">{t('machines:failed')}:</RediaccText>
-                  <SummaryValue $variant="error">
+                  </Typography.Text>
+                </Flex>
+                <Flex align="center" gap={12} data-testid="connectivity-failed-count">
+                  <Typography.Text type="secondary">{t('machines:failed')}:</Typography.Text>
+                  <Typography.Text strong type="danger">
                     {testResults.filter((r) => r.status === 'failed').length}
-                  </SummaryValue>
-                </SummaryMetric>
-                <SummaryMetric data-testid="connectivity-average-response">
-                  <RediaccText color="secondary">{t('machines:averageResponse')}:</RediaccText>
-                  <SummaryValue>
+                  </Typography.Text>
+                </Flex>
+                <Flex align="center" gap={12} data-testid="connectivity-average-response">
+                  <Typography.Text type="secondary">
+                    {t('machines:averageResponse')}:
+                  </Typography.Text>
+                  <Typography.Text strong>
                     {(() => {
                       const successfulTests = testResults.filter(
                         (r) => r.status === 'success' && r.duration
@@ -403,14 +400,14 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
                         ? `${Math.round(avgDuration)}ms`
                         : `${(avgDuration / 1000).toFixed(1)}s`;
                     })()}
-                  </SummaryValue>
-                </SummaryMetric>
-              </SummaryMetrics>
-            </SummaryContainer>
+                  </Typography.Text>
+                </Flex>
+              </Flex>
+            </Flex>
           )}
-        </ModalContentStack>
-      </ModalContent>
-    </StyledModal>
+        </Flex>
+      </Flex>
+    </SizedModal>
   );
 };
 

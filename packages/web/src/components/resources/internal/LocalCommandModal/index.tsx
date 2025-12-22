@@ -1,19 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Form } from 'antd';
+import { Button, Checkbox, Flex, Form, Input, Radio, Tabs, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { SizedModal } from '@/components/common';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
-import {
-  type CheckboxChangeEvent,
-  type RadioChangeEvent,
-  RediaccButton,
-  RediaccCheckbox,
-  RediaccInput,
-  RediaccRadio,
-  RediaccText,
-} from '@/components/ui';
 import { useMessage } from '@/hooks';
 import { createFreshForkToken } from '@/services/forkTokenService';
 import type { PluginContainer } from '@/types';
+import { ModalSize } from '@/types/modal';
 import {
   AppleOutlined,
   CodeOutlined,
@@ -22,20 +15,8 @@ import {
   FileTextOutlined,
   WindowsOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  ActionsRow,
-  BlockText,
-  CommandParagraph,
-  CommandPreview,
-  HelperTextWithMargin,
-  LoadingIndicatorWithMargin,
-  PreviewError,
-  PreviewHeader,
-  PreviewMetaRow,
-  SettingsForm,
-  StyledModal,
-  TabsWrapper,
-} from './styles';
+import type { CheckboxChangeEvent } from 'antd/es/checkbox';
+import type { RadioChangeEvent } from 'antd/es/radio';
 
 type CommandTab = 'vscode' | 'terminal' | 'desktop';
 type OperatingSystem = 'unix' | 'windows';
@@ -218,50 +199,50 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   };
 
   return (
-    <StyledModal
+    <SizedModal
       title={t('resources:localCommandBuilder.title')}
+      className="local-command-modal"
+      size={ModalSize.Large}
       open={open}
       onCancel={onClose}
       footer={null}
     >
-      <BlockText variant="description">
+      <Typography.Text className="block">
         {t('resources:localCommandBuilder.description', { machine, repository })}
-      </BlockText>
+      </Typography.Text>
 
-      <SettingsForm layout="vertical">
+      <Form layout="vertical">
         <Form.Item label={t('resources:localCommandBuilder.operatingSystem')}>
-          <RediaccRadio.Group value={os} onChange={handleOsChange}>
-            <RediaccRadio.Button value="unix">
+          <Radio.Group value={os} onChange={handleOsChange}>
+            <Radio.Button value="unix">
               <AppleOutlined /> {t('resources:localCommandBuilder.unixLinuxMac')}
-            </RediaccRadio.Button>
-            <RediaccRadio.Button value="windows">
+            </Radio.Button>
+            <Radio.Button value="windows">
               <WindowsOutlined /> {t('resources:localCommandBuilder.windows')}
-            </RediaccRadio.Button>
-          </RediaccRadio.Group>
+            </Radio.Button>
+          </Radio.Group>
         </Form.Item>
 
         <Form.Item>
-          <RediaccCheckbox checked={useDocker} onChange={handleDockerChange}>
+          <Checkbox checked={useDocker} onChange={handleDockerChange}>
             {t('resources:localCommandBuilder.useDocker')}
-            <HelperTextWithMargin variant="helper">
-              {t('resources:localCommandBuilder.useDockerHelp')}
-            </HelperTextWithMargin>
-          </RediaccCheckbox>
+            <Typography.Text>{t('resources:localCommandBuilder.useDockerHelp')}</Typography.Text>
+          </Checkbox>
         </Form.Item>
 
         {useDocker && (
           <Form.Item>
-            <RediaccCheckbox checked={useNetworkHost} onChange={handleNetworkHostChange}>
+            <Checkbox checked={useNetworkHost} onChange={handleNetworkHostChange}>
               {t('resources:localCommandBuilder.useNetworkHost')}
-              <HelperTextWithMargin variant="helper">
+              <Typography.Text>
                 {t('resources:localCommandBuilder.useNetworkHostHelp')}
-              </HelperTextWithMargin>
-            </RediaccCheckbox>
+              </Typography.Text>
+            </Checkbox>
           </Form.Item>
         )}
-      </SettingsForm>
+      </Form>
 
-      <TabsWrapper
+      <Tabs
         activeKey={activeTab}
         onChange={(key) => setActiveTab(key as CommandTab)}
         items={[
@@ -272,9 +253,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             children: (
               <Form layout="vertical">
                 <Form.Item help={t('resources:localCommandBuilder.vscodeHelp')}>
-                  <RediaccText color="secondary">
+                  <Typography.Text>
                     {t('resources:localCommandBuilder.vscodeDescription')}
-                  </RediaccText>
+                  </Typography.Text>
                 </Form.Item>
               </Form>
             ),
@@ -289,7 +270,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
                   label={t('resources:localCommandBuilder.command')}
                   help={t('resources:localCommandBuilder.commandHelp')}
                 >
-                  <RediaccInput
+                  <Input
                     placeholder="docker ps"
                     value={termCommand}
                     onChange={handleTermCommandChange}
@@ -306,9 +287,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             children: (
               <Form layout="vertical">
                 <Form.Item help={t('resources:localCommandBuilder.desktopHelp')}>
-                  <RediaccText color="secondary">
+                  <Typography.Text>
                     {t('resources:localCommandBuilder.desktopDescription')}
-                  </RediaccText>
+                  </Typography.Text>
                 </Form.Item>
               </Form>
             ),
@@ -316,61 +297,63 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         ]}
       />
 
-      <CommandPreview>
-        <PreviewHeader>
-          <RediaccText weight="semibold">
+      <Flex vertical gap={12} className="w-full">
+        <Flex align="center" justify="space-between" wrap>
+          <Typography.Text strong>
             {t('resources:localCommandBuilder.generatedCommand')}:
-          </RediaccText>
+          </Typography.Text>
           {isGeneratingToken && (
-            <LoadingIndicatorWithMargin>
+            <Typography.Text>
               <InlineLoadingIndicator
                 width={64}
                 height={12}
                 data-testid="local-command-token-loading"
               />
-            </LoadingIndicatorWithMargin>
+            </Typography.Text>
           )}
-        </PreviewHeader>
+        </Flex>
 
         {tokenError && (
-          <PreviewError>
-            <RediaccText color="danger">Token generation failed: {tokenError}</RediaccText>
-            <RediaccText variant="helper">
+          <Flex vertical gap={4}>
+            <Typography.Text type="danger">Token generation failed: {tokenError}</Typography.Text>
+            <Typography.Text>
               Copy will attempt without secure token. You may need to login manually.
-            </RediaccText>
-          </PreviewError>
+            </Typography.Text>
+          </Flex>
         )}
 
-        <CommandParagraph
+        <Typography.Paragraph
           code
           copyable={{
             text: getCommand(),
             onCopy: copyToClipboard,
           }}
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ whiteSpace: 'pre-wrap' }}
         >
           {getCommand()}
-        </CommandParagraph>
+        </Typography.Paragraph>
 
-        <PreviewMetaRow>
-          <RediaccText variant="caption">
+        <Flex justify="space-between" wrap>
+          <Typography.Text>
             {t('resources:localCommandBuilder.apiUrl')}: {apiUrl}
-          </RediaccText>
-          <RediaccText variant="caption">Token: Secure token will be generated on copy</RediaccText>
-        </PreviewMetaRow>
-      </CommandPreview>
+          </Typography.Text>
+          <Typography.Text>Token: Secure token will be generated on copy</Typography.Text>
+        </Flex>
+      </Flex>
 
-      <ActionsRow>
-        <RediaccButton onClick={onClose}>{t('common:close')}</RediaccButton>
-        <RediaccButton
-          variant="primary"
+      <Flex align="center" wrap gap={8}>
+        <Button onClick={onClose}>{t('common:close')}</Button>
+        <Button
+          type="primary"
           icon={<CopyOutlined />}
           onClick={copyToClipboard}
           disabled={isGeneratingToken}
           loading={isGeneratingToken}
         >
           {t('resources:localCommandBuilder.copyCommand')}
-        </RediaccButton>
-      </ActionsRow>
-    </StyledModal>
+        </Button>
+      </Flex>
+    </SizedModal>
   );
 };

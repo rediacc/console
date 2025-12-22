@@ -92,4 +92,4 @@ export const useDeleteStorage = () => {
   });
 };
 
-export type { GetTeamStorages_ResultSet1 };
+export type { GetTeamStorages_ResultSet1 } from '@rediacc/shared/types';

@@ -303,6 +303,7 @@
     "credentialExists": "Credential exists",
     "datastore": "Datastore",
     "datastoreUsage": "Datastore Usage",
+    "disk": "Disk",
     "defaultGateway": "Default Gateway",
     "defaultInterface": "Default Interface",
     "deleteFork": "delete fork",
@@ -367,6 +368,13 @@
     "functionsFor": "Functions for {{name}}",
     "guid": "Repository GUID",
     "guidHelperText": "Optional: Specify a custom GUID for the repository. Leave empty to auto-generate.",
+    "guidHelperTextNew": "Enter the repository GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)",
+    "guidHelperTextExisting": "This repository already exists on the machine.",
+    "machineHelperText": "Optional: Select a machine to provision storage",
+    "machineHelperTextRequired": "Select a machine to provision storage",
+    "sizeHelperText": "Optional: Specify size if provisioning storage (e.g., 10G, 100G, 1T)",
+    "sizeHelperTextRequired": "Specify size for storage provisioning (e.g., 10G, 100G, 1T)",
+    "parentRepo": "Parent Repository",
     "hasActiveForksMessage": "This repository '{{name}}' has {{count}} active fork(s) that depend on it.",
     "hasRediaccfile": "Rediaccfile",
     "hideDetails": "Hide Details",
@@ -566,6 +574,10 @@
       "teamNameRequired": "Please enter team name"
     }
   },
+  "regionsInfrastructure": {
+    "unavailableTitle": "Regions & Infrastructure Disabled",
+    "unavailableDescription": "Enable the regionsInfrastructure feature flag to access this page."
+  },
   "templates": {
     "clearSelection": "Clear Selection",
     "default": "Default",
@@ -581,6 +593,7 @@
     "rootFiles": "Root Files",
     "searchPlaceholder": "Search templates by name or description...",
     "selectOptional": "Select a template (optional) to pre-populate your repository with files",
+    "selectMultiple": "Select templates (optional, multiple allowed)",
     "selectTemplate": "Select Template",
     "showingResults": "Showing {{count}} of {{total}} templates",
     "startEmpty": "Start with an empty repository",

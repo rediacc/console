@@ -78,7 +78,7 @@ export const selectIsMachineSelected = createSelector(
 
 export const selectValidationForMachine = createSelector(
   [selectAssignmentValidation, (_: RootState, machineName: string) => machineName],
-  (validation, machineName) => validation[machineName] || null
+  (validation, machineName) => validation[machineName] ?? null
 );
 
 export const selectIsValidationStale = createSelector(
@@ -96,7 +96,7 @@ export const selectIsValidationStale = createSelector(
 
 export const selectOperationProgress = createSelector(
   [selectCurrentOperation],
-  (operation) => operation?.progress || null
+  (operation) => operation?.progress ?? null
 );
 
 export const selectIsOperationInProgress = createSelector(

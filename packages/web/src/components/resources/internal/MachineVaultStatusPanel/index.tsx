@@ -1,72 +1,35 @@
 import React, { useEffect, useMemo } from 'react';
-import { Col, Progress, Row } from 'antd';
+import { Card, Col, Empty, Flex, List, Progress, Row, Tag, Typography, type ListProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { CephSection } from '@/components/resources/internal/CephSection';
-import { RediaccEmpty, RediaccStack, RediaccText, RediaccTooltip } from '@/components/ui';
-import { featureFlags } from '@/config/featureFlags';
-import { useTraceModal } from '@/hooks/useDialogState';
 import {
-  calculateResourcePercent,
-  formatTimestampAsIs,
-  getLocalizedRelativeTime,
-} from '@/platform';
+  DetailPanelBody,
+  DetailPanelDivider,
+  DetailPanelFieldLabel,
+  DetailPanelFieldMonospaceValue,
+  DetailPanelFieldRow,
+  DetailPanelFieldStrongValue,
+  DetailPanelFieldValue,
+  DetailPanelSectionHeader,
+  DetailPanelSectionTitle,
+  DetailPanelSurface,
+  DetailPanelTitleGroup,
+} from '@/components/resources/internal/detailPanelPrimitives';
+import { useTraceModal } from '@/hooks/useDialogState';
+import { calculateResourcePercent } from '@/platform';
 import type { Machine } from '@/types';
 import {
-  ApiOutlined,
-  AppstoreOutlined,
   CodeOutlined,
   CompassOutlined,
   ContainerOutlined,
   DatabaseOutlined,
   DesktopOutlined,
-  DoubleRightOutlined,
-  GlobalOutlined,
   HddOutlined,
   InfoCircleOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
 import { abbreviatePath } from '@/utils/pathUtils';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
-import {
-  AddressTag,
-  CardBodyStack,
-  CardHeader,
-  CardTagGroup,
-  CardTitle,
-  CollapseButton,
-  ContentWrapper,
-  FieldLabel,
-  FieldRow,
-  FieldValue,
-  FieldValueMonospace,
-  FieldValueStrong,
-  Header,
-  HeaderIcon,
-  HeaderRow,
-  IconWrapper,
-  IndentedBlock,
-  InfoCard,
-  KeyValueRow,
-  ListCard,
-  MetricCard,
-  PanelTitle,
-  PanelWrapper,
-  PartitionRow,
-  QueueBadge,
-  SectionBlock,
-  SectionDivider,
-  SectionHeader,
-  SectionTitle,
-  StatusTag,
-  StyledList,
-  StyledRediaccEmpty,
-  StyledTag,
-  TagRow,
-  TimestampWrapper,
-  TitleGroup,
-} from './styles';
-import type { ListProps } from 'antd';
 import type { TFunction } from 'i18next';
 
 interface MachineVaultStatusPanelProps {
@@ -175,7 +138,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
   onClose,
   splitView = false,
 }) => {
-  const { t } = useTranslation(['machines', 'resources', 'common', 'ceph']);
+  const { t } = useTranslation(['machines', 'resources', 'common']);
   const auditTrace = useTraceModal();
 
   const vaultData = useMemo<VaultData | null>(() => {
@@ -215,86 +178,14 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
     return null;
   }
 
-  const handleClose = () => {
-    auditTrace.close();
-    onClose();
-  };
-
   return (
     <>
-      <PanelWrapper $splitView={splitView} $visible={visible}>
-        <Header data-testid="vault-status-header">
-          <HeaderRow>
-            <TitleGroup>
-              <HeaderIcon />
-              <PanelTitle level={4} data-testid="vault-status-machine-name">
-                {machine.machineName}
-              </PanelTitle>
-            </TitleGroup>
-            <CollapseButton
-              variant="text"
-              icon={<DoubleRightOutlined />}
-              onClick={handleClose}
-              data-testid="vault-status-collapse"
-              aria-label="Collapse panel"
-            />
-          </HeaderRow>
-
-          <TagRow>
-            <StyledTag
-              $variant="team"
-              icon={<AppstoreOutlined />}
-              data-testid="vault-status-team-tag"
-            >
-              {t('common:general.team')}: {machine.teamName}
-            </StyledTag>
-            <StyledTag
-              $variant="bridge"
-              icon={<ApiOutlined />}
-              data-testid="vault-status-bridge-tag"
-            >
-              {t('machines:bridge')}: {machine.bridgeName}
-            </StyledTag>
-            {machine.regionName && (
-              <StyledTag
-                $variant="region"
-                icon={<GlobalOutlined />}
-                data-testid="vault-status-region-tag"
-              >
-                {t('machines:region')}: {machine.regionName}
-              </StyledTag>
-            )}
-            <QueueBadge
-              count={machine.queueCount ?? undefined}
-              data-testid="vault-status-queue-badge"
-            >
-              <StyledTag $variant="queue">{t('machines:queueItems')}</StyledTag>
-            </QueueBadge>
-            <StyledTag $variant="version" data-testid="vault-status-version-tag">
-              {t('machines:vaultVersion')}: {machine.vaultVersion}
-            </StyledTag>
-          </TagRow>
-
-          {machine.vaultStatusTime && (
-            <TimestampWrapper>
-              <RediaccTooltip title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}>
-                <RediaccText variant="caption" data-testid="vault-status-last-updated">
-                  {t('machines:lastUpdated')}:{' '}
-                  {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
-                </RediaccText>
-              </RediaccTooltip>
-            </TimestampWrapper>
-          )}
-        </Header>
-
-        <ContentWrapper data-testid="vault-status-content">
+      <DetailPanelSurface $splitView={splitView} $visible={visible}>
+        <DetailPanelBody data-testid="vault-status-content">
           {!vaultData ? (
-            <StyledRediaccEmpty>
-              <RediaccEmpty
-                description={t('machines:noVaultData')}
-                data-testid="vault-status-empty"
-              />
-            </StyledRediaccEmpty>
+            <Flex>
+              <Empty description={t('machines:noVaultData')} data-testid="vault-status-empty" />
+            </Flex>
           ) : (
             <>
               {vaultData.system && (
@@ -315,25 +206,10 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
               {vaultData.system_containers && vaultData.system_containers.length > 0 && (
                 <SystemContainersSection containers={vaultData.system_containers} t={t} />
               )}
-
-              {featureFlags.isEnabled('ceph') && machine && (
-                <SectionBlock data-testid="vault-status-ceph">
-                  <CephSection
-                    machine={machine}
-                    onViewDetails={() =>
-                      auditTrace.open({
-                        entityType: 'Machine',
-                        entityIdentifier: machine.machineName,
-                        entityName: machine.machineName,
-                      })
-                    }
-                  />
-                </SectionBlock>
-              )}
             </>
           )}
-        </ContentWrapper>
-      </PanelWrapper>
+        </DetailPanelBody>
+      </DetailPanelSurface>
 
       <AuditTraceModal
         open={auditTrace.isOpen}
@@ -355,49 +231,55 @@ interface SystemInfoSectionProps extends SectionProps {
 }
 
 const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
-  <SectionBlock>
-    <SectionHeader>
-      <IconWrapper $color="var(--color-primary)">
-        <DesktopOutlined />
-      </IconWrapper>
-      <SectionTitle level={5} data-testid="vault-status-system-info-title">
+  <Flex vertical>
+    <DetailPanelSectionHeader>
+      <DesktopOutlined />
+      <DetailPanelSectionTitle level={5} data-testid="vault-status-system-info-title">
         {t('resources:repositories.systemInfo')}
-      </SectionTitle>
-    </SectionHeader>
+      </DetailPanelSectionTitle>
+    </DetailPanelSectionHeader>
 
-    <InfoCard size="sm" data-testid="vault-status-system-info-card">
-      <RediaccStack direction="vertical" gap="sm" fullWidth>
-        <FieldRow>
-          <FieldLabel>{t('resources:repositories.hostname')}:</FieldLabel>
-          <FieldValue data-testid="vault-status-hostname">{system.hostname}</FieldValue>
-        </FieldRow>
-        <FieldRow>
-          <FieldLabel>{t('resources:repositories.uptime')}:</FieldLabel>
-          <FieldValue data-testid="vault-status-uptime">{system.uptime}</FieldValue>
-        </FieldRow>
-        <FieldRow>
-          <FieldLabel>{t('resources:repositories.osName')}:</FieldLabel>
-          <FieldValue data-testid="vault-status-os-name">{system.os_name}</FieldValue>
-        </FieldRow>
-        <FieldRow>
-          <FieldLabel>{t('resources:repositories.kernel')}:</FieldLabel>
-          <FieldValue data-testid="vault-status-kernel">{system.kernel}</FieldValue>
-        </FieldRow>
-        <FieldRow>
-          <FieldLabel>{t('resources:repositories.cpu')}:</FieldLabel>
-          <FieldValue data-testid="vault-status-cpu">
+    <Card size="small" data-testid="vault-status-system-info-card">
+      <Flex vertical gap={8} className="w-full">
+        <DetailPanelFieldRow>
+          <DetailPanelFieldLabel>{t('resources:repositories.hostname')}:</DetailPanelFieldLabel>
+          <DetailPanelFieldValue data-testid="vault-status-hostname">
+            {system.hostname}
+          </DetailPanelFieldValue>
+        </DetailPanelFieldRow>
+        <DetailPanelFieldRow>
+          <DetailPanelFieldLabel>{t('resources:repositories.uptime')}:</DetailPanelFieldLabel>
+          <DetailPanelFieldValue data-testid="vault-status-uptime">
+            {system.uptime}
+          </DetailPanelFieldValue>
+        </DetailPanelFieldRow>
+        <DetailPanelFieldRow>
+          <DetailPanelFieldLabel>{t('resources:repositories.osName')}:</DetailPanelFieldLabel>
+          <DetailPanelFieldValue data-testid="vault-status-os-name">
+            {system.os_name}
+          </DetailPanelFieldValue>
+        </DetailPanelFieldRow>
+        <DetailPanelFieldRow>
+          <DetailPanelFieldLabel>{t('resources:repositories.kernel')}:</DetailPanelFieldLabel>
+          <DetailPanelFieldValue data-testid="vault-status-kernel">
+            {system.kernel}
+          </DetailPanelFieldValue>
+        </DetailPanelFieldRow>
+        <DetailPanelFieldRow>
+          <DetailPanelFieldLabel>{t('resources:repositories.cpu')}:</DetailPanelFieldLabel>
+          <DetailPanelFieldValue data-testid="vault-status-cpu">
             {system.cpu_count} × {system.cpu_model}
-          </FieldValue>
-        </FieldRow>
-        <FieldRow>
-          <FieldLabel>{t('resources:repositories.systemTime')}:</FieldLabel>
-          <FieldValue data-testid="vault-status-system-time">
+          </DetailPanelFieldValue>
+        </DetailPanelFieldRow>
+        <DetailPanelFieldRow>
+          <DetailPanelFieldLabel>{t('resources:repositories.systemTime')}:</DetailPanelFieldLabel>
+          <DetailPanelFieldValue data-testid="vault-status-system-time">
             {system.system_time_human} ({system.timezone})
-          </FieldValue>
-        </FieldRow>
-      </RediaccStack>
-    </InfoCard>
-  </SectionBlock>
+          </DetailPanelFieldValue>
+        </DetailPanelFieldRow>
+      </Flex>
+    </Card>
+  </Flex>
 );
 
 interface ResourceUsageSectionProps extends SectionProps {
@@ -409,82 +291,71 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
   const diskPercent = parseInt(system.disk.use_percent, 10) || 0;
   const datastorePercent = parseInt(system.datastore.use_percent, 10) || 0;
 
-  const diskStroke = diskPercent > 90 ? 'var(--color-error)' : 'var(--color-warning)';
-  const datastoreStroke = datastorePercent > 90 ? 'var(--color-error)' : 'var(--color-success)';
-
   return (
-    <SectionBlock>
-      <SectionDivider orientationMargin="left">
-        <IconWrapper $color="var(--color-info)">
-          <InfoCircleOutlined />
-        </IconWrapper>
+    <Flex vertical>
+      <DetailPanelDivider orientationMargin="left">
+        <InfoCircleOutlined />
         {t('resources:repositories.resourceUsage')}
-      </SectionDivider>
+      </DetailPanelDivider>
 
       <Row gutter={[16, 16]}>
-        <Col span={24} lg={8}>
-          <MetricCard size="sm" data-testid="vault-status-memory-card">
-            <CardHeader>
-              <IconWrapper $color="var(--color-info)">
-                <DatabaseOutlined />
-              </IconWrapper>
-              <CardTitle level={5}>{t('resources:repositories.memory')}</CardTitle>
-            </CardHeader>
-            <Progress percent={Math.round(memoryPercent)} strokeColor="var(--color-info)" />
-            <RediaccText size="xs" color="muted">
+        <Col span={24}>
+          <Card size="small" data-testid="vault-status-memory-card">
+            <Flex justify="space-between" align="center">
+              <DatabaseOutlined />
+              <Typography.Title level={5}>{t('resources:repositories.memory')}</Typography.Title>
+            </Flex>
+            <Progress percent={Math.round(memoryPercent)} />
+            <Typography.Text>
               {t('resources:repositories.used')}: {system.memory.used} / {system.memory.total}
-            </RediaccText>
-            <RediaccText size="xs" color="muted">
+            </Typography.Text>
+            <Typography.Text>
               {t('resources:repositories.available')}: {system.memory.available}
-            </RediaccText>
-          </MetricCard>
+            </Typography.Text>
+          </Card>
         </Col>
 
-        <Col span={24} lg={8}>
-          <MetricCard size="sm" data-testid="vault-status-disk-card">
-            <CardHeader>
-              <IconWrapper $color="var(--color-warning)">
-                <HddOutlined />
-              </IconWrapper>
-              <CardTitle level={5}>{t('resources:repositories.disk')}</CardTitle>
-            </CardHeader>
-            <Progress percent={diskPercent} strokeColor={diskStroke} />
-            <RediaccText size="xs" color="muted">
+        <Col span={24}>
+          <Card size="small" data-testid="vault-status-disk-card">
+            <Flex justify="space-between" align="center">
+              <HddOutlined />
+              <Typography.Title level={5}>{t('resources:repositories.disk')}</Typography.Title>
+            </Flex>
+            <Progress percent={diskPercent} />
+            <Typography.Text>
               {t('resources:repositories.used')}: {system.disk.used} / {system.disk.total}
-            </RediaccText>
-            <RediaccText size="xs" color="muted">
+            </Typography.Text>
+            <Typography.Text>
               {t('resources:repositories.available')}: {system.disk.available}
-            </RediaccText>
-          </MetricCard>
+            </Typography.Text>
+          </Card>
         </Col>
 
-        <Col span={24} lg={8}>
-          <MetricCard size="sm" data-testid="vault-status-datastore-card">
-            <CardHeader>
-              <IconWrapper $color="var(--color-success)">
-                <DatabaseOutlined />
-              </IconWrapper>
-              <CardTitle level={5}>{t('resources:repositories.datastore')}</CardTitle>
-            </CardHeader>
+        <Col span={24}>
+          <Card size="small" data-testid="vault-status-datastore-card">
+            <Flex justify="space-between" align="center">
+              <DatabaseOutlined />
+              <Typography.Title level={5}>{t('resources:repositories.datastore')}</Typography.Title>
+            </Flex>
             {system.datastore.path && (
-              <FieldRow>
-                <FieldLabel>{t('common:general.path')}:</FieldLabel>
-                <FieldValueMonospace copyable={{ text: system.datastore.path }}>
+              <DetailPanelFieldRow>
+                <DetailPanelFieldLabel>{t('common:general.path')}:</DetailPanelFieldLabel>
+                <DetailPanelFieldMonospaceValue copyable={{ text: system.datastore.path }}>
                   {abbreviatePath(system.datastore.path, 40)}
-                </FieldValueMonospace>
-              </FieldRow>
+                </DetailPanelFieldMonospaceValue>
+              </DetailPanelFieldRow>
             )}
-            <Progress percent={datastorePercent} strokeColor={datastoreStroke} />
-            <RediaccText size="xs" color="muted">
+            <Progress percent={datastorePercent} />
+            <Typography.Text>
               {t('resources:repositories.used')}: {system.datastore.used} / {system.datastore.total}
-            </RediaccText>
-            <RediaccText size="xs" color="muted">
+            </Typography.Text>
+            <Typography.Text>
               {t('resources:repositories.available')}: {system.datastore.available}
-            </RediaccText>
-          </MetricCard>
+            </Typography.Text>
+          </Card>
         </Col>
       </Row>
-    </SectionBlock>
+    </Flex>
   );
 };
 
@@ -498,86 +369,91 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
   );
 
   return (
-    <SectionBlock>
-      <SectionDivider orientationMargin="left">
-        <IconWrapper $color="var(--color-info)">
-          <WifiOutlined />
-        </IconWrapper>
+    <Flex vertical>
+      <DetailPanelDivider orientationMargin="left">
+        <WifiOutlined />
         {t('resources:repositories.networkInfo')}
-      </SectionDivider>
+      </DetailPanelDivider>
 
       {network.default_gateway && (
-        <InfoCard size="sm" data-testid="vault-status-gateway-card">
-          <RediaccStack direction="vertical" gap="sm" fullWidth>
-            <FieldRow>
-              <FieldLabel>{t('resources:repositories.defaultGateway')}:</FieldLabel>
-              <FieldValue data-testid="vault-status-gateway">{network.default_gateway}</FieldValue>
-            </FieldRow>
+        <Card size="small" data-testid="vault-status-gateway-card">
+          <Flex vertical gap={8} className="w-full">
+            <DetailPanelFieldRow>
+              <DetailPanelFieldLabel>
+                {t('resources:repositories.defaultGateway')}:
+              </DetailPanelFieldLabel>
+              <DetailPanelFieldValue data-testid="vault-status-gateway">
+                {network.default_gateway}
+              </DetailPanelFieldValue>
+            </DetailPanelFieldRow>
             {network.default_interface && (
-              <FieldRow>
-                <FieldLabel>{t('resources:repositories.defaultInterface')}:</FieldLabel>
-                <FieldValue data-testid="vault-status-interface">
+              <DetailPanelFieldRow>
+                <DetailPanelFieldLabel>
+                  {t('resources:repositories.defaultInterface')}:
+                </DetailPanelFieldLabel>
+                <DetailPanelFieldValue data-testid="vault-status-interface">
                   {network.default_interface}
-                </FieldValue>
-              </FieldRow>
+                </DetailPanelFieldValue>
+              </DetailPanelFieldRow>
             )}
-          </RediaccStack>
-        </InfoCard>
+          </Flex>
+        </Card>
       )}
 
-      <StyledList
+      <List
         dataSource={interfaces}
         data-testid="vault-status-network-list"
         renderItem={
           ((iface: NetworkInterface) => (
-            <ListCard size="sm" data-testid={`vault-status-network-${iface.name}`}>
-              <CardHeader>
-                <TitleGroup>
-                  <IconWrapper $color="var(--color-info)">
-                    <CompassOutlined />
-                  </IconWrapper>
-                  <FieldValueStrong data-testid={`vault-status-network-name-${iface.name}`}>
+            <Card size="small" data-testid={`vault-status-network-${iface.name}`}>
+              <Flex justify="space-between" align="center">
+                <DetailPanelTitleGroup>
+                  <CompassOutlined />
+                  <DetailPanelFieldStrongValue
+                    data-testid={`vault-status-network-name-${iface.name}`}
+                  >
                     {iface.name}
-                  </FieldValueStrong>
-                </TitleGroup>
-                <StatusTag
-                  $tone={iface.state === 'UP' ? 'success' : 'default'}
-                  data-testid={`vault-status-network-state-${iface.name}`}
-                >
+                  </DetailPanelFieldStrongValue>
+                </DetailPanelTitleGroup>
+                <Tag bordered={false} data-testid={`vault-status-network-state-${iface.name}`}>
                   {iface.state}
-                </StatusTag>
-              </CardHeader>
-              <CardBodyStack>
+                </Tag>
+              </Flex>
+              <Flex vertical>
                 {iface.ipv4_addresses.length > 0 && (
-                  <div>
-                    <FieldLabel>{t('resources:repositories.ipAddresses')}:</FieldLabel>
-                    <CardTagGroup>
+                  <Flex vertical>
+                    <DetailPanelFieldLabel>
+                      {t('resources:repositories.ipAddresses')}:
+                    </DetailPanelFieldLabel>
+                    <Flex>
                       {iface.ipv4_addresses.map((ip: string) => (
-                        <AddressTag key={ip} data-testid={`vault-status-ip-${ip}`}>
+                        <Tag key={ip} bordered={false} data-testid={`vault-status-ip-${ip}`}>
                           {ip}
-                        </AddressTag>
+                        </Tag>
                       ))}
-                    </CardTagGroup>
-                  </div>
+                    </Flex>
+                  </Flex>
                 )}
                 {iface.mac_address && iface.mac_address !== 'unknown' && (
-                  <KeyValueRow>
-                    <FieldLabel>{t('resources:repositories.macAddress')}:</FieldLabel>
-                    <FieldValue>{iface.mac_address}</FieldValue>
-                  </KeyValueRow>
+                  <Flex justify="space-between" align="center">
+                    <DetailPanelFieldLabel>
+                      {t('resources:repositories.macAddress')}:
+                    </DetailPanelFieldLabel>
+                    <DetailPanelFieldValue>{iface.mac_address}</DetailPanelFieldValue>
+                  </Flex>
                 )}
                 {iface.mtu > 0 && (
-                  <KeyValueRow>
-                    <FieldLabel>MTU:</FieldLabel>
-                    <FieldValue>{iface.mtu}</FieldValue>
-                  </KeyValueRow>
+                  <Flex justify="space-between" align="center">
+                    <DetailPanelFieldLabel>MTU:</DetailPanelFieldLabel>
+                    <DetailPanelFieldValue>{iface.mtu}</DetailPanelFieldValue>
+                  </Flex>
                 )}
-              </CardBodyStack>
-            </ListCard>
+              </Flex>
+            </Card>
           )) as ListProps<unknown>['renderItem']
         }
       />
-    </SectionBlock>
+    </Flex>
   );
 };
 
@@ -586,70 +462,72 @@ interface BlockDevicesSectionProps extends SectionProps {
 }
 
 const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t }) => (
-  <SectionBlock>
-    <SectionDivider orientationMargin="left">
-      <IconWrapper $color="var(--color-warning)">
-        <HddOutlined />
-      </IconWrapper>
+  <Flex vertical>
+    <DetailPanelDivider orientationMargin="left">
+      <HddOutlined />
       {t('resources:repositories.blockDevices')}
-    </SectionDivider>
+    </DetailPanelDivider>
 
-    <StyledList
+    <List
       dataSource={devices}
       data-testid="vault-status-block-devices-list"
       renderItem={
         ((device: BlockDevice) => (
-          <ListCard size="sm" data-testid={`vault-status-block-device-${device.name}`}>
-            <CardHeader>
-              <TitleGroup>
-                <IconWrapper $color="var(--color-warning)">
-                  <HddOutlined />
-                </IconWrapper>
-                <FieldValueStrong data-testid={`vault-status-device-path-${device.name}`}>
+          <Card size="small" data-testid={`vault-status-block-device-${device.name}`}>
+            <Flex justify="space-between" align="center">
+              <DetailPanelTitleGroup>
+                <HddOutlined />
+                <DetailPanelFieldStrongValue
+                  data-testid={`vault-status-device-path-${device.name}`}
+                >
                   {device.path}
-                </FieldValueStrong>
-              </TitleGroup>
-              <CardTagGroup>
-                <StatusTag data-testid={`vault-status-device-type-${device.name}`}>
+                </DetailPanelFieldStrongValue>
+              </DetailPanelTitleGroup>
+              <Flex>
+                <Tag bordered={false} data-testid={`vault-status-device-type-${device.name}`}>
                   {device.type}
-                </StatusTag>
-                <StatusTag $tone="info" data-testid={`vault-status-device-size-${device.name}`}>
+                </Tag>
+                <Tag bordered={false} data-testid={`vault-status-device-size-${device.name}`}>
                   {device.size_human}
-                </StatusTag>
-              </CardTagGroup>
-            </CardHeader>
+                </Tag>
+              </Flex>
+            </Flex>
 
-            <CardBodyStack>
+            <Flex vertical>
               {device.model && device.model !== 'Unknown' && (
-                <KeyValueRow>
-                  <FieldLabel>{t('resources:repositories.model')}:</FieldLabel>
-                  <FieldValue>{device.model}</FieldValue>
-                </KeyValueRow>
+                <Flex justify="space-between" align="center">
+                  <DetailPanelFieldLabel>
+                    {t('resources:repositories.model')}:
+                  </DetailPanelFieldLabel>
+                  <DetailPanelFieldValue>{device.model}</DetailPanelFieldValue>
+                </Flex>
               )}
 
               {device.partitions.length > 0 && (
-                <div>
-                  <FieldLabel>{t('resources:repositories.partitions')}:</FieldLabel>
-                  <IndentedBlock>
+                <Flex vertical>
+                  <DetailPanelFieldLabel>
+                    {t('resources:repositories.partitions')}:
+                  </DetailPanelFieldLabel>
+                  <Flex vertical>
                     {device.partitions.map((part: BlockDevicePartition) => (
-                      <PartitionRow key={`${device.name}-${part.name}`}>
+                      <Flex key={`${device.name}-${part.name}`} align="center">
                         <CodeOutlined />
-                        <RediaccText as="span" size="xs" color="muted">
+                        <Typography.Text>
                           {part.name}: {part.size_human}
                           {part.filesystem && ` (${part.filesystem})`}
                           {part.mountpoint && ` • ${part.mountpoint}`}
-                        </RediaccText>
-                      </PartitionRow>
+                        </Typography.Text>
+                      </Flex>
                     ))}
-                  </IndentedBlock>
-                </div>
+                  </Flex>
+                </Flex>
               )}
-            </CardBodyStack>
-          </ListCard>
+            </Flex>
+          </Card>
         )) as ListProps<unknown>['renderItem']
       }
     />
-  </SectionBlock>
+  </Flex>
 );
 
 interface SystemContainersSectionProps extends SectionProps {
@@ -657,59 +535,52 @@ interface SystemContainersSectionProps extends SectionProps {
 }
 
 const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ containers, t }) => (
-  <SectionBlock>
-    <SectionDivider orientationMargin="left">
-      <IconWrapper $color="var(--color-secondary)">
-        <ContainerOutlined />
-      </IconWrapper>
+  <Flex vertical>
+    <DetailPanelDivider orientationMargin="left">
+      <ContainerOutlined />
       {t('resources:repositories.systemContainers')}
-    </SectionDivider>
+    </DetailPanelDivider>
 
-    <StyledList
+    <List
       dataSource={containers}
       data-testid="vault-status-containers-list"
       renderItem={
         ((container: Container) => (
-          <ListCard size="sm" data-testid={`vault-status-container-${container.id}`}>
-            <CardHeader>
-              <TitleGroup>
-                <IconWrapper $color="var(--color-secondary)">
-                  <ContainerOutlined />
-                </IconWrapper>
-                <FieldValueStrong data-testid={`vault-status-container-name-${container.id}`}>
+          <Card size="small" data-testid={`vault-status-container-${container.id}`}>
+            <Flex justify="space-between" align="center">
+              <DetailPanelTitleGroup>
+                <ContainerOutlined />
+                <DetailPanelFieldStrongValue
+                  data-testid={`vault-status-container-name-${container.id}`}
+                >
                   {container.name}
-                </FieldValueStrong>
-              </TitleGroup>
-              <StatusTag
-                $tone={container.state === 'running' ? 'success' : 'default'}
-                data-testid={`vault-status-container-state-${container.id}`}
-              >
+                </DetailPanelFieldStrongValue>
+              </DetailPanelTitleGroup>
+              <Tag bordered={false} data-testid={`vault-status-container-state-${container.id}`}>
                 {container.state}
-              </StatusTag>
-            </CardHeader>
+              </Tag>
+            </Flex>
 
-            <CardBodyStack>
-              {container.image && (
-                <RediaccText ellipsis size="xs" color="muted">
-                  {container.image}
-                </RediaccText>
-              )}
+            <Flex vertical>
+              {container.image && <Typography.Text ellipsis>{container.image}</Typography.Text>}
               {container.cpu_percent && (
-                <KeyValueRow>
-                  <FieldLabel>CPU:</FieldLabel>
-                  <FieldValue>{container.cpu_percent}</FieldValue>
-                </KeyValueRow>
+                <Flex justify="space-between" align="center">
+                  <DetailPanelFieldLabel>CPU:</DetailPanelFieldLabel>
+                  <DetailPanelFieldValue>{container.cpu_percent}</DetailPanelFieldValue>
+                </Flex>
               )}
               {container.memory_usage && (
-                <KeyValueRow>
-                  <FieldLabel>{t('resources:repositories.memory')}:</FieldLabel>
-                  <FieldValue>{container.memory_usage}</FieldValue>
-                </KeyValueRow>
+                <Flex justify="space-between" align="center">
+                  <DetailPanelFieldLabel>
+                    {t('resources:repositories.memory')}:
+                  </DetailPanelFieldLabel>
+                  <DetailPanelFieldValue>{container.memory_usage}</DetailPanelFieldValue>
+                </Flex>
               )}
-            </CardBodyStack>
-          </ListCard>
+            </Flex>
+          </Card>
         )) as ListProps<unknown>['renderItem']
       }
     />
-  </SectionBlock>
+  </Flex>
 );

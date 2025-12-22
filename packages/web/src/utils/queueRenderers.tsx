@@ -4,14 +4,8 @@
  */
 
 import React from 'react';
-import { Tag } from 'antd';
-import { RediaccTooltip } from '@/components/ui';
-import {
-  formatAge,
-  PRIORITY_CONFIG,
-  QUEUE_STATUS_CONFIG,
-  type QueueHealthStatus,
-} from '@/platform';
+import { Tag, Tooltip } from 'antd';
+import { formatAge, type QueueHealthStatus } from '@/platform';
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -58,8 +52,6 @@ export function renderQueueStatus(
     ageInMinutes?: number | null;
   }
 ): React.ReactElement {
-  const config =
-    QUEUE_STATUS_CONFIG[healthStatus as QueueHealthStatus] || QUEUE_STATUS_CONFIG.UNKNOWN;
   const icon = QUEUE_STATUS_ICONS[healthStatus as QueueHealthStatus] || QUEUE_STATUS_ICONS.UNKNOWN;
 
   // Show actual status alongside health status for active items
@@ -78,11 +70,9 @@ export function renderQueueStatus(
   }
 
   return (
-    <RediaccTooltip title={tooltipText}>
-      <Tag color={config.color} icon={icon}>
-        {statusText}
-      </Tag>
-    </RediaccTooltip>
+    <Tooltip title={tooltipText}>
+      <Tag icon={icon}>{statusText}</Tag>
+    </Tooltip>
   );
 }
 
@@ -98,15 +88,12 @@ export function renderPriority(
     return null;
   }
 
-  const config = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG[3];
   const icon = PRIORITY_ICONS[priority];
 
   return (
-    <RediaccTooltip title={tooltipContent}>
-      <Tag color={config.color} icon={icon}>
-        {priorityLabel}
-      </Tag>
-    </RediaccTooltip>
+    <Tooltip title={tooltipContent}>
+      <Tag icon={icon}>{priorityLabel}</Tag>
+    </Tooltip>
   );
 }
 

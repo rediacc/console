@@ -1,25 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Checkbox, Flex, Typography } from 'antd';
 import { List as ReactWindowList } from 'react-window';
 import * as InfiniteLoaderModule from 'react-window-infinite-loader';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
-import { RediaccCheckbox } from '@/components/ui';
-import { useTableStyles } from '@/hooks/useComponentStyles';
 import { useMachineSelection } from '@/store/ceph/hooks';
 import { Machine } from '@/types';
-import {
-  ActionsColumn,
-  CheckboxColumn,
-  HeaderContent,
-  HeaderWrapper,
-  LoadingRow,
-  MachineNameColumn,
-  RowContent,
-  RowWrapper,
-  StatusColumn,
-  TableWrapper,
-  TeamNameColumn,
-} from './styles';
 
 type ScrollAlign = 'auto' | 'smart' | 'center' | 'end' | 'start';
 
@@ -118,7 +104,6 @@ const MachineRow: React.FC<
 > = ({ machine, style, selectable, onRowClick, renderActions }) => {
   const { isMachineSelected, toggleSelection } = useMachineSelection();
   const isSelected = isMachineSelected(machine.machineName);
-  const tableStyles = useTableStyles();
 
   const handleCheckboxChange = useCallback(
     (e: React.MouseEvent) => {
@@ -135,39 +120,69 @@ const MachineRow: React.FC<
   }, [machine, onRowClick]);
 
   return (
-    <RowWrapper
+    <Flex
+      align="center"
+      // eslint-disable-next-line no-restricted-syntax
       style={{
+        cursor: onRowClick ? 'pointer' : 'default',
+        minHeight: 40,
         ...style,
-        ...tableStyles.tableCell,
       }}
-      $hasOnClick={!!onRowClick}
       onClick={handleRowClick}
       data-testid={`virtual-machine-row-${machine.machineName}`}
     >
-      <RowContent>
+      <Flex align="center" className="w-full">
         {selectable && (
-          <CheckboxColumn>
-            <RediaccCheckbox
+          <Flex
+            className="flex-shrink-0"
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ width: 32 }}
+          >
+            <Checkbox
               checked={isSelected}
               onClick={handleCheckboxChange}
               data-testid={`virtual-machine-checkbox-${machine.machineName}`}
             />
-          </CheckboxColumn>
+          </Flex>
         )}
-        <MachineNameColumn data-testid={`virtual-machine-name-${machine.machineName}`}>
+        <Typography.Text
+          data-testid={`virtual-machine-name-${machine.machineName}`}
+          className="flex-1 overflow-hidden"
+          // eslint-disable-next-line no-restricted-syntax
+          style={{
+            minWidth: 200,
+          }}
+        >
           {machine.machineName}
-        </MachineNameColumn>
-        <TeamNameColumn>{machine.teamName}</TeamNameColumn>
-        <StatusColumn data-testid={`virtual-machine-status-${machine.machineName}`}>
+        </Typography.Text>
+        <Typography.Text
+          className="overflow-hidden"
+          // eslint-disable-next-line no-restricted-syntax
+          style={{
+            width: 200,
+          }}
+        >
+          {machine.teamName}
+        </Typography.Text>
+        <Flex
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ width: 160 }}
+          data-testid={`virtual-machine-status-${machine.machineName}`}
+        >
           <MachineAssignmentStatusCell machine={machine} />
-        </StatusColumn>
+        </Flex>
         {renderActions && (
-          <ActionsColumn data-testid={`virtual-machine-actions-${machine.machineName}`}>
+          <Flex
+            justify="flex-end"
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ width: 120 }}
+            data-testid={`virtual-machine-actions-${machine.machineName}`}
+          >
             {renderActions(machine)}
-          </ActionsColumn>
+          </Flex>
         )}
-      </RowContent>
-    </RowWrapper>
+      </Flex>
+    </Flex>
   );
 };
 
@@ -187,7 +202,6 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
     listRef.current = instance;
   }, []);
   const { selectedMachines } = useMachineSelection();
-  const tableStyles = useTableStyles();
 
   // Create items list with potential placeholders for infinite loading
   const itemCount = hasMore ? machines.length + 1 : machines.length;
@@ -220,13 +234,19 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
 
       if (!rowIsItemLoaded(index)) {
         return (
-          <LoadingRow style={style} data-testid="virtual-machine-row-loading">
+          <Flex
+            align="center"
+            justify="center"
+            // eslint-disable-next-line no-restricted-syntax
+            style={style}
+            data-testid="virtual-machine-row-loading"
+          >
             <InlineLoadingIndicator
               width="90%"
               height={24}
               data-testid="virtual-machine-row-loading-indicator"
             />
-          </LoadingRow>
+          </Flex>
         );
       }
 
@@ -235,6 +255,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
         <MachineRow
           machine={machine}
           index={index}
+          // eslint-disable-next-line no-restricted-syntax
           style={style}
           selectable={rowSelectable}
           onRowClick={rowOnRowClick}
@@ -360,29 +381,65 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   ]);
 
   return (
-    <TableWrapper
-      style={{
-        ...tableStyles.tableContainer,
-      }}
+    <Flex
+      vertical
+      className="overflow-hidden"
       onKeyDown={handleKeyDown}
       tabIndex={0}
       data-testid="virtual-machine-table"
     >
-      <HeaderWrapper
+      <Flex
+        // eslint-disable-next-line no-restricted-syntax
         style={{
-          ...tableStyles.tableHeader,
+          position: 'sticky',
+          top: 0,
         }}
         data-testid="virtual-machine-header"
       >
-        <HeaderContent>
-          {selectable && <CheckboxColumn />}
-          <MachineNameColumn>Machine Name</MachineNameColumn>
-          <TeamNameColumn>Team</TeamNameColumn>
-          <StatusColumn>Assignment Status</StatusColumn>
-          {renderActions && <ActionsColumn>Actions</ActionsColumn>}
-        </HeaderContent>
-      </HeaderWrapper>
-      <div data-testid="virtual-machine-keyboard-navigation">{content}</div>
-    </TableWrapper>
+        <Flex align="center" className="w-full">
+          {selectable && (
+            <Flex
+              className="flex-shrink-0"
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ width: 32 }}
+            />
+          )}
+          <Typography.Text
+            className="flex-1 overflow-hidden"
+            // eslint-disable-next-line no-restricted-syntax
+            style={{
+              minWidth: 200,
+            }}
+          >
+            Machine Name
+          </Typography.Text>
+          <Typography.Text
+            className="overflow-hidden"
+            // eslint-disable-next-line no-restricted-syntax
+            style={{
+              width: 200,
+            }}
+          >
+            Team
+          </Typography.Text>
+          <Typography.Text
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ width: 160 }}
+          >
+            Assignment Status
+          </Typography.Text>
+          {renderActions && (
+            <Flex
+              justify="flex-end"
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ width: 120 }}
+            >
+              Actions
+            </Flex>
+          )}
+        </Flex>
+      </Flex>
+      <Flex data-testid="virtual-machine-keyboard-navigation">{content}</Flex>
+    </Flex>
   );
 };

@@ -1,16 +1,21 @@
 import React, { useMemo } from 'react';
+import { Flex } from 'antd';
 import { Toaster } from 'react-hot-toast';
-import { useTheme } from '@/context/ThemeContext';
-import { createToastOptions, ToasterContainer } from './styles';
+const createToastOptions = () => ({
+  duration: 4000,
+});
 
 export const ThemedToaster: React.FC = () => {
-  const { theme } = useTheme();
-
-  const toastOptions = useMemo(() => createToastOptions(theme), [theme]);
+  const toastOptions = useMemo(() => createToastOptions(), []);
 
   return (
-    <ToasterContainer data-testid="themed-toaster-container">
+    <Flex
+      data-testid="themed-toaster-container"
+      className="relative"
+      // eslint-disable-next-line no-restricted-syntax
+      style={{ zIndex: 1000 }}
+    >
       <Toaster position="top-center" toastOptions={toastOptions} />
-    </ToasterContainer>
+    </Flex>
   );
 };

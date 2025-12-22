@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
-import { Modal, Space, Tag } from 'antd';
+import { Button, Flex, Modal, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import styled, { useTheme } from 'styled-components';
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
 import {
@@ -23,16 +22,6 @@ import ResourceListView, {
 } from '@/components/common/ResourceListView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccTooltip } from '@/components/ui';
-import {
-  ListSubtitle,
-  ListTitle,
-  ListTitleRow,
-  PageWrapper,
-  RediaccButton,
-  SectionHeading,
-  SectionStack,
-} from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import {
   useAsyncAction,
@@ -68,18 +57,21 @@ interface StorageFunctionData {
   selectedMachine?: string;
 }
 
-const TeamSelectorWrapper = styled.div`
-  width: 100%;
-  max-width: ${({ theme }) => theme.dimensions.SELECTOR_MAX_WIDTH}px;
-`;
+const TeamSelectorWrapper = (props: React.ComponentProps<typeof Flex>) => (
+  <Flex
+    className="w-full"
+    // eslint-disable-next-line no-restricted-syntax
+    style={{ maxWidth: 360 }}
+    {...props}
+  />
+);
 
-const StorageLocationIcon = styled(CloudOutlined)`
-  color: ${({ theme }) => theme.colors.primary};
-`;
+const StorageLocationIcon = (props: React.ComponentProps<typeof CloudOutlined>) => (
+  <CloudOutlined {...props} />
+);
 
 const StoragePage: React.FC = () => {
   const { t } = useTranslation(['resources', 'common']);
-  const theme = useTheme();
   const [modal, contextHolder] = Modal.useModal();
 
   // Custom hooks for common patterns
@@ -338,7 +330,7 @@ const StoragePage: React.FC = () => {
         key: 'teamName',
         width: COLUMN_WIDTHS.TAG,
         ellipsis: true,
-        render: (teamName: string) => <Tag color={theme.colors.secondary}>{teamName}</Tag>,
+        render: (teamName: string) => <Tag>{teamName}</Tag>,
       },
       ...(featureFlags.isEnabled('vaultVersionColumns')
         ? [
@@ -414,120 +406,99 @@ const StoragePage: React.FC = () => {
         },
       }),
     ],
-    [
-      auditTrace,
-      handleDeleteStorage,
-      openUnifiedModal,
-      setCurrentResource,
-      t,
-      theme.colors.secondary,
-    ]
+    [auditTrace, handleDeleteStorage, openUnifiedModal, setCurrentResource, t]
   );
 
   const hasTeamSelection = selectedTeams.length > 0;
   const displayedStorages = hasTeamSelection ? storages : [];
-  const emptyDescription = hasTeamSelection
-    ? t('storage.noStorage', { defaultValue: 'No storage found in this team' })
-    : t('teams.selectTeamPrompt', { defaultValue: 'Select a team to view its resources' });
+  const emptyDescription = hasTeamSelection ? t('storage.noStorage') : t('teams.selectTeamPrompt');
 
   return (
     <>
-      <PageWrapper>
-        <SectionStack>
-          <SectionHeading level={3}>
-            {t('storage.heading', { defaultValue: 'Storage' })}
-          </SectionHeading>
-
-          <TeamSelectorWrapper>
-            <TeamSelector
-              data-testid="resources-team-selector"
-              teams={teams}
-              selectedTeams={selectedTeams}
-              onChange={setSelectedTeams}
-              loading={teamsLoading}
-              placeholder={t('teams.selectTeamToView', {
-                defaultValue: 'Select a team to view its resources',
-              })}
-            />
-          </TeamSelectorWrapper>
-
-          <ResourceListView<GetTeamStorages_ResultSet1>
-            title={
-              <ListTitleRow>
-                <ListTitle>{t('storage.title', { defaultValue: 'Storage Locations' })}</ListTitle>
-                <ListSubtitle>
-                  {t('storage.subtitle', {
-                    defaultValue: 'Manage remote storage locations and rclone configurations',
-                  })}
-                </ListSubtitle>
-              </ListTitleRow>
-            }
-            loading={storagesLoading}
-            data={displayedStorages}
-            columns={storageColumns}
-            rowKey="storageName"
-            data-testid="resources-storage-table"
-            resourceType="storage locations"
-            emptyDescription={emptyDescription}
-            pagination={
-              hasTeamSelection
-                ? {
-                    current: storagePage,
-                    pageSize: storagePageSize,
-                    total: displayedStorages.length,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
-                    showTotal: (total: number, range: [number, number]) =>
-                      `${t('common:general.showingRecords', {
-                        start: range[0],
-                        end: range[1],
-                        total,
-                      })}`,
-                    onChange: (page: number, size: number) => {
-                      setStoragePage(page);
-                      if (size && size !== storagePageSize) {
-                        setStoragePageSize(size);
-                        setStoragePage(1);
-                      }
-                    },
-                    position: ['bottomRight'],
-                  }
-                : false
-            }
-            actions={
-              hasTeamSelection ? (
-                <>
-                  <RediaccTooltip title={t('storage.createStorage')}>
-                    <RediaccButton
-                      variant="primary"
-                      icon={<PlusOutlined />}
-                      data-testid="resources-create-storage-button"
-                      onClick={() => openUnifiedModal('create')}
-                      aria-label={t('storage.createStorage')}
-                    />
-                  </RediaccTooltip>
-                  <RediaccTooltip title={t('resources:storage.import.button')}>
-                    <RediaccButton
-                      icon={<ImportOutlined />}
-                      data-testid="resources-import-button"
-                      onClick={() => rcloneImportWizard.open()}
-                      aria-label={t('resources:storage.import.button')}
-                    />
-                  </RediaccTooltip>
-                  <RediaccTooltip title={t('common:actions.refresh')}>
-                    <RediaccButton
-                      icon={<ReloadOutlined />}
-                      data-testid="resources-refresh-button"
-                      onClick={() => refetchStorage()}
-                      aria-label={t('common:actions.refresh')}
-                    />
-                  </RediaccTooltip>
-                </>
-              ) : undefined
-            }
+      <Flex vertical>
+        <TeamSelectorWrapper>
+          <TeamSelector
+            data-testid="resources-team-selector"
+            teams={teams}
+            selectedTeams={selectedTeams}
+            onChange={setSelectedTeams}
+            loading={teamsLoading}
+            placeholder={t('teams.selectTeamToView')}
           />
-        </SectionStack>
-      </PageWrapper>
+        </TeamSelectorWrapper>
+
+        <ResourceListView<GetTeamStorages_ResultSet1>
+          title={
+            <Space direction="vertical" size={0}>
+              <Typography.Text strong>{t('storage.title')}</Typography.Text>
+              <Typography.Text>{t('storage.subtitle')}</Typography.Text>
+            </Space>
+          }
+          loading={storagesLoading}
+          data={displayedStorages}
+          columns={storageColumns}
+          rowKey="storageName"
+          data-testid="resources-storage-table"
+          resourceType="storage locations"
+          emptyDescription={emptyDescription}
+          pagination={
+            hasTeamSelection
+              ? {
+                  current: storagePage,
+                  pageSize: storagePageSize,
+                  total: displayedStorages.length,
+                  showSizeChanger: true,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  showTotal: (total: number, range: [number, number]) =>
+                    `${t('common:general.showingRecords', {
+                      start: range[0],
+                      end: range[1],
+                      total,
+                    })}`,
+                  onChange: (page: number, size: number) => {
+                    setStoragePage(page);
+                    if (size && size !== storagePageSize) {
+                      setStoragePageSize(size);
+                      setStoragePage(1);
+                    }
+                  },
+                  position: ['bottomRight'],
+                }
+              : false
+          }
+          actions={
+            hasTeamSelection ? (
+              <>
+                <Tooltip title={t('storage.createStorage')}>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    data-testid="resources-create-storage-button"
+                    onClick={() => openUnifiedModal('create')}
+                    aria-label={t('storage.createStorage')}
+                  />
+                </Tooltip>
+                <Tooltip title={t('resources:storage.import.button')}>
+                  <Button
+                    icon={<ImportOutlined />}
+                    data-testid="resources-import-button"
+                    onClick={() => rcloneImportWizard.open()}
+                    aria-label={t('resources:storage.import.button')}
+                  />
+                </Tooltip>
+                <Tooltip title={t('common:actions.refresh')}>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    data-testid="resources-refresh-button"
+                    onClick={() => refetchStorage()}
+                    aria-label={t('common:actions.refresh')}
+                  />
+                </Tooltip>
+              </>
+            ) : undefined
+          }
+        />
+      </Flex>
 
       <UnifiedResourceModal
         data-testid="resources-storage-modal"

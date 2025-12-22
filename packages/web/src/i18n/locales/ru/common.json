@@ -178,12 +178,6 @@
     "actions": "Действия",
     "showingRecords": "Показаны записи {{start}}-{{end}} из {{total}}"
   },
-  "theme": {
-    "dark": "Темный",
-    "light": "Свет",
-    "switchToDark": "Переключиться в темный режим",
-    "switchToLight": "Переключиться в светлый режим"
-  },
   "thisMonth": "В этом месяце",
   "today": "Сегодня",
   "total": "Общий",

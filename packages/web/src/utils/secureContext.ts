@@ -57,7 +57,9 @@ export function getSecurityContextInfo(): {
   const isSecure = isSecureContext();
 
   let suggestion = '';
-  if (!isSecure) {
+  if (isSecure) {
+    // Secure context, no suggestion needed
+  } else {
     if (protocol === 'http:' && !isLocalhost) {
       suggestion = `Access via HTTPS (https://${hostname}) or use localhost for development`;
     } else {

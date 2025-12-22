@@ -50,6 +50,7 @@
   "connectionTestFailed": "Failed to queue connection test",
   "connectionTestQueued": "Connection test queued successfully",
   "connectivityTest": "Connectivity Test",
+  "checkAndRefresh": "Check & Refresh",
   "connectivityTestDescription": "This test will send a 'ping' function to each machine sequentially to verify connectivity.",
   "createMachine": "Add Machine",
   "createRepo": "Create Repo",

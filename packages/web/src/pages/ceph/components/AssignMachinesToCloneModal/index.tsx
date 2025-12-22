@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Tabs } from 'antd';
+import { Alert, Button, Empty, Flex, Select, Table, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type AvailableMachine,
@@ -12,28 +12,12 @@ import {
   useUpdateCloneMachineAssignments,
   useUpdateCloneMachineRemovals,
 } from '@/api/queries/cephMutations';
+import { SizedModal } from '@/components/common';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import {
-  RediaccButton,
-  RediaccSelect,
-  RediaccTable,
-  RediaccTag,
-  RediaccText,
-} from '@/components/ui';
-import { AlertCard } from '@/styles/primitives';
+import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';
-import {
-  AssignTabContainer,
-  BridgeTag,
-  EmptyState,
-  FieldGroup,
-  MachineNameRow,
-  ManageTabContainer,
-  StyledModal,
-  TitleStack,
-} from './styles';
 import type { ColumnsType } from 'antd/es/table';
 import type { TableRowSelection } from 'antd/es/table/interface';
 
@@ -145,35 +129,28 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     if (loadingAvailable) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
-          <div />
+          <Flex />
         </LoadingWrapper>
       );
     }
 
     if (availableMachines.length === 0) {
-      return <EmptyState description={t('machines:noAvailableMachinesForClone')} />;
+      return <Empty description={t('machines:noAvailableMachinesForClone')} />;
     }
 
     return (
-      <AssignTabContainer>
-        <AlertCard
-          $variant="info"
-          message={t('ceph:clones.assignMachinesInfo')}
-          variant="info"
-          showIcon
-        />
+      <Flex vertical gap={16} className="w-full">
+        <Alert message={t('ceph:clones.assignMachinesInfo')} type="info" showIcon />
 
-        <FieldGroup>
-          <RediaccText weight="medium" size="sm">
-            {t('ceph:machines.selectMachines')}:
-          </RediaccText>
-          <RediaccSelect
-            fullWidth
+        <Flex vertical gap={8} className="w-full">
+          <Typography.Text>{t('ceph:machines.selectMachines')}:</Typography.Text>
+          <Select
             mode="multiple"
             placeholder={t('machines:selectMachines')}
             value={selectedMachines}
             onChange={(value) => setSelectedMachines(value as string[])}
             showSearch
+            className="w-full"
             filterOption={(input, option) =>
               (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
             }
@@ -183,11 +160,11 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             }))}
             data-testid="assign-clone-machine-select"
           />
-          <RediaccText variant="caption" color="muted" data-testid="assign-clone-selected-count">
+          <Typography.Text data-testid="assign-clone-selected-count">
             {t('machines:bulkOperations.selectedCount', { count: selectedMachines.length })}
-          </RediaccText>
-        </FieldGroup>
-      </AssignTabContainer>
+          </Typography.Text>
+        </Flex>
+      </Flex>
     );
   };
 
@@ -195,13 +172,13 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     if (loadingAssigned) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
-          <div />
+          <Flex />
         </LoadingWrapper>
       );
     }
 
     if (assignedMachines.length === 0) {
-      return <EmptyState description={t('ceph:clones.noMachinesAssigned')} />;
+      return <Empty description={t('ceph:clones.noMachinesAssigned')} />;
     }
 
     const machineColumn = createTruncatedColumn<CloneMachine>({
@@ -209,10 +186,10 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       dataIndex: 'machineName',
       key: 'machineName',
       renderWrapper: (content) => (
-        <MachineNameRow>
+        <Flex align="center" gap={8}>
           <CloudServerOutlined />
-          <RediaccText weight="medium">{content}</RediaccText>
-        </MachineNameRow>
+          <Typography.Text>{content}</Typography.Text>
+        </Flex>
       ),
     });
 
@@ -220,7 +197,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       title: t('machines:bridge'),
       dataIndex: 'bridgeName',
       key: 'bridgeName',
-      renderWrapper: (content) => <BridgeTag>{content}</BridgeTag>,
+      renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
     });
 
     const columns: ColumnsType<CloneMachine> = [machineColumn, bridgeColumn];
@@ -234,43 +211,34 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     } as TableRowSelection<CloneMachine>;
 
     return (
-      <ManageTabContainer>
-        <AlertCard
-          $variant="warning"
-          message={t('ceph:clones.removeMachinesInfo')}
-          variant="warning"
-          showIcon
-        />
+      <Flex vertical gap={16} className="w-full">
+        <Alert message={t('ceph:clones.removeMachinesInfo')} type="warning" showIcon />
 
-        <RediaccTable<CloneMachine>
+        <Table<CloneMachine>
           rowSelection={rowSelection}
           columns={columns}
           dataSource={assignedMachines}
           rowKey="machineName"
-          size="sm"
+          size="small"
           pagination={false}
           scroll={{ y: 300 }}
           data-testid="assign-clone-machines-table"
         />
 
-        <RediaccText
-          variant="caption"
-          color="muted"
-          data-testid="assign-clone-remove-selected-count"
-        >
+        <Typography.Text data-testid="assign-clone-remove-selected-count">
           {t('machines:bulkOperations.selectedCount', { count: removingMachines.length })}
-        </RediaccText>
-      </ManageTabContainer>
+        </Typography.Text>
+      </Flex>
     );
   };
 
   const footerButtons =
     activeTab === 'assign'
       ? [
-          <RediaccButton key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
+          <Button key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
             {t('common:actions.cancel')}
-          </RediaccButton>,
-          <RediaccButton
+          </Button>,
+          <Button
             key="assign"
             loading={assignMutation.isPending}
             disabled={selectedMachines.length === 0}
@@ -278,38 +246,37 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             data-testid="assign-clone-submit"
           >
             {t('ceph:machines.assignMachine')}
-          </RediaccButton>,
+          </Button>,
         ]
       : [
-          <RediaccButton key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
+          <Button key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
             {t('common:actions.cancel')}
-          </RediaccButton>,
-          <RediaccButton
+          </Button>,
+          <Button
             key="remove"
-            variant="danger"
+            type="primary"
+            danger
             loading={removeMutation.isPending}
             disabled={removingMachines.length === 0}
             onClick={handleRemove}
             data-testid="assign-clone-remove-submit"
           >
             {t('ceph:machines.unassignMachine')}
-          </RediaccButton>,
+          </Button>,
         ];
 
   return (
-    <StyledModal
+    <SizedModal
       data-testid="assign-clone-modal"
       title={
-        <TitleStack>
+        <Flex align="center" gap={8} wrap>
           <CopyOutlined />
           {t('ceph:clones.manageMachines')}
-          {clone && (
-            <RediaccTag variant="warning" size="md" borderless>
-              {clone.cloneName}
-            </RediaccTag>
-          )}
-        </TitleStack>
+          {clone && <Tag bordered={false}>{clone.cloneName}</Tag>}
+        </Flex>
       }
+      className="assign-clone-machines-modal"
+      size={ModalSize.Large}
       open={open}
       onCancel={onCancel}
       footer={footerButtons}
@@ -331,6 +298,6 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           },
         ]}
       />
-    </StyledModal>
+    </SizedModal>
   );
 };

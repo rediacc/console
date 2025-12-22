@@ -79,11 +79,7 @@ class ApiClient implements SharedApiClient {
       }
 
       if (config.data && hasVaultFields(config.data)) {
-        try {
-          config.data = await encryptRequestData(config.data);
-        } catch (error) {
-          return Promise.reject(error);
-        }
+        config.data = await encryptRequestData(config.data);
       }
       return config;
     });
@@ -288,9 +284,9 @@ class ApiClient implements SharedApiClient {
   private handleApiFailure(responseData: ApiResponse): Promise<never> {
     if (this.isUnauthorizedError(responseData)) {
       this.handleUnauthorizedError();
-      return Promise.reject(new Error('Unauthorized'));
+      throw new Error('Unauthorized');
     }
-    return Promise.reject(new Error(this.extractErrorMessage(responseData)));
+    throw new Error(this.extractErrorMessage(responseData));
   }
 
   private async handleTokenRotation(responseData: ApiResponse): Promise<void> {
@@ -322,7 +318,7 @@ class ApiClient implements SharedApiClient {
 
     const customError: Error & { response?: unknown } = new Error(this.extractErrorMessage(error));
     customError.response = error.response;
-    return Promise.reject(customError);
+    throw customError;
   }
 
   private isApiResponse(value: unknown): value is ApiResponse {

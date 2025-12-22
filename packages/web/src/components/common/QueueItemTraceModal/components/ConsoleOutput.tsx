@@ -1,11 +1,9 @@
 import React from 'react';
-import { Empty } from 'antd';
-import { ConsoleOutputContainer } from '../styles';
+import { Empty, Flex } from 'antd';
 import type { ConsoleOutputProps } from '../types';
 
 export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
   content,
-  theme,
   consoleOutputRef,
   isEmpty,
 }) => {
@@ -14,12 +12,8 @@ export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
   }
 
   return (
-    <ConsoleOutputContainer
-      ref={consoleOutputRef}
-      data-testid="queue-trace-console-output"
-      $theme={theme}
-    >
+    <Flex ref={consoleOutputRef} data-testid="queue-trace-console-output">
       {content}
-    </ConsoleOutputContainer>
+    </Flex>
   );
 };

@@ -1,6 +1,5 @@
 import React from 'react';
-import { Form } from 'antd';
-import { RediaccPasswordInput } from '@/components/ui';
+import { Form, Input } from 'antd';
 import { KeyOutlined } from '@/utils/optimizedIcons';
 import type { Rule } from 'antd/es/form';
 
@@ -91,7 +90,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
 
   return (
     <Form.Item name={name} label={label} rules={rules}>
-      <RediaccPasswordInput
+      <Input.Password
         prefix={showIcon ? <KeyOutlined /> : undefined}
         placeholder={placeholder}
         autoComplete={autoComplete}

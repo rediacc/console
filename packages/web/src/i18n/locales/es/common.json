@@ -178,12 +178,6 @@
     "actions": "Acciones",
     "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}"
   },
-  "theme": {
-    "dark": "Oscura",
-    "light": "Ligera",
-    "switchToDark": "Cambiar a modo oscuro",
-    "switchToLight": "Cambiar a modo claro"
-  },
   "thisMonth": "este mes",
   "today": "Hoy",
   "total": "Total",

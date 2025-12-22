@@ -1,11 +1,14 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+export type ThemeMode = 'light' | 'dark';
+
 interface UIState {
   sidebarCollapsed: boolean;
   activeView: string;
   selectedResource: string | null;
   filters: UIFilters;
   uiMode: 'simple' | 'expert';
+  themeMode: ThemeMode;
   modals: {
     vaultConfig: {
       open: boolean;
@@ -27,6 +30,17 @@ const persistUiMode = (mode: 'simple' | 'expert'): void => {
   localStorage.setItem(UI_MODE_KEY, mode);
 };
 
+const THEME_MODE_KEY = 'themeMode';
+
+const getStoredThemeMode = (): ThemeMode => {
+  const stored = localStorage.getItem(THEME_MODE_KEY);
+  return stored === 'dark' ? 'dark' : 'light';
+};
+
+const persistThemeMode = (mode: ThemeMode): void => {
+  localStorage.setItem(THEME_MODE_KEY, mode);
+};
+
 type UIFilterValue = string | number | boolean | undefined;
 type UIFilters = Record<string, UIFilterValue>;
 
@@ -36,6 +50,7 @@ const initialState: UIState = {
   selectedResource: null,
   filters: {},
   uiMode: getStoredUiMode(),
+  themeMode: getStoredThemeMode(),
   modals: {
     vaultConfig: {
       open: false,
@@ -83,6 +98,15 @@ const uiSlice = createSlice({
       state.uiMode = newMode;
       persistUiMode(newMode);
     },
+    setThemeMode: (state, action: PayloadAction<ThemeMode>) => {
+      state.themeMode = action.payload;
+      persistThemeMode(action.payload);
+    },
+    toggleThemeMode: (state) => {
+      const newMode = state.themeMode === 'light' ? 'dark' : 'light';
+      state.themeMode = newMode;
+      persistThemeMode(newMode);
+    },
   },
 });
 
@@ -95,6 +119,8 @@ export const {
   closeVaultModal,
   setUiMode,
   toggleUiMode,
+  setThemeMode,
+  toggleThemeMode,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

@@ -1,31 +1,34 @@
 import { useCallback, useMemo } from 'react';
-import { Alert, Col, DatePicker, Empty, Row, Select, Space } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Dropdown,
+  Empty,
+  Flex,
+  Input,
+  Row,
+  Select,
+  Space,
+  Table,
+  Tooltip,
+  Typography,
+} from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { useAuditLogs } from '@/api/queries/audit';
-import type { AuditLog } from '@/api/queries/audit';
-import {
-  RediaccButton,
-  RediaccDropdown,
-  RediaccInput,
-  RediaccStack,
-  RediaccTable,
-  RediaccText,
-  RediaccTooltip,
-} from '@/components/ui';
-import { useMessage } from '@/hooks';
-import { useFilters, usePagination } from '@/hooks';
+import { useAuditLogs, type AuditLog } from '@/api/queries/audit';
+import { useFilters, useMessage, usePagination } from '@/hooks';
 import {
   buildCSVContent,
   downloadCSV,
   downloadJSON,
   findActionConfig,
   generateTimestampedFilename,
-  getActionTagColor,
   getUniqueMappedValues,
   searchInFields,
 } from '@/platform';
-import { PageCard, PageContainer } from '@/styles/primitives';
 import {
   DownloadOutlined,
   FileExcelOutlined,
@@ -34,7 +37,6 @@ import {
   SearchOutlined,
 } from '@/utils/optimizedIcons';
 import { buildAuditColumns } from './columns';
-import { ActionButtonFull, ActionIcon, FilterLabel, LinkButton, PlaceholderLabel } from './styles';
 
 interface AuditPageFilters extends Record<string, unknown> {
   dateRange: [Dayjs | null, Dayjs | null];
@@ -81,14 +83,10 @@ const AuditPage = () => {
     const IconComponent = config.icon;
 
     return (
-      <ActionIcon $color={config.color}>
+      <Typography.Text className="inline-flex">
         <IconComponent />
-      </ActionIcon>
+      </Typography.Text>
     );
-  }, []);
-
-  const getActionColor = useCallback((action: string) => {
-    return getActionTagColor(action);
   }, []);
 
   const filteredLogs = auditLogs?.filter((log) =>
@@ -101,9 +99,8 @@ const AuditPage = () => {
         t,
         auditLogs,
         getActionIcon,
-        getActionColor,
       }),
-    [t, auditLogs, getActionIcon, getActionColor]
+    [t, auditLogs, getActionIcon]
   );
 
   const entityTypes = getUniqueMappedValues(auditLogs || [], (log) => log.entity);
@@ -164,28 +161,32 @@ const AuditPage = () => {
   const exportMenuItems = [
     {
       key: 'csv',
-      label: <span data-testid="audit-export-csv">{t('common:exportCSV')}</span>,
+      label: (
+        <Typography.Text data-testid="audit-export-csv">{t('common:exportCSV')}</Typography.Text>
+      ),
       icon: <FileExcelOutlined />,
       onClick: exportToCSV,
     },
     {
       key: 'json',
-      label: <span data-testid="audit-export-json">{t('common:exportJSON')}</span>,
+      label: (
+        <Typography.Text data-testid="audit-export-json">{t('common:exportJSON')}</Typography.Text>
+      ),
       icon: <FileTextOutlined />,
       onClick: exportToJSON,
     },
   ];
 
   return (
-    <PageContainer>
-      <RediaccStack variant="spaced-column" fullWidth>
+    <Flex vertical>
+      <Flex vertical gap={24} className="w-full">
         {/* Filters */}
-        <PageCard data-testid="audit-filter-card">
+        <Card data-testid="audit-filter-card">
           <Space direction="vertical" size="large">
             <Row gutter={[24, 16]}>
               <Col xs={24} sm={24} md={8}>
-                <RediaccStack direction="vertical" gap="sm" fullWidth>
-                  <FilterLabel>{t('system:audit.filters.dateRange')}</FilterLabel>
+                <Flex vertical gap={8} className="w-full">
+                  <Typography.Text>{t('system:audit.filters.dateRange')}</Typography.Text>
                   <RangePicker
                     data-testid="audit-filter-date"
                     value={filters.dateRange}
@@ -231,11 +232,11 @@ const AuditPage = () => {
                       },
                     ]}
                   />
-                </RediaccStack>
+                </Flex>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <RediaccStack direction="vertical" gap="sm" fullWidth>
-                  <FilterLabel>{t('system:audit.filters.entityType')}</FilterLabel>
+                <Flex vertical gap={8} className="w-full">
+                  <Typography.Text>{t('system:audit.filters.entityType')}</Typography.Text>
                   <Select
                     data-testid="audit-filter-entity"
                     placeholder={t('system:audit.filters.allEntities')}
@@ -247,12 +248,12 @@ const AuditPage = () => {
                       ...entityTypes.map((entity) => ({ label: entity, value: entity })),
                     ]}
                   />
-                </RediaccStack>
+                </Flex>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <RediaccStack direction="vertical" gap="sm" fullWidth>
-                  <FilterLabel>{t('system:audit.filters.search')}</FilterLabel>
-                  <RediaccInput
+                <Flex vertical gap={8} className="w-full">
+                  <Typography.Text>{t('system:audit.filters.search')}</Typography.Text>
+                  <Input
                     data-testid="audit-filter-search"
                     placeholder={t('system:audit.filters.searchPlaceholder')}
                     prefix={<SearchOutlined />}
@@ -261,48 +262,64 @@ const AuditPage = () => {
                     allowClear
                     autoComplete="off"
                   />
-                </RediaccStack>
+                </Flex>
               </Col>
               <Col xs={24} sm={12} md={2}>
-                <RediaccStack direction="vertical" gap="sm" fullWidth>
-                  <PlaceholderLabel>{t('system:audit.filters.actions')}</PlaceholderLabel>
-                  <ActionButtonFull
+                <Flex vertical gap={8} className="w-full">
+                  <Typography.Text>{t('system:audit.filters.actions')}</Typography.Text>
+                  <Button
                     data-testid="audit-refresh-button"
                     icon={<ReloadOutlined />}
                     onClick={() => refetch()}
                     loading={isLoading}
+                    // eslint-disable-next-line no-restricted-syntax
+                    style={{
+                      width: '100%',
+                      minHeight: 48,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
                   >
                     {t('common:actions.refresh')}
-                  </ActionButtonFull>
-                </RediaccStack>
+                  </Button>
+                </Flex>
               </Col>
               <Col xs={24} sm={12} md={2}>
-                <RediaccStack direction="vertical" gap="sm" fullWidth>
-                  <PlaceholderLabel>{t('system:audit.filters.export')}</PlaceholderLabel>
-                  <RediaccTooltip
+                <Flex vertical gap={8} className="w-full">
+                  <Typography.Text>{t('system:audit.filters.export')}</Typography.Text>
+                  <Tooltip
                     title={
                       !filteredLogs || filteredLogs.length === 0
                         ? t('system:audit.export.noData')
                         : t('system:audit.export.tooltip')
                     }
                   >
-                    <RediaccDropdown
+                    <Dropdown
                       menu={{ items: exportMenuItems }}
                       disabled={!filteredLogs || filteredLogs.length === 0}
                     >
-                      <ActionButtonFull
+                      <Button
                         data-testid="audit-export-button"
                         icon={<DownloadOutlined />}
+                        // eslint-disable-next-line no-restricted-syntax
+                        style={{
+                          width: '100%',
+                          minHeight: 48,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
                       >
                         {t('common:actions.export')}
-                      </ActionButtonFull>
-                    </RediaccDropdown>
-                  </RediaccTooltip>
-                </RediaccStack>
+                      </Button>
+                    </Dropdown>
+                  </Tooltip>
+                </Flex>
               </Col>
             </Row>
           </Space>
-        </PageCard>
+        </Card>
 
         {/* Error Display */}
         {isError && (
@@ -313,16 +330,16 @@ const AuditPage = () => {
             closable
             showIcon
             action={
-              <RediaccButton onClick={() => refetch()} loading={isLoading}>
+              <Button onClick={() => refetch()} loading={isLoading}>
                 {t('system:audit.errors.tryAgain')}
-              </RediaccButton>
+              </Button>
             }
           />
         )}
 
         {/* Audit Logs Table */}
-        <PageCard data-testid="audit-table-card">
-          <RediaccTable<AuditLog>
+        <Card data-testid="audit-table-card">
+          <Table<AuditLog>
             data-testid="audit-table"
             columns={columns}
             dataSource={filteredLogs}
@@ -346,17 +363,17 @@ const AuditPage = () => {
                 <Empty
                   description={
                     <Space direction="vertical" align="center">
-                      <RediaccText color="secondary">
+                      <Typography.Text>
                         {isError
                           ? t('system:audit.errors.unableToLoad')
                           : filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0
                             ? t('system:audit.empty.noMatchingFilters')
                             : t('system:audit.empty.noLogsInRange')}
-                      </RediaccText>
+                      </Typography.Text>
                       {!isError && (
-                        <LinkButton onClick={clearAllFilters}>
+                        <Button type="link" onClick={clearAllFilters}>
                           {t('system:audit.empty.clearFilters')}
-                        </LinkButton>
+                        </Button>
                       )}
                     </Space>
                   }
@@ -364,9 +381,9 @@ const AuditPage = () => {
               ),
             }}
           />
-        </PageCard>
-      </RediaccStack>
-    </PageContainer>
+        </Card>
+      </Flex>
+    </Flex>
   );
 };
 

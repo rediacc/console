@@ -1,18 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Form, Modal, Result, Tabs, Typography } from 'antd';
-import { useTranslation } from 'react-i18next';
-import QRCode from 'react-qr-code';
-import { useSelector } from 'react-redux';
-import type { EnableTwoFactorResponse } from '@/api/queries/twoFactor';
-import { useDisableTFA, useEnableTFA, useTFAStatus } from '@/api/queries/twoFactor';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {
-  RediaccAlert,
-  RediaccButton,
-  RediaccPasswordInput,
-  RediaccStack,
-  RediaccText,
-} from '@/components/ui';
+  Alert,
+  Button,
+  Card,
+  Flex,
+  Form,
+  Input,
+  QRCode,
+  Result,
+  Space,
+  Tabs,
+  Typography,
+} from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import {
+  useDisableTFA,
+  useEnableTFA,
+  useTFAStatus,
+  type EnableTwoFactorResponse,
+} from '@/api/queries/twoFactor';
+import { SizedModal } from '@/components/common';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { useCopyToClipboard } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
 import { OTPCodeField } from '@/pages/settings/profile/components/OTPCodeField';
@@ -22,23 +31,9 @@ import {
   CheckCircleOutlined,
   CopyOutlined,
   KeyOutlined,
+  SafetyCertificateOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import {
-  CardContent,
-  CenteredStack,
-  FormActionRow,
-  FormItemNoMargin,
-  ManualSetupAlert,
-  ModalTitleIcon,
-  ModalTitleWrapper,
-  QRCodeContainer,
-  SecretInput,
-  SecretInputRow,
-  SectionTitle,
-  StatusIcon,
-} from './styles';
 import type { FormInstance } from 'antd/es/form';
 import type { TFunction } from 'i18next';
 
@@ -190,21 +185,21 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
 
   return (
     <>
-      <Modal
+      <SizedModal
         title={
-          <ModalTitleWrapper>
-            <ModalTitleIcon />
-            <span>{t('twoFactorAuth.title')}</span>
-          </ModalTitleWrapper>
+          <Flex align="center" gap={8} className="inline-flex">
+            <SafetyCertificateOutlined />
+            <Typography.Text>{t('twoFactorAuth.title')}</Typography.Text>
+          </Flex>
         }
         open={open}
         onCancel={onCancel}
         footer={null}
-        className={ModalSize.Medium}
+        size={ModalSize.Medium}
         data-testid="tfa-settings-main-modal"
       >
         {mainContent}
-      </Modal>
+      </SizedModal>
 
       <EnableTwoFactorModal
         open={enableModal.isOpen}
@@ -237,7 +232,7 @@ export default TwoFactorSettings;
 
 const LoadingState = () => (
   <LoadingWrapper loading centered minHeight={160} data-testid="tfa-settings-loading">
-    <div />
+    <Flex />
   </LoadingWrapper>
 );
 
@@ -271,34 +266,35 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
       key: 'qrcode',
       label: t('twoFactorAuth.setupMethods.qrCode'),
       children: (
-        <CenteredStack data-testid="tfa-settings-qr-tab">
-          <QRCodeContainer>
+        <Flex vertical align="center" className="text-center" data-testid="tfa-settings-qr-tab">
+          <Flex className="inline-flex">
             <QRCode value={otpUrl} size={200} data-testid="tfa-settings-qr-code" />
-          </QRCodeContainer>
-          <RediaccText color="secondary">{t('twoFactorAuth.scanQRCode')}</RediaccText>
-        </CenteredStack>
+          </Flex>
+          <Typography.Text>{t('twoFactorAuth.scanQRCode')}</Typography.Text>
+        </Flex>
       ),
     },
     {
       key: 'manual',
       label: t('twoFactorAuth.setupMethods.manual'),
       children: (
-        <ManualSetupAlert
+        <Alert
+          className="w-full"
           message={t('twoFactorAuth.manualSetup.title')}
           description={
-            <RediaccStack direction="vertical" gap="sm" fullWidth>
-              <RediaccText>{t('twoFactorAuth.manualSetup.instructions')}</RediaccText>
-              <SecretInputRow>
-                <SecretInput value={secret} readOnly data-testid="tfa-settings-secret-key-input" />
-                <RediaccButton
+            <Flex vertical gap={8} className="w-full">
+              <Typography.Text>{t('twoFactorAuth.manualSetup.instructions')}</Typography.Text>
+              <Space.Compact className="w-full">
+                <Input value={secret} readOnly data-testid="tfa-settings-secret-key-input" />
+                <Button
                   icon={<CopyOutlined />}
                   onClick={() => copySecret(secret)}
                   data-testid="tfa-settings-copy-secret-button"
                 />
-              </SecretInputRow>
-            </RediaccStack>
+              </Space.Compact>
+            </Flex>
           }
-          variant="info"
+          type="info"
           data-testid="tfa-settings-manual-setup-alert"
         />
       ),
@@ -306,12 +302,12 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
   ];
 
   return (
-    <RediaccStack direction="vertical" gap="lg" fullWidth>
-      <CenteredStack>
-        <StatusIcon />
-        <SectionTitle level={4}>{t('twoFactorAuth.verification.title')}</SectionTitle>
-        <Paragraph color="secondary">{t('twoFactorAuth.verification.subtitle')}</Paragraph>
-      </CenteredStack>
+    <Flex vertical gap={24} className="w-full">
+      <Flex vertical align="center" className="text-center">
+        <SafetyCertificateOutlined />
+        <Title level={4}>{t('twoFactorAuth.verification.title')}</Title>
+        <Paragraph>{t('twoFactorAuth.verification.subtitle')}</Paragraph>
+      </Flex>
 
       <Tabs data-testid="tfa-settings-setup-tabs" items={tabItems} />
 
@@ -326,22 +322,22 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
           data-testid="tfa-settings-verification-input"
         />
 
-        <FormItemNoMargin>
-          <FormActionRow $align="space-between">
-            <RediaccButton onClick={onCancel} data-testid="tfa-settings-verification-cancel-button">
+        <Form.Item>
+          <Flex justify="space-between" className="w-full">
+            <Button onClick={onCancel} data-testid="tfa-settings-verification-cancel-button">
               {t('common:general.cancel')}
-            </RediaccButton>
-            <RediaccButton
+            </Button>
+            <Button
               htmlType="submit"
               loading={isSubmitting}
               data-testid="tfa-settings-verification-submit-button"
             >
               {t('twoFactorAuth.verification.submit')}
-            </RediaccButton>
-          </FormActionRow>
-        </FormItemNoMargin>
+            </Button>
+          </Flex>
+        </Form.Item>
       </Form>
-    </RediaccStack>
+    </Flex>
   );
 };
 
@@ -357,21 +353,20 @@ const SuccessContent: React.FC<SuccessContentProps> = ({ t, onDone }) => (
     subTitle={t('twoFactorAuth.enableSuccess.subtitle')}
     data-testid="tfa-settings-success-result"
     extra={
-      <RediaccStack direction="vertical" gap="lg" fullWidth>
-        <RediaccAlert
-          spacing="spacious"
+      <Flex vertical gap={24} className="w-full">
+        <Alert
           message={t('twoFactorAuth.enableSuccess.verified')}
           description={t('twoFactorAuth.enableSuccess.verifiedDescription')}
-          variant="success"
+          type="success"
           showIcon
           icon={<CheckCircleOutlined />}
           data-testid="tfa-settings-success-alert"
         />
 
-        <RediaccButton fullWidth onClick={onDone} data-testid="tfa-settings-success-done-button">
+        <Button block onClick={onDone} data-testid="tfa-settings-success-done-button">
           {t('twoFactorAuth.done')}
-        </RediaccButton>
-      </RediaccStack>
+        </Button>
+      </Flex>
     }
   />
 );
@@ -384,21 +379,21 @@ interface StatusOverviewProps {
 }
 
 const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, onDisable, t }) => (
-  <RediaccStack direction="vertical" gap="lg" fullWidth>
-    <CenteredStack>
-      <StatusIcon $tone={isEnabled ? 'success' : 'muted'} $size={DESIGN_TOKENS.FONT_SIZE.DISPLAY} />
-      <SectionTitle level={4}>
+  <Flex vertical gap={24} className="w-full">
+    <Flex vertical align="center" className="text-center">
+      <SafetyCertificateOutlined />
+      <Title level={4}>
         {isEnabled ? t('twoFactorAuth.status.enabled') : t('twoFactorAuth.status.disabled')}
-      </SectionTitle>
-      <Paragraph color="secondary">
+      </Title>
+      <Paragraph>
         {isEnabled
           ? t('twoFactorAuth.status.enabledDescription')
           : t('twoFactorAuth.status.disabledDescription')}
       </Paragraph>
-    </CenteredStack>
+    </Flex>
 
     <Card>
-      <CardContent>
+      <Flex vertical gap={8}>
         <Title level={5}>{t('twoFactorAuth.whatIs.title')}</Title>
         <Paragraph>{t('twoFactorAuth.whatIs.description')}</Paragraph>
         <ul>
@@ -406,30 +401,32 @@ const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, on
           <li>{t('twoFactorAuth.whatIs.benefit2')}</li>
           <li>{t('twoFactorAuth.whatIs.benefit3')}</li>
         </ul>
-      </CardContent>
+      </Flex>
     </Card>
 
     {isEnabled ? (
-      <RediaccButton
-        variant="danger"
-        fullWidth
+      <Button
+        type="primary"
+        danger
+        block
         icon={<WarningOutlined />}
         onClick={onDisable}
         data-testid="tfa-settings-disable-button"
       >
         {t('twoFactorAuth.disable')}
-      </RediaccButton>
+      </Button>
     ) : (
-      <RediaccButton
-        fullWidth
+      <Button
+        type="primary"
+        block
         icon={<CheckCircleOutlined />}
         onClick={onEnable}
         data-testid="tfa-settings-enable-button"
       >
         {t('twoFactorAuth.enable')}
-      </RediaccButton>
+      </Button>
     )}
-  </RediaccStack>
+  </Flex>
 );
 
 interface EnableModalProps {
@@ -449,20 +446,19 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
   isSubmitting,
   t,
 }) => (
-  <Modal
+  <SizedModal
     title={t('twoFactorAuth.enableModal.title')}
     open={open}
     onCancel={onCancel}
     footer={null}
-    className={ModalSize.Medium}
+    size={ModalSize.Medium}
     data-testid="tfa-settings-enable-modal"
   >
     <Form form={form} layout="vertical" onFinish={onSubmit}>
-      <RediaccAlert
-        spacing="spacious"
+      <Alert
         message={t('twoFactorAuth.enableModal.warning')}
         description={t('twoFactorAuth.enableModal.warningDescription')}
-        variant="warning"
+        type="warning"
         showIcon
         data-testid="tfa-settings-enable-warning-alert"
       />
@@ -472,7 +468,7 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
         label={t('twoFactorAuth.enableModal.passwordLabel')}
         rules={[{ required: true, message: t('twoFactorAuth.enableModal.passwordRequired') }]}
       >
-        <RediaccPasswordInput
+        <Input.Password
           prefix={<KeyOutlined />}
           placeholder={t('twoFactorAuth.enableModal.passwordPlaceholder')}
           autoComplete="off"
@@ -480,22 +476,22 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
         />
       </Form.Item>
 
-      <FormItemNoMargin>
-        <FormActionRow>
-          <RediaccButton onClick={onCancel} data-testid="tfa-settings-enable-cancel-button">
+      <Form.Item>
+        <Flex justify="flex-end" className="w-full">
+          <Button onClick={onCancel} data-testid="tfa-settings-enable-cancel-button">
             {t('common:general.cancel')}
-          </RediaccButton>
-          <RediaccButton
+          </Button>
+          <Button
             htmlType="submit"
             loading={isSubmitting}
             data-testid="tfa-settings-enable-submit-button"
           >
             {t('twoFactorAuth.enableModal.submit')}
-          </RediaccButton>
-        </FormActionRow>
-      </FormItemNoMargin>
+          </Button>
+        </Flex>
+      </Form.Item>
     </Form>
-  </Modal>
+  </SizedModal>
 );
 
 interface DisableModalProps {
@@ -515,20 +511,19 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
   isSubmitting,
   t,
 }) => (
-  <Modal
+  <SizedModal
     title={t('twoFactorAuth.disableModal.title')}
     open={open}
     onCancel={onCancel}
     footer={null}
-    className={ModalSize.Medium}
+    size={ModalSize.Medium}
     data-testid="tfa-settings-disable-modal"
   >
     <Form form={form} layout="vertical" onFinish={onSubmit}>
-      <RediaccAlert
-        spacing="spacious"
+      <Alert
         message={t('twoFactorAuth.disableModal.warning')}
         description={t('twoFactorAuth.disableModal.warningDescription')}
-        variant="error"
+        type="error"
         showIcon
         data-testid="tfa-settings-disable-warning-alert"
       />
@@ -538,7 +533,7 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
         label={t('twoFactorAuth.disableModal.passwordLabel')}
         rules={[{ required: true, message: t('twoFactorAuth.disableModal.passwordRequired') }]}
       >
-        <RediaccPasswordInput
+        <Input.Password
           prefix={<KeyOutlined />}
           placeholder={t('twoFactorAuth.disableModal.passwordPlaceholder')}
           autoComplete="off"
@@ -556,21 +551,22 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
         data-testid="tfa-settings-disable-code-input"
       />
 
-      <FormItemNoMargin>
-        <FormActionRow>
-          <RediaccButton onClick={onCancel} data-testid="tfa-settings-disable-cancel-button">
+      <Form.Item>
+        <Flex justify="flex-end" className="w-full">
+          <Button onClick={onCancel} data-testid="tfa-settings-disable-cancel-button">
             {t('common:general.cancel')}
-          </RediaccButton>
-          <RediaccButton
-            variant="danger"
+          </Button>
+          <Button
+            type="primary"
+            danger
             htmlType="submit"
             loading={isSubmitting}
             data-testid="tfa-settings-disable-submit-button"
           >
             {t('twoFactorAuth.disableModal.submit')}
-          </RediaccButton>
-        </FormActionRow>
-      </FormItemNoMargin>
+          </Button>
+        </Flex>
+      </Form.Item>
     </Form>
-  </Modal>
+  </SizedModal>
 );

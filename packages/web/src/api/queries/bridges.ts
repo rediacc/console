@@ -104,4 +104,7 @@ export const useResetBridgeAuthorization = () => {
   });
 };
 
-export type { GetRegionBridges_ResultSet1, GetRegionBridges_ResultSet1 as Bridge };
+export type {
+  GetRegionBridges_ResultSet1,
+  GetRegionBridges_ResultSet1 as Bridge,
+} from '@rediacc/shared/types';

@@ -1,37 +1,26 @@
 import React from 'react';
-import { Space } from 'antd';
+import { Avatar, Button, Card, Divider, Flex, Segmented, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '@/components/common/LanguageSelector';
-import { ThemeToggle } from '@/components/common/ThemeToggle';
-import { RediaccDivider, RediaccText } from '@/components/ui';
+import type { ThemeMode } from '@/store/ui/uiSlice';
 import {
   LogoutOutlined,
+  MoonOutlined,
   SafetyCertificateOutlined,
   SmileOutlined,
+  SunOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import type { CompanyDashboardData } from '@rediacc/shared/types';
-import {
-  AppearanceRow,
-  LanguageSection,
-  LogoutButton,
-  MenuContainer,
-  ModeSegmented,
-  PlanBadge,
-  UserAvatar,
-  UserDetails,
-  UserInfo,
-  BlockText,
-  LanguageLabel,
-} from './styles';
 
 type UserMenuProps = {
   user: { email: string } | null;
   company: string | null;
   companyData?: Pick<CompanyDashboardData, 'companyInfo' | 'activeSubscription'>;
   uiMode: 'simple' | 'expert';
+  themeMode: ThemeMode;
   onModeToggle: () => void;
+  onThemeToggle: () => void;
   onLogout: () => void;
 };
 
@@ -40,103 +29,147 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   company,
   companyData,
   uiMode,
+  themeMode,
   onModeToggle,
+  onThemeToggle,
   onLogout,
 }) => {
   const { t } = useTranslation('common');
 
   return (
-    <MenuContainer>
-      <UserInfo data-testid="user-info">
-        <UserAvatar icon={<UserOutlined />} size={DESIGN_TOKENS.DIMENSIONS.ICON_XXL} />
-        <UserDetails>
-          <BlockText variant="value" weight="semibold" data-testid="user-info-email">
-            {user?.email}
-          </BlockText>
-          {company && (
-            <BlockText variant="caption" data-testid="user-info-company">
-              {company}
-            </BlockText>
-          )}
-          {companyData?.activeSubscription && (
-            <PlanBadge data-testid="user-info-plan">
-              {companyData.activeSubscription.planCode ?? 'UNKNOWN'}
-            </PlanBadge>
-          )}
-        </UserDetails>
-      </UserInfo>
-
-      <RediaccDivider spacing="none" />
-
-      <div>
-        <RediaccText variant="label">
-          {t('uiMode.label', { defaultValue: 'Interface Mode' })}
-        </RediaccText>
-        <ModeSegmented
-          block
-          value={uiMode}
-          onChange={(value) => {
-            if (value !== uiMode) {
-              onModeToggle();
-            }
-          }}
-          options={[
-            {
-              label: (
-                <Space size={4}>
-                  <SmileOutlined />
-                  <span>{t('uiMode.simple')}</span>
-                </Space>
-              ),
-              value: 'simple',
-            },
-            {
-              label: (
-                <Space size={4}>
-                  <SafetyCertificateOutlined />
-                  <span>{t('uiMode.expert')}</span>
-                </Space>
-              ),
-              value: 'expert',
-            },
-          ]}
-          data-testid="main-mode-toggle"
-        />
-      </div>
-
-      <RediaccDivider spacing="none" />
-
-      <AppearanceRow>
-        <div>
-          <BlockText variant="value" weight="semibold">
-            {t('appearance.label', { defaultValue: 'Appearance' })}
-          </BlockText>
-          <RediaccText variant="caption">
-            {t('appearance.description', { defaultValue: 'Device theme' })}
-          </RediaccText>
-        </div>
-        <ThemeToggle />
-      </AppearanceRow>
-
-      <RediaccDivider spacing="none" />
-
-      <LanguageSection>
-        <LanguageLabel variant="value" weight="semibold">
-          {t('language.label', { defaultValue: 'Language' })}
-        </LanguageLabel>
-        <LanguageSelector iconOnly={false} />
-      </LanguageSection>
-
-      <RediaccDivider spacing="none" />
-
-      <LogoutButton
-        variant="danger"
-        icon={<LogoutOutlined />}
-        onClick={onLogout}
-        data-testid="main-logout-button"
+    <Card styles={{ body: { padding: 0 } }}>
+      <Flex
+        vertical
+        // eslint-disable-next-line no-restricted-syntax
+        style={{ width: 280 }}
       >
-        {t('navigation.logout')}
-      </LogoutButton>
-    </MenuContainer>
+        <Flex align="center" gap={12} wrap data-testid="user-info">
+          <Avatar icon={<UserOutlined />} size={48} />
+          <Flex vertical className="flex-1 min-w-0">
+            <Typography.Text strong className="block" data-testid="user-info-email">
+              {user?.email}
+            </Typography.Text>
+            {company && (
+              <Typography.Text type="secondary" className="block" data-testid="user-info-company">
+                {company}
+              </Typography.Text>
+            )}
+            {companyData?.activeSubscription && (
+              <Tag data-testid="user-info-plan">
+                {companyData.activeSubscription.planCode ?? 'UNKNOWN'}
+              </Tag>
+            )}
+          </Flex>
+        </Flex>
+
+        <Divider
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ margin: '12px 0' }}
+        />
+
+        <Flex vertical>
+          <Typography.Text type="secondary">{t('uiMode.label')}</Typography.Text>
+          <Segmented
+            block
+            value={uiMode}
+            onChange={(value) => {
+              if (value !== uiMode) {
+                onModeToggle();
+              }
+            }}
+            options={[
+              {
+                label: (
+                  <Space size={4}>
+                    <SmileOutlined />
+                    <Typography.Text>{t('uiMode.simple')}</Typography.Text>
+                  </Space>
+                ),
+                value: 'simple',
+              },
+              {
+                label: (
+                  <Space size={4}>
+                    <SafetyCertificateOutlined />
+                    <Typography.Text>{t('uiMode.expert')}</Typography.Text>
+                  </Space>
+                ),
+                value: 'expert',
+              },
+            ]}
+            data-testid="main-mode-toggle"
+          />
+        </Flex>
+
+        <Divider
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ margin: '12px 0' }}
+        />
+
+        <Flex vertical>
+          <Typography.Text type="secondary">{t('theme.label')}</Typography.Text>
+          <Segmented
+            block
+            value={themeMode}
+            onChange={(value) => {
+              if (value !== themeMode) {
+                onThemeToggle();
+              }
+            }}
+            options={[
+              {
+                label: (
+                  <Space size={4}>
+                    <SunOutlined />
+                    <Typography.Text>{t('theme.light')}</Typography.Text>
+                  </Space>
+                ),
+                value: 'light',
+              },
+              {
+                label: (
+                  <Space size={4}>
+                    <MoonOutlined />
+                    <Typography.Text>{t('theme.dark')}</Typography.Text>
+                  </Space>
+                ),
+                value: 'dark',
+              },
+            ]}
+            data-testid="main-theme-toggle"
+          />
+        </Flex>
+
+        <Divider
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ margin: '12px 0' }}
+        />
+
+        <Flex vertical>
+          <Typography.Text strong className="block">
+            {t('language.label')}
+          </Typography.Text>
+          <LanguageSelector iconOnly={false} />
+        </Flex>
+
+        <Divider
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ margin: '12px 0' }}
+        />
+
+        <Button
+          type="text"
+          danger
+          icon={<LogoutOutlined />}
+          onClick={onLogout}
+          data-testid="main-logout-button"
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ justifyContent: 'flex-start' }}
+          className="w-full"
+        >
+          {t('navigation.logout')}
+        </Button>
+      </Flex>
+    </Card>
   );
 };

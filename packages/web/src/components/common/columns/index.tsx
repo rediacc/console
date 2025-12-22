@@ -1,15 +1,17 @@
 import React from 'react';
 import { DeleteOutlined, EditOutlined, EyeOutlined, MoreOutlined } from '@ant-design/icons';
-import { Space } from 'antd';
-import { RediaccButton, RediaccDropdown, RediaccText, RediaccTooltip } from '@/components/ui';
-import i18n from '@/i18n/config';
 import {
-  createStatusRenderer,
-  renderTimestampElement,
-  type StatusConfig,
-  VersionTag,
-} from './renderers';
-import type { MenuProps, TooltipProps } from 'antd';
+  Button,
+  Dropdown,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+  type MenuProps,
+  type TooltipProps,
+} from 'antd';
+import i18n from '@/i18n/config';
+import { createStatusRenderer, renderTimestampElement, type StatusConfig } from './renderers';
 import type { ColumnsType } from 'antd/es/table';
 
 /**
@@ -25,7 +27,7 @@ type ColumnFactory<T> = (options?: {
   render?: (value: string, record: T) => React.ReactNode;
 }) => ColumnsType<T>[number];
 
-type ColumnDataIndex<T> = Extract<keyof T, string | number> | string;
+type ColumnDataIndex = string;
 
 /**
  * Team name column - used across machines, credentials, storage, etc.
@@ -193,7 +195,7 @@ export interface ActionMenuItem<T> {
 export interface ActionColumnOptions<T> {
   title?: React.ReactNode;
   width?: number;
-  fixed?: 'start' | 'end';
+  fixed?: 'left' | 'right';
   buttonIcon?: React.ReactNode;
   buttonLabel?: React.ReactNode;
   onView?: (record: T) => void;
@@ -209,7 +211,7 @@ export interface ActionColumnOptions<T> {
 export const createActionColumn = <T,>(
   options: ActionColumnOptions<T>
 ): ColumnsType<T>[number] => ({
-  title: options.title || i18n.t('common:actionsColumn', { defaultValue: 'Actions' }),
+  title: options.title || i18n.t('common:actionsColumn'),
   key: 'actions',
   width: options.width || 120,
   fixed: options.fixed,
@@ -271,18 +273,16 @@ export const createActionColumn = <T,>(
     };
 
     return (
-      <RediaccDropdown menu={menu} trigger={['click']}>
-        <RediaccButton icon={options.buttonIcon || <MoreOutlined />}>
-          {options.buttonLabel}
-        </RediaccButton>
-      </RediaccDropdown>
+      <Dropdown menu={menu} trigger={['click']}>
+        <Button icon={options.buttonIcon || <MoreOutlined />}>{options.buttonLabel}</Button>
+      </Dropdown>
     );
   },
 });
 
 export interface StatusColumnOptions<T> {
   title?: React.ReactNode;
-  dataIndex: ColumnDataIndex<T>;
+  dataIndex: ColumnDataIndex;
   key?: string;
   width?: number;
   statusMap: Record<string, StatusConfig>;
@@ -315,7 +315,7 @@ export const createStatusColumn = <T,>(options: StatusColumnOptions<T>): Columns
   }
 
   return {
-    title: options.title || i18n.t('common:statusColumn', { defaultValue: 'Status' }),
+    title: options.title || i18n.t('common:statusColumn'),
     dataIndex,
     key: options.key || dataKey || 'status',
     width: options.width ?? 100,
@@ -341,7 +341,7 @@ const toTimestamp = (value: unknown): number => {
 
 export interface DateColumnOptions<T> {
   title?: React.ReactNode;
-  dataIndex: ColumnDataIndex<T>;
+  dataIndex: ColumnDataIndex;
   key?: string;
   width?: number;
   format?: string;
@@ -356,7 +356,7 @@ export interface DateColumnOptions<T> {
 export const createDateColumn = <T,>(options: DateColumnOptions<T>): ColumnsType<T>[number] => {
   const dataIndex = options.dataIndex;
   const dataKey = typeof dataIndex === 'string' ? dataIndex : String(dataIndex);
-  const fallbackTitle = i18n.t('common:dateColumn', { defaultValue: 'Date' });
+  const fallbackTitle = i18n.t('common:dateColumn');
 
   let sorter: ColumnsType<T>[number]['sorter'] | undefined;
   if (options.sorter === true || options.sorter === undefined) {
@@ -387,7 +387,7 @@ export const createDateColumn = <T,>(options: DateColumnOptions<T>): ColumnsType
 
 export interface TruncatedColumnOptions<T> {
   title: React.ReactNode;
-  dataIndex: ColumnDataIndex<T>;
+  dataIndex: ColumnDataIndex;
   key?: string;
   width?: number;
   maxLength?: number;
@@ -419,7 +419,7 @@ export const createTruncatedColumn = <T,>(
     render: (value: string | null | undefined, record: T) => {
       const resolvedValue = options.renderText ? options.renderText(value, record) : value;
       if (!resolvedValue) {
-        return <RediaccText color="secondary">-</RediaccText>;
+        return <Typography.Text>-</Typography.Text>;
       }
       const shouldTruncate = resolvedValue.length > maxLength;
       const displayText = shouldTruncate
@@ -427,11 +427,11 @@ export const createTruncatedColumn = <T,>(
         : resolvedValue;
 
       const content = shouldTruncate ? (
-        <RediaccTooltip title={resolvedValue} placement={placement}>
-          <span>{displayText}</span>
-        </RediaccTooltip>
+        <Tooltip title={resolvedValue} placement={placement}>
+          <Typography.Text>{displayText}</Typography.Text>
+        </Tooltip>
       ) : (
-        <span>{displayText}</span>
+        <Typography.Text>{displayText}</Typography.Text>
       );
 
       return options.renderWrapper ? options.renderWrapper(content, resolvedValue) : content;
@@ -441,7 +441,7 @@ export const createTruncatedColumn = <T,>(
 
 export interface CountColumnOptions<T> {
   title: React.ReactNode;
-  dataIndex: ColumnDataIndex<T>;
+  dataIndex: ColumnDataIndex;
   key?: string;
   width?: number;
   align?: 'left' | 'center' | 'right';
@@ -486,19 +486,19 @@ export const createCountColumn = <T,>(options: CountColumnOptions<T>): ColumnsTy
 
       if (options.useBadge) {
         return (
-          <RediaccTooltip title={options.title}>
+          <Tooltip title={options.title}>
             <Space size="small">
               {options.icon}
-              <span>{count}</span>
+              <Typography.Text>{count}</Typography.Text>
             </Space>
-          </RediaccTooltip>
+          </Tooltip>
         );
       }
 
       return (
         <Space size="small">
           {options.icon}
-          <span>{count}</span>
+          <Typography.Text>{count}</Typography.Text>
         </Space>
       );
     },
@@ -507,7 +507,7 @@ export const createCountColumn = <T,>(options: CountColumnOptions<T>): ColumnsTy
 
 export interface VersionColumnOptions<T> {
   title?: React.ReactNode;
-  dataIndex: ColumnDataIndex<T>;
+  dataIndex: ColumnDataIndex;
   key?: string;
   width?: number;
   align?: 'left' | 'center' | 'right';
@@ -524,7 +524,7 @@ export const createVersionColumn = <T,>(
 ): ColumnsType<T>[number] => {
   const dataIndex = options.dataIndex;
   const dataKey = typeof dataIndex === 'string' ? dataIndex : String(dataIndex);
-  const fallbackTitle = i18n.t('common:general.vaultVersion', { defaultValue: 'Version' });
+  const fallbackTitle = i18n.t('common:general.vaultVersion');
 
   let sorter: ColumnsType<T>[number]['sorter'] | undefined;
   if (options.sorter === true || options.sorter === undefined) {
@@ -552,14 +552,14 @@ export const createVersionColumn = <T,>(
       }
 
       if (value === null || value === undefined) {
-        return <RediaccText color="secondary">-</RediaccText>;
+        return <Typography.Text>-</Typography.Text>;
       }
 
       const formattedVersion = options.formatVersion
         ? options.formatVersion(value)
-        : i18n.t('common:general.versionFormat', { defaultValue: 'v{{version}}', version: value });
+        : i18n.t('common:general.versionFormat', { version: value });
 
-      return <VersionTag>{formattedVersion}</VersionTag>;
+      return <Tag>{formattedVersion}</Tag>;
     },
   };
 };

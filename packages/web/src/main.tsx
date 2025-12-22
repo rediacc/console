@@ -1,3 +1,4 @@
+import '@ant-design/v5-patch-for-react-19';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ReactDOM from 'react-dom/client';
@@ -6,6 +7,7 @@ import App from './App';
 import { AppProviders } from './components/app/AppProviders';
 import i18n from './i18n/config';
 import { store } from './store/store';
+import './styles/global.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {

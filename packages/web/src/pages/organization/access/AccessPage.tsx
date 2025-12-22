@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import {
-  Select as AntSelect,
   Button,
   Card,
+  Flex,
+  Input,
   List,
   Modal,
   Popconfirm,
   Result,
+  Select,
+  Select as AntSelect,
   Space,
   Tabs,
+  Tooltip,
+  Typography,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -25,19 +30,6 @@ import {
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import ResourceListView from '@/components/common/ResourceListView';
-import {
-  ListTitleRow as AccessListHeader,
-  ListSubtitle as AccessListSubtitle,
-  ListTitle as AccessListTitle,
-  PageWrapper as AccessPageWrapper,
-  RediaccInput,
-  SectionHeading as AccessSectionHeading,
-  SectionStack as AccessSectionStack,
-  InlineFormRow,
-  ModalStack,
-  RediaccSelect,
-  RediaccTooltip,
-} from '@/components/ui';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import UserSessionsTab from '@/pages/organization/access/components/UserSessionsTab';
 import { RootState } from '@/store/store';
@@ -81,10 +73,7 @@ const AccessPage: React.FC = () => {
 
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) {
-      showMessage(
-        'error',
-        t('access.modals.groupNameRequired', { defaultValue: 'Please enter a group name' })
-      );
+      showMessage('error', t('access.modals.groupNameRequired'));
       return;
     }
 
@@ -167,7 +156,7 @@ const AccessPage: React.FC = () => {
       render: (count: number) => (
         <Space>
           <UserOutlined />
-          <span>{count}</span>
+          <Typography.Text>{count}</Typography.Text>
         </Space>
       ),
     },
@@ -179,7 +168,7 @@ const AccessPage: React.FC = () => {
       render: (count: number) => (
         <Space>
           <KeyOutlined />
-          <span>{count}</span>
+          <Typography.Text>{count}</Typography.Text>
         </Space>
       ),
     },
@@ -189,7 +178,7 @@ const AccessPage: React.FC = () => {
       width: 360,
       render: (_: unknown, record: PermissionGroup) => (
         <Space>
-          <RediaccTooltip title={tSystem('actions.permissions')}>
+          <Tooltip title={tSystem('actions.permissions')}>
             <Button
               type="primary"
               size="small"
@@ -198,8 +187,8 @@ const AccessPage: React.FC = () => {
               data-testid={`system-permission-group-manage-button-${record.permissionGroupName}`}
               aria-label={tSystem('actions.permissions')}
             />
-          </RediaccTooltip>
-          <RediaccTooltip title={tSystem('actions.assignUser')}>
+          </Tooltip>
+          <Tooltip title={tSystem('actions.assignUser')}>
             <Button
               type="primary"
               size="small"
@@ -208,8 +197,8 @@ const AccessPage: React.FC = () => {
               data-testid={`system-permission-group-assign-user-button-${record.permissionGroupName}`}
               aria-label={tSystem('actions.assignUser')}
             />
-          </RediaccTooltip>
-          <RediaccTooltip title={tSystem('actions.trace')}>
+          </Tooltip>
+          <Tooltip title={tSystem('actions.trace')}>
             <Button
               type="primary"
               size="small"
@@ -224,11 +213,10 @@ const AccessPage: React.FC = () => {
               data-testid={`system-permission-group-trace-button-${record.permissionGroupName}`}
               aria-label={tSystem('actions.trace')}
             />
-          </RediaccTooltip>
+          </Tooltip>
           <Popconfirm
-            title={t('access.modals.deleteGroupTitle', { defaultValue: 'Delete Permission Group' })}
+            title={t('access.modals.deleteGroupTitle')}
             description={t('access.modals.deleteGroupDescription', {
-              defaultValue: 'Are you sure you want to delete group "{{group}}"?',
               group: record.permissionGroupName,
             })}
             onConfirm={() => handleDeleteGroup(record.permissionGroupName)}
@@ -236,7 +224,7 @@ const AccessPage: React.FC = () => {
             cancelText={tCommon('general.no')}
             okButtonProps={{ danger: true }}
           >
-            <RediaccTooltip title={tCommon('actions.delete')}>
+            <Tooltip title={tCommon('actions.delete')}>
               <Button
                 type="primary"
                 danger
@@ -246,7 +234,7 @@ const AccessPage: React.FC = () => {
                 data-testid={`system-permission-group-delete-button-${record.permissionGroupName}`}
                 aria-label={tCommon('actions.delete')}
               />
-            </RediaccTooltip>
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -256,27 +244,19 @@ const AccessPage: React.FC = () => {
   const permissionsContent = (
     <ResourceListView
       title={
-        <AccessListHeader>
-          <AccessListTitle>
-            {t('access.permissions.title', { defaultValue: 'Permission Groups' })}
-          </AccessListTitle>
-          <AccessListSubtitle>
-            {t('access.permissions.subtitle', {
-              defaultValue: 'Manage permission groups and their assignments',
-            })}
-          </AccessListSubtitle>
-        </AccessListHeader>
+        <Space direction="vertical" size={0}>
+          <Typography.Text strong>{t('access.permissions.title')}</Typography.Text>
+          <Typography.Text>{t('access.permissions.subtitle')}</Typography.Text>
+        </Space>
       }
       loading={permissionsLoading}
       data={permissionGroups}
       columns={permissionColumns}
       rowKey="permissionGroupName"
-      searchPlaceholder={t('access.permissions.searchPlaceholder', {
-        defaultValue: 'Search permission groups...',
-      })}
+      searchPlaceholder={t('access.permissions.searchPlaceholder')}
       data-testid="system-permission-group-table"
       actions={
-        <RediaccTooltip title={tSystem('actions.createGroup')}>
+        <Tooltip title={tSystem('actions.createGroup')}>
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -284,7 +264,7 @@ const AccessPage: React.FC = () => {
             data-testid="system-create-permission-group-button"
             aria-label={tSystem('actions.createGroup')}
           />
-        </RediaccTooltip>
+        </Tooltip>
       }
     />
   );
@@ -297,46 +277,39 @@ const AccessPage: React.FC = () => {
 
   if (uiMode === 'simple') {
     return (
-      <AccessPageWrapper>
+      <Flex vertical>
         <Result
           status="403"
-          title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
-          subTitle={tSystem('accessControl.expertOnlyMessage', {
-            defaultValue: 'Switch to expert mode to manage access control.',
-          })}
+          title={tSystem('accessControl.expertOnlyTitle')}
+          subTitle={tSystem('accessControl.expertOnlyMessage')}
         />
-      </AccessPageWrapper>
+      </Flex>
     );
   }
 
   return (
-    <AccessPageWrapper>
-      <AccessSectionStack>
-        <AccessSectionHeading level={3}>
-          {t('access.heading', { defaultValue: 'Access Control' })}
-        </AccessSectionHeading>
-        <Card>
-          <Tabs
-            activeKey={activeTab}
-            onChange={(key) => setActiveTab(key as 'permissions' | 'sessions')}
-            items={[
-              {
-                key: 'permissions',
-                label: t('access.tabs.permissions', { defaultValue: 'Permissions' }),
-                children: permissionsContent,
-              },
-              {
-                key: 'sessions',
-                label: t('access.tabs.sessions', { defaultValue: 'Sessions' }),
-                children: sessionsContent,
-              },
-            ]}
-          />
-        </Card>
-      </AccessSectionStack>
+    <Flex vertical>
+      <Card>
+        <Tabs
+          activeKey={activeTab}
+          onChange={(key) => setActiveTab(key as 'permissions' | 'sessions')}
+          items={[
+            {
+              key: 'permissions',
+              label: t('access.tabs.permissions'),
+              children: permissionsContent,
+            },
+            {
+              key: 'sessions',
+              label: t('access.tabs.sessions'),
+              children: sessionsContent,
+            },
+          ]}
+        />
+      </Card>
 
       <Modal
-        title={t('access.modals.createGroupTitle', { defaultValue: 'Create Permission Group' })}
+        title={t('access.modals.createGroupTitle')}
         open={createModal.isOpen}
         onCancel={() => {
           createModal.close();
@@ -347,8 +320,8 @@ const AccessPage: React.FC = () => {
         okButtonProps={{ 'data-testid': 'modal-create-permission-group-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-create-permission-group-cancel' }}
       >
-        <RediaccInput
-          placeholder={t('access.modals.groupPlaceholder', { defaultValue: 'Enter group name' })}
+        <Input
+          placeholder={t('access.modals.groupPlaceholder')}
           value={newGroupName}
           onChange={(e) => setNewGroupName(e.target.value)}
           data-testid="system-permission-group-name-input"
@@ -358,9 +331,7 @@ const AccessPage: React.FC = () => {
       </Modal>
 
       <Modal
-        title={`${t('access.modals.managePermissionsTitle', { defaultValue: 'Manage Permissions' })} - ${
-          manageModal.state.data?.permissionGroupName || ''
-        }`}
+        title={`${t('access.modals.managePermissionsTitle')} - ${manageModal.state.data?.permissionGroupName || ''}`}
         open={manageModal.isOpen}
         onCancel={() => {
           manageModal.close();
@@ -373,22 +344,18 @@ const AccessPage: React.FC = () => {
           items={[
             {
               key: 'current',
-              label: t('access.modals.currentPermissionsTab', {
-                defaultValue: 'Current Permissions',
-              }),
+              label: t('access.modals.currentPermissionsTab'),
               children: (
                 <Card>
                   <List
                     dataSource={groupDetails?.permissions || []}
                     locale={{
-                      emptyText: t('access.modals.noPermissions', {
-                        defaultValue: 'No permissions assigned',
-                      }),
+                      emptyText: t('access.modals.noPermissions'),
                     }}
                     renderItem={(permission: string) => (
                       <List.Item
                         actions={[
-                          <RediaccTooltip key="remove" title={tCommon('actions.remove')}>
+                          <Tooltip key="remove" title={tCommon('actions.remove')}>
                             <Button
                               type="primary"
                               danger
@@ -398,7 +365,7 @@ const AccessPage: React.FC = () => {
                               data-testid={`permission-remove-button-${permission}`}
                               aria-label={tCommon('actions.remove')}
                             />
-                          </RediaccTooltip>,
+                          </Tooltip>,
                         ]}
                       >
                         <List.Item.Meta avatar={<KeyOutlined />} title={permission} />
@@ -410,18 +377,16 @@ const AccessPage: React.FC = () => {
             },
             {
               key: 'add',
-              label: t('access.modals.addPermissionsTab', { defaultValue: 'Add Permissions' }),
+              label: t('access.modals.addPermissionsTab'),
               children: (
-                <ModalStack>
-                  <InlineFormRow>
-                    <RediaccSelect
-                      fullWidth
-                      placeholder={t('access.modals.permissionPlaceholder', {
-                        defaultValue: 'Select permission to add',
-                      })}
+                <Flex vertical gap={16}>
+                  <Flex gap={12} align="center" wrap>
+                    <Select
+                      placeholder={t('access.modals.permissionPlaceholder')}
                       value={selectedPermission}
                       onChange={(value) => setSelectedPermission((value as string) || '')}
                       showSearch
+                      className="flex-1"
                       filterOption={(input, option) =>
                         String(option?.label ?? '')
                           .toLowerCase()
@@ -440,8 +405,8 @@ const AccessPage: React.FC = () => {
                           {perm.name}
                         </AntSelect.Option>
                       ))}
-                    </RediaccSelect>
-                    <RediaccTooltip title={tSystem('actions.addPermission')}>
+                    </Select>
+                    <Tooltip title={tSystem('actions.addPermission')}>
                       <Button
                         type="primary"
                         onClick={handleAddPermission}
@@ -451,9 +416,9 @@ const AccessPage: React.FC = () => {
                         aria-label={tSystem('actions.addPermission')}
                         icon={<PlusOutlined />}
                       />
-                    </RediaccTooltip>
-                  </InlineFormRow>
-                </ModalStack>
+                    </Tooltip>
+                  </Flex>
+                </Flex>
               ),
             },
           ]}
@@ -461,10 +426,9 @@ const AccessPage: React.FC = () => {
       </Modal>
 
       <Modal
-        title={`${t('access.modals.assignUserTitle', { defaultValue: 'Assign User' })} ${
+        title={`${t('access.modals.assignUserTitle')} ${
           assignModal.state.data
             ? t('access.modals.assignUserTo', {
-                defaultValue: 'to {{group}}',
                 group: assignModal.state.data.permissionGroupName,
               })
             : ''
@@ -479,12 +443,12 @@ const AccessPage: React.FC = () => {
         okButtonProps={{ 'data-testid': 'modal-assign-user-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-assign-user-cancel' }}
       >
-        <RediaccSelect
-          fullWidth
-          placeholder={t('access.modals.userPlaceholder', { defaultValue: 'Select user' })}
+        <Select
+          placeholder={t('access.modals.userPlaceholder')}
           value={selectedUser}
           onChange={(value) => setSelectedUser((value as string) || '')}
           showSearch
+          className="w-full"
           filterOption={(input, option) =>
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
@@ -506,7 +470,7 @@ const AccessPage: React.FC = () => {
         entityIdentifier={auditTrace.entityIdentifier}
         entityName={auditTrace.entityName}
       />
-    </AccessPageWrapper>
+    </Flex>
   );
 };
 

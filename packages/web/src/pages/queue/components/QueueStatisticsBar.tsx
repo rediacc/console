@@ -1,7 +1,6 @@
 import React from 'react';
+import { Divider, Flex, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { RediaccStack, RediaccText } from '@/components/ui';
-import { StatDivider, StatIcon, StatValue } from '@/styles/primitives';
 import {
   ThunderboltOutlined,
   PlayCircleOutlined,
@@ -25,46 +24,38 @@ export const QueueStatisticsBar: React.FC<QueueStatisticsBarProps> = ({
   const { t } = useTranslation(['queue']);
 
   return (
-    <RediaccStack variant="wrap-grid" align="center" gap="sm">
-      <RediaccStack variant="tight-row" align="center" gap="xs">
-        <StatIcon>
+    <Flex wrap="wrap" align="center" gap={8}>
+      <Flex align="center" gap={4}>
+        <Typography.Text className="inline-flex">
           <ThunderboltOutlined />
-        </StatIcon>
-        <RediaccText variant="caption" color="secondary">
-          {t('queue:statistics.total')}:
-        </RediaccText>
-        <StatValue>{totalCount}</StatValue>
-      </RediaccStack>
-      <StatDivider />
-      <RediaccStack variant="tight-row" align="center" gap="xs">
-        <StatIcon $color="var(--color-info)">
+        </Typography.Text>
+        <Typography.Text>{t('queue:statistics.total')}:</Typography.Text>
+        <Typography.Text>{totalCount}</Typography.Text>
+      </Flex>
+      <Divider type="vertical" />
+      <Flex align="center" gap={4}>
+        <Typography.Text className="inline-flex">
           <PlayCircleOutlined />
-        </StatIcon>
-        <RediaccText variant="caption" color="secondary">
-          {t('queue:statistics.active')}:
-        </RediaccText>
-        <StatValue $color="var(--color-info)">{activeCount}</StatValue>
-      </RediaccStack>
-      <StatDivider />
-      <RediaccStack variant="tight-row" align="center" gap="xs">
-        <StatIcon $color="var(--color-error)">
+        </Typography.Text>
+        <Typography.Text>{t('queue:statistics.active')}:</Typography.Text>
+        <Typography.Text>{activeCount}</Typography.Text>
+      </Flex>
+      <Divider type="vertical" />
+      <Flex align="center" gap={4}>
+        <Typography.Text className="inline-flex">
           <ExclamationCircleOutlined />
-        </StatIcon>
-        <RediaccText variant="caption" color="secondary">
-          {t('queue:statistics.failed')}:
-        </RediaccText>
-        <StatValue $color="var(--color-error)">{failedCount}</StatValue>
-      </RediaccStack>
-      <StatDivider />
-      <RediaccStack variant="tight-row" align="center" gap="xs">
-        <StatIcon $color="var(--color-warning)">
+        </Typography.Text>
+        <Typography.Text>{t('queue:statistics.failed')}:</Typography.Text>
+        <Typography.Text>{failedCount}</Typography.Text>
+      </Flex>
+      <Divider type="vertical" />
+      <Flex align="center" gap={4}>
+        <Typography.Text className="inline-flex">
           <WarningOutlined />
-        </StatIcon>
-        <RediaccText variant="caption" color="secondary">
-          {t('queue:statistics.stale')}:
-        </RediaccText>
-        <StatValue $color="var(--color-warning)">{staleCount}</StatValue>
-      </RediaccStack>
-    </RediaccStack>
+        </Typography.Text>
+        <Typography.Text>{t('queue:statistics.stale')}:</Typography.Text>
+        <Typography.Text>{staleCount}</Typography.Text>
+      </Flex>
+    </Flex>
   );
 };

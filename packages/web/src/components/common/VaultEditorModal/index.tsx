@@ -1,28 +1,18 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Space, Upload } from 'antd';
+import { Button, Flex, Space, Tag, Tooltip, Typography, Upload } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { ActionGroup } from '@/components/common/styled';
+import { SizedModal } from '@/components/common';
 import VaultEditor from '@/components/common/VaultEditor';
-import { RediaccButton, RediaccStack, RediaccText, RediaccTooltip } from '@/components/ui';
 import { useMessage } from '@/hooks';
 import type { BaseModalProps } from '@/types';
 import { ModalSize } from '@/types/modal';
-import { CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons';
 import {
-  DownloadIcon,
-  FileActionButton,
-  FileActions,
-  FooterBar,
-  FooterWrapper,
-  UnsavedChangesText,
-  UploadIcon,
-  ValidationAlert,
-  ValidationList,
-  ValidationTitle,
-  VersionBanner,
-  VersionTag,
-  WarningIcon,
-} from './styles';
+  CloseOutlined,
+  DownloadOutlined,
+  InfoCircleOutlined,
+  SaveOutlined,
+  UploadOutlined,
+} from '@/utils/optimizedIcons';
 import type { RcFile } from 'antd/es/upload';
 
 interface VaultEditorModalProps extends BaseModalProps {
@@ -111,39 +101,35 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   }, [showValidationErrors]);
 
   return (
-    <Modal
+    <SizedModal
       title={`${title} - ${entityType}`}
       open={open}
       onCancel={onCancel}
-      className={ModalSize.Fullscreen}
+      size={ModalSize.Fullscreen}
       footer={null}
       data-testid="vault-modal"
       destroyOnClose
     >
-      <RediaccStack variant="spaced-column" fullWidth>
-        <VersionBanner>
+      <Flex vertical gap={24} className="w-full">
+        <Flex align="center" justify="space-between">
           <Space size="small">
-            <RediaccText variant="label" weight="bold">
-              {t('vaultEditor.vaultVersion')}
-            </RediaccText>
-            <VersionTag variant="info">{vaultVersion}</VersionTag>
+            <Typography.Text strong>{t('vaultEditor.vaultVersion')}</Typography.Text>
+            <Tag>{vaultVersion}</Tag>
           </Space>
-          <RediaccText variant="helper">{t('vaultEditor.versionAutoIncrement')}</RediaccText>
-        </VersionBanner>
+          <Typography.Text>{t('vaultEditor.versionAutoIncrement')}</Typography.Text>
+        </Flex>
 
         {showValidationErrors && validationErrors.length > 0 && (
-          <ValidationAlert ref={validationErrorsRef}>
-            <ValidationTitle>
-              <RediaccText variant="title" weight="bold">
-                {t('vaultEditor.validationErrors')}
-              </RediaccText>
-            </ValidationTitle>
-            <ValidationList>
+          <Flex vertical ref={validationErrorsRef}>
+            <Flex className="block">
+              <Typography.Text strong>{t('vaultEditor.validationErrors')}</Typography.Text>
+            </Flex>
+            <ul className="flex flex-col">
               {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>
               ))}
-            </ValidationList>
-          </ValidationAlert>
+            </ul>
+          </Flex>
         )}
 
         <VaultEditor
@@ -159,11 +145,11 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
           }}
           data-testid="vault-modal-editor"
         />
-      </RediaccStack>
+      </Flex>
 
-      <FooterWrapper>
-        <FooterBar>
-          <FileActions>
+      <Flex vertical>
+        <Flex align="center" justify="space-between" wrap>
+          <Flex align="center" wrap>
             <Upload
               accept=".json"
               showUploadList={false}
@@ -175,12 +161,12 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               }}
               data-testid="vault-modal-file-upload"
             >
-              <FileActionButton icon={<UploadIcon />} data-testid="vault-modal-import-button">
+              <Button icon={<UploadOutlined />} data-testid="vault-modal-import-button">
                 {t('vaultEditor.importJson')}
-              </FileActionButton>
+              </Button>
             </Upload>
-            <FileActionButton
-              icon={<DownloadIcon />}
+            <Button
+              icon={<DownloadOutlined />}
               onClick={() => {
                 if (importExportHandlers.current) {
                   importExportHandlers.current.handleExport();
@@ -189,34 +175,34 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               data-testid="vault-modal-export-button"
             >
               {t('vaultEditor.exportJson')}
-            </FileActionButton>
-          </FileActions>
+            </Button>
+          </Flex>
 
-          <ActionGroup>
+          <Flex align="center" wrap>
             {hasChanges && (
               <>
-                <UnsavedChangesText>
-                  <WarningIcon />
+                <Typography.Text className="flex items-center">
+                  <InfoCircleOutlined />
                   {t('vaultEditor.unsavedChanges')}
-                </UnsavedChangesText>
-                <RediaccText variant="helper">
+                </Typography.Text>
+                <Typography.Text>
                   {VERSION_HINT_BULLET}{' '}
                   {t('vaultEditor.versionWillIncrement', { version: vaultVersion + 1 })}
-                </RediaccText>
+                </Typography.Text>
               </>
             )}
-            <RediaccTooltip title={t('actions.cancel')}>
-              <RediaccButton
-                iconOnly
+            <Tooltip title={t('actions.cancel')}>
+              <Button
+                type="text"
                 icon={<CloseOutlined />}
                 onClick={onCancel}
                 data-testid="vault-modal-cancel-button"
                 aria-label={t('actions.cancel')}
               />
-            </RediaccTooltip>
-            <RediaccTooltip title={t('vaultEditor.saveVaultConfiguration')}>
-              <RediaccButton
-                iconOnly
+            </Tooltip>
+            <Tooltip title={t('vaultEditor.saveVaultConfiguration')}>
+              <Button
+                type="text"
                 icon={<SaveOutlined />}
                 onClick={handleSave}
                 loading={loading}
@@ -224,11 +210,11 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                 data-testid="vault-modal-save-button"
                 aria-label={t('vaultEditor.saveVaultConfiguration')}
               />
-            </RediaccTooltip>
-          </ActionGroup>
-        </FooterBar>
-      </FooterWrapper>
-    </Modal>
+            </Tooltip>
+          </Flex>
+        </Flex>
+      </Flex>
+    </SizedModal>
   );
 };
 

@@ -1,18 +1,9 @@
 import React, { useMemo } from 'react';
-import { Empty } from 'antd';
+import { Empty, Flex, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CephCluster, CephClusterMachine, useCephClusterMachines } from '@/api/queries/ceph';
-import { RediaccTable, RediaccTag } from '@/components/ui';
-import {
-  AssignedDateText,
-  ExpandedRowContainer,
-  ExpandedRowTitle,
-  MachineNameCell,
-  MachineNameIcon,
-  MachineNameText,
-  MachinesTableWrapper,
-} from '@/pages/ceph/components/ClusterTable/styles';
 import { createSorter, formatTimestampAsIs } from '@/platform';
+import { DesktopOutlined } from '@/utils/optimizedIcons';
 
 interface ClusterMachinesProps {
   cluster: CephCluster;
@@ -30,10 +21,10 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
         key: 'machineName',
         sorter: createSorter<CephClusterMachine>('machineName'),
         render: (name: string) => (
-          <MachineNameCell>
-            <MachineNameIcon />
-            <MachineNameText>{name}</MachineNameText>
-          </MachineNameCell>
+          <Flex align="center" gap={8}>
+            <DesktopOutlined />
+            <Typography.Text>{name}</Typography.Text>
+          </Flex>
         ),
       },
       {
@@ -41,18 +32,14 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
         dataIndex: 'bridgeName',
         key: 'bridgeName',
         sorter: createSorter<CephClusterMachine>('bridgeName'),
-        render: (name: string) => (
-          <RediaccTag preset="bridge" compact borderless>
-            {name}
-          </RediaccTag>
-        ),
+        render: (name: string) => <Tag bordered={false}>{name}</Tag>,
       },
       {
         title: t('machines.assignedDate'),
         dataIndex: 'assignedDate',
         key: 'assignedDate',
         render: (date: string | null) => (
-          <AssignedDateText>{date ? formatTimestampAsIs(date, 'datetime') : '-'}</AssignedDateText>
+          <Typography.Text>{date ? formatTimestampAsIs(date, 'datetime') : '-'}</Typography.Text>
         ),
       },
     ],
@@ -60,24 +47,23 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({ cluster }) => 
   );
 
   return (
-    <ExpandedRowContainer data-testid={`cluster-expanded-row-${cluster.clusterName}`}>
-      <ExpandedRowTitle>{t('clusters.assignedMachines')}</ExpandedRowTitle>
+    <Flex vertical data-testid={`cluster-expanded-row-${cluster.clusterName}`}>
+      <Typography.Title level={4}>{t('clusters.assignedMachines')}</Typography.Title>
       {machines.length === 0 && !isLoading ? (
         <Empty description={t('clusters.noMachinesAssigned')} />
       ) : (
-        <MachinesTableWrapper>
-          <RediaccTable<CephClusterMachine>
+        <Flex className="overflow-hidden">
+          <Table<CephClusterMachine>
             data-testid={`ds-cluster-machines-table-${cluster.clusterName}`}
             columns={machineColumns}
             dataSource={machines}
             rowKey="machineName"
             loading={isLoading}
-            size="sm"
+            size="small"
             pagination={false}
-            removeMargins
           />
-        </MachinesTableWrapper>
+        </Flex>
       )}
-    </ExpandedRowContainer>
+    </Flex>
   );
 };

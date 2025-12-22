@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
-import { Badge, Empty, Grid, List, Space, Tag } from 'antd';
+import {
+  Badge,
+  Button,
+  Card,
+  Dropdown,
+  Empty,
+  Flex,
+  Grid,
+  List,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { RediaccDropdown, RediaccText } from '@/components/ui';
 import {
   clearAllNotifications,
   clearNotification,
@@ -23,22 +34,6 @@ import {
   InfoCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  BellButton,
-  EmptyWrapper,
-  NotificationActionButton,
-  NotificationCloseButton,
-  NotificationDropdown,
-  NotificationHeader,
-  NotificationIconWrapper,
-  NotificationItem,
-  NotificationListWrapper,
-  NotificationMessageWrapper,
-  NotificationTag,
-  NotificationText,
-  NotificationTitleContent,
-  NotificationTitleRow,
-} from './styles';
 
 dayjs.extend(relativeTime);
 
@@ -78,23 +73,10 @@ const NotificationBell: React.FC = () => {
     })();
 
     return (
-      <NotificationIconWrapper $type={type}>
+      <Flex align="center" justify="center" className="inline-flex">
         <IconComponent />
-      </NotificationIconWrapper>
+      </Flex>
     );
-  };
-
-  const getTypeColor = (type: NotificationType) => {
-    switch (type) {
-      case 'success':
-        return 'success';
-      case 'error':
-        return 'error';
-      case 'warning':
-        return 'warning';
-      case 'info':
-        return 'processing';
-    }
   };
 
   const handleMarkAsRead = (id: string) => {
@@ -115,103 +97,116 @@ const NotificationBell: React.FC = () => {
   };
 
   const dropdownContent = (
-    <NotificationDropdown className="notification-dropdown" data-testid="notification-dropdown">
-      <NotificationHeader>
-        <RediaccText variant="title">{t('notifications.title', 'Notifications')}</RediaccText>
-        {notifications.length > 0 && (
-          <Space>
-            <NotificationActionButton
-              onClick={handleMarkAllAsRead}
-              disabled={unreadCount === 0}
-              data-testid="notification-mark-all-read"
-            >
-              {t('notifications.markAllRead', 'Mark all as read')}
-            </NotificationActionButton>
-            <NotificationActionButton
-              variant="danger"
-              onClick={handleClearAll}
-              data-testid="notification-clear-all"
-            >
-              {t('notifications.clearAll', 'Clear all')}
-            </NotificationActionButton>
-          </Space>
-        )}
-      </NotificationHeader>
-
-      <NotificationListWrapper>
-        {notifications.length === 0 ? (
-          <EmptyWrapper>
-            <Empty description={t('notifications.empty', 'No notifications')} />
-          </EmptyWrapper>
-        ) : (
-          <List
-            dataSource={notifications}
-            renderItem={(notification: Notification, index: number) => (
-              <NotificationItem
-                key={notification.id}
-                $isRead={notification.read}
-                onClick={() => handleMarkAsRead(notification.id)}
-                data-testid={`notification-item-${index}`}
+    <Card styles={{ body: { padding: 0 } }} data-testid="notification-dropdown">
+      <Flex
+        vertical
+        // eslint-disable-next-line no-restricted-syntax
+        style={{ maxHeight: 400, minWidth: 320 }}
+        className="notification-dropdown"
+      >
+        <Flex align="center" justify="space-between">
+          <Typography.Text strong>{t('notifications.title', 'Notifications')}</Typography.Text>
+          {notifications.length > 0 && (
+            <Space>
+              <Button
+                onClick={handleMarkAllAsRead}
+                disabled={unreadCount === 0}
+                data-testid="notification-mark-all-read"
               >
-                <List.Item.Meta
-                  title={
-                    <NotificationTitleRow>
-                      <NotificationTitleContent>
-                        <NotificationText $isRead={notification.read}>
-                          {notification.title}
-                        </NotificationText>
-                        <NotificationTag>
-                          <Tag color={getTypeColor(notification.type)}>
-                            {t(`notifications.types.${notification.type}`).toUpperCase()}
-                          </Tag>
-                        </NotificationTag>
-                        {getIcon(notification.type)}
-                      </NotificationTitleContent>
-                      <NotificationCloseButton
-                        iconOnly
-                        icon={<CloseOutlined />}
-                        onClick={(e) => handleClear(notification.id, e)}
-                        data-testid={`notification-close-${index}`}
-                        aria-label="Close notification"
-                      />
-                    </NotificationTitleRow>
-                  }
-                  description={
-                    <div>
-                      <NotificationMessageWrapper className="notification-message">
-                        <RediaccText variant="description">{notification.message}</RediaccText>
-                      </NotificationMessageWrapper>
-                      <RediaccText variant="caption">
-                        {dayjs(notification.timestamp).fromNow()}
-                      </RediaccText>
-                    </div>
-                  }
-                />
-              </NotificationItem>
-            )}
-          />
-        )}
-      </NotificationListWrapper>
-    </NotificationDropdown>
+                {t('notifications.markAllRead', 'Mark all as read')}
+              </Button>
+              <Button
+                type="text"
+                danger
+                onClick={handleClearAll}
+                data-testid="notification-clear-all"
+              >
+                {t('notifications.clearAll', 'Clear all')}
+              </Button>
+            </Space>
+          )}
+        </Flex>
+
+        <Flex
+          vertical
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ maxHeight: 320 }}
+          className="overflow-auto"
+        >
+          {notifications.length === 0 ? (
+            <Flex
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ padding: '40px 0' }}
+            >
+              <Empty description={t('notifications.empty', 'No notifications')} />
+            </Flex>
+          ) : (
+            <List
+              dataSource={notifications}
+              renderItem={(notification: Notification, index: number) => (
+                <Flex
+                  key={notification.id}
+                  className="cursor-pointer"
+                  onClick={() => handleMarkAsRead(notification.id)}
+                  data-testid={`notification-item-${index}`}
+                >
+                  <List.Item.Meta
+                    title={
+                      <Flex justify="space-between" className="w-full">
+                        <Flex align="center" gap={8} className="inline-flex flex-1">
+                          <Typography.Text>{notification.title}</Typography.Text>
+                          <Typography.Text>
+                            <Tag>{t(`notifications.types.${notification.type}`).toUpperCase()}</Tag>
+                          </Typography.Text>
+                          {getIcon(notification.type)}
+                        </Flex>
+                        <Button
+                          type="text"
+                          icon={<CloseOutlined />}
+                          onClick={(e) => handleClear(notification.id, e)}
+                          data-testid={`notification-close-${index}`}
+                          aria-label="Close notification"
+                          className="flex-shrink-0"
+                        />
+                      </Flex>
+                    }
+                    description={
+                      <Flex vertical>
+                        <Flex className="notification-message">
+                          <Typography.Text type="secondary">{notification.message}</Typography.Text>
+                        </Flex>
+                        <Typography.Text type="secondary">
+                          {dayjs(notification.timestamp).fromNow()}
+                        </Typography.Text>
+                      </Flex>
+                    }
+                  />
+                </Flex>
+              )}
+            />
+          )}
+        </Flex>
+      </Flex>
+    </Card>
   );
 
   return (
     <Badge count={unreadCount} offset={[-4, 4]}>
-      <RediaccDropdown
+      <Dropdown
         trigger={['click']}
         placement={isMobile ? 'bottomCenter' : 'bottomRight'}
         open={dropdownOpen}
         onOpenChange={setDropdownOpen}
         menu={{ items: [] }}
-        popupRender={() => dropdownContent}
+        dropdownRender={() => dropdownContent}
       >
-        <BellButton
-          iconOnly
+        <Button
+          type="text"
           icon={<BellOutlined />}
           aria-label="Notifications"
           data-testid="notification-bell"
         />
-      </RediaccDropdown>
+      </Dropdown>
     </Badge>
   );
 };

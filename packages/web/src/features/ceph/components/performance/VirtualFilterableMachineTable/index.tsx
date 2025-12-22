@@ -1,18 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
-import { Badge } from 'antd';
-import { ActionGroup } from '@/components/common/styled';
+import { Badge, Button, Flex, Input, Select, Typography } from 'antd';
 import { MachineAssignmentService } from '@/features/ceph';
-import {
-  AssignmentSelect,
-  Container,
-  FilterInput,
-  OptionLabel,
-  PageSizeSelect,
-  RefreshButton,
-  StatusText,
-  ToolbarStack,
-} from '@/features/ceph/components/performance/VirtualFilterableMachineTable/styles';
 import { VirtualMachineTable } from '@/features/ceph/components/performance/VirtualMachineTable';
 import { useDebounce } from '@/features/ceph/utils/useDebounce';
 import { Machine, MachineAssignmentType } from '@/types';
@@ -121,40 +110,40 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
       {
         value: 'ALL',
         label: (
-          <Badge count={assignmentCounts.ALL} showZero color="blue">
-            <OptionLabel>All Machines</OptionLabel>
+          <Badge count={assignmentCounts.ALL} showZero>
+            <Typography.Text>All Machines</Typography.Text>
           </Badge>
         ),
       },
       {
         value: 'AVAILABLE',
         label: (
-          <Badge count={assignmentCounts.AVAILABLE} showZero color="green">
-            <OptionLabel>Available</OptionLabel>
+          <Badge count={assignmentCounts.AVAILABLE} showZero>
+            <Typography.Text>Available</Typography.Text>
           </Badge>
         ),
       },
       {
         value: 'CLUSTER',
         label: (
-          <Badge count={assignmentCounts.CLUSTER} showZero color="blue">
-            <OptionLabel>Assigned to Cluster</OptionLabel>
+          <Badge count={assignmentCounts.CLUSTER} showZero>
+            <Typography.Text>Assigned to Cluster</Typography.Text>
           </Badge>
         ),
       },
       {
         value: 'IMAGE',
         label: (
-          <Badge count={assignmentCounts.IMAGE} showZero color="purple">
-            <OptionLabel>Assigned to Image</OptionLabel>
+          <Badge count={assignmentCounts.IMAGE} showZero>
+            <Typography.Text>Assigned to Image</Typography.Text>
           </Badge>
         ),
       },
       {
         value: 'CLONE',
         label: (
-          <Badge count={assignmentCounts.CLONE} showZero color="orange">
-            <OptionLabel>Assigned to Clone</OptionLabel>
+          <Badge count={assignmentCounts.CLONE} showZero>
+            <Typography.Text>Assigned to Clone</Typography.Text>
           </Badge>
         ),
       },
@@ -173,10 +162,12 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
   );
 
   return (
-    <Container data-testid="filterable-machine-container">
-      <ToolbarStack>
-        <ActionGroup>
-          <FilterInput
+    <Flex vertical gap={12} data-testid="filterable-machine-container">
+      <Flex vertical gap={8}>
+        <Flex align="center" wrap gap={8}>
+          <Input
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ width: 'min(360px, 100%)', maxWidth: '100%' }}
             data-testid="filterable-machine-search"
             prefix={<SearchOutlined />}
             placeholder="Search machines..."
@@ -185,7 +176,9 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
             allowClear
           />
 
-          <AssignmentSelect
+          <Select
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ width: 'min(200px, 100%)' }}
             data-testid="filterable-machine-filter-assignment"
             value={assignmentFilter}
             onChange={(value) => setAssignmentFilter(value as MachineAssignmentType | 'ALL')}
@@ -193,7 +186,9 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
             options={assignmentOptions}
           />
 
-          <PageSizeSelect
+          <Select
+            // eslint-disable-next-line no-restricted-syntax
+            style={{ width: 'min(200px, 100%)' }}
             data-testid="filterable-machine-page-size"
             value={pageSize}
             onChange={(value) => setPageSize(Number(value))}
@@ -201,7 +196,13 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           />
 
           {onRefresh && (
-            <RefreshButton
+            <Button
+              className="inline-flex items-center justify-center"
+              // eslint-disable-next-line no-restricted-syntax
+              style={{
+                minWidth: 48,
+                minHeight: 40,
+              }}
               icon={<ReloadOutlined />}
               data-testid="filterable-machine-refresh"
               onClick={onRefresh}
@@ -209,17 +210,17 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
               aria-label="Refresh machines"
             >
               Refresh
-            </RefreshButton>
+            </Button>
           )}
-        </ActionGroup>
+        </Flex>
 
-        <StatusText data-testid="filterable-machine-status">
+        <Typography.Text data-testid="filterable-machine-status">
           Showing {displayedMachines.length} of {filteredMachines.length} machines
           {hasMore && ' (scroll to load more)'}
-        </StatusText>
-      </ToolbarStack>
+        </Typography.Text>
+      </Flex>
 
-      <div data-testid="filterable-machine-table">
+      <Flex data-testid="filterable-machine-table">
         <VirtualMachineTable
           machines={displayedMachines}
           loading={loading}
@@ -230,7 +231,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           onRowClick={onRowClick}
           renderActions={renderActions}
         />
-      </div>
-    </Container>
+      </Flex>
+    </Flex>
   );
 };

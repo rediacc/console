@@ -1,6 +1,6 @@
 import React from 'react';
 import { CloudServerOutlined, TeamOutlined } from '@ant-design/icons';
-import { Empty } from 'antd';
+import { Button, Empty, Flex, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -11,15 +11,6 @@ import {
   useCloneMachines,
 } from '@/api/queries/ceph';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { RediaccStack, RediaccTag, RediaccText } from '@/components/ui';
-import {
-  AssignButton,
-  EmptyState,
-  MachineListButton,
-  MachineListHeader,
-  MachineListWrapper,
-  MachineTagGrid,
-} from '@/pages/ceph/components/CloneTable/styles';
 
 interface CloneMachineTableProps {
   clone: CephRbdClone;
@@ -48,69 +39,65 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
 
   if (isLoading) {
     return (
-      <MachineListWrapper data-testid={`clone-list-machines-loading-${clone.cloneName}`}>
+      <Flex className="w-full" data-testid={`clone-list-machines-loading-${clone.cloneName}`}>
         <LoadingWrapper loading centered minHeight={120}>
-          <div />
+          <Flex />
         </LoadingWrapper>
-      </MachineListWrapper>
+      </Flex>
     );
   }
 
   if (machines.length === 0) {
     return (
-      <MachineListWrapper>
-        <EmptyState>
+      <Flex className="w-full">
+        <Flex vertical align="center" gap={12} className="w-full">
           <Empty description={t('clones.noMachinesAssigned')} />
-          <AssignButton
-            variant="primary"
+          <Button
+            type="primary"
             icon={<TeamOutlined />}
             onClick={() => onManageMachines(clone)}
             data-testid={`clone-list-assign-machines-empty-${clone.cloneName}`}
           >
             {t('clones.assignMachines')}
-          </AssignButton>
-        </EmptyState>
-      </MachineListWrapper>
+          </Button>
+        </Flex>
+      </Flex>
     );
   }
 
   return (
-    <MachineListWrapper data-testid={`clone-list-machines-container-${clone.cloneName}`}>
-      <RediaccStack direction="vertical" gap="md" fullWidth>
-        <MachineListHeader>
+    <Flex className="w-full" data-testid={`clone-list-machines-container-${clone.cloneName}`}>
+      <Flex vertical gap={16} className="w-full">
+        <Flex align="center" gap={8} wrap>
           <TeamOutlined />
-          <RediaccText weight="bold">{t('clones.assignedMachines')}:</RediaccText>
-          <RediaccTag
-            variant="neutral"
-            compact
-            data-testid={`clone-list-machine-count-${clone.cloneName}`}
-          >
+          <Typography.Text strong>{t('clones.assignedMachines')}:</Typography.Text>
+          <Tag data-testid={`clone-list-machine-count-${clone.cloneName}`} bordered={false}>
             {machines.length} {t('machines:machines')}
-          </RediaccTag>
-        </MachineListHeader>
+          </Tag>
+        </Flex>
 
-        <MachineTagGrid>
+        <Flex wrap gap={8}>
           {machines.map((machine: CloneMachine) => (
-            <RediaccTag
+            <Tag
               key={machine.machineName}
-              preset="machine"
-              compact
               icon={<CloudServerOutlined />}
+              bordered={false}
               data-testid={`clone-list-machine-tag-${clone.cloneName}-${machine.machineName}`}
             >
               {machine.machineName}
-            </RediaccTag>
+            </Tag>
           ))}
-        </MachineTagGrid>
+        </Flex>
 
-        <MachineListButton
+        <Button
           icon={<TeamOutlined />}
           onClick={() => onManageMachines(clone)}
           data-testid={`clone-list-manage-machines-button-${clone.cloneName}`}
+          block
         >
           {t('clones.manageMachines')}
-        </MachineListButton>
-      </RediaccStack>
-    </MachineListWrapper>
+        </Button>
+      </Flex>
+    </Flex>
   );
 };

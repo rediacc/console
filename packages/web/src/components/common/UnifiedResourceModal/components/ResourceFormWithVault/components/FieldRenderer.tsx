@@ -1,13 +1,6 @@
-import { Control, Controller } from 'react-hook-form';
-import {
-  SizeInputGroup,
-  SizeNumberInput,
-  SizeUnitSelect,
-} from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/styles';
+import { Input, InputNumber, Select, Space } from 'antd';
+import { Control, Controller, type FieldValues } from 'react-hook-form';
 import type { FormFieldConfig } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/types';
-import { RediaccInput, RediaccPasswordInput, RediaccSelect } from '@/components/ui';
-import type { FieldValues } from 'react-hook-form';
-
 interface FieldRendererProps<T extends FieldValues> {
   field: FormFieldConfig<T>;
   control: Control<T>;
@@ -22,9 +15,9 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
           control={control}
           rules={field.rules}
           render={({ field: controllerField }) => (
-            <RediaccSelect
+            <Select
               {...controllerField}
-              fullWidth
+              className="w-full"
               options={field.options}
               placeholder={field.placeholder}
               disabled={field.disabled}
@@ -43,7 +36,7 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
           control={control}
           rules={field.rules}
           render={({ field: controllerField }) => (
-            <RediaccPasswordInput
+            <Input.Password
               {...controllerField}
               placeholder={field.placeholder}
               disabled={field.disabled}
@@ -80,8 +73,8 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
             }
 
             return (
-              <SizeInputGroup>
-                <SizeNumberInput
+              <Space.Compact className="w-full">
+                <InputNumber
                   data-testid={`resource-modal-field-${field.name}-size-input`}
                   value={parsedValue}
                   onChange={(value) => {
@@ -119,21 +112,31 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
                   keyboard
                   step={1}
                   precision={0}
+                  className="flex-1"
                 />
-                <SizeUnitSelect
+                <Select
                   data-testid={`resource-modal-field-${field.name}-size-unit`}
                   value={parsedUnit}
                   onChange={(unit) => {
                     const newValue = parsedValue ? `${parsedValue}${unit}` : '';
                     controllerField.onChange(newValue);
                   }}
-                  options={units.map((unit) => ({
-                    value: unit === 'percentage' ? '%' : unit,
-                    label: unit === 'percentage' ? '%' : unit === 'G' ? 'GB' : 'TB',
-                  }))}
+                  options={units.map((unit) => {
+                    const value = unit === 'percentage' ? '%' : unit;
+                    let label: string;
+                    if (unit === 'percentage') {
+                      label = '%';
+                    } else if (unit === 'G') {
+                      label = 'GB';
+                    } else {
+                      label = 'TB';
+                    }
+                    return { value, label };
+                  })}
                   disabled={field.disabled}
+                  style={{ width: 80 }} // eslint-disable-line no-restricted-syntax
                 />
-              </SizeInputGroup>
+              </Space.Compact>
             );
           }}
         />
@@ -146,13 +149,19 @@ export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRe
           control={control}
           rules={field.rules}
           render={({ field: controllerField }) => {
-            // RediaccInput only supports: 'text' | 'email' | 'url' | 'tel' | 'password'
+            // Input only supports: 'text' | 'email' | 'url' | 'tel' | 'password'
             // For other types like 'number', use 'text' as fallback
-            const inputType: 'text' | 'email' | 'url' | 'tel' | 'password' =
-              field.type === 'email' ? 'email' : field.type === 'password' ? 'password' : 'text';
+            let inputType: 'text' | 'email' | 'url' | 'tel' | 'password';
+            if (field.type === 'email') {
+              inputType = 'email';
+            } else if (field.type === 'password') {
+              inputType = 'password';
+            } else {
+              inputType = 'text';
+            }
 
             return (
-              <RediaccInput
+              <Input
                 {...controllerField}
                 data-testid={`resource-modal-field-${field.name}-input`}
                 type={inputType}

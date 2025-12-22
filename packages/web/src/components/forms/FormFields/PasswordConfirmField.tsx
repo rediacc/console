@@ -1,6 +1,5 @@
 import React from 'react';
-import { Form } from 'antd';
-import { RediaccPasswordInput } from '@/components/ui';
+import { Form, Input } from 'antd';
 import type { Rule } from 'antd/es/form';
 
 export interface PasswordConfirmFieldProps {
@@ -64,13 +63,13 @@ export const PasswordConfirmField: React.FC<PasswordConfirmFieldProps> = ({
       if (!value || getFieldValue(passwordFieldName) === value) {
         return Promise.resolve();
       }
-      return Promise.reject(new Error(mismatchMessage));
+      throw new Error(mismatchMessage);
     },
   }));
 
   return (
     <Form.Item name={name} label={label} dependencies={[passwordFieldName]} rules={rules}>
-      <RediaccPasswordInput
+      <Input.Password
         placeholder={placeholder}
         autoComplete={autoComplete}
         data-testid={dataTestId}

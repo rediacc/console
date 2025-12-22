@@ -1,7 +1,7 @@
 import React from 'react';
 import { CloudServerOutlined } from '@ant-design/icons';
+import { Badge } from 'antd';
 import { type CephRbdClone, useCloneMachines } from '@/api/queries/ceph';
-import { MachineCountBadgeWrapper } from '@/pages/ceph/components/CloneTable/styles';
 
 interface MachineCountBadgeProps {
   clone: CephRbdClone;
@@ -28,13 +28,12 @@ export const MachineCountBadge: React.FC<MachineCountBadgeProps> = ({
   );
 
   return (
-    <MachineCountBadgeWrapper
+    <Badge
       count={machines.length}
       showZero
-      $active={machines.length > 0}
       data-testid={`clone-list-machine-badge-${clone.cloneName}`}
     >
       <CloudServerOutlined />
-    </MachineCountBadgeWrapper>
+    </Badge>
   );
 };

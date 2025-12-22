@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { Alert, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { configService } from '@/services/configService';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
-import { BannerMessage, SandboxBanner } from './styles';
 
 const SandboxWarning: React.FC = () => {
   const { t } = useTranslation('common');
@@ -21,7 +20,7 @@ const SandboxWarning: React.FC = () => {
   useEffect(() => {
     // Add padding to body when warning is visible
     if (isVisible) {
-      document.body.style.paddingTop = `${DESIGN_TOKENS.SPACING.XXL}px`;
+      document.body.style.paddingTop = '40px';
     }
     return () => {
       document.body.style.paddingTop = '';
@@ -33,16 +32,33 @@ const SandboxWarning: React.FC = () => {
   }
 
   return (
-    <SandboxBanner
+    <Alert
       banner
-      variant="warning"
+      type="warning"
       showIcon={false}
       closable={false}
+      className="flex items-center justify-center"
+      // eslint-disable-next-line no-restricted-syntax
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 240,
+        right: 0,
+        zIndex: 1000,
+        minHeight: 40,
+      }}
       message={
-        <BannerMessage>
+        <Flex
+          align="center"
+          gap={8}
+          wrap
+          className="text-center"
+          // eslint-disable-next-line no-restricted-syntax
+          style={{ fontWeight: 500 }}
+        >
           <ExclamationCircleOutlined />
           <strong>{t('warnings.sandboxEnvironment')}:</strong> {t('warnings.sandboxMessage')}
-        </BannerMessage>
+        </Flex>
       }
     />
   );

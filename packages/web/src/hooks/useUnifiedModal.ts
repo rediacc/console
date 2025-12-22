@@ -16,7 +16,7 @@ export interface UseUnifiedModalReturn<T> {
   openModal: (
     mode: 'create' | 'edit' | 'vault',
     data?: Partial<T> | null,
-    preselectedFunction?: string
+    creationContext?: 'credentials-only' | 'normal'
   ) => void;
   closeModal: () => void;
   setCurrentResource: (resource: T | null) => void;
@@ -36,14 +36,17 @@ export function useUnifiedModal<T extends Record<string, unknown> = Record<strin
   const [currentResource, setCurrentResource] = useState<T | null>(null);
 
   const openModal = useCallback(
-    (mode: 'create' | 'edit' | 'vault', data?: Partial<T> | null, preselectedFunction?: string) => {
+    (
+      mode: 'create' | 'edit' | 'vault',
+      data?: Partial<T> | null,
+      creationContext?: 'credentials-only' | 'normal'
+    ) => {
       setModalState({
         open: true,
         resourceType,
         mode,
         data,
-        preselectedFunction,
-        creationContext: initialCreationContext,
+        creationContext: creationContext || initialCreationContext,
       });
       if (data && mode !== 'create') {
         setCurrentResource(data as T);

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Modal, Space, Tag } from 'antd';
+import { Alert, Button, Flex, Modal, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -24,17 +24,6 @@ import ResourceListView, {
 } from '@/components/common/ResourceListView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { RediaccTooltip } from '@/components/ui';
-import {
-  ListSubtitle,
-  ListTitle,
-  ListTitleRow,
-  PageWrapper,
-  RediaccButton,
-  RediaccText,
-  SectionHeading,
-  SectionStack,
-} from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import {
   useAsyncAction,
@@ -53,18 +42,11 @@ import {
   DeleteOutlined,
   EditOutlined,
   HistoryOutlined,
+  InboxOutlined,
   PlusOutlined,
   ReloadOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import {
-  AffectedSection,
-  InlineList,
-  RepoIcon,
-  SecondaryTag,
-  SpacedAlert,
-  TeamSelectorWrapper,
-} from './CredentialsPage.styles';
 
 interface CredentialsLocationState {
   createRepository?: boolean;
@@ -160,8 +142,8 @@ const CredentialsPage: React.FC = () => {
         modal.error({
           title: t('repositories.cannotDeleteCredential'),
           content: (
-            <div>
-              <RediaccText>
+            <Flex vertical>
+              <Typography.Text>
                 {forks.length > 0
                   ? t('repositories.credentialHasDeploymentsWithForks', {
                       count: affectedMachines.length,
@@ -170,44 +152,43 @@ const CredentialsPage: React.FC = () => {
                   : t('repositories.credentialHasDeployments', {
                       count: affectedMachines.length,
                     })}
-              </RediaccText>
+              </Typography.Text>
 
               {forks.length > 0 && (
-                <AffectedSection>
-                  <RediaccText weight="bold">{t('repositories.affectedForks')}</RediaccText>
-                  <InlineList>
+                <Flex vertical>
+                  <Typography.Text strong>{t('repositories.affectedForks')}</Typography.Text>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <ul style={{ paddingLeft: 24 }}>
                     {forks.map((fork) => (
                       <li key={fork.repositoryGuid}>
                         {fork.repositoryName}
                         {fork.repositoryTag ? `:${fork.repositoryTag}` : ''}
                       </li>
                     ))}
-                  </InlineList>
-                </AffectedSection>
+                  </ul>
+                </Flex>
               )}
 
-              <AffectedSection>
-                <RediaccText weight="bold">{t('repositories.affectedMachines')}</RediaccText>
-                <InlineList>
+              <Flex vertical>
+                <Typography.Text strong>{t('repositories.affectedMachines')}</Typography.Text>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <ul style={{ paddingLeft: 24 }}>
                   {affectedMachines.map((machine) => (
                     <li key={machine.machineName}>
-                      <RediaccText weight="bold">{machine.machineName}</RediaccText>
-                      <RediaccText color="secondary">
-                        {' '}
-                        ({machine.repositoryNames.join(', ')})
-                      </RediaccText>
+                      <Typography.Text strong>{machine.machineName}</Typography.Text>
+                      <Typography.Text> ({machine.repositoryNames.join(', ')})</Typography.Text>
                     </li>
                   ))}
-                </InlineList>
-              </AffectedSection>
+                </ul>
+              </Flex>
 
-              <SpacedAlert
+              <Alert
                 type="warning"
                 message={t('repositories.removeDeploymentsFirst')}
                 showIcon
                 icon={<WarningOutlined />}
               />
-            </div>
+            </Flex>
           ),
           okText: t('common:actions.close'),
         });
@@ -219,27 +200,28 @@ const CredentialsPage: React.FC = () => {
         modal.confirm({
           title: t('repositories.deleteRepository'),
           content: (
-            <div>
-              <RediaccText>
+            <Flex vertical>
+              <Typography.Text>
                 {t('repositories.confirmDelete', { repositoryName: repository.repositoryName })}
-              </RediaccText>
+              </Typography.Text>
 
-              <SpacedAlert
+              <Alert
                 type="warning"
                 message={t('repositories.machinesWillLoseAccess')}
                 description={
-                  <InlineList>
+                  // eslint-disable-next-line no-restricted-syntax
+                  <ul style={{ paddingLeft: 24 }}>
                     {affectedMachines.map((machine) => (
                       <li key={machine.machineName}>
-                        <RediaccText weight="bold">{machine.machineName}</RediaccText>
+                        <Typography.Text strong>{machine.machineName}</Typography.Text>
                       </li>
                     ))}
-                  </InlineList>
+                  </ul>
                 }
                 showIcon
                 icon={<WarningOutlined />}
               />
-            </div>
+            </Flex>
           ),
           okText: t('common:actions.delete'),
           okType: 'danger',
@@ -516,7 +498,7 @@ const CredentialsPage: React.FC = () => {
         ellipsis: true,
         render: (text: string) => (
           <Space>
-            <RepoIcon />
+            <InboxOutlined />
             <strong>{text}</strong>
           </Space>
         ),
@@ -527,7 +509,7 @@ const CredentialsPage: React.FC = () => {
         key: 'teamName',
         width: COLUMN_WIDTHS.TAG,
         ellipsis: true,
-        render: (teamName: string) => <SecondaryTag>{teamName}</SecondaryTag>,
+        render: (teamName: string) => <Tag>{teamName}</Tag>,
       },
       ...(featureFlags.isEnabled('vaultVersionColumns')
         ? [
@@ -596,40 +578,31 @@ const CredentialsPage: React.FC = () => {
   const hasTeamSelection = selectedTeams.length > 0;
   const displayedRepositories = hasTeamSelection ? originalRepositories : [];
   const emptyDescription = hasTeamSelection
-    ? t('repositories.noRepositories', { defaultValue: 'No repositories found in this team' })
-    : t('teams.selectTeamPrompt', { defaultValue: 'Select a team to view its resources' });
+    ? t('repositories.noRepositories')
+    : t('teams.selectTeamPrompt');
 
   return (
     <>
-      <PageWrapper>
-        <SectionStack>
-          <SectionHeading level={3}>
-            {t('credentials.heading', { defaultValue: 'Repository Credentials' })}
-          </SectionHeading>
-
-          <TeamSelectorWrapper>
+      <Flex vertical>
+        <Flex vertical>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <Flex style={{ width: '100%', maxWidth: 360 }}>
             <TeamSelector
               data-testid="resources-team-selector"
               teams={teams}
               selectedTeams={selectedTeams}
               onChange={setSelectedTeams}
               loading={teamsLoading}
-              placeholder={t('teams.selectTeamToView', {
-                defaultValue: 'Select a team to view its resources',
-              })}
+              placeholder={t('teams.selectTeamToView')}
             />
-          </TeamSelectorWrapper>
+          </Flex>
 
           <ResourceListView<Repository>
             title={
-              <ListTitleRow>
-                <ListTitle>{t('credentials.title', { defaultValue: 'Credentials' })}</ListTitle>
-                <ListSubtitle>
-                  {t('credentials.subtitle', {
-                    defaultValue: 'Manage repository credentials and deployments',
-                  })}
-                </ListSubtitle>
-              </ListTitleRow>
+              <Space direction="vertical" size={0}>
+                <Typography.Text strong>{t('credentials.title')}</Typography.Text>
+                <Typography.Text>{t('credentials.subtitle')}</Typography.Text>
+              </Space>
             }
             loading={repositoriesLoading}
             data={displayedRepositories}
@@ -666,29 +639,29 @@ const CredentialsPage: React.FC = () => {
             actions={
               hasTeamSelection ? (
                 <>
-                  <RediaccTooltip title={t('repositories.createRepository')}>
-                    <RediaccButton
-                      variant="primary"
+                  <Tooltip title={t('repositories.createRepository')}>
+                    <Button
+                      type="primary"
                       icon={<PlusOutlined />}
                       data-testid="resources-create-repositorie-button"
                       onClick={() => openUnifiedModal('create', undefined, 'credentials-only')}
                       aria-label={t('repositories.createRepository')}
                     />
-                  </RediaccTooltip>
-                  <RediaccTooltip title={t('common:actions.refresh')}>
-                    <RediaccButton
+                  </Tooltip>
+                  <Tooltip title={t('common:actions.refresh')}>
+                    <Button
                       icon={<ReloadOutlined />}
                       data-testid="resources-refresh-button"
                       onClick={() => refetchRepos()}
                       aria-label={t('common:actions.refresh')}
                     />
-                  </RediaccTooltip>
+                  </Tooltip>
                 </>
               ) : undefined
             }
           />
-        </SectionStack>
-      </PageWrapper>
+        </Flex>
+      </Flex>
 
       <UnifiedResourceModal
         data-testid="resources-repository-modal"
@@ -710,7 +683,11 @@ const CredentialsPage: React.FC = () => {
         hiddenParams={['repository', 'grand']}
         defaultParams={
           currentResource
-            ? { repository: currentResource.repositoryGuid, grand: currentResource.grandGuid || '' }
+            ? {
+                repository: currentResource.repositoryGuid,
+                repositoryName: currentResource.repositoryName,
+                grand: currentResource.grandGuid || '',
+              }
             : {}
         }
       />

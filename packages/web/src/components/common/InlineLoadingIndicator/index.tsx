@@ -1,5 +1,5 @@
 import React from 'react';
-import { LoadingContainer } from './styles';
+import { Flex } from 'antd';
 
 export interface InlineLoadingIndicatorProps {
   width?: number | string;
@@ -27,12 +27,15 @@ const InlineLoadingIndicator: React.FC<InlineLoadingIndicatorProps> = ({
   const classes = ['skeleton-shimmer', className].filter(Boolean).join(' ');
 
   return (
-    <LoadingContainer
+    <Flex
       className={classes}
-      $width={width}
-      $height={height}
-      $borderRadius={borderRadius}
-      style={style}
+      // eslint-disable-next-line no-restricted-syntax
+      style={{
+        width: typeof width === 'number' ? `${width}px` : width,
+        height: typeof height === 'number' ? `${height}px` : height,
+        borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
+        ...style,
+      }}
       data-testid={dataTestId}
       aria-label={ariaLabel}
     />

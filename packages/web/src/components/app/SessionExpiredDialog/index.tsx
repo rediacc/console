@@ -1,18 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Button, Card, Flex, Typography } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
-import { InlineStack } from '@/components/common/styled';
-import { IconWrapper, RediaccStack, RediaccText } from '@/components/ui';
+import { SizedModal } from '@/components/common';
 import { hideSessionExpiredDialog, setStayLoggedOutMode } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import { ClockCircleOutlined, LogoutOutlined } from '@/utils/optimizedIcons';
-import {
-  CountdownCard,
-  CountdownText,
-  FooterButton,
-  SessionExpiredTitle,
-  StyledModal,
-} from './styles';
 
 const COUNTDOWN_DURATION = 60; // 60 seconds
 
@@ -70,58 +63,50 @@ export const SessionExpiredDialog: React.FC = () => {
   };
 
   return (
-    <StyledModal
+    <SizedModal
       title={
-        <InlineStack>
-          <IconWrapper $tone="danger">
-            <ClockCircleOutlined />
-          </IconWrapper>
-          <SessionExpiredTitle size="xl" weight="semibold">
-            Session Expired
-          </SessionExpiredTitle>
-        </InlineStack>
+        <Flex align="center" gap={8} wrap className="inline-flex">
+          <ClockCircleOutlined />
+          <Typography.Title level={4}>Session Expired</Typography.Title>
+        </Flex>
       }
       open={isVisible}
       onCancel={handleStayLoggedOut}
       closable
       maskClosable={false}
       centered
-      className={ModalSize.Small}
+      size={ModalSize.Small}
       data-testid="session-expired-modal"
       footer={[
-        <FooterButton
-          key="stay"
-          onClick={handleStayLoggedOut}
-          data-testid="session-expired-stay-button"
-        >
-          Stay Logged Out
-        </FooterButton>,
-        <FooterButton
+        <Button
           key="login"
-          variant="primary"
+          type="primary"
           onClick={handleContinueToLogin}
           icon={<LogoutOutlined />}
           data-testid="session-expired-login-button"
         >
           Continue to Login
-        </FooterButton>,
+        </Button>,
+        <Button key="stay" onClick={handleStayLoggedOut} data-testid="session-expired-stay-button">
+          Stay Logged Out
+        </Button>,
       ]}
     >
-      <RediaccStack variant="spaced-column" fullWidth>
-        <span>
+      <Flex vertical gap={24} className="w-full">
+        <Typography.Text>
           Your session has expired for security reasons. You have been automatically logged out.
-        </span>
+        </Typography.Text>
 
-        <RediaccText color="secondary">
+        <Typography.Text>
           You can stay on this page or continue to the login screen to sign in again.
-        </RediaccText>
+        </Typography.Text>
 
-        <CountdownCard>
-          <CountdownText weight="semibold">
+        <Card>
+          <Typography.Text strong type="danger">
             Automatically redirecting in {formatTime(countdown)}
-          </CountdownText>
-        </CountdownCard>
-      </RediaccStack>
-    </StyledModal>
+          </Typography.Text>
+        </Card>
+      </Flex>
+    </SizedModal>
   );
 };

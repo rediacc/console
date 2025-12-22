@@ -5,7 +5,10 @@ import {
   Card,
   Checkbox,
   Col,
+  Empty,
+  Flex,
   Form,
+  Input,
   Modal,
   Popconfirm,
   Result,
@@ -13,6 +16,8 @@ import {
   Space,
   Table,
   Tag,
+  Tooltip,
+  Typography,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -38,28 +43,9 @@ import { createVersionColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import {
-  CardHeaderRow,
-  CardTitle,
-  ErrorWrapper,
-  ListSubtitle,
-  ListTitle,
-  ListTitleRow,
-  ModalStack,
-  ModalStackLarge,
-  PageWrapper,
-  RediaccEmpty,
-  RediaccInput,
-  RediaccText,
-  RediaccTooltip,
-  RegionsListWrapper,
-  SectionHeading,
-  SectionStack,
-} from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import { useCopyToClipboard } from '@/hooks';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
-import { ACTIONS_COLUMN_WIDTH, ModalAlert, TokenCopyRow } from '@/pages/system/styles';
 import { createSorter } from '@/platform';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
@@ -76,8 +62,9 @@ import {
   PlusOutlined,
   SyncOutlined,
 } from '@/utils/optimizedIcons';
-import { StyledRediaccEmpty } from './styles';
 import type { ColumnsType } from 'antd/es/table';
+
+const ACTIONS_COLUMN_WIDTH = 640;
 
 const InfrastructurePage: React.FC = () => {
   const { t } = useTranslation('resources');
@@ -107,7 +94,7 @@ const InfrastructurePage: React.FC = () => {
 
   const effectiveRegion = selectedRegion ?? regionsList[0]?.regionName ?? null;
 
-  const { data: bridges, isLoading: bridgesLoading } = useBridges(effectiveRegion || undefined);
+  const { data: bridges, isLoading: bridgesLoading } = useBridges(effectiveRegion ?? undefined);
   const bridgesList: Bridge[] = useMemo(() => bridges || [], [bridges]);
 
   const createRegionMutation = useCreateRegion();
@@ -290,7 +277,7 @@ const InfrastructurePage: React.FC = () => {
             render: (count: number) => (
               <Space>
                 <ApiOutlined />
-                <span>{count}</span>
+                <Typography.Text>{count}</Typography.Text>
               </Space>
             ),
           } as ColumnsType<Region>[number],
@@ -314,7 +301,7 @@ const InfrastructurePage: React.FC = () => {
       width: 300,
       render: (_: unknown, record: Region) => (
         <Space>
-          <RediaccTooltip title={t('general.edit')}>
+          <Tooltip title={t('general.edit')}>
             <Button
               type="primary"
               size="small"
@@ -323,8 +310,8 @@ const InfrastructurePage: React.FC = () => {
               data-testid={`system-region-edit-button-${record.regionName}`}
               aria-label={t('general.edit')}
             />
-          </RediaccTooltip>
-          <RediaccTooltip title={tSystem('actions.trace')}>
+          </Tooltip>
+          <Tooltip title={tSystem('actions.trace')}>
             <Button
               type="primary"
               size="small"
@@ -339,7 +326,7 @@ const InfrastructurePage: React.FC = () => {
               data-testid={`system-region-trace-button-${record.regionName}`}
               aria-label={tSystem('actions.trace')}
             />
-          </RediaccTooltip>
+          </Tooltip>
           <Popconfirm
             title={t('regions.deleteRegion')}
             description={t('regions.confirmDelete', { regionName: record.regionName })}
@@ -348,7 +335,7 @@ const InfrastructurePage: React.FC = () => {
             cancelText={t('general.no')}
             okButtonProps={{ danger: true }}
           >
-            <RediaccTooltip title={t('general.delete')}>
+            <Tooltip title={t('general.delete')}>
               <Button
                 type="primary"
                 danger
@@ -358,7 +345,7 @@ const InfrastructurePage: React.FC = () => {
                 data-testid={`system-region-delete-button-${record.regionName}`}
                 aria-label={t('general.delete')}
               />
-            </RediaccTooltip>
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -376,9 +363,7 @@ const InfrastructurePage: React.FC = () => {
           <ApiOutlined />
           <strong>{text}</strong>
           {Number(record.hasAccess || 0) === 1 && (
-            <Tag color="success" icon={<CheckCircleOutlined />}>
-              {t('bridges.access')}
-            </Tag>
+            <Tag icon={<CheckCircleOutlined />}>{t('bridges.access')}</Tag>
           )}
         </Space>
       ),
@@ -392,7 +377,7 @@ const InfrastructurePage: React.FC = () => {
       render: (count: number) => (
         <Space>
           <DesktopOutlined />
-          <span>{count}</span>
+          <Typography.Text>{count}</Typography.Text>
         </Space>
       ),
     },
@@ -404,13 +389,9 @@ const InfrastructurePage: React.FC = () => {
       sorter: createSorter<Bridge>('isGlobalBridge'),
       render: (isGlobal: boolean) =>
         isGlobal ? (
-          <Tag color="default" icon={<CloudServerOutlined />}>
-            {t('bridges.global')}
-          </Tag>
+          <Tag icon={<CloudServerOutlined />}>{t('bridges.global')}</Tag>
         ) : (
-          <Tag color="blue" icon={<ApiOutlined />}>
-            {t('bridges.regular')}
-          </Tag>
+          <Tag icon={<ApiOutlined />}>{t('bridges.regular')}</Tag>
         ),
     },
     {
@@ -421,13 +402,8 @@ const InfrastructurePage: React.FC = () => {
       sorter: createSorter<Bridge>('managementMode'),
       render: (mode: string) => {
         if (!mode) return <Tag>{t('bridges.local')}</Tag>;
-        const color = mode === 'Cloud' ? 'success' : 'default';
         const icon = mode === 'Cloud' ? <CloudServerOutlined /> : <DesktopOutlined />;
-        return (
-          <Tag color={color} icon={icon}>
-            {mode}
-          </Tag>
-        );
+        return <Tag icon={icon}>{mode}</Tag>;
       },
     },
     ...(featureFlags.isEnabled('vaultVersionColumns')
@@ -448,7 +424,7 @@ const InfrastructurePage: React.FC = () => {
       width: ACTIONS_COLUMN_WIDTH,
       render: (_: unknown, record: Bridge) => (
         <Space>
-          <RediaccTooltip title={t('general.edit')}>
+          <Tooltip title={t('general.edit')}>
             <Button
               type="primary"
               size="small"
@@ -457,8 +433,8 @@ const InfrastructurePage: React.FC = () => {
               data-testid={`system-bridge-edit-button-${record.bridgeName}`}
               aria-label={t('general.edit')}
             />
-          </RediaccTooltip>
-          <RediaccTooltip title={tSystem('actions.token')}>
+          </Tooltip>
+          <Tooltip title={tSystem('actions.token')}>
             <Button
               type="primary"
               size="small"
@@ -467,8 +443,8 @@ const InfrastructurePage: React.FC = () => {
               data-testid={`system-bridge-token-button-${record.bridgeName}`}
               aria-label={tSystem('actions.token')}
             />
-          </RediaccTooltip>
-          <RediaccTooltip title={tSystem('actions.resetAuth')}>
+          </Tooltip>
+          <Tooltip title={tSystem('actions.resetAuth')}>
             <Button
               type="primary"
               size="small"
@@ -483,8 +459,8 @@ const InfrastructurePage: React.FC = () => {
               data-testid={`system-bridge-reset-auth-button-${record.bridgeName}`}
               aria-label={tSystem('actions.resetAuth')}
             />
-          </RediaccTooltip>
-          <RediaccTooltip title={tSystem('actions.trace')}>
+          </Tooltip>
+          <Tooltip title={tSystem('actions.trace')}>
             <Button
               type="primary"
               size="small"
@@ -499,7 +475,7 @@ const InfrastructurePage: React.FC = () => {
               data-testid={`system-bridge-trace-button-${record.bridgeName}`}
               aria-label={tSystem('actions.trace')}
             />
-          </RediaccTooltip>
+          </Tooltip>
           <Popconfirm
             title={t('bridges.deleteBridge')}
             description={t('bridges.confirmDelete', { bridgeName: record.bridgeName })}
@@ -508,7 +484,7 @@ const InfrastructurePage: React.FC = () => {
             cancelText={t('general.no')}
             okButtonProps={{ danger: true }}
           >
-            <RediaccTooltip title={t('general.delete')}>
+            <Tooltip title={t('general.delete')}>
               <Button
                 type="primary"
                 danger
@@ -518,7 +494,7 @@ const InfrastructurePage: React.FC = () => {
                 data-testid={`system-bridge-delete-button-${record.bridgeName}`}
                 aria-label={t('general.delete')}
               />
-            </RediaccTooltip>
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -527,48 +503,40 @@ const InfrastructurePage: React.FC = () => {
 
   if (uiMode === 'simple') {
     return (
-      <PageWrapper>
+      <Flex vertical>
         <Result
           status="403"
-          title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
-          subTitle={tSystem('accessControl.expertOnlyMessage', {
-            defaultValue: 'Switch to expert mode to manage infrastructure.',
-          })}
+          title={tSystem('accessControl.expertOnlyTitle')}
+          subTitle={tSystem('accessControl.expertOnlyMessage')}
         />
-      </PageWrapper>
+      </Flex>
     );
   }
 
   if (!featureFlags.isEnabled('regionsInfrastructure')) {
     return (
-      <PageWrapper>
+      <Flex vertical>
         <Result
           status="info"
-          title={t('regionsInfrastructure.unavailableTitle', {
-            defaultValue: 'Regions & Infrastructure Disabled',
-          })}
-          subTitle={t('regionsInfrastructure.unavailableDescription', {
-            defaultValue: 'Enable the regionsInfrastructure feature flag to access this page.',
-          })}
+          title={t('regionsInfrastructure.unavailableTitle')}
+          subTitle={t('regionsInfrastructure.unavailableDescription')}
         />
-      </PageWrapper>
+      </Flex>
     );
   }
 
   return (
-    <PageWrapper>
-      <SectionStack>
-        <SectionHeading level={3}>{tSystem('regionsInfrastructure.title')}</SectionHeading>
-
+    <Flex vertical>
+      <Flex vertical>
         <Row gutter={[24, 24]}>
           <Col span={24}>
-            <RegionsListWrapper>
+            <Flex vertical>
               <ResourceListView
                 title={
-                  <ListTitleRow>
-                    <ListTitle>{t('regions.title')}</ListTitle>
-                    <ListSubtitle>{t('regions.selectRegionPrompt')}</ListSubtitle>
-                  </ListTitleRow>
+                  <Space direction="vertical" size={0}>
+                    <Typography.Text strong>{t('regions.title')}</Typography.Text>
+                    <Typography.Text>{t('regions.selectRegionPrompt')}</Typography.Text>
+                  </Space>
                 }
                 loading={regionsLoading}
                 data={regionsList}
@@ -577,7 +545,7 @@ const InfrastructurePage: React.FC = () => {
                 searchPlaceholder={t('regions.searchRegions')}
                 data-testid="system-region-table"
                 actions={
-                  <RediaccTooltip title={t('regions.createRegion')}>
+                  <Tooltip title={t('regions.createRegion')}>
                     <Button
                       type="primary"
                       icon={<PlusOutlined />}
@@ -585,7 +553,7 @@ const InfrastructurePage: React.FC = () => {
                       data-testid="system-create-region-button"
                       aria-label={t('regions.createRegion')}
                     />
-                  </RediaccTooltip>
+                  </Tooltip>
                 }
                 rowSelection={{
                   type: 'radio',
@@ -605,27 +573,25 @@ const InfrastructurePage: React.FC = () => {
                     .join(' '),
                 })}
               />
-            </RegionsListWrapper>
+            </Flex>
           </Col>
 
           {!featureFlags.isEnabled('disableBridge') && (
             <Col span={24}>
               <Card>
-                <CardHeaderRow>
-                  <div>
-                    <CardTitle level={4}>
+                <Flex wrap align="center" justify="space-between" gap={8}>
+                  <Flex vertical>
+                    <Typography.Title level={4}>
                       {effectiveRegion
                         ? t('regions.bridgesInRegion', { region: effectiveRegion })
                         : t('bridges.title')}
-                    </CardTitle>
+                    </Typography.Title>
                     {!effectiveRegion && (
-                      <RediaccText size="sm" color="secondary">
-                        {t('regions.selectRegionToView')}
-                      </RediaccText>
+                      <Typography.Text>{t('regions.selectRegionToView')}</Typography.Text>
                     )}
-                  </div>
+                  </Flex>
                   {effectiveRegion && (
-                    <RediaccTooltip title={t('bridges.createBridge')}>
+                    <Tooltip title={t('bridges.createBridge')}>
                       <Button
                         type="primary"
                         icon={<PlusOutlined />}
@@ -635,14 +601,14 @@ const InfrastructurePage: React.FC = () => {
                         data-testid="system-create-bridge-button"
                         aria-label={t('bridges.createBridge')}
                       />
-                    </RediaccTooltip>
+                    </Tooltip>
                   )}
-                </CardHeaderRow>
+                </Flex>
 
                 {!effectiveRegion ? (
-                  <StyledRediaccEmpty>
-                    <RediaccEmpty variant="minimal" description={t('regions.selectRegionPrompt')} />
-                  </StyledRediaccEmpty>
+                  <Flex>
+                    <Empty description={t('regions.selectRegionPrompt')} />
+                  </Flex>
                 ) : (
                   <LoadingWrapper
                     loading={bridgesLoading}
@@ -669,7 +635,7 @@ const InfrastructurePage: React.FC = () => {
             </Col>
           )}
         </Row>
-      </SectionStack>
+      </Flex>
 
       {!featureFlags.isEnabled('disableBridge') && (
         <Modal
@@ -691,59 +657,61 @@ const InfrastructurePage: React.FC = () => {
 
             if (bridge.hasAccess === 0) {
               return (
-                <ErrorWrapper>
+                /* eslint-disable-next-line no-restricted-syntax */
+                <Flex style={{ maxWidth: 600, width: '100%' }}>
                   <Alert
                     message={t('bridges.accessDenied')}
                     description={t('bridges.accessDeniedDescription')}
                     type="error"
                     showIcon
                   />
-                </ErrorWrapper>
+                </Flex>
               );
             }
 
             if (!token) {
               return (
-                <ErrorWrapper>
+                /* eslint-disable-next-line no-restricted-syntax */
+                <Flex style={{ maxWidth: 600, width: '100%' }}>
                   <Alert
                     message={t('bridges.noToken')}
                     description={t('bridges.noTokenDescription')}
                     type="info"
                     showIcon
                   />
-                </ErrorWrapper>
+                </Flex>
               );
             }
 
             return (
-              <ModalStackLarge>
-                <ModalAlert
+              <Flex vertical gap={16} className="w-full">
+                <Alert
                   message={t('bridges.tokenHeading')}
                   description={t('bridges.tokenDescription')}
-                  variant="warning"
+                  type="warning"
                   showIcon
                 />
 
-                <div>
-                  <RediaccText weight="bold">{t('bridges.tokenLabel')}</RediaccText>
-                  <TokenCopyRow>
-                    <RediaccInput fullWidth value={token} readOnly autoComplete="off" />
+                <Flex vertical>
+                  <Typography.Text strong>{t('bridges.tokenLabel')}</Typography.Text>
+                  <Space.Compact className="w-full">
+                    <Input className="w-full" value={token} readOnly autoComplete="off" />
                     <Button
                       icon={tokenCopied ? <CheckCircleOutlined /> : <KeyOutlined />}
                       onClick={() => copyToken(token)}
                     >
                       {tokenCopied ? tCommon('actions.copied') : tCommon('actions.copy')}
                     </Button>
-                  </TokenCopyRow>
-                </div>
+                  </Space.Compact>
+                </Flex>
 
-                <ModalAlert
+                <Alert
                   message={tCommon('general.important')}
                   description={t('bridges.tokenImportant')}
-                  variant="info"
+                  type="info"
                   showIcon
                 />
-              </ModalStackLarge>
+              </Flex>
             );
           })()}
         </Modal>
@@ -804,13 +772,13 @@ const InfrastructurePage: React.FC = () => {
           ]}
         >
           {resetAuthModal.state.data && (
-            <ModalStack>
-              <ModalAlert
+            <Flex vertical gap={16} className="w-full">
+              <Alert
                 message={tCommon('general.warning')}
                 description={t('bridges.resetAuthWarning', {
                   bridge: resetAuthModal.state.data.bridgeName,
                 })}
-                variant="warning"
+                type="warning"
                 showIcon
               />
 
@@ -833,11 +801,11 @@ const InfrastructurePage: React.FC = () => {
                   </Checkbox>
                 </Form.Item>
               </Form>
-            </ModalStack>
+            </Flex>
           )}
         </Modal>
       )}
-    </PageWrapper>
+    </Flex>
   );
 };
 

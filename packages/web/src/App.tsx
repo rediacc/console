@@ -1,4 +1,5 @@
 import React, { lazy, Suspense, useEffect } from 'react';
+import { Flex } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { initializeApiClient } from '@/api/init';
@@ -11,13 +12,11 @@ import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { TelemetryProvider } from '@/components/common/TelemetryProvider';
 import AuthLayout from '@/components/layout/AuthLayout';
 import MainLayout from '@/components/layout/MainLayout';
-import { LoadingState } from '@/components/ui';
 import { featureFlags } from '@/config/featureFlags';
 import LoginPage from '@/pages/login';
 import { selectIsAuthenticated } from '@/store/auth/authSelectors';
 import { loginSuccess } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
-import { GlobalStyles } from '@/styles/GlobalStyles';
 import { getAuthData, migrateFromLocalStorage } from '@/utils/auth';
 import { getBasePath } from '@/utils/basePath';
 
@@ -28,7 +27,6 @@ const MachineRepositoriesPage = lazy(() => import('@/pages/resources/MachineRepo
 const RepositoryContainersPage = lazy(() => import('@/pages/resources/RepositoryContainersPage'));
 const CephPage = lazy(() => import('@/pages/ceph/CephPage'));
 const QueuePage = lazy(() => import('@/pages/queue/QueuePage'));
-const ArchitecturePage = lazy(() => import('@/pages/architecture/ArchitecturePage'));
 const AuditPage = lazy(() => import('@/pages/audit/AuditPage'));
 const CredentialsPage = lazy(() => import('@/pages/credentials/CredentialsPage'));
 const StoragePage = lazy(() => import('@/pages/storage/StoragePage'));
@@ -42,11 +40,11 @@ const InfrastructurePage = lazy(() => import('@/pages/settings/infrastructure/In
 // Loading component
 const PageLoader: React.FC = () => {
   return (
-    <LoadingState data-testid="page-loader" $justify="center" $align="center" $paddingY="XXXL">
+    <Flex data-testid="page-loader" align="center" justify="center" vertical>
       <LoadingWrapper loading centered minHeight={400}>
-        <div />
+        <Flex />
       </LoadingWrapper>
-    </LoadingState>
+    </Flex>
   );
 };
 
@@ -116,7 +114,6 @@ const AppContent: React.FC = () => {
 
   return (
     <AppProviders>
-      <GlobalStyles />
       <BrowserRouter basename={getBasePath()}>
         <RedirectHandler />
         <TelemetryProvider>
@@ -311,16 +308,6 @@ const AppContent: React.FC = () => {
                     element={
                       <Suspense fallback={<PageLoader />}>
                         <AuditPage />
-                      </Suspense>
-                    }
-                  />
-
-                  {/* Architecture */}
-                  <Route
-                    path="/architecture"
-                    element={
-                      <Suspense fallback={<PageLoader />}>
-                        <ArchitecturePage />
                       </Suspense>
                     }
                   />

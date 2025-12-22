@@ -109,6 +109,53 @@ export default tseslint.config(
         'newlines-between': 'never',
         alphabetize: { order: 'asc', caseInsensitive: true },
       }],
+
+      // Ban styled-components and Layout to enforce Ant Design best practices
+      'no-restricted-imports': ['error', {
+        paths: [
+          { name: 'styled-components', message: 'Use Ant Design components with CSS utility classes (className) instead.' },
+          {
+            name: 'antd',
+            importNames: ['Layout'],
+            message: 'Layout has default grey/dark backgrounds. Use Flex component instead.',
+          },
+        ],
+        patterns: [
+          { group: ['styled-components/*'], message: 'Use Ant Design components instead.' },
+          { group: ['antd/es/layout', 'antd/es/layout/*', 'antd/lib/layout', 'antd/lib/layout/*'], message: 'Layout has default grey/dark backgrounds. Use Flex component instead.' },
+        ],
+      }],
+
+      // Ban raw HTML elements to enforce Ant Design component usage
+      'react/forbid-elements': ['error', {
+        forbid: [
+          { element: 'div', message: 'Use Flex, Card, or other antd layout components.' },
+          { element: 'span', message: 'Use Typography.Text.' },
+          { element: 'button', message: 'Use antd Button component.' },
+          { element: 'input', message: 'Use antd Input component.' },
+          { element: 'select', message: 'Use antd Select component.' },
+        ],
+      }],
+
+      // Ban local aliases of constants and CSS variables
+      'no-restricted-syntax': ['error',
+        {
+          selector: "VariableDeclarator[init.type='MemberExpression'][init.computed=false][init.object.name=/^[A-Z][A-Z_0-9]*$/]",
+          message: 'Do not create local aliases from constants. Use the original property access directly (e.g., LAYOUT.HEADER_HEIGHT instead of const X = LAYOUT.X).',
+        },
+        {
+          selector: "Literal[value=/var\\(--ant-/]",
+          message: 'Do not use CSS variables (var(--ant-*)). Remove color styling or use Ant Design component props.',
+        },
+        {
+          selector: "CallExpression[callee.name=/^t$|^tSystem$|^tCommon$/] ObjectExpression Property[key.name='defaultValue']",
+          message: 'Do not use defaultValue in translation calls. Add the key to English translation JSON files instead.',
+        },
+        {
+          selector: 'JSXAttribute[name.name="style"]',
+          message: 'Inline styles are not allowed. Use CSS utility classes from global.css instead (e.g., className="w-full inline-flex"). For dynamic styles, use // eslint-disable-next-line no-restricted-syntax',
+        },
+      ],
     }
   }
 );
