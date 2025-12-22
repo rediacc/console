@@ -149,25 +149,21 @@ const QueuePage: React.FC = () => {
         label:
           dropdownData?.teams?.find((team) => team.value === filters.teamName)?.label ||
           filters.teamName,
-        color: 'blue',
       },
       {
         key: 'machineName',
         value: filters.machineName,
         label: filters.machineName,
-        color: 'blue',
       },
       {
         key: 'regionName',
         value: filters.regionName,
         label: filters.regionName,
-        color: 'blue',
       },
       {
         key: 'bridgeName',
         value: filters.bridgeName,
         label: filters.bridgeName,
-        color: 'blue',
       },
       {
         key: 'dateRange',
@@ -175,26 +171,22 @@ const QueuePage: React.FC = () => {
         label: filters.dateRange
           ? `${filters.dateRange[0]?.format('MM/DD')}\u2192${filters.dateRange[1]?.format('MM/DD')}`
           : '',
-        color: 'blue',
       },
       {
         key: 'statusFilter',
         value: filters.statusFilter,
         label: '', // Array items display themselves
-        color: 'blue',
       },
       {
         key: 'taskIdFilter',
         value:
           filters.taskIdFilter && isValidGuid(filters.taskIdFilter) ? filters.taskIdFilter : '',
         label: filters.taskIdFilter ? `${filters.taskIdFilter.substring(0, 8)}...` : '',
-        color: 'blue',
       },
       {
         key: 'onlyStale',
         value: filters.onlyStale,
         label: 'Stale',
-        color: 'orange',
       },
     ],
     [filters, dropdownData?.teams]

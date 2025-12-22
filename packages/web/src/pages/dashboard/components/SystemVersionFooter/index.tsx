@@ -39,7 +39,6 @@ const SystemVersionFooter: React.FC = () => {
   }
 
   const environment = apiHealth?.environment || 'Unknown';
-  const _isProduction = environment === 'Production';
   const uptime = apiHealth?.uptime;
 
   return (

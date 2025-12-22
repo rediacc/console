@@ -89,8 +89,8 @@ const UserSessionsTab: React.FC = () => {
     dataIndex: 'isActive',
     key: 'isActive',
     statusMap: {
-      true: { icon: <CheckCircleOutlined />, label: t('userSessions.active'), color: 'success' },
-      false: { icon: <StopOutlined />, label: t('userSessions.inactive'), color: 'default' },
+      true: { icon: <CheckCircleOutlined />, label: t('userSessions.active') },
+      false: { icon: <StopOutlined />, label: t('userSessions.inactive') },
     },
   });
 

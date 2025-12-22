@@ -15,19 +15,16 @@ interface ColumnBuilderParams {
   t: TFunction<'system' | 'common'>;
   auditLogs?: GetAuditLogs_ResultSet1[];
   getActionIcon: (action: string) => React.ReactNode;
-  getActionColor: (action: string) => string;
 }
 
 export const buildAuditColumns = ({
   t,
   auditLogs,
   getActionIcon,
-  getActionColor,
 }: ColumnBuilderParams): ColumnsType<GetAuditLogs_ResultSet1> => {
   const actionStatusMap = (auditLogs || []).reduce<Record<string, StatusConfig>>((acc, log) => {
     if (!acc[log.action]) {
       acc[log.action] = {
-        color: getActionColor(log.action),
         icon: getActionIcon(log.action),
         label: log.action.replace(/_/g, ' '),
       };
@@ -55,7 +52,7 @@ export const buildAuditColumns = ({
     key: 'action',
     width: 200,
     statusMap: actionStatusMap,
-    defaultConfig: { color: 'default' },
+    defaultConfig: {},
     sorter: (a, b) => a.action.localeCompare(b.action),
   });
   actionColumn.filters =

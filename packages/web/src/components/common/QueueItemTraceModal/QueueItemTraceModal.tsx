@@ -118,18 +118,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   const simplifiedStatus = traceData?.queueDetails
     ? getSimplifiedStatus(traceData.queueDetails)
     : { status: 'unknown', color: 'default' as const, icon: null };
-  const _statusTagColor = (() => {
-    const map = {
-      neutral: 'default',
-      success: 'success',
-      warning: 'warning',
-      error: 'error',
-      primary: 'processing',
-      info: 'processing',
-      default: 'default',
-    } as const;
-    return map[simplifiedStatus.color as keyof typeof map] ?? 'default';
-  })();
 
   return (
     <SizedModal

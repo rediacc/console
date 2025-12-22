@@ -33,13 +33,7 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
   // If machine already has cephClusterName, we know it's assigned to a cluster
   if (machine.cephClusterName) {
     return (
-      // eslint-disable-next-line no-restricted-syntax
-      <Flex
-        align="flex-start"
-        justify="flex-start"
-        style={{ minHeight: 24 }}
-        data-testid="machine-status-cell-cluster"
-      >
+      <Flex align="flex-start" justify="flex-start" data-testid="machine-status-cell-cluster">
         <MachineAssignmentStatusBadge
           assignmentType="CLUSTER"
           assignmentDetails={`Assigned to cluster: ${machine.cephClusterName}`}
@@ -51,8 +45,7 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
 
   if (isLoading) {
     return (
-      // eslint-disable-next-line no-restricted-syntax
-      <Flex align="center" justify="center" style={{ minHeight: 24 }}>
+      <Flex align="center" justify="center">
         <InlineLoadingIndicator width={140} height={22} data-testid="machine-status-cell-loading" />
       </Flex>
     );
@@ -60,13 +53,7 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
 
   if (!data) {
     return (
-      // eslint-disable-next-line no-restricted-syntax
-      <Flex
-        align="flex-start"
-        justify="flex-start"
-        style={{ minHeight: 24 }}
-        data-testid="machine-status-cell-available"
-      >
+      <Flex align="flex-start" justify="flex-start" data-testid="machine-status-cell-available">
         <MachineAssignmentStatusBadge assignmentType="AVAILABLE" size="small" />
       </Flex>
     );
@@ -85,11 +72,9 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
   );
 
   return (
-    // eslint-disable-next-line no-restricted-syntax
     <Flex
       align="flex-start"
       justify="flex-start"
-      style={{ minHeight: 24 }}
       data-testid={`machine-status-cell-${assignmentType.toLowerCase()}`}
     >
       <MachineAssignmentStatusBadge

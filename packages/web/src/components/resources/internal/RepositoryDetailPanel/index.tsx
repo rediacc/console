@@ -533,13 +533,6 @@ const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
 
     <Flex vertical data-testid="repository-detail-services-list">
       {panelData.services.map((service, index) => {
-        const _state: 'active' | 'failed' | 'other' =
-          service.active_state === 'active'
-            ? 'active'
-            : service.active_state === 'failed'
-              ? 'failed'
-              : 'other';
-
         return (
           <Card
             key={`${service.name}-${index}`}

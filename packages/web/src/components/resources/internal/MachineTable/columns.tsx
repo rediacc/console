@@ -95,16 +95,14 @@ export const buildMachineTableColumns = ({
       dataIndex: 'vaultStatusTime',
       key: 'status',
       statusMap: {
-        online: { icon: <CheckCircleOutlined />, label: t('machines:connected'), color: 'success' },
+        online: { icon: <CheckCircleOutlined />, label: t('machines:connected') },
         offline: {
           icon: <DisconnectOutlined />,
           label: t('machines:connectionFailed'),
-          color: 'error',
         },
         unknown: {
           icon: <DisconnectOutlined />,
           label: t('machines:statusUnknown'),
-          color: 'default',
         },
       },
       sorter: createCustomSorter<Machine>((m) => {

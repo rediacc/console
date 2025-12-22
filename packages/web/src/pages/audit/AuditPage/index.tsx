@@ -26,7 +26,6 @@ import {
   downloadJSON,
   findActionConfig,
   generateTimestampedFilename,
-  getActionTagColor,
   getUniqueMappedValues,
   searchInFields,
 } from '@/platform';
@@ -90,10 +89,6 @@ const AuditPage = () => {
     );
   }, []);
 
-  const getActionColor = useCallback((action: string) => {
-    return getActionTagColor(action);
-  }, []);
-
   const filteredLogs = auditLogs?.filter((log) =>
     searchInFields(log, filters.searchText, ['entityName', 'action', 'details', 'actionByUser'])
   );
@@ -104,9 +99,8 @@ const AuditPage = () => {
         t,
         auditLogs,
         getActionIcon,
-        getActionColor,
       }),
-    [t, auditLogs, getActionIcon, getActionColor]
+    [t, auditLogs, getActionIcon]
   );
 
   const entityTypes = getUniqueMappedValues(auditLogs || [], (log) => log.entity);
