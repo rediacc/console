@@ -197,7 +197,7 @@ const LoginPage: React.FC = () => {
         const newState = featureFlags.togglePowerMode();
 
         // Update visibility for endpoint selector
-        setEndpointSelectorVisible(newState);
+        setShowAdvancedOptions(newState);
 
         // Show toast with current state - different message for localhost vs non-localhost
         const message = onLocalhost
