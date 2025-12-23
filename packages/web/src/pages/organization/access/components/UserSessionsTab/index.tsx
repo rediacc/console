@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Button,
   Card,
@@ -51,16 +51,21 @@ const UserSessionsTab: React.FC = () => {
   const { data: sessions = [], isLoading, refetch } = useUserRequests();
   const deleteUserRequestMutation = useDeleteUserRequest();
 
-  const handleTerminateSession = async (session: UserRequest) => {
-    try {
-      await deleteUserRequestMutation.mutateAsync({ targetRequestId: session.requestId });
-      if (session.userEmail === user?.email) {
-        message.warning('system:userSessions.selfTerminateWarning');
+  /* eslint-disable react-hooks/preserve-manual-memoization */
+  const handleTerminateSession = useCallback(
+    async (session: UserRequest) => {
+      try {
+        await deleteUserRequestMutation.mutateAsync({ targetRequestId: session.requestId });
+        if (session.userEmail === user?.email) {
+          message.warning('system:userSessions.selfTerminateWarning');
+        }
+      } catch {
+        // noop
       }
-    } catch {
-      // noop
-    }
-  };
+    },
+    [deleteUserRequestMutation, user?.email, message]
+  );
+  /* eslint-enable react-hooks/preserve-manual-memoization */
 
   const filteredSessions = sessions.filter((session: UserRequest) => {
     const searchLower = searchTerm.toLowerCase();

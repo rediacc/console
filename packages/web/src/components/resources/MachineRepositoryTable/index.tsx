@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -214,11 +214,14 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     }
   };
 
-  const handleRunFunction = (Repository: Repository, functionName?: string) => {
-    setSelectedRepo(Repository);
-    setSelectedFunction(functionName || null);
-    functionModal.open();
-  };
+  const handleRunFunction = useCallback(
+    (Repository: Repository, functionName?: string) => {
+      setSelectedRepo(Repository);
+      setSelectedFunction(functionName || null);
+      functionModal.open();
+    },
+    [functionModal]
+  );
 
   const closeModalAndReset = () => {
     functionModal.close();
@@ -567,17 +570,13 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     }),
   ];
 
-  const isFork = (record: RepositoryTableRow) => {
-    const repositoryData = teamRepositories.find(
-      (r) => r.repositoryName === record.name && r.repositoryTag === record.repositoryTag
-    );
-    return repositoryData ? coreIsFork(repositoryData) : false;
-  };
-
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
     () => (record: RepositoryTableRow) => {
-      const isRepoFork = isFork(record);
+      const repositoryData = teamRepositories.find(
+        (r) => r.repositoryName === record.name && r.repositoryTag === record.repositoryTag
+      );
+      const isRepoFork = repositoryData ? coreIsFork(repositoryData) : false;
 
       const menuItems: MenuProps['items'] = [
         {

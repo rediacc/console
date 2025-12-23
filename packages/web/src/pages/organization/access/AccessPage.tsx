@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Badge,
   Button,
@@ -91,13 +91,16 @@ const AccessPage: React.FC = () => {
     }
   };
 
-  const handleDeleteGroup = async (groupName: string) => {
-    try {
-      await deleteGroupMutation.mutateAsync({ permissionGroupName: groupName });
-    } catch {
-      // handled by mutation
-    }
-  };
+  const handleDeleteGroup = useCallback(
+    async (groupName: string) => {
+      try {
+        await deleteGroupMutation.mutateAsync({ permissionGroupName: groupName });
+      } catch {
+        // handled by mutation
+      }
+    },
+    [deleteGroupMutation]
+  );
 
   const handleAddPermission = async () => {
     if (!manageModal.state.data || !selectedPermission) return;

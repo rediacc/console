@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Badge,
   Button,
@@ -126,13 +126,16 @@ const TeamsPage: React.FC = () => {
     }
   };
 
-  const handleDeleteTeam = async (teamName: string) => {
-    try {
-      await deleteTeamMutation.mutateAsync({ teamName });
-    } catch {
-      // handled by mutation
-    }
-  };
+  const handleDeleteTeam = useCallback(
+    async (teamName: string) => {
+      try {
+        await deleteTeamMutation.mutateAsync({ teamName });
+      } catch {
+        // handled by mutation
+      }
+    },
+    [deleteTeamMutation]
+  );
 
   const handleAddTeamMember = async () => {
     if (!manageTeamModal.state.data || !selectedMemberEmail) return;

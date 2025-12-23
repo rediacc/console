@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ExpandIcon } from '@/components/common/ExpandIcon';
 import { MobileCard } from '@/components/common/MobileCard';
 import ResourceListView from '@/components/common/ResourceListView';
-import { MachineAssignmentStatusCell } from '@/components/resources/MachineAssignmentStatusCell';
+import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
 import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable';
 import type { Machine } from '@/types';
 import { DesktopOutlined } from '@/utils/optimizedIcons';

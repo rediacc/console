@@ -1,4 +1,4 @@
-import { useMemo, useState, type Key } from 'react';
+import { useCallback, useMemo, useState, type Key } from 'react';
 import {
   CameraOutlined,
   CheckCircleOutlined,
@@ -111,45 +111,51 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     reassignMachineModal.open(image);
   };
 
-  const handleRunFunction = async (functionName: string, image?: CephRbdImage) => {
-    try {
-      const queueVault = await buildQueueVault({
-        functionName: functionName,
-        teamName: pool.teamName,
-        machineName: pool.clusterName,
-        bridgeName: 'default',
-        params: {
-          cluster_name: pool.clusterName,
-          pool_name: pool.poolName,
-          image_name: image?.imageName || '',
-        },
-        priority: 3,
-        addedVia: 'Ceph',
-      });
+  const handleQueueItemCreated = useCallback(
+    (taskId: string) => {
+      queueTrace.open(taskId);
+      message.success('ceph:queue.itemCreated');
+    },
+    [queueTrace, message]
+  );
 
-      const response = await managedQueueMutation.mutateAsync({
-        teamName: pool.teamName,
-        machineName: pool.clusterName, // Using cluster as machine for Ceph
-        bridgeName: 'default',
-        queueVault,
-        priority: 3,
-      });
+  const handleRunFunction = useCallback(
+    async (functionName: string, image?: CephRbdImage) => {
+      try {
+        const queueVault = await buildQueueVault({
+          functionName: functionName,
+          teamName: pool.teamName,
+          machineName: pool.clusterName,
+          bridgeName: 'default',
+          params: {
+            cluster_name: pool.clusterName,
+            pool_name: pool.poolName,
+            image_name: image?.imageName || '',
+          },
+          priority: 3,
+          addedVia: 'Ceph',
+        });
 
-      const taskId = response.taskId;
-      if (taskId) {
-        handleQueueItemCreated(taskId);
+        const response = await managedQueueMutation.mutateAsync({
+          teamName: pool.teamName,
+          machineName: pool.clusterName, // Using cluster as machine for Ceph
+          bridgeName: 'default',
+          queueVault,
+          priority: 3,
+        });
+
+        const taskId = response.taskId;
+        if (taskId) {
+          handleQueueItemCreated(taskId);
+        }
+      } catch {
+        message.error('ceph:queue.createError');
       }
-    } catch {
-      message.error('ceph:queue.createError');
-    }
-  };
+    },
+    [pool, buildQueueVault, managedQueueMutation, handleQueueItemCreated, message]
+  );
 
-  const handleQueueItemCreated = (taskId: string) => {
-    queueTrace.open(taskId);
-    message.success('ceph:queue.itemCreated');
-  };
-
-  const getImageMenuItems = (image: CephRbdImage): MenuProps['items'] => [
+  const getImageMenuItems = useCallback((image: CephRbdImage): MenuProps['items'] => [
     {
       key: 'edit',
       label: (
@@ -297,7 +303,8 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       danger: true,
       onClick: () => handleDelete(image),
     },
-  ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [t, handleRunFunction]);
 
   const columns = [
     {
@@ -377,15 +384,20 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     }),
   ];
 
-  const handleExpand = (image: CephRbdImage) => {
-    const imageKey = String(image.imageGuid ?? '');
-    setExpandedRowKeys((prev) =>
-      prev.includes(imageKey) ? prev.filter((k) => k !== imageKey) : [...prev, imageKey]
-    );
-  };
+   
+  const handleExpand = useCallback(
+    (image: CephRbdImage) => {
+      const imageKey = String(image.imageGuid ?? '');
+      setExpandedRowKeys((prev) =>
+        prev.includes(imageKey) ? prev.filter((k) => k !== imageKey) : [...prev, imageKey]
+      );
+    },
+    [setExpandedRowKeys]
+  );
+   
 
   const mobileRender = useMemo(
-    // eslint-disable-next-line react/display-name, react-hooks/preserve-manual-memoization
+    // eslint-disable-next-line react/display-name
     () => (record: CephRbdImage) => {
       const actions = (
         <Space>
@@ -437,7 +449,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
         </MobileCard>
       );
     },
-    [t, getImageMenuItems, handleRunFunction]
+    [t, getImageMenuItems, handleRunFunction, handleExpand]
   );
 
   const expandedRowRender = (record: CephRbdImage) => (

@@ -151,9 +151,12 @@ const QueuePage: React.FC = () => {
 
   // Custom hooks for actions and export
   const { handleCancelQueueItem, cancelLoading } = useQueueActions(modal);
-  const handleViewTrace = (taskId: string) => {
-    queueTrace.open(taskId);
-  };
+  const handleViewTrace = useCallback(
+    (taskId: string) => {
+      queueTrace.open(taskId);
+    },
+    [queueTrace]
+  );
 
   const statistics = queueData?.statistics ?? ({} as Partial<QueueStatistics>);
   const totalCount = statistics.totalCount ?? queueData?.items?.length ?? 0;

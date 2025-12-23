@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Dropdown, Flex, Space, Tag, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useRepositories } from '@/api/queries/repositories';
@@ -364,54 +364,65 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
 
   // Handle container actions
 
-  const handleContainerAction = async (container: Container, functionName: string) => {
-    const result = await executeAction({
-      teamName: machine.teamName,
+  const handleContainerAction = useCallback(
+    async (container: Container, functionName: string) => {
+      const result = await executeAction({
+        teamName: machine.teamName,
 
-      machineName: machine.machineName,
+        machineName: machine.machineName,
 
-      bridgeName: machine.bridgeName,
+        bridgeName: machine.bridgeName,
 
-      functionName,
+        functionName,
 
-      params: {
-        repository: repositoryData?.repositoryGuid || repository.name,
-        repositoryName: repositoryData?.repositoryName || repository.name,
+        params: {
+          repository: repositoryData?.repositoryGuid || repository.name,
+          repositoryName: repositoryData?.repositoryName || repository.name,
 
-        container: container.id,
-      },
+          container: container.id,
+        },
 
-      priority: 4,
+        priority: 4,
 
-      addedVia: 'container-action',
+        addedVia: 'container-action',
 
-      machineVault: machine.vaultContent || '{}',
+        machineVault: machine.vaultContent || '{}',
 
-      repositoryGuid: repositoryData?.repositoryGuid,
+        repositoryGuid: repositoryData?.repositoryGuid,
 
-      vaultContent: grandRepoVault,
+        vaultContent: grandRepoVault,
 
-      repositoryNetworkId: repositoryData?.repositoryNetworkId,
+        repositoryNetworkId: repositoryData?.repositoryNetworkId,
 
-      repositoryNetworkMode: repositoryData?.repositoryNetworkMode,
+        repositoryNetworkMode: repositoryData?.repositoryNetworkMode,
 
-      repositoryTag: repositoryData?.repositoryTag,
-    });
+        repositoryTag: repositoryData?.repositoryTag,
+      });
 
-    if (result.success) {
-      if (result.taskId) {
-        showMessage('success', t('machines:queueItemCreated'));
+      if (result.success) {
+        if (result.taskId) {
+          showMessage('success', t('machines:queueItemCreated'));
 
-        if (onQueueItemCreated) {
-          onQueueItemCreated(result.taskId, machine.machineName);
+          if (onQueueItemCreated) {
+            onQueueItemCreated(result.taskId, machine.machineName);
+          }
+        } else if (result.isQueued) {
+          showMessage('info', t('resources:repositories.highestPriorityQueued'));
         }
-      } else if (result.isQueued) {
-        showMessage('info', t('resources:repositories.highestPriorityQueued'));
+      } else {
+        showMessage('error', result.error || t('common:errors.somethingWentWrong'));
       }
-    } else {
-      showMessage('error', result.error || t('common:errors.somethingWentWrong'));
-    }
-  };
+    },
+    [
+      executeAction,
+      machine,
+      repository.name,
+      repositoryData,
+      grandRepoVault,
+      t,
+      onQueueItemCreated,
+    ]
+  );
 
   // Container columns
 

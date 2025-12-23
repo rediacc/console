@@ -240,7 +240,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
   );
 
   const mobileRender = useMemo(
-    // eslint-disable-next-line react/display-name, react-hooks/preserve-manual-memoization
+    // eslint-disable-next-line react/display-name
     () => (record: CephRbdSnapshot) => {
       const onExpand = () => {
         setExpandedRowKeys((prev) =>
@@ -293,7 +293,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         </MobileCard>
       );
     },
-    [t, getSnapshotMenuItems, handleRunFunction]
+    [t, getSnapshotMenuItems, handleRunFunction, setExpandedRowKeys]
   );
 
   const expandedRowRender = useCallback(

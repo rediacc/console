@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
@@ -106,21 +106,27 @@ const UsersPage: React.FC = () => {
     }
   };
 
-  const handleDeactivateUser = async (userEmail: string) => {
-    try {
-      await deactivateUserMutation.mutateAsync({ userEmail });
-    } catch {
-      // handled by mutation
-    }
-  };
+  const handleDeactivateUser = useCallback(
+    async (userEmail: string) => {
+      try {
+        await deactivateUserMutation.mutateAsync({ userEmail });
+      } catch {
+        // handled by mutation
+      }
+    },
+    [deactivateUserMutation]
+  );
 
-  const handleReactivateUser = async (userEmail: string) => {
-    try {
-      await reactivateUserMutation.mutateAsync({ userEmail });
-    } catch {
-      // handled by mutation
-    }
-  };
+  const handleReactivateUser = useCallback(
+    async (userEmail: string) => {
+      try {
+        await reactivateUserMutation.mutateAsync({ userEmail });
+      } catch {
+        // handled by mutation
+      }
+    },
+    [reactivateUserMutation]
+  );
 
   const handleAssignUserPermissions = async () => {
     if (!assignPermissionModal.state.data || !selectedUserGroup) return;

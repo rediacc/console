@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -112,13 +112,16 @@ const InfrastructurePage: React.FC = () => {
   const updateBridgeVaultMutation = useUpdateBridgeVault();
   const resetBridgeAuthMutation = useResetBridgeAuthorization();
 
-  const openUnifiedModal = (
-    resourceType: 'region' | 'bridge',
-    mode: 'create' | 'edit',
-    data?: Partial<Region> | Partial<Bridge> | null
-  ) => {
-    unifiedModal.open({ resourceType, mode, data });
-  };
+  const openUnifiedModal = useCallback(
+    (
+      resourceType: 'region' | 'bridge',
+      mode: 'create' | 'edit',
+      data?: Partial<Region> | Partial<Bridge> | null
+    ) => {
+      unifiedModal.open({ resourceType, mode, data });
+    },
+    [unifiedModal]
+  );
 
   const closeUnifiedModal = () => {
     unifiedModal.close();
@@ -220,16 +223,19 @@ const InfrastructurePage: React.FC = () => {
     }
   };
 
-  const handleDeleteRegion = async (regionName: string) => {
-    try {
-      await deleteRegionMutation.mutateAsync({ regionName });
-      if (selectedRegion === regionName) {
-        setSelectedRegion(null);
+  const handleDeleteRegion = useCallback(
+    async (regionName: string) => {
+      try {
+        await deleteRegionMutation.mutateAsync({ regionName });
+        if (selectedRegion === regionName) {
+          setSelectedRegion(null);
+        }
+      } catch {
+        // handled by mutation
       }
-    } catch {
-      // handled by mutation
-    }
-  };
+    },
+    [deleteRegionMutation, selectedRegion]
+  );
 
   const handleDeleteBridge = async (bridge: Bridge) => {
     try {
