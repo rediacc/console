@@ -36,8 +36,8 @@ import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { AssignMachinesToCloneModal } from '@/pages/ceph/components/AssignMachinesToCloneModal';
 import { buildCloneColumns } from './columns';
-import { CloneMachineTable } from './components/CloneMachineTable';
-import { MachineCountBadge } from './components/MachineCountBadge';
+import { CloneMachineCountBadge } from '../CloneMachineCountBadge';
+import { CloneMachineTable } from '../CloneMachineTable';
 import type { MenuProps } from 'antd';
 
 interface CloneTableProps {
@@ -218,7 +218,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
 
   const renderMachineCount = useCallback(
     (clone: CephRbdClone) => (
-      <MachineCountBadge
+      <CloneMachineCountBadge
         clone={clone}
         snapshotName={snapshot.snapshotName}
         imageName={image.imageName}

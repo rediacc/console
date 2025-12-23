@@ -11,7 +11,7 @@ import {
   RightOutlined,
   DatabaseOutlined,
 } from '@/utils/optimizedIcons';
-import { getPoolFunctionMenuItems } from './menus';
+import { buildPoolMenuItems } from '../../menuItems';
 import type { ColumnsType } from 'antd/es/table';
 import type { TFunction } from 'i18next';
 
@@ -74,7 +74,7 @@ export const buildPoolColumns = ({
             icon: <FunctionOutlined />,
             tooltip: 'common:actions.remote',
             label: 'common:actions.remote',
-            dropdownItems: getPoolFunctionMenuItems(t),
+            dropdownItems: buildPoolMenuItems(t),
             onDropdownClick: (key) => {
               if (key === 'advanced') {
                 onRunFunction(record);

@@ -18,9 +18,9 @@ import { ManageClusterMachinesModal } from '@/pages/ceph/components/ManageCluste
 import { confirmAction } from '@/utils/confirmations';
 import { CloudServerOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 import { buildClusterColumns } from './columns';
-import { ClusterMachines } from './components/ClusterMachines';
-import { MachineCountBadge } from './components/MachineCountBadge';
-import { getClusterFunctionMenuItems } from './menus';
+import { buildClusterMenuItems } from '../../menuItems';
+import { ClusterMachineCountBadge } from '../ClusterMachineCountBadge';
+import { ClusterMachines } from '../ClusterMachines';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -140,7 +140,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
         <Space onClick={(e) => e.stopPropagation()}>
           <Dropdown
             menu={{
-              items: getClusterFunctionMenuItems(t),
+              items: buildClusterMenuItems(t),
               onClick: ({ key }) => {
                 if (key === 'advanced') {
                   handleFunctionRun(record);
@@ -171,7 +171,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
           </Space>
           <Flex gap={8} wrap align="center">
             <Tag bordered={false}>{record.teamName}</Tag>
-            <MachineCountBadge cluster={record} />
+            <ClusterMachineCountBadge cluster={record} />
           </Flex>
           <Typography.Text type="secondary" className="text-xs">
             {t('common:general.versionFormat', { version: record.vaultVersion || 0 })}
