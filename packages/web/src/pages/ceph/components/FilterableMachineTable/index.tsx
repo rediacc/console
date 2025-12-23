@@ -78,6 +78,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
   );
 
   const mobileRender = React.useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: Machine) => {
       const isExpanded = expandedRowKeys.includes(record.machineName);
       const isSelected = selectedRowKeys.includes(record.machineName);
@@ -101,7 +102,10 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
       );
 
       return (
-        <MobileCard onClick={hasQueueItems ? () => handleToggleRow(record.machineName) : undefined} actions={actions}>
+        <MobileCard
+          onClick={hasQueueItems ? () => handleToggleRow(record.machineName) : undefined}
+          actions={actions}
+        >
           <Space>
             {showSelection && (
               <Typography.Text onClick={handleCheckboxChange}>

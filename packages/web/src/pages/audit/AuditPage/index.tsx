@@ -105,6 +105,7 @@ const AuditPage = () => {
   );
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: AuditLog) => {
       const config = findActionConfig(record.action);
       const IconComponent = config.icon;
@@ -119,9 +120,7 @@ const AuditPage = () => {
         <MobileCard actions={timestampDisplay}>
           <Space>
             <IconComponent />
-            <Typography.Text strong>
-              {record.action.replace(/_/g, ' ')}
-            </Typography.Text>
+            <Typography.Text strong>{record.action.replace(/_/g, ' ')}</Typography.Text>
           </Space>
           <Flex gap={8} wrap align="center">
             <Tag>{record.entity}</Tag>

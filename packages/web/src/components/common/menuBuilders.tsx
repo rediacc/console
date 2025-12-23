@@ -7,10 +7,7 @@ type MenuItem = NonNullable<MenuProps['items']>[number];
 /**
  * Builds an edit menu item with EditOutlined icon
  */
-export const buildEditMenuItem = (
-  t: TFunction<string[]>,
-  onClick: () => void,
-): MenuItem => ({
+export const buildEditMenuItem = (t: TFunction<string[]>, onClick: () => void): MenuItem => ({
   key: 'edit',
   label: t('common:actions.edit'),
   icon: <EditOutlined />,
@@ -20,10 +17,7 @@ export const buildEditMenuItem = (
 /**
  * Builds a delete menu item with DeleteOutlined icon and danger styling
  */
-export const buildDeleteMenuItem = (
-  t: TFunction<string[]>,
-  onClick: () => void,
-): MenuItem => ({
+export const buildDeleteMenuItem = (t: TFunction<string[]>, onClick: () => void): MenuItem => ({
   key: 'delete',
   label: t('common:actions.delete'),
   icon: <DeleteOutlined />,
@@ -34,10 +28,7 @@ export const buildDeleteMenuItem = (
 /**
  * Builds a trace menu item with HistoryOutlined icon
  */
-export const buildTraceMenuItem = (
-  t: TFunction<string[]>,
-  onClick: () => void,
-): MenuItem => ({
+export const buildTraceMenuItem = (t: TFunction<string[]>, onClick: () => void): MenuItem => ({
   key: 'trace',
   label: t('common:actions.trace'),
   icon: <HistoryOutlined />,

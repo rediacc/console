@@ -709,6 +709,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
   ];
 
   const containerMobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: Container) => {
       const menuItems: MenuProps['items'] = [];
 
@@ -842,7 +843,10 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
             <Typography.Text type="secondary" className="text-xs">
               {record.port_mappings
                 .slice(0, 2)
-                .map((pm, idx) => `${pm.host_port}:${pm.container_port}${idx < Math.min(record.port_mappings!.length, 2) - 1 ? ', ' : ''}`)
+                .map(
+                  (pm, idx) =>
+                    `${pm.host_port}:${pm.container_port}${idx < Math.min(record.port_mappings!.length, 2) - 1 ? ', ' : ''}`
+                )
                 .join('')}
               {record.port_mappings.length > 2 && ` +${record.port_mappings.length - 2}`}
             </Typography.Text>

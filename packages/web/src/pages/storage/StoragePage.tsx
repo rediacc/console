@@ -1,5 +1,15 @@
 import React, { useCallback, useMemo } from 'react';
-import { Button, Dropdown, Flex, Modal, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
+import {
+  Button,
+  Dropdown,
+  Flex,
+  Modal,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+  type MenuProps,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
@@ -416,30 +426,70 @@ const StoragePage: React.FC = () => {
   const emptyDescription = hasTeamSelection ? t('storage.noStorage') : t('teams.selectTeamPrompt');
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: GetTeamStorages_ResultSet1) => {
       const menuItems: MenuProps['items'] = [
-        { key: 'edit', label: t('common:actions.edit'), icon: <EditOutlined />, onClick: () => openUnifiedModal('edit', record as GetTeamStorages_ResultSet1 & Record<string, unknown>) },
-        { key: 'run', label: t('common:actions.runFunction'), icon: <FunctionOutlined />, onClick: () => {
-          setCurrentResource(record as GetTeamStorages_ResultSet1 & Record<string, unknown>);
-          openUnifiedModal('create', record as GetTeamStorages_ResultSet1 & Record<string, unknown>);
-        }},
-        { key: 'trace', label: t('machines:trace'), icon: <HistoryOutlined />, onClick: () => auditTrace.open({
-          entityType: 'Storage',
-          entityIdentifier: record.storageName,
-          entityName: record.storageName,
-        })},
-        { key: 'delete', label: t('common:actions.delete'), icon: <DeleteOutlined />, danger: true, onClick: () => handleDeleteStorage(record) },
+        {
+          key: 'edit',
+          label: t('common:actions.edit'),
+          icon: <EditOutlined />,
+          onClick: () =>
+            openUnifiedModal(
+              'edit',
+              record as GetTeamStorages_ResultSet1 & Record<string, unknown>
+            ),
+        },
+        {
+          key: 'run',
+          label: t('common:actions.runFunction'),
+          icon: <FunctionOutlined />,
+          onClick: () => {
+            setCurrentResource(record as GetTeamStorages_ResultSet1 & Record<string, unknown>);
+            openUnifiedModal(
+              'create',
+              record as GetTeamStorages_ResultSet1 & Record<string, unknown>
+            );
+          },
+        },
+        {
+          key: 'trace',
+          label: t('machines:trace'),
+          icon: <HistoryOutlined />,
+          onClick: () =>
+            auditTrace.open({
+              entityType: 'Storage',
+              entityIdentifier: record.storageName,
+              entityName: record.storageName,
+            }),
+        },
+        {
+          key: 'delete',
+          label: t('common:actions.delete'),
+          icon: <DeleteOutlined />,
+          danger: true,
+          onClick: () => handleDeleteStorage(record),
+        },
       ];
 
       return (
-        <MobileCard actions={
-          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
-          </Dropdown>
-        }>
+        <MobileCard
+          actions={
+            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+              <Button
+                type="text"
+                size="small"
+                icon={<MoreOutlined />}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Actions"
+              />
+            </Dropdown>
+          }
+        >
           <Space>
             <CloudOutlined />
-            <Typography.Text strong className="truncate">{record.storageName}</Typography.Text>
+            <Typography.Text strong className="truncate">
+              {record.storageName}
+            </Typography.Text>
           </Space>
           <Tag>{record.teamName}</Tag>
         </MobileCard>

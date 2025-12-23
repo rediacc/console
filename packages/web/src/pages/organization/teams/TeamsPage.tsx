@@ -181,35 +181,79 @@ const TeamsPage: React.FC = () => {
   const teamColumns = getTeamColumns(columnParams);
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: Team) => {
       const menuItems: MenuProps['items'] = [
-        { key: 'edit', label: tSystem('actions.edit'), icon: <EditOutlined />, onClick: () => unifiedModal.openEdit(record as ExistingResourceData) },
-        { key: 'members', label: tSystem('actions.members'), icon: <UserOutlined />, onClick: () => manageTeamModal.open(record) },
-        { key: 'trace', label: tSystem('actions.trace'), icon: <HistoryOutlined />, onClick: () => auditTrace.open({
-          entityType: 'Team',
-          entityIdentifier: record.teamName,
-          entityName: record.teamName,
-        })},
-        { key: 'delete', label: tCommon('actions.delete'), icon: <DeleteOutlined />, danger: true, onClick: () => handleDeleteTeam(record.teamName) },
+        {
+          key: 'edit',
+          label: tSystem('actions.edit'),
+          icon: <EditOutlined />,
+          onClick: () => unifiedModal.openEdit(record as ExistingResourceData),
+        },
+        {
+          key: 'members',
+          label: tSystem('actions.members'),
+          icon: <UserOutlined />,
+          onClick: () => manageTeamModal.open(record),
+        },
+        {
+          key: 'trace',
+          label: tSystem('actions.trace'),
+          icon: <HistoryOutlined />,
+          onClick: () =>
+            auditTrace.open({
+              entityType: 'Team',
+              entityIdentifier: record.teamName,
+              entityName: record.teamName,
+            }),
+        },
+        {
+          key: 'delete',
+          label: tCommon('actions.delete'),
+          icon: <DeleteOutlined />,
+          danger: true,
+          onClick: () => handleDeleteTeam(record.teamName),
+        },
       ];
 
       return (
-        <MobileCard actions={
-          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
-          </Dropdown>
-        }>
+        <MobileCard
+          actions={
+            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+              <Button
+                type="text"
+                size="small"
+                icon={<MoreOutlined />}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Actions"
+              />
+            </Dropdown>
+          }
+        >
           <Space>
             <TeamOutlined />
-            <Typography.Text strong className="truncate">{record.teamName}</Typography.Text>
+            <Typography.Text strong className="truncate">
+              {record.teamName}
+            </Typography.Text>
           </Space>
           <Flex gap={16} wrap>
             <Space size="small">
-              <Badge count={record.memberCount} showZero size="small"><UserOutlined /></Badge>
+              <Badge count={record.memberCount} showZero size="small">
+                <UserOutlined />
+              </Badge>
             </Space>
-            <Space size="small"><DesktopOutlined /><Typography.Text>{record.machineCount}</Typography.Text></Space>
-            <Space size="small"><DatabaseOutlined /><Typography.Text>{record.repositoryCount || 0}</Typography.Text></Space>
-            <Space size="small"><CloudServerOutlined /><Typography.Text>{record.storageCount || 0}</Typography.Text></Space>
+            <Space size="small">
+              <DesktopOutlined />
+              <Typography.Text>{record.machineCount}</Typography.Text>
+            </Space>
+            <Space size="small">
+              <DatabaseOutlined />
+              <Typography.Text>{record.repositoryCount || 0}</Typography.Text>
+            </Space>
+            <Space size="small">
+              <CloudServerOutlined />
+              <Typography.Text>{record.storageCount || 0}</Typography.Text>
+            </Space>
           </Flex>
         </MobileCard>
       );

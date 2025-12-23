@@ -61,9 +61,7 @@ export const buildClusterColumns = ({
         const isExpanded = expandedRowKeys.includes(record.clusterName);
         return (
           <Flex align="center" gap={8}>
-            <RightOutlined
-              className={`expand-icon ${isExpanded ? 'expand-icon-rotated' : ''}`}
-            />
+            <RightOutlined className={`expand-icon ${isExpanded ? 'expand-icon-rotated' : ''}`} />
             <CloudServerOutlined />
             <Typography.Text>
               {clusterNameColumn.render?.(name, record, index) as React.ReactNode}

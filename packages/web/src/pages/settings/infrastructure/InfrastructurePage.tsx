@@ -506,26 +506,54 @@ const InfrastructurePage: React.FC = () => {
   ];
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: Region) => {
       const menuItems: MenuProps['items'] = [
-        { key: 'edit', label: t('general.edit'), icon: <EditOutlined />, onClick: () => openUnifiedModal('region', 'edit', record) },
-        { key: 'trace', label: tSystem('actions.trace'), icon: <HistoryOutlined />, onClick: () => auditTrace.open({
-          entityType: 'Region',
-          entityIdentifier: record.regionName,
-          entityName: record.regionName,
-        })},
-        { key: 'delete', label: t('general.delete'), icon: <DeleteOutlined />, danger: true, onClick: () => handleDeleteRegion(record.regionName) },
+        {
+          key: 'edit',
+          label: t('general.edit'),
+          icon: <EditOutlined />,
+          onClick: () => openUnifiedModal('region', 'edit', record),
+        },
+        {
+          key: 'trace',
+          label: tSystem('actions.trace'),
+          icon: <HistoryOutlined />,
+          onClick: () =>
+            auditTrace.open({
+              entityType: 'Region',
+              entityIdentifier: record.regionName,
+              entityName: record.regionName,
+            }),
+        },
+        {
+          key: 'delete',
+          label: t('general.delete'),
+          icon: <DeleteOutlined />,
+          danger: true,
+          onClick: () => handleDeleteRegion(record.regionName),
+        },
       ];
 
       return (
-        <MobileCard actions={
-          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
-          </Dropdown>
-        }>
+        <MobileCard
+          actions={
+            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+              <Button
+                type="text"
+                size="small"
+                icon={<MoreOutlined />}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Actions"
+              />
+            </Dropdown>
+          }
+        >
           <Space>
             <EnvironmentOutlined />
-            <Typography.Text strong className="truncate">{record.regionName}</Typography.Text>
+            <Typography.Text strong className="truncate">
+              {record.regionName}
+            </Typography.Text>
           </Space>
           <Space size="small">
             <ApiOutlined />

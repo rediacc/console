@@ -1,5 +1,16 @@
 ﻿import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Button, Card, Dropdown, Empty, Flex, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
+import {
+  Button,
+  Card,
+  Dropdown,
+  Empty,
+  Flex,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+  type MenuProps,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -586,13 +597,28 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   };
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: Machine) => {
       const menuItems: MenuProps['items'] = [
         ...(onEditMachine
-          ? [{ key: 'edit', label: t('common:actions.edit'), icon: <EditOutlined />, onClick: () => onEditMachine(record) }]
+          ? [
+              {
+                key: 'edit',
+                label: t('common:actions.edit'),
+                icon: <EditOutlined />,
+                onClick: () => onEditMachine(record),
+              },
+            ]
           : []),
         ...(onFunctionsMachine
-          ? [{ key: 'functions', label: t('machines:functions'), icon: <FunctionOutlined />, onClick: () => onFunctionsMachine(record) }]
+          ? [
+              {
+                key: 'functions',
+                label: t('machines:functions'),
+                icon: <FunctionOutlined />,
+                onClick: () => onFunctionsMachine(record),
+              },
+            ]
           : []),
         {
           key: 'trace',
@@ -606,7 +632,15 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             }),
         },
         ...(handleDelete
-          ? [{ key: 'delete', label: t('common:actions.delete'), icon: <DeleteOutlined />, danger: true, onClick: () => handleDelete(record) }]
+          ? [
+              {
+                key: 'delete',
+                label: t('common:actions.delete'),
+                icon: <DeleteOutlined />,
+                danger: true,
+                onClick: () => handleDelete(record),
+              },
+            ]
           : []),
       ];
 
@@ -617,7 +651,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       const actions =
         menuItems.length > 0 ? (
           <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
+            <Button
+              type="text"
+              size="small"
+              icon={<MoreOutlined />}
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Actions"
+            />
           </Dropdown>
         ) : undefined;
 

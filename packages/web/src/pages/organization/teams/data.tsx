@@ -1,13 +1,4 @@
-import {
-  Badge,
-  Button,
-  Flex,
-  Popconfirm,
-  Space,
-  Tooltip,
-  Typography,
-  type TableProps,
-} from 'antd';
+import { Badge, Button, Flex, Popconfirm, Space, Tooltip, Typography, type TableProps } from 'antd';
 import type { Team } from '@/api/queries/teams';
 import {
   createCountColumn,
@@ -222,4 +213,3 @@ export const getTeamColumns = ({
 
   return columns;
 };
-

@@ -262,31 +262,64 @@ const UsersPage: React.FC = () => {
   ];
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: User) => {
       const menuItems: MenuProps['items'] = [
-        { key: 'permissions', label: tSystem('actions.permissions'), icon: <SafetyOutlined />, onClick: () => {
-          assignPermissionModal.open(record);
-          setSelectedUserGroup(record.permissionsName || '');
-        }},
-        { key: 'trace', label: tSystem('actions.trace'), icon: <HistoryOutlined />, onClick: () => auditTrace.open({
-          entityType: 'User',
-          entityIdentifier: record.userEmail,
-          entityName: record.userEmail,
-        })},
+        {
+          key: 'permissions',
+          label: tSystem('actions.permissions'),
+          icon: <SafetyOutlined />,
+          onClick: () => {
+            assignPermissionModal.open(record);
+            setSelectedUserGroup(record.permissionsName || '');
+          },
+        },
+        {
+          key: 'trace',
+          label: tSystem('actions.trace'),
+          icon: <HistoryOutlined />,
+          onClick: () =>
+            auditTrace.open({
+              entityType: 'User',
+              entityIdentifier: record.userEmail,
+              entityName: record.userEmail,
+            }),
+        },
         record.activated
-          ? { key: 'deactivate', label: tSystem('actions.deactivate'), icon: <StopOutlined />, danger: true, onClick: () => handleDeactivateUser(record.userEmail) }
-          : { key: 'activate', label: tSystem('actions.activate'), icon: <CheckOutlined />, onClick: () => handleReactivateUser(record.userEmail) },
+          ? {
+              key: 'deactivate',
+              label: tSystem('actions.deactivate'),
+              icon: <StopOutlined />,
+              danger: true,
+              onClick: () => handleDeactivateUser(record.userEmail),
+            }
+          : {
+              key: 'activate',
+              label: tSystem('actions.activate'),
+              icon: <CheckOutlined />,
+              onClick: () => handleReactivateUser(record.userEmail),
+            },
       ];
 
       return (
-        <MobileCard actions={
-          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
-          </Dropdown>
-        }>
+        <MobileCard
+          actions={
+            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+              <Button
+                type="text"
+                size="small"
+                icon={<MoreOutlined />}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Actions"
+              />
+            </Dropdown>
+          }
+        >
           <Space>
             <UserOutlined />
-            <Typography.Text strong className="truncate">{record.userEmail}</Typography.Text>
+            <Typography.Text strong className="truncate">
+              {record.userEmail}
+            </Typography.Text>
           </Space>
           <Flex gap={8} wrap>
             {record.activated ? (

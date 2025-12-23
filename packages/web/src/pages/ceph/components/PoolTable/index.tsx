@@ -4,7 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { CephCluster, CephPool } from '@/api/queries/ceph';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { ExpandIcon } from '@/components/common/ExpandIcon';
-import { buildDeleteMenuItem, buildDivider, buildEditMenuItem, buildTraceMenuItem } from '@/components/common/menuBuilders';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildEditMenuItem,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
 import { MobileCard } from '@/components/common/MobileCard';
 import { useExpandableTable, useTraceModal } from '@/hooks';
 import RbdImageTable from '@/pages/ceph/components/RbdImageTable';
@@ -116,6 +121,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
   );
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: CephPool) => {
       const isExpanded = expandedRowKeys.includes(record.poolGuid || '');
 
@@ -141,7 +147,12 @@ export const PoolTable: React.FC<PoolTableProps> = ({
             }}
             trigger={['click']}
           >
-            <Button type="text" size="small" icon={<FunctionOutlined />} aria-label={t('common:actions.remote')} />
+            <Button
+              type="text"
+              size="small"
+              icon={<FunctionOutlined />}
+              aria-label={t('common:actions.remote')}
+            />
           </Dropdown>
           <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
             <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
@@ -162,7 +173,15 @@ export const PoolTable: React.FC<PoolTableProps> = ({
         </MobileCard>
       );
     },
-    [t, expandedRowKeys, onEditPool, handleAuditTrace, handleDelete, handleRunFunction, handleToggleRow]
+    [
+      t,
+      expandedRowKeys,
+      onEditPool,
+      handleAuditTrace,
+      handleDelete,
+      handleRunFunction,
+      handleToggleRow,
+    ]
   );
 
   const expandedRowRender = useCallback((record: CephPool) => {

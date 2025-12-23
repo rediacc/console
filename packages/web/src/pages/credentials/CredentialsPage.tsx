@@ -1,5 +1,16 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Alert, Button, Dropdown, Flex, Modal, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
+import {
+  Alert,
+  Button,
+  Dropdown,
+  Flex,
+  Modal,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+  type MenuProps,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -584,26 +595,54 @@ const CredentialsPage: React.FC = () => {
     : t('teams.selectTeamPrompt');
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: Repository) => {
       const menuItems: MenuProps['items'] = [
-        { key: 'edit', label: t('common:actions.edit'), icon: <EditOutlined />, onClick: () => openUnifiedModal('edit', record as Repository & Record<string, unknown>) },
-        { key: 'trace', label: t('machines:trace'), icon: <HistoryOutlined />, onClick: () => auditTrace.open({
-          entityType: 'Repository',
-          entityIdentifier: record.repositoryName,
-          entityName: record.repositoryName,
-        })},
-        { key: 'delete', label: t('common:actions.delete'), icon: <DeleteOutlined />, danger: true, onClick: () => handleDeleteRepository(record) },
+        {
+          key: 'edit',
+          label: t('common:actions.edit'),
+          icon: <EditOutlined />,
+          onClick: () => openUnifiedModal('edit', record as Repository & Record<string, unknown>),
+        },
+        {
+          key: 'trace',
+          label: t('machines:trace'),
+          icon: <HistoryOutlined />,
+          onClick: () =>
+            auditTrace.open({
+              entityType: 'Repository',
+              entityIdentifier: record.repositoryName,
+              entityName: record.repositoryName,
+            }),
+        },
+        {
+          key: 'delete',
+          label: t('common:actions.delete'),
+          icon: <DeleteOutlined />,
+          danger: true,
+          onClick: () => handleDeleteRepository(record),
+        },
       ];
 
       return (
-        <MobileCard actions={
-          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
-          </Dropdown>
-        }>
+        <MobileCard
+          actions={
+            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+              <Button
+                type="text"
+                size="small"
+                icon={<MoreOutlined />}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Actions"
+              />
+            </Dropdown>
+          }
+        >
           <Space>
             <InboxOutlined />
-            <Typography.Text strong className="truncate">{record.repositoryName}</Typography.Text>
+            <Typography.Text strong className="truncate">
+              {record.repositoryName}
+            </Typography.Text>
           </Space>
           <Tag>{record.teamName}</Tag>
         </MobileCard>

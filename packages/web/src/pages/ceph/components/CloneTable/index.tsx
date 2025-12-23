@@ -241,6 +241,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   );
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: CephRbdClone) => {
       const onExpand = () => {
         setExpandedRowKeys((prev) =>
@@ -270,7 +271,11 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
               aria-label={t('common.remote')}
             />
           </Tooltip>
-          <Dropdown menu={{ items: getCloneMenuItems(record) }} trigger={['click']} placement="bottomRight">
+          <Dropdown
+            menu={{ items: getCloneMenuItems(record) }}
+            trigger={['click']}
+            placement="bottomRight"
+          >
             <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
           </Dropdown>
         </Space>

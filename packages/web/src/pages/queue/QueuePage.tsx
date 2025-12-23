@@ -1,5 +1,17 @@
 import React, { useCallback, useMemo } from 'react';
-import { Badge, Button, Dropdown, Flex, Modal, Space, Tabs, Tag, Tooltip, Typography, type MenuProps } from 'antd';
+import {
+  Badge,
+  Button,
+  Dropdown,
+  Flex,
+  Modal,
+  Space,
+  Tabs,
+  Tag,
+  Tooltip,
+  Typography,
+  type MenuProps,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { QueueFilters, type QueueStatistics, useQueueItems } from '@/api/queries/queue';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -34,13 +46,20 @@ import type { Dayjs } from 'dayjs';
 
 const getStatusColor = (status: string): string => {
   switch (status?.toLowerCase()) {
-    case 'pending': return 'blue';
-    case 'assigned': return 'cyan';
-    case 'processing': return 'orange';
-    case 'completed': return 'green';
-    case 'failed': return 'red';
-    case 'cancelled': return 'default';
-    default: return 'default';
+    case 'pending':
+      return 'blue';
+    case 'assigned':
+      return 'cyan';
+    case 'processing':
+      return 'orange';
+    case 'completed':
+      return 'green';
+    case 'failed':
+      return 'red';
+    case 'cancelled':
+      return 'default';
+    default:
+      return 'default';
   }
 };
 
@@ -262,24 +281,54 @@ const QueuePage: React.FC = () => {
   });
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: QueueItem) => {
       const canCancel = ['PENDING', 'ASSIGNED'].includes(record.status?.toUpperCase() || '');
       const menuItems: MenuProps['items'] = [
-        ...(record.taskId ? [{ key: 'trace', label: t('common:actions.viewDetails'), icon: <HistoryOutlined />, onClick: () => handleViewTrace(record.taskId!) }] : []),
-        ...(canCancel && record.taskId ? [{ key: 'cancel', label: t('common:actions.cancel'), icon: <CloseCircleOutlined />, danger: true, onClick: () => handleCancelQueueItem(record.taskId!) }] : []),
+        ...(record.taskId
+          ? [
+              {
+                key: 'trace',
+                label: t('common:actions.viewDetails'),
+                icon: <HistoryOutlined />,
+                onClick: () => handleViewTrace(record.taskId!),
+              },
+            ]
+          : []),
+        ...(canCancel && record.taskId
+          ? [
+              {
+                key: 'cancel',
+                label: t('common:actions.cancel'),
+                icon: <CloseCircleOutlined />,
+                danger: true,
+                onClick: () => handleCancelQueueItem(record.taskId!),
+              },
+            ]
+          : []),
       ];
       const truncatedTaskId = record.taskId ? `${record.taskId.substring(0, 8)}...` : '';
 
       return (
-        <MobileCard actions={
-          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
-          </Dropdown>
-        }>
+        <MobileCard
+          actions={
+            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+              <Button
+                type="text"
+                size="small"
+                icon={<MoreOutlined />}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Actions"
+              />
+            </Dropdown>
+          }
+        >
           <Flex gap={8} align="center" wrap>
             <Space size="small">
               <RocketOutlined />
-              <Typography.Text strong className="truncate">{truncatedTaskId}</Typography.Text>
+              <Typography.Text strong className="truncate">
+                {truncatedTaskId}
+              </Typography.Text>
             </Space>
             <Tag color={getStatusColor(record.status ?? '')}>{record.status}</Tag>
           </Flex>

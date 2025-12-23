@@ -4,7 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { CephCluster } from '@/api/queries/ceph';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { ExpandIcon } from '@/components/common/ExpandIcon';
-import { buildDeleteMenuItem, buildDivider, buildEditMenuItem, buildTraceMenuItem } from '@/components/common/menuBuilders';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildEditMenuItem,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
 import { MobileCard } from '@/components/common/MobileCard';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useDialogState, useExpandableTable, useTraceModal } from '@/hooks';
@@ -113,6 +118,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   );
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: CephCluster) => {
       const isExpanded = expandedRowKeys.includes(record.clusterName);
 
@@ -144,7 +150,12 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
             }}
             trigger={['click']}
           >
-            <Button type="text" size="small" icon={<FunctionOutlined />} aria-label={t('common:actions.remote')} />
+            <Button
+              type="text"
+              size="small"
+              icon={<FunctionOutlined />}
+              aria-label={t('common:actions.remote')}
+            />
           </Dropdown>
           <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
             <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
@@ -169,7 +180,16 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
         </MobileCard>
       );
     },
-    [t, expandedRowKeys, onEditCluster, handleManageMachines, handleAuditTrace, handleDelete, handleFunctionRun, handleToggleRow]
+    [
+      t,
+      expandedRowKeys,
+      onEditCluster,
+      handleManageMachines,
+      handleAuditTrace,
+      handleDelete,
+      handleFunctionRun,
+      handleToggleRow,
+    ]
   );
 
   const expandedRowRender = useCallback(

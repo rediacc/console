@@ -250,7 +250,9 @@ const UserSessionsTab: React.FC = () => {
     actionsColumn,
   ];
 
+  /* eslint-disable react-hooks/preserve-manual-memoization */
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: UserRequest) => {
       const childCount = filteredSessions.filter(
         (session) => session.parentRequestId === record.requestId
@@ -320,6 +322,7 @@ const UserSessionsTab: React.FC = () => {
     },
     [t, user?.email, filteredSessions, handleTerminateSession, deleteUserRequestMutation.isPending]
   );
+  /* eslint-enable react-hooks/preserve-manual-memoization */
 
   return (
     <Flex vertical gap={16} data-testid="user-sessions-tab">

@@ -385,6 +385,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   };
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name, react-hooks/preserve-manual-memoization
     () => (record: CephRbdImage) => {
       const actions = (
         <Space>
@@ -406,7 +407,11 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
               aria-label={t('common.remote')}
             />
           </Tooltip>
-          <Dropdown menu={{ items: getImageMenuItems(record) }} trigger={['click']} placement="bottomRight">
+          <Dropdown
+            menu={{ items: getImageMenuItems(record) }}
+            trigger={['click']}
+            placement="bottomRight"
+          >
             <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
           </Dropdown>
         </Space>

@@ -1,5 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Button, Dropdown, Flex, Input, Space, Table, Tag, Tooltip, Typography, type MenuProps } from 'antd';
+import {
+  Alert,
+  Button,
+  Dropdown,
+  Flex,
+  Input,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+  type MenuProps,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -563,6 +575,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   };
 
   const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
     () => (record: RepositoryTableRow) => {
       const isRepoFork = isFork(record);
 
@@ -595,7 +608,8 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           label: t('common:actions.delete'),
           icon: <DeleteOutlined />,
           danger: true,
-          onClick: () => (isRepoFork ? confirmForkDeletion(record) : confirmRepositoryDeletion(record)),
+          onClick: () =>
+            isRepoFork ? confirmForkDeletion(record) : confirmRepositoryDeletion(record),
         },
       ];
 
@@ -618,7 +632,11 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       );
 
       return (
-        <MobileCard onClick={handleCardClick} className={isRepoFork ? 'ml-4' : undefined} actions={actions}>
+        <MobileCard
+          onClick={handleCardClick}
+          className={isRepoFork ? 'ml-4' : undefined}
+          actions={actions}
+        >
           <Space>
             <InboxOutlined />
             <Typography.Text strong className="truncate">
