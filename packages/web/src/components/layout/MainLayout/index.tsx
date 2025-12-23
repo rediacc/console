@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ProLayout } from '@ant-design/pro-components';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Flex } from 'antd';
+import { Button, Flex, Grid } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -41,6 +41,8 @@ const MainLayout: React.FC = () => {
   const message = useMessage();
   const { data: companyData } = useCompanyInfo();
   const { trackUserAction } = useTelemetry();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.sm;
 
   // Update company data when it changes
   useEffect(() => {
@@ -159,7 +161,7 @@ const MainLayout: React.FC = () => {
         onCollapse={handleCollapse}
         collapsedButtonRender={false}
         // Branding
-        logo={logo}
+        logo={collapsed ? false : logo}
         title={false}
         onMenuHeaderClick={() => {
           trackUserAction('navigation', '/dashboard', {
@@ -237,7 +239,7 @@ const MainLayout: React.FC = () => {
                 src={logo}
                 alt="Rediacc Logo"
                 // eslint-disable-next-line no-restricted-syntax
-                style={{ height: 32, width: 'auto', objectFit: 'contain' }}
+                style={{ height: isMobile ? 24 : 32, width: 'auto', objectFit: 'contain' }}
               />
             </Flex>
           </Flex>

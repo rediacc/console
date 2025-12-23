@@ -699,6 +699,7 @@ const InfrastructurePage: React.FC = () => {
             </Button>,
           ]}
           className={ModalSize.Medium}
+          centered
         >
           {(() => {
             const bridge = bridgeCredentialsModal.state.data;
@@ -821,6 +822,7 @@ const InfrastructurePage: React.FC = () => {
               {t('bridges.resetAuthConfirm')}
             </Button>,
           ]}
+          centered
         >
           {resetAuthModal.state.data && (
             <Flex vertical gap={16} className="w-full">

@@ -292,7 +292,7 @@ const QueuePage: React.FC = () => {
           ? [
               {
                 key: 'trace',
-                label: t('common:actions.viewDetails'),
+                label: t('common:actions.trace'),
                 icon: <HistoryOutlined />,
                 onClick: () => handleViewTrace(record.taskId!),
               },

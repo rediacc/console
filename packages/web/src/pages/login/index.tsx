@@ -607,6 +607,7 @@ const LoginPage: React.FC = () => {
         }}
         footer={null}
         className={ModalSize.Medium}
+        centered
       >
         <Flex vertical gap={16} className="w-full">
           <Alert

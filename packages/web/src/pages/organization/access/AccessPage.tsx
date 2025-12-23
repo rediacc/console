@@ -384,6 +384,7 @@ const AccessPage: React.FC = () => {
         confirmLoading={createGroupMutation.isPending}
         okButtonProps={{ 'data-testid': 'modal-create-permission-group-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-create-permission-group-cancel' }}
+        centered
       >
         <Input
           placeholder={t('access.modals.groupPlaceholder')}
@@ -404,6 +405,7 @@ const AccessPage: React.FC = () => {
         }}
         footer={null}
         className={ModalSize.Large}
+        centered
       >
         <Tabs
           items={[
@@ -507,6 +509,7 @@ const AccessPage: React.FC = () => {
         confirmLoading={assignUserMutation.isPending}
         okButtonProps={{ 'data-testid': 'modal-assign-user-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-assign-user-cancel' }}
+        centered
       >
         <Select
           placeholder={t('access.modals.userPlaceholder')}

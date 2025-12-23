@@ -279,6 +279,7 @@ const TeamsPage: React.FC = () => {
         }}
         footer={null}
         className={ModalSize.Large}
+        centered
       >
         <Tabs
           items={[

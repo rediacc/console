@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Alert,
   Button,
@@ -37,13 +37,15 @@ import { useAppSelector } from '@/store/store';
 import { showMessage } from '@/utils/messages';
 import {
   CheckCircleOutlined,
+  ContainerOutlined,
   DeleteOutlined,
   DesktopOutlined,
   DisconnectOutlined,
+  EyeOutlined,
   FunctionOutlined,
   InboxOutlined,
+  PauseCircleOutlined,
   PlayCircleOutlined,
-  StopOutlined,
 } from '@/utils/optimizedIcons';
 import { useRepositoryColumns, useSystemContainerColumns } from './columns';
 import { RepositoryActionsMenu } from './components/RepositoryActionsMenu';
@@ -562,6 +564,11 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           onRenameRepository={handleRenameRepo}
           onDeleteGrandRepository={confirmRepositoryDeletion}
           onRepositoryClick={onRepositoryClick}
+          onViewContainers={(repo) =>
+            navigate(`/machines/${machine.machineName}/repositories/${repo.name}/containers`, {
+              state: { machine, Repository: repo },
+            })
+          }
           onCreateRepository={onCreateRepository}
           t={t}
         />
@@ -569,15 +576,30 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     }),
   ];
 
-  const mobileRender = useMemo(
-    // eslint-disable-next-line react/display-name
-    () => (record: RepositoryTableRow) => {
+  const mobileRender = useCallback(
+    (record: RepositoryTableRow) => {
       const repositoryData = teamRepositories.find(
         (r) => r.repositoryName === record.name && r.repositoryTag === record.repositoryTag
       );
       const isRepoFork = repositoryData ? coreIsFork(repositoryData) : false;
 
       const menuItems: MenuProps['items'] = [
+        {
+          key: 'viewContainers',
+          label: t('resources:containers.containers'),
+          icon: <ContainerOutlined />,
+          onClick: () =>
+            navigate(`/machines/${machine.machineName}/repositories/${record.name}/containers`, {
+              state: { machine, Repository: record },
+            }),
+        },
+        {
+          key: 'viewDetails',
+          label: t('resources:audit.details'),
+          icon: <EyeOutlined />,
+          onClick: () => onRepositoryClick?.(record),
+        },
+        { type: 'divider' as const },
         {
           key: 'up',
           label: t('functions:functions.up.name'),
@@ -589,7 +611,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
               {
                 key: 'down',
                 label: t('functions:functions.down.name'),
-                icon: <StopOutlined />,
+                icon: <PauseCircleOutlined />,
                 onClick: () => executeQuickAction(record, 'down', 4),
               },
             ]
@@ -611,20 +633,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         },
       ];
 
-      const handleCardClick = () => {
-        navigate(`/machines/${machine.machineName}/repositories/${record.name}/containers`, {
-          state: { machine, Repository: record },
-        });
-      };
-
       const actions = <ResourceActionsDropdown menuItems={menuItems} />;
 
       return (
-        <MobileCard
-          onClick={handleCardClick}
-          className={isRepoFork ? 'ml-4' : undefined}
-          actions={actions}
-        >
+        <MobileCard className={isRepoFork ? 'ml-4' : undefined} actions={actions}>
           <Space>
             <InboxOutlined />
             <Typography.Text strong className="truncate">
@@ -657,6 +669,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       confirmForkDeletion,
       confirmRepositoryDeletion,
       teamRepositories,
+      onRepositoryClick,
     ]
   );
 
@@ -776,18 +789,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           pagination={false}
           emptyDescription={t('resources:repositories.noRepositories')}
           mobileRender={mobileRender}
-          onRow={(record) => ({
-            onClick: (e: React.MouseEvent<HTMLElement>) => {
-              const target = e.target as HTMLElement;
-              if (target.closest('button') || target.closest('.ant-dropdown')) {
-                return;
-              }
-
-              navigate(`/machines/${machine.machineName}/repositories/${record.name}/containers`, {
-                state: { machine, Repository: record },
-              });
-            },
-          })}
         />
       </Flex>
 

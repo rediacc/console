@@ -156,6 +156,7 @@ const ProfilePage: React.FC = () => {
         onCancel={closeChangePassword}
         footer={null}
         className={ModalSize.Medium}
+        centered
       >
         <Form
           form={changePasswordForm}

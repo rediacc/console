@@ -191,34 +191,12 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
   const getRowClassName = (container: Container) => {
     const classNames = ['repository-container-row'];
 
-    if (onContainerClick) {
-      classNames.push('repository-container-row--clickable');
-    }
-
     if (highlightedContainer?.id === container.id) {
       classNames.push('repository-container-row--selected');
     }
 
     return classNames.join(' ');
   };
-
-  const buildRowHandlers = (container: Container) => ({
-    className: getRowClassName(container),
-
-    onClick: (e: React.MouseEvent<HTMLElement>) => {
-      if (!onContainerClick) {
-        return;
-      }
-
-      const target = e.target as HTMLElement;
-
-      if (target.closest('button') || target.closest('.ant-dropdown')) {
-        return;
-      }
-
-      onContainerClick(container);
-    },
-  });
 
   // Find repository data for credentials - must match both name AND tag to distinguish forks
 
@@ -884,7 +862,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         pagination={false}
         emptyDescription={t('resources:containers.noContainers')}
         mobileRender={containerMobileRender}
-        onRow={(container) => buildRowHandlers(container)}
+        onRow={(container) => ({ className: getRowClassName(container) })}
         data-testid="regular-containers-table"
       />
 
@@ -902,7 +880,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
             rowKey="id"
             pagination={false}
             mobileRender={containerMobileRender}
-            onRow={(container) => buildRowHandlers(container)}
+            onRow={(container) => ({ className: getRowClassName(container) })}
             data-testid="plugin-containers-table"
           />
         </Flex>

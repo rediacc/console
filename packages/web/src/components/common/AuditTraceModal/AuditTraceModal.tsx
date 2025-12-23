@@ -209,6 +209,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       footer={null}
       destroyOnClose
       data-testid="audit-trace-modal"
+      centered
     >
       {isLoading ? (
         <LoadingWrapper

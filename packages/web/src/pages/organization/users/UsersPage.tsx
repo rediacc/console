@@ -376,6 +376,7 @@ const UsersPage: React.FC = () => {
           userForm.reset();
         }}
         footer={null}
+        centered
       >
         <ResourceForm
           form={userForm}
@@ -403,6 +404,7 @@ const UsersPage: React.FC = () => {
         confirmLoading={assignUserPermissionsMutation.isPending}
         okButtonProps={{ 'data-testid': 'modal-assign-permissions-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-assign-permissions-cancel' }}
+        centered
       >
         <Form layout="vertical">
           <Form.Item label={t('users.modals.permissionGroupLabel')}>
