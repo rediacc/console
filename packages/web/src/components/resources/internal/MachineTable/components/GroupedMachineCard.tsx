@@ -58,7 +58,8 @@ export const GroupedMachineCard: React.FC<GroupedMachineCardProps> = ({
           {iconMap[groupBy]}
           <Typography.Text strong>{groupKey}</Typography.Text>
           <Tag bordered={false}>
-            {machines.length} {machines.length === 1 ? t('machines:machine') : t('machines:machines')}
+            {machines.length}{' '}
+            {machines.length === 1 ? t('machines:machine') : t('machines:machines')}
           </Tag>
         </Flex>
       }

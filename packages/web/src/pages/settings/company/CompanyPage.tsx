@@ -712,7 +712,13 @@ const CompanyPage: React.FC = () => {
         </Form>
       </Modal>
 
-      <Modal open={successModal.isOpen} closable={false} footer={null} className={ModalSize.Medium} centered>
+      <Modal
+        open={successModal.isOpen}
+        closable={false}
+        footer={null}
+        className={ModalSize.Medium}
+        centered
+      >
         <Result
           status="success"
           title={tSystem(
