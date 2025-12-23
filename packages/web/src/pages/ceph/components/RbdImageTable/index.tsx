@@ -8,7 +8,6 @@ import {
   CopyOutlined,
   DeleteOutlined,
   DesktopOutlined,
-  EllipsisOutlined,
   ExpandOutlined,
   FileImageOutlined,
   InfoCircleOutlined,
@@ -29,8 +28,6 @@ import {
   useDeleteCephRbdImage,
   useUpdateCephPoolVault,
 } from '@/api/queries/cephMutations';
-import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
-import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
 import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
@@ -40,9 +37,9 @@ import { useDialogState, useExpandableTable, useMessage, useQueueTraceModal } fr
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMachineReassignmentModal';
-import { createSorter } from '@/platform';
 import type { ImageFormValues as FullImageFormValues } from '@rediacc/shared/types';
-import SnapshotTable from './SnapshotTable';
+import { buildRbdImageColumns } from './columns';
+import SnapshotTable from '../SnapshotTable';
 
 interface RbdImageTableProps {
   pool: CephPool;
@@ -309,83 +306,15 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     [t, handleRunFunction]
   );
 
-  const columns = [
-    {
-      title: t('images.name'),
-      dataIndex: 'imageName',
-      key: 'imageName',
-      sorter: createSorter<CephRbdImage>('imageName'),
-      render: (text: string, record: CephRbdImage) => (
-        <Space data-testid={`rbd-image-name-${record.imageName}`}>
-          <FileImageOutlined />
-          <Typography.Text>{text}</Typography.Text>
-          {record.vaultContent && (
-            <Tooltip title={t('common.hasVault')}>
-              <Tag data-testid={`rbd-vault-tag-${record.imageName}`}>{t('common.vault')}</Tag>
-            </Tooltip>
-          )}
-        </Space>
-      ),
-    },
-    createTruncatedColumn<CephRbdImage>({
-      title: t('images.guid'),
-      dataIndex: 'imageGuid',
-      key: 'imageGuid',
-      width: 300,
-      maxLength: 8,
-      sorter: createSorter<CephRbdImage>('imageGuid'),
-      renderText: (value) => value || '',
-    }),
-    {
-      title: t('images.assignedMachine'),
-      dataIndex: 'machineName',
-      key: 'machineName',
-      width: 200,
-      sorter: createSorter<CephRbdImage>('machineName'),
-      render: (machineName: string, record: CephRbdImage) =>
-        machineName ? (
-          <Tag
-            icon={<CloudServerOutlined />}
-            bordered={false}
-            data-testid={`rbd-machine-tag-${record.imageName}`}
-          >
-            {machineName}
-          </Tag>
-        ) : (
-          <Tag data-testid={`rbd-machine-none-${record.imageName}`} bordered={false}>
-            {t('common.none')}
-          </Tag>
-        ),
-    },
-    createActionColumn<CephRbdImage>({
-      width: 150,
-      renderActions: (record) => (
-        <ActionButtonGroup
-          buttons={[
-            {
-              type: 'remote',
-              icon: <CloudUploadOutlined />,
-              tooltip: 'ceph:common.remote',
-              onClick: () => handleRunFunction('ceph_rbd_info', record),
-              testIdSuffix: 'remote-button',
-            },
-            {
-              type: 'actions',
-              icon: <EllipsisOutlined />,
-              tooltip: 'ceph:common.moreActions',
-              dropdownItems: getImageMenuItems(record),
-              variant: 'default',
-              testIdSuffix: 'actions-dropdown',
-            },
-          ]}
-          record={record}
-          idField="imageName"
-          testIdPrefix="rbd"
-          t={t}
-        />
-      ),
-    }),
-  ];
+  const columns = useMemo(
+    () =>
+      buildRbdImageColumns({
+        t,
+        handleRunFunction,
+        getImageMenuItems,
+      }),
+    [t, handleRunFunction, getImageMenuItems]
+  );
 
   const handleExpand = useCallback(
     (image: CephRbdImage) => {

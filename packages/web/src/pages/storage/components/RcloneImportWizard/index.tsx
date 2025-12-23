@@ -1,22 +1,18 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   Button,
   Checkbox,
   Flex,
   Modal,
   Space,
   Steps,
-  Table,
   Tag,
   Tooltip,
   Typography,
-  Upload,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useCreateStorage, useStorage } from '@/api/queries/storage';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
-import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { createSorter } from '@/platform';
 import {
   CheckCircleOutlined,
@@ -24,161 +20,19 @@ import {
   CloseCircleOutlined,
   CloudOutlined,
   InfoCircleOutlined,
-  UploadOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
+import { ConnectionTest } from './ConnectionTest';
+import { ImportProgress } from './ImportProgress';
+import { StepConfigForm } from './StepConfigForm';
+import type {
+  ImportStatus,
+  RcloneConfig,
+  RcloneConfigFields,
+  RcloneImportWizardProps,
+} from './types';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload';
-import type { TFunction } from 'i18next';
-
-const { Text, Paragraph } = Typography;
-
-type RcloneConfigFields = {
-  [key: string]: string | number | boolean | Record<string, unknown> | undefined;
-  type?: string;
-};
-
-interface RcloneConfig {
-  name: string;
-  type: string;
-  config: RcloneConfigFields;
-}
-
-interface ImportStatus {
-  name: string;
-  status: 'pending' | 'success' | 'error' | 'skipped';
-  message?: string;
-  exists?: boolean;
-  selected?: boolean;
-}
-
-interface RcloneImportWizardProps {
-  open: boolean;
-  onClose: () => void;
-  teamName: string;
-  onImportComplete?: () => void;
-}
-
-type WizardTranslator = TFunction<'resources' | 'common'>;
-
-interface UploadStepProps {
-  t: WizardTranslator;
-  fileList: UploadFile[];
-  parsingError: string | null;
-  onBeforeUpload: (file: File) => Promise<boolean>;
-  onFileListChange: (files: UploadFile[]) => void;
-}
-
-const UploadStep: React.FC<UploadStepProps> = ({
-  t,
-  fileList,
-  parsingError,
-  onBeforeUpload,
-  onFileListChange,
-}) => (
-  <Flex vertical>
-    <Alert
-      message={t('resources:storage.import.instructions')}
-      description={
-        <Flex vertical>
-          <Paragraph>{t('resources:storage.import.instructionsDetail')}</Paragraph>
-          <Paragraph>
-            <Text code>rclone config file</Text>
-          </Paragraph>
-          <Paragraph>{t('resources:storage.import.uploadPrompt')}</Paragraph>
-        </Flex>
-      }
-      type="info"
-      showIcon
-      icon={<InfoCircleOutlined />}
-    />
-
-    <Upload.Dragger
-      accept=".conf"
-      fileList={fileList}
-      beforeUpload={onBeforeUpload}
-      onChange={({ fileList }) => onFileListChange(fileList)}
-      maxCount={1}
-      data-testid="rclone-wizard-upload-dragger"
-    >
-      <p className="ant-upload-drag-icon">
-        <UploadOutlined />
-      </p>
-      <p className="ant-upload-text">{t('resources:storage.import.dragDropText')}</p>
-      <p className="ant-upload-hint">{t('resources:storage.import.supportedFormats')}</p>
-    </Upload.Dragger>
-
-    {parsingError && <Alert message={parsingError} type="error" showIcon />}
-  </Flex>
-);
-
-interface SelectionStepProps {
-  t: WizardTranslator;
-  importStatuses: ImportStatus[];
-  columns: ColumnsType<ImportStatus>;
-}
-
-const SelectionStep: React.FC<SelectionStepProps> = ({ t, importStatuses, columns }) => (
-  <Flex vertical>
-    <Alert
-      message={t('resources:storage.import.selectStorages')}
-      description={t('resources:storage.import.selectDescription')}
-      type="info"
-      showIcon
-    />
-
-    <Table<ImportStatus>
-      dataSource={importStatuses}
-      columns={columns}
-      rowKey="name"
-      pagination={false}
-      size="small"
-      data-testid="rclone-wizard-config-table"
-    />
-  </Flex>
-);
-
-interface ResultStepProps {
-  t: WizardTranslator;
-  importStatuses: ImportStatus[];
-  columns: ColumnsType<ImportStatus>;
-  isImporting: boolean;
-}
-
-const ResultStep: React.FC<ResultStepProps> = ({ t, importStatuses, columns, isImporting }) => (
-  <Flex vertical>
-    {isImporting ? (
-      <Flex align="center" justify="center">
-        <LoadingWrapper
-          loading
-          centered
-          minHeight={160}
-          tip={t('resources:storage.import.importing')}
-        >
-          <Flex />
-        </LoadingWrapper>
-      </Flex>
-    ) : (
-      <>
-        <Alert
-          message={t('resources:storage.import.complete')}
-          description={t('resources:storage.import.completeDescription')}
-          type="success"
-          showIcon
-        />
-
-        <Table<ImportStatus>
-          dataSource={importStatuses}
-          columns={columns}
-          rowKey="name"
-          pagination={false}
-          size="small"
-          data-testid="rclone-wizard-results-table"
-        />
-      </>
-    )}
-  </Flex>
-);
 
 const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   open,
@@ -551,7 +405,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
     switch (currentStep) {
       case 0:
         return (
-          <UploadStep
+          <StepConfigForm
             t={t}
             fileList={fileList}
             parsingError={parsingError}
@@ -560,10 +414,10 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
           />
         );
       case 1:
-        return <SelectionStep t={t} importStatuses={importStatuses} columns={columns} />;
+        return <ConnectionTest t={t} importStatuses={importStatuses} columns={columns} />;
       case 2:
         return (
-          <ResultStep
+          <ImportProgress
             t={t}
             importStatuses={importStatuses}
             columns={columns}

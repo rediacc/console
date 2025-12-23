@@ -1,7 +1,6 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Alert,
-  Breadcrumb,
   Button,
   Card,
   Drawer,
@@ -26,6 +25,9 @@ import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { useRepositoryCreation } from '@/hooks/useRepositoryCreation';
 import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal';
 import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal';
+import { ResourcePageLayout } from '@/pages/resources/shared/ResourcePageLayout';
+import { ContainerData, RepositoryRowData } from '@/pages/resources/shared/types';
+import { useResourcePageState } from '@/pages/resources/shared/useResourcePageState';
 import { Machine, PluginContainer, Repository } from '@/types';
 import {
   CloudDownloadOutlined,
@@ -35,43 +37,9 @@ import {
   ReloadOutlined,
 } from '@/utils/optimizedIcons';
 
-interface ContainerData {
-  id: string;
-  name: string;
-  image: string;
-  command: string;
-  created: string;
-  status: string;
-  state: string;
-  ports: string;
-  port_mappings?: Array<{
-    host?: string;
-    host_port?: string;
-    container_port: string;
-    protocol: string;
-  }>;
-  labels: string;
-  mounts: string;
-  networks: string;
-  size: string;
-  repository: string;
-  cpu_percent: string;
-  memory_usage: string;
-  memory_percent: string;
-  net_io: string;
-  block_io: string;
-  pids: string;
-}
-
 type MachineReposLocationState = {
   machine?: Machine;
 } | null;
-
-type RepositoryRowData = {
-  name: string;
-  repositoryTag?: string;
-  originalGuid?: string;
-};
 
 const MachineReposPage: React.FC = () => {
   const { machineName } = useParams<{ machineName: string }>();
@@ -84,17 +52,6 @@ const MachineReposPage: React.FC = () => {
 
   // Use shared panel width hook (33% of window, min 300px, max 700px)
   const panelWidth = usePanelWidth();
-
-  // State for selected resource (Repository or container) and panel
-  const [selectedResource, setSelectedResource] = useState<
-    Repository | ContainerData | PluginContainer | null
-  >(null);
-
-  // Refresh key for forcing MachineRepositoryTable updates
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  // Auto-load ref (not state to avoid re-renders)
-  const hasInitiallyLoadedRef = useRef(false);
 
   // Queue trace modal state
   const queueTrace = useQueueTraceModal();
@@ -142,21 +99,20 @@ const MachineReposPage: React.FC = () => {
     machine?.teamName ? [machine.teamName] : undefined
   );
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshKey((prev) => prev + 1);
-    // Refetch both repositories AND machines to get updated vaultStatus
+  const refreshData = useCallback(async () => {
     await Promise.all([refetchRepos(), refetchMachines()]);
   }, [refetchRepos, refetchMachines]);
 
-  // Auto-refresh data on mount (query existing data, no queue items)
-  useEffect(() => {
-    if (machine && !hasInitiallyLoadedRef.current) {
-      hasInitiallyLoadedRef.current = true;
-      // Just refresh existing data from database
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional initial data load on mount
-      handleRefresh();
-    }
-  }, [machine, handleRefresh]);
+  const {
+    selectedResource,
+    setSelectedResource,
+    refreshKey,
+    handleRefresh,
+    handlePanelClose,
+  } = useResourcePageState<Repository | ContainerData | PluginContainer>(
+    refreshData,
+    !!machine
+  );
 
   const handleBackToMachines = () => {
     navigate('/machines');
@@ -233,10 +189,6 @@ const MachineReposPage: React.FC = () => {
     setSelectedResource(container as PluginContainer | ContainerData);
   };
 
-  const handlePanelClose = () => {
-    setSelectedResource(null);
-  };
-
   // Loading state
   if (machinesLoading && !machine) {
     return (
@@ -278,139 +230,141 @@ const MachineReposPage: React.FC = () => {
     );
   }
 
+  const breadcrumbItems = [
+    {
+      title: <Typography.Text>{t('machines:machines')}</Typography.Text>,
+      onClick: () => navigate('/machines'),
+    },
+    {
+      title: machine?.machineName || machineName,
+    },
+    {
+      title: t('resources:repositories.repositories'),
+    },
+  ];
+
+  const header = (
+    <Flex align="center" gap={8} wrap>
+      <Tooltip title={t('machines:backToMachines')}>
+        <Button
+          type="text"
+          icon={<DoubleLeftOutlined />}
+          onClick={handleBackToMachines}
+          aria-label={t('machines:backToMachines')}
+          data-testid="machine-repositories-back-button"
+        />
+      </Tooltip>
+      <Typography.Title level={4}>
+        <Space>
+          <DesktopOutlined />
+          <Typography.Text>
+            {t('machines:machine')}: {machine?.machineName}
+          </Typography.Text>
+        </Space>
+      </Typography.Title>
+    </Flex>
+  );
+
+  const tags = (
+    <Flex align="center" wrap>
+      <Tag>
+        {t('machines:team')}: {machine?.teamName}
+      </Tag>
+      <Tag>
+        {t('machines:bridge')}: {machine?.bridgeName}
+      </Tag>
+      {machine?.regionName && (
+        <Tag>
+          {t('machines:region')}: {machine.regionName}
+        </Tag>
+      )}
+    </Flex>
+  );
+
+  const actions = (
+    <>
+      <Tooltip title={t('machines:createRepository')}>
+        <Button
+          type="text"
+          icon={<PlusOutlined />}
+          onClick={handleCreateRepo}
+          data-testid="machine-repositories-create-repo-button"
+        />
+      </Tooltip>
+      <Tooltip title={t('functions:functions.pull.name')}>
+        <Button
+          type="text"
+          icon={<CloudDownloadOutlined />}
+          onClick={handlePull}
+          data-testid="machine-repositories-pull-button"
+        />
+      </Tooltip>
+      <Tooltip title={t('machines:checkAndRefresh')}>
+        <Button
+          type="text"
+          icon={<ReloadOutlined />}
+          onClick={() => connectivityTest.open()}
+          disabled={!machine}
+          data-testid="machine-repositories-test-and-refresh-button"
+          aria-label={t('machines:checkAndRefresh')}
+        />
+      </Tooltip>
+    </>
+  );
+
+  const content = machine ? (
+    <MachineRepositoryTable
+      machine={machine}
+      key={`${machine.machineName}-${refreshKey}`}
+      refreshKey={refreshKey}
+      onActionComplete={handleRefresh}
+      onRepositoryClick={handleRepositoryClick}
+      onContainerClick={handleContainerClick}
+      onQueueItemCreated={(taskId, machineName) => {
+        queueTrace.open(taskId, machineName ?? undefined);
+      }}
+    />
+  ) : null;
+
+  const drawer = (
+    <Drawer
+      open={!!selectedResource}
+      onClose={handlePanelClose}
+      width={panelWidth}
+      placement="right"
+      mask={true}
+      data-testid="machine-repositories-drawer"
+    >
+      {selectedResource &&
+        ('repositoryName' in selectedResource ? (
+          <RepositoryDetailPanel
+            repository={selectedResource as Repository}
+            visible={true}
+            onClose={handlePanelClose}
+            splitView
+          />
+        ) : (
+          <ContainerDetailPanel
+            container={selectedResource as unknown as ContainerData}
+            visible={true}
+            onClose={handlePanelClose}
+            splitView
+          />
+        ))}
+    </Drawer>
+  );
+
   return (
-    <Flex vertical>
-      <Card>
-        <Flex vertical>
-          <Flex vertical>
-            <Breadcrumb
-              items={[
-                {
-                  title: <Typography.Text>{t('machines:machines')}</Typography.Text>,
-                  onClick: () => navigate('/machines'),
-                },
-                {
-                  title: machine?.machineName || machineName,
-                },
-                {
-                  title: t('resources:repositories.repositories'),
-                },
-              ]}
-              data-testid="machine-repositories-breadcrumb"
-            />
-
-            <Flex align="center" justify="space-between" wrap>
-              <Flex vertical className="flex-1 min-w-0">
-                <Flex align="center" gap={8} wrap>
-                  <Tooltip title={t('machines:backToMachines')}>
-                    <Button
-                      type="text"
-                      icon={<DoubleLeftOutlined />}
-                      onClick={handleBackToMachines}
-                      aria-label={t('machines:backToMachines')}
-                      data-testid="machine-repositories-back-button"
-                    />
-                  </Tooltip>
-                  <Typography.Title level={4}>
-                    <Space>
-                      <DesktopOutlined />
-                      <Typography.Text>
-                        {t('machines:machine')}: {machine?.machineName}
-                      </Typography.Text>
-                    </Space>
-                  </Typography.Title>
-                </Flex>
-                <Flex align="center" wrap>
-                  <Tag>
-                    {t('machines:team')}: {machine?.teamName}
-                  </Tag>
-                  <Tag>
-                    {t('machines:bridge')}: {machine?.bridgeName}
-                  </Tag>
-                  {machine?.regionName && (
-                    <Tag>
-                      {t('machines:region')}: {machine.regionName}
-                    </Tag>
-                  )}
-                </Flex>
-              </Flex>
-
-              <Flex align="center" wrap>
-                <Tooltip title={t('machines:createRepository')}>
-                  <Button
-                    type="text"
-                    icon={<PlusOutlined />}
-                    onClick={handleCreateRepo}
-                    data-testid="machine-repositories-create-repo-button"
-                  />
-                </Tooltip>
-                <Tooltip title={t('functions:functions.pull.name')}>
-                  <Button
-                    type="text"
-                    icon={<CloudDownloadOutlined />}
-                    onClick={handlePull}
-                    data-testid="machine-repositories-pull-button"
-                  />
-                </Tooltip>
-                <Tooltip title={t('machines:checkAndRefresh')}>
-                  <Button
-                    type="text"
-                    icon={<ReloadOutlined />}
-                    onClick={() => connectivityTest.open()}
-                    disabled={!machine}
-                    data-testid="machine-repositories-test-and-refresh-button"
-                    aria-label={t('machines:checkAndRefresh')}
-                  />
-                </Tooltip>
-              </Flex>
-            </Flex>
-          </Flex>
-
-          <Flex className="flex-1 overflow-hidden relative">
-            <Flex vertical className="w-full h-full overflow-auto">
-              {machine && (
-                <MachineRepositoryTable
-                  machine={machine}
-                  key={`${machine.machineName}-${refreshKey}`}
-                  refreshKey={refreshKey}
-                  onActionComplete={handleRefresh}
-                  onRepositoryClick={handleRepositoryClick}
-                  onContainerClick={handleContainerClick}
-                  onQueueItemCreated={(taskId, machineName) => {
-                    queueTrace.open(taskId, machineName ?? undefined);
-                  }}
-                />
-              )}
-            </Flex>
-
-            <Drawer
-              open={!!selectedResource}
-              onClose={handlePanelClose}
-              width={panelWidth}
-              placement="right"
-              mask={true}
-              data-testid="machine-repositories-drawer"
-            >
-              {selectedResource &&
-                ('repositoryName' in selectedResource ? (
-                  <RepositoryDetailPanel
-                    repository={selectedResource as Repository}
-                    visible={true}
-                    onClose={handlePanelClose}
-                    splitView
-                  />
-                ) : (
-                  <ContainerDetailPanel
-                    container={selectedResource as unknown as ContainerData}
-                    visible={true}
-                    onClose={handlePanelClose}
-                    splitView
-                  />
-                ))}
-            </Drawer>
-          </Flex>
-        </Flex>
-      </Card>
+    <>
+      <ResourcePageLayout
+        breadcrumbItems={breadcrumbItems}
+        breadcrumbTestId="machine-repositories-breadcrumb"
+        header={header}
+        tags={tags}
+        actions={actions}
+        content={content}
+        drawer={drawer}
+      />
 
       <QueueItemTraceModal
         taskId={queueTrace.state.taskId}
@@ -457,7 +411,7 @@ const MachineReposPage: React.FC = () => {
         machines={machine ? [machine] : []}
         teamFilter={machine?.teamName ? [machine.teamName] : undefined}
       />
-    </Flex>
+    </>
   );
 };
 

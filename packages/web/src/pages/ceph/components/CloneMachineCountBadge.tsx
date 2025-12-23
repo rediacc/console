@@ -11,7 +11,7 @@ interface MachineCountBadgeProps {
   teamName: string;
 }
 
-export const MachineCountBadge: React.FC<MachineCountBadgeProps> = ({
+export const CloneMachineCountBadge: React.FC<MachineCountBadgeProps> = ({
   clone,
   snapshotName,
   imageName,
