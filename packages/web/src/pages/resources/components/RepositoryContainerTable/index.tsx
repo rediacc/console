@@ -413,15 +413,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         showMessage('error', result.error || t('common:errors.somethingWentWrong'));
       }
     },
-    [
-      executeAction,
-      machine,
-      repository.name,
-      repositoryData,
-      grandRepoVault,
-      t,
-      onQueueItemCreated,
-    ]
+    [executeAction, machine, repository.name, repositoryData, grandRepoVault, t, onQueueItemCreated]
   );
 
   // Container columns

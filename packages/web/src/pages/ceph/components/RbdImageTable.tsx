@@ -155,156 +155,159 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     [pool, buildQueueVault, managedQueueMutation, handleQueueItemCreated, message]
   );
 
-  const getImageMenuItems = useCallback((image: CephRbdImage): MenuProps['items'] => [
-    {
-      key: 'edit',
-      label: (
-        <Typography.Text data-testid={`rbd-edit-action-${image.imageName}`}>
-          {t('images.edit')}
-        </Typography.Text>
-      ),
-      icon: <SettingOutlined />,
-      onClick: () => handleEdit(image),
-    },
-    {
-      key: 'reassignMachine',
-      label: (
-        <Typography.Text data-testid={`rbd-reassign-action-${image.imageName}`}>
-          {t('images.reassignMachine')}
-        </Typography.Text>
-      ),
-      icon: <CloudServerOutlined />,
-      onClick: () => handleReassignMachine(image),
-    },
-    { type: 'divider' },
-    {
-      key: 'snapshot',
-      label: (
-        <Typography.Text data-testid={`rbd-snapshot-action-${image.imageName}`}>
-          {t('images.createSnapshot')}
-        </Typography.Text>
-      ),
-      icon: <CameraOutlined />,
-      onClick: () => handleRunFunction('ceph_rbd_snapshot_create', image),
-    },
-    {
-      key: 'clone',
-      label: (
-        <Typography.Text data-testid={`rbd-clone-action-${image.imageName}`}>
-          {t('images.clone')}
-        </Typography.Text>
-      ),
-      icon: <CopyOutlined />,
-      onClick: () => handleRunFunction('ceph_rbd_clone', image),
-    },
-    {
-      key: 'resize',
-      label: (
-        <Typography.Text data-testid={`rbd-resize-action-${image.imageName}`}>
-          {t('images.resize')}
-        </Typography.Text>
-      ),
-      icon: <ExpandOutlined />,
-      onClick: () => handleRunFunction('ceph_rbd_resize', image),
-    },
-    { type: 'divider' },
-    {
-      key: 'export',
-      label: (
-        <Typography.Text data-testid={`rbd-export-action-${image.imageName}`}>
-          {t('images.export')}
-        </Typography.Text>
-      ),
-      icon: <CloudUploadOutlined />,
-      onClick: () => handleRunFunction('ceph_rbd_export', image),
-    },
-    {
-      key: 'import',
-      label: (
-        <Typography.Text data-testid={`rbd-import-action-${image.imageName}`}>
-          {t('images.import')}
-        </Typography.Text>
-      ),
-      icon: <CloudDownloadOutlined />,
-      onClick: () => handleRunFunction('ceph_rbd_import', image),
-    },
-    { type: 'divider' },
-    {
-      key: 'info',
-      label: (
-        <Typography.Text data-testid={`rbd-info-action-${image.imageName}`}>
-          {t('images.info')}
-        </Typography.Text>
-      ),
-      icon: <InfoCircleOutlined />,
-      onClick: () => handleRunFunction('ceph_rbd_info', image),
-    },
-    {
-      key: 'status',
-      label: (
-        <Typography.Text data-testid={`rbd-status-action-${image.imageName}`}>
-          {t('images.status')}
-        </Typography.Text>
-      ),
-      icon: <CheckCircleOutlined />,
-      onClick: () => handleRunFunction('ceph_rbd_status', image),
-    },
-    { type: 'divider' },
-    {
-      key: 'map',
-      label: (
-        <Typography.Text data-testid={`rbd-map-action-${image.imageName}`}>
-          {t('images.map')}
-        </Typography.Text>
-      ),
-      icon: <DesktopOutlined />,
-      onClick: () => handleRunFunction('ceph_rbd_map', image),
-    },
-    {
-      key: 'unmap',
-      label: (
-        <Typography.Text data-testid={`rbd-unmap-action-${image.imageName}`}>
-          {t('images.unmap')}
-        </Typography.Text>
-      ),
-      icon: <DesktopOutlined />,
-      onClick: () => handleRunFunction('ceph_rbd_unmap', image),
-    },
-    {
-      key: 'showmapped',
-      label: (
-        <Typography.Text data-testid={`rbd-showmapped-action-${image.imageName}`}>
-          {t('images.showMapped')}
-        </Typography.Text>
-      ),
-      icon: <DesktopOutlined />,
-      onClick: () => handleRunFunction('ceph_rbd_showmapped', image),
-    },
-    { type: 'divider' },
-    {
-      key: 'flatten',
-      label: (
-        <Typography.Text data-testid={`rbd-flatten-action-${image.imageName}`}>
-          {t('images.flatten')}
-        </Typography.Text>
-      ),
-      icon: <SyncOutlined />,
-      onClick: () => handleRunFunction('ceph_rbd_flatten', image),
-    },
-    { type: 'divider' },
-    {
-      key: 'delete',
-      label: (
-        <Typography.Text data-testid={`rbd-delete-action-${image.imageName}`}>
-          {t('images.delete')}
-        </Typography.Text>
-      ),
-      icon: <DeleteOutlined />,
-      danger: true,
-      onClick: () => handleDelete(image),
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [t, handleRunFunction]);
+  const getImageMenuItems = useCallback(
+    (image: CephRbdImage): MenuProps['items'] => [
+      {
+        key: 'edit',
+        label: (
+          <Typography.Text data-testid={`rbd-edit-action-${image.imageName}`}>
+            {t('images.edit')}
+          </Typography.Text>
+        ),
+        icon: <SettingOutlined />,
+        onClick: () => handleEdit(image),
+      },
+      {
+        key: 'reassignMachine',
+        label: (
+          <Typography.Text data-testid={`rbd-reassign-action-${image.imageName}`}>
+            {t('images.reassignMachine')}
+          </Typography.Text>
+        ),
+        icon: <CloudServerOutlined />,
+        onClick: () => handleReassignMachine(image),
+      },
+      { type: 'divider' },
+      {
+        key: 'snapshot',
+        label: (
+          <Typography.Text data-testid={`rbd-snapshot-action-${image.imageName}`}>
+            {t('images.createSnapshot')}
+          </Typography.Text>
+        ),
+        icon: <CameraOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_snapshot_create', image),
+      },
+      {
+        key: 'clone',
+        label: (
+          <Typography.Text data-testid={`rbd-clone-action-${image.imageName}`}>
+            {t('images.clone')}
+          </Typography.Text>
+        ),
+        icon: <CopyOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_clone', image),
+      },
+      {
+        key: 'resize',
+        label: (
+          <Typography.Text data-testid={`rbd-resize-action-${image.imageName}`}>
+            {t('images.resize')}
+          </Typography.Text>
+        ),
+        icon: <ExpandOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_resize', image),
+      },
+      { type: 'divider' },
+      {
+        key: 'export',
+        label: (
+          <Typography.Text data-testid={`rbd-export-action-${image.imageName}`}>
+            {t('images.export')}
+          </Typography.Text>
+        ),
+        icon: <CloudUploadOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_export', image),
+      },
+      {
+        key: 'import',
+        label: (
+          <Typography.Text data-testid={`rbd-import-action-${image.imageName}`}>
+            {t('images.import')}
+          </Typography.Text>
+        ),
+        icon: <CloudDownloadOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_import', image),
+      },
+      { type: 'divider' },
+      {
+        key: 'info',
+        label: (
+          <Typography.Text data-testid={`rbd-info-action-${image.imageName}`}>
+            {t('images.info')}
+          </Typography.Text>
+        ),
+        icon: <InfoCircleOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_info', image),
+      },
+      {
+        key: 'status',
+        label: (
+          <Typography.Text data-testid={`rbd-status-action-${image.imageName}`}>
+            {t('images.status')}
+          </Typography.Text>
+        ),
+        icon: <CheckCircleOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_status', image),
+      },
+      { type: 'divider' },
+      {
+        key: 'map',
+        label: (
+          <Typography.Text data-testid={`rbd-map-action-${image.imageName}`}>
+            {t('images.map')}
+          </Typography.Text>
+        ),
+        icon: <DesktopOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_map', image),
+      },
+      {
+        key: 'unmap',
+        label: (
+          <Typography.Text data-testid={`rbd-unmap-action-${image.imageName}`}>
+            {t('images.unmap')}
+          </Typography.Text>
+        ),
+        icon: <DesktopOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_unmap', image),
+      },
+      {
+        key: 'showmapped',
+        label: (
+          <Typography.Text data-testid={`rbd-showmapped-action-${image.imageName}`}>
+            {t('images.showMapped')}
+          </Typography.Text>
+        ),
+        icon: <DesktopOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_showmapped', image),
+      },
+      { type: 'divider' },
+      {
+        key: 'flatten',
+        label: (
+          <Typography.Text data-testid={`rbd-flatten-action-${image.imageName}`}>
+            {t('images.flatten')}
+          </Typography.Text>
+        ),
+        icon: <SyncOutlined />,
+        onClick: () => handleRunFunction('ceph_rbd_flatten', image),
+      },
+      { type: 'divider' },
+      {
+        key: 'delete',
+        label: (
+          <Typography.Text data-testid={`rbd-delete-action-${image.imageName}`}>
+            {t('images.delete')}
+          </Typography.Text>
+        ),
+        icon: <DeleteOutlined />,
+        danger: true,
+        onClick: () => handleDelete(image),
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    ],
+    [t, handleRunFunction]
+  );
 
   const columns = [
     {
@@ -384,7 +387,6 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     }),
   ];
 
-   
   const handleExpand = useCallback(
     (image: CephRbdImage) => {
       const imageKey = String(image.imageGuid ?? '');
@@ -394,7 +396,6 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     },
     [setExpandedRowKeys]
   );
-   
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
