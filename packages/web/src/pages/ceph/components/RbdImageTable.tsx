@@ -304,8 +304,8 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
         danger: true,
         onClick: () => handleDelete(image),
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [t, handleRunFunction]
   );
 
