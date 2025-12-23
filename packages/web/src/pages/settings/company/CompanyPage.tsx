@@ -559,6 +559,7 @@ const CompanyPage: React.FC = () => {
         }}
         footer={null}
         className={ModalSize.Medium}
+        centered
       >
         <Form layout="vertical" form={masterPasswordForm} onFinish={handleUpdateMasterPassword}>
           {currentMasterPassword && (
@@ -711,7 +712,13 @@ const CompanyPage: React.FC = () => {
         </Form>
       </Modal>
 
-      <Modal open={successModal.isOpen} closable={false} footer={null} className={ModalSize.Medium}>
+      <Modal
+        open={successModal.isOpen}
+        closable={false}
+        footer={null}
+        className={ModalSize.Medium}
+        centered
+      >
         <Result
           status="success"
           title={tSystem(
@@ -788,6 +795,7 @@ const CompanyPage: React.FC = () => {
         }}
         footer={null}
         className={ModalSize.Medium}
+        centered
       >
         <Form form={importForm} layout="vertical" onFinish={handleImportCompanyData}>
           <Alert

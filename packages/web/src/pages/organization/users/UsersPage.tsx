@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
@@ -11,6 +11,7 @@ import {
   Tag,
   Tooltip,
   Typography,
+  type MenuProps,
 } from 'antd';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +28,9 @@ import {
   useUsers,
 } from '@/api/queries/users';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { buildDivider, buildTraceMenuItem } from '@/components/common/menuBuilders';
+import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import ResourceForm from '@/pages/organization/users/components/ResourceForm';
@@ -102,21 +106,27 @@ const UsersPage: React.FC = () => {
     }
   };
 
-  const handleDeactivateUser = async (userEmail: string) => {
-    try {
-      await deactivateUserMutation.mutateAsync({ userEmail });
-    } catch {
-      // handled by mutation
-    }
-  };
+  const handleDeactivateUser = useCallback(
+    async (userEmail: string) => {
+      try {
+        await deactivateUserMutation.mutateAsync({ userEmail });
+      } catch {
+        // handled by mutation
+      }
+    },
+    [deactivateUserMutation]
+  );
 
-  const handleReactivateUser = async (userEmail: string) => {
-    try {
-      await reactivateUserMutation.mutateAsync({ userEmail });
-    } catch {
-      // handled by mutation
-    }
-  };
+  const handleReactivateUser = useCallback(
+    async (userEmail: string) => {
+      try {
+        await reactivateUserMutation.mutateAsync({ userEmail });
+      } catch {
+        // handled by mutation
+      }
+    },
+    [reactivateUserMutation]
+  );
 
   const handleAssignUserPermissions = async () => {
     if (!assignPermissionModal.state.data || !selectedUserGroup) return;
@@ -257,6 +267,76 @@ const UsersPage: React.FC = () => {
     },
   ];
 
+  const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: User) => {
+      const menuItems: MenuProps['items'] = [
+        {
+          key: 'permissions',
+          label: tSystem('actions.permissions'),
+          icon: <SafetyOutlined />,
+          onClick: () => {
+            assignPermissionModal.open(record);
+            setSelectedUserGroup(record.permissionsName || '');
+          },
+        },
+        buildTraceMenuItem(tCommon, () =>
+          auditTrace.open({
+            entityType: 'User',
+            entityIdentifier: record.userEmail,
+            entityName: record.userEmail,
+          })
+        ),
+        buildDivider(),
+        record.activated
+          ? {
+              key: 'deactivate',
+              label: tSystem('actions.deactivate'),
+              icon: <StopOutlined />,
+              danger: true,
+              onClick: () => handleDeactivateUser(record.userEmail),
+            }
+          : {
+              key: 'activate',
+              label: tSystem('actions.activate'),
+              icon: <CheckOutlined />,
+              onClick: () => handleReactivateUser(record.userEmail),
+            },
+      ];
+
+      return (
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
+          <Space>
+            <UserOutlined />
+            <Typography.Text strong className="truncate">
+              {record.userEmail}
+            </Typography.Text>
+          </Space>
+          <Flex gap={8} wrap>
+            {record.activated ? (
+              <Tag icon={<CheckCircleOutlined />}>{t('users.status.active')}</Tag>
+            ) : (
+              <Tag icon={<StopOutlined />}>{t('users.status.inactive')}</Tag>
+            )}
+            {record.permissionsName && (
+              <Tag icon={<SafetyOutlined />}>{record.permissionsName}</Tag>
+            )}
+          </Flex>
+        </MobileCard>
+      );
+    },
+
+    [
+      t,
+      tSystem,
+      tCommon,
+      assignPermissionModal,
+      auditTrace,
+      handleDeactivateUser,
+      handleReactivateUser,
+    ]
+  );
+
   return (
     <Flex vertical>
       <Flex vertical gap={16}>
@@ -270,6 +350,7 @@ const UsersPage: React.FC = () => {
           loading={usersLoading}
           data={users}
           columns={userColumns}
+          mobileRender={mobileRender}
           rowKey="userEmail"
           searchPlaceholder={t('users.searchPlaceholder')}
           data-testid="system-user-table"
@@ -295,6 +376,7 @@ const UsersPage: React.FC = () => {
           userForm.reset();
         }}
         footer={null}
+        centered
       >
         <ResourceForm
           form={userForm}
@@ -322,6 +404,7 @@ const UsersPage: React.FC = () => {
         confirmLoading={assignUserPermissionsMutation.isPending}
         okButtonProps={{ 'data-testid': 'modal-assign-permissions-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-assign-permissions-cancel' }}
+        centered
       >
         <Form layout="vertical">
           <Form.Item label={t('users.modals.permissionGroupLabel')}>

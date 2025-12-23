@@ -22,4 +22,10 @@ export const darkThemeTokens = {
 export const getThemeConfig = (isDark: boolean): ThemeConfig => ({
   algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
   token: isDark ? darkThemeTokens : lightThemeTokens,
+  components: {
+    Card: {
+      bodyPadding: 0,
+      bodyPaddingSM: 0,
+    },
+  },
 });

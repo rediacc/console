@@ -42,13 +42,7 @@ export const buildPoolColumns = ({
       const isExpanded = expandedRowKeys.includes(record.poolGuid || '');
       return (
         <Flex align="center" gap={8} className="inline-flex">
-          <RightOutlined
-            // eslint-disable-next-line no-restricted-syntax
-            style={{
-              transform: isExpanded ? 'rotate(90deg)' : undefined,
-              transition: 'transform 0.2s ease',
-            }}
-          />
+          <RightOutlined className={`expand-icon ${isExpanded ? 'expand-icon-rotated' : ''}`} />
           <DatabaseOutlined />
           <Typography.Text>{name}</Typography.Text>
         </Flex>

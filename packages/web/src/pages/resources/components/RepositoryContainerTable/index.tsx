@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, Flex, Space, Table, Typography, type MenuProps } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Flex, Space, Tag, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useRepositories } from '@/api/queries/repositories';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
@@ -9,6 +9,9 @@ import {
   createTruncatedColumn,
 } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
+import ResourceListView from '@/components/common/ResourceListView';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
 import { featureFlags } from '@/config/featureFlags';
 import { useQueueAction } from '@/hooks/useQueueAction';
@@ -23,6 +26,7 @@ import { Machine, PluginContainer } from '@/types';
 import { showMessage } from '@/utils/messages';
 import {
   CheckCircleOutlined,
+  ContainerOutlined,
   DeleteOutlined,
   DisconnectOutlined,
   EyeOutlined,
@@ -187,34 +191,12 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
   const getRowClassName = (container: Container) => {
     const classNames = ['repository-container-row'];
 
-    if (onContainerClick) {
-      classNames.push('repository-container-row--clickable');
-    }
-
     if (highlightedContainer?.id === container.id) {
       classNames.push('repository-container-row--selected');
     }
 
     return classNames.join(' ');
   };
-
-  const buildRowHandlers = (container: Container) => ({
-    className: getRowClassName(container),
-
-    onClick: (e: React.MouseEvent<HTMLElement>) => {
-      if (!onContainerClick) {
-        return;
-      }
-
-      const target = e.target as HTMLElement;
-
-      if (target.closest('button') || target.closest('.ant-dropdown')) {
-        return;
-      }
-
-      onContainerClick(container);
-    },
-  });
 
   // Find repository data for credentials - must match both name AND tag to distinguish forks
 
@@ -360,54 +342,57 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
 
   // Handle container actions
 
-  const handleContainerAction = async (container: Container, functionName: string) => {
-    const result = await executeAction({
-      teamName: machine.teamName,
+  const handleContainerAction = useCallback(
+    async (container: Container, functionName: string) => {
+      const result = await executeAction({
+        teamName: machine.teamName,
 
-      machineName: machine.machineName,
+        machineName: machine.machineName,
 
-      bridgeName: machine.bridgeName,
+        bridgeName: machine.bridgeName,
 
-      functionName,
+        functionName,
 
-      params: {
-        repository: repositoryData?.repositoryGuid || repository.name,
-        repositoryName: repositoryData?.repositoryName || repository.name,
+        params: {
+          repository: repositoryData?.repositoryGuid || repository.name,
+          repositoryName: repositoryData?.repositoryName || repository.name,
 
-        container: container.id,
-      },
+          container: container.id,
+        },
 
-      priority: 4,
+        priority: 4,
 
-      addedVia: 'container-action',
+        addedVia: 'container-action',
 
-      machineVault: machine.vaultContent || '{}',
+        machineVault: machine.vaultContent || '{}',
 
-      repositoryGuid: repositoryData?.repositoryGuid,
+        repositoryGuid: repositoryData?.repositoryGuid,
 
-      vaultContent: grandRepoVault,
+        vaultContent: grandRepoVault,
 
-      repositoryNetworkId: repositoryData?.repositoryNetworkId,
+        repositoryNetworkId: repositoryData?.repositoryNetworkId,
 
-      repositoryNetworkMode: repositoryData?.repositoryNetworkMode,
+        repositoryNetworkMode: repositoryData?.repositoryNetworkMode,
 
-      repositoryTag: repositoryData?.repositoryTag,
-    });
+        repositoryTag: repositoryData?.repositoryTag,
+      });
 
-    if (result.success) {
-      if (result.taskId) {
-        showMessage('success', t('machines:queueItemCreated'));
+      if (result.success) {
+        if (result.taskId) {
+          showMessage('success', t('machines:queueItemCreated'));
 
-        if (onQueueItemCreated) {
-          onQueueItemCreated(result.taskId, machine.machineName);
+          if (onQueueItemCreated) {
+            onQueueItemCreated(result.taskId, machine.machineName);
+          }
+        } else if (result.isQueued) {
+          showMessage('info', t('resources:repositories.highestPriorityQueued'));
         }
-      } else if (result.isQueued) {
-        showMessage('info', t('resources:repositories.highestPriorityQueued'));
+      } else {
+        showMessage('error', result.error || t('common:errors.somethingWentWrong'));
       }
-    } else {
-      showMessage('error', result.error || t('common:errors.somethingWentWrong'));
-    }
-  };
+    },
+    [executeAction, machine, repository.name, repositoryData, grandRepoVault, t, onQueueItemCreated]
+  );
 
   // Container columns
 
@@ -704,6 +689,141 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     }),
   ];
 
+  const containerMobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: Container) => {
+      const menuItems: MenuProps['items'] = [];
+
+      if (onContainerClick) {
+        menuItems.push({
+          key: 'view',
+          label: t('common:viewDetails'),
+          icon: <EyeOutlined />,
+          onClick: () => onContainerClick(record),
+        });
+      }
+
+      if (record.state === 'running') {
+        menuItems.push(
+          { type: 'divider' as const },
+          {
+            key: 'stop',
+            label: t('functions:functions.container_stop.name'),
+            icon: <StopOutlined />,
+            onClick: () => handleContainerAction(record, 'container_stop'),
+          },
+          {
+            key: 'restart',
+            label: t('functions:functions.container_restart.name'),
+            icon: <ReloadOutlined />,
+            onClick: () => handleContainerAction(record, 'container_restart'),
+          },
+          {
+            key: 'pause',
+            label: t('functions:functions.container_pause.name'),
+            icon: <PauseCircleOutlined />,
+            onClick: () => handleContainerAction(record, 'container_pause'),
+          }
+        );
+      } else if (record.state === 'paused') {
+        menuItems.push(
+          { type: 'divider' as const },
+          {
+            key: 'unpause',
+            label: t('functions:functions.container_unpause.name'),
+            icon: <PlayCircleOutlined />,
+            onClick: () => handleContainerAction(record, 'container_unpause'),
+          }
+        );
+      } else {
+        menuItems.push(
+          { type: 'divider' as const },
+          {
+            key: 'start',
+            label: t('functions:functions.container_start.name'),
+            icon: <PlayCircleOutlined />,
+            onClick: () => handleContainerAction(record, 'container_start'),
+          },
+          {
+            key: 'remove',
+            label: t('functions:functions.container_remove.name'),
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => handleContainerAction(record, 'container_remove'),
+          }
+        );
+      }
+
+      const getStateColor = (state: string) => {
+        switch (state) {
+          case 'running':
+            return 'success';
+          case 'paused':
+            return 'warning';
+          case 'restarting':
+            return 'processing';
+          default:
+            return 'default';
+        }
+      };
+
+      const getStateLabel = (state: string) => {
+        switch (state) {
+          case 'running':
+            return t('resources:containers.containerStatusRunning');
+          case 'paused':
+            return t('resources:containers.containerStatusPaused');
+          case 'restarting':
+            return t('resources:containers.containerStatusRestarting');
+          default:
+            return t('resources:containers.containerStatusStopped');
+        }
+      };
+
+      const handleCardClick = () => {
+        if (onContainerClick) {
+          onContainerClick(record);
+        }
+      };
+
+      const actions = <ResourceActionsDropdown menuItems={menuItems} isLoading={isExecuting} />;
+
+      return (
+        <MobileCard onClick={onContainerClick ? handleCardClick : undefined} actions={actions}>
+          <Space>
+            <ContainerOutlined />
+            <Typography.Text strong className="truncate">
+              {record.name}
+            </Typography.Text>
+          </Space>
+          <Flex gap={8} wrap>
+            <Tag color={getStateColor(record.state)}>{getStateLabel(record.state)}</Tag>
+            {record.status && (
+              <Typography.Text type="secondary" className="text-xs">
+                {record.status}
+              </Typography.Text>
+            )}
+          </Flex>
+          {record.image && (
+            <Typography.Text type="secondary" className="text-xs truncate">
+              {record.image}
+            </Typography.Text>
+          )}
+          {record.port_mappings && record.port_mappings.length > 0 && (
+            <Typography.Text type="secondary" className="text-xs">
+              {record.port_mappings
+                .slice(0, 2)
+                .map((pm) => `${pm.host_port}:${pm.container_port}`)
+                .join(', ')}
+              {record.port_mappings.length > 2 && ` +${record.port_mappings.length - 2}`}
+            </Typography.Text>
+          )}
+        </MobileCard>
+      );
+    },
+    [t, onContainerClick, handleContainerAction, isExecuting]
+  );
+
   if (loading) {
     return (
       <Flex vertical data-testid="container-list-loading">
@@ -734,48 +854,35 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
   return (
     <Flex vertical data-testid="repository-container-list">
       {/* Regular Containers */}
-
-      {containers.length > 0 ? (
-        <Flex vertical data-testid="regular-containers-section">
-          <Flex>
-            <Table<Container>
-              columns={containerColumns}
-              dataSource={containers}
-              rowKey="id"
-              size="small"
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              data-testid="regular-containers-table"
-              onRow={(container) => buildRowHandlers(container)}
-            />
-          </Flex>
-        </Flex>
-      ) : (
-        <Flex data-testid="no-containers" className="text-center" justify="center">
-          <Typography.Text>{t('resources:containers.noContainers')}</Typography.Text>
-        </Flex>
-      )}
+      <ResourceListView<Container>
+        loading={false}
+        data={containers}
+        columns={containerColumns}
+        rowKey="id"
+        pagination={false}
+        emptyDescription={t('resources:containers.noContainers')}
+        mobileRender={containerMobileRender}
+        onRow={(container) => ({ className: getRowClassName(container) })}
+        data-testid="regular-containers-table"
+      />
 
       {/* Plugin Containers */}
-
       {featureFlags.isEnabled('plugins') && pluginContainers.length > 0 && (
         <Flex vertical data-testid="plugin-containers-section">
           <Typography.Title level={5}>
             {t('resources:containers.pluginContainers')}
           </Typography.Title>
 
-          <Flex>
-            <Table<Container>
-              columns={containerColumns}
-              dataSource={pluginContainers}
-              rowKey="id"
-              size="small"
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              data-testid="plugin-containers-table"
-              onRow={(container) => buildRowHandlers(container)}
-            />
-          </Flex>
+          <ResourceListView<Container>
+            loading={false}
+            data={pluginContainers}
+            columns={containerColumns}
+            rowKey="id"
+            pagination={false}
+            mobileRender={containerMobileRender}
+            onRow={(container) => ({ className: getRowClassName(container) })}
+            data-testid="plugin-containers-table"
+          />
         </Flex>
       )}
     </Flex>

@@ -1,9 +1,23 @@
 import React, { useCallback, useMemo } from 'react';
-import { Badge, Button, Dropdown, Flex, Modal, Space, Tabs, Tooltip, Typography } from 'antd';
+import {
+  Badge,
+  Button,
+  Dropdown,
+  Flex,
+  Modal,
+  Space,
+  Tabs,
+  Tag,
+  Tooltip,
+  Typography,
+  type MenuProps,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { QueueFilters, type QueueStatistics, useQueueItems } from '@/api/queries/queue';
 import { useDropdownData } from '@/api/queries/useDropdownData';
+import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useFilters, useMultiPagination, useQueueTraceModal } from '@/hooks';
 import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay';
@@ -14,7 +28,14 @@ import {
   filterFailedItems,
   isValidGuid,
 } from '@/platform';
-import { ExportOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import {
+  CloseCircleOutlined,
+  DesktopOutlined,
+  ExportOutlined,
+  HistoryOutlined,
+  ReloadOutlined,
+  RocketOutlined,
+} from '@/utils/optimizedIcons';
 import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
 import { QueueFilterPanel } from './components/QueueFilterPanel';
 import { QueueStatisticsBar } from './components/QueueStatisticsBar';
@@ -22,6 +43,25 @@ import { useQueueActions } from './hooks/useQueueActions';
 import { useQueueExport } from './hooks/useQueueExport';
 import { getQueueColumns } from './queueTableColumns';
 import type { Dayjs } from 'dayjs';
+
+const getStatusColor = (status: string): string => {
+  switch (status?.toLowerCase()) {
+    case 'pending':
+      return 'blue';
+    case 'assigned':
+      return 'cyan';
+    case 'processing':
+      return 'orange';
+    case 'completed':
+      return 'green';
+    case 'failed':
+      return 'red';
+    case 'cancelled':
+      return 'default';
+    default:
+      return 'default';
+  }
+};
 
 // Page-level filter state type
 type QueuePageFilters = {
@@ -111,9 +151,12 @@ const QueuePage: React.FC = () => {
 
   // Custom hooks for actions and export
   const { handleCancelQueueItem, cancelLoading } = useQueueActions(modal);
-  const handleViewTrace = (taskId: string) => {
-    queueTrace.open(taskId);
-  };
+  const handleViewTrace = useCallback(
+    (taskId: string) => {
+      queueTrace.open(taskId);
+    },
+    [queueTrace]
+  );
 
   const statistics = queueData?.statistics ?? ({} as Partial<QueueStatistics>);
   const totalCount = statistics.totalCount ?? queueData?.items?.length ?? 0;
@@ -240,6 +283,58 @@ const QueuePage: React.FC = () => {
     t,
   });
 
+  const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: QueueItem) => {
+      const canCancel = ['PENDING', 'ASSIGNED'].includes(record.status?.toUpperCase() || '');
+      const menuItems: MenuProps['items'] = [
+        ...(record.taskId
+          ? [
+              {
+                key: 'trace',
+                label: t('common:actions.trace'),
+                icon: <HistoryOutlined />,
+                onClick: () => handleViewTrace(record.taskId!),
+              },
+            ]
+          : []),
+        ...(canCancel && record.taskId
+          ? [
+              {
+                key: 'cancel',
+                label: t('common:actions.cancel'),
+                icon: <CloseCircleOutlined />,
+                danger: true,
+                onClick: () => handleCancelQueueItem(record.taskId!),
+              },
+            ]
+          : []),
+      ];
+      const truncatedTaskId = record.taskId ? `${record.taskId.substring(0, 8)}...` : '';
+
+      return (
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
+          <Flex gap={8} align="center" wrap>
+            <Space size="small">
+              <RocketOutlined />
+              <Typography.Text strong className="truncate">
+                {truncatedTaskId}
+              </Typography.Text>
+            </Space>
+            <Tag color={getStatusColor(record.status ?? '')}>{record.status}</Tag>
+          </Flex>
+          {record.machineName && (
+            <Space size="small">
+              <DesktopOutlined />
+              <Typography.Text className="truncate">{record.machineName}</Typography.Text>
+            </Space>
+          )}
+        </MobileCard>
+      );
+    },
+    [t, handleViewTrace, handleCancelQueueItem]
+  );
+
   return (
     <Flex vertical data-testid="queue-page-container">
       {contextHolder}
@@ -321,6 +416,7 @@ const QueuePage: React.FC = () => {
                 loading={isLoading || isRefetching}
                 data={activeItems}
                 columns={queueColumns}
+                mobileRender={mobileRender}
                 rowKey="taskId"
                 searchPlaceholder="Search queue items..."
                 pagination={{
@@ -354,6 +450,7 @@ const QueuePage: React.FC = () => {
                 loading={isLoading || isRefetching}
                 data={completedItems}
                 columns={queueColumns}
+                mobileRender={mobileRender}
                 rowKey="taskId"
                 searchPlaceholder="Search completed items..."
                 pagination={{
@@ -387,6 +484,7 @@ const QueuePage: React.FC = () => {
                 loading={isLoading || isRefetching}
                 data={cancelledItems}
                 columns={queueColumns}
+                mobileRender={mobileRender}
                 rowKey="taskId"
                 searchPlaceholder="Search cancelled items..."
                 pagination={{
@@ -420,6 +518,7 @@ const QueuePage: React.FC = () => {
                 loading={isLoading || isRefetching}
                 data={failedItems}
                 columns={queueColumns}
+                mobileRender={mobileRender}
                 rowKey="taskId"
                 searchPlaceholder="Search failed items..."
                 pagination={{

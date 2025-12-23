@@ -20,6 +20,7 @@ import {
   DisconnectOutlined,
   EditOutlined,
   EyeOutlined,
+  FolderOpenOutlined,
   FunctionOutlined,
   HistoryOutlined,
   WifiOutlined,
@@ -47,6 +48,7 @@ interface MachineColumnsParams {
   onFunctionsMachine?: (machine: Machine, functionName?: string) => void;
   handleDelete: (machine: Machine) => void;
   handleRowClick: (machine: Machine) => void;
+  onViewRepositories: (machine: Machine) => void;
   executePingForMachineAndWait: ExecutePingForMachineAndWait;
   setAssignClusterModal: (state: { open: boolean; machine: Machine | null }) => void;
   setAuditTraceModal: (state: {
@@ -69,6 +71,7 @@ export const buildMachineTableColumns = ({
   onFunctionsMachine,
   handleDelete,
   handleRowClick,
+  onViewRepositories,
   executePingForMachineAndWait,
   setAssignClusterModal,
   setAuditTraceModal,
@@ -203,6 +206,14 @@ export const buildMachineTableColumns = ({
         renderActions: (record) => (
           <ActionButtonGroup
             buttons={[
+              {
+                type: 'viewRepositories',
+                icon: <FolderOpenOutlined />,
+                tooltip: 'machines:viewRepositories',
+                onClick: () => onViewRepositories(record),
+                variant: 'default',
+                testIdSuffix: 'view-repositories',
+              },
               {
                 type: 'view',
                 icon: <EyeOutlined />,

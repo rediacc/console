@@ -214,17 +214,17 @@ const RepoContainersPage: React.FC = () => {
         <Card>
           <Flex vertical>
             <Alert
-              message={t('machines:repoNotFound')}
+              message={t('machines:repositoryNotFound')}
               description={
                 <Flex vertical>
                   <p>
-                    {t('machines:repoNotFoundDescription', {
+                    {t('machines:repositoryNotFoundDescription', {
                       repositoryName: repositoryName,
                       machineName,
                     })}
                   </p>
                   <Button type="primary" onClick={handleBackToRepos}>
-                    {t('machines:backToRepos')}
+                    {t('machines:backToRepositories')}
                   </Button>
                 </Flex>
               }
@@ -279,12 +279,12 @@ const RepoContainersPage: React.FC = () => {
             <Flex align="center" justify="space-between" wrap>
               <Flex vertical className="flex-1 min-w-0">
                 <Flex align="center" gap={8} wrap>
-                  <Tooltip title={t('machines:backToRepos')}>
+                  <Tooltip title={t('machines:backToRepositories')}>
                     <Button
                       type="text"
                       icon={<DoubleLeftOutlined />}
                       onClick={handleBackToRepos}
-                      aria-label={t('machines:backToRepos')}
+                      aria-label={t('machines:backToRepositories')}
                       data-testid="repository-containers-back-button"
                     />
                   </Tooltip>
@@ -292,7 +292,7 @@ const RepoContainersPage: React.FC = () => {
                     <Space>
                       <InboxOutlined />
                       <Typography.Text>
-                        {t('machines:repoContainers')}: {actualRepositoryName}
+                        {t('machines:repositoryContainers')}: {actualRepositoryName}
                       </Typography.Text>
                     </Space>
                   </Typography.Title>

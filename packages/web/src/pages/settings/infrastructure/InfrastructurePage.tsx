@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -18,6 +18,7 @@ import {
   Tag,
   Tooltip,
   Typography,
+  type MenuProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -41,6 +42,14 @@ import {
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { createVersionColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildEditMenuItem,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
+import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { featureFlags } from '@/config/featureFlags';
@@ -108,13 +117,16 @@ const InfrastructurePage: React.FC = () => {
   const updateBridgeVaultMutation = useUpdateBridgeVault();
   const resetBridgeAuthMutation = useResetBridgeAuthorization();
 
-  const openUnifiedModal = (
-    resourceType: 'region' | 'bridge',
-    mode: 'create' | 'edit',
-    data?: Partial<Region> | Partial<Bridge> | null
-  ) => {
-    unifiedModal.open({ resourceType, mode, data });
-  };
+  const openUnifiedModal = useCallback(
+    (
+      resourceType: 'region' | 'bridge',
+      mode: 'create' | 'edit',
+      data?: Partial<Region> | Partial<Bridge> | null
+    ) => {
+      unifiedModal.open({ resourceType, mode, data });
+    },
+    [unifiedModal]
+  );
 
   const closeUnifiedModal = () => {
     unifiedModal.close();
@@ -216,16 +228,19 @@ const InfrastructurePage: React.FC = () => {
     }
   };
 
-  const handleDeleteRegion = async (regionName: string) => {
-    try {
-      await deleteRegionMutation.mutateAsync({ regionName });
-      if (selectedRegion === regionName) {
-        setSelectedRegion(null);
+  const handleDeleteRegion = useCallback(
+    async (regionName: string) => {
+      try {
+        await deleteRegionMutation.mutateAsync({ regionName });
+        if (selectedRegion === regionName) {
+          setSelectedRegion(null);
+        }
+      } catch {
+        // handled by mutation
       }
-    } catch {
-      // handled by mutation
-    }
-  };
+    },
+    [deleteRegionMutation, selectedRegion]
+  );
 
   const handleDeleteBridge = async (bridge: Bridge) => {
     try {
@@ -501,6 +516,41 @@ const InfrastructurePage: React.FC = () => {
     },
   ];
 
+  const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: Region) => {
+      const menuItems: MenuProps['items'] = [
+        buildEditMenuItem(tCommon, () => openUnifiedModal('region', 'edit', record)),
+        buildTraceMenuItem(tCommon, () =>
+          auditTrace.open({
+            entityType: 'Region',
+            entityIdentifier: record.regionName,
+            entityName: record.regionName,
+          })
+        ),
+        buildDivider(),
+        buildDeleteMenuItem(tCommon, () => handleDeleteRegion(record.regionName)),
+      ];
+
+      return (
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
+          <Space>
+            <EnvironmentOutlined />
+            <Typography.Text strong className="truncate">
+              {record.regionName}
+            </Typography.Text>
+          </Space>
+          <Space size="small">
+            <ApiOutlined />
+            <Typography.Text>{record.bridgeCount} bridges</Typography.Text>
+          </Space>
+        </MobileCard>
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t, tSystem, tCommon, auditTrace, handleDeleteRegion, openUnifiedModal]
+  );
+
   if (uiMode === 'simple') {
     return (
       <Flex vertical>
@@ -541,6 +591,7 @@ const InfrastructurePage: React.FC = () => {
                 loading={regionsLoading}
                 data={regionsList}
                 columns={regionColumns}
+                mobileRender={mobileRender}
                 rowKey="regionName"
                 searchPlaceholder={t('regions.searchRegions')}
                 data-testid="system-region-table"
@@ -648,6 +699,7 @@ const InfrastructurePage: React.FC = () => {
             </Button>,
           ]}
           className={ModalSize.Medium}
+          centered
         >
           {(() => {
             const bridge = bridgeCredentialsModal.state.data;
@@ -770,6 +822,7 @@ const InfrastructurePage: React.FC = () => {
               {t('bridges.resetAuthConfirm')}
             </Button>,
           ]}
+          centered
         >
           {resetAuthModal.state.data && (
             <Flex vertical gap={16} className="w-full">

@@ -9,6 +9,7 @@ import {
   AppstoreOutlined,
   CheckCircleOutlined,
   CloudUploadOutlined,
+  ContainerOutlined,
   ControlOutlined,
   CopyOutlined,
   DatabaseOutlined,
@@ -49,6 +50,7 @@ interface RepositoryActionsMenuProps {
   onRenameRepository: (repository: RepositoryTableRow) => void;
   onDeleteGrandRepository: (repository: RepositoryTableRow) => void;
   onRepositoryClick?: (repository: RepositoryTableRow) => void;
+  onViewContainers?: (repository: RepositoryTableRow) => void;
   onCreateRepository?: (machine: Machine, repositoryGuid: string) => void;
   t: ReturnType<typeof useTranslation>['t'];
 }
@@ -68,6 +70,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   onRenameRepository,
   onDeleteGrandRepository,
   onRepositoryClick,
+  onViewContainers,
   onCreateRepository,
   t,
 }) => {
@@ -289,6 +292,15 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   return (
     <ActionButtonGroup
       buttons={[
+        {
+          type: 'viewContainers',
+          icon: <ContainerOutlined />,
+          tooltip: 'resources:repositories.viewContainers',
+          variant: 'default',
+          onClick: (row) => onViewContainers?.(row),
+          testId: (row) =>
+            `machine-repo-view-containers-${row.name}-${row.repositoryTag || 'latest'}`,
+        },
         {
           type: 'view',
           icon: <EyeOutlined />,
