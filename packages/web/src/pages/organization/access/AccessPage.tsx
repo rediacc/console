@@ -44,12 +44,7 @@ import UserSessionsTab from '@/pages/organization/access/components/UserSessions
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
-import {
-  KeyOutlined,
-  PlusOutlined,
-  SafetyOutlined,
-  UserOutlined,
-} from '@/utils/optimizedIcons';
+import { KeyOutlined, PlusOutlined, SafetyOutlined, UserOutlined } from '@/utils/optimizedIcons';
 
 const AccessPage: React.FC = () => {
   const { t } = useTranslation('organization');

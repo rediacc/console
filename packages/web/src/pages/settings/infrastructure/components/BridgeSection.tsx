@@ -57,7 +57,12 @@ export const BridgeSection: React.FC<BridgeSectionProps> = ({
             <Empty description={t('regions.selectRegionPrompt')} />
           </Flex>
         ) : (
-          <LoadingWrapper loading={bridgesLoading} centered minHeight={200} tip={tCommon('general.loading')}>
+          <LoadingWrapper
+            loading={bridgesLoading}
+            centered
+            minHeight={200}
+            tip={tCommon('general.loading')}
+          >
             <Table
               columns={columns}
               dataSource={bridgesList}

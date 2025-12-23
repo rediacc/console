@@ -1,15 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import {
-  Alert,
-  Button,
-  Card,
-  Drawer,
-  Flex,
-  Space,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Alert, Button, Card, Drawer, Flex, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -103,16 +93,8 @@ const MachineReposPage: React.FC = () => {
     await Promise.all([refetchRepos(), refetchMachines()]);
   }, [refetchRepos, refetchMachines]);
 
-  const {
-    selectedResource,
-    setSelectedResource,
-    refreshKey,
-    handleRefresh,
-    handlePanelClose,
-  } = useResourcePageState<Repository | ContainerData | PluginContainer>(
-    refreshData,
-    !!machine
-  );
+  const { selectedResource, setSelectedResource, refreshKey, handleRefresh, handlePanelClose } =
+    useResourcePageState<Repository | ContainerData | PluginContainer>(refreshData, !!machine);
 
   const handleBackToMachines = () => {
     navigate('/machines');

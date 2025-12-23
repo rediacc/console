@@ -1,6 +1,12 @@
 import { Button, Popconfirm, Space, Tooltip, Typography } from 'antd';
 import type { PermissionGroup } from '@/api/queries/permissions';
-import { DeleteOutlined, HistoryOutlined, KeyOutlined, SafetyOutlined, UserOutlined } from '@/utils/optimizedIcons';
+import {
+  DeleteOutlined,
+  HistoryOutlined,
+  KeyOutlined,
+  SafetyOutlined,
+  UserOutlined,
+} from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 import type { TFunction } from 'i18next';
 

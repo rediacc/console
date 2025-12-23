@@ -65,7 +65,10 @@ export const RegionSection: React.FC<RegionSectionProps> = ({
           }}
           onRow={(record: Region) => ({
             onClick: () => onSelectRegion(record.regionName),
-            className: ['clickable-row', effectiveRegion === record.regionName ? 'selected-row' : '']
+            className: [
+              'clickable-row',
+              effectiveRegion === record.regionName ? 'selected-row' : '',
+            ]
               .filter(Boolean)
               .join(' '),
           })}

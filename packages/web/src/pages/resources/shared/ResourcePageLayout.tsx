@@ -33,7 +33,11 @@ export const ResourcePageLayout: React.FC<ResourcePageLayoutProps> = ({
               {tags}
             </Flex>
 
-            {actions ? <Flex align="center" wrap>{actions}</Flex> : null}
+            {actions ? (
+              <Flex align="center" wrap>
+                {actions}
+              </Flex>
+            ) : null}
           </Flex>
         </Flex>
 

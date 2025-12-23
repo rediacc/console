@@ -1,15 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Button,
-  Checkbox,
-  Flex,
-  Modal,
-  Space,
-  Steps,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Button, Checkbox, Flex, Modal, Space, Steps, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useCreateStorage, useStorage } from '@/api/queries/storage';
 import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';

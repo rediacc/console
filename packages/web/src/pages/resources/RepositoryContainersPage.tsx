@@ -1,15 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import {
-  Alert,
-  Button,
-  Card,
-  Drawer,
-  Flex,
-  Space,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Alert, Button, Card, Drawer, Flex, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';

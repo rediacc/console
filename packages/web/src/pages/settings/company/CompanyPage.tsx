@@ -1,12 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Button,
-  Flex,
-  Form,
-  Modal,
-  Result,
-  Typography,
-} from 'antd';
+import { Button, Flex, Form, Modal, Result, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -288,28 +281,28 @@ const CompanyPage: React.FC = () => {
   }
 
   return (
-      <Flex vertical>
-        <Flex vertical gap={24}>
-          <CompanyVaultSection
-            t={t}
-            showConfigureVault={featureFlags.isEnabled('companyVaultConfiguration')}
-            onConfigureVault={() => companyVaultModal.open()}
-          />
+    <Flex vertical>
+      <Flex vertical gap={24}>
+        <CompanyVaultSection
+          t={t}
+          showConfigureVault={featureFlags.isEnabled('companyVaultConfiguration')}
+          onConfigureVault={() => companyVaultModal.open()}
+        />
 
-          {featureFlags.isEnabled('dangerZone') && (
-            <DangerZoneSection
-              tSystem={tSystem}
-              tCommon={tCommon}
-              onBlockUserRequests={(block) => blockUserRequestsMutation.mutate(block)}
-              isBlockingUserRequests={blockUserRequestsMutation.isPending}
-              onExportVaults={handleExportVaults}
-              isExportingVaults={exportVaultsQuery.isFetching}
-              onExportCompanyData={handleExportCompanyData}
-              isExportingCompanyData={exportCompanyDataQuery.isFetching}
-              onOpenImportModal={() => importModal.open()}
-              onOpenMasterPasswordModal={handleOpenMasterPasswordModal}
-            />
-          )}
+        {featureFlags.isEnabled('dangerZone') && (
+          <DangerZoneSection
+            tSystem={tSystem}
+            tCommon={tCommon}
+            onBlockUserRequests={(block) => blockUserRequestsMutation.mutate(block)}
+            isBlockingUserRequests={blockUserRequestsMutation.isPending}
+            onExportVaults={handleExportVaults}
+            isExportingVaults={exportVaultsQuery.isFetching}
+            onExportCompanyData={handleExportCompanyData}
+            isExportingCompanyData={exportCompanyDataQuery.isFetching}
+            onOpenImportModal={() => importModal.open()}
+            onOpenMasterPasswordModal={handleOpenMasterPasswordModal}
+          />
+        )}
       </Flex>
 
       <VaultEditorModal

@@ -33,10 +33,7 @@ import { featureFlags } from '@/config/featureFlags';
 import { useCopyToClipboard } from '@/hooks';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { RootState } from '@/store/store';
-import {
-  ApiOutlined,
-  EnvironmentOutlined,
-} from '@/utils/optimizedIcons';
+import { ApiOutlined, EnvironmentOutlined } from '@/utils/optimizedIcons';
 import { buildBridgeColumns, buildRegionColumns } from './columns';
 import { BridgeCredentialsModal } from './components/BridgeCredentialsModal';
 import { BridgeSection } from './components/BridgeSection';

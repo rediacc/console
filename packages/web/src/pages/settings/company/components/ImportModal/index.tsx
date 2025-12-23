@@ -67,8 +67,12 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           <Space direction="vertical">
             <Radio value="skip">
               <Space direction="vertical" size={4}>
-                <Typography.Text strong>{tSystem('dangerZone.importData.modal.modeSkip')}</Typography.Text>
-                <Typography.Text>{tSystem('dangerZone.importData.modal.modeSkipDesc')}</Typography.Text>
+                <Typography.Text strong>
+                  {tSystem('dangerZone.importData.modal.modeSkip')}
+                </Typography.Text>
+                <Typography.Text>
+                  {tSystem('dangerZone.importData.modal.modeSkipDesc')}
+                </Typography.Text>
               </Space>
             </Radio>
             <Radio value="override">

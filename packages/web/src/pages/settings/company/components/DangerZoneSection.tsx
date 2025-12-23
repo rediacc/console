@@ -1,5 +1,16 @@
 import React from 'react';
-import { Button, Card, Col, Divider, Flex, Popconfirm, Row, Space, Tooltip, Typography } from 'antd';
+import {
+  Button,
+  Card,
+  Col,
+  Divider,
+  Flex,
+  Popconfirm,
+  Row,
+  Space,
+  Tooltip,
+  Typography,
+} from 'antd';
 import {
   DownloadOutlined,
   ExportOutlined,
@@ -45,7 +56,9 @@ export const DangerZoneSection: React.FC<DangerZoneSectionProps> = ({
       <Row gutter={[16, 16]} align="middle">
         <Col xs={24} lg={16}>
           <Space direction="vertical" size={8}>
-            <Typography.Title level={5}>{tSystem('dangerZone.blockUserRequests.title')}</Typography.Title>
+            <Typography.Title level={5}>
+              {tSystem('dangerZone.blockUserRequests.title')}
+            </Typography.Title>
             <Typography.Paragraph>
               {tSystem('dangerZone.blockUserRequests.description')}
             </Typography.Paragraph>
@@ -109,8 +122,12 @@ export const DangerZoneSection: React.FC<DangerZoneSectionProps> = ({
       <Row gutter={[16, 16]} align="middle">
         <Col xs={24} lg={16}>
           <Space direction="vertical" size={8}>
-            <Typography.Title level={5}>{tSystem('dangerZone.exportVaults.title')}</Typography.Title>
-            <Typography.Paragraph>{tSystem('dangerZone.exportVaults.description')}</Typography.Paragraph>
+            <Typography.Title level={5}>
+              {tSystem('dangerZone.exportVaults.title')}
+            </Typography.Title>
+            <Typography.Paragraph>
+              {tSystem('dangerZone.exportVaults.description')}
+            </Typography.Paragraph>
           </Space>
         </Col>
         <Col xs={24} lg={8}>
@@ -135,7 +152,9 @@ export const DangerZoneSection: React.FC<DangerZoneSectionProps> = ({
         <Col xs={24} lg={16}>
           <Space direction="vertical" size={8}>
             <Typography.Title level={5}>{tSystem('dangerZone.exportData.title')}</Typography.Title>
-            <Typography.Paragraph>{tSystem('dangerZone.exportData.description')}</Typography.Paragraph>
+            <Typography.Paragraph>
+              {tSystem('dangerZone.exportData.description')}
+            </Typography.Paragraph>
           </Space>
         </Col>
         <Col xs={24} lg={8}>
@@ -160,7 +179,9 @@ export const DangerZoneSection: React.FC<DangerZoneSectionProps> = ({
         <Col xs={24} lg={16}>
           <Space direction="vertical" size={8}>
             <Typography.Title level={5}>{tSystem('dangerZone.importData.title')}</Typography.Title>
-            <Typography.Paragraph>{tSystem('dangerZone.importData.description')}</Typography.Paragraph>
+            <Typography.Paragraph>
+              {tSystem('dangerZone.importData.description')}
+            </Typography.Paragraph>
           </Space>
         </Col>
         <Col xs={24} lg={8}>

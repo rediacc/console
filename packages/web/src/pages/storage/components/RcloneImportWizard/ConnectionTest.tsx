@@ -9,11 +9,7 @@ interface ConnectionTestProps {
   columns: ColumnsType<ImportStatus>;
 }
 
-export const ConnectionTest: React.FC<ConnectionTestProps> = ({
-  t,
-  importStatuses,
-  columns,
-}) => (
+export const ConnectionTest: React.FC<ConnectionTestProps> = ({ t, importStatuses, columns }) => (
   <Flex vertical>
     <Alert
       message={t('resources:storage.import.selectStorages')}

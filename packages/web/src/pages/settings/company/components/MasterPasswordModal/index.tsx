@@ -76,8 +76,7 @@ export const MasterPasswordModal: React.FC<MasterPasswordModalProps> = ({
             <Typography.Text>
               {tSystem(
                 `dangerZone.updateMasterPassword.modal.warningDescription${
-                  masterPasswordOperation.charAt(0).toUpperCase() +
-                  masterPasswordOperation.slice(1)
+                  masterPasswordOperation.charAt(0).toUpperCase() + masterPasswordOperation.slice(1)
                 }`
               )}
             </Typography.Text>
@@ -134,9 +133,7 @@ export const MasterPasswordModal: React.FC<MasterPasswordModalProps> = ({
             requiredMessage={tSystem(
               'dangerZone.updateMasterPassword.modal.confirmPasswordRequired'
             )}
-            mismatchMessage={tSystem(
-              'dangerZone.updateMasterPassword.modal.confirmPasswordMatch'
-            )}
+            mismatchMessage={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordMatch')}
           />
         </>
       )}
@@ -170,8 +167,7 @@ export const MasterPasswordModal: React.FC<MasterPasswordModalProps> = ({
           >
             {tSystem(
               `dangerZone.updateMasterPassword.modal.submit${
-                masterPasswordOperation.charAt(0).toUpperCase() +
-                masterPasswordOperation.slice(1)
+                masterPasswordOperation.charAt(0).toUpperCase() + masterPasswordOperation.slice(1)
               }`
             )}
           </Button>

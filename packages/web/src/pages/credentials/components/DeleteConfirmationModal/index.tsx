@@ -135,9 +135,7 @@ export const useDeleteConfirmationModal = ({
     }
 
     modal.confirm({
-      title: isCredential
-        ? t('repositories.deleteCredential')
-        : t('repositories.deleteRepository'),
+      title: isCredential ? t('repositories.deleteCredential') : t('repositories.deleteRepository'),
       content: isCredential
         ? t('repositories.confirmDeleteCredential', { repositoryName: repository.repositoryName })
         : t('repositories.confirmDelete', { repositoryName: repository.repositoryName }),
