@@ -5,7 +5,6 @@ import {
   Card,
   Checkbox,
   Col,
-  Dropdown,
   Empty,
   Flex,
   Form,
@@ -43,7 +42,14 @@ import {
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { createVersionColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildEditMenuItem,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
 import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { featureFlags } from '@/config/featureFlags';
@@ -62,7 +68,6 @@ import {
   EnvironmentOutlined,
   HistoryOutlined,
   KeyOutlined,
-  MoreOutlined,
   PlusOutlined,
   SyncOutlined,
 } from '@/utils/optimizedIcons';
@@ -515,46 +520,20 @@ const InfrastructurePage: React.FC = () => {
     // eslint-disable-next-line react/display-name
     () => (record: Region) => {
       const menuItems: MenuProps['items'] = [
-        {
-          key: 'edit',
-          label: t('general.edit'),
-          icon: <EditOutlined />,
-          onClick: () => openUnifiedModal('region', 'edit', record),
-        },
-        {
-          key: 'trace',
-          label: tSystem('actions.trace'),
-          icon: <HistoryOutlined />,
-          onClick: () =>
-            auditTrace.open({
-              entityType: 'Region',
-              entityIdentifier: record.regionName,
-              entityName: record.regionName,
-            }),
-        },
-        {
-          key: 'delete',
-          label: t('general.delete'),
-          icon: <DeleteOutlined />,
-          danger: true,
-          onClick: () => handleDeleteRegion(record.regionName),
-        },
+        buildEditMenuItem(tCommon, () => openUnifiedModal('region', 'edit', record)),
+        buildTraceMenuItem(tCommon, () =>
+          auditTrace.open({
+            entityType: 'Region',
+            entityIdentifier: record.regionName,
+            entityName: record.regionName,
+          })
+        ),
+        buildDivider(),
+        buildDeleteMenuItem(tCommon, () => handleDeleteRegion(record.regionName)),
       ];
 
       return (
-        <MobileCard
-          actions={
-            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-              <Button
-                type="text"
-                size="small"
-                icon={<MoreOutlined />}
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Actions"
-              />
-            </Dropdown>
-          }
-        >
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
           <Space>
             <EnvironmentOutlined />
             <Typography.Text strong className="truncate">
@@ -568,7 +547,8 @@ const InfrastructurePage: React.FC = () => {
         </MobileCard>
       );
     },
-    [t, tSystem, auditTrace, handleDeleteRegion, openUnifiedModal]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t, tSystem, tCommon, auditTrace, handleDeleteRegion, openUnifiedModal]
   );
 
   if (uiMode === 'simple') {

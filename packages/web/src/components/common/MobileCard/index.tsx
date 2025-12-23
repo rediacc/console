@@ -28,5 +28,3 @@ export function MobileCard({ children, onClick, className, actions }: MobileCard
     </Card>
   );
 }
-
-export default MobileCard;

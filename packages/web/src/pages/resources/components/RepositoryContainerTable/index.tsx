@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Dropdown, Flex, Space, Tag, Typography, type MenuProps } from 'antd';
+import { Alert, Flex, Space, Tag, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useRepositories } from '@/api/queries/repositories';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
@@ -10,6 +10,7 @@ import {
 } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
 import { featureFlags } from '@/config/featureFlags';
@@ -30,7 +31,6 @@ import {
   DisconnectOutlined,
   EyeOutlined,
   FunctionOutlined,
-  MoreOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,
   ReloadOutlined,
@@ -808,18 +808,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         }
       };
 
-      const actions = (
-        <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-          <Button
-            type="text"
-            size="small"
-            icon={<MoreOutlined />}
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Actions"
-            loading={isExecuting}
-          />
-        </Dropdown>
-      );
+      const actions = <ResourceActionsDropdown menuItems={menuItems} isLoading={isExecuting} />;
 
       return (
         <MobileCard onClick={onContainerClick ? handleCardClick : undefined} actions={actions}>
@@ -846,11 +835,8 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
             <Typography.Text type="secondary" className="text-xs">
               {record.port_mappings
                 .slice(0, 2)
-                .map(
-                  (pm, idx) =>
-                    `${pm.host_port}:${pm.container_port}${idx < Math.min(record.port_mappings!.length, 2) - 1 ? ', ' : ''}`
-                )
-                .join('')}
+                .map((pm) => `${pm.host_port}:${pm.container_port}`)
+                .join(', ')}
               {record.port_mappings.length > 2 && ` +${record.port_mappings.length - 2}`}
             </Typography.Text>
           )}

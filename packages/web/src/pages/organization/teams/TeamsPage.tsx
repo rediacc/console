@@ -3,7 +3,6 @@ import {
   Badge,
   Button,
   Card,
-  Dropdown,
   Flex,
   List,
   Modal,
@@ -31,7 +30,14 @@ import {
 } from '@/api/queries/teams';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildEditMenuItem,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
 import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal, {
   type ExistingResourceData,
@@ -44,9 +50,6 @@ import {
   DatabaseOutlined,
   DeleteOutlined,
   DesktopOutlined,
-  EditOutlined,
-  HistoryOutlined,
-  MoreOutlined,
   PlusOutlined,
   TeamOutlined,
   UserOutlined,
@@ -187,52 +190,26 @@ const TeamsPage: React.FC = () => {
     // eslint-disable-next-line react/display-name
     () => (record: Team) => {
       const menuItems: MenuProps['items'] = [
-        {
-          key: 'edit',
-          label: tSystem('actions.edit'),
-          icon: <EditOutlined />,
-          onClick: () => unifiedModal.openEdit(record as ExistingResourceData),
-        },
+        buildEditMenuItem(tCommon, () => unifiedModal.openEdit(record as ExistingResourceData)),
         {
           key: 'members',
           label: tSystem('actions.members'),
           icon: <UserOutlined />,
           onClick: () => manageTeamModal.open(record),
         },
-        {
-          key: 'trace',
-          label: tSystem('actions.trace'),
-          icon: <HistoryOutlined />,
-          onClick: () =>
-            auditTrace.open({
-              entityType: 'Team',
-              entityIdentifier: record.teamName,
-              entityName: record.teamName,
-            }),
-        },
-        {
-          key: 'delete',
-          label: tCommon('actions.delete'),
-          icon: <DeleteOutlined />,
-          danger: true,
-          onClick: () => handleDeleteTeam(record.teamName),
-        },
+        buildTraceMenuItem(tCommon, () =>
+          auditTrace.open({
+            entityType: 'Team',
+            entityIdentifier: record.teamName,
+            entityName: record.teamName,
+          })
+        ),
+        buildDivider(),
+        buildDeleteMenuItem(tCommon, () => handleDeleteTeam(record.teamName)),
       ];
 
       return (
-        <MobileCard
-          actions={
-            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-              <Button
-                type="text"
-                size="small"
-                icon={<MoreOutlined />}
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Actions"
-              />
-            </Dropdown>
-          }
-        >
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
           <Space>
             <TeamOutlined />
             <Typography.Text strong className="truncate">

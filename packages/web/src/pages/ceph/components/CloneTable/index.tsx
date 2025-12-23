@@ -4,14 +4,13 @@ import {
   CopyOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
-  MoreOutlined,
   PlusOutlined,
   ScissorOutlined,
   SettingOutlined,
   SyncOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, Flex, Space, Tag, Tooltip, Typography } from 'antd';
+import { Button, Flex, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -27,6 +26,7 @@ import {
 } from '@/api/queries/cephMutations';
 import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { useMessage } from '@/hooks';
@@ -271,13 +271,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
               aria-label={t('common.remote')}
             />
           </Tooltip>
-          <Dropdown
-            menu={{ items: getCloneMenuItems(record) }}
-            trigger={['click']}
-            placement="bottomRight"
-          >
-            <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
-          </Dropdown>
+          <ResourceActionsDropdown menuItems={getCloneMenuItems(record)} />
         </Space>
       );
 

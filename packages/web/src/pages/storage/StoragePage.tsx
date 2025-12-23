@@ -1,15 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import {
-  Button,
-  Dropdown,
-  Flex,
-  Modal,
-  Space,
-  Tag,
-  Tooltip,
-  Typography,
-  type MenuProps,
-} from 'antd';
+import { Button, Flex, Modal, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
@@ -25,8 +15,15 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { createActionColumn } from '@/components/common/columns';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildEditMenuItem,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
 import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView, {
   COLUMN_RESPONSIVE,
   COLUMN_WIDTHS,
@@ -55,7 +52,6 @@ import {
   FunctionOutlined,
   HistoryOutlined,
   ImportOutlined,
-  MoreOutlined,
   PlusOutlined,
   ReloadOutlined,
 } from '@/utils/optimizedIcons';
@@ -429,16 +425,9 @@ const StoragePage: React.FC = () => {
     // eslint-disable-next-line react/display-name
     () => (record: GetTeamStorages_ResultSet1) => {
       const menuItems: MenuProps['items'] = [
-        {
-          key: 'edit',
-          label: t('common:actions.edit'),
-          icon: <EditOutlined />,
-          onClick: () =>
-            openUnifiedModal(
-              'edit',
-              record as GetTeamStorages_ResultSet1 & Record<string, unknown>
-            ),
-        },
+        buildEditMenuItem(t, () =>
+          openUnifiedModal('edit', record as GetTeamStorages_ResultSet1 & Record<string, unknown>)
+        ),
         {
           key: 'run',
           label: t('common:actions.runFunction'),
@@ -451,40 +440,19 @@ const StoragePage: React.FC = () => {
             );
           },
         },
-        {
-          key: 'trace',
-          label: t('machines:trace'),
-          icon: <HistoryOutlined />,
-          onClick: () =>
-            auditTrace.open({
-              entityType: 'Storage',
-              entityIdentifier: record.storageName,
-              entityName: record.storageName,
-            }),
-        },
-        {
-          key: 'delete',
-          label: t('common:actions.delete'),
-          icon: <DeleteOutlined />,
-          danger: true,
-          onClick: () => handleDeleteStorage(record),
-        },
+        buildTraceMenuItem(t, () =>
+          auditTrace.open({
+            entityType: 'Storage',
+            entityIdentifier: record.storageName,
+            entityName: record.storageName,
+          })
+        ),
+        buildDivider(),
+        buildDeleteMenuItem(t, () => handleDeleteStorage(record)),
       ];
 
       return (
-        <MobileCard
-          actions={
-            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-              <Button
-                type="text"
-                size="small"
-                icon={<MoreOutlined />}
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Actions"
-              />
-            </Dropdown>
-          }
-        >
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
           <Space>
             <CloudOutlined />
             <Typography.Text strong className="truncate">

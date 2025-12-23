@@ -17,6 +17,7 @@ import { QueueFilters, type QueueStatistics, useQueueItems } from '@/api/queries
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useFilters, useMultiPagination, useQueueTraceModal } from '@/hooks';
 import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay';
@@ -32,7 +33,6 @@ import {
   DesktopOutlined,
   ExportOutlined,
   HistoryOutlined,
-  MoreOutlined,
   ReloadOutlined,
   RocketOutlined,
 } from '@/utils/optimizedIcons';
@@ -313,19 +313,7 @@ const QueuePage: React.FC = () => {
       const truncatedTaskId = record.taskId ? `${record.taskId.substring(0, 8)}...` : '';
 
       return (
-        <MobileCard
-          actions={
-            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-              <Button
-                type="text"
-                size="small"
-                icon={<MoreOutlined />}
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Actions"
-              />
-            </Dropdown>
-          }
-        >
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
           <Flex gap={8} align="center" wrap>
             <Space size="small">
               <RocketOutlined />

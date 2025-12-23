@@ -3,7 +3,6 @@ import {
   Badge,
   Button,
   Card,
-  Dropdown,
   Flex,
   Input,
   List,
@@ -32,7 +31,13 @@ import {
 } from '@/api/queries/permissions';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
 import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import UserSessionsTab from '@/pages/organization/access/components/UserSessionsTab';
@@ -43,7 +48,6 @@ import {
   DeleteOutlined,
   HistoryOutlined,
   KeyOutlined,
-  MoreOutlined,
   PlusOutlined,
   SafetyOutlined,
   UserOutlined,
@@ -265,40 +269,19 @@ const AccessPage: React.FC = () => {
           icon: <UserOutlined />,
           onClick: () => assignModal.open(record),
         },
-        {
-          key: 'trace',
-          label: tSystem('actions.trace'),
-          icon: <HistoryOutlined />,
-          onClick: () =>
-            auditTrace.open({
-              entityType: 'Permissions',
-              entityIdentifier: record.permissionGroupName,
-              entityName: record.permissionGroupName,
-            }),
-        },
-        {
-          key: 'delete',
-          label: tCommon('actions.delete'),
-          icon: <DeleteOutlined />,
-          danger: true,
-          onClick: () => handleDeleteGroup(record.permissionGroupName),
-        },
+        buildTraceMenuItem(tCommon, () =>
+          auditTrace.open({
+            entityType: 'Permissions',
+            entityIdentifier: record.permissionGroupName,
+            entityName: record.permissionGroupName,
+          })
+        ),
+        buildDivider(),
+        buildDeleteMenuItem(tCommon, () => handleDeleteGroup(record.permissionGroupName)),
       ];
 
       return (
-        <MobileCard
-          actions={
-            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-              <Button
-                type="text"
-                size="small"
-                icon={<MoreOutlined />}
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Actions"
-              />
-            </Dropdown>
-          }
-        >
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
           <Space>
             <SafetyOutlined />
             <Typography.Text strong className="truncate">

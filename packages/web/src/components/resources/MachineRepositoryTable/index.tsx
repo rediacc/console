@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
-  Dropdown,
   Flex,
   Input,
   Space,
@@ -28,6 +27,7 @@ import { createActionColumn } from '@/components/common/columns';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
@@ -42,7 +42,6 @@ import {
   DisconnectOutlined,
   FunctionOutlined,
   InboxOutlined,
-  MoreOutlined,
   PlayCircleOutlined,
   StopOutlined,
 } from '@/utils/optimizedIcons';
@@ -618,17 +617,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         });
       };
 
-      const actions = (
-        <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-          <Button
-            type="text"
-            size="small"
-            icon={<MoreOutlined />}
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Actions"
-          />
-        </Dropdown>
-      );
+      const actions = <ResourceActionsDropdown menuItems={menuItems} />;
 
       return (
         <MobileCard

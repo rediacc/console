@@ -11,11 +11,12 @@ import {
   buildTraceMenuItem,
 } from '@/components/common/menuBuilders';
 import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useDialogState, useExpandableTable, useTraceModal } from '@/hooks';
 import { ManageClusterMachinesModal } from '@/pages/ceph/components/ManageClusterMachinesModal';
 import { confirmAction } from '@/utils/confirmations';
-import { CloudServerOutlined, FunctionOutlined, MoreOutlined } from '@/utils/optimizedIcons';
+import { CloudServerOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 import { buildClusterColumns } from './columns';
 import { ClusterMachines } from './components/ClusterMachines';
 import { MachineCountBadge } from './components/MachineCountBadge';
@@ -157,9 +158,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
               aria-label={t('common:actions.remote')}
             />
           </Dropdown>
-          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
-          </Dropdown>
+          <ResourceActionsDropdown menuItems={menuItems} />
         </Space>
       );
 

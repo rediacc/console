@@ -5,13 +5,12 @@ import {
   CopyOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
-  MoreOutlined,
   PlusOutlined,
   RollbackOutlined,
   SecurityScanOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, Flex, Space, Tag, Tooltip, Typography } from 'antd';
+import { Button, Flex, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -26,6 +25,7 @@ import {
 } from '@/api/queries/cephMutations';
 import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
@@ -270,13 +270,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
               aria-label={t('common.remote')}
             />
           </Tooltip>
-          <Dropdown
-            menu={{ items: getSnapshotMenuItems(record) }}
-            trigger={['click']}
-            placement="bottomRight"
-          >
-            <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
-          </Dropdown>
+          <ResourceActionsDropdown menuItems={getSnapshotMenuItems(record)} />
         </Space>
       );
 

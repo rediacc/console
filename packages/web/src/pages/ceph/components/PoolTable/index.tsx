@@ -11,10 +11,11 @@ import {
   buildTraceMenuItem,
 } from '@/components/common/menuBuilders';
 import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import { useExpandableTable, useTraceModal } from '@/hooks';
 import RbdImageTable from '@/pages/ceph/components/RbdImageTable';
 import { confirmAction } from '@/utils/confirmations';
-import { DatabaseOutlined, FunctionOutlined, MoreOutlined } from '@/utils/optimizedIcons';
+import { DatabaseOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 import { buildPoolColumns } from './columns';
 import { ClusterPoolsCard } from './components/ClusterPoolsCard';
 import { getPoolFunctionMenuItems } from './menus';
@@ -154,9 +155,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
               aria-label={t('common:actions.remote')}
             />
           </Dropdown>
-          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
-          </Dropdown>
+          <ResourceActionsDropdown menuItems={menuItems} />
         </Space>
       );
 

@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
-  Dropdown,
   Flex,
   Form,
   Modal,
@@ -29,7 +28,9 @@ import {
   useUsers,
 } from '@/api/queries/users';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { buildDivider, buildTraceMenuItem } from '@/components/common/menuBuilders';
 import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import ResourceForm from '@/pages/organization/users/components/ResourceForm';
@@ -37,7 +38,6 @@ import {
   CheckCircleOutlined,
   CheckOutlined,
   HistoryOutlined,
-  MoreOutlined,
   PlusOutlined,
   SafetyOutlined,
   StopOutlined,
@@ -280,17 +280,14 @@ const UsersPage: React.FC = () => {
             setSelectedUserGroup(record.permissionsName || '');
           },
         },
-        {
-          key: 'trace',
-          label: tSystem('actions.trace'),
-          icon: <HistoryOutlined />,
-          onClick: () =>
-            auditTrace.open({
-              entityType: 'User',
-              entityIdentifier: record.userEmail,
-              entityName: record.userEmail,
-            }),
-        },
+        buildTraceMenuItem(tCommon, () =>
+          auditTrace.open({
+            entityType: 'User',
+            entityIdentifier: record.userEmail,
+            entityName: record.userEmail,
+          })
+        ),
+        buildDivider(),
         record.activated
           ? {
               key: 'deactivate',
@@ -308,19 +305,7 @@ const UsersPage: React.FC = () => {
       ];
 
       return (
-        <MobileCard
-          actions={
-            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-              <Button
-                type="text"
-                size="small"
-                icon={<MoreOutlined />}
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Actions"
-              />
-            </Dropdown>
-          }
-        >
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
           <Space>
             <UserOutlined />
             <Typography.Text strong className="truncate">
@@ -340,7 +325,16 @@ const UsersPage: React.FC = () => {
         </MobileCard>
       );
     },
-    [t, tSystem, assignPermissionModal, auditTrace, handleDeactivateUser, handleReactivateUser]
+
+    [
+      t,
+      tSystem,
+      tCommon,
+      assignPermissionModal,
+      auditTrace,
+      handleDeactivateUser,
+      handleReactivateUser,
+    ]
   );
 
   return (

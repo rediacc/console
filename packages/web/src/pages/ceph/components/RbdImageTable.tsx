@@ -16,7 +16,7 @@ import {
   SettingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, Flex, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
+import { Button, Flex, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -33,6 +33,7 @@ import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
 import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { useDialogState, useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
@@ -40,7 +41,6 @@ import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMachineReassignmentModal';
 import { createSorter } from '@/platform';
-import { MoreOutlined } from '@/utils/optimizedIcons';
 import type { ImageFormValues as FullImageFormValues } from '@rediacc/shared/types';
 import SnapshotTable from './SnapshotTable';
 
@@ -420,13 +420,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
               aria-label={t('common.remote')}
             />
           </Tooltip>
-          <Dropdown
-            menu={{ items: getImageMenuItems(record) }}
-            trigger={['click']}
-            placement="bottomRight"
-          >
-            <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
-          </Dropdown>
+          <ResourceActionsDropdown menuItems={getImageMenuItems(record)} />
         </Space>
       );
 
