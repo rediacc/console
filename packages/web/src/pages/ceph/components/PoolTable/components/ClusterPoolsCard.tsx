@@ -1,6 +1,7 @@
-import React from 'react';
-import { Card, Flex, Table, Tag, Typography } from 'antd';
+import React, { type ReactNode } from 'react';
+import { Card, Flex, Tag, Typography } from 'antd';
 import type { CephPool } from '@/api/queries/ceph';
+import ResourceListView from '@/components/common/ResourceListView';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 import type { TFunction } from 'i18next';
@@ -15,6 +16,7 @@ interface ClusterPoolsCardProps {
   onExpandedRowsChange: (clusterKeys: string[], keys: string[]) => void;
   expandedRowRender: (pool: CephPool) => React.ReactNode;
   onToggleRow: (poolGuid?: string) => void;
+  mobileRender?: (record: CephPool) => ReactNode;
   t: TFunction<'ceph' | 'common'>;
 }
 
@@ -28,6 +30,7 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
   onExpandedRowsChange,
   expandedRowRender,
   onToggleRow,
+  mobileRender,
   t,
 }) => {
   const clusterPoolKeys = pools.map((pool) => pool.poolGuid || '').filter(Boolean);
@@ -47,18 +50,19 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
       }
     >
       <Flex className="overflow-hidden">
-        <Table<CephPool>
+        <ResourceListView<CephPool>
           columns={columns}
-          dataSource={pools}
+          data={pools}
           rowKey="poolGuid"
           loading={loading}
-          scroll={{ x: 'max-content' }}
           pagination={false}
           data-testid={`ds-pool-table-${clusterName}`}
+          mobileRender={mobileRender}
           expandable={{
             expandedRowRender,
             expandedRowKeys: activeKeys,
-            onExpandedRowsChange: (keys) => onExpandedRowsChange(clusterPoolKeys, keys as string[]),
+            onExpandedRowsChange: (keys: readonly React.Key[]) =>
+              onExpandedRowsChange(clusterPoolKeys, keys as string[]),
             expandIcon: () => null,
             expandRowByClick: false,
           }}
@@ -72,7 +76,6 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
               onToggleRow(record.poolGuid ?? undefined);
             },
           })}
-          rowClassName={() => 'pool-row'}
         />
       </Flex>
     </Card>

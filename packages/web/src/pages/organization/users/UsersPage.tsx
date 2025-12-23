@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
+  Dropdown,
   Flex,
   Form,
   Modal,
@@ -11,6 +12,7 @@ import {
   Tag,
   Tooltip,
   Typography,
+  type MenuProps,
 } from 'antd';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +29,7 @@ import {
   useUsers,
 } from '@/api/queries/users';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { MobileCard } from '@/components/common/MobileCard';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import ResourceForm from '@/pages/organization/users/components/ResourceForm';
@@ -34,6 +37,7 @@ import {
   CheckCircleOutlined,
   CheckOutlined,
   HistoryOutlined,
+  MoreOutlined,
   PlusOutlined,
   SafetyOutlined,
   StopOutlined,
@@ -257,6 +261,49 @@ const UsersPage: React.FC = () => {
     },
   ];
 
+  const mobileRender = useMemo(
+    () => (record: User) => {
+      const menuItems: MenuProps['items'] = [
+        { key: 'permissions', label: tSystem('actions.permissions'), icon: <SafetyOutlined />, onClick: () => {
+          assignPermissionModal.open(record);
+          setSelectedUserGroup(record.permissionsName || '');
+        }},
+        { key: 'trace', label: tSystem('actions.trace'), icon: <HistoryOutlined />, onClick: () => auditTrace.open({
+          entityType: 'User',
+          entityIdentifier: record.userEmail,
+          entityName: record.userEmail,
+        })},
+        record.activated
+          ? { key: 'deactivate', label: tSystem('actions.deactivate'), icon: <StopOutlined />, danger: true, onClick: () => handleDeactivateUser(record.userEmail) }
+          : { key: 'activate', label: tSystem('actions.activate'), icon: <CheckOutlined />, onClick: () => handleReactivateUser(record.userEmail) },
+      ];
+
+      return (
+        <MobileCard actions={
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
+          </Dropdown>
+        }>
+          <Space>
+            <UserOutlined />
+            <Typography.Text strong className="truncate">{record.userEmail}</Typography.Text>
+          </Space>
+          <Flex gap={8} wrap>
+            {record.activated ? (
+              <Tag icon={<CheckCircleOutlined />}>{t('users.status.active')}</Tag>
+            ) : (
+              <Tag icon={<StopOutlined />}>{t('users.status.inactive')}</Tag>
+            )}
+            {record.permissionsName && (
+              <Tag icon={<SafetyOutlined />}>{record.permissionsName}</Tag>
+            )}
+          </Flex>
+        </MobileCard>
+      );
+    },
+    [t, tSystem, assignPermissionModal, auditTrace, handleDeactivateUser, handleReactivateUser]
+  );
+
   return (
     <Flex vertical>
       <Flex vertical gap={16}>
@@ -270,6 +317,7 @@ const UsersPage: React.FC = () => {
           loading={usersLoading}
           data={users}
           columns={userColumns}
+          mobileRender={mobileRender}
           rowKey="userEmail"
           searchPlaceholder={t('users.searchPlaceholder')}
           data-testid="system-user-table"

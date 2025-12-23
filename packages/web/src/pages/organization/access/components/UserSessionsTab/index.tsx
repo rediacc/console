@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Button,
   Card,
@@ -9,7 +9,6 @@ import {
   Row,
   Space,
   Statistic,
-  Table,
   Tag,
   Tooltip,
   Typography,
@@ -25,6 +24,8 @@ import {
   createStatusColumn,
   createTruncatedColumn,
 } from '@/components/common/columns';
+import { MobileCard } from '@/components/common/MobileCard';
+import ResourceListView from '@/components/common/ResourceListView';
 import { useMessage } from '@/hooks';
 import { createDateSorter } from '@/platform';
 import { selectUser } from '@/store/auth/authSelectors';
@@ -249,6 +250,77 @@ const UserSessionsTab: React.FC = () => {
     actionsColumn,
   ];
 
+  const mobileRender = useMemo(
+    () => (record: UserRequest) => {
+      const childCount = filteredSessions.filter(
+        (session) => session.parentRequestId === record.requestId
+      ).length;
+
+      const actions = (
+        <Popconfirm
+          title={t('userSessions.confirmTerminate')}
+          description={
+            record.userEmail === user?.email
+              ? t('userSessions.confirmTerminateSelf')
+              : t('userSessions.confirmTerminateOther', { email: record.userEmail })
+          }
+          onConfirm={() => handleTerminateSession(record)}
+          okText={t('common:yes')}
+          cancelText={t('common:no')}
+          disabled={!record.isActive}
+        >
+          <Tooltip title={t('userSessions.terminate')}>
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<CloseCircleOutlined />}
+              disabled={!record.isActive}
+              loading={deleteUserRequestMutation.isPending}
+              aria-label={t('userSessions.terminate')}
+            />
+          </Tooltip>
+        </Popconfirm>
+      );
+
+      return (
+        <MobileCard actions={actions}>
+          <Space wrap>
+            <Typography.Text strong>{record.userEmail}</Typography.Text>
+            {record.userEmail === user?.email && <Tag>{t('userSessions.currentSession')}</Tag>}
+            {record.isActive ? (
+              <Tag color="success" icon={<CheckCircleOutlined />}>
+                {t('userSessions.active')}
+              </Tag>
+            ) : (
+              <Tag icon={<StopOutlined />}>{t('userSessions.inactive')}</Tag>
+            )}
+          </Space>
+          <Space wrap>
+            <Typography.Text type="secondary">{record.sessionName}</Typography.Text>
+            {record.parentRequestId && (
+              <Tag icon={<LinkOutlined />} className="text-xs">
+                {t('userSessions.fork')}
+              </Tag>
+            )}
+            {childCount > 0 && (
+              <Tag icon={<BranchesOutlined />} className="text-xs">
+                {childCount}
+              </Tag>
+            )}
+          </Space>
+          <Typography.Text type="secondary" className="text-xs">
+            IP: {record.ipAddress || t('userSessions.notAvailable')}
+          </Typography.Text>
+          <Typography.Text type="secondary" className="text-xs">
+            {t('userSessions.columns.lastActivity')}: {dayjs(record.lastActivity).fromNow()}
+          </Typography.Text>
+        </MobileCard>
+      );
+    },
+    [t, user?.email, filteredSessions, handleTerminateSession, deleteUserRequestMutation.isPending]
+  );
+
   return (
     <Flex vertical gap={16} data-testid="user-sessions-tab">
       <Row gutter={16}>
@@ -362,12 +434,13 @@ const UserSessionsTab: React.FC = () => {
           </Flex>
         }
       >
-        <Table<UserRequest>
+        <ResourceListView<UserRequest>
           data-testid="sessions-table"
           columns={columns}
-          dataSource={filteredSessions}
+          data={filteredSessions}
           rowKey={(record) => record.requestId.toString()}
           loading={isLoading}
+          mobileRender={mobileRender}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
@@ -375,7 +448,6 @@ const UserSessionsTab: React.FC = () => {
               <Typography.Text>{t('userSessions.totalCount', { count: total })}</Typography.Text>
             ),
           }}
-          scroll={{ x: 1500 }}
           onRow={(record) =>
             ({
               'data-testid': `sessions-row-${record.requestId}`,

@@ -1,4 +1,4 @@
-import { useState, type Key } from 'react';
+import { useMemo, useState, type Key } from 'react';
 import {
   CameraOutlined,
   CheckCircleOutlined,
@@ -16,7 +16,7 @@ import {
   SettingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { Button, Flex, Space, Table, Tag, Tooltip, Typography, type MenuProps } from 'antd';
+import { Button, Dropdown, Flex, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -31,13 +31,16 @@ import {
 } from '@/api/queries/cephMutations';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
+import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { useDialogState, useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { ImageMachineReassignmentModal } from '@/pages/ceph/components/ImageMachineReassignmentModal';
 import { createSorter } from '@/platform';
+import { MoreOutlined } from '@/utils/optimizedIcons';
 import type { ImageFormValues as FullImageFormValues } from '@rediacc/shared/types';
 import SnapshotTable from './SnapshotTable';
 
@@ -374,6 +377,64 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     }),
   ];
 
+  const handleExpand = (image: CephRbdImage) => {
+    const imageKey = String(image.imageGuid ?? '');
+    setExpandedRowKeys((prev) =>
+      prev.includes(imageKey) ? prev.filter((k) => k !== imageKey) : [...prev, imageKey]
+    );
+  };
+
+  const mobileRender = useMemo(
+    () => (record: CephRbdImage) => {
+      const actions = (
+        <Space>
+          <Tooltip title={t('snapshots.title')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<CameraOutlined />}
+              onClick={() => handleExpand(record)}
+              aria-label={t('snapshots.title')}
+            />
+          </Tooltip>
+          <Tooltip title={t('common.remote')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<CloudUploadOutlined />}
+              onClick={() => handleRunFunction('ceph_rbd_info', record)}
+              aria-label={t('common.remote')}
+            />
+          </Tooltip>
+          <Dropdown menu={{ items: getImageMenuItems(record) }} trigger={['click']} placement="bottomRight">
+            <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
+          </Dropdown>
+        </Space>
+      );
+
+      return (
+        <MobileCard actions={actions}>
+          <Space>
+            <FileImageOutlined />
+            <Typography.Text strong>{record.imageName}</Typography.Text>
+            {record.vaultContent && <Tag bordered={false}>{t('common.vault')}</Tag>}
+          </Space>
+          <Typography.Text type="secondary" className="text-xs truncate">
+            {String(record.imageGuid ?? '').substring(0, 8)}...
+          </Typography.Text>
+          {record.machineName ? (
+            <Tag icon={<CloudServerOutlined />} bordered={false}>
+              {record.machineName}
+            </Tag>
+          ) : (
+            <Tag bordered={false}>{t('common.none')}</Tag>
+          )}
+        </MobileCard>
+      );
+    },
+    [t, getImageMenuItems, handleRunFunction]
+  );
+
   const expandedRowRender = (record: CephRbdImage) => (
     <Flex data-testid={`rbd-snapshot-list-${record.imageName}`}>
       <SnapshotTable image={record} pool={pool} teamFilter={teamFilter} />
@@ -396,20 +457,28 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       </Flex>
 
       <Flex className="overflow-hidden">
-        <Table<CephRbdImage>
+        <ResourceListView<CephRbdImage>
           columns={columns}
-          dataSource={images}
+          data={images}
           rowKey="imageGuid"
           loading={isLoading}
-          size="small"
           pagination={false}
           data-testid="rbd-image-table"
           onRow={getRowProps}
+          mobileRender={mobileRender}
           expandable={{
             expandedRowRender,
             expandedRowKeys,
             onExpandedRowsChange: (keys: readonly Key[]) => setExpandedRowKeys(keys.map(String)),
-            expandIcon: ({ expanded, onExpand, record }) => (
+            expandIcon: ({
+              expanded,
+              onExpand,
+              record,
+            }: {
+              expanded: boolean;
+              onExpand: (record: CephRbdImage, event: React.MouseEvent<HTMLElement>) => void;
+              record: CephRbdImage;
+            }) => (
               <Button
                 icon={expanded ? <CameraOutlined /> : <CameraOutlined />}
                 onClick={(e) => onExpand(record, e)}

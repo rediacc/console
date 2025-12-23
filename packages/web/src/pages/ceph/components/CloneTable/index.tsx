@@ -4,13 +4,14 @@ import {
   CopyOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
+  MoreOutlined,
   PlusOutlined,
   ScissorOutlined,
   SettingOutlined,
   SyncOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import { Button, Flex, Table, Tooltip, Typography } from 'antd';
+import { Button, Dropdown, Flex, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -24,7 +25,9 @@ import {
   useDeleteCephRbdClone,
   useUpdateCephPoolVault,
 } from '@/api/queries/cephMutations';
+import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { useMessage } from '@/hooks';
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
@@ -237,6 +240,61 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
     [getCloneMenuItems, handleRunFunction, renderMachineCount, t]
   );
 
+  const mobileRender = useMemo(
+    () => (record: CephRbdClone) => {
+      const onExpand = () => {
+        setExpandedRowKeys((prev) =>
+          prev.includes(record.cloneName)
+            ? prev.filter((k) => k !== record.cloneName)
+            : [...prev, record.cloneName]
+        );
+      };
+
+      const actions = (
+        <Space>
+          <Tooltip title={t('clones.viewMachines')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={onExpand}
+              aria-label={t('clones.viewMachines')}
+            />
+          </Tooltip>
+          <Tooltip title={t('common.remote')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<CloudUploadOutlined />}
+              onClick={() => handleRunFunction('ceph_rbd_info', record)}
+              aria-label={t('common.remote')}
+            />
+          </Tooltip>
+          <Dropdown menu={{ items: getCloneMenuItems(record) }} trigger={['click']} placement="bottomRight">
+            <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
+          </Dropdown>
+        </Space>
+      );
+
+      return (
+        <MobileCard actions={actions}>
+          <Space>
+            <CopyOutlined />
+            <Typography.Text strong>{record.cloneName}</Typography.Text>
+            {record.vaultContent && <Tag bordered={false}>{t('common.vault')}</Tag>}
+          </Space>
+          <Flex gap={8} align="center">
+            <Typography.Text type="secondary" className="text-xs">
+              {t('machines:machines')}:
+            </Typography.Text>
+            {renderMachineCount(record)}
+          </Flex>
+        </MobileCard>
+      );
+    },
+    [t, renderMachineCount, handleRunFunction, getCloneMenuItems]
+  );
+
   const expandedRowRender = useCallback(
     (record: CephRbdClone) => (
       <CloneMachineTable
@@ -267,20 +325,27 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
         </Flex>
 
         <Flex className="overflow-hidden">
-          <Table<CephRbdClone>
+          <ResourceListView<CephRbdClone>
             columns={columns}
-            dataSource={clones}
-            rowKey="cloneGuid"
+            data={clones}
+            rowKey="cloneName"
             loading={isLoading}
-            size="small"
             pagination={false}
             data-testid="clone-list-table"
+            mobileRender={mobileRender}
             expandable={{
               expandedRowRender,
               rowExpandable: () => true,
               expandedRowKeys,
-              onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
-              expandIcon: ({ onExpand, record }) => (
+              onExpandedRowsChange: (keys: readonly React.Key[]) =>
+                setExpandedRowKeys(keys as string[]),
+              expandIcon: ({
+                onExpand,
+                record,
+              }: {
+                onExpand: (record: CephRbdClone, event: React.MouseEvent<HTMLElement>) => void;
+                record: CephRbdClone;
+              }) => (
                 <Button
                   icon={<CopyOutlined />}
                   onClick={(event) => onExpand(record, event)}

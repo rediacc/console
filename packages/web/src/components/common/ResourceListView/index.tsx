@@ -4,7 +4,9 @@ import {
   Card,
   Empty,
   Flex,
+  Grid,
   Input,
+  List,
   Table,
   Tooltip,
   Typography,
@@ -15,7 +17,7 @@ import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@/utils/optimizedI
 
 export { COLUMN_RESPONSIVE, COLUMN_WIDTHS } from './columnConstants';
 
-interface ResourceListViewProps<T extends object = Record<string, unknown>> {
+export interface ResourceListViewProps<T extends object = Record<string, unknown>> {
   title?: ReactNode;
   loading?: boolean;
   data?: T[];
@@ -34,6 +36,14 @@ interface ResourceListViewProps<T extends object = Record<string, unknown>> {
   createButtonText?: string;
   emptyDescription?: string;
   resourceType?: string;
+  /** Custom render function for mobile view */
+  mobileRender?: (record: T, index: number) => ReactNode;
+  /** Expandable row configuration */
+  expandable?: TableProps<T>['expandable'];
+  /** Row class name */
+  rowClassName?: TableProps<T>['rowClassName'];
+  /** Custom data-testid for the table */
+  'data-testid'?: string;
 }
 
 function ResourceListView<T extends object = Record<string, unknown>>({
@@ -55,7 +65,13 @@ function ResourceListView<T extends object = Record<string, unknown>>({
   createButtonText = 'Create New',
   emptyDescription,
   resourceType = 'items',
+  mobileRender,
+  expandable,
+  rowClassName,
+  'data-testid': dataTestId,
 }: ResourceListViewProps<T>) {
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.sm;
   const shouldRenderControls = Boolean(title || onSearch || filters || actions);
   const resolvedEmptyDescription = emptyDescription || emptyText;
   const singularResourceType =
@@ -74,11 +90,15 @@ function ResourceListView<T extends object = Record<string, unknown>>({
         }
       : false;
 
+  const getRowKey = (record: T, index: number): Key => {
+    if (typeof rowKey === 'function') return rowKey(record);
+    return ((record as Record<string, unknown>)[rowKey] as Key) ?? index;
+  };
+
   const getRowDataTestId = (record: T): string => {
     if (typeof rowKey === 'function') {
       return `resource-list-item-${rowKey(record)}`;
     }
-
     const recordValue = (record as Record<string, unknown>)[rowKey];
     return `resource-list-item-${recordValue ?? rowKey}`;
   };
@@ -155,6 +175,31 @@ function ResourceListView<T extends object = Record<string, unknown>>({
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             data-testid="resource-list-empty"
           />
+        ) : isMobile && mobileRender ? (
+          <List
+            dataSource={data}
+            renderItem={(record, index) => (
+              <List.Item
+                key={getRowKey(record, index)}
+                className="mobile-list-item"
+                data-testid={getRowDataTestId(record)}
+              >
+                {mobileRender(record, index)}
+              </List.Item>
+            )}
+            pagination={
+              resolvedPagination
+                ? {
+                    size: resolvedPagination.size,
+                    showSizeChanger: resolvedPagination.showSizeChanger,
+                    showTotal: resolvedPagination.showTotal,
+                    pageSizeOptions: resolvedPagination.pageSizeOptions,
+                    defaultPageSize: resolvedPagination.defaultPageSize,
+                  }
+                : false
+            }
+            split={false}
+          />
         ) : (
           <Table<T>
             columns={columns}
@@ -166,8 +211,10 @@ function ResourceListView<T extends object = Record<string, unknown>>({
               'data-testid': getRowDataTestId(record),
             })}
             rowSelection={rowSelection}
+            expandable={expandable}
+            rowClassName={rowClassName}
             scroll={{ x: true }}
-            data-testid="resource-list-table"
+            data-testid={dataTestId || 'resource-list-table'}
           />
         )}
       </LoadingWrapper>

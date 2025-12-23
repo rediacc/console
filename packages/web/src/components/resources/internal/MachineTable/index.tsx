@@ -1,11 +1,13 @@
 ﻿import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Button, Card, Empty, Flex, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import { Button, Card, Dropdown, Empty, Flex, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { MobileCard } from '@/components/common/MobileCard';
+import ResourceListView from '@/components/common/ResourceListView';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
@@ -23,10 +25,15 @@ import {
   BranchesOutlined,
   CloudServerOutlined,
   DashboardOutlined,
+  DeleteOutlined,
   DesktopOutlined,
+  EditOutlined,
+  FunctionOutlined,
   GlobalOutlined,
+  HistoryOutlined,
   InboxOutlined,
   InfoCircleOutlined,
+  MoreOutlined,
   RightOutlined,
   TeamOutlined,
 } from '@/utils/optimizedIcons';
@@ -60,7 +67,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   enabled = true,
   onQueueItemCreated,
   onRowClick,
-  selectedMachine: externalSelectedMachine,
+  selectedMachine: _externalSelectedMachine,
 }) => {
   const { t } = useTranslation(['machines', 'common', 'functions', 'resources']);
   const navigate = useNavigate();
@@ -578,6 +585,61 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     );
   };
 
+  const mobileRender = useMemo(
+    () => (record: Machine) => {
+      const menuItems: MenuProps['items'] = [
+        ...(onEditMachine
+          ? [{ key: 'edit', label: t('common:actions.edit'), icon: <EditOutlined />, onClick: () => onEditMachine(record) }]
+          : []),
+        ...(onFunctionsMachine
+          ? [{ key: 'functions', label: t('machines:functions'), icon: <FunctionOutlined />, onClick: () => onFunctionsMachine(record) }]
+          : []),
+        {
+          key: 'trace',
+          label: t('common:actions.viewHistory'),
+          icon: <HistoryOutlined />,
+          onClick: () =>
+            auditTrace.open({
+              entityType: 'Machine',
+              entityIdentifier: record.machineName,
+              entityName: record.machineName,
+            }),
+        },
+        ...(handleDelete
+          ? [{ key: 'delete', label: t('common:actions.delete'), icon: <DeleteOutlined />, danger: true, onClick: () => handleDelete(record) }]
+          : []),
+      ];
+
+      const handleCardClick = () => {
+        navigate(`/machines/${record.machineName}/repositories`, { state: { machine: record } });
+      };
+
+      const actions =
+        menuItems.length > 0 ? (
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
+          </Dropdown>
+        ) : undefined;
+
+      return (
+        <MobileCard onClick={handleCardClick} actions={actions}>
+          <Space>
+            <DesktopOutlined />
+            <Typography.Text strong className="truncate">
+              {record.machineName}
+            </Typography.Text>
+          </Space>
+          <Flex gap={8} wrap>
+            <Tag>{record.teamName}</Tag>
+            {record.bridgeName && <Tag>{record.bridgeName}</Tag>}
+            {record.regionName && <Tag>{record.regionName}</Tag>}
+          </Flex>
+        </MobileCard>
+      );
+    },
+    [t, navigate, onEditMachine, onFunctionsMachine, handleDelete, auditTrace]
+  );
+
   return (
     <Flex vertical className={`h-full ${className}`}>
       {renderViewToggle()}
@@ -585,19 +647,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
       {groupBy === 'machine' ? (
         <Flex vertical ref={tableContainerRef} className="flex-1 overflow-hidden">
-          <Table
-            columns={columns}
-            dataSource={filteredMachines}
-            rowKey="machineName"
+          <ResourceListView<Machine>
             loading={isLoading}
-            scroll={{ x: 'max-content' }}
+            data={filteredMachines}
+            columns={columns}
+            rowKey="machineName"
             rowSelection={rowSelection}
-            rowClassName={(record) => {
-              const isSelected = externalSelectedMachine?.machineName === record.machineName;
-              const baseClass = 'machine-table-row';
-              return isSelected ? `${baseClass} machine-table-row--selected` : baseClass;
-            }}
-            data-testid="machine-table"
+            mobileRender={mobileRender}
             pagination={{
               pageSize: dynamicPageSize,
               showSizeChanger: false,
@@ -621,7 +677,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 });
               },
             })}
-            sticky
           />
         </Flex>
       ) : (

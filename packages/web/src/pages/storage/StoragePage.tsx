@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { Button, Flex, Modal, Space, Tag, Tooltip, Typography } from 'antd';
+import { Button, Dropdown, Flex, Modal, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
@@ -15,6 +15,7 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { createActionColumn } from '@/components/common/columns';
+import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import ResourceListView, {
   COLUMN_RESPONSIVE,
@@ -44,6 +45,7 @@ import {
   FunctionOutlined,
   HistoryOutlined,
   ImportOutlined,
+  MoreOutlined,
   PlusOutlined,
   ReloadOutlined,
 } from '@/utils/optimizedIcons';
@@ -413,6 +415,39 @@ const StoragePage: React.FC = () => {
   const displayedStorages = hasTeamSelection ? storages : [];
   const emptyDescription = hasTeamSelection ? t('storage.noStorage') : t('teams.selectTeamPrompt');
 
+  const mobileRender = useMemo(
+    () => (record: GetTeamStorages_ResultSet1) => {
+      const menuItems: MenuProps['items'] = [
+        { key: 'edit', label: t('common:actions.edit'), icon: <EditOutlined />, onClick: () => openUnifiedModal('edit', record as GetTeamStorages_ResultSet1 & Record<string, unknown>) },
+        { key: 'run', label: t('common:actions.runFunction'), icon: <FunctionOutlined />, onClick: () => {
+          setCurrentResource(record as GetTeamStorages_ResultSet1 & Record<string, unknown>);
+          openUnifiedModal('create', record as GetTeamStorages_ResultSet1 & Record<string, unknown>);
+        }},
+        { key: 'trace', label: t('machines:trace'), icon: <HistoryOutlined />, onClick: () => auditTrace.open({
+          entityType: 'Storage',
+          entityIdentifier: record.storageName,
+          entityName: record.storageName,
+        })},
+        { key: 'delete', label: t('common:actions.delete'), icon: <DeleteOutlined />, danger: true, onClick: () => handleDeleteStorage(record) },
+      ];
+
+      return (
+        <MobileCard actions={
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
+          </Dropdown>
+        }>
+          <Space>
+            <CloudOutlined />
+            <Typography.Text strong className="truncate">{record.storageName}</Typography.Text>
+          </Space>
+          <Tag>{record.teamName}</Tag>
+        </MobileCard>
+      );
+    },
+    [t, openUnifiedModal, setCurrentResource, auditTrace, handleDeleteStorage]
+  );
+
   return (
     <>
       <Flex vertical>
@@ -437,6 +472,7 @@ const StoragePage: React.FC = () => {
           loading={storagesLoading}
           data={displayedStorages}
           columns={storageColumns}
+          mobileRender={mobileRender}
           rowKey="storageName"
           data-testid="resources-storage-table"
           resourceType="storage locations"

@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
+  Badge,
   Button,
   Card,
+  Dropdown,
   Flex,
   List,
   Modal,
@@ -12,6 +14,7 @@ import {
   Tag,
   Tooltip,
   Typography,
+  type MenuProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
@@ -28,6 +31,7 @@ import {
 } from '@/api/queries/teams';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { MobileCard } from '@/components/common/MobileCard';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal, {
   type ExistingResourceData,
@@ -35,7 +39,18 @@ import UnifiedResourceModal, {
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { useFormModal } from '@/hooks/useFormModal';
 import { ModalSize } from '@/types/modal';
-import { DeleteOutlined, PlusOutlined, UserOutlined } from '@/utils/optimizedIcons';
+import {
+  CloudServerOutlined,
+  DatabaseOutlined,
+  DeleteOutlined,
+  DesktopOutlined,
+  EditOutlined,
+  HistoryOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  TeamOutlined,
+  UserOutlined,
+} from '@/utils/optimizedIcons';
 import { getTeamColumns } from './data';
 
 const TeamsPage: React.FC = () => {
@@ -146,14 +161,14 @@ const TeamsPage: React.FC = () => {
     }
   };
 
-  const teamColumns = getTeamColumns({
+  const columnParams = {
     tSystem,
     tCommon,
-    onEdit: (team) => unifiedModal.openEdit(team as ExistingResourceData),
-    onManageMembers: (team) => {
+    onEdit: (team: Team) => unifiedModal.openEdit(team as ExistingResourceData),
+    onManageMembers: (team: Team) => {
       manageTeamModal.open(team);
     },
-    onTrace: (team) =>
+    onTrace: (team: Team) =>
       auditTrace.open({
         entityType: 'Team',
         entityIdentifier: team.teamName,
@@ -161,7 +176,46 @@ const TeamsPage: React.FC = () => {
       }),
     onDelete: handleDeleteTeam,
     isDeleting: deleteTeamMutation.isPending,
-  });
+  };
+
+  const teamColumns = getTeamColumns(columnParams);
+
+  const mobileRender = useMemo(
+    () => (record: Team) => {
+      const menuItems: MenuProps['items'] = [
+        { key: 'edit', label: tSystem('actions.edit'), icon: <EditOutlined />, onClick: () => unifiedModal.openEdit(record as ExistingResourceData) },
+        { key: 'members', label: tSystem('actions.members'), icon: <UserOutlined />, onClick: () => manageTeamModal.open(record) },
+        { key: 'trace', label: tSystem('actions.trace'), icon: <HistoryOutlined />, onClick: () => auditTrace.open({
+          entityType: 'Team',
+          entityIdentifier: record.teamName,
+          entityName: record.teamName,
+        })},
+        { key: 'delete', label: tCommon('actions.delete'), icon: <DeleteOutlined />, danger: true, onClick: () => handleDeleteTeam(record.teamName) },
+      ];
+
+      return (
+        <MobileCard actions={
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
+          </Dropdown>
+        }>
+          <Space>
+            <TeamOutlined />
+            <Typography.Text strong className="truncate">{record.teamName}</Typography.Text>
+          </Space>
+          <Flex gap={16} wrap>
+            <Space size="small">
+              <Badge count={record.memberCount} showZero size="small"><UserOutlined /></Badge>
+            </Space>
+            <Space size="small"><DesktopOutlined /><Typography.Text>{record.machineCount}</Typography.Text></Space>
+            <Space size="small"><DatabaseOutlined /><Typography.Text>{record.repositoryCount || 0}</Typography.Text></Space>
+            <Space size="small"><CloudServerOutlined /><Typography.Text>{record.storageCount || 0}</Typography.Text></Space>
+          </Flex>
+        </MobileCard>
+      );
+    },
+    [tSystem, tCommon, unifiedModal, manageTeamModal, auditTrace, handleDeleteTeam]
+  );
 
   return (
     <Flex vertical>
@@ -175,6 +229,7 @@ const TeamsPage: React.FC = () => {
         loading={teamsLoading}
         data={teams}
         columns={teamColumns}
+        mobileRender={mobileRender}
         rowKey="teamName"
         searchPlaceholder={t('teams.searchPlaceholder')}
         data-testid="system-team-table"

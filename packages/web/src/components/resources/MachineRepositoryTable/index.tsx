@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Alert, Button, Flex, Input, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import React, { useMemo, useState } from 'react';
+import { Alert, Button, Dropdown, Flex, Input, Space, Table, Tag, Tooltip, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -15,13 +15,25 @@ import { useTeams } from '@/api/queries/teams';
 import { createActionColumn } from '@/components/common/columns';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { MobileCard } from '@/components/common/MobileCard';
+import ResourceListView from '@/components/common/ResourceListView';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { useQueueAction } from '@/hooks/useQueueAction';
 import { isFork as coreIsFork, getGrandVaultForOperation, preparePromotion } from '@/platform';
 import { useAppSelector } from '@/store/store';
 import { showMessage } from '@/utils/messages';
-import { DesktopOutlined } from '@/utils/optimizedIcons';
+import {
+  CheckCircleOutlined,
+  DeleteOutlined,
+  DesktopOutlined,
+  DisconnectOutlined,
+  FunctionOutlined,
+  InboxOutlined,
+  MoreOutlined,
+  PlayCircleOutlined,
+  StopOutlined,
+} from '@/utils/optimizedIcons';
 import { useRepositoryColumns, useSystemContainerColumns } from './columns';
 import { RepositoryActionsMenu } from './components/RepositoryActionsMenu';
 import {
@@ -51,7 +63,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   hideSystemInfo = false,
   onCreateRepository,
   onRepositoryClick,
-  highlightedRepository,
+  highlightedRepository: _highlightedRepository,
   onContainerClick: _onContainerClick,
   highlightedContainer: _highlightedContainer,
   isLoading,
@@ -543,6 +555,105 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     }),
   ];
 
+  const isFork = (record: RepositoryTableRow) => {
+    const repositoryData = teamRepositories.find(
+      (r) => r.repositoryName === record.name && r.repositoryTag === record.repositoryTag
+    );
+    return repositoryData ? coreIsFork(repositoryData) : false;
+  };
+
+  const mobileRender = useMemo(
+    () => (record: RepositoryTableRow) => {
+      const isRepoFork = isFork(record);
+
+      const menuItems: MenuProps['items'] = [
+        {
+          key: 'up',
+          label: t('functions:functions.up.name'),
+          icon: <PlayCircleOutlined />,
+          onClick: () => executeQuickAction(record, 'up', 4, 'mount'),
+        },
+        ...(record.mounted
+          ? [
+              {
+                key: 'down',
+                label: t('functions:functions.down.name'),
+                icon: <StopOutlined />,
+                onClick: () => executeQuickAction(record, 'down', 4),
+              },
+            ]
+          : []),
+        {
+          key: 'function',
+          label: t('machines:runFunction'),
+          icon: <FunctionOutlined />,
+          onClick: () => handleRunFunction(record),
+        },
+        { type: 'divider' as const },
+        {
+          key: 'delete',
+          label: t('common:actions.delete'),
+          icon: <DeleteOutlined />,
+          danger: true,
+          onClick: () => (isRepoFork ? confirmForkDeletion(record) : confirmRepositoryDeletion(record)),
+        },
+      ];
+
+      const handleCardClick = () => {
+        navigate(`/machines/${machine.machineName}/repositories/${record.name}/containers`, {
+          state: { machine, Repository: record },
+        });
+      };
+
+      const actions = (
+        <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+          <Button
+            type="text"
+            size="small"
+            icon={<MoreOutlined />}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Actions"
+          />
+        </Dropdown>
+      );
+
+      return (
+        <MobileCard onClick={handleCardClick} className={isRepoFork ? 'ml-4' : undefined} actions={actions}>
+          <Space>
+            <InboxOutlined />
+            <Typography.Text strong className="truncate">
+              {record.name}
+            </Typography.Text>
+            {record.repositoryTag && <Tag>{record.repositoryTag}</Tag>}
+          </Space>
+          <Flex gap={8} wrap>
+            {record.mounted ? (
+              <Tag icon={<CheckCircleOutlined />} color="success">
+                {t('resources:repositories.mounted')}
+              </Tag>
+            ) : (
+              <Tag icon={<DisconnectOutlined />}>{t('resources:repositories.unmounted')}</Tag>
+            )}
+            {record.mounted && record.docker_running && (
+              <Tag color="processing">{t('resources:repositories.dockerRunning')}</Tag>
+            )}
+            {isRepoFork && <Tag color="purple">{t('resources:repositories.fork')}</Tag>}
+          </Flex>
+        </MobileCard>
+      );
+    },
+    [
+      t,
+      machine,
+      navigate,
+      executeQuickAction,
+      handleRunFunction,
+      confirmForkDeletion,
+      confirmRepositoryDeletion,
+      teamRepositories,
+    ]
+  );
+
   if (loading) {
     return (
       <Flex data-testid="machine-repo-list-loading">
@@ -651,30 +762,14 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       })()}
 
       <Flex className="w-full">
-        <Table<RepositoryTableRow>
+        <ResourceListView<RepositoryTableRow>
+          loading={loading}
+          data={getTableDataSource()}
           columns={columns}
-          dataSource={getTableDataSource()}
           rowKey={(record) => record.key || `${record.name}-${record.repositoryTag || 'latest'}`}
-          size="small"
           pagination={false}
-          scroll={{ x: 'max-content' }}
-          data-testid="machine-repo-list-table"
-          rowClassName={(record) => {
-            const repositoryData = teamRepositories.find(
-              (r) => r.repositoryName === record.name && r.repositoryTag === record.repositoryTag
-            );
-            const classes = ['Repository-row'];
-            if (repositoryData && coreIsFork(repositoryData)) {
-              classes.push('Repository-fork-row');
-            }
-            if (highlightedRepository?.name === record.name) {
-              classes.push('Repository-row--highlighted');
-            }
-            return classes.join(' ');
-          }}
-          locale={{
-            emptyText: t('resources:repositories.noRepositories'),
-          }}
+          emptyDescription={t('resources:repositories.noRepositories')}
+          mobileRender={mobileRender}
           onRow={(record) => ({
             onClick: (e: React.MouseEvent<HTMLElement>) => {
               const target = e.target as HTMLElement;

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Alert, Button, Flex, Modal, Space, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Dropdown, Flex, Modal, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -17,6 +17,7 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { createActionColumn } from '@/components/common/columns';
+import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import ResourceListView, {
   COLUMN_RESPONSIVE,
@@ -43,6 +44,7 @@ import {
   EditOutlined,
   HistoryOutlined,
   InboxOutlined,
+  MoreOutlined,
   PlusOutlined,
   ReloadOutlined,
   WarningOutlined,
@@ -581,6 +583,35 @@ const CredentialsPage: React.FC = () => {
     ? t('repositories.noRepositories')
     : t('teams.selectTeamPrompt');
 
+  const mobileRender = useMemo(
+    () => (record: Repository) => {
+      const menuItems: MenuProps['items'] = [
+        { key: 'edit', label: t('common:actions.edit'), icon: <EditOutlined />, onClick: () => openUnifiedModal('edit', record as Repository & Record<string, unknown>) },
+        { key: 'trace', label: t('machines:trace'), icon: <HistoryOutlined />, onClick: () => auditTrace.open({
+          entityType: 'Repository',
+          entityIdentifier: record.repositoryName,
+          entityName: record.repositoryName,
+        })},
+        { key: 'delete', label: t('common:actions.delete'), icon: <DeleteOutlined />, danger: true, onClick: () => handleDeleteRepository(record) },
+      ];
+
+      return (
+        <MobileCard actions={
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
+          </Dropdown>
+        }>
+          <Space>
+            <InboxOutlined />
+            <Typography.Text strong className="truncate">{record.repositoryName}</Typography.Text>
+          </Space>
+          <Tag>{record.teamName}</Tag>
+        </MobileCard>
+      );
+    },
+    [t, openUnifiedModal, auditTrace, handleDeleteRepository]
+  );
+
   return (
     <>
       <Flex vertical>
@@ -607,6 +638,7 @@ const CredentialsPage: React.FC = () => {
             loading={repositoriesLoading}
             data={displayedRepositories}
             columns={repositoryColumns}
+            mobileRender={mobileRender}
             rowKey="repositoryGuid"
             data-testid="resources-repository-table"
             resourceType="repositories"

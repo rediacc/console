@@ -62,11 +62,7 @@ export const buildClusterColumns = ({
         return (
           <Flex align="center" gap={8}>
             <RightOutlined
-              // eslint-disable-next-line no-restricted-syntax
-              style={{
-                transform: isExpanded ? 'rotate(90deg)' : undefined,
-                transition: 'transform 0.2s ease',
-              }}
+              className={`expand-icon ${isExpanded ? 'expand-icon-rotated' : ''}`}
             />
             <CloudServerOutlined />
             <Typography.Text>

@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
+  Badge,
   Button,
   Card,
+  Dropdown,
   Flex,
   Input,
   List,
@@ -14,6 +16,7 @@ import {
   Tabs,
   Tooltip,
   Typography,
+  type MenuProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -29,6 +32,7 @@ import {
 } from '@/api/queries/permissions';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { MobileCard } from '@/components/common/MobileCard';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import UserSessionsTab from '@/pages/organization/access/components/UserSessionsTab';
@@ -39,6 +43,7 @@ import {
   DeleteOutlined,
   HistoryOutlined,
   KeyOutlined,
+  MoreOutlined,
   PlusOutlined,
   SafetyOutlined,
   UserOutlined,
@@ -241,6 +246,44 @@ const AccessPage: React.FC = () => {
     },
   ];
 
+  const mobileRender = useMemo(
+    () => (record: PermissionGroup) => {
+      const menuItems: MenuProps['items'] = [
+        { key: 'permissions', label: tSystem('actions.permissions'), icon: <KeyOutlined />, onClick: () => manageModal.open(record) },
+        { key: 'assign', label: tSystem('actions.assignUser'), icon: <UserOutlined />, onClick: () => assignModal.open(record) },
+        { key: 'trace', label: tSystem('actions.trace'), icon: <HistoryOutlined />, onClick: () => auditTrace.open({
+          entityType: 'Permissions',
+          entityIdentifier: record.permissionGroupName,
+          entityName: record.permissionGroupName,
+        })},
+        { key: 'delete', label: tCommon('actions.delete'), icon: <DeleteOutlined />, danger: true, onClick: () => handleDeleteGroup(record.permissionGroupName) },
+      ];
+
+      return (
+        <MobileCard actions={
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+            <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} aria-label="Actions" />
+          </Dropdown>
+        }>
+          <Space>
+            <SafetyOutlined />
+            <Typography.Text strong className="truncate">{record.permissionGroupName}</Typography.Text>
+          </Space>
+          <Flex gap={16} wrap>
+            <Space size="small">
+              <Badge count={record.userCount} showZero size="small"><UserOutlined /></Badge>
+            </Space>
+            <Space size="small">
+              <KeyOutlined />
+              <Typography.Text>{record.permissionCount}</Typography.Text>
+            </Space>
+          </Flex>
+        </MobileCard>
+      );
+    },
+    [tSystem, tCommon, manageModal, assignModal, auditTrace, handleDeleteGroup]
+  );
+
   const permissionsContent = (
     <ResourceListView
       title={
@@ -252,6 +295,7 @@ const AccessPage: React.FC = () => {
       loading={permissionsLoading}
       data={permissionGroups}
       columns={permissionColumns}
+      mobileRender={mobileRender}
       rowKey="permissionGroupName"
       searchPlaceholder={t('access.permissions.searchPlaceholder')}
       data-testid="system-permission-group-table"

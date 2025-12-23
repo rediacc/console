@@ -1,13 +1,19 @@
 import { useCallback, useMemo } from 'react';
-import { Button, Empty, Modal, Space } from 'antd';
+import { Button, Dropdown, Empty, Modal, Space, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CephCluster, CephPool } from '@/api/queries/ceph';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { ExpandIcon } from '@/components/common/ExpandIcon';
+import { buildDeleteMenuItem, buildDivider, buildEditMenuItem, buildTraceMenuItem } from '@/components/common/menuBuilders';
+import { MobileCard } from '@/components/common/MobileCard';
 import { useExpandableTable, useTraceModal } from '@/hooks';
 import RbdImageTable from '@/pages/ceph/components/RbdImageTable';
 import { confirmAction } from '@/utils/confirmations';
+import { DatabaseOutlined, FunctionOutlined, MoreOutlined } from '@/utils/optimizedIcons';
 import { buildPoolColumns } from './columns';
 import { ClusterPoolsCard } from './components/ClusterPoolsCard';
+import { getPoolFunctionMenuItems } from './menus';
+import type { MenuProps } from 'antd';
 
 interface PoolTableProps {
   pools: CephPool[];
@@ -99,11 +105,6 @@ export const PoolTable: React.FC<PoolTableProps> = ({
     [expandedRowKeys, handleAuditTrace, handleDelete, handleRunFunction, onEditPool, t]
   );
 
-  const expandedRowRender = useCallback((record: CephPool) => {
-    const teamFilter = record.teamName;
-    return <RbdImageTable pool={record} teamFilter={teamFilter} />;
-  }, []);
-
   const handleToggleRow = useCallback(
     (poolGuid?: string) => {
       if (!poolGuid) {
@@ -113,6 +114,61 @@ export const PoolTable: React.FC<PoolTableProps> = ({
     },
     [toggleRow]
   );
+
+  const mobileRender = useMemo(
+    () => (record: CephPool) => {
+      const isExpanded = expandedRowKeys.includes(record.poolGuid || '');
+
+      const menuItems: MenuProps['items'] = [
+        buildEditMenuItem(t, () => onEditPool(record)),
+        buildTraceMenuItem(t, () => handleAuditTrace(record)),
+        buildDivider(),
+        buildDeleteMenuItem(t, () => handleDelete(record)),
+      ];
+
+      const actions = (
+        <Space onClick={(e) => e.stopPropagation()}>
+          <Dropdown
+            menu={{
+              items: getPoolFunctionMenuItems(t),
+              onClick: ({ key }) => {
+                if (key === 'advanced') {
+                  handleRunFunction(record);
+                } else {
+                  handleRunFunction({ ...record, preselectedFunction: key });
+                }
+              },
+            }}
+            trigger={['click']}
+          >
+            <Button type="text" size="small" icon={<FunctionOutlined />} aria-label={t('common:actions.remote')} />
+          </Dropdown>
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+            <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
+          </Dropdown>
+        </Space>
+      );
+
+      return (
+        <MobileCard onClick={() => handleToggleRow(record.poolGuid ?? undefined)} actions={actions}>
+          <Space>
+            <ExpandIcon isExpanded={isExpanded} />
+            <DatabaseOutlined />
+            <Typography.Text strong>{record.poolName}</Typography.Text>
+          </Space>
+          <Typography.Text type="secondary" className="text-xs">
+            {t('common:general.versionFormat', { version: record.vaultVersion || 0 })}
+          </Typography.Text>
+        </MobileCard>
+      );
+    },
+    [t, expandedRowKeys, onEditPool, handleAuditTrace, handleDelete, handleRunFunction, handleToggleRow]
+  );
+
+  const expandedRowRender = useCallback((record: CephPool) => {
+    const teamFilter = record.teamName;
+    return <RbdImageTable pool={record} teamFilter={teamFilter} />;
+  }, []);
 
   const handleExpandedRowsChange = useCallback(
     (clusterKeys: string[], keys: string[]) => {
@@ -152,6 +208,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
             onExpandedRowsChange={handleExpandedRowsChange}
             expandedRowRender={expandedRowRender}
             onToggleRow={handleToggleRow}
+            mobileRender={mobileRender}
             t={t}
           />
         );
