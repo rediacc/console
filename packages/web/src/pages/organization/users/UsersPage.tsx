@@ -5,7 +5,6 @@ import {
   Flex,
   Form,
   Modal,
-  Popconfirm,
   Select,
   Space,
   Tag,
@@ -33,11 +32,11 @@ import { MobileCard } from '@/components/common/MobileCard';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import { buildUserColumns } from '@/pages/organization/users/columns';
 import ResourceForm from '@/pages/organization/users/components/ResourceForm';
 import {
   CheckCircleOutlined,
   CheckOutlined,
-  HistoryOutlined,
   PlusOutlined,
   SafetyOutlined,
   StopOutlined,
@@ -143,129 +142,44 @@ const UsersPage: React.FC = () => {
     }
   };
 
-  const userColumns = [
-    {
-      title: tSystem('tables.users.email'),
-      dataIndex: 'userEmail',
-      key: 'userEmail',
-      render: (email: string) => (
-        <Space>
-          <UserOutlined />
-          <strong>{email}</strong>
-        </Space>
-      ),
+  const handleOpenPermissionsModal = useCallback(
+    (record: User) => {
+      assignPermissionModal.open(record);
+      setSelectedUserGroup(record.permissionsName || '');
     },
-    {
-      title: tSystem('tables.users.status'),
-      dataIndex: 'activated',
-      key: 'activated',
-      width: 120,
-      render: (activated: boolean) =>
-        activated ? (
-          <Tag icon={<CheckCircleOutlined />}>{t('users.status.active')}</Tag>
-        ) : (
-          <Tag icon={<StopOutlined />}>{t('users.status.inactive')}</Tag>
-        ),
-    },
-    {
-      title: tSystem('tables.users.permissionGroup'),
-      dataIndex: 'permissionGroupName',
-      key: 'permissionGroupName',
-      render: (group: string) =>
-        group ? (
-          <Tag icon={<SafetyOutlined />}>{group}</Tag>
-        ) : (
-          <Tag>{t('users.permissionGroups.none')}</Tag>
-        ),
-    },
-    {
-      title: tSystem('tables.users.lastActive'),
-      dataIndex: 'lastActive',
-      key: 'lastActive',
-      render: (date: string) =>
-        date ? new Date(date).toLocaleDateString() : t('users.lastActive.never'),
-    },
-    {
-      title: tSystem('tables.users.actions'),
-      key: 'actions',
-      width: 300,
-      render: (_: unknown, record: User) => (
-        <Space>
-          <Tooltip title={tSystem('actions.permissions')}>
-            <Button
-              type="text"
-              icon={<SafetyOutlined />}
-              onClick={() => {
-                assignPermissionModal.open(record);
-                setSelectedUserGroup(record.permissionsName || '');
-              }}
-              data-testid={`system-user-permissions-button-${record.userEmail}`}
-              aria-label={tSystem('actions.permissions')}
-            />
-          </Tooltip>
-          <Tooltip title={tSystem('actions.trace')}>
-            <Button
-              type="text"
-              icon={<HistoryOutlined />}
-              onClick={() =>
-                auditTrace.open({
-                  entityType: 'User',
-                  entityIdentifier: record.userEmail,
-                  entityName: record.userEmail,
-                })
-              }
-              data-testid={`system-user-trace-button-${record.userEmail}`}
-              aria-label={tSystem('actions.trace')}
-            />
-          </Tooltip>
-          {record.activated && (
-            <Popconfirm
-              title={tSystem('users.deactivate.confirmTitle')}
-              description={tSystem('users.deactivate.confirmDescription', {
-                email: record.userEmail,
-              })}
-              onConfirm={() => handleDeactivateUser(record.userEmail)}
-              okText={tCommon('general.yes')}
-              cancelText={tCommon('general.no')}
-              okButtonProps={{ danger: true }}
-            >
-              <Tooltip title={tSystem('actions.deactivate')}>
-                <Button
-                  type="text"
-                  danger
-                  icon={<StopOutlined />}
-                  loading={deactivateUserMutation.isPending}
-                  data-testid={`system-user-deactivate-button-${record.userEmail}`}
-                  aria-label={tSystem('actions.deactivate')}
-                />
-              </Tooltip>
-            </Popconfirm>
-          )}
-          {!record.activated && (
-            <Popconfirm
-              title={tSystem('users.activate.confirmTitle')}
-              description={tSystem('users.activate.confirmDescription', {
-                email: record.userEmail,
-              })}
-              onConfirm={() => handleReactivateUser(record.userEmail)}
-              okText={tCommon('general.yes')}
-              cancelText={tCommon('general.no')}
-            >
-              <Tooltip title={tSystem('actions.activate')}>
-                <Button
-                  type="text"
-                  icon={<CheckOutlined />}
-                  loading={reactivateUserMutation.isPending}
-                  data-testid={`system-user-activate-button-${record.userEmail}`}
-                  aria-label={tSystem('actions.activate')}
-                />
-              </Tooltip>
-            </Popconfirm>
-          )}
-        </Space>
-      ),
-    },
-  ];
+    [assignPermissionModal]
+  );
+
+  const userColumns = useMemo(
+    () =>
+      buildUserColumns({
+        t,
+        tSystem,
+        tCommon,
+        onAssignPermissions: handleOpenPermissionsModal,
+        onTrace: (record) =>
+          auditTrace.open({
+            entityType: 'User',
+            entityIdentifier: record.userEmail,
+            entityName: record.userEmail,
+          }),
+        onDeactivate: handleDeactivateUser,
+        onReactivate: handleReactivateUser,
+        isDeactivating: deactivateUserMutation.isPending,
+        isReactivating: reactivateUserMutation.isPending,
+      }),
+    [
+      t,
+      tSystem,
+      tCommon,
+      handleOpenPermissionsModal,
+      auditTrace,
+      handleDeactivateUser,
+      handleReactivateUser,
+      deactivateUserMutation.isPending,
+      reactivateUserMutation.isPending,
+    ]
+  );
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name

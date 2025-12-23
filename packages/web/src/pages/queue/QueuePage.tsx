@@ -37,11 +37,11 @@ import {
   RocketOutlined,
 } from '@/utils/optimizedIcons';
 import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
+import { buildQueueColumns } from './columns';
 import { QueueFilterPanel } from './components/QueueFilterPanel';
 import { QueueStatisticsBar } from './components/QueueStatisticsBar';
 import { useQueueActions } from './hooks/useQueueActions';
 import { useQueueExport } from './hooks/useQueueExport';
-import { getQueueColumns } from './queueTableColumns';
 import type { Dayjs } from 'dayjs';
 
 const getStatusColor = (status: string): string => {
@@ -276,7 +276,7 @@ const QueuePage: React.FC = () => {
   const isFetching = isLoading || isRefetching;
 
   // Get queue columns configuration
-  const queueColumns = getQueueColumns({
+  const queueColumns = buildQueueColumns({
     handleViewTrace,
     handleCancelQueueItem,
     cancelLoading,

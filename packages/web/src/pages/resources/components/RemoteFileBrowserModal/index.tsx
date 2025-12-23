@@ -16,13 +16,65 @@ import { SizedModal } from '@/components/common';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import { waitForQueueItemCompletion } from '@/services/helloService';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { BrowserBreadcrumb } from './BrowserBreadcrumb';
 import { BrowserFileTable } from './BrowserFileTable';
-import { useBrowserQueueAction } from './useBrowserQueueAction';
+import { FileListParserFactory } from './parsers';
 import { buildListQueueVault, buildPullQueueVault } from './vaultBuilder';
-import type { RemoteFile, RemoteFileBrowserModalProps, SourceOption } from './types';
+import type {
+  AdditionalVaultData,
+  RemoteFile,
+  RemoteFileBrowserModalProps,
+  SourceOption,
+} from './types';
+
+interface ExecuteListParams {
+  selectedSource: string;
+  currentPath: string;
+  teamName: string;
+  machineName: string;
+  bridgeName: string;
+  additionalVaultData: AdditionalVaultData;
+  mapGuidToRepository: (guid: string) => {
+    displayName: string;
+    repositoryName?: string;
+    repositoryTag?: string;
+    isUnmapped: boolean;
+  };
+}
+
+const parseListResponse = (
+  responseData: { result?: string } | undefined,
+  currentPath: string,
+  mapGuidToRepository: ExecuteListParams['mapGuidToRepository']
+): RemoteFile[] => {
+  const commandResult = responseData?.result;
+
+  if (!commandResult && !responseData) {
+    console.warn('Remote file browser received no response data');
+    return [];
+  }
+
+  let dataToProcess = '';
+
+  if (typeof commandResult === 'string') {
+    try {
+      const parsed = JSON.parse(commandResult);
+      dataToProcess = parsed.command_output || '';
+    } catch {
+      dataToProcess = commandResult;
+    }
+  }
+
+  if (typeof dataToProcess === 'string' && dataToProcess) {
+    const parser = new FileListParserFactory(currentPath, mapGuidToRepository);
+    return parser.parse(dataToProcess);
+  }
+
+  return [];
+};
 
 export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   open,
@@ -42,7 +94,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   const { data: teamRepositories = [] } = useRepositories(teamName);
   const { buildQueueVault } = useQueueVaultBuilder();
   const { mutateAsync: createQueueItem } = useManagedQueueItem();
-  const { executeList } = useBrowserQueueAction();
 
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<RemoteFile[]>([]);
@@ -94,6 +145,57 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       repositoryTag: tag,
       isUnmapped: false,
     };
+  };
+
+  const executeList = async (params: ExecuteListParams): Promise<RemoteFile[]> => {
+    const {
+      selectedSource,
+      currentPath,
+      teamName,
+      machineName,
+      bridgeName,
+      additionalVaultData,
+      mapGuidToRepository,
+    } = params;
+
+    const vault = await buildQueueVault({
+      teamName,
+      machineName,
+      bridgeName,
+      functionName: 'list',
+      params: {
+        from: selectedSource,
+        path: currentPath || '',
+        format: 'json',
+      },
+      priority: 4,
+      addedVia: 'file-browser',
+      ...additionalVaultData,
+    });
+
+    const result = await createQueueItem({
+      teamName,
+      machineName,
+      bridgeName,
+      queueVault: vault,
+      priority: 4,
+    });
+
+    const taskId = result.taskId || result.queueId;
+    if (!taskId) {
+      throw new Error('Failed to create queue item - no taskId returned');
+    }
+
+    if (result.isQueued) {
+      throw new Error('QUEUED');
+    }
+
+    const completionResult = await waitForQueueItemCompletion(taskId, 30000);
+    if (!completionResult.success) {
+      throw new Error(completionResult.message || 'List operation failed');
+    }
+
+    return parseListResponse(completionResult.responseData, currentPath, mapGuidToRepository);
   };
 
   const loadFiles = async () => {

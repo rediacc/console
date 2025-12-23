@@ -1,0 +1,70 @@
+import React from 'react';
+import { Typography } from 'antd';
+import {
+  DatabaseOutlined,
+  ExpandOutlined,
+  FunctionOutlined,
+  KeyOutlined,
+  PlusOutlined,
+} from '@/utils/optimizedIcons';
+import type { MenuProps } from 'antd';
+import type { TFunction } from 'i18next';
+
+// Helper to create menu labels with consistent data-testid
+const createClusterActionLabel = (actionKey: string, label: React.ReactNode) =>
+  React.createElement(
+    Typography.Text,
+    { 'data-testid': `cluster-action-${actionKey.replace(/_/g, '-')}` } as React.ComponentProps<
+      typeof Typography.Text
+    >,
+    label
+  );
+
+const createPoolActionLabel = (actionKey: string, label: React.ReactNode) =>
+  React.createElement(
+    Typography.Text,
+    { 'data-testid': `pool-action-${actionKey.replace(/_/g, '-')}` } as React.ComponentProps<
+      typeof Typography.Text
+    >,
+    label
+  );
+
+export const buildClusterMenuItems = (
+  t: TFunction<'ceph' | 'common' | 'machines'>
+): MenuProps['items'] => [
+  {
+    key: 'status',
+    label: createClusterActionLabel('status', t('functions.cluster_status')),
+    icon: React.createElement(ExpandOutlined),
+  },
+  {
+    key: 'dashboard',
+    label: createClusterActionLabel('dashboard', t('functions.cluster_dashboard')),
+    icon: React.createElement(KeyOutlined),
+  },
+  { type: 'divider' },
+  {
+    key: 'advanced',
+    label: createClusterActionLabel('advanced', t('common:actions.advanced')),
+    icon: React.createElement(FunctionOutlined),
+  },
+];
+
+export const buildPoolMenuItems = (t: TFunction<'ceph' | 'common'>): MenuProps['items'] => [
+  {
+    key: 'list',
+    label: createPoolActionLabel('list', t('functions.pool_list')),
+    icon: React.createElement(DatabaseOutlined),
+  },
+  {
+    key: 'image_create',
+    label: createPoolActionLabel('image-create', t('functions.image_create')),
+    icon: React.createElement(PlusOutlined),
+  },
+  { type: 'divider' },
+  {
+    key: 'advanced',
+    label: createPoolActionLabel('advanced', t('common:actions.advanced')),
+    icon: React.createElement(FunctionOutlined),
+  },
+];

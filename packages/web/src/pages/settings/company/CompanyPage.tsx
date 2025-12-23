@@ -1,22 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Divider,
-  Flex,
-  Form,
-  Modal,
-  Popconfirm,
-  Radio,
-  Result,
-  Row,
-  Space,
-  Tooltip,
-  Typography,
-  Upload,
-} from 'antd';
+import { Button, Flex, Form, Modal, Result, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -30,7 +13,6 @@ import {
   useUpdateCompanyVaults,
 } from '@/api/queries/company';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
-import { PasswordConfirmField, PasswordField } from '@/components/forms/FormFields';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState } from '@/hooks/useDialogState';
 import { masterPasswordService } from '@/services/masterPasswordService';
@@ -39,18 +21,10 @@ import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import { decryptString, encryptString } from '@/utils/encryption';
 import { showMessage } from '@/utils/messages';
-import {
-  BankOutlined,
-  DownloadOutlined,
-  ExportOutlined,
-  ImportOutlined,
-  KeyOutlined,
-  LockOutlined,
-  SettingOutlined,
-  UnlockOutlined,
-  UploadOutlined,
-  WarningOutlined,
-} from '@/utils/optimizedIcons';
+import { CompanyVaultSection } from './components/CompanyVaultSection';
+import { DangerZoneSection } from './components/DangerZoneSection';
+import { ImportModal } from './components/ImportModal';
+import { MasterPasswordModal } from './components/MasterPasswordModal';
 
 const CompanyPage: React.FC = () => {
   const { t } = useTranslation('settings');
@@ -309,228 +283,25 @@ const CompanyPage: React.FC = () => {
   return (
     <Flex vertical>
       <Flex vertical gap={24}>
-        <Card>
-          <Flex align="flex-start" justify="space-between" gap={16} wrap>
-            {/* eslint-disable-next-line no-restricted-syntax */}
-            <Flex vertical gap={8} style={{ flex: 1, minWidth: 240 }}>
-              <Flex align="center" gap={8}>
-                <BankOutlined />
-                <Typography.Title level={4}>{t('company.title')}</Typography.Title>
-              </Flex>
-
-              <Typography.Paragraph>{t('company.description')}</Typography.Paragraph>
-            </Flex>
-
-            {featureFlags.isEnabled('companyVaultConfiguration') && (
-              <Tooltip title={t('company.configureVault')}>
-                <Button
-                  icon={<SettingOutlined />}
-                  onClick={() => companyVaultModal.open()}
-                  data-testid="system-company-vault-button"
-                  aria-label={t('company.configureVault')}
-                />
-              </Tooltip>
-            )}
-          </Flex>
-        </Card>
+        <CompanyVaultSection
+          t={t}
+          showConfigureVault={featureFlags.isEnabled('companyVaultConfiguration')}
+          onConfigureVault={() => companyVaultModal.open()}
+        />
 
         {featureFlags.isEnabled('dangerZone') && (
-          <Flex vertical gap={16}>
-            <Typography.Title level={3}>
-              <WarningOutlined /> {tSystem('dangerZone.title')}
-            </Typography.Title>
-
-            <Card>
-              <Row gutter={[16, 16]} align="middle">
-                <Col xs={24} lg={16}>
-                  <Space direction="vertical" size={8}>
-                    <Typography.Title level={5}>
-                      {tSystem('dangerZone.blockUserRequests.title')}
-                    </Typography.Title>
-                    <Typography.Paragraph>
-                      {tSystem('dangerZone.blockUserRequests.description')}
-                    </Typography.Paragraph>
-                  </Space>
-                </Col>
-                <Col xs={24} lg={8}>
-                  <Flex justify="flex-end">
-                    <Popconfirm
-                      title={tSystem('dangerZone.blockUserRequests.confirmBlock.title')}
-                      description={
-                        <Space direction="vertical" size="small">
-                          <Typography.Text>
-                            {tSystem('dangerZone.blockUserRequests.confirmBlock.description')}
-                          </Typography.Text>
-                          <ul>
-                            <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect1')}</li>
-                            <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect2')}</li>
-                            <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect3')}</li>
-                          </ul>
-                          <Typography.Text strong>
-                            {tSystem('dangerZone.blockUserRequests.confirmBlock.confirm')}
-                          </Typography.Text>
-                        </Space>
-                      }
-                      onConfirm={() => blockUserRequestsMutation.mutate(true)}
-                      okText={tSystem('dangerZone.blockUserRequests.confirmBlock.okText')}
-                      cancelText={tCommon('general.cancel')}
-                      okButtonProps={{ danger: true }}
-                    >
-                      <Tooltip title={tSystem('dangerZone.blockUserRequests.blockButton')}>
-                        <Button
-                          danger
-                          icon={<LockOutlined />}
-                          loading={blockUserRequestsMutation.isPending}
-                          aria-label={tSystem('dangerZone.blockUserRequests.blockButton')}
-                        />
-                      </Tooltip>
-                    </Popconfirm>
-                    <Popconfirm
-                      title={tSystem('dangerZone.blockUserRequests.confirmUnblock.title')}
-                      description={tSystem(
-                        'dangerZone.blockUserRequests.confirmUnblock.description'
-                      )}
-                      onConfirm={() => blockUserRequestsMutation.mutate(false)}
-                      okText={tSystem('dangerZone.blockUserRequests.confirmUnblock.okText')}
-                      cancelText={tCommon('general.cancel')}
-                    >
-                      <Tooltip title={tSystem('dangerZone.blockUserRequests.unblockButton')}>
-                        <Button
-                          icon={<UnlockOutlined />}
-                          loading={blockUserRequestsMutation.isPending}
-                          aria-label={tSystem('dangerZone.blockUserRequests.unblockButton')}
-                        />
-                      </Tooltip>
-                    </Popconfirm>
-                  </Flex>
-                </Col>
-              </Row>
-
-              {/* eslint-disable-next-line no-restricted-syntax */}
-              <Divider style={{ margin: '24px 0' }} />
-
-              <Row gutter={[16, 16]} align="middle">
-                <Col xs={24} lg={16}>
-                  <Space direction="vertical" size={8}>
-                    <Typography.Title level={5}>
-                      {tSystem('dangerZone.exportVaults.title')}
-                    </Typography.Title>
-                    <Typography.Paragraph>
-                      {tSystem('dangerZone.exportVaults.description')}
-                    </Typography.Paragraph>
-                  </Space>
-                </Col>
-                <Col xs={24} lg={8}>
-                  <Flex justify="flex-end">
-                    <Tooltip title={tSystem('dangerZone.exportVaults.button')}>
-                      <Button
-                        icon={<DownloadOutlined />}
-                        onClick={handleExportVaults}
-                        loading={exportVaultsQuery.isFetching}
-                        data-testid="system-export-vaults-button"
-                        aria-label={tSystem('dangerZone.exportVaults.button')}
-                      />
-                    </Tooltip>
-                  </Flex>
-                </Col>
-              </Row>
-
-              {/* eslint-disable-next-line no-restricted-syntax */}
-              <Divider style={{ margin: '24px 0' }} />
-
-              <Row gutter={[16, 16]} align="middle">
-                <Col xs={24} lg={16}>
-                  <Space direction="vertical" size={8}>
-                    <Typography.Title level={5}>
-                      {tSystem('dangerZone.exportData.title')}
-                    </Typography.Title>
-                    <Typography.Paragraph>
-                      {tSystem('dangerZone.exportData.description')}
-                    </Typography.Paragraph>
-                  </Space>
-                </Col>
-                <Col xs={24} lg={8}>
-                  <Flex justify="flex-end">
-                    <Tooltip title={tSystem('dangerZone.exportData.button')}>
-                      <Button
-                        icon={<ExportOutlined />}
-                        onClick={handleExportCompanyData}
-                        loading={exportCompanyDataQuery.isFetching}
-                        data-testid="system-export-data-button"
-                        aria-label={tSystem('dangerZone.exportData.button')}
-                      />
-                    </Tooltip>
-                  </Flex>
-                </Col>
-              </Row>
-
-              {/* eslint-disable-next-line no-restricted-syntax */}
-              <Divider style={{ margin: '24px 0' }} />
-
-              <Row gutter={[16, 16]} align="middle">
-                <Col xs={24} lg={16}>
-                  <Space direction="vertical" size={8}>
-                    <Typography.Title level={5}>
-                      {tSystem('dangerZone.importData.title')}
-                    </Typography.Title>
-                    <Typography.Paragraph>
-                      {tSystem('dangerZone.importData.description')}
-                    </Typography.Paragraph>
-                  </Space>
-                </Col>
-                <Col xs={24} lg={8}>
-                  <Flex justify="flex-end">
-                    <Tooltip title={tSystem('dangerZone.importData.button')}>
-                      <Button
-                        danger
-                        icon={<ImportOutlined />}
-                        onClick={() => importModal.open()}
-                        data-testid="system-import-data-button"
-                        aria-label={tSystem('dangerZone.importData.button')}
-                      />
-                    </Tooltip>
-                  </Flex>
-                </Col>
-              </Row>
-
-              {/* eslint-disable-next-line no-restricted-syntax */}
-              <Divider style={{ margin: '24px 0' }} />
-
-              <Row gutter={[16, 16]} align="middle">
-                <Col xs={24} lg={16}>
-                  <Space direction="vertical" size={8}>
-                    <Typography.Title level={5}>
-                      {tSystem('dangerZone.updateMasterPassword.title')}
-                    </Typography.Title>
-                    <Typography.Paragraph>
-                      {tSystem('dangerZone.updateMasterPassword.description')}
-                    </Typography.Paragraph>
-                    <ul className="requirements-list">
-                      <li>{tSystem('dangerZone.updateMasterPassword.effect1')}</li>
-                      <li>{tSystem('dangerZone.updateMasterPassword.effect2')}</li>
-                      <li>{tSystem('dangerZone.updateMasterPassword.effect3')}</li>
-                    </ul>
-                    <Typography.Text type="danger" strong>
-                      {tSystem('dangerZone.updateMasterPassword.warning')}
-                    </Typography.Text>
-                  </Space>
-                </Col>
-                <Col xs={24} lg={8}>
-                  <Flex justify="flex-end">
-                    <Tooltip title={tSystem('dangerZone.updateMasterPassword.button')}>
-                      <Button
-                        danger
-                        icon={<KeyOutlined />}
-                        onClick={handleOpenMasterPasswordModal}
-                        data-testid="system-update-master-password-button"
-                        aria-label={tSystem('dangerZone.updateMasterPassword.button')}
-                      />
-                    </Tooltip>
-                  </Flex>
-                </Col>
-              </Row>
-            </Card>
-          </Flex>
+          <DangerZoneSection
+            tSystem={tSystem}
+            tCommon={tCommon}
+            onBlockUserRequests={(block) => blockUserRequestsMutation.mutate(block)}
+            isBlockingUserRequests={blockUserRequestsMutation.isPending}
+            onExportVaults={handleExportVaults}
+            isExportingVaults={exportVaultsQuery.isFetching}
+            onExportCompanyData={handleExportCompanyData}
+            isExportingCompanyData={exportCompanyDataQuery.isFetching}
+            onOpenImportModal={() => importModal.open()}
+            onOpenMasterPasswordModal={handleOpenMasterPasswordModal}
+          />
         )}
       </Flex>
 
@@ -545,172 +316,22 @@ const CompanyPage: React.FC = () => {
         loading={updateCompanyVaultMutation.isPending}
       />
 
-      <Modal
-        title={
-          currentMasterPassword
-            ? tSystem('dangerZone.updateMasterPassword.modal.title')
-            : tSystem('dangerZone.updateMasterPassword.modal.operationCreate')
-        }
+      <MasterPasswordModal
+        tSystem={tSystem}
+        tCommon={tCommon}
         open={masterPasswordModal.isOpen}
+        currentMasterPassword={currentMasterPassword}
+        masterPasswordOperation={masterPasswordOperation}
+        onOperationChange={setMasterPasswordOperation}
         onCancel={() => {
           masterPasswordModal.close();
           masterPasswordForm.resetFields();
           setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create');
         }}
-        footer={null}
-        className={ModalSize.Medium}
-        centered
-      >
-        <Form layout="vertical" form={masterPasswordForm} onFinish={handleUpdateMasterPassword}>
-          {currentMasterPassword && (
-            <Form.Item label={tSystem('dangerZone.updateMasterPassword.modal.operationType')}>
-              <Radio.Group
-                value={masterPasswordOperation}
-                onChange={(e) => {
-                  setMasterPasswordOperation(e.target.value);
-                  masterPasswordForm.resetFields(['password', 'confirmPassword']);
-                }}
-              >
-                <Space direction="vertical">
-                  <Radio value="update">
-                    {tSystem('dangerZone.updateMasterPassword.modal.operationUpdate')}
-                  </Radio>
-                  <Radio value="remove">
-                    {tSystem('dangerZone.updateMasterPassword.modal.operationRemove')}
-                  </Radio>
-                </Space>
-              </Radio.Group>
-            </Form.Item>
-          )}
-
-          <Alert
-            message={
-              <>
-                {'\u26A0\uFE0F'}{' '}
-                {tSystem('dangerZone.updateMasterPassword.modal.warningTitle').replace('⚠️ ', '')}
-              </>
-            }
-            description={
-              <Space direction="vertical" size="small">
-                <Typography.Text>
-                  {tSystem(
-                    `dangerZone.updateMasterPassword.modal.warningDescription${
-                      masterPasswordOperation.charAt(0).toUpperCase() +
-                      masterPasswordOperation.slice(1)
-                    }`
-                  )}
-                </Typography.Text>
-                <ul>
-                  <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect1')}</li>
-                  <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect2')}</li>
-                  <li>
-                    {tSystem(
-                      `dangerZone.updateMasterPassword.modal.warningEffect3${
-                        masterPasswordOperation.charAt(0).toUpperCase() +
-                        masterPasswordOperation.slice(1)
-                      }`
-                    )}
-                  </li>
-                  {masterPasswordOperation !== 'remove' && (
-                    <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect4')}</li>
-                  )}
-                </ul>
-                <Typography.Text strong>
-                  {tSystem('dangerZone.updateMasterPassword.modal.warningPermanent')}
-                </Typography.Text>
-                <Typography.Text type="danger" strong>
-                  {tSystem(
-                    masterPasswordOperation === 'remove'
-                      ? 'dangerZone.updateMasterPassword.modal.warningSecureRemove'
-                      : 'dangerZone.updateMasterPassword.modal.warningSecure'
-                  )}
-                </Typography.Text>
-              </Space>
-            }
-            type="warning"
-            showIcon
-          />
-
-          {masterPasswordOperation !== 'remove' && (
-            <>
-              <PasswordField
-                name="password"
-                label={tSystem('dangerZone.updateMasterPassword.modal.newPasswordLabel')}
-                placeholder={tSystem(
-                  'dangerZone.updateMasterPassword.modal.newPasswordPlaceholder'
-                )}
-                minLength={12}
-                requiredMessage={tSystem(
-                  'dangerZone.updateMasterPassword.modal.newPasswordRequired'
-                )}
-                minLengthMessage={tSystem(
-                  'dangerZone.updateMasterPassword.modal.newPasswordMinLength'
-                )}
-                patternMessage={tSystem('dangerZone.updateMasterPassword.modal.newPasswordPattern')}
-              />
-
-              <PasswordConfirmField
-                name="confirmPassword"
-                label={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordLabel')}
-                passwordFieldName="password"
-                placeholder={tSystem(
-                  'dangerZone.updateMasterPassword.modal.confirmPasswordPlaceholder'
-                )}
-                requiredMessage={tSystem(
-                  'dangerZone.updateMasterPassword.modal.confirmPasswordRequired'
-                )}
-                mismatchMessage={tSystem(
-                  'dangerZone.updateMasterPassword.modal.confirmPasswordMatch'
-                )}
-              />
-            </>
-          )}
-
-          <Alert
-            message={tCommon('general.important')}
-            description={tSystem(
-              `dangerZone.updateMasterPassword.modal.importantNote${
-                masterPasswordOperation === 'create'
-                  ? 'Create'
-                  : masterPasswordOperation === 'remove'
-                    ? 'Remove'
-                    : ''
-              }`
-            )}
-            type="info"
-            showIcon
-          />
-
-          <Form.Item>
-            <Flex justify="flex-end" gap={8}>
-              <Button
-                onClick={() => {
-                  masterPasswordModal.close();
-                  masterPasswordForm.resetFields();
-                  setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create');
-                }}
-                data-testid="system-master-password-cancel-button"
-              >
-                {tSystem('dangerZone.updateMasterPassword.modal.cancel')}
-              </Button>
-              <Button
-                danger
-                htmlType="submit"
-                loading={updateVaultsMutation.isPending}
-                disabled={updateVaultsMutation.isPending}
-                data-testid="system-master-password-submit-button"
-              >
-                {tSystem(
-                  `dangerZone.updateMasterPassword.modal.submit${
-                    masterPasswordOperation.charAt(0).toUpperCase() +
-                    masterPasswordOperation.slice(1)
-                  }`
-                )}
-              </Button>
-            </Flex>
-          </Form.Item>
-        </Form>
-      </Modal>
+        onSubmit={handleUpdateMasterPassword}
+        form={masterPasswordForm}
+        isSubmitting={updateVaultsMutation.isPending}
+      />
 
       <Modal
         open={successModal.isOpen}
@@ -784,8 +405,8 @@ const CompanyPage: React.FC = () => {
         />
       </Modal>
 
-      <Modal
-        title={tSystem('dangerZone.importData.modal.title')}
+      <ImportModal
+        tSystem={tSystem}
         open={importModal.isOpen}
         onCancel={() => {
           importModal.close();
@@ -793,84 +414,14 @@ const CompanyPage: React.FC = () => {
           importForm.resetFields();
           setImportMode('skip');
         }}
-        footer={null}
-        className={ModalSize.Medium}
-        centered
-      >
-        <Form form={importForm} layout="vertical" onFinish={handleImportCompanyData}>
-          <Alert
-            message={tSystem('dangerZone.importData.modal.warning')}
-            description={tSystem('dangerZone.importData.modal.warningText')}
-            type="warning"
-            showIcon
-          />
-
-          <Form.Item label={tSystem('dangerZone.importData.modal.selectFile')} required>
-            <Upload
-              beforeUpload={(file) => {
-                setImportFile(file);
-                return false;
-              }}
-              onRemove={() => setImportFile(null)}
-              maxCount={1}
-              accept=".json"
-            >
-              <Button icon={<UploadOutlined />}>
-                {importFile ? importFile.name : tSystem('dangerZone.importData.modal.selectFile')}
-              </Button>
-            </Upload>
-          </Form.Item>
-
-          <Form.Item label={tSystem('dangerZone.importData.modal.importMode')}>
-            <Radio.Group value={importMode} onChange={(e) => setImportMode(e.target.value)}>
-              <Space direction="vertical">
-                <Radio value="skip">
-                  <Space direction="vertical" size={4}>
-                    <Typography.Text strong>
-                      {tSystem('dangerZone.importData.modal.modeSkip')}
-                    </Typography.Text>
-                    <Typography.Text>
-                      {tSystem('dangerZone.importData.modal.modeSkipDesc')}
-                    </Typography.Text>
-                  </Space>
-                </Radio>
-                <Radio value="override">
-                  <Space direction="vertical" size={4}>
-                    <Typography.Text strong>
-                      {tSystem('dangerZone.importData.modal.modeOverride')}
-                    </Typography.Text>
-                    <Typography.Text>
-                      {tSystem('dangerZone.importData.modal.modeOverrideDesc')}
-                    </Typography.Text>
-                  </Space>
-                </Radio>
-              </Space>
-            </Radio.Group>
-          </Form.Item>
-
-          <Form.Item>
-            <Flex justify="flex-end" gap={8}>
-              <Button
-                onClick={() => {
-                  importModal.close();
-                  setImportFile(null);
-                  importForm.resetFields();
-                  setImportMode('skip');
-                }}
-              >
-                {tSystem('dangerZone.importData.modal.cancel')}
-              </Button>
-              <Button
-                htmlType="submit"
-                loading={importCompanyDataMutation.isPending}
-                disabled={!importFile}
-              >
-                {tSystem('dangerZone.importData.modal.import')}
-              </Button>
-            </Flex>
-          </Form.Item>
-        </Form>
-      </Modal>
+        onSubmit={handleImportCompanyData}
+        importForm={importForm}
+        importFile={importFile}
+        setImportFile={setImportFile}
+        importMode={importMode}
+        setImportMode={setImportMode}
+        isSubmitting={importCompanyDataMutation.isPending}
+      />
     </Flex>
   );
 };

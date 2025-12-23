@@ -18,7 +18,7 @@ import {
 } from '@/utils/optimizedIcons';
 import type { TFunction } from 'i18next';
 
-interface GetTeamColumnsParams {
+interface BuildTeamColumnsParams {
   tSystem: TFunction<'system'>;
   tCommon: TFunction<'common'>;
   onEdit: (team: Team) => void;
@@ -28,7 +28,7 @@ interface GetTeamColumnsParams {
   isDeleting: boolean;
 }
 
-export const getTeamColumns = ({
+export const buildTeamColumns = ({
   tSystem,
   tCommon,
   onEdit,
@@ -36,7 +36,7 @@ export const getTeamColumns = ({
   onTrace,
   onDelete,
   isDeleting,
-}: GetTeamColumnsParams): TableProps<Team>['columns'] => {
+}: BuildTeamColumnsParams): TableProps<Team>['columns'] => {
   const teamNameColumn = createTruncatedColumn<Team>({
     title: tSystem('tables.teams.teamName'),
     dataIndex: 'teamName',

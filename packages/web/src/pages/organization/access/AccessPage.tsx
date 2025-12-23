@@ -7,7 +7,6 @@ import {
   Input,
   List,
   Modal,
-  Popconfirm,
   Result,
   Select,
   Select as AntSelect,
@@ -40,18 +39,12 @@ import { MobileCard } from '@/components/common/MobileCard';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
+import { buildPermissionColumns } from '@/pages/organization/access/columns';
 import UserSessionsTab from '@/pages/organization/access/components/UserSessionsTab';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
-import {
-  DeleteOutlined,
-  HistoryOutlined,
-  KeyOutlined,
-  PlusOutlined,
-  SafetyOutlined,
-  UserOutlined,
-} from '@/utils/optimizedIcons';
+import { KeyOutlined, PlusOutlined, SafetyOutlined, UserOutlined } from '@/utils/optimizedIcons';
 
 const AccessPage: React.FC = () => {
   const { t } = useTranslation('organization');
@@ -148,110 +141,34 @@ const AccessPage: React.FC = () => {
     }
   };
 
-  const permissionColumns = [
-    {
-      title: tSystem('tables.permissionGroups.groupName'),
-      dataIndex: 'permissionGroupName',
-      key: 'permissionGroupName',
-      render: (text: string) => (
-        <Space>
-          <SafetyOutlined />
-          <strong>{text}</strong>
-        </Space>
-      ),
-    },
-    {
-      title: tSystem('tables.permissionGroups.users'),
-      dataIndex: 'userCount',
-      key: 'userCount',
-      width: 120,
-      render: (count: number) => (
-        <Space>
-          <UserOutlined />
-          <Typography.Text>{count}</Typography.Text>
-        </Space>
-      ),
-    },
-    {
-      title: tSystem('tables.permissionGroups.permissions'),
-      dataIndex: 'permissionCount',
-      key: 'permissionCount',
-      width: 140,
-      render: (count: number) => (
-        <Space>
-          <KeyOutlined />
-          <Typography.Text>{count}</Typography.Text>
-        </Space>
-      ),
-    },
-    {
-      title: tSystem('tables.permissionGroups.actions'),
-      key: 'actions',
-      width: 360,
-      render: (_: unknown, record: PermissionGroup) => (
-        <Space>
-          <Tooltip title={tSystem('actions.permissions')}>
-            <Button
-              type="primary"
-              size="small"
-              icon={<KeyOutlined />}
-              onClick={() => manageModal.open(record)}
-              data-testid={`system-permission-group-manage-button-${record.permissionGroupName}`}
-              aria-label={tSystem('actions.permissions')}
-            />
-          </Tooltip>
-          <Tooltip title={tSystem('actions.assignUser')}>
-            <Button
-              type="primary"
-              size="small"
-              icon={<UserOutlined />}
-              onClick={() => assignModal.open(record)}
-              data-testid={`system-permission-group-assign-user-button-${record.permissionGroupName}`}
-              aria-label={tSystem('actions.assignUser')}
-            />
-          </Tooltip>
-          <Tooltip title={tSystem('actions.trace')}>
-            <Button
-              type="primary"
-              size="small"
-              icon={<HistoryOutlined />}
-              onClick={() =>
-                auditTrace.open({
-                  entityType: 'Permissions',
-                  entityIdentifier: record.permissionGroupName,
-                  entityName: record.permissionGroupName,
-                })
-              }
-              data-testid={`system-permission-group-trace-button-${record.permissionGroupName}`}
-              aria-label={tSystem('actions.trace')}
-            />
-          </Tooltip>
-          <Popconfirm
-            title={t('access.modals.deleteGroupTitle')}
-            description={t('access.modals.deleteGroupDescription', {
-              group: record.permissionGroupName,
-            })}
-            onConfirm={() => handleDeleteGroup(record.permissionGroupName)}
-            okText={tCommon('general.yes')}
-            cancelText={tCommon('general.no')}
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title={tCommon('actions.delete')}>
-              <Button
-                type="primary"
-                danger
-                size="small"
-                icon={<DeleteOutlined />}
-                loading={deleteGroupMutation.isPending}
-                data-testid={`system-permission-group-delete-button-${record.permissionGroupName}`}
-                aria-label={tCommon('actions.delete')}
-              />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const permissionColumns = useMemo(
+    () =>
+      buildPermissionColumns({
+        t,
+        tSystem,
+        tCommon,
+        onManagePermissions: manageModal.open,
+        onAssignUser: assignModal.open,
+        onTrace: (record) =>
+          auditTrace.open({
+            entityType: 'Permissions',
+            entityIdentifier: record.permissionGroupName,
+            entityName: record.permissionGroupName,
+          }),
+        onDeleteGroup: handleDeleteGroup,
+        isDeleting: deleteGroupMutation.isPending,
+      }),
+    [
+      t,
+      tSystem,
+      tCommon,
+      manageModal.open,
+      assignModal.open,
+      auditTrace,
+      handleDeleteGroup,
+      deleteGroupMutation.isPending,
+    ]
+  );
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name

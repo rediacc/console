@@ -7,7 +7,7 @@ interface MachineCountBadgeProps {
   cluster: CephCluster;
 }
 
-export const MachineCountBadge: React.FC<MachineCountBadgeProps> = ({ cluster }) => {
+export const ClusterMachineCountBadge: React.FC<MachineCountBadgeProps> = ({ cluster }) => {
   const { data: machines = [] } = useCephClusterMachines(cluster.clusterName, true);
 
   return (

@@ -17,8 +17,8 @@ import RbdImageTable from '@/pages/ceph/components/RbdImageTable';
 import { confirmAction } from '@/utils/confirmations';
 import { DatabaseOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 import { buildPoolColumns } from './columns';
-import { ClusterPoolsCard } from './components/ClusterPoolsCard';
-import { getPoolFunctionMenuItems } from './menus';
+import { buildPoolMenuItems } from '../../menuItems';
+import { ClusterPoolsCard } from '../ClusterPoolsCard';
 import type { MenuProps } from 'antd';
 
 interface PoolTableProps {
@@ -137,7 +137,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
         <Space onClick={(e) => e.stopPropagation()}>
           <Dropdown
             menu={{
-              items: getPoolFunctionMenuItems(t),
+              items: buildPoolMenuItems(t),
               onClick: ({ key }) => {
                 if (key === 'advanced') {
                   handleRunFunction(record);

@@ -54,7 +54,7 @@ import {
   TeamOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import { getTeamColumns } from './data';
+import { buildTeamColumns } from './columns';
 
 const TeamsPage: React.FC = () => {
   const { t } = useTranslation('organization');
@@ -184,7 +184,7 @@ const TeamsPage: React.FC = () => {
     isDeleting: deleteTeamMutation.isPending,
   };
 
-  const teamColumns = getTeamColumns(columnParams);
+  const teamColumns = buildTeamColumns(columnParams);
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name

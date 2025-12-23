@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Alert, Button, Flex, Modal, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
+import { Button, Flex, Space, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -14,25 +14,11 @@ import {
 } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
 import { useDropdownData } from '@/api/queries/useDropdownData';
-import { ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { createActionColumn } from '@/components/common/columns';
-import {
-  buildDeleteMenuItem,
-  buildDivider,
-  buildEditMenuItem,
-  buildTraceMenuItem,
-} from '@/components/common/menuBuilders';
-import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
-import ResourceListView, {
-  COLUMN_RESPONSIVE,
-  COLUMN_WIDTHS,
-} from '@/components/common/ResourceListView';
+import ResourceListView from '@/components/common/ResourceListView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
-import { featureFlags } from '@/config/featureFlags';
 import {
   useAsyncAction,
   usePagination,
@@ -46,15 +32,10 @@ import { useRepositoryCreation } from '@/hooks/useRepositoryCreation';
 import { getAffectedResources as coreGetAffectedResources } from '@/platform';
 import type { QueueActionParams } from '@/services/queueActionService';
 import { showMessage } from '@/utils/messages';
-import {
-  DeleteOutlined,
-  EditOutlined,
-  HistoryOutlined,
-  InboxOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  WarningOutlined,
-} from '@/utils/optimizedIcons';
+import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import { buildRepositoryColumns } from './columns';
+import { useDeleteConfirmationModal } from './components/DeleteConfirmationModal';
+import { RepositoryMobileCard } from './components/RepositoryMobileCard';
 
 interface CredentialsLocationState {
   createRepository?: boolean;
@@ -74,7 +55,6 @@ type RepoModalData = Partial<Repository> & Record<string, unknown>;
 
 const CredentialsPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common']);
-  const [modal, contextHolder] = Modal.useModal();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -132,151 +112,21 @@ const CredentialsPage: React.FC = () => {
     [repositories]
   );
 
-  // Helper function to find affected resources when deleting a repository
-  // Uses core repository relationship service
   const getAffectedResources = useCallback(
-    (repository: Repository) => {
-      return coreGetAffectedResources(repository, repositories, machines);
-    },
+    (repository: Repository) => coreGetAffectedResources(repository, repositories, machines),
     [repositories, machines]
   );
 
-  const handleDeleteRepository = useCallback(
-    (repository: Repository) => {
-      const { isCredential, forks, affectedMachines } = getAffectedResources(repository);
-
-      // For credential deletion with machine deployments - BLOCK
-      if (isCredential && affectedMachines.length > 0) {
-        modal.error({
-          title: t('repositories.cannotDeleteCredential'),
-          content: (
-            <Flex vertical>
-              <Typography.Text>
-                {forks.length > 0
-                  ? t('repositories.credentialHasDeploymentsWithForks', {
-                      count: affectedMachines.length,
-                      forkCount: forks.length,
-                    })
-                  : t('repositories.credentialHasDeployments', {
-                      count: affectedMachines.length,
-                    })}
-              </Typography.Text>
-
-              {forks.length > 0 && (
-                <Flex vertical>
-                  <Typography.Text strong>{t('repositories.affectedForks')}</Typography.Text>
-                  {/* eslint-disable-next-line no-restricted-syntax */}
-                  <ul style={{ paddingLeft: 24 }}>
-                    {forks.map((fork) => (
-                      <li key={fork.repositoryGuid}>
-                        {fork.repositoryName}
-                        {fork.repositoryTag ? `:${fork.repositoryTag}` : ''}
-                      </li>
-                    ))}
-                  </ul>
-                </Flex>
-              )}
-
-              <Flex vertical>
-                <Typography.Text strong>{t('repositories.affectedMachines')}</Typography.Text>
-                {/* eslint-disable-next-line no-restricted-syntax */}
-                <ul style={{ paddingLeft: 24 }}>
-                  {affectedMachines.map((machine) => (
-                    <li key={machine.machineName}>
-                      <Typography.Text strong>{machine.machineName}</Typography.Text>
-                      <Typography.Text> ({machine.repositoryNames.join(', ')})</Typography.Text>
-                    </li>
-                  ))}
-                </ul>
-              </Flex>
-
-              <Alert
-                type="warning"
-                message={t('repositories.removeDeploymentsFirst')}
-                showIcon
-                icon={<WarningOutlined />}
-              />
-            </Flex>
-          ),
-          okText: t('common:actions.close'),
-        });
-        return;
-      }
-
-      // For fork deletion with machine deployments - WARNING but allow
-      if (!isCredential && affectedMachines.length > 0) {
-        modal.confirm({
-          title: t('repositories.deleteRepository'),
-          content: (
-            <Flex vertical>
-              <Typography.Text>
-                {t('repositories.confirmDelete', { repositoryName: repository.repositoryName })}
-              </Typography.Text>
-
-              <Alert
-                type="warning"
-                message={t('repositories.machinesWillLoseAccess')}
-                description={
-                  // eslint-disable-next-line no-restricted-syntax
-                  <ul style={{ paddingLeft: 24 }}>
-                    {affectedMachines.map((machine) => (
-                      <li key={machine.machineName}>
-                        <Typography.Text strong>{machine.machineName}</Typography.Text>
-                      </li>
-                    ))}
-                  </ul>
-                }
-                showIcon
-                icon={<WarningOutlined />}
-              />
-            </Flex>
-          ),
-          okText: t('common:actions.delete'),
-          okType: 'danger',
-          cancelText: t('common:actions.cancel'),
-          onOk: async () => {
-            try {
-              await deleteRepoMutation.mutateAsync({
-                teamName: repository.teamName,
-                repositoryName: repository.repositoryName,
-              });
-              showMessage('success', t('repositories.deleteSuccess'));
-              refetchRepos();
-            } catch {
-              showMessage('error', t('repositories.deleteError'));
-            }
-          },
-        });
-        return;
-      }
-
-      // For credential deletion without deployments or fork deletion without deployments - simple confirm
-      modal.confirm({
-        title: isCredential
-          ? t('repositories.deleteCredential')
-          : t('repositories.deleteRepository'),
-        content: isCredential
-          ? t('repositories.confirmDeleteCredential', { repositoryName: repository.repositoryName })
-          : t('repositories.confirmDelete', { repositoryName: repository.repositoryName }),
-        okText: t('common:actions.delete'),
-        okType: 'danger',
-        cancelText: t('common:actions.cancel'),
-        onOk: async () => {
-          try {
-            await deleteRepoMutation.mutateAsync({
-              teamName: repository.teamName,
-              repositoryName: repository.repositoryName,
-            });
-            showMessage('success', t('repositories.deleteSuccess'));
-            refetchRepos();
-          } catch {
-            showMessage('error', t('repositories.deleteError'));
-          }
-        },
-      });
-    },
-    [deleteRepoMutation, getAffectedResources, modal, refetchRepos, t]
-  );
+  const { handleDeleteRepository, contextHolder } = useDeleteConfirmationModal({
+    t,
+    getAffectedResources,
+    onDelete: (repository) =>
+      deleteRepoMutation.mutateAsync({
+        teamName: repository.teamName,
+        repositoryName: repository.repositoryName,
+      }),
+    onDeleted: refetchRepos,
+  });
 
   const handleUnifiedModalSubmit = useCallback(
     async (data: RepositoryFormValues) => {
@@ -497,89 +347,19 @@ const CredentialsPage: React.FC = () => {
   }, [location, navigate, openUnifiedModal, setSelectedTeams]);
 
   const repositoryColumns = useMemo(
-    () => [
-      {
-        title: t('repositories.repositoryName'),
-        dataIndex: 'repositoryName',
-        key: 'repositoryName',
-        width: COLUMN_WIDTHS.NAME,
-        ellipsis: true,
-        render: (text: string) => (
-          <Space>
-            <InboxOutlined />
-            <strong>{text}</strong>
-          </Space>
-        ),
-      },
-      {
-        title: t('general.team'),
-        dataIndex: 'teamName',
-        key: 'teamName',
-        width: COLUMN_WIDTHS.TAG,
-        ellipsis: true,
-        render: (teamName: string) => <Tag>{teamName}</Tag>,
-      },
-      ...(featureFlags.isEnabled('vaultVersionColumns')
-        ? [
-            {
-              title: t('general.vaultVersion'),
-              dataIndex: 'vaultVersion',
-              key: 'vaultVersion',
-              width: COLUMN_WIDTHS.VERSION,
-              align: 'center' as const,
-              responsive: COLUMN_RESPONSIVE.DESKTOP_ONLY,
-              render: (version: number) => (
-                <Tag>{t('common:general.versionFormat', { version })}</Tag>
-              ),
-            },
-          ]
-        : []),
-      createActionColumn<Repository>({
-        width: COLUMN_WIDTHS.ACTIONS_WIDE,
-        renderActions: (record) => {
-          const buttons: ActionButtonConfig<Repository>[] = [
-            {
-              type: 'edit',
-              icon: <EditOutlined />,
-              tooltip: 'common:actions.edit',
-              onClick: (r: Repository) =>
-                openUnifiedModal('edit', r as Repository & Record<string, unknown>),
-              variant: 'primary',
-            },
-            {
-              type: 'trace',
-              icon: <HistoryOutlined />,
-              tooltip: 'machines:trace',
-              onClick: (r: Repository) =>
-                auditTrace.open({
-                  entityType: 'Repository',
-                  entityIdentifier: r.repositoryName,
-                  entityName: r.repositoryName,
-                }),
-              variant: 'default',
-            },
-            {
-              type: 'delete',
-              icon: <DeleteOutlined />,
-              tooltip: 'common:actions.delete',
-              onClick: handleDeleteRepository,
-              variant: 'primary',
-              danger: true,
-            },
-          ];
-
-          return (
-            <ActionButtonGroup<Repository>
-              buttons={buttons}
-              record={record}
-              idField="repositoryGuid"
-              testIdPrefix="resources-repository"
-              t={t}
-            />
-          );
-        },
+    () =>
+      buildRepositoryColumns({
+        t,
+        onEdit: (repository) =>
+          openUnifiedModal('edit', repository as Repository & Record<string, unknown>),
+        onTrace: (repository) =>
+          auditTrace.open({
+            entityType: 'Repository',
+            entityIdentifier: repository.repositoryName,
+            entityName: repository.repositoryName,
+          }),
+        onDelete: handleDeleteRepository,
       }),
-    ],
     [auditTrace, handleDeleteRepository, openUnifiedModal, t]
   );
 
@@ -589,36 +369,24 @@ const CredentialsPage: React.FC = () => {
     ? t('repositories.noRepositories')
     : t('teams.selectTeamPrompt');
 
-  const mobileRender = useMemo(
-    // eslint-disable-next-line react/display-name
-    () => (record: Repository) => {
-      const menuItems: MenuProps['items'] = [
-        buildEditMenuItem(t, () =>
-          openUnifiedModal('edit', record as Repository & Record<string, unknown>)
-        ),
-        buildTraceMenuItem(t, () =>
+  const mobileRender = useCallback(
+    (record: Repository) => (
+      <RepositoryMobileCard
+        record={record}
+        t={t}
+        onEdit={(repository) =>
+          openUnifiedModal('edit', repository as Repository & Record<string, unknown>)
+        }
+        onTrace={(repository) =>
           auditTrace.open({
             entityType: 'Repository',
-            entityIdentifier: record.repositoryName,
-            entityName: record.repositoryName,
+            entityIdentifier: repository.repositoryName,
+            entityName: repository.repositoryName,
           })
-        ),
-        buildDivider(),
-        buildDeleteMenuItem(t, () => handleDeleteRepository(record)),
-      ];
-
-      return (
-        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
-          <Space>
-            <InboxOutlined />
-            <Typography.Text strong className="truncate">
-              {record.repositoryName}
-            </Typography.Text>
-          </Space>
-          <Tag>{record.teamName}</Tag>
-        </MobileCard>
-      );
-    },
+        }
+        onDelete={handleDeleteRepository}
+      />
+    ),
     [t, openUnifiedModal, auditTrace, handleDeleteRepository]
   );
 

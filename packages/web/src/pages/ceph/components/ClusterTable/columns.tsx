@@ -15,8 +15,8 @@ import {
   RightOutlined,
   CloudServerOutlined,
 } from '@/utils/optimizedIcons';
-import { MachineCountBadge } from './components/MachineCountBadge';
-import { getClusterFunctionMenuItems } from './menus';
+import { buildClusterMenuItems } from '../../menuItems';
+import { ClusterMachineCountBadge } from '../ClusterMachineCountBadge';
 import type { ColumnsType } from 'antd/es/table';
 import type { TFunction } from 'i18next';
 
@@ -85,7 +85,7 @@ export const buildClusterColumns = ({
       align: 'center',
       render: (_: unknown, record: CephCluster) => (
         <Flex align="center" gap={8}>
-          <MachineCountBadge cluster={record} />
+          <ClusterMachineCountBadge cluster={record} />
           <Button
             data-testid={`ds-cluster-manage-machines-${record.clusterName}`}
             onClick={(event) => {
@@ -121,7 +121,7 @@ export const buildClusterColumns = ({
               type: 'function-dropdown',
               icon: <FunctionOutlined />,
               tooltip: 'common:actions.remote',
-              dropdownItems: getClusterFunctionMenuItems(t),
+              dropdownItems: buildClusterMenuItems(t),
               onDropdownClick: (key) => {
                 if (key === 'advanced') {
                   onRunFunction(record);

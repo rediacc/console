@@ -23,7 +23,7 @@ interface QueueColumnsConfig {
   t: (key: string) => string;
 }
 
-export const getQueueColumns = ({
+export const buildQueueColumns = ({
   handleViewTrace,
   handleCancelQueueItem,
   cancelLoading,
