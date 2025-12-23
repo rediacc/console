@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
+  Badge,
   Button,
   Card,
   Flex,
@@ -12,6 +13,7 @@ import {
   Tag,
   Tooltip,
   Typography,
+  type MenuProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
@@ -28,6 +30,14 @@ import {
 } from '@/api/queries/teams';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildEditMenuItem,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
+import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal, {
   type ExistingResourceData,
@@ -35,7 +45,15 @@ import UnifiedResourceModal, {
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { useFormModal } from '@/hooks/useFormModal';
 import { ModalSize } from '@/types/modal';
-import { DeleteOutlined, PlusOutlined, UserOutlined } from '@/utils/optimizedIcons';
+import {
+  CloudServerOutlined,
+  DatabaseOutlined,
+  DeleteOutlined,
+  DesktopOutlined,
+  PlusOutlined,
+  TeamOutlined,
+  UserOutlined,
+} from '@/utils/optimizedIcons';
 import { getTeamColumns } from './data';
 
 const TeamsPage: React.FC = () => {
@@ -111,13 +129,16 @@ const TeamsPage: React.FC = () => {
     }
   };
 
-  const handleDeleteTeam = async (teamName: string) => {
-    try {
-      await deleteTeamMutation.mutateAsync({ teamName });
-    } catch {
-      // handled by mutation
-    }
-  };
+  const handleDeleteTeam = useCallback(
+    async (teamName: string) => {
+      try {
+        await deleteTeamMutation.mutateAsync({ teamName });
+      } catch {
+        // handled by mutation
+      }
+    },
+    [deleteTeamMutation]
+  );
 
   const handleAddTeamMember = async () => {
     if (!manageTeamModal.state.data || !selectedMemberEmail) return;
@@ -146,14 +167,14 @@ const TeamsPage: React.FC = () => {
     }
   };
 
-  const teamColumns = getTeamColumns({
+  const columnParams = {
     tSystem,
     tCommon,
-    onEdit: (team) => unifiedModal.openEdit(team as ExistingResourceData),
-    onManageMembers: (team) => {
+    onEdit: (team: Team) => unifiedModal.openEdit(team as ExistingResourceData),
+    onManageMembers: (team: Team) => {
       manageTeamModal.open(team);
     },
-    onTrace: (team) =>
+    onTrace: (team: Team) =>
       auditTrace.open({
         entityType: 'Team',
         entityIdentifier: team.teamName,
@@ -161,7 +182,64 @@ const TeamsPage: React.FC = () => {
       }),
     onDelete: handleDeleteTeam,
     isDeleting: deleteTeamMutation.isPending,
-  });
+  };
+
+  const teamColumns = getTeamColumns(columnParams);
+
+  const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: Team) => {
+      const menuItems: MenuProps['items'] = [
+        buildEditMenuItem(tCommon, () => unifiedModal.openEdit(record as ExistingResourceData)),
+        {
+          key: 'members',
+          label: tSystem('actions.members'),
+          icon: <UserOutlined />,
+          onClick: () => manageTeamModal.open(record),
+        },
+        buildTraceMenuItem(tCommon, () =>
+          auditTrace.open({
+            entityType: 'Team',
+            entityIdentifier: record.teamName,
+            entityName: record.teamName,
+          })
+        ),
+        buildDivider(),
+        buildDeleteMenuItem(tCommon, () => handleDeleteTeam(record.teamName)),
+      ];
+
+      return (
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
+          <Space>
+            <TeamOutlined />
+            <Typography.Text strong className="truncate">
+              {record.teamName}
+            </Typography.Text>
+          </Space>
+          <Flex gap={16} wrap>
+            <Space size="small">
+              <Badge count={record.memberCount} showZero size="small">
+                <UserOutlined />
+              </Badge>
+            </Space>
+            <Space size="small">
+              <DesktopOutlined />
+              <Typography.Text>{record.machineCount}</Typography.Text>
+            </Space>
+            <Space size="small">
+              <DatabaseOutlined />
+              <Typography.Text>{record.repositoryCount || 0}</Typography.Text>
+            </Space>
+            <Space size="small">
+              <CloudServerOutlined />
+              <Typography.Text>{record.storageCount || 0}</Typography.Text>
+            </Space>
+          </Flex>
+        </MobileCard>
+      );
+    },
+    [tSystem, tCommon, unifiedModal, manageTeamModal, auditTrace, handleDeleteTeam]
+  );
 
   return (
     <Flex vertical>
@@ -175,6 +253,7 @@ const TeamsPage: React.FC = () => {
         loading={teamsLoading}
         data={teams}
         columns={teamColumns}
+        mobileRender={mobileRender}
         rowKey="teamName"
         searchPlaceholder={t('teams.searchPlaceholder')}
         data-testid="system-team-table"
@@ -200,6 +279,7 @@ const TeamsPage: React.FC = () => {
         }}
         footer={null}
         className={ModalSize.Large}
+        centered
       >
         <Tabs
           items={[

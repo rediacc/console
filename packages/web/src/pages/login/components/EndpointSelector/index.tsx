@@ -417,6 +417,7 @@ const EndpointSelector: React.FC = () => {
           customForm.resetFields();
         }}
         footer={null}
+        centered
       >
         <Form form={customForm} layout="vertical" onFinish={handleAddCustomEndpoint}>
           <Form.Item

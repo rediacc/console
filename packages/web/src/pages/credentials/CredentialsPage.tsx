@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Alert, Button, Flex, Modal, Space, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Flex, Modal, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -17,7 +17,15 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { createActionColumn } from '@/components/common/columns';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildEditMenuItem,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
+import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView, {
   COLUMN_RESPONSIVE,
   COLUMN_WIDTHS,
@@ -581,6 +589,39 @@ const CredentialsPage: React.FC = () => {
     ? t('repositories.noRepositories')
     : t('teams.selectTeamPrompt');
 
+  const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: Repository) => {
+      const menuItems: MenuProps['items'] = [
+        buildEditMenuItem(t, () =>
+          openUnifiedModal('edit', record as Repository & Record<string, unknown>)
+        ),
+        buildTraceMenuItem(t, () =>
+          auditTrace.open({
+            entityType: 'Repository',
+            entityIdentifier: record.repositoryName,
+            entityName: record.repositoryName,
+          })
+        ),
+        buildDivider(),
+        buildDeleteMenuItem(t, () => handleDeleteRepository(record)),
+      ];
+
+      return (
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
+          <Space>
+            <InboxOutlined />
+            <Typography.Text strong className="truncate">
+              {record.repositoryName}
+            </Typography.Text>
+          </Space>
+          <Tag>{record.teamName}</Tag>
+        </MobileCard>
+      );
+    },
+    [t, openUnifiedModal, auditTrace, handleDeleteRepository]
+  );
+
   return (
     <>
       <Flex vertical>
@@ -607,6 +648,7 @@ const CredentialsPage: React.FC = () => {
             loading={repositoriesLoading}
             data={displayedRepositories}
             columns={repositoryColumns}
+            mobileRender={mobileRender}
             rowKey="repositoryGuid"
             data-testid="resources-repository-table"
             resourceType="repositories"

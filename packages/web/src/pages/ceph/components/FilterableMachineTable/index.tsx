@@ -1,8 +1,13 @@
 import React from 'react';
-import { Flex, Table } from 'antd';
+import { Badge, Checkbox, Flex, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { ExpandIcon } from '@/components/common/ExpandIcon';
+import { MobileCard } from '@/components/common/MobileCard';
+import ResourceListView from '@/components/common/ResourceListView';
+import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
 import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable';
 import type { Machine } from '@/types';
+import { DesktopOutlined } from '@/utils/optimizedIcons';
 import { buildMachineTableColumns } from './columns';
 import type { TableRowSelection } from 'antd/es/table/interface';
 
@@ -60,22 +65,92 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
     [refreshKeys]
   );
 
+  const handleToggleRow = React.useCallback(
+    (machineName: string) => {
+      if (!onExpandedRowsChange) return;
+      if (expandedRowKeys.includes(machineName)) {
+        onExpandedRowsChange(expandedRowKeys.filter((key) => key !== machineName));
+      } else {
+        onExpandedRowsChange([...expandedRowKeys, machineName]);
+      }
+    },
+    [expandedRowKeys, onExpandedRowsChange]
+  );
+
+  const mobileRender = React.useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: Machine) => {
+      const isExpanded = expandedRowKeys.includes(record.machineName);
+      const isSelected = selectedRowKeys.includes(record.machineName);
+      const hasQueueItems = (record.queueCount ?? 0) > 0;
+
+      const handleCheckboxChange = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!onSelectionChange) return;
+
+        if (isSelected) {
+          onSelectionChange(selectedRowKeys.filter((key) => key !== record.machineName));
+        } else {
+          onSelectionChange([...selectedRowKeys, record.machineName]);
+        }
+      };
+
+      const actions = (
+        <Space direction="vertical" align="end">
+          <Badge count={record.queueCount ?? 0} showZero title={t('machines:queueItems')} />
+        </Space>
+      );
+
+      return (
+        <MobileCard
+          onClick={hasQueueItems ? () => handleToggleRow(record.machineName) : undefined}
+          actions={actions}
+        >
+          <Space>
+            {showSelection && (
+              <Typography.Text onClick={handleCheckboxChange}>
+                <Checkbox checked={isSelected} />
+              </Typography.Text>
+            )}
+            {hasQueueItems && <ExpandIcon isExpanded={isExpanded} />}
+            <DesktopOutlined />
+            <Typography.Text strong className="truncate">
+              {record.machineName}
+            </Typography.Text>
+          </Space>
+          <Flex gap={8} wrap align="center">
+            {record.teamName && <Tag bordered={false}>{record.teamName}</Tag>}
+            {record.bridgeName && (
+              <Tag bordered={false} color="blue">
+                {record.bridgeName}
+              </Tag>
+            )}
+          </Flex>
+          <Flex align="center" gap={8}>
+            <MachineAssignmentStatusCell machine={record} />
+          </Flex>
+        </MobileCard>
+      );
+    },
+    [t, expandedRowKeys, selectedRowKeys, showSelection, onSelectionChange, handleToggleRow]
+  );
+
   return (
     <Flex className="w-full overflow-hidden">
-      <Table<Machine>
+      <ResourceListView<Machine>
         columns={columns}
-        dataSource={machines}
+        data={machines}
         rowKey="machineName"
         loading={loading}
         rowSelection={rowSelection}
         data-testid="ds-machines-table"
+        mobileRender={mobileRender}
         expandable={{
           expandedRowKeys,
           onExpandedRowsChange: onExpandedRowsChange ? handleExpandedRowsChange : undefined,
           expandedRowRender: renderExpandedRow,
-          rowExpandable: (machine) => (machine.queueCount ?? 0) > 0,
+          rowExpandable: (machine: Machine) => (machine.queueCount ?? 0) > 0,
         }}
-        scroll={{ x: 800 }}
         pagination={{
           showSizeChanger: true,
           showTotal: (total: number, range: [number, number]) =>

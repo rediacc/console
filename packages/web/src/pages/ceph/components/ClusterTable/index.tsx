@@ -1,13 +1,27 @@
 import { useCallback, useMemo } from 'react';
-import { Button, Empty, Flex, Modal, Space, Table } from 'antd';
+import { Button, Dropdown, Empty, Flex, Modal, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CephCluster } from '@/api/queries/ceph';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { ExpandIcon } from '@/components/common/ExpandIcon';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildEditMenuItem,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
+import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
+import ResourceListView from '@/components/common/ResourceListView';
 import { useDialogState, useExpandableTable, useTraceModal } from '@/hooks';
 import { ManageClusterMachinesModal } from '@/pages/ceph/components/ManageClusterMachinesModal';
 import { confirmAction } from '@/utils/confirmations';
+import { CloudServerOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 import { buildClusterColumns } from './columns';
 import { ClusterMachines } from './components/ClusterMachines';
+import { MachineCountBadge } from './components/MachineCountBadge';
+import { getClusterFunctionMenuItems } from './menus';
+import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ClusterTableProps {
@@ -104,6 +118,79 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
     [toggleRow]
   );
 
+  const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: CephCluster) => {
+      const isExpanded = expandedRowKeys.includes(record.clusterName);
+
+      const menuItems: MenuProps['items'] = [
+        buildEditMenuItem(t, () => onEditCluster(record)),
+        {
+          key: 'manage',
+          label: t('machines:manage'),
+          icon: <CloudServerOutlined />,
+          onClick: () => handleManageMachines(record),
+        },
+        buildTraceMenuItem(t, () => handleAuditTrace(record)),
+        buildDivider(),
+        buildDeleteMenuItem(t, () => handleDelete(record)),
+      ];
+
+      const actions = (
+        <Space onClick={(e) => e.stopPropagation()}>
+          <Dropdown
+            menu={{
+              items: getClusterFunctionMenuItems(t),
+              onClick: ({ key }) => {
+                if (key === 'advanced') {
+                  handleFunctionRun(record);
+                } else {
+                  handleFunctionRun({ ...record, preselectedFunction: key });
+                }
+              },
+            }}
+            trigger={['click']}
+          >
+            <Button
+              type="text"
+              size="small"
+              icon={<FunctionOutlined />}
+              aria-label={t('common:actions.remote')}
+            />
+          </Dropdown>
+          <ResourceActionsDropdown menuItems={menuItems} />
+        </Space>
+      );
+
+      return (
+        <MobileCard onClick={() => handleToggleRow(record.clusterName)} actions={actions}>
+          <Space>
+            <ExpandIcon isExpanded={isExpanded} />
+            <CloudServerOutlined />
+            <Typography.Text strong>{record.clusterName}</Typography.Text>
+          </Space>
+          <Flex gap={8} wrap align="center">
+            <Tag bordered={false}>{record.teamName}</Tag>
+            <MachineCountBadge cluster={record} />
+          </Flex>
+          <Typography.Text type="secondary" className="text-xs">
+            {t('common:general.versionFormat', { version: record.vaultVersion || 0 })}
+          </Typography.Text>
+        </MobileCard>
+      );
+    },
+    [
+      t,
+      expandedRowKeys,
+      onEditCluster,
+      handleManageMachines,
+      handleAuditTrace,
+      handleDelete,
+      handleFunctionRun,
+      handleToggleRow,
+    ]
+  );
+
   const expandedRowRender = useCallback(
     (record: CephCluster) => <ClusterMachines cluster={record} />,
     []
@@ -124,13 +211,12 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
     <>
       {contextHolder}
       <Flex className="overflow-hidden">
-        <Table<CephCluster>
+        <ResourceListView<CephCluster>
           data-testid="ds-cluster-table"
           columns={columns}
-          dataSource={clusters}
+          data={clusters}
           rowKey="clusterName"
           loading={loading}
-          scroll={{ x: 'max-content' }}
           pagination={{
             showSizeChanger: true,
             showTotal: (total, range) =>
@@ -140,10 +226,12 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
                 total,
               }),
           }}
+          mobileRender={mobileRender}
           expandable={{
             expandedRowRender,
             expandedRowKeys,
-            onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
+            onExpandedRowsChange: (keys: readonly React.Key[]) =>
+              setExpandedRowKeys(keys as string[]),
             expandIcon: () => null,
             expandRowByClick: false,
           }}

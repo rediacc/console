@@ -271,6 +271,7 @@
     "subtitle": "Manage repository credentials and deployments"
   },
   "repositories": {
+    "viewContainers": "View Containers",
     "accessible": "Accessible",
     "activeState": "State",
     "activity": "Activity",

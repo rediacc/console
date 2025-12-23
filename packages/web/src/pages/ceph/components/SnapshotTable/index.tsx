@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState, type Key } from 'react';
 import {
+  CameraOutlined,
+  CloudUploadOutlined,
   CopyOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
@@ -8,7 +10,7 @@ import {
   SecurityScanOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { Button, Flex, Table, Tooltip, Typography } from 'antd';
+import { Button, Flex, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   type CephPool,
@@ -21,7 +23,10 @@ import {
   useDeleteCephRbdSnapshot,
   useUpdateCephPoolVault,
 } from '@/api/queries/cephMutations';
+import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
+import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
@@ -234,6 +239,57 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
     [getSnapshotMenuItems, handleRunFunction, t]
   );
 
+  const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: CephRbdSnapshot) => {
+      const onExpand = () => {
+        setExpandedRowKeys((prev) =>
+          prev.includes(record.snapshotGuid || '')
+            ? prev.filter((k) => k !== record.snapshotGuid)
+            : [...prev, record.snapshotGuid || '']
+        );
+      };
+
+      const actions = (
+        <Space>
+          <Tooltip title={t('clones.title')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={onExpand}
+              aria-label={t('clones.title')}
+            />
+          </Tooltip>
+          <Tooltip title={t('common.remote')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<CloudUploadOutlined />}
+              onClick={() => handleRunFunction('ceph_rbd_snapshot_list', record)}
+              aria-label={t('common.remote')}
+            />
+          </Tooltip>
+          <ResourceActionsDropdown menuItems={getSnapshotMenuItems(record)} />
+        </Space>
+      );
+
+      return (
+        <MobileCard actions={actions}>
+          <Space>
+            <CameraOutlined />
+            <Typography.Text strong>{record.snapshotName}</Typography.Text>
+            {record.vaultContent && <Tag bordered={false}>{t('common.vault')}</Tag>}
+          </Space>
+          <Typography.Text type="secondary" className="text-xs truncate">
+            {record.snapshotGuid?.substring(0, 8)}...
+          </Typography.Text>
+        </MobileCard>
+      );
+    },
+    [t, getSnapshotMenuItems, handleRunFunction, setExpandedRowKeys]
+  );
+
   const expandedRowRender = useCallback(
     (record: CephRbdSnapshot) => (
       <CloneTable snapshot={record} image={image} pool={pool} teamFilter={teamFilter} />
@@ -257,19 +313,25 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         </Flex>
 
         <Flex className="overflow-hidden">
-          <Table<CephRbdSnapshot>
+          <ResourceListView<CephRbdSnapshot>
             columns={columns}
-            dataSource={snapshots}
+            data={snapshots}
             rowKey="snapshotGuid"
             loading={isLoading}
-            size="small"
             pagination={false}
             data-testid="snapshot-list-table"
+            mobileRender={mobileRender}
             expandable={{
               expandedRowRender,
               expandedRowKeys,
               onExpandedRowsChange: (keys: readonly Key[]) => setExpandedRowKeys(keys.map(String)),
-              expandIcon: ({ onExpand, record }) => (
+              expandIcon: ({
+                onExpand,
+                record,
+              }: {
+                onExpand: (record: CephRbdSnapshot, event: React.MouseEvent<HTMLElement>) => void;
+                record: CephRbdSnapshot;
+              }) => (
                 <Button
                   icon={<CopyOutlined />}
                   onClick={(event) => onExpand(record, event)}

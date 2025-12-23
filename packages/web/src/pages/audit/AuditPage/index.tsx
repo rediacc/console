@@ -6,19 +6,20 @@ import {
   Col,
   DatePicker,
   Dropdown,
-  Empty,
   Flex,
   Input,
   Row,
   Select,
   Space,
-  Table,
+  Tag,
   Tooltip,
   Typography,
 } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useAuditLogs, type AuditLog } from '@/api/queries/audit';
+import { MobileCard } from '@/components/common/MobileCard';
+import ResourceListView from '@/components/common/ResourceListView';
 import { useFilters, useMessage, usePagination } from '@/hooks';
 import {
   buildCSVContent,
@@ -51,7 +52,7 @@ const AuditPage = () => {
   const message = useMessage();
 
   // Filter state with useFilters hook
-  const { filters, setFilter, clearAllFilters } = useFilters<AuditPageFilters>({
+  const { filters, setFilter } = useFilters<AuditPageFilters>({
     dateRange: [dayjs().subtract(7, 'days'), dayjs()],
     entityFilter: undefined,
     searchText: '',
@@ -101,6 +102,44 @@ const AuditPage = () => {
         getActionIcon,
       }),
     [t, auditLogs, getActionIcon]
+  );
+
+  const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: AuditLog) => {
+      const config = findActionConfig(record.action);
+      const IconComponent = config.icon;
+
+      const timestampDisplay = (
+        <Typography.Text type="secondary" className="text-xs">
+          {dayjs(record.timestamp).format('MM/DD HH:mm')}
+        </Typography.Text>
+      );
+
+      return (
+        <MobileCard actions={timestampDisplay}>
+          <Space>
+            <IconComponent />
+            <Typography.Text strong>{record.action.replace(/_/g, ' ')}</Typography.Text>
+          </Space>
+          <Flex gap={8} wrap align="center">
+            <Tag>{record.entity}</Tag>
+            {record.entityName && (
+              <Typography.Text className="truncate">{record.entityName}</Typography.Text>
+            )}
+          </Flex>
+          <Typography.Text type="secondary" className="text-xs">
+            {t('system:audit.columns.user')}: {record.actionByUser}
+          </Typography.Text>
+          {record.details && (
+            <Typography.Text type="secondary" className="text-xs truncate">
+              {record.details}
+            </Typography.Text>
+          )}
+        </MobileCard>
+      );
+    },
+    [t]
   );
 
   const entityTypes = getUniqueMappedValues(auditLogs || [], (log) => log.entity);
@@ -339,12 +378,20 @@ const AuditPage = () => {
 
         {/* Audit Logs Table */}
         <Card data-testid="audit-table-card">
-          <Table<AuditLog>
+          <ResourceListView<AuditLog>
             data-testid="audit-table"
             columns={columns}
-            dataSource={filteredLogs}
+            data={filteredLogs || []}
             loading={isLoading}
             rowKey={(record) => `${record.timestamp}-${record.action}-${record.entityName}`}
+            mobileRender={mobileRender}
+            emptyDescription={
+              isError
+                ? t('system:audit.errors.unableToLoad')
+                : filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0
+                  ? t('system:audit.empty.noMatchingFilters')
+                  : t('system:audit.empty.noLogsInRange')
+            }
             pagination={{
               current: currentPage,
               pageSize: pageSize,
@@ -355,30 +402,6 @@ const AuditPage = () => {
                 t('system:audit.pagination.showing', { start: range[0], end: range[1], total }),
               onChange: onPageChange,
               position: ['bottomRight'],
-              className: 'audit-table-pagination',
-            }}
-            scroll={{ x: 'max-content' }}
-            locale={{
-              emptyText: (
-                <Empty
-                  description={
-                    <Space direction="vertical" align="center">
-                      <Typography.Text>
-                        {isError
-                          ? t('system:audit.errors.unableToLoad')
-                          : filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0
-                            ? t('system:audit.empty.noMatchingFilters')
-                            : t('system:audit.empty.noLogsInRange')}
-                      </Typography.Text>
-                      {!isError && (
-                        <Button type="link" onClick={clearAllFilters}>
-                          {t('system:audit.empty.clearFilters')}
-                        </Button>
-                      )}
-                    </Space>
-                  }
-                />
-              ),
             }}
           />
         </Card>

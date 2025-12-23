@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { Button, Flex, Modal, Space, Tag, Tooltip, Typography } from 'antd';
+import { Button, Flex, Modal, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import { QueueFunction } from '@/api/queries/queue';
@@ -15,7 +15,15 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { createActionColumn } from '@/components/common/columns';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildEditMenuItem,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
+import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView, {
   COLUMN_RESPONSIVE,
   COLUMN_WIDTHS,
@@ -413,6 +421,51 @@ const StoragePage: React.FC = () => {
   const displayedStorages = hasTeamSelection ? storages : [];
   const emptyDescription = hasTeamSelection ? t('storage.noStorage') : t('teams.selectTeamPrompt');
 
+  const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: GetTeamStorages_ResultSet1) => {
+      const menuItems: MenuProps['items'] = [
+        buildEditMenuItem(t, () =>
+          openUnifiedModal('edit', record as GetTeamStorages_ResultSet1 & Record<string, unknown>)
+        ),
+        {
+          key: 'run',
+          label: t('common:actions.runFunction'),
+          icon: <FunctionOutlined />,
+          onClick: () => {
+            setCurrentResource(record as GetTeamStorages_ResultSet1 & Record<string, unknown>);
+            openUnifiedModal(
+              'create',
+              record as GetTeamStorages_ResultSet1 & Record<string, unknown>
+            );
+          },
+        },
+        buildTraceMenuItem(t, () =>
+          auditTrace.open({
+            entityType: 'Storage',
+            entityIdentifier: record.storageName,
+            entityName: record.storageName,
+          })
+        ),
+        buildDivider(),
+        buildDeleteMenuItem(t, () => handleDeleteStorage(record)),
+      ];
+
+      return (
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
+          <Space>
+            <CloudOutlined />
+            <Typography.Text strong className="truncate">
+              {record.storageName}
+            </Typography.Text>
+          </Space>
+          <Tag>{record.teamName}</Tag>
+        </MobileCard>
+      );
+    },
+    [t, openUnifiedModal, setCurrentResource, auditTrace, handleDeleteStorage]
+  );
+
   return (
     <>
       <Flex vertical>
@@ -437,6 +490,7 @@ const StoragePage: React.FC = () => {
           loading={storagesLoading}
           data={displayedStorages}
           columns={storageColumns}
+          mobileRender={mobileRender}
           rowKey="storageName"
           data-testid="resources-storage-table"
           resourceType="storage locations"

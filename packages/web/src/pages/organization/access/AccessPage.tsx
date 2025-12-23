@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
+  Badge,
   Button,
   Card,
   Flex,
@@ -14,6 +15,7 @@ import {
   Tabs,
   Tooltip,
   Typography,
+  type MenuProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -29,6 +31,13 @@ import {
 } from '@/api/queries/permissions';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
+import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import UserSessionsTab from '@/pages/organization/access/components/UserSessionsTab';
@@ -86,13 +95,16 @@ const AccessPage: React.FC = () => {
     }
   };
 
-  const handleDeleteGroup = async (groupName: string) => {
-    try {
-      await deleteGroupMutation.mutateAsync({ permissionGroupName: groupName });
-    } catch {
-      // handled by mutation
-    }
-  };
+  const handleDeleteGroup = useCallback(
+    async (groupName: string) => {
+      try {
+        await deleteGroupMutation.mutateAsync({ permissionGroupName: groupName });
+      } catch {
+        // handled by mutation
+      }
+    },
+    [deleteGroupMutation]
+  );
 
   const handleAddPermission = async () => {
     if (!manageModal.state.data || !selectedPermission) return;
@@ -241,6 +253,58 @@ const AccessPage: React.FC = () => {
     },
   ];
 
+  const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: PermissionGroup) => {
+      const menuItems: MenuProps['items'] = [
+        {
+          key: 'permissions',
+          label: tSystem('actions.permissions'),
+          icon: <KeyOutlined />,
+          onClick: () => manageModal.open(record),
+        },
+        {
+          key: 'assign',
+          label: tSystem('actions.assignUser'),
+          icon: <UserOutlined />,
+          onClick: () => assignModal.open(record),
+        },
+        buildTraceMenuItem(tCommon, () =>
+          auditTrace.open({
+            entityType: 'Permissions',
+            entityIdentifier: record.permissionGroupName,
+            entityName: record.permissionGroupName,
+          })
+        ),
+        buildDivider(),
+        buildDeleteMenuItem(tCommon, () => handleDeleteGroup(record.permissionGroupName)),
+      ];
+
+      return (
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
+          <Space>
+            <SafetyOutlined />
+            <Typography.Text strong className="truncate">
+              {record.permissionGroupName}
+            </Typography.Text>
+          </Space>
+          <Flex gap={16} wrap>
+            <Space size="small">
+              <Badge count={record.userCount} showZero size="small">
+                <UserOutlined />
+              </Badge>
+            </Space>
+            <Space size="small">
+              <KeyOutlined />
+              <Typography.Text>{record.permissionCount}</Typography.Text>
+            </Space>
+          </Flex>
+        </MobileCard>
+      );
+    },
+    [tSystem, tCommon, manageModal, assignModal, auditTrace, handleDeleteGroup]
+  );
+
   const permissionsContent = (
     <ResourceListView
       title={
@@ -252,6 +316,7 @@ const AccessPage: React.FC = () => {
       loading={permissionsLoading}
       data={permissionGroups}
       columns={permissionColumns}
+      mobileRender={mobileRender}
       rowKey="permissionGroupName"
       searchPlaceholder={t('access.permissions.searchPlaceholder')}
       data-testid="system-permission-group-table"
@@ -319,6 +384,7 @@ const AccessPage: React.FC = () => {
         confirmLoading={createGroupMutation.isPending}
         okButtonProps={{ 'data-testid': 'modal-create-permission-group-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-create-permission-group-cancel' }}
+        centered
       >
         <Input
           placeholder={t('access.modals.groupPlaceholder')}
@@ -339,6 +405,7 @@ const AccessPage: React.FC = () => {
         }}
         footer={null}
         className={ModalSize.Large}
+        centered
       >
         <Tabs
           items={[
@@ -442,6 +509,7 @@ const AccessPage: React.FC = () => {
         confirmLoading={assignUserMutation.isPending}
         okButtonProps={{ 'data-testid': 'modal-assign-user-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-assign-user-cancel' }}
+        centered
       >
         <Select
           placeholder={t('access.modals.userPlaceholder')}

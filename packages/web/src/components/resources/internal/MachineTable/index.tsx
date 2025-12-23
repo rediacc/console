@@ -1,11 +1,14 @@
 ﻿import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Button, Card, Empty, Flex, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import { Button, Empty, Flex, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
 import { useRepositories } from '@/api/queries/repositories';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { MobileCard } from '@/components/common/MobileCard';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
+import ResourceListView from '@/components/common/ResourceListView';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
 import { featureFlags } from '@/config/featureFlags';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
@@ -23,15 +26,21 @@ import {
   BranchesOutlined,
   CloudServerOutlined,
   DashboardOutlined,
+  DeleteOutlined,
   DesktopOutlined,
+  EditOutlined,
+  EyeOutlined,
+  FolderOpenOutlined,
+  FunctionOutlined,
   GlobalOutlined,
+  HistoryOutlined,
   InboxOutlined,
   InfoCircleOutlined,
-  RightOutlined,
   TeamOutlined,
 } from '@/utils/optimizedIcons';
 import type { DeployedRepo } from '@rediacc/shared/services/machine';
 import { buildMachineTableColumns, type MachineFunctionAction } from './columns';
+import { GroupedMachineCard } from './components/GroupedMachineCard';
 
 type GroupByMode = 'machine' | 'bridge' | 'team' | 'region' | 'repository' | 'status' | 'grand';
 
@@ -60,7 +69,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   enabled = true,
   onQueueItemCreated,
   onRowClick,
-  selectedMachine: externalSelectedMachine,
+  selectedMachine: _externalSelectedMachine,
 }) => {
   const { t } = useTranslation(['machines', 'common', 'functions', 'resources']);
   const navigate = useNavigate();
@@ -207,6 +216,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         onFunctionsMachine,
         handleDelete,
         handleRowClick,
+        onViewRepositories: (machine) =>
+          navigate(`/machines/${machine.machineName}/repositories`, { state: { machine } }),
         executePingForMachineAndWait,
         setAssignClusterModal: openAssignClusterModal,
         setAuditTraceModal: openAuditTraceModal,
@@ -223,6 +234,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       onFunctionsMachine,
       handleDelete,
       handleRowClick,
+      navigate,
       executePingForMachineAndWait,
       openAssignClusterModal,
       openAuditTraceModal,
@@ -361,7 +373,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             </Tooltip>
           )}
 
-          <Tooltip title={t('machines:groupByRepo')}>
+          <Tooltip title={t('machines:groupByRepository')}>
             <Button
               // eslint-disable-next-line no-restricted-syntax
               style={{ minWidth: 42 }}
@@ -369,7 +381,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               icon={<InboxOutlined />}
               onClick={() => setGroupBy('repository')}
               data-testid="machine-view-toggle-repo"
-              aria-label={t('machines:groupByRepo')}
+              aria-label={t('machines:groupByRepository')}
             />
           </Tooltip>
 
@@ -505,78 +517,112 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       );
     }
 
-    const iconMap: Partial<Record<GroupByMode, React.ReactNode>> = {
-      bridge: <CloudServerOutlined />,
-      team: <TeamOutlined />,
-      region: <GlobalOutlined />,
-      repository: <InboxOutlined />,
-      status: <DashboardOutlined />,
-      grand: <BranchesOutlined />,
-    };
-
     return (
-      <Flex vertical>
-        {Object.entries(groupedMachinesForTable).map(([groupKey, machines], groupIndex) => (
-          <Card key={groupKey}>
-            <Flex align="center" gap={8} wrap className="inline-flex">
-              <Space size="small">
-                <Typography.Text>#{groupIndex + 1}</Typography.Text>
-                <Tag bordered={false} icon={iconMap[groupBy]}>
-                  {groupKey}
-                </Tag>
-                <Typography.Text>
-                  {machines.length}{' '}
-                  {machines.length === 1 ? t('machines:machine') : t('machines:machines')}
-                </Typography.Text>
-              </Space>
-            </Flex>
-
-            {machines.map((machine) => (
-              <Flex
-                key={machine.machineName}
-                justify="space-between"
-                align="center"
-                className="cursor-pointer"
-                onClick={() =>
-                  navigate(`/machines/${machine.machineName}/repositories`, {
-                    state: { machine },
-                  })
-                }
-                data-testid={`grouped-machine-row-${machine.machineName}`}
-              >
-                <Flex align="center">
-                  <DesktopOutlined />
-                  <Flex vertical>
-                    <Typography.Text>{machine.machineName}</Typography.Text>
-                    <Space size="small">
-                      <Tag bordered={false}>{machine.teamName}</Tag>
-                      {machine.bridgeName && <Tag bordered={false}>{machine.bridgeName}</Tag>}
-                      {machine.regionName && <Tag bordered={false}>{machine.regionName}</Tag>}
-                    </Space>
-                  </Flex>
-                </Flex>
-
-                <Tooltip title={t('machines:viewRepos')}>
-                  <Button
-                    type="primary"
-                    icon={<RightOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/machines/${machine.machineName}/repositories`, {
-                        state: { machine },
-                      });
-                    }}
-                  >
-                    {t('machines:viewRepos')}
-                  </Button>
-                </Tooltip>
-              </Flex>
-            ))}
-          </Card>
+      <Flex vertical gap={16}>
+        {Object.entries(groupedMachinesForTable).map(([groupKey, groupMachines]) => (
+          <GroupedMachineCard
+            key={groupKey}
+            groupKey={groupKey}
+            groupBy={groupBy}
+            machines={groupMachines}
+            columns={columns}
+            mobileRender={mobileRender}
+            loading={isLoading}
+            pageSize={10}
+            rowSelection={rowSelection}
+            onRow={(record) =>
+              ({
+                'data-testid': `machine-row-${record.machineName}`,
+              }) as React.HTMLAttributes<HTMLElement>
+            }
+          />
         ))}
       </Flex>
     );
   };
+
+  const mobileRender = useCallback(
+    (record: Machine) => {
+      const menuItems: MenuProps['items'] = [
+        {
+          key: 'viewRepositories',
+          label: t('resources:repositories.repositories'),
+          icon: <FolderOpenOutlined />,
+          onClick: () =>
+            navigate(`/machines/${record.machineName}/repositories`, {
+              state: { machine: record },
+            }),
+        },
+        {
+          key: 'viewDetails',
+          label: t('resources:audit.details'),
+          icon: <EyeOutlined />,
+          onClick: () => handleRowClick(record),
+        },
+        { type: 'divider' as const },
+        ...(onEditMachine
+          ? [
+              {
+                key: 'edit',
+                label: t('common:actions.edit'),
+                icon: <EditOutlined />,
+                onClick: () => onEditMachine(record),
+              },
+            ]
+          : []),
+        ...(onFunctionsMachine
+          ? [
+              {
+                key: 'functions',
+                label: t('machines:functions'),
+                icon: <FunctionOutlined />,
+                onClick: () => onFunctionsMachine(record),
+              },
+            ]
+          : []),
+        {
+          key: 'trace',
+          label: t('resources:audit.trace'),
+          icon: <HistoryOutlined />,
+          onClick: () =>
+            auditTrace.open({
+              entityType: 'Machine',
+              entityIdentifier: record.machineName,
+              entityName: record.machineName,
+            }),
+        },
+        ...(handleDelete
+          ? [
+              { type: 'divider' as const },
+              {
+                key: 'delete',
+                label: t('common:actions.delete'),
+                icon: <DeleteOutlined />,
+                danger: true,
+                onClick: () => handleDelete(record),
+              },
+            ]
+          : []),
+      ];
+
+      return (
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
+          <Space>
+            <DesktopOutlined />
+            <Typography.Text strong className="truncate">
+              {record.machineName}
+            </Typography.Text>
+          </Space>
+          <Flex gap={8} wrap>
+            <Tag>{record.teamName}</Tag>
+            {record.bridgeName && <Tag>{record.bridgeName}</Tag>}
+            {record.regionName && <Tag>{record.regionName}</Tag>}
+          </Flex>
+        </MobileCard>
+      );
+    },
+    [t, navigate, onEditMachine, onFunctionsMachine, handleDelete, auditTrace, handleRowClick]
+  );
 
   return (
     <Flex vertical className={`h-full ${className}`}>
@@ -585,43 +631,24 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
       {groupBy === 'machine' ? (
         <Flex vertical ref={tableContainerRef} className="flex-1 overflow-hidden">
-          <Table
-            columns={columns}
-            dataSource={filteredMachines}
-            rowKey="machineName"
+          <ResourceListView<Machine>
             loading={isLoading}
-            scroll={{ x: 'max-content' }}
+            data={filteredMachines}
+            columns={columns}
+            rowKey="machineName"
             rowSelection={rowSelection}
-            rowClassName={(record) => {
-              const isSelected = externalSelectedMachine?.machineName === record.machineName;
-              const baseClass = 'machine-table-row';
-              return isSelected ? `${baseClass} machine-table-row--selected` : baseClass;
-            }}
-            data-testid="machine-table"
+            mobileRender={mobileRender}
             pagination={{
               pageSize: dynamicPageSize,
               showSizeChanger: false,
               showTotal: (total, range) =>
                 t('common:table.showingRecords', { start: range[0], end: range[1], total }),
             }}
-            onRow={(record) => ({
-              'data-testid': `machine-row-${record.machineName}`,
-              onClick: (e) => {
-                const target = e.target as HTMLElement;
-                if (
-                  target.closest('button') ||
-                  target.closest('.ant-dropdown') ||
-                  target.closest('.ant-dropdown-menu')
-                ) {
-                  return;
-                }
-
-                navigate(`/machines/${record.machineName}/repositories`, {
-                  state: { machine: record },
-                });
-              },
-            })}
-            sticky
+            onRow={(record) =>
+              ({
+                'data-testid': `machine-row-${record.machineName}`,
+              }) as React.HTMLAttributes<HTMLElement>
+            }
           />
         </Flex>
       ) : (

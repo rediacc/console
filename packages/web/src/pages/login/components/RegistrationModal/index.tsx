@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Button, Checkbox, Flex, Form, Input, Modal, Steps, Typography } from 'antd';
+import { Alert, Button, Checkbox, Flex, Form, Input, Modal, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import apiClient, { api } from '@/api/client';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
@@ -13,8 +13,6 @@ import {
   CheckCircleOutlined,
   LockOutlined,
   MailOutlined,
-  SafetyCertificateOutlined,
-  UserOutlined,
 } from '@/utils/optimizedIcons';
 
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
@@ -495,20 +493,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       onCancel={handleClose}
       footer={null}
       destroyOnClose
+      centered
       data-testid="registration-modal"
     >
       <Flex vertical gap={16} className="w-full">
-        <Steps
-          current={currentStep}
-          size="small"
-          data-testid="registration-steps"
-          items={[
-            { title: t('auth:registration.steps.register'), icon: <UserOutlined /> },
-            { title: t('auth:registration.steps.verify'), icon: <SafetyCertificateOutlined /> },
-            { title: t('auth:registration.steps.complete'), icon: <CheckCircleOutlined /> },
-          ]}
-        />
-
         {error && (
           <Alert
             message={error}

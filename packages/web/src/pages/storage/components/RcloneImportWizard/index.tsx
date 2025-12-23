@@ -615,6 +615,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
           </Button>
         )
       }
+      centered
     >
       <Flex vertical>
         <Steps

@@ -14,20 +14,14 @@ const AuthLayout: React.FC = () => {
         style={{ minHeight: '100vh' }}
         data-testid="auth-layout-container"
       >
-        {/* Header - always visible */}
+        {/* Language selector - top right corner */}
         <Flex
           className="auth-header"
-          justify="space-between"
+          justify="flex-end"
           align="center"
           // eslint-disable-next-line no-restricted-syntax
-          style={{ padding: '16px 24px' }}
+          style={{ padding: '16px 24px', position: 'absolute', top: 0, right: 0, zIndex: 1 }}
         >
-          <img
-            src={logoBlack}
-            alt="Rediacc"
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ height: 32, width: 'auto', objectFit: 'contain' }}
-          />
           <LanguageSelector iconOnly={true} />
         </Flex>
 
@@ -41,6 +35,13 @@ const AuthLayout: React.FC = () => {
             className="auth-form-panel flex-1"
             data-testid="auth-layout-content"
           >
+            {/* Logo centered above form */}
+            <img
+              src={logoBlack}
+              alt="Rediacc"
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ height: 40, width: 'auto', objectFit: 'contain', marginBottom: 32 }}
+            />
             <Outlet />
           </Flex>
         </Flex>
