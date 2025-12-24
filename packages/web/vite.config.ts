@@ -92,7 +92,11 @@ export default defineConfig(({ mode }) => {
               if (id.includes('antd')) {
                 return 'vendor-antd';
               }
-              if (id.includes('@reduxjs') || id.includes('react-redux') || id.includes('react-query')) {
+              if (
+                id.includes('@reduxjs') ||
+                id.includes('react-redux') ||
+                id.includes('react-query')
+              ) {
                 return 'vendor-state';
               }
               if (id.includes('axios') || id.includes('dayjs') || id.includes('zod')) {

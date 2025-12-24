@@ -20,10 +20,7 @@ export async function validateMasterPassword(
 ): Promise<boolean> {
   try {
     // Try to decrypt the vault content
-    const decrypted = await cryptoService.decryptString(
-      encryptedVaultCompany,
-      masterPassword
-    );
+    const decrypted = await cryptoService.decryptString(encryptedVaultCompany, masterPassword);
 
     // If decryption succeeds, the password is valid
     // The decrypted content should be valid JSON (even if it's just {})

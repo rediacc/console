@@ -13,10 +13,7 @@ import {
 import { QueueFunction } from '@/api/queries/queue';
 import { Repository, useRepositories } from '@/api/queries/repositories';
 import { useStorage } from '@/api/queries/storage';
-import {
-  SplitResourceView,
-  type ContainerData,
-} from '@/components/common';
+import { SplitResourceView, type ContainerData } from '@/components/common';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
