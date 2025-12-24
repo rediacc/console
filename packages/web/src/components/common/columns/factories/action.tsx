@@ -1,4 +1,3 @@
-import React from 'react';
 import { DeleteOutlined, EditOutlined, EyeOutlined, MoreOutlined } from '@ant-design/icons';
 import { Button, Dropdown, type MenuProps } from 'antd';
 import i18n from '@/i18n/config';

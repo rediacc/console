@@ -8,10 +8,10 @@ import type { TFunction } from 'i18next';
 
 interface UseMachineFunctionHandlersProps {
   currentResource: Machine | null;
-  teams: Array<{ teamName: string; vaultContent?: string }>;
+  teams: Array<{ teamName: string; vaultContent?: string | null }>;
   machines: Machine[];
-  repositories: Array<{ repositoryGuid: string; vaultContent?: string }>;
-  storages: Array<{ storageName: string; vaultContent?: string }>;
+  repositories: Array<{ repositoryGuid: string; vaultContent?: string | null }>;
+  storages: Array<{ storageName: string; vaultContent?: string | null }>;
   executeAction: (params: QueueActionParams) => Promise<{
     success: boolean;
     taskId?: string;

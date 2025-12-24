@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
-import type { GetMachines_Result } from '@/api/queries/machines';
+import type { Machine } from '@/types';
 import type { GetTeamRepositories_ResultSet1 as Repository } from '@rediacc/shared/types';
 import type { RepositoryPanelData, RepositoryVaultData, ServiceData } from '../types';
 
 export const useRepositoryVaultData = (
   repository: Repository | null,
-  machines: GetMachines_Result[]
+  machines: Machine[]
 ): RepositoryPanelData | null => {
   return useMemo<RepositoryPanelData | null>(() => {
     if (!repository || !machines.length) return null;

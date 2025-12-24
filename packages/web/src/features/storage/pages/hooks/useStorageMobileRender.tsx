@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { Space, Tag, Typography, type MenuProps } from 'antd';
 import type { GetTeamStorages_ResultSet1 } from '@/api/queries/storage';
 import {

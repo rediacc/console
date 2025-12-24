@@ -298,13 +298,14 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   };
 
   // Show functions button only for machines, repositories, and storage
-  const showFunctions =
+  const showFunctions = Boolean(
     (resourceType === 'machine' || resourceType === 'repository' || resourceType === 'storage') &&
-    mode === 'create' &&
-    existingData &&
-    !existingData.prefilledMachine && // Don't show functions when creating repository from machine
-    onFunctionSubmit &&
-    functionCategories.length > 0;
+      mode === 'create' &&
+      existingData &&
+      !existingData.prefilledMachine && // Don't show functions when creating repository from machine
+      onFunctionSubmit &&
+      functionCategories.length > 0
+  );
 
   // Auto-open function modal if we're in create mode with existing data (for repository functions)
   // WARNING: The !functionModal.isOpen check is critical to prevent infinite render loops!
@@ -353,7 +354,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             onCancel();
           }}
           onSubmit={async (functionData) => {
-            await onFunctionSubmit(functionData);
+            if (onFunctionSubmit) {
+              await onFunctionSubmit(functionData);
+            }
             functionModal.close();
             onCancel();
           }}

@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import type { GetMachines_Result } from '@/api/queries/machines';
 import type {
   GetTeamStorages_ResultSet1,
   useCreateStorage,
@@ -7,33 +6,37 @@ import type {
   useUpdateStorageName,
   useUpdateStorageVault,
 } from '@/api/queries/storage';
-import type { DropdownData } from '@/api/queries/useDropdownData';
 import type { QueueActionParams } from '@/services/queue';
+import type { Machine } from '@/types';
 import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
+import type { CompanyDropdownData } from '@rediacc/shared/types';
 import type { StorageFunctionData } from '../types';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import type { TFunction } from 'i18next';
 
 interface Team {
   teamName: string;
-  vaultContent?: string;
+  vaultContent?: string | null;
 }
 
 interface UseStorageHandlersParams {
   t: TFunction;
   modal: HookAPI;
-  execute: <T>(fn: () => Promise<T>, options?: { skipSuccessMessage?: boolean }) => Promise<T>;
+  execute: <T>(
+    fn: () => Promise<T>,
+    options?: { skipSuccessMessage?: boolean }
+  ) => Promise<{ success: boolean; data?: T; error?: string }>;
   deleteStorageMutation: ReturnType<typeof useDeleteStorage>;
   createStorageMutation: ReturnType<typeof useCreateStorage>;
   updateStorageNameMutation: ReturnType<typeof useUpdateStorageName>;
   updateStorageVaultMutation: ReturnType<typeof useUpdateStorageVault>;
   refetchStorage: () => void;
   closeUnifiedModal: () => void;
-  unifiedModalMode: 'create' | 'edit' | 'view';
+  unifiedModalMode: 'create' | 'edit' | 'view' | 'vault';
   currentResource: (GetTeamStorages_ResultSet1 & Record<string, unknown>) | null;
-  dropdownData: DropdownData | undefined;
-  machines: GetMachines_Result[];
+  dropdownData: CompanyDropdownData | undefined;
+  machines: Machine[];
   storages: GetTeamStorages_ResultSet1[];
   teams: Team[];
   executeAction: (
@@ -90,7 +93,14 @@ export const useStorageHandlers = ({
       await execute(
         async () => {
           if (unifiedModalMode === 'create') {
-            await createStorageMutation.mutateAsync(storageData);
+            if (!storageData.storageName || !storageData.teamName) {
+              throw new Error('Storage name and team name are required');
+            }
+            await createStorageMutation.mutateAsync({
+              storageName: storageData.storageName,
+              teamName: storageData.teamName,
+              vaultContent: storageData.vaultContent,
+            });
           } else if (currentResource) {
             const currentName = currentResource.storageName;
             const newName = storageData.storageName;

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Space, Tag, Tooltip, Typography } from 'antd';
 import i18n from '@/i18n/config';
 import { createStatusRenderer, renderTimestampElement, type StatusConfig } from '../renderers';

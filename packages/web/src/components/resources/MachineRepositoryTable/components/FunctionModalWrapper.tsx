@@ -1,9 +1,10 @@
 import React from 'react';
 import { Flex, Space, Tag, Typography } from 'antd';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
+import type { Machine } from '@/types';
 import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import type { FunctionData } from '../hooks/useFunctionExecution';
-import type { Machine, Repository } from '../types';
+import type { Repository } from '../types';
 import type { TFunction } from 'i18next';
 
 interface FunctionModalWrapperProps {
