@@ -17,10 +17,19 @@ import { apiConnectionService } from '@/services/api';
 import { masterPasswordService } from '@/services/auth';
 import { loginSuccess } from '@/store/auth/authSlice';
 import { hashPassword, saveAuthData } from '@/utils/auth';
-import { generateRandomCompanyName, generateRandomEmail, generateRandomPassword } from '@/utils/generators';
+import {
+  generateRandomCompanyName,
+  generateRandomEmail,
+  generateRandomPassword,
+} from '@/utils/generators';
 import { showMessage } from '@/utils/messages';
 import { isSecureContext } from '@/utils/secureContext';
-import { analyzeVaultProtocolState, isEncrypted, VaultProtocolState, validateMasterPassword } from '@/utils/vaultProtocol';
+import {
+  analyzeVaultProtocolState,
+  isEncrypted,
+  VaultProtocolState,
+  validateMasterPassword,
+} from '@/utils/vaultProtocol';
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import type { ApiResponse, AuthLoginResult } from '@rediacc/shared/types';
 import { LoginForm } from './components/LoginForm';
@@ -40,12 +49,15 @@ const LoginPage: React.FC = () => {
   const [twoFACode, setTwoFACode] = useState('');
   const [showRegistration, setShowRegistration] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
-  const [quickRegistrationData, setQuickRegistrationData] = useState<{
-    email: string;
-    password: string;
-    companyName: string;
-    activationCode: string;
-  } | undefined>(undefined);
+  const [quickRegistrationData, setQuickRegistrationData] = useState<
+    | {
+        email: string;
+        password: string;
+        companyName: string;
+        activationCode: string;
+      }
+    | undefined
+  >(undefined);
   const [isQuickRegistration, setIsQuickRegistration] = useState(false);
   const [isConnectionSecure, setIsConnectionSecure] = useState(true);
   const [insecureWarningDismissed, setInsecureWarningDismissed] = useState(false);
@@ -105,12 +117,17 @@ const LoginPage: React.FC = () => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'E') {
         e.preventDefault();
-        const onLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const onLocalhost =
+          window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const newState = featureFlags.togglePowerMode();
         setShowAdvancedOptions(newState);
         const message = onLocalhost
-          ? newState ? 'Localhost Mode - All features enabled' : 'Localhost Mode - All features disabled'
-          : newState ? 'Advanced options enabled' : 'Advanced options disabled';
+          ? newState
+            ? 'Localhost Mode - All features enabled'
+            : 'Localhost Mode - All features disabled'
+          : newState
+            ? 'Advanced options enabled'
+            : 'Advanced options disabled';
         showMessage('info', message);
       }
     };
@@ -151,7 +168,11 @@ const LoginPage: React.FC = () => {
       const authenticationStatus = authResult.authenticationStatus;
 
       if (authenticationStatus === 'TFA_REQUIRED' && !isAuthorized) {
-        setPendingTFAData({ email: values.email, authResult, masterPassword: values.masterPassword });
+        setPendingTFAData({
+          email: values.email,
+          authResult,
+          masterPassword: values.masterPassword,
+        });
         setShowTFAModal(true);
         setLoading(false);
         return;
@@ -167,8 +188,18 @@ const LoginPage: React.FC = () => {
         passwordValid = await validateMasterPassword(vaultCompany, values.masterPassword!);
       }
 
-      const protocolState = analyzeVaultProtocolState(vaultCompany, userProvidedPassword, passwordValid);
-      const protocolResult = handleProtocolState(protocolState, t, form, setError, setVaultProtocolState);
+      const protocolState = analyzeVaultProtocolState(
+        vaultCompany,
+        userProvidedPassword,
+        passwordValid
+      );
+      const protocolResult = handleProtocolState(
+        protocolState,
+        t,
+        form,
+        setError,
+        setVaultProtocolState
+      );
       if (protocolResult.shouldReturn) return;
 
       await saveAuthData(values.email, companyName ?? undefined);
@@ -182,12 +213,14 @@ const LoginPage: React.FC = () => {
         await i18n.changeLanguage(preferredLanguage);
       }
 
-      dispatch(loginSuccess({
-        user: { email: values.email, company: companyName ?? undefined, preferredLanguage },
-        company: companyName ?? undefined,
-        vaultCompany: vaultCompany ?? undefined,
-        companyEncryptionEnabled: companyHasEncryption,
-      }));
+      dispatch(
+        loginSuccess({
+          user: { email: values.email, company: companyName ?? undefined, preferredLanguage },
+          company: companyName ?? undefined,
+          vaultCompany: vaultCompany ?? undefined,
+          companyEncryptionEnabled: companyHasEncryption,
+        })
+      );
 
       trackUserAction('login_success', 'login_form', {
         email_domain: values.email.split('@')[1] || 'unknown',
@@ -198,7 +231,8 @@ const LoginPage: React.FC = () => {
 
       navigate('/machines');
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : t('login.errors.invalidCredentials');
+      const errorMessage =
+        error instanceof Error ? error.message : t('login.errors.invalidCredentials');
       trackUserAction('login_failure', 'login_form', {
         email_domain: values.email.split('@')[1] || 'unknown',
         error_message: errorMessage || 'unknown_error',
@@ -245,12 +279,14 @@ const LoginPage: React.FC = () => {
           await i18n.changeLanguage(preferredLanguage);
         }
 
-        dispatch(loginSuccess({
-          user: { email, company: companyName ?? undefined, preferredLanguage },
-          company: companyName ?? undefined,
-          vaultCompany: vaultCompany ?? undefined,
-          companyEncryptionEnabled: companyHasEncryption,
-        }));
+        dispatch(
+          loginSuccess({
+            user: { email, company: companyName ?? undefined, preferredLanguage },
+            company: companyName ?? undefined,
+            vaultCompany: vaultCompany ?? undefined,
+            companyEncryptionEnabled: companyHasEncryption,
+          })
+        );
 
         setShowTFAModal(false);
         navigate('/machines');

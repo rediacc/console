@@ -20,7 +20,9 @@ interface UseContainerActionsProps {
   grandRepoVault: string;
   machineVault: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  executeAction: (params: any) => Promise<{ success: boolean; taskId?: string; isQueued?: boolean; error?: string }>;
+  executeAction: (
+    params: any
+  ) => Promise<{ success: boolean; taskId?: string; isQueued?: boolean; error?: string }>;
   onQueueItemCreated?: (taskId: string, machineName: string) => void;
   t: TFunction;
 }

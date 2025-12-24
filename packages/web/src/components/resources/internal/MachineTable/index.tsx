@@ -189,10 +189,21 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         machineFunctions,
       }),
     [
-      t, isExpertMode, uiMode, showActions, onRowClick, canAssignToCluster,
-      onEditMachine, onFunctionsMachine, handleDelete, handleRowClick,
-      navigate, executePingForMachineAndWait, openAssignClusterModal,
-      openAuditTraceModal, machineFunctions,
+      t,
+      isExpertMode,
+      uiMode,
+      showActions,
+      onRowClick,
+      canAssignToCluster,
+      onEditMachine,
+      onFunctionsMachine,
+      handleDelete,
+      handleRowClick,
+      navigate,
+      executePingForMachineAndWait,
+      openAssignClusterModal,
+      openAuditTraceModal,
+      machineFunctions,
     ]
   );
 
@@ -264,7 +275,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             pageSize={10}
             rowSelection={rowSelection}
             onRow={(record) =>
-              ({ 'data-testid': `machine-row-${record.machineName}` }) as React.HTMLAttributes<HTMLElement>
+              ({
+                'data-testid': `machine-row-${record.machineName}`,
+              }) as React.HTMLAttributes<HTMLElement>
             }
           />
         ))}
@@ -307,7 +320,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 t('common:table.showingRecords', { start: range[0], end: range[1], total }),
             }}
             onRow={(record) =>
-              ({ 'data-testid': `machine-row-${record.machineName}` }) as React.HTMLAttributes<HTMLElement>
+              ({
+                'data-testid': `machine-row-${record.machineName}`,
+              }) as React.HTMLAttributes<HTMLElement>
             }
           />
         </Flex>
@@ -340,7 +355,10 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           open={assignClusterModal.isOpen}
           machine={assignClusterModal.state.data}
           onCancel={assignClusterModal.close}
-          onSuccess={() => { assignClusterModal.close(); refetch(); }}
+          onSuccess={() => {
+            assignClusterModal.close();
+            refetch();
+          }}
         />
       )}
 
@@ -348,14 +366,22 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         open={bulkAssignClusterModal}
         machines={machines.filter((m) => selectedRowKeys.includes(m.machineName))}
         onCancel={() => setBulkAssignClusterModal(false)}
-        onSuccess={() => { setBulkAssignClusterModal(false); setSelectedRowKeys([]); refetch(); }}
+        onSuccess={() => {
+          setBulkAssignClusterModal(false);
+          setSelectedRowKeys([]);
+          refetch();
+        }}
       />
 
       <RemoveFromClusterModal
         open={removeFromClusterModal}
         machines={machines.filter((m) => selectedRowKeys.includes(m.machineName))}
         onCancel={() => setRemoveFromClusterModal(false)}
-        onSuccess={() => { setRemoveFromClusterModal(false); setSelectedRowKeys([]); refetch(); }}
+        onSuccess={() => {
+          setRemoveFromClusterModal(false);
+          setSelectedRowKeys([]);
+          refetch();
+        }}
       />
 
       <ViewAssignmentStatusModal

@@ -3,9 +3,7 @@ import { Space, Tag } from 'antd';
 import type { GetTeamStorages_ResultSet1 } from '@/api/queries/storage';
 import { ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn } from '@/components/common/columns';
-import ResourceListView, {
-  COLUMN_WIDTHS,
-} from '@/components/common/ResourceListView';
+import ResourceListView, { COLUMN_WIDTHS } from '@/components/common/ResourceListView';
 import { featureFlags } from '@/config/featureFlags';
 import {
   CloudOutlined,
@@ -18,10 +16,17 @@ import type { TFunction } from 'i18next';
 
 interface UseStorageColumnsParams {
   t: TFunction;
-  openUnifiedModal: (mode: 'create' | 'edit', data?: GetTeamStorages_ResultSet1 & Record<string, unknown>) => void;
+  openUnifiedModal: (
+    mode: 'create' | 'edit',
+    data?: GetTeamStorages_ResultSet1 & Record<string, unknown>
+  ) => void;
   setCurrentResource: (resource: GetTeamStorages_ResultSet1 & Record<string, unknown>) => void;
   handleDeleteStorage: (storage: GetTeamStorages_ResultSet1) => void;
-  openAuditTrace: (params: { entityType: string; entityIdentifier: string; entityName: string }) => void;
+  openAuditTrace: (params: {
+    entityType: string;
+    entityIdentifier: string;
+    entityName: string;
+  }) => void;
 }
 
 const StorageLocationIcon = (props: React.ComponentProps<typeof CloudOutlined>) => (
@@ -66,7 +71,11 @@ export const useStorageColumns = ({
               key: 'vaultVersion',
               width: COLUMN_WIDTHS.VERSION,
               align: 'center' as const,
-              responsive: ['lg', 'xl', 'xxl'] as typeof ResourceListView.COLUMN_RESPONSIVE.DESKTOP_ONLY,
+              responsive: [
+                'lg',
+                'xl',
+                'xxl',
+              ] as typeof ResourceListView.COLUMN_RESPONSIVE.DESKTOP_ONLY,
               render: (version: number) => (
                 <Tag>{t('common:general.versionFormat', { version })}</Tag>
               ),

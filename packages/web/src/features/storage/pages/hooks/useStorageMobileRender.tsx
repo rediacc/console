@@ -14,10 +14,17 @@ import type { TFunction } from 'i18next';
 
 interface UseStorageMobileRenderParams {
   t: TFunction;
-  openUnifiedModal: (mode: 'create' | 'edit', data?: GetTeamStorages_ResultSet1 & Record<string, unknown>) => void;
+  openUnifiedModal: (
+    mode: 'create' | 'edit',
+    data?: GetTeamStorages_ResultSet1 & Record<string, unknown>
+  ) => void;
   setCurrentResource: (resource: GetTeamStorages_ResultSet1 & Record<string, unknown>) => void;
   handleDeleteStorage: (storage: GetTeamStorages_ResultSet1) => void;
-  openAuditTrace: (params: { entityType: string; entityIdentifier: string; entityName: string }) => void;
+  openAuditTrace: (params: {
+    entityType: string;
+    entityIdentifier: string;
+    entityName: string;
+  }) => void;
 }
 
 export const useStorageMobileRender = ({

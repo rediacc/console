@@ -1,14 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Flex,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Alert, Button, Flex, Space, Table, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMachines } from '@/api/queries/machines';
@@ -94,12 +85,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   const updateRepoNameMutation = useUpdateRepositoryName();
   const updateRepoTagMutation = useUpdateRepositoryTag();
 
-  const {
-    loading,
-    error,
-    containersData,
-    groupedRepositories,
-  } = useRepositoryTableState({
+  const { loading, error, containersData, groupedRepositories } = useRepositoryTableState({
     machine,
     teamRepositories,
     repositoriesLoading,
@@ -110,7 +96,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   const { systemContainerColumns } = useSystemContainerColumns();
 
   const { executeQuickAction } = useQuickRepositoryAction({
-    teamRepositories: teamRepositories as Parameters<typeof useQuickRepositoryAction>[0]['teamRepositories'],
+    teamRepositories: teamRepositories as Parameters<
+      typeof useQuickRepositoryAction
+    >[0]['teamRepositories'],
     machine: machine as Parameters<typeof useQuickRepositoryAction>[0]['machine'],
     executeAction: executeAction as Parameters<typeof useQuickRepositoryAction>[0]['executeAction'],
     onQueueItemCreated,
@@ -118,7 +106,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   });
 
   const { confirmForkDeletion } = useConfirmForkDeletion({
-    teamRepositories: teamRepositories as Parameters<typeof useConfirmForkDeletion>[0]['teamRepositories'],
+    teamRepositories: teamRepositories as Parameters<
+      typeof useConfirmForkDeletion
+    >[0]['teamRepositories'],
     machine: machine as Parameters<typeof useConfirmForkDeletion>[0]['machine'],
     confirm: confirm as Parameters<typeof useConfirmForkDeletion>[0]['confirm'],
     executeAction: executeAction as Parameters<typeof useConfirmForkDeletion>[0]['executeAction'],
@@ -127,7 +117,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   });
 
   const { confirmDeletion: confirmRepositoryDeletion } = useConfirmRepositoryDeletion({
-    teamRepositories: teamRepositories as Parameters<typeof useConfirmRepositoryDeletion>[0]['teamRepositories'],
+    teamRepositories: teamRepositories as Parameters<
+      typeof useConfirmRepositoryDeletion
+    >[0]['teamRepositories'],
     modal,
     t,
     onConfirm: async (context) => {
@@ -240,7 +232,8 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         teamMachines: teamMachines as FunctionExecutionContext['teamMachines'],
         teamStorages: teamStorages as FunctionExecutionContext['teamStorages'],
         executeAction: executeAction as FunctionExecutionContext['executeAction'],
-        createRepositoryCredential: createRepositoryCredential as FunctionExecutionContext['createRepositoryCredential'],
+        createRepositoryCredential:
+          createRepositoryCredential as FunctionExecutionContext['createRepositoryCredential'],
         onQueueItemCreated,
         closeModal: closeModalAndReset,
         t,

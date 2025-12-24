@@ -104,9 +104,15 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     key: 'status',
     statusMap: {
       running: { icon: <CheckCircleOutlined />, label: t('machines:connected') },
-      paused: { icon: <PauseCircleOutlined />, label: t('resources:containers.containerStatusPaused') },
+      paused: {
+        icon: <PauseCircleOutlined />,
+        label: t('resources:containers.containerStatusPaused'),
+      },
       exited: { icon: <DisconnectOutlined />, label: t('machines:connectionFailed') },
-      restarting: { icon: <ReloadOutlined />, label: t('resources:containers.containerStatusRestarting') },
+      restarting: {
+        icon: <ReloadOutlined />,
+        label: t('resources:containers.containerStatusRestarting'),
+      },
     },
     defaultConfig: { icon: <DisconnectOutlined />, label: t('machines:connectionFailed') },
   });
@@ -116,12 +122,24 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     dataIndex: 'state',
     key: 'state',
     statusMap: {
-      running: { icon: <PlayCircleOutlined />, label: t('resources:containers.containerStatusRunning') },
-      paused: { icon: <PauseCircleOutlined />, label: t('resources:containers.containerStatusPaused') },
-      restarting: { icon: <ReloadOutlined />, label: t('resources:containers.containerStatusRestarting') },
+      running: {
+        icon: <PlayCircleOutlined />,
+        label: t('resources:containers.containerStatusRunning'),
+      },
+      paused: {
+        icon: <PauseCircleOutlined />,
+        label: t('resources:containers.containerStatusPaused'),
+      },
+      restarting: {
+        icon: <ReloadOutlined />,
+        label: t('resources:containers.containerStatusRestarting'),
+      },
       exited: { icon: <StopOutlined />, label: t('resources:containers.containerStatusStopped') },
     },
-    defaultConfig: { icon: <StopOutlined />, label: t('resources:containers.containerStatusStopped') },
+    defaultConfig: {
+      icon: <StopOutlined />,
+      label: t('resources:containers.containerStatusStopped'),
+    },
   });
 
   const containerNameColumn = createTruncatedColumn<Container>({
@@ -141,150 +159,168 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     renderText: (image: string | null | undefined) => image ?? 'N/A',
   });
 
-  const containerColumns: ColumnsType<Container> = useMemo(() => [
-    {
-      ...connectionStatusColumn,
-      align: 'center',
-      sorter: createCustomSorter<Container>((c) => (c.state === 'running' ? 0 : 1)),
-      render: (state: string, record: Container, index) =>
-        connectionStatusColumn.render?.(state, record, index) as React.ReactNode,
-    },
-    containerNameColumn,
-    {
-      ...stateColumn,
-      render: (state: string, record: Container, index) => (
-        <Space>
-          {stateColumn.render?.(state, record, index) as React.ReactNode}
-          {record.status && <Typography.Text>{record.status}</Typography.Text>}
-        </Space>
-      ),
-    },
-    imageColumn,
-    {
-      title: t('resources:containers.ports'),
-      dataIndex: 'port_mappings',
-      key: 'ports',
-      width: 150,
-      sorter: createArrayLengthSorter<Container>('port_mappings'),
-      render: (_: unknown, record: Container) => {
-        if (!record.port_mappings || record.port_mappings.length === 0) {
-          return <Typography.Text>-</Typography.Text>;
-        }
-        return (
-          <Space direction="vertical" size={4}>
-            {record.port_mappings.slice(0, 2).map((pm, idx) => (
-              <Typography.Text key={idx}>
-                {pm.host_port}:{pm.container_port}/{pm.protocol}
-              </Typography.Text>
-            ))}
-            {record.port_mappings.length > 2 && (
-              <Typography.Text>+{record.port_mappings.length - 2} more</Typography.Text>
-            )}
+  const containerColumns: ColumnsType<Container> = useMemo(
+    () => [
+      {
+        ...connectionStatusColumn,
+        align: 'center',
+        sorter: createCustomSorter<Container>((c) => (c.state === 'running' ? 0 : 1)),
+        render: (state: string, record: Container, index) =>
+          connectionStatusColumn.render?.(state, record, index) as React.ReactNode,
+      },
+      containerNameColumn,
+      {
+        ...stateColumn,
+        render: (state: string, record: Container, index) => (
+          <Space>
+            {stateColumn.render?.(state, record, index) as React.ReactNode}
+            {record.status && <Typography.Text>{record.status}</Typography.Text>}
           </Space>
-        );
+        ),
       },
-    },
-    createActionColumn<Container>({
-      title: t('common:table.actions'),
-      fixed: 'right',
-      renderActions: (container) => {
-        const createActionLabel = (actionKey: string, label: React.ReactNode) => (
-          <Typography.Text data-testid={`container-action-${actionKey.replace(/_/g, '-')}`}>
-            {label}
-          </Typography.Text>
-        );
-
-        const menuItems: MenuProps['items'] = [];
-
-        if (container.state === 'running') {
-          menuItems.push(
-            {
-              key: 'stop',
-              label: createActionLabel('stop', t('functions:functions.container_stop.name')),
-              icon: <StopOutlined />,
-              onClick: () => handleContainerAction(container, 'container_stop'),
-            },
-            {
-              key: 'restart',
-              label: createActionLabel('restart', t('functions:functions.container_restart.name')),
-              icon: <ReloadOutlined />,
-              onClick: () => handleContainerAction(container, 'container_restart'),
-            },
-            {
-              key: 'pause',
-              label: createActionLabel('pause', t('functions:functions.container_pause.name')),
-              icon: <PauseCircleOutlined />,
-              onClick: () => handleContainerAction(container, 'container_pause'),
-            }
+      imageColumn,
+      {
+        title: t('resources:containers.ports'),
+        dataIndex: 'port_mappings',
+        key: 'ports',
+        width: 150,
+        sorter: createArrayLengthSorter<Container>('port_mappings'),
+        render: (_: unknown, record: Container) => {
+          if (!record.port_mappings || record.port_mappings.length === 0) {
+            return <Typography.Text>-</Typography.Text>;
+          }
+          return (
+            <Space direction="vertical" size={4}>
+              {record.port_mappings.slice(0, 2).map((pm, idx) => (
+                <Typography.Text key={idx}>
+                  {pm.host_port}:{pm.container_port}/{pm.protocol}
+                </Typography.Text>
+              ))}
+              {record.port_mappings.length > 2 && (
+                <Typography.Text>+{record.port_mappings.length - 2} more</Typography.Text>
+              )}
+            </Space>
           );
-        } else if (container.state === 'paused') {
-          menuItems.push({
-            key: 'unpause',
-            label: createActionLabel('unpause', t('functions:functions.container_unpause.name')),
-            icon: <PlayCircleOutlined />,
-            onClick: () => handleContainerAction(container, 'container_unpause'),
-          });
-        } else {
-          menuItems.push(
-            {
-              key: 'start',
-              label: createActionLabel('start', t('functions:functions.container_start.name')),
-              icon: <PlayCircleOutlined />,
-              onClick: () => handleContainerAction(container, 'container_start'),
-            },
-            {
-              key: 'remove',
-              label: createActionLabel('remove', t('functions:functions.container_remove.name')),
-              icon: <DeleteOutlined />,
-              onClick: () => handleContainerAction(container, 'container_remove'),
-            }
+        },
+      },
+      createActionColumn<Container>({
+        title: t('common:table.actions'),
+        fixed: 'right',
+        renderActions: (container) => {
+          const createActionLabel = (actionKey: string, label: React.ReactNode) => (
+            <Typography.Text data-testid={`container-action-${actionKey.replace(/_/g, '-')}`}>
+              {label}
+            </Typography.Text>
           );
-        }
 
-        return (
-          <ActionButtonGroup
-            buttons={[
+          const menuItems: MenuProps['items'] = [];
+
+          if (container.state === 'running') {
+            menuItems.push(
               {
-                type: 'view',
-                icon: <EyeOutlined />,
-                tooltip: 'common:viewDetails',
-                variant: 'default',
-                onClick: (row) => onContainerClick?.(row),
-                testId: (row) => `container-view-details-${row.id}`,
+                key: 'stop',
+                label: createActionLabel('stop', t('functions:functions.container_stop.name')),
+                icon: <StopOutlined />,
+                onClick: () => handleContainerAction(container, 'container_stop'),
               },
               {
-                type: 'remote',
-                icon: <FunctionOutlined />,
-                tooltip: 'machines:remote',
-                variant: 'primary',
-                dropdownItems: menuItems,
-                loading: isExecuting,
-                testId: (row) => `container-actions-${row.id}`,
-              },
-              {
-                type: 'custom',
-                render: (row) => (
-                  <LocalActionsMenu
-                    machine={machine.machineName}
-                    repository={repository.name}
-                    teamName={machine.teamName}
-                    userEmail={userEmail}
-                    containerId={row.id}
-                    containerName={row.name}
-                    containerState={row.state}
-                    isContainerMenu={true}
-                  />
+                key: 'restart',
+                label: createActionLabel(
+                  'restart',
+                  t('functions:functions.container_restart.name')
                 ),
+                icon: <ReloadOutlined />,
+                onClick: () => handleContainerAction(container, 'container_restart'),
               },
-            ]}
-            record={container}
-            idField="id"
-            t={t}
-          />
-        );
-      },
-    }),
-  ], [t, connectionStatusColumn, containerNameColumn, stateColumn, imageColumn, handleContainerAction, isExecuting, onContainerClick, machine, repository, userEmail]);
+              {
+                key: 'pause',
+                label: createActionLabel('pause', t('functions:functions.container_pause.name')),
+                icon: <PauseCircleOutlined />,
+                onClick: () => handleContainerAction(container, 'container_pause'),
+              }
+            );
+          } else if (container.state === 'paused') {
+            menuItems.push({
+              key: 'unpause',
+              label: createActionLabel('unpause', t('functions:functions.container_unpause.name')),
+              icon: <PlayCircleOutlined />,
+              onClick: () => handleContainerAction(container, 'container_unpause'),
+            });
+          } else {
+            menuItems.push(
+              {
+                key: 'start',
+                label: createActionLabel('start', t('functions:functions.container_start.name')),
+                icon: <PlayCircleOutlined />,
+                onClick: () => handleContainerAction(container, 'container_start'),
+              },
+              {
+                key: 'remove',
+                label: createActionLabel('remove', t('functions:functions.container_remove.name')),
+                icon: <DeleteOutlined />,
+                onClick: () => handleContainerAction(container, 'container_remove'),
+              }
+            );
+          }
+
+          return (
+            <ActionButtonGroup
+              buttons={[
+                {
+                  type: 'view',
+                  icon: <EyeOutlined />,
+                  tooltip: 'common:viewDetails',
+                  variant: 'default',
+                  onClick: (row) => onContainerClick?.(row),
+                  testId: (row) => `container-view-details-${row.id}`,
+                },
+                {
+                  type: 'remote',
+                  icon: <FunctionOutlined />,
+                  tooltip: 'machines:remote',
+                  variant: 'primary',
+                  dropdownItems: menuItems,
+                  loading: isExecuting,
+                  testId: (row) => `container-actions-${row.id}`,
+                },
+                {
+                  type: 'custom',
+                  render: (row) => (
+                    <LocalActionsMenu
+                      machine={machine.machineName}
+                      repository={repository.name}
+                      teamName={machine.teamName}
+                      userEmail={userEmail}
+                      containerId={row.id}
+                      containerName={row.name}
+                      containerState={row.state}
+                      isContainerMenu={true}
+                    />
+                  ),
+                },
+              ]}
+              record={container}
+              idField="id"
+              t={t}
+            />
+          );
+        },
+      }),
+    ],
+    [
+      t,
+      connectionStatusColumn,
+      containerNameColumn,
+      stateColumn,
+      imageColumn,
+      handleContainerAction,
+      isExecuting,
+      onContainerClick,
+      machine,
+      repository,
+      userEmail,
+    ]
+  );
 
   const containerMobileRender = useCallback(
     (record: Container) => (

@@ -303,7 +303,10 @@ class TelemetryService {
           return result.then(
             (value) => {
               const duration = performance.now() - startTime;
-              span.setAttributes({ 'performance.duration_ms': duration, 'performance.success': true });
+              span.setAttributes({
+                'performance.duration_ms': duration,
+                'performance.success': true,
+              });
               span.setStatus({ code: 1 });
               span.end();
               this.trackPerformance(name, duration);
@@ -406,4 +409,9 @@ export const createTelemetryConfig = (): TelemetryConfig => {
 };
 
 // Re-export types for consumers
-export type { TelemetryConfig, TelemetryContext, UserContext, WebVitalsMetric } from './telemetry/types';
+export type {
+  TelemetryConfig,
+  TelemetryContext,
+  UserContext,
+  WebVitalsMetric,
+} from './telemetry/types';

@@ -39,13 +39,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     (showAdvancedOptions && featureFlags.isEnabled('loginAdvancedOptions'));
 
   return (
-    <Form
-      form={form}
-      name="login"
-      onFinish={onSubmit}
-      layout="vertical"
-      requiredMark={false}
-    >
+    <Form form={form} name="login" onFinish={onSubmit} layout="vertical" requiredMark={false}>
       <Form.Item
         name="email"
         label={
@@ -129,9 +123,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <Form.Item>
         <Tooltip
           title={
-            !isConnectionSecure
-              ? t('auth:login.insecureConnection.buttonDisabled')
-              : undefined
+            !isConnectionSecure ? t('auth:login.insecureConnection.buttonDisabled') : undefined
           }
         >
           <Button

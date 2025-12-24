@@ -36,7 +36,9 @@ interface UseStorageHandlersParams {
   machines: GetMachines_Result[];
   storages: GetTeamStorages_ResultSet1[];
   teams: Team[];
-  executeAction: (params: QueueActionParams) => Promise<{ success: boolean; taskId?: string; isQueued?: boolean; error?: string }>;
+  executeAction: (
+    params: QueueActionParams
+  ) => Promise<{ success: boolean; taskId?: string; isQueued?: boolean; error?: string }>;
   openQueueTrace: (taskId: string, machineName: string) => void;
 }
 

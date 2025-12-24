@@ -111,7 +111,7 @@ export const updatedDateColumn = <T extends { updatedDate?: string | number | Da
  * Actions column (typically used for edit/delete buttons)
  * This is just a shell - you provide the render function
  */
-export const actionsColumn = <T,>(
+export const actionsColumn = <T>(
   render: (record: T) => React.ReactNode,
   options: { width?: number; fixed?: 'left' | 'right' } = {}
 ): ColumnsType<T>[number] => ({

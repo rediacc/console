@@ -1,6 +1,13 @@
 import type { Machine } from '@/types';
 
-export type GroupByMode = 'machine' | 'bridge' | 'team' | 'region' | 'repository' | 'status' | 'grand';
+export type GroupByMode =
+  | 'machine'
+  | 'bridge'
+  | 'team'
+  | 'region'
+  | 'repository'
+  | 'status'
+  | 'grand';
 
 export interface MachineTableProps {
   teamFilter?: string | string[];
