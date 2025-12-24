@@ -86,23 +86,27 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              if (/[\\/]node_modules[\\/](react|react-dom|react-router-dom)[\\/]/.test(id)) {
                 return 'vendor-react';
               }
-              if (id.includes('antd')) {
+              if (/[\\/]node_modules[\\/]antd[\\/]/.test(id)) {
                 return 'vendor-antd';
               }
               if (
-                id.includes('@reduxjs') ||
-                id.includes('react-redux') ||
-                id.includes('react-query')
+                /[\\/]node_modules[\\/](@reduxjs|react-redux|@tanstack[\\/]react-query)[\\/]/.test(
+                  id
+                )
               ) {
                 return 'vendor-state';
               }
-              if (id.includes('axios') || id.includes('dayjs') || id.includes('zod')) {
+              if (/[\\/]node_modules[\\/](axios|dayjs|zod)[\\/]/.test(id)) {
                 return 'vendor-utils';
               }
-              if (id.includes('i18next')) {
+              if (
+                /[\\/]node_modules[\\/](i18next|react-i18next|i18next-browser-languagedetector)[\\/]/.test(
+                  id
+                )
+              ) {
                 return 'vendor-i18n';
               }
             }
