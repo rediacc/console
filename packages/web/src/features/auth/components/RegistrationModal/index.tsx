@@ -492,7 +492,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       open={open}
       onCancel={handleClose}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
       centered
       data-testid="registration-modal"
     >

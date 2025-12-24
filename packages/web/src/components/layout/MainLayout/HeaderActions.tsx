@@ -31,7 +31,7 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({
       <Dropdown
         trigger={['click']}
         placement="bottomRight"
-        dropdownRender={() => (
+        popupRender={() => (
           <UserMenu
             user={user}
             company={company}

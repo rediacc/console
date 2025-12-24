@@ -1,5 +1,5 @@
-﻿import React, { useEffect, useMemo } from 'react';
-import { Alert, Card, Col, Empty, Flex, Progress, Row, Space, Tag, Typography } from 'antd';
+import React, { useEffect } from 'react';
+import { Alert, Empty, Flex, Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMachines } from '@/api/queries/machines';
 import {
@@ -14,19 +14,19 @@ import {
   DetailPanelSectionTitle,
   DetailPanelSurface,
 } from '@/components/resources/internal/detailPanelPrimitives';
-import type { Machine } from '@/types';
 import {
   CheckCircleOutlined,
-  CodeOutlined,
-  DatabaseOutlined,
   FieldTimeOutlined,
   FolderOutlined,
-  InfoCircleOutlined,
   StopOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 import { abbreviatePath } from '@/utils/pathUtils';
 import type { GetTeamRepositories_ResultSet1 as Repository } from '@rediacc/shared/types';
+import { useRepositoryVaultData } from './hooks/useRepositoryVaultData';
+import { ServicesSection } from './sections/ServicesSection';
+import { StorageSection } from './sections/StorageSection';
+import type { RepositoryPanelData } from './types';
 import type { TFunction } from 'i18next';
 
 interface RepositoryDetailPanelProps {
@@ -34,53 +34,6 @@ interface RepositoryDetailPanelProps {
   visible: boolean;
   onClose: () => void;
   splitView?: boolean;
-}
-
-interface RepositoryVaultData {
-  name: string;
-  size: number;
-  size_human: string;
-  modified: number;
-  modified_human: string;
-  image_path: string;
-  mounted: boolean;
-  mount_path: string;
-  accessible: boolean;
-  disk_space?: {
-    total: string;
-    used: string;
-    available: string;
-    use_percent: string;
-  };
-  has_rediaccfile: boolean;
-  docker_running: boolean;
-  container_count: number;
-  has_services: boolean;
-  service_count: number;
-  total_volumes?: number;
-  internal_volumes?: number;
-  external_volumes?: number;
-  external_volume_names?: string[];
-  volume_status?: 'safe' | 'warning' | 'none';
-}
-
-interface ServiceData {
-  name: string;
-  active_state: string;
-  memory_human?: string;
-  main_pid?: number;
-  uptime_human?: string;
-  restarts?: number;
-  repository?: string;
-  service_name?: string;
-  unit_file?: string;
-}
-
-interface RepositoryPanelData {
-  machine: Machine;
-  repositoryData: RepositoryVaultData;
-  systemData?: Record<string, unknown>;
-  services: ServiceData[];
 }
 
 export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
@@ -91,88 +44,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
 }) => {
   const { t } = useTranslation(['resources', 'common', 'machines']);
   const { data: machines = [] } = useMachines(repository?.teamName);
-
-  const repositoryData = useMemo<RepositoryPanelData | null>(() => {
-    if (!repository || !machines.length) return null;
-
-    for (const machine of machines) {
-      if (!machine.vaultStatus) continue;
-
-      try {
-        const trimmedStatus = machine.vaultStatus.trim();
-        if (
-          trimmedStatus.startsWith('jq:') ||
-          trimmedStatus.startsWith('error:') ||
-          !trimmedStatus.startsWith('{')
-        ) {
-          continue;
-        }
-
-        const vaultStatusData = JSON.parse(trimmedStatus);
-
-        if (vaultStatusData.status === 'completed' && vaultStatusData.result) {
-          let cleanedResult = vaultStatusData.result;
-          const jsonEndMatch = cleanedResult.match(/(\}[\s\n]*$)/);
-          if (jsonEndMatch) {
-            const lastBraceIndex = cleanedResult.lastIndexOf('}');
-            if (lastBraceIndex < cleanedResult.length - 10) {
-              cleanedResult = cleanedResult.substring(0, lastBraceIndex + 1);
-            }
-          }
-
-          const newlineIndex = cleanedResult.indexOf('\njq:');
-          if (newlineIndex > 0) {
-            cleanedResult = cleanedResult.substring(0, newlineIndex);
-          }
-
-          const result = JSON.parse(cleanedResult.trim());
-
-          if (Array.isArray(result.repositories)) {
-            const repositoryData = result.repositories.find((r: RepositoryVaultData) => {
-              return r.name === repository.repositoryName || r.name === repository.repositoryGuid;
-            });
-
-            if (repositoryData) {
-              const servicesForRepo: ServiceData[] = [];
-
-              if (Array.isArray(result.services)) {
-                result.services.forEach((service: ServiceData) => {
-                  if (
-                    service.repository === repositoryData.name ||
-                    service.repository === repository.repositoryGuid
-                  ) {
-                    servicesForRepo.push(service);
-                    return;
-                  }
-
-                  const serviceName = service.service_name || service.unit_file || '';
-                  const guidMatch = serviceName.match(/rediacc_([0-9a-f-]{36})_/);
-                  if (
-                    guidMatch &&
-                    (guidMatch[1] === repository.repositoryGuid ||
-                      guidMatch[1] === repositoryData.name)
-                  ) {
-                    servicesForRepo.push(service);
-                  }
-                });
-              }
-
-              return {
-                machine,
-                repositoryData: repositoryData,
-                systemData: result.system,
-                services: servicesForRepo,
-              };
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing vault status:', error);
-      }
-    }
-
-    return null;
-  }, [repository, machines]);
+  const repositoryData = useRepositoryVaultData(repository, machines);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -209,7 +81,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
         ) : (
           <>
             <RepoInfoSection repository={repository} panelData={repositoryData} t={t} />
-            <ExternalVolumeWarning repository={repository} panelData={repositoryData} t={t} />
+            <ExternalVolumeWarning repository={repository} panelData={repositoryData} />
             <StorageSection repository={repository} panelData={repositoryData} t={t} />
             <FilePathsSection repository={repository} panelData={repositoryData} t={t} />
             {repositoryData.repositoryData.mounted && (
@@ -334,7 +206,12 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
   );
 };
 
-const ExternalVolumeWarning: React.FC<SectionProps> = ({ repository, panelData }) => {
+interface WarningProps {
+  repository: Repository;
+  panelData: RepositoryPanelData;
+}
+
+const ExternalVolumeWarning: React.FC<WarningProps> = ({ repository, panelData }) => {
   const { repositoryData } = panelData;
 
   if (
@@ -372,77 +249,6 @@ const ExternalVolumeWarning: React.FC<SectionProps> = ({ repository, panelData }
       }
       data-testid={`repo-detail-volume-warning-alert-${repository.repositoryName}`}
     />
-  );
-};
-
-const StorageSection: React.FC<SectionProps> = ({ repository, panelData, t }) => {
-  const { repositoryData } = panelData;
-  const diskPercent = repositoryData.disk_space
-    ? parseInt(repositoryData.disk_space.use_percent, 10)
-    : 0;
-
-  return (
-    <Flex vertical>
-      <DetailPanelDivider data-testid="repository-detail-storage-divider">
-        <InfoCircleOutlined />
-        {t('resources:repositories.storageInfo')}
-      </DetailPanelDivider>
-
-      <Row gutter={[16, 16]}>
-        <Col span={24}>
-          <DetailPanelSectionCard
-            size="small"
-            data-testid={`repo-detail-storage-info-card-${repository.repositoryName}`}
-          >
-            <Flex vertical className="w-full">
-              <DetailPanelFieldRow>
-                <DetailPanelFieldLabel>
-                  {t('resources:repositories.imageSize')}:
-                </DetailPanelFieldLabel>
-                <DetailPanelFieldValue>{repositoryData.size_human}</DetailPanelFieldValue>
-              </DetailPanelFieldRow>
-              <DetailPanelFieldRow>
-                <DetailPanelFieldLabel>
-                  {t('resources:repositories.lastModified')}:
-                </DetailPanelFieldLabel>
-                <DetailPanelFieldValue>{repositoryData.modified_human}</DetailPanelFieldValue>
-              </DetailPanelFieldRow>
-            </Flex>
-          </DetailPanelSectionCard>
-        </Col>
-
-        {repositoryData.mounted && repositoryData.disk_space && (
-          <Col span={24}>
-            <DetailPanelSectionCard
-              size="small"
-              data-testid={`repo-detail-disk-usage-card-${repository.repositoryName}`}
-            >
-              <Flex vertical className="w-full">
-                <DetailPanelFieldRow>
-                  <Space>
-                    <DatabaseOutlined />
-                    <DetailPanelFieldValue strong>
-                      {t('resources:repositories.diskUsage')}
-                    </DetailPanelFieldValue>
-                  </Space>
-                </DetailPanelFieldRow>
-                <DetailPanelFieldValue>
-                  {repositoryData.disk_space.used} / {repositoryData.disk_space.total}
-                </DetailPanelFieldValue>
-                <Progress
-                  percent={diskPercent}
-                  status={diskPercent > 90 ? 'exception' : 'normal'}
-                  data-testid={`repo-detail-disk-usage-progress-${repository.repositoryName}`}
-                />
-                <Typography.Text>
-                  {t('resources:repositories.available')}: {repositoryData.disk_space.available}
-                </Typography.Text>
-              </Flex>
-            </DetailPanelSectionCard>
-          </Col>
-        )}
-      </Row>
-    </Flex>
   );
 };
 
@@ -523,76 +329,3 @@ const ActivitySection: React.FC<SectionProps> = ({ repository, panelData, t }) =
     </Flex>
   );
 };
-
-const ServicesSection: React.FC<SectionProps> = ({ repository, panelData, t }) => (
-  <Flex vertical>
-    <DetailPanelDivider data-testid="repository-detail-services-divider">
-      <CodeOutlined />
-      {t('resources:repositories.servicesSection')}
-    </DetailPanelDivider>
-
-    <Flex vertical data-testid="repository-detail-services-list">
-      {panelData.services.map((service, index) => {
-        return (
-          <Card
-            key={`${service.name}-${index}`}
-            size="small"
-            data-testid={`repo-detail-service-card-${repository.repositoryName}-${service.name}`}
-          >
-            <Row gutter={[16, 8]}>
-              <Col span={24}>
-                <Flex justify="space-between" align="center">
-                  <DetailPanelFieldValue
-                    strong
-                    data-testid={`repo-detail-service-name-${repository.repositoryName}-${service.name}`}
-                  >
-                    {service.name}
-                  </DetailPanelFieldValue>
-                  <Tag
-                    bordered={false}
-                    data-testid={`repo-detail-service-status-${repository.repositoryName}-${service.name}`}
-                  >
-                    {service.active_state}
-                  </Tag>
-                </Flex>
-              </Col>
-              {(service.memory_human ||
-                service.main_pid ||
-                service.uptime_human ||
-                service.restarts !== undefined) && (
-                <Col span={24}>
-                  <Flex wrap>
-                    {service.memory_human && (
-                      <Flex vertical>
-                        <Typography.Text>Memory</Typography.Text>
-                        <Typography.Text>{service.memory_human}</Typography.Text>
-                      </Flex>
-                    )}
-                    {service.main_pid && (
-                      <Flex vertical>
-                        <Typography.Text>PID</Typography.Text>
-                        <Typography.Text>{service.main_pid}</Typography.Text>
-                      </Flex>
-                    )}
-                    {service.uptime_human && (
-                      <Flex vertical>
-                        <Typography.Text>Uptime</Typography.Text>
-                        <Typography.Text>{service.uptime_human}</Typography.Text>
-                      </Flex>
-                    )}
-                    {service.restarts !== undefined && (
-                      <Flex vertical>
-                        <Typography.Text>Restarts</Typography.Text>
-                        <Typography.Text>{service.restarts}</Typography.Text>
-                      </Flex>
-                    )}
-                  </Flex>
-                </Col>
-              )}
-            </Row>
-          </Card>
-        );
-      })}
-    </Flex>
-  </Flex>
-);

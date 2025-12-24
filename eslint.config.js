@@ -20,6 +20,10 @@ export default tseslint.config(
       '*.config.ts',
       'packages/web/vite.config.ts',
       'packages/cli/bundle.mjs',
+      // Ignore .d.ts files (generated type declarations)
+      '**/*.d.ts',
+      // Ignore public config files
+      'packages/web/public/**',
     ]
   },
   
@@ -44,7 +48,9 @@ export default tseslint.config(
       parserOptions: {
         ecmaFeatures: {
           jsx: true
-        }
+        },
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
         ...globals.browser,
@@ -77,16 +83,18 @@ export default tseslint.config(
       
       // TypeScript rules
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['warn', { 
+      '@typescript-eslint/no-unused-vars': ['warn', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_'
       }],
       '@typescript-eslint/no-empty-interface': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',
+      '@typescript-eslint/no-deprecated': 'error',
       
       // General rules
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-debugger': 'warn',
+      'max-lines': ['error', { max: 512, skipBlankLines: true, skipComments: true }],
 
       // Import rules - enforce consistent import paths
       // Note: no-relative-parent-imports is not used because @/ aliases resolve to parent
@@ -156,6 +164,14 @@ export default tseslint.config(
           message: 'Inline styles are not allowed. Use CSS utility classes from global.css instead (e.g., className="w-full inline-flex"). For dynamic styles, use // eslint-disable-next-line no-restricted-syntax',
         },
       ],
+    }
+  },
+
+  // Disable max-lines for auto-generated files
+  {
+    files: ['**/*.generated.ts', '**/*.generated.tsx'],
+    rules: {
+      'max-lines': 'off',
     }
   }
 );

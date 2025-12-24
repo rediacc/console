@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Checkbox, Collapse, Flex, Space, Tag, Typography, Upload } from 'antd';
+import { Collapse, Space, Tag, Typography } from 'antd';
 import { type Resolver, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -18,7 +18,8 @@ import { useMessage } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
-import { AppstoreOutlined, DownloadOutlined, UploadOutlined } from '@/utils/optimizedIcons';
+import { AppstoreOutlined } from '@/utils/optimizedIcons';
+import { ModalFooter } from './components/ModalFooter';
 import {
   renderModalTitle,
   resolveTeamName,
@@ -297,13 +298,14 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   };
 
   // Show functions button only for machines, repositories, and storage
-  const showFunctions =
+  const showFunctions = Boolean(
     (resourceType === 'machine' || resourceType === 'repository' || resourceType === 'storage') &&
-    mode === 'create' &&
-    existingData &&
-    !existingData.prefilledMachine && // Don't show functions when creating repository from machine
-    onFunctionSubmit &&
-    functionCategories.length > 0;
+      mode === 'create' &&
+      existingData &&
+      !existingData.prefilledMachine && // Don't show functions when creating repository from machine
+      onFunctionSubmit &&
+      functionCategories.length > 0
+  );
 
   // Auto-open function modal if we're in create mode with existing data (for repository functions)
   // WARNING: The !functionModal.isOpen check is critical to prevent infinite render loops!
@@ -352,7 +354,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             onCancel();
           }}
           onSubmit={async (functionData) => {
-            await onFunctionSubmit(functionData);
+            if (onFunctionSubmit) {
+              await onFunctionSubmit(functionData);
+            }
             functionModal.close();
             onCancel();
           }}
@@ -381,82 +385,32 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         title={renderModalTitle(modalHeaderProps)}
         open={open}
         onCancel={onCancel}
-        destroyOnClose
+        destroyOnHidden
         size={ModalSize.Fullscreen}
         footer={[
-          <Flex align="center" justify="space-between" gap={16} key="footer-container">
-            <Flex align="center" gap={8}>
-              {mode === 'create' && uiMode === 'expert' && (
-                <Space>
-                  <Upload
-                    data-testid="resource-modal-upload-json"
-                    accept=".json"
-                    showUploadList={false}
-                    beforeUpload={(file) => {
-                      if (importExportHandlers.current) {
-                        return importExportHandlers.current.handleImport(file);
-                      }
-                      return false;
-                    }}
-                  >
-                    <Button data-testid="resource-modal-import-button" icon={<UploadOutlined />}>
-                      {t('common:vaultEditor.importJson')}
-                    </Button>
-                  </Upload>
-                  <Button
-                    data-testid="resource-modal-export-button"
-                    icon={<DownloadOutlined />}
-                    onClick={() => {
-                      if (importExportHandlers.current) {
-                        importExportHandlers.current.handleExport();
-                      }
-                    }}
-                  >
-                    {t('common:vaultEditor.exportJson')}
-                  </Button>
-                </Space>
-              )}
-            </Flex>
-            <Flex align="center" gap={8}>
-              {mode === 'create' && resourceType === 'machine' && (
-                <Checkbox
-                  data-testid="resource-modal-auto-setup-checkbox"
-                  checked={autoSetupEnabled}
-                  onChange={(e) => setAutoSetupEnabled(e.target.checked)}
-                >
-                  {t('machines:autoSetupAfterCreation')}
-                </Checkbox>
-              )}
-              <Button data-testid="resource-modal-cancel-button" onClick={onCancel}>
-                {t('general.cancel')}
-              </Button>
-              {mode === 'create' && existingData && onUpdateVault && (
-                <Button data-testid="resource-modal-vault-button" onClick={() => vaultModal.open()}>
-                  {t('general.vault')}
-                </Button>
-              )}
-              {showFunctions && (
-                <Button
-                  data-testid="resource-modal-functions-button"
-                  onClick={() => functionModal.open()}
-                >
-                  {t(`${resourceType}s.${resourceType}Functions`)}
-                </Button>
-              )}
-              <Button
-                data-testid="resource-modal-ok-button"
-                loading={isSubmitting}
-                disabled={mode === 'create' && resourceType === 'machine' && !testConnectionSuccess}
-                onClick={() => {
-                  if (formRef.current) {
-                    formRef.current.submit();
-                  }
-                }}
-              >
-                {mode === 'create' ? t('general.create') : t('general.save')}
-              </Button>
-            </Flex>
-          </Flex>,
+          <ModalFooter
+            key="footer"
+            mode={mode}
+            resourceType={resourceType}
+            uiMode={uiMode}
+            isSubmitting={isSubmitting}
+            testConnectionSuccess={testConnectionSuccess}
+            autoSetupEnabled={autoSetupEnabled}
+            setAutoSetupEnabled={setAutoSetupEnabled}
+            existingData={existingData}
+            showFunctions={showFunctions}
+            onCancel={onCancel}
+            onUpdateVault={onUpdateVault}
+            onVaultOpen={() => vaultModal.open()}
+            onFunctionOpen={() => functionModal.open()}
+            onSubmit={() => {
+              if (formRef.current) {
+                formRef.current.submit();
+              }
+            }}
+            importExportHandlers={importExportHandlers}
+            t={t}
+          />,
         ]}
       >
         <ResourceFormWithVault
