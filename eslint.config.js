@@ -20,6 +20,10 @@ export default tseslint.config(
       '*.config.ts',
       'packages/web/vite.config.ts',
       'packages/cli/bundle.mjs',
+      // Ignore .d.ts files (generated type declarations)
+      '**/*.d.ts',
+      // Ignore public config files
+      'packages/web/public/**',
     ]
   },
   

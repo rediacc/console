@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import type { QueueActionParams } from '@/services/queue';
 import { showMessage } from '@/utils/messages';
 import type { Container, Repository } from '../types';
 import type { TFunction } from 'i18next';
@@ -19,9 +20,8 @@ interface UseContainerActionsProps {
   repositoryData?: RepositoryData;
   grandRepoVault: string;
   machineVault: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   executeAction: (
-    params: any
+    params: QueueActionParams
   ) => Promise<{ success: boolean; taskId?: string; isQueued?: boolean; error?: string }>;
   onQueueItemCreated?: (taskId: string, machineName: string) => void;
   t: TFunction;
