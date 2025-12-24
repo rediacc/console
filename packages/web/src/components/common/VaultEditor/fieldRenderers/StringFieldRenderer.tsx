@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form, Input, InputNumber } from 'antd';
+import { Form, Input, InputNumber, Space } from 'antd';
 import { FieldFormItem } from '../components/FieldFormItem';
 import FieldGenerator from '../components/FieldGenerator';
 import { FieldLabel } from '../components/FieldLabel';
@@ -107,23 +107,31 @@ export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
       rules={rules}
       initialValue={fieldDef.default}
     >
-      <Input
-        className="w-full"
-        placeholder={fieldPlaceholder}
-        type={fieldDef.sensitive ? 'password' : 'text'}
-        autoComplete={fieldDef.sensitive ? 'new-password' : 'off'}
-        data-testid={`vault-editor-field-${fieldName}`}
-        addonAfter={
-          isGeneratable ? (
-            <FieldGenerator
-              fieldType={fieldName === 'credential' ? 'repo_credential' : 'ssh_keys'}
-              onGenerate={handleFieldGeneration}
-              entityType={entityType}
-              data-testid={`vault-editor-generate-${fieldName}`}
-            />
-          ) : undefined
-        }
-      />
+      {isGeneratable ? (
+        <Space.Compact className="w-full">
+          <Input
+            className="w-full"
+            placeholder={fieldPlaceholder}
+            type={fieldDef.sensitive ? 'password' : 'text'}
+            autoComplete={fieldDef.sensitive ? 'new-password' : 'off'}
+            data-testid={`vault-editor-field-${fieldName}`}
+          />
+          <FieldGenerator
+            fieldType={fieldName === 'credential' ? 'repo_credential' : 'ssh_keys'}
+            onGenerate={handleFieldGeneration}
+            entityType={entityType}
+            data-testid={`vault-editor-generate-${fieldName}`}
+          />
+        </Space.Compact>
+      ) : (
+        <Input
+          className="w-full"
+          placeholder={fieldPlaceholder}
+          type={fieldDef.sensitive ? 'password' : 'text'}
+          autoComplete={fieldDef.sensitive ? 'new-password' : 'off'}
+          data-testid={`vault-editor-field-${fieldName}`}
+        />
+      )}
     </Form.Item>
   );
 };

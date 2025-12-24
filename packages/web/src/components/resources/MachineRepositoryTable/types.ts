@@ -124,3 +124,14 @@ export interface MachineRepositoryTableProps {
 }
 
 export type MenuClickEvent = { key: string; domEvent: React.MouseEvent | React.KeyboardEvent };
+
+export interface TeamRepository {
+  repositoryGuid: string;
+  repositoryName: string;
+  repositoryTag?: string;
+  parentGuid?: string;
+  grandGuid?: string;
+  teamName: string;
+  vaultContent?: string;
+  repositoryNetworkId?: string;
+}

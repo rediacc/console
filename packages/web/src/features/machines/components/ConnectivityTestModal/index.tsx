@@ -298,7 +298,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       open={open}
       onCancel={onClose}
       size={ModalSize.Large}
-      destroyOnClose
+      destroyOnHidden
       footer={
         <Flex justify="flex-end" wrap>
           <Button

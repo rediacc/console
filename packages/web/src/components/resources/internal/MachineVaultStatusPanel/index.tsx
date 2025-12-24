@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Card, Col, Empty, Flex, List, Progress, Row, Tag, Typography, type ListProps } from 'antd';
+import { Card, Col, Empty, Flex, Progress, Row, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import {
@@ -8,28 +8,26 @@ import {
   DetailPanelFieldLabel,
   DetailPanelFieldMonospaceValue,
   DetailPanelFieldRow,
-  DetailPanelFieldStrongValue,
   DetailPanelFieldValue,
   DetailPanelSectionHeader,
   DetailPanelSectionTitle,
   DetailPanelSurface,
-  DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import { useTraceModal } from '@/hooks/useDialogState';
 import { calculateResourcePercent } from '@/platform';
 import type { Machine } from '@/types';
 import {
-  CodeOutlined,
-  CompassOutlined,
-  ContainerOutlined,
   DatabaseOutlined,
   DesktopOutlined,
   HddOutlined,
   InfoCircleOutlined,
-  WifiOutlined,
 } from '@/utils/optimizedIcons';
 import { abbreviatePath } from '@/utils/pathUtils';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
+import { BlockDevicesSection } from './sections/BlockDevicesSection';
+import { NetworkSection } from './sections/NetworkSection';
+import { SystemContainersSection } from './sections/SystemContainersSection';
+import type { BlockDevice, SystemInfo, VaultData, VaultNetwork } from './types';
 import type { TFunction } from 'i18next';
 
 interface MachineVaultStatusPanelProps {
@@ -37,99 +35,6 @@ interface MachineVaultStatusPanelProps {
   visible: boolean;
   onClose: () => void;
   splitView?: boolean;
-}
-
-interface SystemInfo {
-  hostname: string;
-  kernel: string;
-  os_name: string;
-  uptime: string;
-  system_time: number;
-  system_time_human: string;
-  timezone: string;
-  cpu_count: number;
-  cpu_model: string;
-  memory: {
-    total: string;
-    used: string;
-    available: string;
-  };
-  disk: {
-    total: string;
-    used: string;
-    available: string;
-    use_percent: string;
-  };
-  datastore: {
-    path: string;
-    total: string;
-    used: string;
-    available: string;
-    use_percent: string;
-  };
-}
-
-interface NetworkInterface {
-  name: string;
-  state: string;
-  mac_address: string;
-  mtu: number;
-  ipv4_addresses: string[];
-  ipv6_addresses: string[];
-  default_gateway: string | null;
-}
-
-interface VaultNetwork {
-  default_gateway?: string;
-  default_interface?: string;
-  interfaces: NetworkInterface[];
-}
-
-interface BlockDevicePartition {
-  name: string;
-  path: string;
-  size_bytes: number;
-  size_human: string;
-  filesystem: string | null;
-  mountpoint: string | null;
-}
-
-interface BlockDevice {
-  name: string;
-  path: string;
-  size_bytes: number;
-  size_human: string;
-  model: string;
-  serial: string | null;
-  type: string;
-  discard_granularity: number;
-  physical_sector_size: number;
-  logical_sector_size: number;
-  partitions: BlockDevicePartition[];
-}
-
-interface Container {
-  id: string;
-  name: string;
-  image: string;
-  command: string;
-  created: string;
-  status: string;
-  state: string;
-  ports: string;
-  cpu_percent?: string;
-  memory_usage?: string;
-  memory_percent?: string;
-  net_io?: string;
-  block_io?: string;
-  pids?: string;
-}
-
-interface VaultData {
-  system?: SystemInfo;
-  network?: VaultNetwork;
-  block_devices?: BlockDevice[];
-  system_containers?: Container[];
 }
 
 export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = ({
@@ -222,12 +127,9 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
   );
 };
 
-interface SectionProps {
-  t: TFunction;
-}
-
-interface SystemInfoSectionProps extends SectionProps {
+interface SystemInfoSectionProps {
   system: SystemInfo;
+  t: TFunction;
 }
 
 const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
@@ -282,8 +184,9 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
   </Flex>
 );
 
-interface ResourceUsageSectionProps extends SectionProps {
+interface ResourceUsageSectionProps {
   system: SystemInfo;
+  t: TFunction;
 }
 
 const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }) => {
@@ -358,229 +261,3 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
     </Flex>
   );
 };
-
-interface NetworkSectionProps extends SectionProps {
-  network: VaultNetwork;
-}
-
-const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
-  const interfaces = network.interfaces.filter(
-    (iface) => iface.state !== 'unknown' && iface.name !== 'lo'
-  );
-
-  return (
-    <Flex vertical>
-      <DetailPanelDivider orientationMargin="left">
-        <WifiOutlined />
-        {t('resources:repositories.networkInfo')}
-      </DetailPanelDivider>
-
-      {network.default_gateway && (
-        <Card size="small" data-testid="vault-status-gateway-card">
-          <Flex vertical gap={8} className="w-full">
-            <DetailPanelFieldRow>
-              <DetailPanelFieldLabel>
-                {t('resources:repositories.defaultGateway')}:
-              </DetailPanelFieldLabel>
-              <DetailPanelFieldValue data-testid="vault-status-gateway">
-                {network.default_gateway}
-              </DetailPanelFieldValue>
-            </DetailPanelFieldRow>
-            {network.default_interface && (
-              <DetailPanelFieldRow>
-                <DetailPanelFieldLabel>
-                  {t('resources:repositories.defaultInterface')}:
-                </DetailPanelFieldLabel>
-                <DetailPanelFieldValue data-testid="vault-status-interface">
-                  {network.default_interface}
-                </DetailPanelFieldValue>
-              </DetailPanelFieldRow>
-            )}
-          </Flex>
-        </Card>
-      )}
-
-      <List
-        dataSource={interfaces}
-        data-testid="vault-status-network-list"
-        renderItem={
-          ((iface: NetworkInterface) => (
-            <Card size="small" data-testid={`vault-status-network-${iface.name}`}>
-              <Flex justify="space-between" align="center">
-                <DetailPanelTitleGroup>
-                  <CompassOutlined />
-                  <DetailPanelFieldStrongValue
-                    data-testid={`vault-status-network-name-${iface.name}`}
-                  >
-                    {iface.name}
-                  </DetailPanelFieldStrongValue>
-                </DetailPanelTitleGroup>
-                <Tag bordered={false} data-testid={`vault-status-network-state-${iface.name}`}>
-                  {iface.state}
-                </Tag>
-              </Flex>
-              <Flex vertical>
-                {iface.ipv4_addresses.length > 0 && (
-                  <Flex vertical>
-                    <DetailPanelFieldLabel>
-                      {t('resources:repositories.ipAddresses')}:
-                    </DetailPanelFieldLabel>
-                    <Flex>
-                      {iface.ipv4_addresses.map((ip: string) => (
-                        <Tag key={ip} bordered={false} data-testid={`vault-status-ip-${ip}`}>
-                          {ip}
-                        </Tag>
-                      ))}
-                    </Flex>
-                  </Flex>
-                )}
-                {iface.mac_address && iface.mac_address !== 'unknown' && (
-                  <Flex justify="space-between" align="center">
-                    <DetailPanelFieldLabel>
-                      {t('resources:repositories.macAddress')}:
-                    </DetailPanelFieldLabel>
-                    <DetailPanelFieldValue>{iface.mac_address}</DetailPanelFieldValue>
-                  </Flex>
-                )}
-                {iface.mtu > 0 && (
-                  <Flex justify="space-between" align="center">
-                    <DetailPanelFieldLabel>MTU:</DetailPanelFieldLabel>
-                    <DetailPanelFieldValue>{iface.mtu}</DetailPanelFieldValue>
-                  </Flex>
-                )}
-              </Flex>
-            </Card>
-          )) as ListProps<unknown>['renderItem']
-        }
-      />
-    </Flex>
-  );
-};
-
-interface BlockDevicesSectionProps extends SectionProps {
-  devices: BlockDevice[];
-}
-
-const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t }) => (
-  <Flex vertical>
-    <DetailPanelDivider orientationMargin="left">
-      <HddOutlined />
-      {t('resources:repositories.blockDevices')}
-    </DetailPanelDivider>
-
-    <List
-      dataSource={devices}
-      data-testid="vault-status-block-devices-list"
-      renderItem={
-        ((device: BlockDevice) => (
-          <Card size="small" data-testid={`vault-status-block-device-${device.name}`}>
-            <Flex justify="space-between" align="center">
-              <DetailPanelTitleGroup>
-                <HddOutlined />
-                <DetailPanelFieldStrongValue
-                  data-testid={`vault-status-device-path-${device.name}`}
-                >
-                  {device.path}
-                </DetailPanelFieldStrongValue>
-              </DetailPanelTitleGroup>
-              <Flex>
-                <Tag bordered={false} data-testid={`vault-status-device-type-${device.name}`}>
-                  {device.type}
-                </Tag>
-                <Tag bordered={false} data-testid={`vault-status-device-size-${device.name}`}>
-                  {device.size_human}
-                </Tag>
-              </Flex>
-            </Flex>
-
-            <Flex vertical>
-              {device.model && device.model !== 'Unknown' && (
-                <Flex justify="space-between" align="center">
-                  <DetailPanelFieldLabel>
-                    {t('resources:repositories.model')}:
-                  </DetailPanelFieldLabel>
-                  <DetailPanelFieldValue>{device.model}</DetailPanelFieldValue>
-                </Flex>
-              )}
-
-              {device.partitions.length > 0 && (
-                <Flex vertical>
-                  <DetailPanelFieldLabel>
-                    {t('resources:repositories.partitions')}:
-                  </DetailPanelFieldLabel>
-                  <Flex vertical>
-                    {device.partitions.map((part: BlockDevicePartition) => (
-                      <Flex key={`${device.name}-${part.name}`} align="center">
-                        <CodeOutlined />
-                        <Typography.Text>
-                          {part.name}: {part.size_human}
-                          {part.filesystem && ` (${part.filesystem})`}
-                          {part.mountpoint && ` • ${part.mountpoint}`}
-                        </Typography.Text>
-                      </Flex>
-                    ))}
-                  </Flex>
-                </Flex>
-              )}
-            </Flex>
-          </Card>
-        )) as ListProps<unknown>['renderItem']
-      }
-    />
-  </Flex>
-);
-
-interface SystemContainersSectionProps extends SectionProps {
-  containers: Container[];
-}
-
-const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ containers, t }) => (
-  <Flex vertical>
-    <DetailPanelDivider orientationMargin="left">
-      <ContainerOutlined />
-      {t('resources:repositories.systemContainers')}
-    </DetailPanelDivider>
-
-    <List
-      dataSource={containers}
-      data-testid="vault-status-containers-list"
-      renderItem={
-        ((container: Container) => (
-          <Card size="small" data-testid={`vault-status-container-${container.id}`}>
-            <Flex justify="space-between" align="center">
-              <DetailPanelTitleGroup>
-                <ContainerOutlined />
-                <DetailPanelFieldStrongValue
-                  data-testid={`vault-status-container-name-${container.id}`}
-                >
-                  {container.name}
-                </DetailPanelFieldStrongValue>
-              </DetailPanelTitleGroup>
-              <Tag bordered={false} data-testid={`vault-status-container-state-${container.id}`}>
-                {container.state}
-              </Tag>
-            </Flex>
-
-            <Flex vertical>
-              {container.image && <Typography.Text ellipsis>{container.image}</Typography.Text>}
-              {container.cpu_percent && (
-                <Flex justify="space-between" align="center">
-                  <DetailPanelFieldLabel>CPU:</DetailPanelFieldLabel>
-                  <DetailPanelFieldValue>{container.cpu_percent}</DetailPanelFieldValue>
-                </Flex>
-              )}
-              {container.memory_usage && (
-                <Flex justify="space-between" align="center">
-                  <DetailPanelFieldLabel>
-                    {t('resources:repositories.memory')}:
-                  </DetailPanelFieldLabel>
-                  <DetailPanelFieldValue>{container.memory_usage}</DetailPanelFieldValue>
-                </Flex>
-              )}
-            </Flex>
-          </Card>
-        )) as ListProps<unknown>['renderItem']
-      }
-    />
-  </Flex>
-);

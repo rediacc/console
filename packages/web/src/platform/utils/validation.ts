@@ -39,7 +39,7 @@ export const [
 ] = resourceTypes.map((type) => createResourceNameSchema(type));
 
 // User schemas
-const emailSchema = z.string().min(1, 'Email is required').email('Invalid email address');
+const emailSchema = z.email({ message: 'Invalid email address' }).min(1, 'Email is required');
 
 const passwordSchema = z
   .string()
@@ -60,7 +60,7 @@ const vaultSchema = z
   }, 'Vault must be valid JSON');
 
 // Form schemas factory - always uses 'vaultContent' for consistency with API
-const withVault = (fields: Record<string, z.ZodSchema>) =>
+const withVault = (fields: Record<string, z.ZodType>) =>
   z.object({ ...fields, vaultContent: vaultSchema.optional().default('{}') });
 
 // Create schemas using configuration
@@ -122,9 +122,7 @@ export const createRepositorySchema = z
         z
           .string()
           .length(0), // Allow empty string
-        z
-          .string()
-          .uuid('Invalid GUID format'), // Or valid UUID
+        z.uuid({ message: 'Invalid GUID format' }), // Or valid UUID
       ])
       .optional(), // Optional repository GUID
     vaultContent: vaultSchema.optional().default('{}'),
@@ -179,7 +177,7 @@ export const queueItemSchema = z.object({
 });
 
 // Edit schemas - factory function for single field schemas
-const createEditSchema = <T extends z.ZodSchema>(schema: T, fieldName: string) =>
+const createEditSchema = <T extends z.ZodType>(schema: T, fieldName: string) =>
   z.object({ [fieldName]: schema });
 
 export const editTeamSchema = createEditSchema(teamNameSchema, 'teamName');

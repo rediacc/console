@@ -3,7 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 export type NotificationType = 'success' | 'error' | 'warning' | 'info';
 
 const generateNotificationId = (): string =>
-  `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 const decrementUnreadCount = (count: number): number => Math.max(0, count - 1);
 
 export interface Notification {

@@ -149,7 +149,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
       }
       open={open}
       onCancel={handleClose}
-      destroyOnClose
+      destroyOnHidden
       footer={
         <ActionButtons
           queueDetails={traceData?.queueDetails}
