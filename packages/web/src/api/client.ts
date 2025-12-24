@@ -6,10 +6,10 @@ import axios, {
   InternalAxiosRequestConfig,
   isAxiosError,
 } from 'axios';
-import { apiConnectionService } from '@/services/apiConnectionService';
+import { apiConnectionService } from '@/services/api';
+import { tokenService } from '@/services/auth';
 import { telemetryService } from '@/services/telemetryService';
-import { tokenService } from '@/services/tokenService';
-import { logout, showSessionExpiredDialog } from '@/store/auth/authSlice';
+import { logout, showSessionExpiredModal } from '@/store/auth/authSlice';
 import { store } from '@/store/store';
 import { showMessage } from '@/utils/messages';
 import { createApiServices, normalizeResponse } from '@rediacc/shared/api';
@@ -273,10 +273,10 @@ class ApiClient implements SharedApiClient {
     // Only show dialog if not already on login page and dialog not already shown
     if (!isAlreadyOnLogin) {
       const state = store.getState();
-      if (!state.auth.showSessionExpiredDialog) {
+      if (!state.auth.showSessionExpiredModal) {
         showMessage('error', 'Session expired. Please login again.');
         store.dispatch(logout());
-        store.dispatch(showSessionExpiredDialog());
+        store.dispatch(showSessionExpiredModal());
       }
     }
   }

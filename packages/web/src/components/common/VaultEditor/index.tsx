@@ -11,7 +11,12 @@ import {
   VaultEditorTestConnection,
   VaultEditorSystemCompatibility,
 } from './sections';
-import { handleImport, handleExport, handleRawJsonChange } from './utilities';
+import {
+  handleImport,
+  handleExport,
+  handleRawJsonChange,
+  type FieldMovements,
+} from './utils/index';
 import type { VaultEditorProps, VaultFormValues } from './types';
 import type { UploadFile } from 'antd/es/upload/interface';
 
@@ -80,7 +85,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
           setImportedData,
           directOnChange,
           onValidate,
-          showFieldMovements: (movements) => {
+          showFieldMovements: (movements: FieldMovements) => {
             if (movements.movedToExtra.length > 0) {
               message.info('common:vaultEditor.fieldsMovedToExtra', {
                 count: movements.movedToExtra.length,

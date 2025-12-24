@@ -3,8 +3,8 @@ import { api } from '@/api/client';
 import { QUERY_KEYS } from '@/api/queryKeys';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
+import { minifyJSON } from '@/platform/utils/json';
 import { invalidateAllQueueCaches } from '@/utils/cacheUtils';
-import { minifyJSON } from '@/utils/json';
 import type {
   CancelQueueItemParams,
   CreateQueueItemParams,

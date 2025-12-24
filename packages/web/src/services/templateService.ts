@@ -1,5 +1,5 @@
+import { configService } from '@/services/api';
 import { CONFIG_URLS } from '@/utils/apiConstants';
-import { configService } from './configService';
 
 interface Template {
   id?: string;

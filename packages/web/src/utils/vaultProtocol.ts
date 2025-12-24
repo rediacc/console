@@ -1,9 +1,9 @@
+import { cryptoService } from '@/services/crypto';
 import {
   isEncrypted,
   VaultProtocolState,
   analyzeVaultProtocolState,
 } from '@rediacc/shared/encryption';
-import { decryptString, encryptString } from './encryption';
 
 // Re-export shared utilities for backward compatibility
 export { isEncrypted, VaultProtocolState, analyzeVaultProtocolState };
@@ -20,7 +20,10 @@ export async function validateMasterPassword(
 ): Promise<boolean> {
   try {
     // Try to decrypt the vault content
-    const decrypted = await decryptString(encryptedVaultCompany, masterPassword);
+    const decrypted = await cryptoService.decryptString(
+      encryptedVaultCompany,
+      masterPassword
+    );
 
     // If decryption succeeds, the password is valid
     // The decrypted content should be valid JSON (even if it's just {})
@@ -56,7 +59,10 @@ export async function createVaultCompanySentinel(
   };
 
   // Encrypt the sentinel using the master password
-  const encryptedSentinel = await encryptString(JSON.stringify(sentinel), masterPassword);
+  const encryptedSentinel = await cryptoService.encryptString(
+    JSON.stringify(sentinel),
+    masterPassword
+  );
   return encryptedSentinel;
 }
 

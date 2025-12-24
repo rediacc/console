@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { apiConnectionService } from '@/services/apiConnectionService';
+import { apiConnectionService } from '@/services/api';
 
 export interface ApiHealthResponse {
   status: string;

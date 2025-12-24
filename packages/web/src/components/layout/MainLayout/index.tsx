@@ -13,7 +13,7 @@ import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
 import { featureFlags } from '@/config/featureFlags';
 import { useMessage } from '@/hooks';
-import { masterPasswordService } from '@/services/masterPasswordService';
+import { masterPasswordService } from '@/services/auth';
 import { selectCompany } from '@/store/auth/authSelectors';
 import { logout, updateCompany } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';

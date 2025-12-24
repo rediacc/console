@@ -54,7 +54,7 @@ export const resolveTeamName = (
   return 'Private Team';
 };
 
-export const resolveBridgeName = (getFormValue: (field: string) => string | undefined): string => {
+export const getBridgeName = (getFormValue: (field: string) => string | undefined): string => {
   const formBridge = getFormValue('bridgeName');
   if (formBridge) return formBridge;
   return 'Global Bridges';

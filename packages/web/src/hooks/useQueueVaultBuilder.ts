@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { api } from '@/api/client';
-import { type QueueRequestContext, queueService } from '@/services/queueService';
-import { minifyJSON } from '@/utils/json';
+import { minifyJSON } from '@/platform/utils/json';
+import { type QueueRequestContext, queueService } from '@/services/queue';
 
 /**
  * Hook to build queue vault data with all required context

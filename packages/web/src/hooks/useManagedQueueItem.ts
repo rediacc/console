@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import type { QueueItem, QueueItemData } from '@/platform/types/queue';
-import { queueService } from '@/services/queueService';
-import { minifyJSON } from '@/utils/json';
+import { minifyJSON } from '@/platform/utils/json';
+import { queueService } from '@/services/queue';
 import { showMessage } from '@/utils/messages';
 
 /**

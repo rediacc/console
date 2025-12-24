@@ -6,9 +6,9 @@ import {
   QueueActionParams,
   QueueActionResult,
   QueueActionService,
-} from '@/services/queueActionService';
+} from '@/services/queue';
 
-export type { QueueActionParams, QueueActionResult } from '@/services/queueActionService';
+export type { QueueActionParams, QueueActionResult } from '@/services/queue';
 
 /**
  * Generic hook for executing queue actions

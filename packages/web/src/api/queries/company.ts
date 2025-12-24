@@ -2,9 +2,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
+import { minifyJSON } from '@/platform/utils/json';
 import { selectCompany } from '@/store/auth/authSelectors';
 import { useAppSelector } from '@/store/store';
-import { minifyJSON } from '@/utils/json';
 import { showMessage } from '@/utils/messages';
 import type {
   CompanyBlockUserRequestsResult,

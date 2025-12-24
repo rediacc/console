@@ -6,7 +6,7 @@ import {
   GenerationOptions,
   generateRepoCredential,
   generateSSHKeyPair,
-} from '@/utils/cryptoGenerators';
+} from '@/utils/generators';
 import { CheckOutlined, CopyOutlined, KeyOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 
 interface FieldGeneratorProps {

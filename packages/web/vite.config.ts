@@ -84,12 +84,40 @@ export default defineConfig(({ mode }) => {
       },
       rollupOptions: {
         output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-            'vendor-antd': ['antd'],
-            'vendor-state': ['@reduxjs/toolkit', 'react-redux', '@tanstack/react-query'],
-            'vendor-utils': ['axios', 'dayjs', 'zod'],
-            'vendor-i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
+          manualChunks: (id) => {
+            if (id.includes('node_modules')) {
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+                return 'vendor-react';
+              }
+              if (id.includes('antd')) {
+                return 'vendor-antd';
+              }
+              if (id.includes('@reduxjs') || id.includes('react-redux') || id.includes('react-query')) {
+                return 'vendor-state';
+              }
+              if (id.includes('axios') || id.includes('dayjs') || id.includes('zod')) {
+                return 'vendor-utils';
+              }
+              if (id.includes('i18next')) {
+                return 'vendor-i18n';
+              }
+            }
+
+            if (id.endsWith('/types.ts') || id.endsWith('/models/index.ts')) {
+              return undefined;
+            }
+
+            if (id.includes('/src/features/')) {
+              const [, featureName] = id.split('/src/features/')[1].split('/');
+              return `feature-${featureName}`;
+            }
+
+            if (id.includes('/src/hooks/')) return 'app-hooks';
+            if (id.includes('/src/components/common/')) return 'app-common';
+            if (id.includes('/src/components/resources/')) return 'app-resources';
+            if (id.includes('/src/services/')) return 'app-services';
+
+            return undefined;
           },
           chunkFileNames: (chunkInfo) => {
             const facadeModuleId = chunkInfo.facadeModuleId
