@@ -3,8 +3,8 @@ import { api } from '@/api/client';
 import { QUERY_KEY_STRINGS } from '@/api/queryKeys';
 import { createResourceQuery } from '@/hooks/api/queryFactory';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
+import { minifyJSON } from '@/platform/utils/json';
 import type { Machine } from '@/types';
-import { minifyJSON } from '@/utils/json';
 import type {
   CreateMachineParams,
   DeleteMachineParams,

@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { createResourceQuery } from '@/hooks/api/queryFactory';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
-import { minifyJSON } from '@/utils/json';
+import { minifyJSON } from '@/platform/utils/json';
 import type {
   CreateRepositoryParams,
   DeleteRepositoryParams,

@@ -13,7 +13,7 @@ import {
 import type { MenuConfig } from './types';
 import type { TFunction } from 'i18next';
 
-export const getMenuItems = (t: TFunction): MenuConfig[] => [
+export const buildMainMenuItems = (t: TFunction): MenuConfig[] => [
   {
     key: '/dashboard',
     icon: <DashboardOutlined />,

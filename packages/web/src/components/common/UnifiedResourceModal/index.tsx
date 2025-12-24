@@ -22,7 +22,7 @@ import { AppstoreOutlined, DownloadOutlined, UploadOutlined } from '@/utils/opti
 import {
   renderModalTitle,
   resolveTeamName,
-  resolveBridgeName,
+  getBridgeName,
   createFunctionSubtitle,
   getFunctionTitle,
 } from './components/ModalHeaderRenderer';
@@ -476,7 +476,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             importExportHandlers.current = handlers;
           }}
           teamName={resolveTeamName(getFormValue, existingData, teamFilter)}
-          bridgeName={resolveBridgeName(getFormValue)}
+          bridgeName={getBridgeName(getFormValue)}
           onTestConnectionStateChange={setTestConnectionSuccess}
           isModalOpen={open}
           beforeVaultContent={undefined}

@@ -1,2 +1,2 @@
 // Re-export from centralized location
-export * from '@/utils/useDebounce';
+export * from '@/hooks/useDebounce';

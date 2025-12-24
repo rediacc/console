@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { protocolUrlService } from '../protocolUrlService';
 
 // Mock the dynamic imports
-vi.mock('../forkTokenService', () => ({
+vi.mock('../auth/forkTokenService', () => ({
   createFreshForkToken: vi.fn().mockResolvedValue('mock-fork-token'),
 }));
 
-vi.mock('../apiConnectionService', () => ({
+vi.mock('../api/apiConnectionService', () => ({
   apiConnectionService: {
     getApiUrl: vi.fn().mockResolvedValue('https://api.example.com/api'),
   },

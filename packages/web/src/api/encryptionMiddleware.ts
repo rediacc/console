@@ -1,5 +1,5 @@
-import { cryptoService } from '@/services/cryptoService';
-import { masterPasswordService } from '@/services/masterPasswordService';
+import { masterPasswordService } from '@/services/auth';
+import { cryptoService } from '@/services/crypto';
 import { showMessage } from '@/utils/messages';
 
 /**

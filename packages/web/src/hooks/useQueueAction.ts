@@ -2,13 +2,9 @@ import { useCallback, useMemo } from 'react';
 import { useTeams } from '@/api/queries/teams';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import {
-  QueueActionParams,
-  QueueActionResult,
-  QueueActionService,
-} from '@/services/queueActionService';
+import { QueueActionParams, QueueActionResult, QueueActionService } from '@/services/queue';
 
-export type { QueueActionParams, QueueActionResult } from '@/services/queueActionService';
+export type { QueueActionParams, QueueActionResult } from '@/services/queue';
 
 /**
  * Generic hook for executing queue actions

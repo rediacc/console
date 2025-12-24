@@ -2,11 +2,7 @@ import React, { useState } from 'react';
 import { Button, Flex, Popover, Radio, Tooltip, Typography, type RadioChangeEvent } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMessage } from '@/hooks';
-import {
-  GenerationOptions,
-  generateRepoCredential,
-  generateSSHKeyPair,
-} from '@/utils/cryptoGenerators';
+import { GenerationOptions, generateRepoCredential, generateSSHKeyPair } from '@/utils/generators';
 import { CheckOutlined, CopyOutlined, KeyOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 
 interface FieldGeneratorProps {

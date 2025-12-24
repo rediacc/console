@@ -12,7 +12,7 @@ import {
   createSnapshotSchema,
   createStorageSchema,
   createTeamSchema,
-} from '@/utils/validation';
+} from '@/platform/utils/validation';
 import type { ResourceType } from '../index';
 
 type ResourceFormValues = Record<string, unknown>;

@@ -6,7 +6,7 @@ import { initializeApiClient } from '@/api/init';
 import { AppProviders } from '@/components/app/AppProviders';
 import { ErrorBoundary } from '@/components/app/ErrorBoundary';
 import { InteractionTracker } from '@/components/app/InteractionTracker';
-import { SessionExpiredDialog } from '@/components/app/SessionExpiredDialog';
+import { SessionExpiredModal } from '@/components/app/SessionExpiredModal';
 import { ThemedToaster } from '@/components/app/ThemedToaster';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { TelemetryProvider } from '@/components/common/TelemetryProvider';
@@ -21,21 +21,45 @@ import { getAuthData, migrateFromLocalStorage } from '@/utils/auth';
 import { getBasePath } from '@/utils/basePath';
 
 // Lazy load heavy pages
-const DashboardPage = lazy(() => import('@/pages/dashboard'));
-const MachinesPage = lazy(() => import('@/pages/machines/MachinesPage'));
-const MachineRepositoriesPage = lazy(() => import('@/pages/resources/MachineRepositoriesPage'));
-const RepositoryContainersPage = lazy(() => import('@/pages/resources/RepositoryContainersPage'));
-const CephPage = lazy(() => import('@/pages/ceph/CephPage'));
-const QueuePage = lazy(() => import('@/pages/queue/QueuePage'));
-const AuditPage = lazy(() => import('@/pages/audit/AuditPage'));
-const CredentialsPage = lazy(() => import('@/pages/credentials/CredentialsPage'));
-const StoragePage = lazy(() => import('@/pages/storage/StoragePage'));
-const UsersPage = lazy(() => import('@/pages/organization/users/UsersPage'));
-const TeamsPage = lazy(() => import('@/pages/organization/teams/TeamsPage'));
-const AccessPage = lazy(() => import('@/pages/organization/access/AccessPage'));
-const ProfilePage = lazy(() => import('@/pages/settings/profile/ProfilePage'));
-const CompanyPage = lazy(() => import('@/pages/settings/company/CompanyPage'));
-const InfrastructurePage = lazy(() => import('@/pages/settings/infrastructure/InfrastructurePage'));
+const DashboardPage = lazy(() =>
+  import('@/features/dashboard').then((m) => ({ default: m.DashboardPage }))
+);
+const MachinesPage = lazy(() =>
+  import('@/features/machines').then((m) => ({ default: m.MachinesPage }))
+);
+const MachineRepositoriesPage = lazy(() =>
+  import('@/features/resources').then((m) => ({ default: m.MachineRepositoriesPage }))
+);
+const RepositoryContainersPage = lazy(() =>
+  import('@/features/resources').then((m) => ({ default: m.RepositoryContainersPage }))
+);
+const CephPage = lazy(() => import('@/features/ceph').then((m) => ({ default: m.CephPage })));
+const QueuePage = lazy(() => import('@/features/queue').then((m) => ({ default: m.QueuePage })));
+const AuditPage = lazy(() => import('@/features/audit').then((m) => ({ default: m.AuditPage })));
+const CredentialsPage = lazy(() =>
+  import('@/features/credentials').then((m) => ({ default: m.CredentialsPage }))
+);
+const StoragePage = lazy(() =>
+  import('@/features/storage').then((m) => ({ default: m.StoragePage }))
+);
+const UsersPage = lazy(() =>
+  import('@/features/organization').then((m) => ({ default: m.UsersPage }))
+);
+const TeamsPage = lazy(() =>
+  import('@/features/organization').then((m) => ({ default: m.TeamsPage }))
+);
+const AccessPage = lazy(() =>
+  import('@/features/organization').then((m) => ({ default: m.AccessPage }))
+);
+const ProfilePage = lazy(() =>
+  import('@/features/settings').then((m) => ({ default: m.ProfilePage }))
+);
+const CompanyPage = lazy(() =>
+  import('@/features/settings').then((m) => ({ default: m.CompanyPage }))
+);
+const InfrastructurePage = lazy(() =>
+  import('@/features/settings').then((m) => ({ default: m.InfrastructurePage }))
+);
 
 // Loading component
 const PageLoader: React.FC = () => {
@@ -71,8 +95,8 @@ const RedirectHandler: React.FC = () => {
 const AppContent: React.FC = () => {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const showSessionExpiredDialog = useSelector(
-    (state: RootState) => state.auth.showSessionExpiredDialog
+  const showSessionExpiredModal = useSelector(
+    (state: RootState) => state.auth.showSessionExpiredModal
   );
   const stayLoggedOutMode = useSelector((state: RootState) => state.auth.stayLoggedOutMode);
   const [, setFeatureFlagVersion] = React.useState(0);
@@ -128,7 +152,7 @@ const AppContent: React.FC = () => {
                 {/* Protected routes */}
                 <Route
                   element={
-                    isAuthenticated || showSessionExpiredDialog || stayLoggedOutMode ? (
+                    isAuthenticated || showSessionExpiredModal || stayLoggedOutMode ? (
                       <MainLayout />
                     ) : (
                       <Navigate to="/login" replace />
@@ -318,7 +342,7 @@ const AppContent: React.FC = () => {
         </TelemetryProvider>
       </BrowserRouter>
       <ThemedToaster />
-      <SessionExpiredDialog />
+      <SessionExpiredModal />
     </AppProviders>
   );
 };
