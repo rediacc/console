@@ -198,7 +198,7 @@ const NotificationBell: React.FC = () => {
         open={dropdownOpen}
         onOpenChange={setDropdownOpen}
         menu={{ items: [] }}
-        dropdownRender={() => dropdownContent}
+        popupRender={() => dropdownContent}
       >
         <Button
           type="text"

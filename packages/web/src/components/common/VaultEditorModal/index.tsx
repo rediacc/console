@@ -108,7 +108,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       size={ModalSize.Fullscreen}
       footer={null}
       data-testid="vault-modal"
-      destroyOnClose
+      destroyOnHidden
     >
       <Flex vertical gap={24} className="w-full">
         <Flex align="center" justify="space-between">

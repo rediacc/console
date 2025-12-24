@@ -3,13 +3,11 @@ import {
   Alert,
   Button,
   Flex,
-  Input,
   Space,
   Table,
   Tag,
   Tooltip,
   Typography,
-  type MenuProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -24,31 +22,20 @@ import {
 import { useStorage } from '@/api/queries/storage';
 import { useTeams } from '@/api/queries/teams';
 import { createActionColumn } from '@/components/common/columns';
-import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
-import { MobileCard } from '@/components/common/MobileCard';
-import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { useQueueAction } from '@/hooks/useQueueAction';
-import { isFork as coreIsFork, getGrandVaultForOperation, preparePromotion } from '@/platform';
+import { getGrandVaultForOperation } from '@/platform';
 import { useAppSelector } from '@/store/store';
 import { showMessage } from '@/utils/messages';
-import {
-  CheckCircleOutlined,
-  ContainerOutlined,
-  DeleteOutlined,
-  DesktopOutlined,
-  DisconnectOutlined,
-  EyeOutlined,
-  FunctionOutlined,
-  InboxOutlined,
-  PauseCircleOutlined,
-  PlayCircleOutlined,
-} from '@/utils/optimizedIcons';
+import { DesktopOutlined } from '@/utils/optimizedIcons';
 import { useRepositoryColumns, useSystemContainerColumns } from './columns';
+import { FunctionModalWrapper } from './components/FunctionModalWrapper';
 import { RepositoryActionsMenu } from './components/RepositoryActionsMenu';
+import { RepositoryMobileCard } from './components/RepositoryMobileCard';
+import { SSHKeyWarning } from './components/SSHKeyWarning';
 import {
   handleForkFunction,
   handleDeployFunction,
@@ -59,8 +46,8 @@ import {
 import { useConfirmForkDeletion } from './hooks/useConfirmForkDeletion';
 import { useConfirmRepositoryDeletion } from './hooks/useConfirmRepositoryDeletion';
 import { useQuickRepositoryAction } from './hooks/useQuickRepositoryAction';
+import { useRepositoryActions } from './hooks/useRepositoryActions';
 import { useRepositoryTableState } from './hooks/useRepositoryTableState';
-import { getAxiosErrorMessage } from './utils';
 import type { FunctionExecutionContext, FunctionData } from './hooks/useFunctionExecution';
 import type {
   Container,
@@ -108,16 +95,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   const updateRepoTagMutation = useUpdateRepositoryTag();
 
   const {
-    repositories: _repos,
-    systemInfo: _systemInfo,
     loading,
     error,
-    servicesData: _servicesData,
     containersData,
     groupedRepositories,
-    setRepos: _setRepos,
-    setServicesData: _setServicesData,
-    setContainersData: _setContainersData,
   } = useRepositoryTableState({
     machine,
     teamRepositories,
@@ -129,32 +110,24 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   const { systemContainerColumns } = useSystemContainerColumns();
 
   const { executeQuickAction } = useQuickRepositoryAction({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    teamRepositories: teamRepositories as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    machine: machine as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    executeAction: executeAction as any,
+    teamRepositories: teamRepositories as Parameters<typeof useQuickRepositoryAction>[0]['teamRepositories'],
+    machine: machine as Parameters<typeof useQuickRepositoryAction>[0]['machine'],
+    executeAction: executeAction as Parameters<typeof useQuickRepositoryAction>[0]['executeAction'],
     onQueueItemCreated,
     t,
   });
 
   const { confirmForkDeletion } = useConfirmForkDeletion({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    teamRepositories: teamRepositories as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    machine: machine as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    confirm: confirm as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    executeAction: executeAction as any,
+    teamRepositories: teamRepositories as Parameters<typeof useConfirmForkDeletion>[0]['teamRepositories'],
+    machine: machine as Parameters<typeof useConfirmForkDeletion>[0]['machine'],
+    confirm: confirm as Parameters<typeof useConfirmForkDeletion>[0]['confirm'],
+    executeAction: executeAction as Parameters<typeof useConfirmForkDeletion>[0]['executeAction'],
     onQueueItemCreated,
     t,
   });
 
   const { confirmDeletion: confirmRepositoryDeletion } = useConfirmRepositoryDeletion({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    teamRepositories: teamRepositories as any,
+    teamRepositories: teamRepositories as Parameters<typeof useConfirmRepositoryDeletion>[0]['teamRepositories'],
     modal,
     t,
     onConfirm: async (context) => {
@@ -209,6 +182,18 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     },
   });
 
+  const { handlePromoteToGrand, handleRenameRepo, handleRenameTag } = useRepositoryActions({
+    teamName: machine.teamName,
+    teamRepositories,
+    confirm,
+    modal,
+    promoteRepoMutation,
+    updateRepoNameMutation,
+    updateRepoTagMutation,
+    onActionComplete,
+    t,
+  });
+
   const handleRefresh = () => {
     if (onActionComplete) {
       onActionComplete();
@@ -216,8 +201,8 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   };
 
   const handleRunFunction = useCallback(
-    (Repository: Repository, functionName?: string) => {
-      setSelectedRepo(Repository);
+    (repository: Repository, functionName?: string) => {
+      setSelectedRepo(repository);
       setSelectedFunction(functionName || null);
       functionModal.open();
     },
@@ -244,245 +229,18 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     return newRepo;
   };
 
-  const handlePromoteToGrand = async (Repository: Repository) => {
-    const context = preparePromotion(Repository.name, Repository.repositoryTag, teamRepositories);
-
-    if (context.status === 'error') {
-      const errorKey =
-        context.errorCode === 'NOT_FOUND'
-          ? 'resources:repositories.RepoNotFound'
-          : 'resources:repositories.alreadyOriginalRepo';
-      showMessage('error', t(errorKey));
-      return;
-    }
-
-    const { siblingClones, currentGrandName } = context;
-
-    confirm({
-      title: t('resources:repositories.promoteToGrandTitle'),
-      content: (
-        <Flex vertical>
-          <Typography.Paragraph>
-            {t('resources:repositories.promoteToGrandMessage', {
-              name: Repository.name,
-              grand: currentGrandName,
-            })}
-          </Typography.Paragraph>
-          {siblingClones.length > 0 && (
-            <>
-              <Typography.Paragraph>
-                {t('resources:repositories.promoteWillUpdateSiblings', {
-                  count: siblingClones.length,
-                })}
-              </Typography.Paragraph>
-              <ul>
-                {siblingClones.map((clone) => (
-                  <li key={clone.repositoryGuid}>{clone.repositoryName}</li>
-                ))}
-              </ul>
-            </>
-          )}
-          <Alert message={t('resources:repositories.promoteWarning')} type="warning" showIcon />
-        </Flex>
-      ),
-      okText: t('resources:repositories.promoteButton'),
-      okType: 'primary',
-      cancelText: t('common:cancel'),
-      onOk: async () => {
-        try {
-          await promoteRepoMutation.mutateAsync({
-            teamName: machine.teamName,
-            repositoryName: Repository.name,
-          });
-          showMessage(
-            'success',
-            t('resources:repositories.promoteSuccess', { name: Repository.name })
-          );
-        } catch (error: unknown) {
-          const errorMessage = getAxiosErrorMessage(
-            error,
-            t('resources:repositories.promoteFailed')
-          );
-          showMessage('error', errorMessage);
-        }
-      },
-    });
-  };
-
-  const handleRenameRepo = async (Repository: Repository) => {
-    let newName = Repository.name;
-
-    modal.confirm({
-      title: t('resources:repositories.renameTitle'),
-      content: (
-        <Flex vertical>
-          <Typography.Paragraph>
-            {t('resources:repositories.renameMessage', { name: Repository.name })}
-          </Typography.Paragraph>
-          <Input
-            defaultValue={Repository.name}
-            placeholder={t('resources:repositories.newRepoName')}
-            onChange={(e) => {
-              newName = e.target.value;
-            }}
-            onPressEnter={(e) => {
-              e.preventDefault();
-            }}
-            autoFocus
-          />
-        </Flex>
-      ),
-      okText: t('common:save'),
-      cancelText: t('common:cancel'),
-      onOk: async () => {
-        const trimmedName = newName.trim();
-
-        if (!trimmedName) {
-          showMessage('error', t('resources:repositories.emptyNameError'));
-          throw new Error(t('resources:repositories.emptyNameError'));
-        }
-
-        if (trimmedName === Repository.name) {
-          showMessage('info', t('resources:repositories.nameUnchanged'));
-          throw new Error(t('resources:repositories.nameUnchanged'));
-        }
-
-        const existingRepo = teamRepositories.find((r) => r.repositoryName === trimmedName);
-        if (existingRepo) {
-          showMessage(
-            'error',
-            t('resources:repositories.nameAlreadyExists', { name: trimmedName })
-          );
-          throw new Error(t('resources:repositories.nameAlreadyExists', { name: trimmedName }));
-        }
-
-        try {
-          await updateRepoNameMutation.mutateAsync({
-            teamName: machine.teamName,
-            currentRepositoryName: Repository.name,
-            newRepositoryName: trimmedName,
-          });
-          showMessage(
-            'success',
-            t('resources:repositories.renameSuccess', {
-              oldName: Repository.name,
-              newName: trimmedName,
-            })
-          );
-
-          if (onActionComplete) {
-            onActionComplete();
-          }
-        } catch (error: unknown) {
-          const errorMessage = getAxiosErrorMessage(
-            error,
-            t('resources:repositories.renameFailed')
-          );
-          showMessage('error', errorMessage);
-          throw error;
-        }
-      },
-    });
-  };
-
-  const handleRenameTag = async (Repository: Repository) => {
-    let newTag = Repository.repositoryTag || 'latest';
-
-    modal.confirm({
-      title: t('resources:repositories.renameTagTitle'),
-      content: (
-        <Flex vertical>
-          <Typography.Paragraph>
-            {t('resources:repositories.renameTagMessage', {
-              name: Repository.name,
-              tag: Repository.repositoryTag,
-            })}
-          </Typography.Paragraph>
-          <Input
-            defaultValue={Repository.repositoryTag}
-            placeholder={t('resources:repositories.newTagName')}
-            onChange={(e) => {
-              newTag = e.target.value;
-            }}
-            onPressEnter={(e) => {
-              e.preventDefault();
-            }}
-            autoFocus
-          />
-        </Flex>
-      ),
-      okText: t('common:save'),
-      cancelText: t('common:cancel'),
-      onOk: async () => {
-        const trimmedTag = newTag.trim();
-
-        if (!trimmedTag) {
-          showMessage('error', t('resources:repositories.emptyTagError'));
-          throw new Error(t('resources:repositories.emptyTagError'));
-        }
-
-        if (trimmedTag === Repository.repositoryTag) {
-          showMessage('info', t('resources:repositories.tagUnchanged'));
-          throw new Error(t('resources:repositories.tagUnchanged'));
-        }
-
-        const existingTag = teamRepositories.find(
-          (r) => r.repositoryName === Repository.name && r.repositoryTag === trimmedTag
-        );
-        if (existingTag) {
-          showMessage('error', t('resources:repositories.tagAlreadyExists', { tag: trimmedTag }));
-          throw new Error(t('resources:repositories.tagAlreadyExists', { tag: trimmedTag }));
-        }
-
-        try {
-          await updateRepoTagMutation.mutateAsync({
-            teamName: machine.teamName,
-            repositoryName: Repository.name,
-            currentTag: Repository.repositoryTag || 'latest',
-            newTag: trimmedTag,
-          });
-          showMessage(
-            'success',
-            t('resources:repositories.renameTagSuccess', {
-              name: Repository.name,
-              oldTag: Repository.repositoryTag,
-              newTag: trimmedTag,
-            })
-          );
-
-          if (onActionComplete) {
-            onActionComplete();
-          }
-        } catch (error: unknown) {
-          const errorMessage = getAxiosErrorMessage(
-            error,
-            t('resources:repositories.renameTagFailed')
-          );
-          showMessage('error', errorMessage);
-          throw error;
-        }
-      },
-    });
-  };
-
   const handleFunctionSubmit = async (functionData: FunctionData) => {
     if (!selectedRepository) return;
 
     try {
       const context: FunctionExecutionContext = {
         selectedRepository,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        teamRepositories: teamRepositories as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        machine: machine as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        teamMachines: teamMachines as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        teamStorages: teamStorages as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        executeAction: executeAction as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        createRepositoryCredential: createRepositoryCredential as any,
+        teamRepositories: teamRepositories as FunctionExecutionContext['teamRepositories'],
+        machine: machine as FunctionExecutionContext['machine'],
+        teamMachines: teamMachines as FunctionExecutionContext['teamMachines'],
+        teamStorages: teamStorages as FunctionExecutionContext['teamStorages'],
+        executeAction: executeAction as FunctionExecutionContext['executeAction'],
+        createRepositoryCredential: createRepositoryCredential as FunctionExecutionContext['createRepositoryCredential'],
         onQueueItemCreated,
         closeModal: closeModalAndReset,
         t,
@@ -577,89 +335,24 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   ];
 
   const mobileRender = useCallback(
-    (record: RepositoryTableRow) => {
-      const repositoryData = teamRepositories.find(
-        (r) => r.repositoryName === record.name && r.repositoryTag === record.repositoryTag
-      );
-      const isRepoFork = repositoryData ? coreIsFork(repositoryData) : false;
-
-      const menuItems: MenuProps['items'] = [
-        {
-          key: 'viewContainers',
-          label: t('resources:containers.containers'),
-          icon: <ContainerOutlined />,
-          onClick: () =>
-            navigate(`/machines/${machine.machineName}/repositories/${record.name}/containers`, {
-              state: { machine, Repository: record },
-            }),
-        },
-        {
-          key: 'viewDetails',
-          label: t('resources:audit.details'),
-          icon: <EyeOutlined />,
-          onClick: () => onRepositoryClick?.(record),
-        },
-        { type: 'divider' as const },
-        {
-          key: 'up',
-          label: t('functions:functions.up.name'),
-          icon: <PlayCircleOutlined />,
-          onClick: () => executeQuickAction(record, 'up', 4, 'mount'),
-        },
-        ...(record.mounted
-          ? [
-              {
-                key: 'down',
-                label: t('functions:functions.down.name'),
-                icon: <PauseCircleOutlined />,
-                onClick: () => executeQuickAction(record, 'down', 4),
-              },
-            ]
-          : []),
-        {
-          key: 'function',
-          label: t('machines:runFunction'),
-          icon: <FunctionOutlined />,
-          onClick: () => handleRunFunction(record),
-        },
-        { type: 'divider' as const },
-        {
-          key: 'delete',
-          label: t('common:actions.delete'),
-          icon: <DeleteOutlined />,
-          danger: true,
-          onClick: () =>
-            isRepoFork ? confirmForkDeletion(record) : confirmRepositoryDeletion(record),
-        },
-      ];
-
-      const actions = <ResourceActionsDropdown menuItems={menuItems} />;
-
-      return (
-        <MobileCard className={isRepoFork ? 'ml-4' : undefined} actions={actions}>
-          <Space>
-            <InboxOutlined />
-            <Typography.Text strong className="truncate">
-              {record.name}
-            </Typography.Text>
-            {record.repositoryTag && <Tag>{record.repositoryTag}</Tag>}
-          </Space>
-          <Flex gap={8} wrap>
-            {record.mounted ? (
-              <Tag icon={<CheckCircleOutlined />} color="success">
-                {t('resources:repositories.mounted')}
-              </Tag>
-            ) : (
-              <Tag icon={<DisconnectOutlined />}>{t('resources:repositories.unmounted')}</Tag>
-            )}
-            {record.mounted && record.docker_running && (
-              <Tag color="processing">{t('resources:repositories.dockerRunning')}</Tag>
-            )}
-            {isRepoFork && <Tag color="purple">{t('resources:repositories.fork')}</Tag>}
-          </Flex>
-        </MobileCard>
-      );
-    },
+    (record: RepositoryTableRow) => (
+      <RepositoryMobileCard
+        record={record}
+        teamRepositories={teamRepositories}
+        machineName={machine.machineName}
+        onNavigateToContainers={(repo) =>
+          navigate(`/machines/${machine.machineName}/repositories/${repo.name}/containers`, {
+            state: { machine, Repository: repo },
+          })
+        }
+        onRepositoryClick={onRepositoryClick}
+        onQuickAction={executeQuickAction}
+        onRunFunction={handleRunFunction}
+        onConfirmForkDeletion={confirmForkDeletion}
+        onConfirmRepositoryDeletion={confirmRepositoryDeletion}
+        t={t}
+      />
+    ),
     [
       t,
       machine,
@@ -718,10 +411,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           justify="center"
           className="absolute"
           // eslint-disable-next-line no-restricted-syntax
-          style={{
-            inset: 0,
-            zIndex: 1000,
-          }}
+          style={{ inset: 0, zIndex: 1000 }}
         >
           <LoadingWrapper loading centered minHeight={120} tip={t('common:general.refreshing')}>
             <Flex />
@@ -733,10 +423,8 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         <Flex data-testid="machine-repo-list-machine-header">
           <Space direction="vertical" size="small">
             <Space>
-              <Typography.Text
-                // eslint-disable-next-line no-restricted-syntax
-                style={{ fontSize: 16 }}
-              >
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <Typography.Text style={{ fontSize: 16 }}>
                 <DesktopOutlined />
               </Typography.Text>
               <Typography.Title level={4} data-testid="machine-repo-list-machine-name">
@@ -757,28 +445,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         </Flex>
       )}
 
-      {(() => {
-        const team = teams?.find((t) => t.teamName === machine.teamName);
-        if (!team?.vaultContent) return null;
-
-        let missingSSHKeys = false;
-        try {
-          const teamVault = JSON.parse(team.vaultContent);
-          missingSSHKeys = !teamVault.SSH_PRIVATE_KEY || !teamVault.SSH_PUBLIC_KEY;
-        } catch {
-          return null;
-        }
-
-        return missingSSHKeys ? (
-          <Alert
-            type="warning"
-            showIcon
-            closable
-            message={t('common:vaultEditor.missingSshKeysWarning')}
-            description={t('common:vaultEditor.missingSshKeysDescription')}
-          />
-        ) : null;
-      })()}
+      <SSHKeyWarning teamName={machine.teamName} teams={teams} t={t} />
 
       <Flex className="w-full">
         <ResourceListView<RepositoryTableRow>
@@ -809,129 +476,20 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         </Flex>
       )}
 
-      <FunctionSelectionModal
-        open={functionModal.isOpen}
+      <FunctionModalWrapper
+        isOpen={functionModal.isOpen}
         onCancel={() => {
           functionModal.close();
           setSelectedRepo(null);
           setSelectedFunction(null);
         }}
         onSubmit={handleFunctionSubmit}
-        title={t('machines:runFunction')}
-        data-testid="machine-repo-list-function-modal"
-        subtitle={
-          selectedRepository && (
-            <Flex vertical gap={8} className="w-full">
-              <Space>
-                <Typography.Text>{t('resources:repositories.Repository')}:</Typography.Text>
-                <Tag>{selectedRepository.name}</Tag>
-                <Typography.Text>•</Typography.Text>
-                <Typography.Text>{t('machines:machine')}:</Typography.Text>
-                <Tag>{machine.machineName}</Tag>
-              </Space>
-              {selectedFunction === 'push' &&
-                (() => {
-                  const currentRepoData = teamRepositories.find(
-                    (r) =>
-                      r.repositoryName === selectedRepository.name &&
-                      r.repositoryTag === selectedRepository.repositoryTag
-                  );
-                  if (currentRepoData?.parentGuid) {
-                    const parentRepo = teamRepositories.find(
-                      (r) => r.repositoryGuid === currentRepoData.parentGuid
-                    );
-                    if (parentRepo) {
-                      return (
-                        <Space>
-                          <Typography.Text
-                            // eslint-disable-next-line no-restricted-syntax
-                            style={{ fontSize: 12 }}
-                          >
-                            {t('resources:repositories.parentRepo')}:
-                          </Typography.Text>
-                          <Tag>{parentRepo.repositoryName}</Tag>
-                          <Typography.Text
-                            // eslint-disable-next-line no-restricted-syntax
-                            style={{ fontSize: 12 }}
-                          >
-                            →
-                          </Typography.Text>
-                          <Typography.Text
-                            // eslint-disable-next-line no-restricted-syntax
-                            style={{ fontSize: 12 }}
-                          >
-                            {t('common:current')}:
-                          </Typography.Text>
-                          <Tag>{selectedRepository.name}</Tag>
-                        </Space>
-                      );
-                    }
-                  }
-                  return null;
-                })()}
-            </Flex>
-          )
-        }
-        allowedCategories={['Repository', 'backup', 'network']}
-        loading={isExecuting}
-        showMachineSelection={false}
-        teamName={machine.teamName}
-        hiddenParams={['repository', 'grand', 'state']}
-        defaultParams={{
-          repository: (() => {
-            const repository = teamRepositories.find(
-              (r) =>
-                r.repositoryName === selectedRepository?.name &&
-                r.repositoryTag === selectedRepository?.repositoryTag
-            );
-            return repository?.repositoryGuid || '';
-          })(),
-          grand:
-            teamRepositories.find(
-              (r) =>
-                r.repositoryName === selectedRepository?.name &&
-                r.repositoryTag === selectedRepository?.repositoryTag
-            )?.grandGuid || '',
-          ...((selectedFunction === 'backup' ||
-            selectedFunction === 'push' ||
-            selectedFunction === 'deploy' ||
-            selectedFunction === 'fork') &&
-          selectedRepository
-            ? {
-                state: selectedRepository.mounted ? 'online' : 'offline',
-              }
-            : {}),
-        }}
-        initialParams={{
-          ...((selectedFunction === 'fork' || selectedFunction === 'deploy') && selectedRepository
-            ? {
-                tag: new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-'),
-              }
-            : {}),
-        }}
-        preselectedFunction={selectedFunction || undefined}
-        currentMachineName={machine.machineName}
-        additionalContext={
-          selectedFunction === 'push' && selectedRepository
-            ? {
-                sourceRepo: selectedRepository.name,
-                parentRepo: (() => {
-                  const currentRepoData = teamRepositories.find(
-                    (r) =>
-                      r.repositoryName === selectedRepository.name &&
-                      r.repositoryTag === selectedRepository.repositoryTag
-                  );
-                  if (currentRepoData?.parentGuid) {
-                    const parentRepo = teamRepositories.find(
-                      (r) => r.repositoryGuid === currentRepoData.parentGuid
-                    );
-                    return parentRepo?.repositoryName || null;
-                  }
-                  return null;
-                })(),
-              }
-            : undefined
-        }
+        selectedRepository={selectedRepository}
+        selectedFunction={selectedFunction}
+        machine={machine}
+        teamRepositories={teamRepositories}
+        isExecuting={isExecuting}
+        t={t}
       />
 
       {contextHolder}

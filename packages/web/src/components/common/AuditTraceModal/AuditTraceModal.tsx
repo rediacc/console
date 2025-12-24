@@ -207,7 +207,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       onCancel={onCancel}
       width={1024}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
       data-testid="audit-trace-modal"
       centered
     >

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Flex, Form, Input, Modal, Tooltip, Typography } from 'antd';
+import { Alert, Button, Flex, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -16,83 +16,16 @@ import type { LoginFormValues } from '@/features/auth/types';
 import { apiConnectionService } from '@/services/api';
 import { masterPasswordService } from '@/services/auth';
 import { loginSuccess } from '@/store/auth/authSlice';
-import { ModalSize } from '@/types/modal';
 import { hashPassword, saveAuthData } from '@/utils/auth';
-import {
-  generateRandomCompanyName,
-  generateRandomEmail,
-  generateRandomPassword,
-} from '@/utils/generators';
+import { generateRandomCompanyName, generateRandomEmail, generateRandomPassword } from '@/utils/generators';
 import { showMessage } from '@/utils/messages';
-import {
-  InfoCircleOutlined,
-  KeyOutlined,
-  LockOutlined,
-  SafetyCertificateOutlined,
-  UserOutlined,
-} from '@/utils/optimizedIcons';
 import { isSecureContext } from '@/utils/secureContext';
-import {
-  analyzeVaultProtocolState,
-  getVaultProtocolMessage,
-  isEncrypted,
-  VaultProtocolState,
-  validateMasterPassword,
-} from '@/utils/vaultProtocol';
+import { analyzeVaultProtocolState, isEncrypted, VaultProtocolState, validateMasterPassword } from '@/utils/vaultProtocol';
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import type { ApiResponse, AuthLoginResult } from '@rediacc/shared/types';
-import type { FormInstance } from 'antd/es/form';
-
-const FIELD_FOCUS_DELAY_MS = 100;
-
-interface ProtocolHandlerResult {
-  shouldReturn: boolean;
-}
-
-const handleProtocolState = (
-  protocolState: VaultProtocolState,
-  t: (key: string) => string,
-  form: FormInstance<LoginFormValues>,
-  setError: (error: string) => void,
-  setVaultProtocolState: (state: VaultProtocolState) => void
-): ProtocolHandlerResult => {
-  const protocolMessage = getVaultProtocolMessage(protocolState);
-  const messageKey = protocolMessage.messageKey.replace('auth:', '');
-  const translatedMessage = t(messageKey) || protocolMessage.message;
-
-  switch (protocolState) {
-    case VaultProtocolState.PASSWORD_REQUIRED:
-      setError(translatedMessage);
-      setVaultProtocolState(protocolState);
-      setTimeout(() => {
-        form.getFieldInstance('masterPassword')?.focus();
-      }, FIELD_FOCUS_DELAY_MS);
-      return { shouldReturn: true };
-
-    case VaultProtocolState.INVALID_PASSWORD:
-      setError(translatedMessage);
-      setVaultProtocolState(protocolState);
-      form.setFieldValue('masterPassword', '');
-      setTimeout(() => {
-        form.getFieldInstance('masterPassword')?.focus();
-      }, FIELD_FOCUS_DELAY_MS);
-      return { shouldReturn: true };
-
-    case VaultProtocolState.PASSWORD_NOT_NEEDED:
-      if (translatedMessage && translatedMessage !== messageKey) {
-        showMessage('warning', translatedMessage);
-      } else {
-        showMessage('warning', protocolMessage.message);
-      }
-      return { shouldReturn: false };
-
-    case VaultProtocolState.VALID:
-      return { shouldReturn: false };
-
-    default:
-      return { shouldReturn: false };
-  }
-};
+import { LoginForm } from './components/LoginForm';
+import { TFAModal } from './components/TFAModal';
+import { handleProtocolState } from './hooks/useProtocolStateHandler';
 
 const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -107,18 +40,16 @@ const LoginPage: React.FC = () => {
   const [twoFACode, setTwoFACode] = useState('');
   const [showRegistration, setShowRegistration] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
-  const [quickRegistrationData, setQuickRegistrationData] = useState<
-    | {
-        email: string;
-        password: string;
-        companyName: string;
-        activationCode: string;
-      }
-    | undefined
-  >(undefined);
+  const [quickRegistrationData, setQuickRegistrationData] = useState<{
+    email: string;
+    password: string;
+    companyName: string;
+    activationCode: string;
+  } | undefined>(undefined);
   const [isQuickRegistration, setIsQuickRegistration] = useState(false);
   const [isConnectionSecure, setIsConnectionSecure] = useState(true);
   const [insecureWarningDismissed, setInsecureWarningDismissed] = useState(false);
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const dispatch = useDispatch();
@@ -133,24 +64,19 @@ const LoginPage: React.FC = () => {
       const registerParam = searchParams.get('register');
 
       if (registerParam === 'quick') {
-        // Check if we're in CI/TEST mode
         try {
           const ciMode = await apiConnectionService.isCiMode();
-
           if (ciMode) {
-            // Generate random registration data for quick registration
             const randomData = {
               email: generateRandomEmail(),
               password: generateRandomPassword(),
               companyName: generateRandomCompanyName(),
-              activationCode: '111111', // Fixed code for CI/TEST mode
+              activationCode: '111111',
             };
-
             setQuickRegistrationData(randomData);
             setIsQuickRegistration(true);
             setShowRegistration(true);
           } else {
-            // Not in CI mode, fall back to normal registration
             console.warn('Quick registration is only available in CI/TEST mode');
             showMessage('warning', 'Quick registration is only available in CI/TEST mode');
             setShowRegistration(true);
@@ -160,11 +86,9 @@ const LoginPage: React.FC = () => {
           setShowRegistration(true);
         }
       } else if (registerParam === 'manual') {
-        // Manual registration mode
         setShowRegistration(true);
       }
 
-      // Clean up the URL to remove the parameter
       if (registerParam) {
         searchParams.delete('register');
         const newUrl = searchParams.toString()
@@ -173,7 +97,6 @@ const LoginPage: React.FC = () => {
         window.history.replaceState({}, '', newUrl);
       }
     };
-
     checkRegistrationMode();
   }, [searchParams]);
 
@@ -182,37 +105,20 @@ const LoginPage: React.FC = () => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'E') {
         e.preventDefault();
-
-        // Check if running on localhost
-        const onLocalhost =
-          window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-        // Toggle global power mode (or localhost mode if on localhost)
+        const onLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const newState = featureFlags.togglePowerMode();
-
-        // Update visibility for endpoint selector
         setShowAdvancedOptions(newState);
-
-        // Show toast with current state - different message for localhost vs non-localhost
         const message = onLocalhost
-          ? newState
-            ? 'Localhost Mode - All features enabled'
-            : 'Localhost Mode - All features disabled'
-          : newState
-            ? 'Advanced options enabled'
-            : 'Advanced options disabled';
-
+          ? newState ? 'Localhost Mode - All features enabled' : 'Localhost Mode - All features disabled'
+          : newState ? 'Advanced options enabled' : 'Advanced options disabled';
         showMessage('info', message);
-
-        // Console log for debugging
       }
     };
-
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  // Check if connection is secure (required for Web Crypto API)
+  // Check if connection is secure
   useEffect(() => {
     const secure = isSecureContext();
     setIsConnectionSecure(secure);
@@ -226,7 +132,6 @@ const LoginPage: React.FC = () => {
     setError(null);
     setVaultProtocolState(null);
 
-    // Track login attempt
     trackUserAction('login_attempt', 'login_form', {
       email_domain: values.email.split('@')[1] || 'unknown',
       has_master_password: !!values.masterPassword,
@@ -234,95 +139,56 @@ const LoginPage: React.FC = () => {
     });
 
     try {
-      // Hash password
       const passwordHash = await hashPassword(values.password);
-
-      // Attempt login
       const loginResponse = await apiClient.login(values.email, passwordHash);
 
       if (loginResponse.failure !== 0) {
         throw new Error(loginResponse.errors?.join('; ') || 'Login failed');
       }
 
-      // Extract user data from response
       const authResult = parseAuthenticationResult(loginResponse as ApiResponse);
-
-      // Check if TFA is required
       const isAuthorized = authResult.isAuthorized;
       const authenticationStatus = authResult.authenticationStatus;
 
-      // If TFA is required but not authorized, show TFA modal
       if (authenticationStatus === 'TFA_REQUIRED' && !isAuthorized) {
-        // Store the login data for after TFA verification
-        // Note: Token is already saved by response interceptor
-        setPendingTFAData({
-          email: values.email,
-          authResult,
-          masterPassword: values.masterPassword,
-        });
+        setPendingTFAData({ email: values.email, authResult, masterPassword: values.masterPassword });
         setShowTFAModal(true);
         setLoading(false);
         return;
       }
 
-      // Extract VaultCompany and company name from response
       const vaultCompany = authResult.vaultCompany;
       const companyName = authResult.companyName ?? authResult.company ?? null;
-
-      // Analyze vault protocol state
       const companyHasEncryption = isEncrypted(vaultCompany);
       const userProvidedPassword = !!values.masterPassword;
 
-      // Validate master password if company has encryption and user provided password
       let passwordValid: boolean | undefined = undefined;
       if (companyHasEncryption && userProvidedPassword && vaultCompany) {
         passwordValid = await validateMasterPassword(vaultCompany, values.masterPassword!);
       }
 
-      // Determine protocol state
-      const protocolState = analyzeVaultProtocolState(
-        vaultCompany,
-        userProvidedPassword,
-        passwordValid
-      );
+      const protocolState = analyzeVaultProtocolState(vaultCompany, userProvidedPassword, passwordValid);
+      const protocolResult = handleProtocolState(protocolState, t, form, setError, setVaultProtocolState);
+      if (protocolResult.shouldReturn) return;
 
-      // Handle different protocol states
-      const protocolResult = handleProtocolState(
-        protocolState,
-        t,
-        form,
-        setError,
-        setVaultProtocolState
-      );
-      if (protocolResult.shouldReturn) {
-        return;
-      }
-
-      // Save auth data (email and company only - token is managed by interceptor)
       await saveAuthData(values.email, companyName ?? undefined);
 
-      // Store master password in secure memory if encryption is enabled
       if (companyHasEncryption && values.masterPassword) {
         await masterPasswordService.setMasterPassword(values.masterPassword);
       }
 
-      // Apply user's preferred language if available
       const preferredLanguage = authResult.preferredLanguage ?? undefined;
       if (preferredLanguage && preferredLanguage !== i18n.language) {
         await i18n.changeLanguage(preferredLanguage);
       }
 
-      // Update Redux store with all relevant data (token and masterPassword are now stored separately for security)
-      dispatch(
-        loginSuccess({
-          user: { email: values.email, company: companyName ?? undefined, preferredLanguage },
-          company: companyName ?? undefined,
-          vaultCompany: vaultCompany ?? undefined,
-          companyEncryptionEnabled: companyHasEncryption,
-        })
-      );
+      dispatch(loginSuccess({
+        user: { email: values.email, company: companyName ?? undefined, preferredLanguage },
+        company: companyName ?? undefined,
+        vaultCompany: vaultCompany ?? undefined,
+        companyEncryptionEnabled: companyHasEncryption,
+      }));
 
-      // Track successful login
       trackUserAction('login_success', 'login_form', {
         email_domain: values.email.split('@')[1] || 'unknown',
         company: companyName || 'unknown',
@@ -332,15 +198,12 @@ const LoginPage: React.FC = () => {
 
       navigate('/machines');
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : t('login.errors.invalidCredentials');
-      // Track login failure
+      const errorMessage = error instanceof Error ? error.message : t('login.errors.invalidCredentials');
       trackUserAction('login_failure', 'login_form', {
         email_domain: values.email.split('@')[1] || 'unknown',
         error_message: errorMessage || 'unknown_error',
         has_master_password: !!values.masterPassword,
       });
-
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -349,14 +212,9 @@ const LoginPage: React.FC = () => {
 
   const handleTFAVerification = async () => {
     try {
-      // Token is already set by login response interceptor
-      // No manual token management needed - interceptor handles rotation
-
-      // Verify the TFA code
       const result = await verifyTFAMutation.mutateAsync({ code: twoFACode });
 
       if (result.isAuthorized) {
-        // Check if this is because TFA is not enabled
         if (result.hasTFAEnabled === false) {
           showMessage('info', 'Two-factor authentication is not enabled for this account.');
           setShowTFAModal(false);
@@ -364,52 +222,48 @@ const LoginPage: React.FC = () => {
           return;
         }
 
-        // Continue with the login process using stored data
         if (!pendingTFAData) {
           setLoading(false);
           setShowTFAModal(false);
           setTwoFACode('');
           return;
         }
-        const { email, authResult: storedAuthResult, masterPassword } = pendingTFAData;
 
-        // Extract VaultCompany and company name from stored userData
+        const { email, authResult: storedAuthResult, masterPassword } = pendingTFAData;
         const vaultCompany = storedAuthResult.vaultCompany;
         const companyName = storedAuthResult.companyName || storedAuthResult.company || null;
 
-        // Save auth data (email and company only - token is managed by interceptor)
         await saveAuthData(email, companyName ?? undefined);
 
-        // Store master password if encryption is enabled
         const companyHasEncryption = isEncrypted(vaultCompany);
         if (companyHasEncryption && masterPassword) {
           await masterPasswordService.setMasterPassword(masterPassword);
         }
 
-        // Apply user's preferred language if available
         const preferredLanguage = storedAuthResult.preferredLanguage ?? undefined;
         if (preferredLanguage && preferredLanguage !== i18n.language) {
           await i18n.changeLanguage(preferredLanguage);
         }
 
-        // Update Redux store
-        dispatch(
-          loginSuccess({
-            user: { email, company: companyName ?? undefined, preferredLanguage },
-            company: companyName ?? undefined,
-            vaultCompany: vaultCompany ?? undefined,
-            companyEncryptionEnabled: companyHasEncryption,
-          })
-        );
+        dispatch(loginSuccess({
+          user: { email, company: companyName ?? undefined, preferredLanguage },
+          company: companyName ?? undefined,
+          vaultCompany: vaultCompany ?? undefined,
+          companyEncryptionEnabled: companyHasEncryption,
+        }));
 
-        // Close modal and navigate
         setShowTFAModal(false);
         navigate('/machines');
       }
     } catch {
       // Error is handled by the mutation
-      // No need to clear token - it's managed by interceptor
     }
+  };
+
+  const handleTFACancel = () => {
+    setShowTFAModal(false);
+    setTwoFACode('');
+    setPendingTFAData(null);
   };
 
   return (
@@ -433,117 +287,16 @@ const LoginPage: React.FC = () => {
             <InsecureConnectionWarning onClose={() => setInsecureWarningDismissed(true)} />
           )}
 
-          <Form
+          <LoginForm
             form={form}
-            name="login"
-            onFinish={handleLogin}
-            layout="vertical"
-            requiredMark={false}
-          >
-            <Form.Item
-              name="email"
-              label={
-                <label htmlFor="login-email-input" className="block">
-                  {t('auth:login.email')}
-                </label>
-              }
-              rules={[
-                { required: true, message: t('common:messages.required') },
-                { type: 'email', message: t('common:messages.invalidEmail') },
-              ]}
-              validateStatus={error ? 'error' : undefined}
-            >
-              <Input
-                id="login-email-input"
-                prefix={<UserOutlined />}
-                placeholder={t('auth:login.emailPlaceholder')}
-                autoComplete="email"
-                data-testid="login-email-input"
-                aria-label={t('auth:login.email')}
-                aria-describedby="email-error"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="password"
-              label={
-                <label htmlFor="login-password-input" className="block">
-                  {t('auth:login.password')}
-                </label>
-              }
-              rules={[{ required: true, message: t('common:messages.required') }]}
-              validateStatus={error ? 'error' : undefined}
-            >
-              <Input.Password
-                id="login-password-input"
-                prefix={<LockOutlined />}
-                placeholder={t('auth:login.passwordPlaceholder')}
-                autoComplete="current-password"
-                data-testid="login-password-input"
-                aria-label={t('auth:login.password')}
-                aria-describedby="password-error"
-              />
-            </Form.Item>
-
-            {/* Progressive disclosure: Show master password field only when needed */}
-            {(vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
-              vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
-              (showAdvancedOptions && featureFlags.isEnabled('loginAdvancedOptions'))) && (
-              <Flex vertical>
-                <Form.Item
-                  name="masterPassword"
-                  label={
-                    <label htmlFor="login-master-password-input">
-                      <Flex align="center" gap={8} className="flex">
-                        <Typography.Text>{t('auth:login.masterPassword')}</Typography.Text>
-                        <Tooltip title={t('auth:login.masterPasswordTooltip')}>
-                          <InfoCircleOutlined />
-                        </Tooltip>
-                      </Flex>
-                    </label>
-                  }
-                  validateStatus={
-                    vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
-                    vaultProtocolState === VaultProtocolState.INVALID_PASSWORD
-                      ? 'error'
-                      : undefined
-                  }
-                  required={vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED}
-                >
-                  <Input.Password
-                    id="login-master-password-input"
-                    prefix={<KeyOutlined />}
-                    placeholder={t('auth:login.masterPasswordPlaceholder')}
-                    autoComplete="off"
-                    data-testid="login-master-password-input"
-                    aria-label={t('auth:login.masterPassword')}
-                    aria-describedby="master-password-error"
-                  />
-                </Form.Item>
-              </Flex>
-            )}
-
-            <Form.Item>
-              <Tooltip
-                title={
-                  !isConnectionSecure
-                    ? t('auth:login.insecureConnection.buttonDisabled')
-                    : undefined
-                }
-              >
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  block
-                  loading={loading}
-                  disabled={!isConnectionSecure}
-                  data-testid="login-submit-button"
-                >
-                  {loading ? t('auth:login.signingIn') : t('auth:login.signIn')}
-                </Button>
-              </Tooltip>
-            </Form.Item>
-          </Form>
+            onSubmit={handleLogin}
+            loading={loading}
+            error={error}
+            isConnectionSecure={isConnectionSecure}
+            vaultProtocolState={vaultProtocolState}
+            showAdvancedOptions={showAdvancedOptions}
+            t={t}
+          />
 
           <Flex justify="center">
             <Typography.Text>
@@ -561,7 +314,6 @@ const LoginPage: React.FC = () => {
             </Typography.Text>
           </Flex>
 
-          {/* Advanced options section */}
           <Flex vertical align="center" gap={8}>
             {!showAdvancedOptions &&
               vaultProtocolState !== VaultProtocolState.PASSWORD_REQUIRED &&
@@ -585,80 +337,17 @@ const LoginPage: React.FC = () => {
         </Flex>
       </Flex>
 
-      {/* TFA Verification Modal */}
-      <Modal
-        title={
-          <Flex align="center" gap={8}>
-            <SafetyCertificateOutlined />
-            <Typography.Text>{t('login.twoFactorAuth.title')}</Typography.Text>
-          </Flex>
-        }
+      <TFAModal
         open={showTFAModal}
-        onCancel={() => {
-          setShowTFAModal(false);
-          setTwoFACode('');
-          setPendingTFAData(null);
-        }}
-        footer={null}
-        className={ModalSize.Medium}
-        centered
-      >
-        <Flex vertical gap={16} className="w-full">
-          <Alert
-            message={t('login.twoFactorAuth.required')}
-            description={t('login.twoFactorAuth.description')}
-            type="info"
-            showIcon
-            data-testid="tfa-info-alert"
-          />
+        twoFACode={twoFACode}
+        setTwoFACode={setTwoFACode}
+        onVerify={handleTFAVerification}
+        onCancel={handleTFACancel}
+        isVerifying={verifyTFAMutation.isPending}
+        twoFAForm={twoFAForm}
+        t={t}
+      />
 
-          <Form form={twoFAForm} onFinish={() => handleTFAVerification()} layout="vertical">
-            <Form.Item
-              name="twoFACode"
-              label={t('login.twoFactorAuth.codeLabel')}
-              rules={[
-                { required: true, message: t('common:messages.required') },
-                { len: 6, message: t('login.twoFactorAuth.codeLength') },
-                { pattern: /^\d{6}$/, message: t('login.twoFactorAuth.codeFormat') },
-              ]}
-            >
-              <Input
-                placeholder={t('login.twoFactorAuth.codePlaceholder')}
-                value={twoFACode}
-                onChange={(e) => setTwoFACode(e.target.value)}
-                autoComplete="off"
-                maxLength={6}
-                data-testid="tfa-code-input"
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Flex justify="flex-end" className="w-full">
-                <Button
-                  onClick={() => {
-                    setShowTFAModal(false);
-                    setTwoFACode('');
-                    setPendingTFAData(null);
-                  }}
-                >
-                  {t('common:general.cancel')}
-                </Button>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={verifyTFAMutation.isPending}
-                  disabled={twoFACode.length !== 6}
-                  data-testid="tfa-verify-button"
-                >
-                  {t('login.twoFactorAuth.verify')}
-                </Button>
-              </Flex>
-            </Form.Item>
-          </Form>
-        </Flex>
-      </Modal>
-
-      {/* Registration Modal */}
       <RegistrationModal
         open={showRegistration}
         onCancel={() => {
@@ -669,15 +358,9 @@ const LoginPage: React.FC = () => {
         autoFillData={quickRegistrationData}
         autoSubmit={isQuickRegistration}
         onRegistrationComplete={async (credentials) => {
-          // Auto-login after quick registration
           if (isQuickRegistration) {
             setShowRegistration(false);
-
-            // Perform login with the registration credentials
-            await handleLogin({
-              email: credentials.email,
-              password: credentials.password,
-            });
+            await handleLogin({ email: credentials.email, password: credentials.password });
           }
         }}
       />

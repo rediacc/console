@@ -72,7 +72,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
           </Tag>
         );
       }}
-      dropdownRender={(menu: React.ReactElement) => (
+      popupRender={(menu: React.ReactElement) => (
         <>
           <Flex>
             <Input
