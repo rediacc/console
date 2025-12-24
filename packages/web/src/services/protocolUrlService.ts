@@ -3,6 +3,9 @@
  * Generates and handles rediacc:// URLs for desktop app integration
  */
 
+import { apiConnectionService } from '@/services/api';
+import { createFreshForkToken } from '@/services/auth';
+
 export type ProtocolAction = 'terminal' | 'desktop' | 'vscode';
 
 export interface ProtocolError {
@@ -229,10 +232,6 @@ class ProtocolUrlService {
    */
   async generateUrl(params: ProtocolUrlParams): Promise<string> {
     const { team, machine, repository, action, queryParams } = params;
-
-    // Import services dynamically to avoid circular dependencies
-    const { createFreshForkToken } = await import('./forkTokenService');
-    const { apiConnectionService } = await import('./apiConnectionService');
 
     // Get current API URL to include in protocol URL
     let apiUrl = await apiConnectionService.getApiUrl();

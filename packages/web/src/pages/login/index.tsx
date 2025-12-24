@@ -4,15 +4,17 @@ import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '@/api/client';
-import { useVerifyTFA } from '@/api/queries/twoFactor';
 import InsecureConnectionWarning from '@/components/common/InsecureConnectionWarning';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
 import { featureFlags } from '@/config/featureFlags';
-import EndpointSelector from '@/pages/login/components/EndpointSelector';
-import RegistrationModal from '@/pages/login/components/RegistrationModal';
-import { apiConnectionService } from '@/services/apiConnectionService';
-import { masterPasswordService } from '@/services/masterPasswordService';
+import EndpointSelector from '@/features/auth/components/EndpointSelector';
+import RegistrationModal from '@/features/auth/components/RegistrationModal';
+import { useLoginForm } from '@/features/auth/hooks/useLoginForm';
+import { useTFAVerification } from '@/features/auth/hooks/useTFAVerification';
+import type { LoginFormValues } from '@/features/auth/types';
+import { apiConnectionService } from '@/services/api';
+import { masterPasswordService } from '@/services/auth';
 import { loginSuccess } from '@/store/auth/authSlice';
 import { ModalSize } from '@/types/modal';
 import { hashPassword, saveAuthData } from '@/utils/auth';
@@ -20,7 +22,7 @@ import {
   generateRandomCompanyName,
   generateRandomEmail,
   generateRandomPassword,
-} from '@/utils/cryptoGenerators';
+} from '@/utils/generators';
 import { showMessage } from '@/utils/messages';
 import {
   InfoCircleOutlined,
@@ -41,13 +43,6 @@ import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import type { ApiResponse, AuthLoginResult } from '@rediacc/shared/types';
 import type { FormInstance } from 'antd/es/form';
 
-interface LoginForm {
-  email: string;
-  password: string;
-  masterPassword?: string;
-  rememberMe?: boolean;
-}
-
 const FIELD_FOCUS_DELAY_MS = 100;
 
 interface ProtocolHandlerResult {
@@ -57,7 +52,7 @@ interface ProtocolHandlerResult {
 const handleProtocolState = (
   protocolState: VaultProtocolState,
   t: (key: string) => string,
-  form: FormInstance<LoginForm>,
+  form: FormInstance<LoginFormValues>,
   setError: (error: string) => void,
   setVaultProtocolState: (state: VaultProtocolState) => void
 ): ProtocolHandlerResult => {
@@ -127,10 +122,9 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const dispatch = useDispatch();
-  const [form] = Form.useForm<LoginForm>();
-  const [twoFAForm] = Form.useForm();
+  const { form, twoFAForm } = useLoginForm();
   const { t, i18n } = useTranslation(['auth', 'common']);
-  const verifyTFAMutation = useVerifyTFA();
+  const verifyTFAMutation = useTFAVerification();
   const { trackUserAction } = useTelemetry();
 
   // Check URL parameters for registration flag
@@ -227,7 +221,7 @@ const LoginPage: React.FC = () => {
     }
   }, []);
 
-  const handleLogin = async (values: LoginForm) => {
+  const handleLogin = async (values: LoginFormValues) => {
     setLoading(true);
     setError(null);
     setVaultProtocolState(null);

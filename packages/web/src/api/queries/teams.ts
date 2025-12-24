@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { QUERY_KEY_STRINGS, QUERY_KEYS } from '@/api/queryKeys';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
-import { minifyJSON } from '@/utils/json';
+import { minifyJSON } from '@/platform/utils/json';
 import type {
   CreateTeamMembershipParams,
   CreateTeamParams,

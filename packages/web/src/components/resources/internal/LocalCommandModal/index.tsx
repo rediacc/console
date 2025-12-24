@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { SizedModal } from '@/components/common';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import { useMessage } from '@/hooks';
-import { createFreshForkToken } from '@/services/forkTokenService';
+import { createFreshForkToken } from '@/services/auth';
 import type { PluginContainer } from '@/types';
 import { ModalSize } from '@/types/modal';
 import {

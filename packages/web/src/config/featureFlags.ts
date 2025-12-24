@@ -115,7 +115,7 @@
  * ============================================================================
  */
 
-import { apiConnectionService } from '@/services/apiConnectionService';
+import { apiConnectionService } from '@/services/api';
 
 export interface FeatureFlag {
   enabled?: boolean; // If not specified, defaults to true. Only use false for truly disabled/deprecated features

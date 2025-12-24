@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
-import { minifyJSON } from '@/utils/json';
+import { minifyJSON } from '@/platform/utils/json';
 import type {
   CreateRegionParams,
   DeleteRegionParams,

@@ -30,4 +30,4 @@ export {
   MachineValidationService,
 } from '@rediacc/shared/services/machine';
 // BatchApiService - uses web-specific API, keep local implementation
-export { BatchApiService } from './batch-api.service';
+export { BatchApiService } from './batchApiService';
