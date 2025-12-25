@@ -6,6 +6,7 @@ import type { ApiResponse } from '@rediacc/shared/types';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { nodeStorageAdapter } from '../adapters/storage.js';
 import { EXIT_CODES } from '../types/index.js';
+import type { ErrorCode } from '../types/errors.js';
 
 const API_PREFIX = '/StoredProcedure';
 const STORAGE_KEYS = {
@@ -272,16 +273,28 @@ class CliApiClient implements SharedApiClient {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          throw new CliApiError('Authentication required', EXIT_CODES.AUTH_REQUIRED);
+          throw new CliApiError(
+            'Authentication required',
+            'AUTH_REQUIRED',
+            EXIT_CODES.AUTH_REQUIRED
+          );
         }
         if (error.response?.status === 403) {
-          throw new CliApiError('Permission denied', EXIT_CODES.PERMISSION_DENIED);
+          throw new CliApiError(
+            'Permission denied',
+            'PERMISSION_DENIED',
+            EXIT_CODES.PERMISSION_DENIED
+          );
         }
         if (error.response?.status === 404) {
-          throw new CliApiError('Resource not found', EXIT_CODES.NOT_FOUND);
+          throw new CliApiError('Resource not found', 'NOT_FOUND', EXIT_CODES.NOT_FOUND);
         }
         if (!error.response) {
-          throw new CliApiError(`Network error: ${error.message}`, EXIT_CODES.NETWORK_ERROR);
+          throw new CliApiError(
+            `Network error: ${error.message}`,
+            'NETWORK_ERROR',
+            EXIT_CODES.NETWORK_ERROR
+          );
         }
       }
       throw error;
@@ -327,15 +340,65 @@ class CliApiClient implements SharedApiClient {
   }
 
   private createApiError(response: ApiResponse): CliApiError {
-    const message = response.errors.join('; ') || response.message || 'API request failed';
-    return new CliApiError(message, EXIT_CODES.GENERAL_ERROR, response);
+    // Collect all error details from various sources
+    const details: string[] = [];
+
+    // From errors array (SQL RAISERROR messages)
+    if (response.errors.length > 0) {
+      details.push(...response.errors);
+    }
+
+    // Check resultSets for error messages
+    for (const rs of response.resultSets) {
+      for (const row of rs.data as Record<string, unknown>[]) {
+        const errorMsg = (row.errorMessage ?? row.ErrorMessage ?? row.error) as
+          | string
+          | undefined;
+        if (errorMsg && typeof errorMsg === 'string') {
+          if (!details.includes(errorMsg)) {
+            details.push(errorMsg);
+          }
+        }
+      }
+    }
+
+    // Determine error code and exit code from failure value
+    const { code, exitCode } = this.mapFailureToError(response.failure);
+
+    // Primary message
+    const message = details[0] || response.message || `Request failed (code: ${response.failure})`;
+
+    return new CliApiError(message, code, exitCode, details, response);
+  }
+
+  private mapFailureToError(failure: number): { code: ErrorCode; exitCode: number } {
+    // Map middleware return codes to error codes
+    switch (failure) {
+      case 400:
+        return { code: 'INVALID_REQUEST', exitCode: EXIT_CODES.INVALID_ARGUMENTS };
+      case 401:
+        return { code: 'AUTH_REQUIRED', exitCode: EXIT_CODES.AUTH_REQUIRED };
+      case 403:
+        return { code: 'PERMISSION_DENIED', exitCode: EXIT_CODES.PERMISSION_DENIED };
+      case 404:
+        return { code: 'NOT_FOUND', exitCode: EXIT_CODES.NOT_FOUND };
+      case 409:
+        return { code: 'INVALID_REQUEST', exitCode: EXIT_CODES.INVALID_ARGUMENTS };
+      default:
+        if (failure >= 500) {
+          return { code: 'SERVER_ERROR', exitCode: EXIT_CODES.API_ERROR };
+        }
+        return { code: 'GENERAL_ERROR', exitCode: EXIT_CODES.GENERAL_ERROR };
+    }
   }
 }
 
 export class CliApiError extends Error {
   constructor(
     message: string,
+    public readonly code: ErrorCode = 'GENERAL_ERROR',
     public readonly exitCode: number = EXIT_CODES.GENERAL_ERROR,
+    public readonly details: string[] = [],
     public readonly response?: ApiResponse
   ) {
     super(message);

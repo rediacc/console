@@ -13,7 +13,9 @@ import { registerShortcuts } from './commands/shortcuts.js';
 import { registerStorageCommands } from './commands/storage.js';
 import { registerTeamCommands } from './commands/team.js';
 import { registerUserCommands } from './commands/user.js';
+import { setOutputFormat } from './utils/errors.js';
 import { VERSION } from './version.js';
+import type { OutputFormat } from './types/index.js';
 
 export const cli = new Command();
 
@@ -21,7 +23,12 @@ cli
   .name('rdc')
   .description('Rediacc Console CLI - Command line interface for Rediacc operations')
   .version(VERSION)
-  .option('-o, --output <format>', 'Output format (table|json|yaml|csv)', 'table');
+  .option('-o, --output <format>', 'Output format (table|json|yaml|csv)', 'table')
+  .hook('preAction', (thisCommand) => {
+    // Set output format before any command runs so error handling knows the format
+    const opts = thisCommand.opts();
+    setOutputFormat(opts.output as OutputFormat);
+  });
 
 // Register all command groups
 registerAuthCommands(cli);

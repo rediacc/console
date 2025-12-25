@@ -11,7 +11,7 @@ import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 
@@ -29,8 +29,7 @@ export function registerRepositoryCommands(program: Command): void {
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          outputService.error('Team name required. Use --team or set context.');
-          process.exit(1);
+          throw new ValidationError('Team name required. Use --team or set context.');
         }
 
         const repositories = await withSpinner(
@@ -61,8 +60,7 @@ export function registerRepositoryCommands(program: Command): void {
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          outputService.error('Team name required. Use --team or set context.');
-          process.exit(1);
+          throw new ValidationError('Team name required. Use --team or set context.');
         }
 
         const createOptions: {
@@ -99,8 +97,7 @@ export function registerRepositoryCommands(program: Command): void {
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          outputService.error('Team name required. Use --team or set context.');
-          process.exit(1);
+          throw new ValidationError('Team name required. Use --team or set context.');
         }
 
         await withSpinner(
@@ -131,8 +128,7 @@ export function registerRepositoryCommands(program: Command): void {
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          outputService.error('Team name required. Use --team or set context.');
-          process.exit(1);
+          throw new ValidationError('Team name required. Use --team or set context.');
         }
 
         // Fetch all repositories to validate deletion
@@ -149,8 +145,7 @@ export function registerRepositoryCommands(program: Command): void {
         );
 
         if (!targetRepository) {
-          outputService.error(`Repository "${name}:${options.tag}" not found`);
-          process.exit(1);
+          throw new ValidationError(`Repository "${name}:${options.tag}" not found`);
         }
 
         // Use shared orchestration to validate deletion
@@ -158,18 +153,18 @@ export function registerRepositoryCommands(program: Command): void {
           const validation = canDeleteGrandRepo(targetRepository, allRepositories);
 
           if (!validation.canDelete) {
-            outputService.error(`Cannot delete grand repository: ${validation.reason}`);
+            let errorMessage = `Cannot delete grand repository: ${validation.reason}`;
 
             if (validation.childClones.length > 0) {
-              outputService.info('\nAffected child clones:');
-              validation.childClones.forEach((clone) => {
-                outputService.info(
-                  `  - ${clone.repositoryName}${clone.repositoryTag ? `:${clone.repositoryTag}` : ''}`
-                );
-              });
-              outputService.info('\nDelete or promote child clones first.');
+              const cloneNames = validation.childClones
+                .map(
+                  (clone) =>
+                    `${clone.repositoryName}${clone.repositoryTag ? `:${clone.repositoryTag}` : ''}`
+                )
+                .join(', ');
+              errorMessage += `. Affected child clones: ${cloneNames}. Delete or promote child clones first.`;
             }
-            process.exit(1);
+            throw new ValidationError(errorMessage);
           }
         }
 
@@ -220,8 +215,7 @@ export function registerRepositoryCommands(program: Command): void {
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          outputService.error('Team name required. Use --team or set context.');
-          process.exit(1);
+          throw new ValidationError('Team name required. Use --team or set context.');
         }
 
         // Fetch all repositories to validate promotion
@@ -238,16 +232,14 @@ export function registerRepositoryCommands(program: Command): void {
         );
 
         if (!targetRepository) {
-          outputService.error(`Repository "${name}:${options.tag}" not found`);
-          process.exit(1);
+          throw new ValidationError(`Repository "${name}:${options.tag}" not found`);
         }
 
         // Use shared orchestration to validate promotion
         const validation = canPromoteToGrand(targetRepository);
 
         if (!validation.canPromote) {
-          outputService.error(`Cannot promote: ${validation.reason}`);
-          process.exit(1);
+          throw new ValidationError(`Cannot promote: ${validation.reason}`);
         }
 
         // Find and display affected siblings
@@ -306,8 +298,7 @@ export function registerRepositoryCommands(program: Command): void {
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          outputService.error('Team name required. Use --team or set context.');
-          process.exit(1);
+          throw new ValidationError('Team name required. Use --team or set context.');
         }
 
         const vaultsResponse = await withSpinner(
@@ -354,8 +345,7 @@ export function registerRepositoryCommands(program: Command): void {
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          outputService.error('Team name required. Use --team or set context.');
-          process.exit(1);
+          throw new ValidationError('Team name required. Use --team or set context.');
         }
 
         // Get vault data from --vault flag or stdin
@@ -370,21 +360,18 @@ export function registerRepositoryCommands(program: Command): void {
         }
 
         if (!vaultData) {
-          outputService.error('Vault data required. Use --vault <json> or pipe JSON via stdin.');
-          process.exit(1);
+          throw new ValidationError('Vault data required. Use --vault <json> or pipe JSON via stdin.');
         }
 
         if (options.vaultVersion === undefined || options.vaultVersion === null) {
-          outputService.error('Vault version required. Use --vault-version <n>.');
-          process.exit(1);
+          throw new ValidationError('Vault version required. Use --vault-version <n>.');
         }
 
         // Validate JSON
         try {
           JSON.parse(vaultData);
         } catch {
-          outputService.error('Invalid JSON vault data.');
-          process.exit(1);
+          throw new ValidationError('Invalid JSON vault data.');
         }
 
         await withSpinner(

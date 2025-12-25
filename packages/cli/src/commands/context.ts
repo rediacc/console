@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import type { OutputFormat } from '../types/index.js';
 
 export function registerContextCommands(program: Command): void {
@@ -34,8 +34,7 @@ export function registerContextCommands(program: Command): void {
       try {
         const validKeys = ['team', 'region'];
         if (!validKeys.includes(key)) {
-          outputService.error(`Invalid context key. Valid keys: ${validKeys.join(', ')}`);
-          process.exit(1);
+          throw new ValidationError(`Invalid context key. Valid keys: ${validKeys.join(', ')}`);
         }
 
         await contextService.set(key as 'team' | 'region', value);
@@ -54,8 +53,7 @@ export function registerContextCommands(program: Command): void {
         if (key) {
           const validKeys = ['team', 'region'];
           if (!validKeys.includes(key)) {
-            outputService.error(`Invalid context key. Valid keys: ${validKeys.join(', ')}`);
-            process.exit(1);
+            throw new ValidationError(`Invalid context key. Valid keys: ${validKeys.join(', ')}`);
           }
           await contextService.remove(key as 'team' | 'region');
           outputService.success(`Context "${key}" cleared`);

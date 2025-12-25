@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { api, apiClient } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { askConfirm, askPassword, askText } from '../utils/prompt.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
@@ -52,8 +52,7 @@ export function registerAuthCommands(program: Command): void {
         }
 
         if (!result.success && !result.isTFAEnabled) {
-          outputService.error(result.message ?? 'Authentication failed');
-          process.exit(1);
+          throw new ValidationError(result.message ?? 'Authentication failed');
         }
 
         outputService.success('Login successful!');
@@ -115,8 +114,7 @@ export function registerAuthCommands(program: Command): void {
         );
 
         if (!result.success) {
-          outputService.error(result.message ?? 'Registration failed');
-          process.exit(1);
+          throw new ValidationError(result.message ?? 'Registration failed');
         }
 
         outputService.success('Registration successful! Check your email for the activation code.');
@@ -148,8 +146,7 @@ export function registerAuthCommands(program: Command): void {
         );
 
         if (!result.success) {
-          outputService.error(result.message ?? 'Activation failed');
-          process.exit(1);
+          throw new ValidationError(result.message ?? 'Activation failed');
         }
 
         outputService.success('Account activated! You can now login with: rdc login');

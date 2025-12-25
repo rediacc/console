@@ -39,15 +39,16 @@ export interface ApiCallOptions {
   headers?: Record<string, string>;
 }
 
-// Exit codes
+// Exit codes (Unix-compatible)
 export const EXIT_CODES = {
   SUCCESS: 0,
   GENERAL_ERROR: 1,
-  INVALID_ARGUMENTS: 2,
+  INVALID_ARGUMENTS: 2, // Unix convention for usage error
   AUTH_REQUIRED: 3,
   PERMISSION_DENIED: 4,
   NOT_FOUND: 5,
   NETWORK_ERROR: 6,
+  API_ERROR: 7, // Server returned error
 } as const;
 
 export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];

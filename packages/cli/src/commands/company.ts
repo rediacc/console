@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 export function registerCompanyCommands(program: Command): void {
@@ -133,21 +133,18 @@ export function registerCompanyCommands(program: Command): void {
         }
 
         if (!vaultData) {
-          outputService.error('Vault data required. Use --vault <json> or pipe JSON via stdin.');
-          process.exit(1);
+          throw new ValidationError('Vault data required. Use --vault <json> or pipe JSON via stdin.');
         }
 
         if (options.vaultVersion === undefined || options.vaultVersion === null) {
-          outputService.error('Vault version required. Use --vault-version <n>.');
-          process.exit(1);
+          throw new ValidationError('Vault version required. Use --vault-version <n>.');
         }
 
         // Validate JSON
         try {
           JSON.parse(vaultData);
         } catch {
-          outputService.error('Invalid JSON vault data.');
-          process.exit(1);
+          throw new ValidationError('Invalid JSON vault data.');
         }
 
         await withSpinner(
@@ -229,8 +226,7 @@ export function registerCompanyCommands(program: Command): void {
 
         const validActions = ['enable', 'disable'];
         if (!validActions.includes(action)) {
-          outputService.error(`Invalid action "${action}". Use "enable" or "disable".`);
-          process.exit(1);
+          throw new ValidationError(`Invalid action "${action}". Use "enable" or "disable".`);
         }
 
         const enable = action === 'enable';

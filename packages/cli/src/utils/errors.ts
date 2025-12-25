@@ -1,26 +1,99 @@
 import { CliApiError } from '../services/api.js';
 import { AuthError } from '../services/auth.js';
 import { outputService } from '../services/output.js';
-import { EXIT_CODES } from '../types/index.js';
+import { ValidationError, type CliError } from '../types/errors.js';
+import { EXIT_CODES, type OutputFormat } from '../types/index.js';
 
+// Global output format (set by main program before command execution)
+let currentOutputFormat: OutputFormat = 'table';
+
+/**
+ * Set the current output format for error handling.
+ * Should be called after parsing CLI options but before running commands.
+ */
+export function setOutputFormat(format: OutputFormat): void {
+  currentOutputFormat = format;
+}
+
+/**
+ * Get the current output format.
+ */
+export function getOutputFormat(): OutputFormat {
+  return currentOutputFormat;
+}
+
+/**
+ * Handle errors with format-aware output.
+ *
+ * - JSON mode: outputs structured error JSON to stdout (for piping)
+ * - Other modes: outputs error message to stderr
+ */
 export function handleError(error: unknown): never {
-  let message: string;
-  let exitCode: number;
+  const cliError = normalizeError(error);
 
-  if (error instanceof CliApiError) {
-    message = error.message;
-    exitCode = error.exitCode;
-  } else if (error instanceof AuthError) {
-    message = error.message;
-    exitCode = error.exitCode;
-  } else if (error instanceof Error) {
-    message = error.message;
-    exitCode = EXIT_CODES.GENERAL_ERROR;
+  if (currentOutputFormat === 'json') {
+    // JSON mode: output error as JSON to stdout for piping
+    const errorResponse = {
+      success: false,
+      error: {
+        code: cliError.code,
+        message: cliError.message,
+        ...(cliError.details?.length && { details: cliError.details }),
+      },
+      exitCode: cliError.exitCode,
+    };
+    // eslint-disable-next-line no-console -- JSON errors must go to stdout for piping
+    console.log(JSON.stringify(errorResponse, null, 2));
   } else {
-    message = String(error);
-    exitCode = EXIT_CODES.GENERAL_ERROR;
+    // Non-JSON mode: output to stderr
+    outputService.error(`Error: ${cliError.message}`);
+    if (cliError.details?.length) {
+      for (const detail of cliError.details) {
+        if (detail !== cliError.message) {
+          outputService.error(`  - ${detail}`);
+        }
+      }
+    }
   }
 
-  outputService.error(`Error: ${message}`);
-  process.exit(exitCode);
+  process.exit(cliError.exitCode);
 }
+
+/**
+ * Normalize various error types into a consistent CliError structure.
+ */
+function normalizeError(error: unknown): CliError {
+  if (error instanceof CliApiError) {
+    return {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      exitCode: error.exitCode,
+    };
+  }
+
+  if (error instanceof AuthError) {
+    return {
+      code: 'AUTH_REQUIRED',
+      message: error.message,
+      exitCode: error.exitCode,
+    };
+  }
+
+  if (error instanceof ValidationError) {
+    return {
+      code: 'VALIDATION_ERROR',
+      message: error.message,
+      exitCode: EXIT_CODES.INVALID_ARGUMENTS,
+    };
+  }
+
+  // Unknown error
+  return {
+    code: 'GENERAL_ERROR',
+    message: error instanceof Error ? error.message : String(error),
+    exitCode: EXIT_CODES.GENERAL_ERROR,
+  };
+}
+
+export { ValidationError };

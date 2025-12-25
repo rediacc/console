@@ -5,7 +5,7 @@ import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { queueService } from '../services/queue.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import {
   formatAge,
   formatBoolean,
@@ -92,8 +92,7 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
   const opts = await contextService.applyDefaults(options);
 
   if (!opts.team) {
-    outputService.error('Team name required. Use --team or set context.');
-    process.exit(1);
+    throw new ValidationError('Team name required. Use --team or set context.');
   }
 
   let queueVault: string;
@@ -251,8 +250,7 @@ export function registerQueueCommands(program: Command): void {
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          outputService.error('Team name required. Use --team or set context.');
-          process.exit(1);
+          throw new ValidationError('Team name required. Use --team or set context.');
         }
 
         const response = await withSpinner(
