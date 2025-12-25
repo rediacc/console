@@ -99,7 +99,7 @@ export default defineConfig(({ mode }) => {
               ) {
                 return 'vendor-state';
               }
-              if (/[\\/]node_modules[\\/](axios|dayjs|zod)[\\/]/.test(id)) {
+              if (/[\\/]node_modules[\\/](axios|dayjs)[\\/]/.test(id)) {
                 return 'vendor-utils';
               }
               if (
@@ -116,7 +116,7 @@ export default defineConfig(({ mode }) => {
             }
 
             if (id.includes('/src/features/')) {
-              const [, featureName] = id.split('/src/features/')[1].split('/');
+              const [featureName] = id.split('/src/features/')[1].split('/');
               return `feature-${featureName}`;
             }
 
