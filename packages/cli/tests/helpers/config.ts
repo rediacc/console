@@ -29,7 +29,7 @@ export function getConfig(): TestConfig {
   const password = currentTestAccount?.password ?? process.env.REDIACC_TEST_PASSWORD ?? '';
 
   config = {
-    apiUrl: process.env.REDIACC_TEST_API_URL ?? 'https://sent-cat-ranks-brokers.trycloudflare.com',
+    apiUrl: process.env.REDIACC_TEST_API_URL ?? 'https://retained-patricia-hawk-int.trycloudflare.com',
     email,
     password,
     cliDir: resolve(__dirname, '../..'),

@@ -1,22 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { EXIT_CODES } from '../types/index.js';
-
-// Mock dependencies before importing the module
-vi.mock('../services/output.js', () => ({
-  outputService: {
-    error: vi.fn(),
-  },
-}));
-
-// Import after mocking
+import { CliApiError } from '../services/api.js';
 import { outputService } from '../services/output.js';
+import { EXIT_CODES } from '../types/index.js';
 import {
   handleError,
   setOutputFormat,
   ValidationError,
   normalizeError,
 } from '../utils/errors.js';
-import { CliApiError } from '../services/api.js';
+
+// Mock the output service
+vi.mock('../services/output.js', () => ({
+  outputService: {
+    error: vi.fn(),
+  },
+}));
 
 describe('Error Handling', () => {
   let mockExit: ReturnType<typeof vi.spyOn>;
