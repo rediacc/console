@@ -48,6 +48,7 @@
     "rimraf": "^6.1.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
+    "@vitest/coverage-v8": "^4.0.15",
     "vitest": "^4.0.15",
     "yaml": "^2.7.0"
   },
