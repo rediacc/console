@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { runCli } from './helpers/cli.js';
 
 describe('permission commands', () => {
@@ -22,14 +22,40 @@ describe('permission commands', () => {
     });
   });
 
-  // Note: permission modifications are sensitive and skipped
-  describe.skip('permission modifications', () => {
-    it('should grant a permission', async () => {
-      // Permission changes affect system access
+  describe('permission modifications', () => {
+    let testGroupName: string;
+
+    beforeAll(async () => {
+      testGroupName = `test-group-${Date.now()}`;
+      // Create a test permission group
+      const result = await runCli(['permission', 'group', 'create', testGroupName]);
+      expect(result.success).toBe(true);
     });
 
-    it('should revoke a permission', async () => {
-      // Permission changes affect system access
+    afterAll(async () => {
+      // Cleanup - delete test group
+      await runCli(['permission', 'group', 'delete', testGroupName, '--force']);
+    });
+
+    it('should add a permission to a group', async () => {
+      const result = await runCli(['permission', 'add', testGroupName, 'machine:read']);
+
+      expect(result.success).toBe(true);
+      expect(result.stdout).toContain('Permission added');
+    });
+
+    it('should show permission group with added permission', async () => {
+      const result = await runCli(['permission', 'group', 'show', testGroupName]);
+
+      expect(result.success).toBe(true);
+      expect(result.json).not.toBeNull();
+    });
+
+    it('should remove a permission from a group', async () => {
+      const result = await runCli(['permission', 'remove', testGroupName, 'machine:read']);
+
+      expect(result.success).toBe(true);
+      expect(result.stdout).toContain('Permission removed');
     });
   });
 });

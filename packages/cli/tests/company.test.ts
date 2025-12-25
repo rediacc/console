@@ -43,11 +43,4 @@ describe('company commands', () => {
       expect(result.stderr).toContain('Invalid action');
     });
   });
-
-  // Note: company update operations are sensitive and skipped
-  describe.skip('company update operations', () => {
-    it('should update company name', async () => {
-      // Requires careful handling - company name changes affect all users
-    });
-  });
 });

@@ -36,10 +36,60 @@ describe('storage commands', () => {
     });
   });
 
-  // Note: storage CRUD operations are skipped to avoid modifying production data
-  describe.skip('storage CRUD operations', () => {
+  describe('storage CRUD operations', () => {
+    let testStorageName: string;
+    let renamedStorageName: string;
+
+    beforeAll(() => {
+      const timestamp = Date.now();
+      testStorageName = `test-storage-${timestamp}`;
+      renamedStorageName = `test-storage-renamed-${timestamp}`;
+    });
+
     it('should create a storage configuration', async () => {
-      // Storage creation typically requires specific provider configuration
+      const result = await runCli(['storage', 'create', testStorageName, '--team', teamName]);
+
+      expect(result.success).toBe(true);
+      expect(result.stdout).toContain('created');
+    });
+
+    it('should list storage including created storage', async () => {
+      const result = await runCli(['storage', 'list', '--team', teamName]);
+
+      expect(result.success).toBe(true);
+      expect(Array.isArray(result.json)).toBe(true);
+
+      const storages = result.json as { storageName: string }[];
+      const found = storages.some((s) => s.storageName === testStorageName);
+      expect(found).toBe(true);
+    });
+
+    it('should rename a storage configuration', async () => {
+      const result = await runCli([
+        'storage',
+        'rename',
+        testStorageName,
+        renamedStorageName,
+        '--team',
+        teamName,
+      ]);
+
+      expect(result.success).toBe(true);
+      expect(result.stdout).toContain('renamed');
+    });
+
+    it('should delete a storage configuration', async () => {
+      const result = await runCli([
+        'storage',
+        'delete',
+        renamedStorageName,
+        '--team',
+        teamName,
+        '--force',
+      ]);
+
+      expect(result.success).toBe(true);
+      expect(result.stdout).toContain('deleted');
     });
   });
 });

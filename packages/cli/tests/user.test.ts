@@ -67,23 +67,51 @@ describe('user commands', () => {
     });
   });
 
-  // Note: user CRUD operations are sensitive and skipped
-  describe.skip('user CRUD operations', () => {
-    it('should invite a new user', async () => {
-      // User invitations send real emails
+  describe('user CRUD operations', () => {
+    let testUserEmail: string;
+
+    it('should create a new user', async () => {
+      testUserEmail = `test-crud-${Date.now()}@rediacc-test.local`;
+      const result = await runCli(['user', 'create', testUserEmail]);
+
+      expect(result.success).toBe(true);
+      expect(result.stdout).toContain('User created');
     });
 
-    it('should update user permissions', async () => {
-      // Permissions changes are sensitive
+    it('should assign permission group to user', async () => {
+      // Get a permission group name
+      const groups = await runCli(['permission', 'group', 'list']);
+      expect(groups.success).toBe(true);
+
+      const groupList = groups.json as { permissionGroupName: string }[];
+      expect(groupList.length).toBeGreaterThan(0);
+
+      const groupName = groupList[0].permissionGroupName;
+      const result = await runCli(['user', 'permission', 'assign', testUserEmail, groupName]);
+
+      expect(result.success).toBe(true);
+      expect(result.stdout).toContain('Permission assigned');
     });
   });
 
-  describe.skip('user update-email', () => {
+  describe('user update-email', () => {
     it('should update user email', async () => {
-      // Email changes are sensitive and require verification
+      const timestamp = Date.now();
+      const oldEmail = `test-email-old-${timestamp}@rediacc-test.local`;
+      const newEmail = `test-email-new-${timestamp}@rediacc-test.local`;
+
+      // Create user first
+      const createResult = await runCli(['user', 'create', oldEmail]);
+      expect(createResult.success).toBe(true);
+
+      // Update email
+      const result = await runCli(['user', 'update-email', oldEmail, newEmail]);
+      expect(result.success).toBe(true);
+      expect(result.stdout).toContain('Email updated');
     });
   });
 
+  // Note: update-password requires interactive stdin input
   describe.skip('user update-password', () => {
     it('should update password', async () => {
       // Requires interactive password input
