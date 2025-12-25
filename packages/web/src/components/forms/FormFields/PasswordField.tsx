@@ -69,19 +69,19 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
   if (required) {
     rules.push({
       required: true,
-      message: requiredMessage || `Please enter ${label.toLowerCase()}`,
+      message: requiredMessage ?? `Please enter ${label.toLowerCase()}`,
     });
   }
 
   rules.push({
     min: minLength,
-    message: minLengthMessage || `Password must be at least ${minLength} characters`,
+    message: minLengthMessage ?? `Password must be at least ${minLength} characters`,
   });
 
   rules.push({
     pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])/,
     message:
-      patternMessage || 'Password must contain uppercase, lowercase, number and special character',
+      patternMessage ?? 'Password must contain uppercase, lowercase, number and special character',
   });
 
   if (additionalRules.length > 0) {

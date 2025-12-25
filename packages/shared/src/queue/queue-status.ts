@@ -87,11 +87,11 @@ export function isPermanentFailure(failureReason: string | undefined | null): bo
 }
 
 export function getStatusConfig(status: QueueHealthStatus): StatusConfig {
-  return QUEUE_STATUS_CONFIG[status] || QUEUE_STATUS_CONFIG.UNKNOWN;
+  return QUEUE_STATUS_CONFIG[status];
 }
 
 export function getPriorityConfig(priority: number): PriorityConfig {
-  return PRIORITY_CONFIG[priority] || PRIORITY_CONFIG[3];
+  return PRIORITY_CONFIG[priority] ?? PRIORITY_CONFIG[3];
 }
 
 export function isRetryEligible(retryCount: number, lastFailureReason?: string): boolean {

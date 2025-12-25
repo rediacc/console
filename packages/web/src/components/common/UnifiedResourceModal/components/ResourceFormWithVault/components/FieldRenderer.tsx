@@ -1,178 +1,152 @@
 import { Input, InputNumber, Select, Space } from 'antd';
-import { Control, Controller, type FieldValues } from 'react-hook-form';
-import type { FormFieldConfig } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault/types';
-interface FieldRendererProps<T extends FieldValues> {
-  field: FormFieldConfig<T>;
-  control: Control<T>;
+import type { FormFieldConfig } from '../types';
+
+interface FieldRendererProps {
+  field: FormFieldConfig;
+  value?: unknown;
+  onChange?: (value: unknown) => void;
 }
 
-export const FieldRenderer = <T extends FieldValues>({ field, control }: FieldRendererProps<T>) => {
+/**
+ * Renders form field input based on field type.
+ * Used with Ant Design Form.Item which handles value binding via name prop.
+ */
+export const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange }) => {
   switch (field.type) {
     case 'select':
       return (
-        <Controller
-          name={field.name}
-          control={control}
-          rules={field.rules}
-          render={({ field: controllerField }) => (
-            <Select
-              {...controllerField}
-              className="w-full"
-              options={field.options}
-              placeholder={field.placeholder}
-              disabled={field.disabled}
-              showSearch
-              allowClear
-              optionFilterProp="label"
-              data-testid={`resource-modal-field-${field.name}-select`}
-            />
-          )}
+        <Select
+          value={value as string | undefined}
+          onChange={onChange}
+          className="w-full"
+          options={field.options}
+          placeholder={field.placeholder}
+          disabled={field.disabled}
+          showSearch
+          allowClear
+          optionFilterProp="label"
+          data-testid={`resource-modal-field-${field.name}-select`}
         />
       );
+
     case 'password':
       return (
-        <Controller
-          name={field.name}
-          control={control}
-          rules={field.rules}
-          render={({ field: controllerField }) => (
-            <Input.Password
-              {...controllerField}
-              placeholder={field.placeholder}
-              disabled={field.disabled}
-              data-testid={`resource-modal-field-${field.name}-password`}
-            />
-          )}
+        <Input.Password
+          value={value as string | undefined}
+          onChange={(e) => onChange?.(e.target.value)}
+          placeholder={field.placeholder}
+          disabled={field.disabled}
+          data-testid={`resource-modal-field-${field.name}-password`}
         />
       );
+
     case 'size': {
-      const units = field.sizeUnits || ['G', 'T'];
+      const units = field.sizeUnits ?? ['G', 'T'];
       const defaultUnit = units[0] === 'percentage' ? '%' : units[0];
+
+      const currentValue =
+        typeof value === 'string'
+          ? value
+          : value !== undefined && value !== null
+            ? String(value)
+            : '';
+
+      let parsedValue: number | undefined;
+      let parsedUnit = defaultUnit;
+
+      if (currentValue) {
+        const match = currentValue.match(/^(\d+)([%GT]?)$/);
+        if (match) {
+          parsedValue = parseInt(match[1], 10);
+          parsedUnit = match[2] || defaultUnit;
+        }
+      }
+
       return (
-        <Controller
-          name={field.name}
-          control={control}
-          rules={field.rules}
-          render={({ field: controllerField }) => {
-            const rawValue = controllerField.value;
-            const currentValue =
-              typeof rawValue === 'string'
-                ? rawValue
-                : rawValue !== undefined && rawValue !== null
-                  ? String(rawValue)
-                  : '';
-            let parsedValue: number | undefined;
-            let parsedUnit = defaultUnit;
-
-            if (currentValue) {
-              const match = currentValue.match(/^(\d+)([%GT]?)$/);
-              if (match) {
-                parsedValue = parseInt(match[1], 10);
-                parsedUnit = match[2] || defaultUnit;
+        <Space.Compact className="w-full">
+          <InputNumber
+            data-testid={`resource-modal-field-${field.name}-size-input`}
+            value={parsedValue}
+            onChange={(numValue) => {
+              if (numValue === null) {
+                onChange?.('');
+                return;
               }
-            }
+              const numericValue = typeof numValue === 'string' ? parseInt(numValue, 10) : numValue;
+              if (!isNaN(numericValue) && numericValue > 0) {
+                onChange?.(`${numericValue}${parsedUnit}`);
+              }
+            }}
+            onKeyDown={(event) => {
+              const allowedKeys = [
+                'Backspace',
+                'Delete',
+                'Tab',
+                'Enter',
+                'ArrowLeft',
+                'ArrowRight',
+              ];
+              if (!/[0-9]/.test(event.key) && !allowedKeys.includes(event.key)) {
+                event.preventDefault();
+              }
+            }}
+            parser={(val) => {
+              const parsed = val?.replace(/[^\d]/g, '');
+              return parsed ? parseInt(parsed, 10) : 0;
+            }}
+            formatter={(val) => (val ? `${val}` : '')}
+            placeholder={units.includes('percentage') ? '95' : '100'}
+            min={1}
+            max={units.includes('percentage') ? 100 : undefined}
+            disabled={field.disabled}
+            keyboard
+            step={1}
+            precision={0}
+            className="flex-1"
+          />
+          <Select
+            data-testid={`resource-modal-field-${field.name}-size-unit`}
+            value={parsedUnit}
+            onChange={(unit) => {
+              const newValue = parsedValue ? `${parsedValue}${unit}` : '';
+              onChange?.(newValue);
+            }}
+            options={units.map((unit) => {
+              const unitValue = unit === 'percentage' ? '%' : unit;
+              let label: string;
+              if (unit === 'percentage') {
+                label = '%';
+              } else if (unit === 'G') {
+                label = 'GB';
+              } else {
+                label = 'TB';
+              }
+              return { value: unitValue, label };
+            })}
+            disabled={field.disabled}
+            style={{ width: 80 }} // eslint-disable-line no-restricted-syntax
+          />
+        </Space.Compact>
+      );
+    }
 
-            return (
-              <Space.Compact className="w-full">
-                <InputNumber
-                  data-testid={`resource-modal-field-${field.name}-size-input`}
-                  value={parsedValue}
-                  onChange={(value) => {
-                    if (value === null || value === undefined) {
-                      controllerField.onChange('');
-                      return;
-                    }
-                    const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-                    if (!isNaN(numericValue) && numericValue > 0) {
-                      controllerField.onChange(`${numericValue}${parsedUnit}`);
-                    }
-                  }}
-                  onKeyDown={(event) => {
-                    const allowedKeys = [
-                      'Backspace',
-                      'Delete',
-                      'Tab',
-                      'Enter',
-                      'ArrowLeft',
-                      'ArrowRight',
-                    ];
-                    if (!/[0-9]/.test(event.key) && !allowedKeys.includes(event.key)) {
-                      event.preventDefault();
-                    }
-                  }}
-                  parser={(value) => {
-                    const parsed = value?.replace(/[^\d]/g, '');
-                    return parsed ? parseInt(parsed, 10) : 0;
-                  }}
-                  formatter={(value) => (value ? `${value}` : '')}
-                  placeholder={units.includes('percentage') ? '95' : '100'}
-                  min={1}
-                  max={units.includes('percentage') ? 100 : undefined}
-                  disabled={field.disabled}
-                  keyboard
-                  step={1}
-                  precision={0}
-                  className="flex-1"
-                />
-                <Select
-                  data-testid={`resource-modal-field-${field.name}-size-unit`}
-                  value={parsedUnit}
-                  onChange={(unit) => {
-                    const newValue = parsedValue ? `${parsedValue}${unit}` : '';
-                    controllerField.onChange(newValue);
-                  }}
-                  options={units.map((unit) => {
-                    const value = unit === 'percentage' ? '%' : unit;
-                    let label: string;
-                    if (unit === 'percentage') {
-                      label = '%';
-                    } else if (unit === 'G') {
-                      label = 'GB';
-                    } else {
-                      label = 'TB';
-                    }
-                    return { value, label };
-                  })}
-                  disabled={field.disabled}
-                  style={{ width: 80 }} // eslint-disable-line no-restricted-syntax
-                />
-              </Space.Compact>
-            );
-          }}
+    default: {
+      // Remaining types: 'text' | 'email' | 'number' | undefined
+      // Note: 'password' is handled in its own case above
+      const inputType = field.type === 'email' ? 'email' : 'text';
+
+      return (
+        <Input
+          value={value as string | undefined}
+          onChange={(e) => onChange?.(e.target.value)}
+          data-testid={`resource-modal-field-${field.name}-input`}
+          type={inputType}
+          placeholder={field.placeholder}
+          disabled={field.disabled}
+          readOnly={field.readOnly}
+          autoComplete="off"
         />
       );
     }
-    default:
-      return (
-        <Controller
-          name={field.name}
-          control={control}
-          rules={field.rules}
-          render={({ field: controllerField }) => {
-            // Input only supports: 'text' | 'email' | 'url' | 'tel' | 'password'
-            // For other types like 'number', use 'text' as fallback
-            let inputType: 'text' | 'email' | 'url' | 'tel' | 'password';
-            if (field.type === 'email') {
-              inputType = 'email';
-            } else if (field.type === 'password') {
-              inputType = 'password';
-            } else {
-              inputType = 'text';
-            }
-
-            return (
-              <Input
-                {...controllerField}
-                data-testid={`resource-modal-field-${field.name}-input`}
-                type={inputType}
-                placeholder={field.placeholder}
-                disabled={field.disabled}
-                readOnly={field.readOnly}
-                autoComplete="off"
-              />
-            );
-          }}
-        />
-      );
   }
 };

@@ -1,6 +1,5 @@
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import { isEncrypted } from '@rediacc/shared/encryption';
-import type { ApiResponse } from '@rediacc/shared/types';
 import { api, apiClient } from './api.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { nodeStorageAdapter } from '../adapters/storage.js';
@@ -36,7 +35,7 @@ class AuthService {
     }
 
     // Check authentication status
-    const authResult = parseAuthenticationResult(response as ApiResponse);
+    const authResult = parseAuthenticationResult(response);
     if (!authResult.isAuthorized) {
       return {
         success: false,
@@ -66,7 +65,7 @@ class AuthService {
     if (!result.isAuthorized) {
       return {
         success: false,
-        message: result.result || 'TFA verification failed',
+        message: result.result ?? 'TFA verification failed',
       };
     }
 

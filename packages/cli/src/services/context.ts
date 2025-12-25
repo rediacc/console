@@ -62,13 +62,9 @@ class ContextService {
   async applyDefaults(options: CommandOptions): Promise<CommandOptions> {
     const result = { ...options };
 
-    if (!result.team) {
-      result.team = await this.getTeam();
-    }
+    result.team ??= await this.getTeam();
 
-    if (!result.region) {
-      result.region = await this.getRegion();
-    }
+    result.region ??= await this.getRegion();
 
     return result;
   }

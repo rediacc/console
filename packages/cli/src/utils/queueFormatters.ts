@@ -4,11 +4,9 @@
  */
 
 import chalk from 'chalk';
-import type { ErrorSeverity } from '@rediacc/shared/error-parser';
 import {
   formatError as formatErrorShared,
   formatErrors,
-  getSeverityLevel,
   parseFailureReason,
 } from '@rediacc/shared/error-parser';
 import { STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
@@ -23,7 +21,7 @@ export { formatAge } from '@rediacc/shared/formatters';
  * @param status - Queue status (PENDING, COMPLETED, FAILED, etc.)
  * @returns Chalk color function
  */
-export function getStatusColor(status: string): (text: string) => string {
+function getStatusColor(status: string): (text: string) => string {
   const statusUpper = status.toUpperCase();
 
   switch (statusUpper) {
@@ -83,7 +81,7 @@ export function formatPriority(priority: number | undefined): string {
     5: { color: chalk.gray, label: 'P5 (Lowest)' },
   };
 
-  const config = priorityMap[priority] || priorityMap[3];
+  const config = priorityMap[priority] ?? priorityMap[3];
   return config.color(config.label);
 }
 
@@ -104,25 +102,6 @@ function chalkColorFn(text: string, level: string): string {
     default: chalk.gray(text),
   };
   return colorMap[level] || chalk.gray(text);
-}
-
-/**
- * Get chalk color function for error severity
- * Uses shared getSeverityLevel for consistency
- *
- * @param severity - Error severity level
- * @returns Chalk color function
- */
-export function getSeverityColor(severity: ErrorSeverity): (text: string) => string {
-  const level = getSeverityLevel(severity);
-  const colorMap: Record<string, (text: string) => string> = {
-    critical: chalk.red.bold,
-    error: chalk.red,
-    warning: chalk.yellow,
-    info: chalk.blue,
-    default: chalk.gray,
-  };
-  return colorMap[level] || chalk.gray;
 }
 
 /**
@@ -176,7 +155,7 @@ export function formatError(failureReason: string | undefined, showAll: boolean 
  * @returns Colored retry count string
  */
 export function formatRetryCount(retryCount: number | undefined): string {
-  if (retryCount === undefined || retryCount === null) return chalk.gray('-');
+  if (retryCount === undefined) return chalk.gray('-');
 
   if (retryCount === 0) return chalk.green(`${retryCount}/${STALE_TASK_CONSTANTS.MAX_RETRY_COUNT}`);
   if (retryCount < STALE_TASK_CONSTANTS.MAX_RETRY_COUNT - 1)
@@ -191,6 +170,6 @@ export function formatRetryCount(retryCount: number | undefined): string {
  * @returns Colored checkmark or cross
  */
 export function formatBoolean(value: boolean | undefined): string {
-  if (value === undefined || value === null) return chalk.gray('-');
+  if (value === undefined) return chalk.gray('-');
   return value ? chalk.green('✓') : chalk.red('✗');
 }

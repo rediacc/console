@@ -110,7 +110,11 @@ const uiSlice = createSlice({
   },
 });
 
-export const {
+// Export only the actions that are used externally
+export const { toggleUiMode, toggleThemeMode } = uiSlice.actions;
+
+// Destructure remaining actions for internal use (not exported)
+const {
   toggleSidebar,
   setActiveView,
   setSelectedResource,
@@ -118,9 +122,17 @@ export const {
   openVaultModal,
   closeVaultModal,
   setUiMode,
-  toggleUiMode,
   setThemeMode,
-  toggleThemeMode,
 } = uiSlice.actions;
+
+// Reserved for future use - prevent unused variable warnings
+void toggleSidebar;
+void setActiveView;
+void setSelectedResource;
+void setFilters;
+void openVaultModal;
+void closeVaultModal;
+void setUiMode;
+void setThemeMode;
 
 export default uiSlice.reducer;

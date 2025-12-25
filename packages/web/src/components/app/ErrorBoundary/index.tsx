@@ -43,14 +43,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     // Track error in telemetry
     try {
       telemetryService.trackError(error, {
-        component_stack: errorInfo.componentStack || undefined,
+        component_stack: errorInfo.componentStack ?? undefined,
         error_boundary: 'global',
         page_url: window.location.href,
         user_agent: navigator.userAgent,
         timestamp: Date.now(),
-        error_id: this.state.errorId || 'unknown',
+        error_id: this.state.errorId ?? 'unknown',
         react_error_info: JSON.stringify({
-          componentStack: errorInfo.componentStack?.substring(0, 1000) || 'N/A', // Limit length
+          componentStack: errorInfo.componentStack?.substring(0, 1000) ?? 'N/A', // Limit length
           // Add any other relevant React error info
         }),
       });
@@ -70,8 +70,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     // Track retry attempt
     try {
       telemetryService.trackEvent('error_boundary.retry', {
-        error_id: this.state.errorId || 'unknown',
-        error_type: this.state.error?.constructor.name || 'unknown',
+        error_id: this.state.errorId ?? 'unknown',
+        error_type: this.state.error?.constructor.name ?? 'unknown',
         page_url: window.location.href,
       });
     } catch (error) {
@@ -86,8 +86,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     // Track page reload
     try {
       telemetryService.trackEvent('error_boundary.reload', {
-        error_id: this.state.errorId || 'unknown',
-        error_type: this.state.error?.constructor.name || 'unknown',
+        error_id: this.state.errorId ?? 'unknown',
+        error_type: this.state.error?.constructor.name ?? 'unknown',
         page_url: window.location.href,
       });
     } catch (error) {
@@ -167,7 +167,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 /**
  * Hook-based error boundary wrapper for functional components
  */
-export const withErrorBoundary = <P extends object>(
+const withErrorBoundary = <P extends object>(
   Component: React.ComponentType<P>,
   fallback?: (error: Error, errorInfo: React.ErrorInfo, retry: () => void) => ReactNode
 ) => {
@@ -179,6 +179,9 @@ export const withErrorBoundary = <P extends object>(
     );
   };
 
-  WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`;
+  WrappedComponent.displayName = `withErrorBoundary(${Component.displayName ?? Component.name})`;
   return WrappedComponent;
 };
+
+// Export for internal use if needed in the future
+void withErrorBoundary;

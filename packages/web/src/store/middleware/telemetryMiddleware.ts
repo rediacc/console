@@ -50,9 +50,9 @@ interface TelemetryWindow extends Window {
   sessionStartTime?: number;
 }
 
-export const createTelemetryMiddleware = (
+const createTelemetryMiddleware = (
   options: TelemetryMiddlewareOptions = {}
-): Middleware<{}, RootState> => {
+): Middleware<object, RootState> => {
   const { enabled = true, debugMode = false } = options;
 
   return (store) => (next) => (action) => {
@@ -152,12 +152,12 @@ function trackUserPreferences(
 
   if (action.type === 'ui/setTheme') {
     const actionWithPayload = action as UnknownAction & { payload?: string };
-    preferences['ui.theme'] = actionWithPayload.payload || 'unknown';
+    preferences['ui.theme'] = actionWithPayload.payload ?? 'unknown';
   }
 
   if (action.type === 'ui/toggleUiMode') {
-    preferences['ui.mode'] = stateAfter.ui?.uiMode || 'unknown';
-    preferences['ui.mode_switched_from'] = stateBefore.ui?.uiMode || 'unknown';
+    preferences['ui.mode'] = stateAfter.ui.uiMode;
+    preferences['ui.mode_switched_from'] = stateBefore.ui.uiMode;
   }
 
   telemetryService.trackEvent('user.preferences_updated', {
@@ -180,7 +180,7 @@ function trackWorkflowProgression(action: UnknownAction, stateAfter: RootState):
         ...workflowData,
         'workflow.name': 'authentication',
         'workflow.step': 'login_completed',
-        'user.company': stateAfter.auth?.company || 'unknown',
+        'user.company': stateAfter.auth.company ?? 'unknown',
       };
       break;
 
@@ -189,7 +189,7 @@ function trackWorkflowProgression(action: UnknownAction, stateAfter: RootState):
         ...workflowData,
         'workflow.name': 'machine_assignment',
         'workflow.step': 'machine_assigned',
-        'machine.count': stateAfter.machineAssignment?.selectedMachines?.length || 0,
+        'machine.count': stateAfter.machineAssignment.selectedMachines.length,
       };
       break;
 
@@ -225,7 +225,7 @@ function trackBusinessActions(
       const sessionDuration = Date.now() - sessionStartTime;
       telemetryService.trackEvent('business.user_session_end', {
         'session.duration_ms': sessionDuration,
-        'session.company': stateBefore.auth?.company || 'unknown',
+        'session.company': stateBefore.auth.company ?? 'unknown',
       });
       break;
     }
@@ -242,7 +242,7 @@ function trackBusinessActions(
       telemetryService.trackEvent('business.machine_assignment', {
         'machine.id': String(typedAction.payload?.id ?? 'unknown'),
         'assignment.pool_type': String(typedAction.payload?.poolType ?? 'unknown'),
-        'assignment.total_assigned': stateAfter.machineAssignment?.selectedMachines?.length || 0,
+        'assignment.total_assigned': stateAfter.machineAssignment.selectedMachines.length,
       });
       break;
   }
@@ -255,7 +255,7 @@ function extractFeatureName(actionType: string): string {
 }
 
 function getNotificationCount(state: RootState): number {
-  return state.notifications?.notifications?.length || 0;
+  return state.notifications.notifications.length;
 }
 
 // Create the default telemetry middleware
@@ -263,5 +263,3 @@ export const telemetryMiddleware = createTelemetryMiddleware({
   enabled: true,
   debugMode: import.meta.env.DEV,
 });
-
-export default telemetryMiddleware;

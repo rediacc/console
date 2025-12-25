@@ -34,7 +34,7 @@ interface AppProvidersProps {
 
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   const { i18n } = useTranslation();
-  const currentLocale: AntdLocale = antdLocales[i18n.language] || enUS;
+  const currentLocale: AntdLocale = antdLocales[i18n.language] ?? enUS;
   const themeMode = useSelector((state: RootState) => state.ui.themeMode);
   const themeConfig = getThemeConfig(themeMode === 'dark');
 

@@ -51,12 +51,12 @@ export const useCreateTeam = () => {
     mutationFn: (params) =>
       api.teams.create({
         ...params,
-        vaultContent: params.vaultContent || '{}',
+        vaultContent: params.vaultContent ?? '{}',
       }),
     successMessage: (_, vars) => `Team "${vars.teamName}" created successfully`,
     errorMessage: 'Failed to create team',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
     },
   });
 };
@@ -69,8 +69,8 @@ export const useUpdateTeamName = () => {
     successMessage: (_, vars) => `Team renamed to "${vars.newTeamName}"`,
     errorMessage: 'Failed to update team name',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.dropdown] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.dropdown] });
     },
   });
 };
@@ -87,7 +87,7 @@ export const useUpdateTeamVault = () => {
     successMessage: (_, vars) => `Team "${vars.teamName}" vault updated successfully`,
     errorMessage: 'Failed to update team vault',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
     },
   });
 };
@@ -100,8 +100,8 @@ export const useDeleteTeam = () => {
     successMessage: (_, vars) => `Team "${vars.teamName}" deleted successfully`,
     errorMessage: 'Failed to delete team',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.dropdown] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.dropdown] });
     },
   });
 };
@@ -114,7 +114,9 @@ export const useAddTeamMember = () => {
     successMessage: (_, vars) => `User "${vars.newUserEmail}" added to team`,
     errorMessage: 'Failed to add team member',
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teamMembers, vars.teamName] });
+      void queryClient.invalidateQueries({
+        queryKey: [QUERY_KEY_STRINGS.teamMembers, vars.teamName],
+      });
     },
   });
 };
@@ -127,7 +129,9 @@ export const useRemoveTeamMember = () => {
     successMessage: (_, vars) => `User "${vars.removeUserEmail}" removed from team`,
     errorMessage: 'Failed to remove team member',
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teamMembers, vars.teamName] });
+      void queryClient.invalidateQueries({
+        queryKey: [QUERY_KEY_STRINGS.teamMembers, vars.teamName],
+      });
     },
   });
 };

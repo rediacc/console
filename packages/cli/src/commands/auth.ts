@@ -26,13 +26,13 @@ export function registerAuthCommands(program: Command): void {
 
         // Get email
         const email =
-          options.email ||
+          options.email ??
           (await askText('Email:', {
             validate: (input) => input.includes('@') || 'Please enter a valid email',
           }));
 
         // Get password (use provided or prompt interactively)
-        const password = options.password || (await askPassword('Password:'));
+        const password = options.password ?? (await askPassword('Password:'));
 
         // Attempt login
         const result = await withSpinner(
@@ -52,7 +52,7 @@ export function registerAuthCommands(program: Command): void {
         }
 
         if (!result.success && !result.isTFAEnabled) {
-          outputService.error(result.message || 'Authentication failed');
+          outputService.error(result.message ?? 'Authentication failed');
           process.exit(1);
         }
 
@@ -84,7 +84,7 @@ export function registerAuthCommands(program: Command): void {
         const email = await authService.getStoredEmail();
 
         if (isAuth) {
-          outputService.success(`Authenticated as: ${email || 'unknown'}`);
+          outputService.success(`Authenticated as: ${email ?? 'unknown'}`);
         } else {
           outputService.warn('Not authenticated. Run: rediacc login');
         }

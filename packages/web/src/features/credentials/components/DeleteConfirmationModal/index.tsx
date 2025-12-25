@@ -6,12 +6,12 @@ import type { TFunction } from 'i18next';
 
 interface AffectedResources {
   isCredential: boolean;
-  forks: Array<{
+  forks: {
     repositoryGuid: string;
     repositoryName: string;
     repositoryTag?: string | null;
-  }>;
-  affectedMachines: Array<{ machineName: string; repositoryNames: string[] }>;
+  }[];
+  affectedMachines: { machineName: string; repositoryNames: string[] }[];
 }
 
 interface DeleteConfirmationModalParams {

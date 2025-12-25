@@ -19,11 +19,12 @@ interface ColumnBuilderParams {
 
 export const buildAuditColumns = ({
   t,
-  auditLogs,
+  auditLogs = [],
   getActionIcon,
 }: ColumnBuilderParams): ColumnsType<GetAuditLogs_ResultSet1> => {
-  const actionStatusMap = (auditLogs || []).reduce<Record<string, StatusConfig>>((acc, log) => {
-    if (!acc[log.action]) {
+  const actionStatusMap = auditLogs.reduce<Record<string, StatusConfig>>((acc, log) => {
+    const existingConfig = acc[log.action] as StatusConfig | undefined;
+    if (existingConfig === undefined) {
       acc[log.action] = {
         icon: getActionIcon(log.action),
         label: log.action.replace(/_/g, ' '),
@@ -55,11 +56,10 @@ export const buildAuditColumns = ({
     defaultConfig: {},
     sorter: (a, b) => a.action.localeCompare(b.action),
   });
-  actionColumn.filters =
-    [...new Set(auditLogs?.map((log) => log.action) || [])].map((action) => ({
-      text: action.replace(/_/g, ' '),
-      value: action,
-    })) || [];
+  actionColumn.filters = [...new Set(auditLogs.map((log) => log.action))].map((action) => ({
+    text: action.replace(/_/g, ' '),
+    value: action,
+  }));
   actionColumn.onFilter = (value, record) => record.action === value;
   actionColumn.filterIcon = (_filtered: boolean) => <FilterOutlined />;
 
@@ -75,35 +75,32 @@ export const buildAuditColumns = ({
     width: 220,
     maxLength: 24,
   });
-  entityNameColumn.filters =
-    [
-      ...new Set(
-        auditLogs?.map((log) => log.entityName).filter((name): name is string => name != null) || []
-      ),
-    ].map((name) => ({
-      text: name,
-      value: name,
-    })) || [];
+  entityNameColumn.filters = [
+    ...new Set(
+      auditLogs.map((log) => log.entityName).filter((name): name is string => name != null)
+    ),
+  ].map((name) => ({
+    text: name,
+    value: name,
+  }));
   entityNameColumn.onFilter = (value, record) => record.entityName === value;
   entityNameColumn.filterIcon = (_filtered: boolean) => <FilterOutlined />;
 
-  const userColumnFilters =
-    [
-      ...new Set(
-        auditLogs?.map((log) => log.actionByUser).filter((user): user is string => user != null) ||
-          []
-      ),
-    ].map((user) => ({
-      text: user,
-      value: user,
-    })) || [];
+  const userColumnFilters = [
+    ...new Set(
+      auditLogs.map((log) => log.actionByUser).filter((user): user is string => user != null)
+    ),
+  ].map((user) => ({
+    text: user,
+    value: user,
+  }));
 
   const detailsColumn = createTruncatedColumn<GetAuditLogs_ResultSet1>({
     title: t('system:audit.columns.details'),
     dataIndex: 'details',
     key: 'details',
     maxLength: 48,
-    renderText: (value) => value || '',
+    renderText: (value) => value ?? '',
     renderWrapper: (content) => <Typography.Text>{content}</Typography.Text>,
   });
 
@@ -121,11 +118,10 @@ export const buildAuditColumns = ({
       key: 'entity',
       width: 160,
       render: (entity: string) => <Tag>{entity}</Tag>,
-      filters:
-        [...new Set(auditLogs?.map((log) => log.entity) || [])].map((entity) => ({
-          text: entity,
-          value: entity,
-        })) || [],
+      filters: [...new Set(auditLogs.map((log) => log.entity))].map((entity) => ({
+        text: entity,
+        value: entity,
+      })),
       onFilter: (value, record) => record.entity === value,
       filterIcon: (_filtered: boolean) => <FilterOutlined />,
     },

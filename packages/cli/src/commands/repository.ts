@@ -74,7 +74,7 @@ export function registerRepositoryCommands(program: Command): void {
         };
         if (options.parent) {
           createOptions.parentRepositoryName = options.parent;
-          createOptions.parentRepositoryTag = options.parentTag || 'main';
+          createOptions.parentRepositoryTag = options.parentTag ?? 'main';
         }
 
         await withSpinner(

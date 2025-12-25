@@ -14,10 +14,7 @@ interface UseTemplateSelectionProps {
 }
 
 const resolvePreselectedTemplate = (existingData?: Record<string, unknown>): string | null => {
-  if (
-    existingData &&
-    typeof (existingData as Record<string, unknown>).preselectedTemplate === 'string'
-  ) {
+  if (existingData && typeof existingData.preselectedTemplate === 'string') {
     return (existingData as Record<string, string>).preselectedTemplate || null;
   }
   return null;

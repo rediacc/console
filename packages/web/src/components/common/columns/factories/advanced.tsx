@@ -1,6 +1,6 @@
 import { Space, Tag, Tooltip, Typography } from 'antd';
 import i18n from '@/i18n/config';
-import { createStatusRenderer, renderTimestampElement, type StatusConfig } from '../renderers';
+import { createStatusRenderer, renderTimestampElement } from '../renderers';
 import type {
   CountColumnOptions,
   DateColumnOptions,
@@ -27,10 +27,7 @@ const toTimestamp = (value: unknown): number => {
 export const createStatusColumn = <T,>(options: StatusColumnOptions<T>): ColumnsType<T>[number] => {
   const dataIndex = options.dataIndex;
   const dataKey = typeof dataIndex === 'string' ? dataIndex : String(dataIndex);
-  const renderStatus = createStatusRenderer<string>(
-    options.statusMap as Record<string, StatusConfig>,
-    options.defaultConfig
-  );
+  const renderStatus = createStatusRenderer<string>(options.statusMap, options.defaultConfig);
 
   let sorter: ColumnsType<T>[number]['sorter'] | undefined;
   if (options.sorter === true) {
@@ -44,9 +41,9 @@ export const createStatusColumn = <T,>(options: StatusColumnOptions<T>): Columns
   }
 
   return {
-    title: options.title || i18n.t('common:statusColumn'),
+    title: options.title ?? i18n.t('common:statusColumn'),
     dataIndex,
-    key: options.key || dataKey || 'status',
+    key: options.key ?? dataKey,
     width: options.width ?? 100,
     align: options.align ?? 'center',
     sorter,
@@ -79,9 +76,9 @@ export const createDateColumn = <T,>(options: DateColumnOptions<T>): ColumnsType
   }
 
   return {
-    title: options.title || fallbackTitle,
+    title: options.title ?? fallbackTitle,
     dataIndex,
-    key: options.key || dataKey || 'date',
+    key: options.key ?? dataKey,
     width: options.width ?? 180,
     sorter,
     defaultSortOrder: options.defaultSortOrder,
@@ -101,12 +98,12 @@ export const createTruncatedColumn = <T,>(
   const dataIndex = options.dataIndex;
   const dataKey = typeof dataIndex === 'string' ? dataIndex : String(dataIndex);
   const maxLength = options.maxLength ?? 12;
-  const placement = options.tooltipPlacement || 'topLeft';
+  const placement = options.tooltipPlacement ?? 'topLeft';
 
   return {
     title: options.title,
     dataIndex,
-    key: options.key || dataKey || 'value',
+    key: options.key ?? dataKey,
     width: options.width,
     ellipsis: options.ellipsis ?? true,
     sorter: options.sorter,
@@ -154,7 +151,7 @@ export const createCountColumn = <T,>(options: CountColumnOptions<T>): ColumnsTy
   return {
     title: options.title,
     dataIndex,
-    key: options.key || dataKey || 'count',
+    key: options.key ?? dataKey,
     width: options.width ?? 100,
     align: options.align ?? 'center',
     sorter,
@@ -163,7 +160,7 @@ export const createCountColumn = <T,>(options: CountColumnOptions<T>): ColumnsTy
         return options.renderValue(value, record);
       }
 
-      const count = value ?? 0;
+      const count = value;
 
       if (options.useBadge) {
         return (
@@ -210,9 +207,9 @@ export const createVersionColumn = <T,>(
   }
 
   return {
-    title: options.title || fallbackTitle,
+    title: options.title ?? fallbackTitle,
     dataIndex,
-    key: options.key || dataKey || 'version',
+    key: options.key ?? dataKey,
     width: options.width ?? 120,
     align: options.align ?? 'center',
     sorter,
@@ -221,7 +218,7 @@ export const createVersionColumn = <T,>(
         return options.renderValue(value, record);
       }
 
-      if (value === null || value === undefined) {
+      if (typeof value !== 'number') {
         return <Typography.Text>-</Typography.Text>;
       }
 

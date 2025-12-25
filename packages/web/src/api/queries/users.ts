@@ -3,13 +3,10 @@ import { api } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
 import { hashPassword } from '@/utils/auth';
-import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 import type {
-  CreatePermissionGroupParams,
   DeleteUserRequestParams,
   GetCompanyUsers_ResultSet1,
   UpdateUserAssignedPermissionsParams,
-  UpdateUserEmailParams,
   UpdateUserLanguageParams,
   UpdateUserPasswordParams,
   UpdateUserToActivatedParams,
@@ -39,29 +36,8 @@ export const useCreateUser = () => {
       i18n.t('organization:users.success.created', { email: vars.email }),
     errorMessage: i18n.t('organization:users.errors.createFailed'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
-    },
-  });
-};
-
-// Activate user - special case using auth service
-export const useActivateUser = () => {
-  const queryClient = useQueryClient();
-
-  return useMutationWithFeedback({
-    mutationFn: async (data: {
-      userEmail: string;
-      activationCode: string;
-      passwordHash: string;
-    }) => {
-      return api.auth.activateAccount(data.userEmail, data.activationCode, data.passwordHash);
-    },
-    successMessage: (_, variables) =>
-      i18n.t('organization:users.success.activated', { email: variables.userEmail }),
-    errorMessage: i18n.t('organization:users.errors.activateFailed'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
+      void queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
     },
   });
 };
@@ -75,7 +51,7 @@ export const useDeactivateUser = () => {
       i18n.t('organization:users.success.deactivated', { email: params.userEmail }),
     errorMessage: i18n.t('organization:users.errors.deactivateFailed'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 };
@@ -89,21 +65,7 @@ export const useReactivateUser = () => {
       i18n.t('organization:users.success.activated', { email: params.userEmail }),
     errorMessage: i18n.t('organization:users.errors.activateFailed'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-    },
-  });
-};
-
-// Update user email
-export const useUpdateUserEmail = () => {
-  const queryClient = useQueryClient();
-  return useMutationWithFeedback<unknown, Error, UpdateUserEmailParams>({
-    mutationFn: (params) => api.users.updateEmail(params),
-    successMessage: (_, vars) =>
-      i18n.t('organization:users.success.emailUpdated', { email: vars.newUserEmail }),
-    errorMessage: i18n.t('organization:users.errors.emailUpdateFailed'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 };
@@ -114,30 +76,6 @@ export const useUpdateUserLanguage = () => {
     mutationFn: (params) => api.users.updateLanguage(params),
     successMessage: () => i18n.t('organization:users.success.languageSaved'),
     errorMessage: i18n.t('organization:users.errors.languageUpdateFailed'),
-  });
-};
-
-// Get permission groups
-export const usePermissionGroups = () => {
-  return useQuery<PermissionGroupWithParsedPermissions[]>({
-    queryKey: ['permission-groups'],
-    queryFn: () => api.permissions.listGroups(),
-  });
-};
-
-// Create permission group
-export const useCreatePermissionGroup = () => {
-  const queryClient = useQueryClient();
-  return useMutationWithFeedback<unknown, Error, CreatePermissionGroupParams>({
-    mutationFn: (params) => api.permissions.createGroup(params),
-    successMessage: (_, params) =>
-      i18n.t('organization:users.success.permissionGroupCreated', {
-        groupName: params.permissionGroupName,
-      }),
-    errorMessage: i18n.t('organization:users.errors.permissionGroupCreateFailed'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['permission-groups'] });
-    },
   });
 };
 
@@ -153,7 +91,7 @@ export const useAssignUserPermissions = () => {
       }),
     errorMessage: i18n.t('organization:users.errors.assignPermissionsFailed'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 };
@@ -189,7 +127,7 @@ export const useDeleteUserRequest = () => {
     successMessage: () => i18n.t('organization:users.success.sessionTerminated'),
     errorMessage: i18n.t('organization:users.errors.sessionTerminateFailed'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-requests'] });
+      void queryClient.invalidateQueries({ queryKey: ['user-requests'] });
     },
   });
 };
@@ -210,7 +148,7 @@ export const useUpdateUserVault = () => {
     successMessage: () => i18n.t('organization:users.success.userVaultUpdated'),
     errorMessage: i18n.t('organization:users.errors.userVaultUpdateFailed'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-vault'] });
+      void queryClient.invalidateQueries({ queryKey: ['user-vault'] });
     },
   });
 };
@@ -221,4 +159,3 @@ export type {
   UserRequest,
   UserVault,
 } from '@rediacc/shared/types';
-export type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';

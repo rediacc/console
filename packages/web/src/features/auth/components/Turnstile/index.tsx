@@ -247,7 +247,7 @@ export const Turnstile: React.FC<TurnstileProps> = ({
           renderTurnstile();
         });
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error('[Turnstile] Failed to load script:', error);
         if (mountedRef.current) {
           onError?.();
@@ -291,5 +291,3 @@ export const Turnstile: React.FC<TurnstileProps> = ({
 
   return <Flex ref={containerRef} />;
 };
-
-export default Turnstile;

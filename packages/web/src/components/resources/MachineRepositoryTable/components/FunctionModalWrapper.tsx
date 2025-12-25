@@ -31,23 +31,23 @@ export const FunctionModalWrapper: React.FC<FunctionModalWrapperProps> = ({
   t,
 }) => {
   const getDefaultParams = () => {
+    if (!selectedRepository) return {};
     const repository = teamRepositories.find(
       (r) =>
-        r.repositoryName === selectedRepository?.name &&
-        r.repositoryTag === selectedRepository?.repositoryTag
+        r.repositoryName === selectedRepository.name &&
+        r.repositoryTag === selectedRepository.repositoryTag
     );
 
     const repoParams = {
-      repository: repository?.repositoryGuid || '',
-      grand: repository?.grandGuid || '',
+      repository: repository?.repositoryGuid ?? '',
+      grand: repository?.grandGuid ?? '',
     };
 
     const stateParam =
-      (selectedFunction === 'backup' ||
-        selectedFunction === 'push' ||
-        selectedFunction === 'deploy' ||
-        selectedFunction === 'fork') &&
-      selectedRepository
+      selectedFunction === 'backup' ||
+      selectedFunction === 'push' ||
+      selectedFunction === 'deploy' ||
+      selectedFunction === 'fork'
         ? { state: selectedRepository.mounted ? 'online' : 'offline' }
         : {};
 
@@ -74,7 +74,7 @@ export const FunctionModalWrapper: React.FC<FunctionModalWrapperProps> = ({
         );
         return {
           sourceRepo: selectedRepository.name,
-          parentRepo: parentRepo?.repositoryName || null,
+          parentRepo: parentRepo?.repositoryName ?? null,
         };
       }
       return { sourceRepo: selectedRepository.name, parentRepo: null };
@@ -145,7 +145,7 @@ export const FunctionModalWrapper: React.FC<FunctionModalWrapperProps> = ({
       hiddenParams={['repository', 'grand', 'state']}
       defaultParams={getDefaultParams()}
       initialParams={getInitialParams()}
-      preselectedFunction={selectedFunction || undefined}
+      preselectedFunction={selectedFunction ?? undefined}
       currentMachineName={machine.machineName}
       additionalContext={getAdditionalContext()}
     />

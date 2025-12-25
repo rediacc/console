@@ -146,7 +146,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                   <Select
                     placeholder={t('machines:selectMachine')}
                     value={selectedMachine}
-                    onChange={(value) => setSelectedMachine(value as string)}
+                    onChange={(value) => setSelectedMachine(value)}
                     showSearch
                     optionFilterProp="children"
                     className="w-full"

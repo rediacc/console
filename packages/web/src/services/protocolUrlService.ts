@@ -8,12 +8,12 @@ import { createFreshForkToken } from '@/services/auth';
 
 export type ProtocolAction = 'terminal' | 'desktop' | 'vscode';
 
-export interface ProtocolError {
+interface ProtocolError {
   type: 'timeout' | 'exception' | 'not-installed' | 'permission-denied';
   message: string;
 }
 
-export interface ProtocolUrlParams {
+interface ProtocolUrlParams {
   team: string;
   machine: string;
   repository: string;
@@ -21,7 +21,7 @@ export interface ProtocolUrlParams {
   queryParams?: Record<string, string | number | boolean>;
 }
 
-export interface TerminalParams {
+interface TerminalParams {
   command?: string;
   autoExecute?: boolean;
   terminalType?: 'repository' | 'machine';
@@ -38,7 +38,7 @@ export interface ContainerParams {
   shell?: 'bash' | 'sh' | 'zsh';
 }
 
-export interface WindowParams {
+interface WindowParams {
   popup?: boolean;
   fullscreen?: boolean;
   minimize?: boolean;
@@ -51,7 +51,7 @@ export interface WindowParams {
   lang?: 'en' | 'ar' | 'de';
 }
 
-export interface VSCodeParams {
+interface VSCodeParams {
   path?: string; // Optional: specific directory to open in VSCode
   windowParams?: WindowParams; // Optional: window customization
 }
@@ -175,10 +175,6 @@ function buildProtocolParameters(
   }
 
   for (const [key, value] of Object.entries(queryParams)) {
-    if (value === undefined || value === null) {
-      continue;
-    }
-
     if (typeof value === 'boolean') {
       searchParams.append(key, value ? 'yes' : 'no');
     } else {
@@ -244,7 +240,7 @@ class ProtocolUrlService {
     }
 
     // Create fresh fork token for this action (ensures new token per click)
-    const actionKey = action || 'default';
+    const actionKey = action ?? 'default';
     const forkToken = await createFreshForkToken(actionKey);
 
     // Build path components
@@ -347,7 +343,7 @@ class ProtocolUrlService {
       queryParams: {
         terminalType: 'container',
         action: 'logs',
-        lines: containerParams.lines || 100,
+        lines: containerParams.lines ?? 100,
         follow: true,
         ...containerParams,
         ...windowParams,
@@ -388,7 +384,7 @@ class ProtocolUrlService {
       action: 'vscode',
       queryParams: {
         ...(vscodeParams?.path ? { path: vscodeParams.path } : {}),
-        ...(vscodeParams?.windowParams || {}),
+        ...(vscodeParams?.windowParams ?? {}),
       },
     });
   }

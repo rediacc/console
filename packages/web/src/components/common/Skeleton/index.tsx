@@ -24,7 +24,7 @@ export interface SkeletonTextProps {
   height?: string;
 }
 
-export const SkeletonText: React.FC<SkeletonTextProps> = ({ width, height }) => {
+const SkeletonText: React.FC<SkeletonTextProps> = ({ width, height }) => {
   return (
     <Flex
       // eslint-disable-next-line no-restricted-syntax
@@ -42,7 +42,7 @@ export interface SkeletonRowProps {
   columns?: number;
 }
 
-export const SkeletonRow: React.FC<SkeletonRowProps> = ({ columns = 4 }) => {
+const SkeletonRow: React.FC<SkeletonRowProps> = ({ columns = 4 }) => {
   return (
     <Flex
       align="center"
@@ -67,7 +67,7 @@ export interface SkeletonCardProps {
   lines?: number;
 }
 
-export const SkeletonCard: React.FC<SkeletonCardProps> = ({ lines = 3 }) => {
+const SkeletonCard: React.FC<SkeletonCardProps> = ({ lines = 3 }) => {
   return (
     <Flex
       vertical
@@ -84,7 +84,7 @@ export const SkeletonCard: React.FC<SkeletonCardProps> = ({ lines = 3 }) => {
   );
 };
 
-export const SkeletonButton: React.FC = () => {
+const SkeletonButton: React.FC = () => {
   return (
     <Flex
       // eslint-disable-next-line no-restricted-syntax
@@ -93,7 +93,7 @@ export const SkeletonButton: React.FC = () => {
   );
 };
 
-export const SkeletonInput: React.FC = () => {
+const SkeletonInput: React.FC = () => {
   return (
     <Flex
       className="w-full"
@@ -103,10 +103,17 @@ export const SkeletonInput: React.FC = () => {
   );
 };
 
-export const SkeletonBase = (props: React.HTMLAttributes<HTMLDivElement>) => (
+const SkeletonBase = (props: React.HTMLAttributes<HTMLDivElement>) => (
   <Flex
     // eslint-disable-next-line no-restricted-syntax
     style={{ ...baseStyle, ...props.style }}
     {...props}
   />
 );
+
+// Components are available for future use
+void SkeletonCard;
+void SkeletonRow;
+void SkeletonButton;
+void SkeletonInput;
+void SkeletonBase;

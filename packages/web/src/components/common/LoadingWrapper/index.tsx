@@ -110,7 +110,7 @@ const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
 
   if (isEmpty) {
     return (
-      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyMessage || emptyDescription} />
+      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyMessage ?? emptyDescription} />
     );
   }
 

@@ -6,7 +6,7 @@
 /**
  * Base URL for JSON configuration files hosted on json.rediacc.com
  */
-export const JSON_API_BASE_URL = 'https://json.rediacc.com';
+const JSON_API_BASE_URL = 'https://json.rediacc.com';
 
 /**
  * Configuration endpoints - direct paths matching json.rediacc.com structure

@@ -29,12 +29,12 @@ function printTrace(trace: QueueTraceSummary, program: Command): void {
   if (format === 'table') {
     const formattedTrace = {
       taskId: trace.taskId,
-      status: formatStatus(trace.status || 'UNKNOWN'),
+      status: formatStatus(trace.status ?? 'UNKNOWN'),
       age: trace.ageInMinutes != null ? formatAge(trace.ageInMinutes) : '-',
       priority: trace.priority ? formatPriority(trace.priority) : '-',
       retries: trace.retryCount != null ? formatRetryCount(trace.retryCount) : '-',
-      progress: trace.progress || '-',
-      consoleOutput: trace.consoleOutput || '-',
+      progress: trace.progress ?? '-',
+      consoleOutput: trace.consoleOutput ?? '-',
     };
     outputService.print(formattedTrace, format);
   } else {
@@ -104,7 +104,7 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
   } else {
     // Parse parameters
     const params: Record<string, string> = {};
-    for (const param of options.param || []) {
+    for (const param of options.param ?? []) {
       const [key, ...valueParts] = param.split('=');
       params[key] = valueParts.join('=');
     }
@@ -166,9 +166,9 @@ export async function traceAction(
       const summary = mapTraceToSummary(trace);
 
       if (summary) {
-        const statusText = formatStatus(summary.status || 'UNKNOWN');
+        const statusText = formatStatus(summary.status ?? 'UNKNOWN');
         const ageText = summary.ageInMinutes != null ? formatAge(summary.ageInMinutes) : 'unknown';
-        const progressText = summary.progress || 'No progress';
+        const progressText = summary.progress ?? 'No progress';
         if (spinner) {
           spinner.text = `${statusText} | Age: ${ageText} | ${progressText}`;
         }
@@ -279,12 +279,12 @@ export function registerQueueCommands(program: Command): void {
         if (format === 'table' && items.length > 0) {
           const formattedItems = items.map((item) => ({
             taskId: item.taskId,
-            status: formatStatus(item.status || item.healthStatus),
+            status: formatStatus(item.status ?? item.healthStatus),
             priority: item.priority ? formatPriority(item.priority) : '-',
             age: item.ageInMinutes != null ? formatAge(item.ageInMinutes) : '-',
-            team: item.teamName || '-',
-            machine: item.machineName || '-',
-            bridge: item.bridgeName || '-',
+            team: item.teamName ?? '-',
+            machine: item.machineName ?? '-',
+            bridge: item.bridgeName ?? '-',
             retries: item.retryCount != null ? formatRetryCount(item.retryCount) : '-',
             hasResponse: formatBoolean(item.hasResponse === 1),
             error: item.lastFailureReason ? formatError(item.lastFailureReason) : '-',

@@ -51,7 +51,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       style={style}
       placeholder={placeholder}
       value={selectedTeams}
-      onChange={(values) => onChange(values as string[])}
+      onChange={(values) => onChange(values)}
       loading={loading}
       options={filteredOptions}
       filterOption={false}

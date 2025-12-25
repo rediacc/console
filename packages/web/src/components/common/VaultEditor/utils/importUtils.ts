@@ -3,7 +3,7 @@ import type { FieldDefinition, VaultFormValues } from '../types';
 import type { FormInstance } from 'antd';
 import type { UploadFile } from 'antd/es/upload/interface';
 
-export const readJsonFile = (
+const readJsonFile = (
   file: UploadFile,
   onSuccess: (data: VaultFormValues) => void,
   onError: () => void
@@ -34,7 +34,7 @@ export const applyImportedData = (
   }
 ): void => {
   const extras: VaultFormValues = {};
-  const schemaFields = Object.keys(entityDef.fields || {});
+  const schemaFields = Object.keys(entityDef.fields ?? {});
 
   if (data.extraFields && typeof data.extraFields === 'object') {
     Object.assign(extras, data.extraFields as Record<string, unknown>);
@@ -50,11 +50,11 @@ export const applyImportedData = (
   callbacks.setImportedData(data);
 
   const formData: VaultFormValues = {};
-  Object.entries(entityDef.fields || {}).forEach(([key, field]) => {
+  Object.entries(entityDef.fields ?? {}).forEach(([key, field]) => {
     if (data[key] !== undefined) {
       formData[key] =
         field.format === 'base64' && typeof data[key] === 'string'
-          ? decodeBase64(data[key] as string)
+          ? decodeBase64(data[key])
           : data[key];
     }
   });

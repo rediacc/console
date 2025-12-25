@@ -33,7 +33,7 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
   mobileRender,
   t,
 }) => {
-  const clusterPoolKeys = pools.map((pool) => pool.poolGuid || '').filter(Boolean);
+  const clusterPoolKeys = pools.map((pool) => pool.poolGuid ?? '').filter(Boolean);
   const activeKeys = expandedRowKeys.filter((key) => clusterPoolKeys.includes(key));
 
   return (

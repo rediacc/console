@@ -48,7 +48,7 @@ export function getNavigationType(): string {
     if ('performance' in window) {
       const entries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
       if (entries.length > 0) {
-        return entries[0].type || 'unknown';
+        return entries[0].type;
       }
     }
   } catch (error) {
@@ -88,9 +88,9 @@ export function getPerformanceAttributes(): Record<string, number | string> {
     const navigatorWithConnection = navigator as Navigator & { connection?: NavigatorConnection };
     const connection = navigatorWithConnection.connection;
     if (connection) {
-      attributes['network.effective_type'] = connection.effectiveType || 'unknown';
-      attributes['network.downlink'] = connection.downlink || 0;
-      attributes['network.rtt'] = connection.rtt || 0;
+      attributes['network.effective_type'] = connection.effectiveType ?? 'unknown';
+      attributes['network.downlink'] = connection.downlink ?? 0;
+      attributes['network.rtt'] = connection.rtt ?? 0;
     }
   } catch (error) {
     console.warn('Failed to get performance attributes:', error);

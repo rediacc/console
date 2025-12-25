@@ -164,5 +164,3 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
     </Flex>
   );
 };
-
-export default FilterableMachineTable;

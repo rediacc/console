@@ -45,7 +45,7 @@ const normalizeQueryKey = (key: string | QueryKey): QueryKey => {
  * Factory function for creating ceph mutations
  * Uses useMutationWithFeedback with i18n support for ceph operations
  */
-export function createCephMutation<TData extends object>(config: MutationFactoryConfig<TData>) {
+function createCephMutation<TData extends object>(config: MutationFactoryConfig<TData>) {
   const operationLabel = i18n.t(`ceph:mutations.operations.${config.operation}`);
   const resourceLabel = i18n.t(`ceph:mutations.resources.${config.resourceKey}`);
   const fallbackError = i18n.t('ceph:errors.operationFailed', {
@@ -66,7 +66,7 @@ export function createCephMutation<TData extends object>(config: MutationFactory
         const allKeysToInvalidate = [...primaryKeys, ...additionalKeys];
 
         allKeysToInvalidate.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: normalizeQueryKey(key) });
+          void queryClient.invalidateQueries({ queryKey: normalizeQueryKey(key) });
         });
       },
     });
@@ -214,7 +214,7 @@ export const useUpdateMachineCeph = createCephMutation<UpdateMachineCephParams>(
   operation: 'update',
   resourceKey: 'machineClusterAssignment',
   translationKey: 'machines.updateSuccess',
-  getInvalidateKeys: (variables) => [CEPH_QUERY_KEYS.clusterMachines(variables.clusterName || '')],
+  getInvalidateKeys: (variables) => [CEPH_QUERY_KEYS.clusterMachines(variables.clusterName ?? '')],
 });
 
 export const useUpdateCloneMachineAssignments = createCephMutation<

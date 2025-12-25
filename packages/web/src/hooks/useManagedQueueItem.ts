@@ -72,8 +72,10 @@ export const useManagedQueueItem = () => {
       return { taskId: queueId, isQueued: false };
     },
     onSuccess: (response, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['queue-items'] });
-      queryClient.invalidateQueries({ queryKey: ['queue-items-bridge', variables.bridgeName] });
+      void queryClient.invalidateQueries({ queryKey: ['queue-items'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['queue-items-bridge', variables.bridgeName],
+      });
 
       if (response.isQueued) {
         // Don't show success message for queued items, it was already shown by the service

@@ -47,7 +47,8 @@ export const PoolTable: React.FC<PoolTableProps> = ({
 
   const poolsByCluster = useMemo(() => {
     return pools.reduce<Record<string, CephPool[]>>((acc, pool) => {
-      if (!acc[pool.clusterName]) {
+      const existing = acc[pool.clusterName] as CephPool[] | undefined;
+      if (existing === undefined) {
         acc[pool.clusterName] = [];
       }
       acc[pool.clusterName].push(pool);
@@ -67,13 +68,13 @@ export const PoolTable: React.FC<PoolTableProps> = ({
     (pool: CephPool) => {
       confirmAction({
         modal,
-        title: t('pools.confirmDelete') as string,
-        content: t('pools.deleteWarning', { name: pool.poolName }) as string,
-        okText: t('common:actions.delete') as string,
+        title: t('pools.confirmDelete'),
+        content: t('pools.deleteWarning', { name: pool.poolName }),
+        okText: t('common:actions.delete'),
         okType: 'danger',
-        cancelText: t('common:actions.cancel') as string,
+        cancelText: t('common:actions.cancel'),
         onConfirm: async () => {
-          onDeletePool(pool);
+          await Promise.resolve(onDeletePool(pool));
         },
       });
     },
@@ -124,7 +125,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
     () => (record: CephPool) => {
-      const isExpanded = expandedRowKeys.includes(record.poolGuid || '');
+      const isExpanded = expandedRowKeys.includes(record.poolGuid ?? '');
 
       const menuItems: MenuProps['items'] = [
         buildEditMenuItem(t, () => onEditPool(record)),

@@ -72,7 +72,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
 
   const handleValidate = (valid: boolean, errors?: string[]) => {
     setIsValid(valid);
-    setValidationErrors(errors || []);
+    setValidationErrors(errors ?? []);
   };
 
   const handleSave = async () => {

@@ -127,7 +127,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
         <Flex align="center" justify="space-between" wrap>
           <Flex align="center" gap={8}>
             <HistoryOutlined />
-            <Typography.Text>{`Queue Item Trace - ${taskId || ''}`}</Typography.Text>
+            <Typography.Text>{`Queue Item Trace - ${taskId ?? ''}`}</Typography.Text>
           </Flex>
           <Flex align="center" gap={8} wrap>
             <Segmented
@@ -206,9 +206,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                       label: (
                         <Space>
                           <Typography.Text>Response (Console)</Typography.Text>
-                          {traceData?.queueDetails?.status === 'PROCESSING' && (
-                            <Tag>Live Output</Tag>
-                          )}
+                          {traceData.queueDetails.status === 'PROCESSING' && <Tag>Live Output</Tag>}
                         </Space>
                       ),
                       children: (
@@ -218,7 +216,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                             .replace(/\\n/g, '\n')
                             .replace(/\\r/g, '\r')}
                           consoleOutputRef={consoleOutputRef}
-                          isEmpty={!traceData?.responseVaultContent?.hasContent}
+                          isEmpty={!traceData.responseVaultContent?.hasContent}
                         />
                       ),
                     },
@@ -302,7 +300,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                           }
                         : null,
 
-                      traceData.traceLogs && traceData.traceLogs.length > 0
+                      traceData.traceLogs.length > 0
                         ? {
                             key: 'timeline',
                             label: (
@@ -335,7 +333,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
                           }
                         : null,
 
-                      traceData.queuePosition && traceData.queuePosition.length > 0
+                      traceData.queuePosition.length > 0
                         ? {
                             key: 'related',
                             label: (

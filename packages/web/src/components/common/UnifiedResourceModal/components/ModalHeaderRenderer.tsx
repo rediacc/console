@@ -33,7 +33,7 @@ const RESOURCE_CONFIG = {
 } as const;
 
 const getResourceTranslationKey = (resourceType: ResourceType) => {
-  return RESOURCE_CONFIG[resourceType as keyof typeof RESOURCE_CONFIG]?.key || `${resourceType}s`;
+  return RESOURCE_CONFIG[resourceType].key;
 };
 
 export const resolveTeamName = (
@@ -110,23 +110,16 @@ const getModalTitle = ({
   t,
 }: Omit<ModalHeaderRendererProps, 'getFormValue' | 'isExpertMode'>): string => {
   if (mode === 'create') {
-    const createKey = RESOURCE_CONFIG[resourceType as keyof typeof RESOURCE_CONFIG]?.createKey;
-    const createText = createKey ? t(createKey) : '';
+    const createKey = RESOURCE_CONFIG[resourceType].createKey;
+    const createText = t(createKey);
 
     // Special case for repository creation
     if (resourceType === 'repository') {
-      // Check if this is credential-only mode (either from Add Credential button or Repository Credentials tab)
-      const isCredentialOnlyMode =
-        (existingData?.repositoryGuid &&
-          typeof existingData.repositoryGuid === 'string' &&
-          existingData.repositoryGuid.trim() !== '') ||
-        creationContext === 'credentials-only';
-
-      if (isCredentialOnlyMode) {
+      if (creationContext === 'credentials-only') {
         // For credential-only mode, show "Create Repository (Credentials) in [team]"
         const teamNameValue = existingData?.teamName;
         const team =
-          (typeof teamNameValue === 'string' ? teamNameValue : null) ||
+          (typeof teamNameValue === 'string' ? teamNameValue : null) ??
           (uiMode === 'simple'
             ? 'Private Team'
             : Array.isArray(teamFilter)
@@ -185,7 +178,7 @@ const getModalSubtitle = ({
     return Array.isArray(teamFilter) ? teamFilter[0] : teamFilter;
   }
 
-  return isExpertMode ? '' : 'Private Team';
+  return '';
 };
 
 export const getFunctionTitle = (resourceType: ResourceType, t: TFunction): string => {

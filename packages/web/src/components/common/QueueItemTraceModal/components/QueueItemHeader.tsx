@@ -47,7 +47,7 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
             {
               title: 'Assigned',
               description: queueDetails.assignedTime
-                ? formatTimestampAsIs(queueDetails.assignedTime as string, 'time')
+                ? formatTimestampAsIs(queueDetails.assignedTime, 'time')
                 : 'Waiting',
             },
             {
@@ -61,7 +61,7 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
                 );
 
                 if (status === 'PROCESSING') {
-                  return processingTimestamp || 'In Progress';
+                  return processingTimestamp ?? 'In Progress';
                 }
 
                 if (status === 'CANCELLING') {
@@ -69,7 +69,7 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
                 }
 
                 if (currentStep >= 1) {
-                  return processingTimestamp || 'Processed';
+                  return processingTimestamp ?? 'Processed';
                 }
 
                 return '';
@@ -80,15 +80,15 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
               description: (() => {
                 if (status === 'COMPLETED') {
                   const timestamp = getTimelineTimestamp(traceLogs, 'QUEUE_ITEM_COMPLETED');
-                  return `Done${timestamp ? ' - ' + timestamp : ''}`;
+                  return `Done${timestamp ? ` - ${timestamp}` : ''}`;
                 }
                 if (status === 'FAILED') {
                   const timestamp = getTimelineTimestamp(traceLogs, 'QUEUE_ITEM_FAILED');
-                  return `Failed${timestamp ? ' - ' + timestamp : ''}`;
+                  return `Failed${timestamp ? ` - ${timestamp}` : ''}`;
                 }
                 if (status === 'CANCELLED') {
                   const timestamp = getTimelineTimestamp(traceLogs, 'QUEUE_ITEM_CANCELLED');
-                  return `Cancelled${timestamp ? ' - ' + timestamp : ''}`;
+                  return `Cancelled${timestamp ? ` - ${timestamp}` : ''}`;
                 }
                 if (status === 'CANCELLING') {
                   return 'Cancelling';

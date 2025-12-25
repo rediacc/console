@@ -10,9 +10,9 @@ import type { ColumnsType } from 'antd/es/table';
 export const createActionColumn = <T,>(
   options: ActionColumnOptions<T>
 ): ColumnsType<T>[number] => ({
-  title: options.title || i18n.t('common:actionsColumn'),
+  title: options.title ?? i18n.t('common:actionsColumn'),
   key: 'actions',
-  width: options.width || 120,
+  width: options.width ?? 120,
   fixed: options.fixed,
   render: (_: unknown, record: T) => {
     if (options.renderActions) {
@@ -46,7 +46,7 @@ export const createActionColumn = <T,>(
       });
     }
 
-    const extraItems = options.getMenuItems?.(record) || [];
+    const extraItems = options.getMenuItems?.(record) ?? [];
     const items = [...baseItems, ...extraItems];
 
     if (!items.length) {
@@ -67,13 +67,13 @@ export const createActionColumn = <T,>(
     const menu: MenuProps = {
       items: menuItems,
       onClick: ({ key }) => {
-        handlers[key]?.(record);
+        handlers[key](record);
       },
     };
 
     return (
       <Dropdown menu={menu} trigger={['click']}>
-        <Button icon={options.buttonIcon || <MoreOutlined />}>{options.buttonLabel}</Button>
+        <Button icon={options.buttonIcon ?? <MoreOutlined />}>{options.buttonLabel}</Button>
       </Dropdown>
     );
   },

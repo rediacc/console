@@ -61,7 +61,7 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ auditLogs, 
                   <Typography.Text>
                     {log.entityName} {log.actionByUser && `• ${log.actionByUser}`}
                   </Typography.Text>
-                  {log.details && log.details.trim() && (
+                  {log.details?.trim() && (
                     <Typography.Text>
                       {log.details.length > DESCRIPTION_TRUNCATE_LENGTH
                         ? `${log.details.substring(0, DESCRIPTION_TRUNCATE_LENGTH)}...`

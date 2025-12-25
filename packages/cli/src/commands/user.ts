@@ -42,7 +42,7 @@ export function registerUserCommands(program: Command): void {
         const result = await withSpinner(
           `Creating user "${email}"...`,
           () =>
-            api.users.create(email, undefined, { fullName: options.name || email.split('@')[0] }),
+            api.users.create(email, undefined, { fullName: options.name ?? email.split('@')[0] }),
           'User created'
         );
 
@@ -147,11 +147,7 @@ export function registerUserCommands(program: Command): void {
 
         const format = program.opts().output as OutputFormat;
 
-        if (vaultData) {
-          outputService.print(vaultData, format);
-        } else {
-          outputService.info('No user vault found');
-        }
+        outputService.print(vaultData, format);
       } catch (error) {
         handleError(error);
       }

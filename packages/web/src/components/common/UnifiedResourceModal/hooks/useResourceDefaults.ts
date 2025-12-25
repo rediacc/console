@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import type { CompanyDropdownData } from '@rediacc/shared/types';
 import type { ExistingResourceData, ResourceFormValues, ResourceType } from '../types';
-import type { UseFormReturn } from 'react-hook-form';
+import type { FormInstance } from 'antd/es/form';
 
 interface UseResourceDefaultsOptions {
   open: boolean;
   mode: 'create' | 'edit' | 'vault';
   resourceType: ResourceType;
-  form: UseFormReturn<ResourceFormValues>;
+  form: FormInstance<ResourceFormValues>;
   dropdownData?: CompanyDropdownData;
   existingData?: ExistingResourceData;
   teamFilter?: string | string[];
@@ -31,7 +31,7 @@ const getSingleTeamFromFilter = (teamFilter: string | string[] | undefined): str
 };
 
 const setRepositoryDefaults = (
-  form: UseFormReturn<ResourceFormValues>,
+  form: FormInstance<ResourceFormValues>,
   existingData?: ExistingResourceData,
   setSelectedTemplate?: (template: string | null) => void
 ) => {
@@ -48,12 +48,12 @@ const setRepositoryDefaults = (
 
   // Set prefilled machine if provided
   if (existingData?.machineName) {
-    form.setValue('machineName', existingData.machineName);
+    form.setFieldValue('machineName', existingData.machineName);
   }
 };
 
 const setMachineDefaults = (
-  form: UseFormReturn<ResourceFormValues>,
+  form: FormInstance<ResourceFormValues>,
   dropdownData?: CompanyDropdownData
 ) => {
   if (!dropdownData?.regions || dropdownData.regions.length === 0) {
@@ -61,15 +61,15 @@ const setMachineDefaults = (
   }
 
   const firstRegion = dropdownData.regions[0].value;
-  form.setValue('regionName', firstRegion);
+  form.setFieldValue('regionName', firstRegion);
 
-  const regionBridges = dropdownData.bridgesByRegion?.find(
+  const regionBridges = dropdownData.bridgesByRegion.find(
     (region: { regionName: string }) => region.regionName === firstRegion
   );
 
   if (regionBridges?.bridges && regionBridges.bridges.length > 0) {
     const firstBridge = regionBridges.bridges[0].value;
-    form.setValue('bridgeName', firstBridge);
+    form.setFieldValue('bridgeName', firstBridge);
   }
 };
 
@@ -90,14 +90,11 @@ export const useResourceDefaults = (options: UseResourceDefaultsOptions): void =
       return;
     }
 
-    // Reset form to default values
-    form.reset(form.formState.defaultValues);
-
     // Set team if available
     const singleTeam = getSingleTeamFromFilter(teamFilter);
-    const teamName = existingData?.teamName || singleTeam;
+    const teamName = existingData?.teamName ?? singleTeam;
     if (teamName) {
-      form.setValue('teamName', teamName);
+      form.setFieldValue('teamName', teamName);
     }
 
     // Resource-specific defaults

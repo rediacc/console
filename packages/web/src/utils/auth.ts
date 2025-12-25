@@ -23,7 +23,7 @@ export async function hashPassword(password: string): Promise<string> {
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-  return '0x' + hashHex;
+  return `0x${hashHex}`;
 }
 
 // Session storage helpers using secure memory storage
@@ -39,7 +39,7 @@ export async function saveAuthData(email: string, company?: string) {
 }
 
 export async function getAuthData() {
-  const [token, email, company] = await Promise.all([
+  const [token, email, company] = await Promise.all<string | null>([
     tokenService.getToken(),
     secureStorage.getItem(STORAGE_KEYS.USER_EMAIL),
     secureStorage.getItem(STORAGE_KEYS.USER_COMPANY),
@@ -67,14 +67,13 @@ async function batchStorageOperation(
 
   if (operation === 'migrate') {
     // Save non-null values to secure storage
-    await Promise.all(
-      entries
-        .map(([storageKey], index) => {
-          const value = values[index];
-          return value ? secureStorage.setItem(storageKey, value) : null;
-        })
-        .filter(Boolean)
-    );
+    const promises = entries
+      .map(([storageKey], index) => {
+        const value = values[index];
+        return value ? secureStorage.setItem(storageKey, value) : null;
+      })
+      .filter((p): p is Promise<void> => p !== null);
+    await Promise.all(promises);
   }
 
   // Clear from source storage

@@ -135,5 +135,5 @@ export function canForkRepo(_repo: RepositoryWithRelations): boolean {
 export function getGrandGuidForFork(repository: RepositoryWithRelations): string {
   // If forking a fork, use the same grand
   // If forking a credential, the credential becomes the grand
-  return repository.grandGuid || repository.repositoryGuid;
+  return repository.grandGuid ?? repository.repositoryGuid;
 }

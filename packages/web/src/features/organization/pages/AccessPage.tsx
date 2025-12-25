@@ -62,10 +62,10 @@ const AccessPage: React.FC = () => {
   const auditTrace = useTraceModal();
 
   const { data: dropdownData } = useDropdownData();
-  const availablePermissions = dropdownData?.permissions || [];
+  const availablePermissions = dropdownData?.permissions ?? [];
   const { data: permissionGroups = [], isLoading: permissionsLoading } = usePermissionGroupsQuery();
   const { data: groupDetails } = usePermissionGroupDetails(
-    manageModal.state.data?.permissionGroupName || ''
+    manageModal.state.data?.permissionGroupName ?? ''
   );
   const createGroupMutation = useCreatePermissionGroup();
   const deleteGroupMutation = useDeletePermissionGroup();
@@ -314,7 +314,7 @@ const AccessPage: React.FC = () => {
       </Modal>
 
       <Modal
-        title={`${t('access.modals.managePermissionsTitle')} - ${manageModal.state.data?.permissionGroupName || ''}`}
+        title={`${t('access.modals.managePermissionsTitle')} - ${manageModal.state.data?.permissionGroupName ?? ''}`}
         open={manageModal.isOpen}
         onCancel={() => {
           manageModal.close();
@@ -332,7 +332,7 @@ const AccessPage: React.FC = () => {
               children: (
                 <Card>
                   <List
-                    dataSource={groupDetails?.permissions || []}
+                    dataSource={groupDetails?.permissions ?? []}
                     locale={{
                       emptyText: t('access.modals.noPermissions'),
                     }}
@@ -368,7 +368,7 @@ const AccessPage: React.FC = () => {
                     <Select
                       placeholder={t('access.modals.permissionPlaceholder')}
                       value={selectedPermission}
-                      onChange={(value) => setSelectedPermission((value as string) || '')}
+                      onChange={(value) => setSelectedPermission(value || '')}
                       showSearch
                       className="flex-1"
                       filterOption={(input, option) =>
@@ -383,7 +383,7 @@ const AccessPage: React.FC = () => {
                           key={perm.name}
                           value={perm.name}
                           label={perm.name}
-                          disabled={groupDetails?.permissions?.includes(perm.name)}
+                          disabled={groupDetails?.permissions.includes(perm.name)}
                           data-testid={`permission-option-${perm.name}`}
                         >
                           {perm.name}
@@ -431,18 +431,18 @@ const AccessPage: React.FC = () => {
         <Select
           placeholder={t('access.modals.userPlaceholder')}
           value={selectedUser}
-          onChange={(value) => setSelectedUser((value as string) || '')}
+          onChange={(value) => setSelectedUser(value || '')}
           showSearch
           className="w-full"
           filterOption={(input, option) =>
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
           options={
-            dropdownData?.users?.map((user) => ({
+            dropdownData?.users.map((user) => ({
               value: user.value,
               label: user.label,
               disabled: user.status !== 'active',
-            })) || []
+            })) ?? []
           }
           data-testid="assign-user-select"
         />

@@ -95,7 +95,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
       ...installCommands.verify,
     ].join('\n');
 
-    navigator.clipboard.writeText(allCommands);
+    void navigator.clipboard.writeText(allCommands);
     message.success('common:allCommandsCopied');
   };
 

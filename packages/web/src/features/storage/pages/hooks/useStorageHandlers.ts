@@ -117,7 +117,7 @@ export const useStorageHandlers = ({
             if (vaultData && vaultData !== currentResource.vaultContent) {
               await updateStorageVaultMutation.mutateAsync({
                 teamName: currentResource.teamName,
-                storageName: newName || currentName,
+                storageName: newName ?? currentName,
                 vaultContent: vaultData,
                 vaultVersion: currentResource.vaultVersion + 1,
               });
@@ -170,10 +170,10 @@ export const useStorageHandlers = ({
         return;
       }
 
-      const teamEntry = dropdownData?.machinesByTeam?.find(
+      const teamEntry = dropdownData?.machinesByTeam.find(
         (team) => team.teamName === currentResource.teamName
       );
-      const machineEntry = teamEntry?.machines?.find(
+      const machineEntry = teamEntry?.machines.find(
         (machine) => machine.value === functionData.selectedMachine
       );
 
@@ -198,10 +198,10 @@ export const useStorageHandlers = ({
         description: functionData.description,
         addedVia: 'storage-table',
         teamVault:
-          teams.find((team) => team.teamName === currentResource.teamName)?.vaultContent || '{}',
+          teams.find((team) => team.teamName === currentResource.teamName)?.vaultContent ?? '{}',
         storageName: currentResource.storageName,
-        storageVault: currentResource.vaultContent || '{}',
-        machineVault: selectedMachine?.vaultContent || '{}',
+        storageVault: currentResource.vaultContent ?? '{}',
+        machineVault: selectedMachine?.vaultContent ?? '{}',
       };
 
       // Handle pull function source vaults
@@ -242,7 +242,7 @@ export const useStorageHandlers = ({
           );
         }
       } else {
-        showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'));
+        showMessage('error', result.error ?? t('resources:errors.failedToCreateQueueItem'));
       }
     },
     [

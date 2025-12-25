@@ -50,7 +50,7 @@ export const OTPCodeField: React.FC<OTPCodeFieldProps> = ({
   if (required) {
     rules.push({
       required: true,
-      message: requiredMessage || `Please enter ${label.toLowerCase()}`,
+      message: requiredMessage ?? `Please enter ${label.toLowerCase()}`,
     });
   }
 

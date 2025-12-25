@@ -46,8 +46,7 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
         {providerFields.required && providerFields.required.length > 0 && (
           <>
             {providerFields.required.map((fieldName: string) => {
-              if (!providerFields.fields || !(fieldName in providerFields.fields)) return null;
-              const field = providerFields.fields[fieldName as keyof typeof providerFields.fields];
+              const field = providerFields.fields?.[fieldName];
               if (!field) return null;
 
               return (
@@ -55,8 +54,8 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
                   <VaultFieldRenderer
                     fieldName={fieldName}
                     fieldDef={field}
-                    required={true}
-                    isProviderField={true}
+                    required
+                    isProviderField
                     entityType="STORAGE"
                     selectedProvider={selectedProvider}
                     form={form}
@@ -73,8 +72,7 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
           <>
             {providerFields.required && providerFields.required.length > 0 && <Flex />}
             {providerFields.optional.map((fieldName: string) => {
-              if (!providerFields.fields || !(fieldName in providerFields.fields)) return null;
-              const field = providerFields.fields[fieldName as keyof typeof providerFields.fields];
+              const field = providerFields.fields?.[fieldName];
               if (!field) return null;
 
               return (
@@ -83,7 +81,7 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
                     fieldName={fieldName}
                     fieldDef={field}
                     required={false}
-                    isProviderField={true}
+                    isProviderField
                     entityType="STORAGE"
                     selectedProvider={selectedProvider}
                     form={form}

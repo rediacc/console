@@ -20,5 +20,3 @@ export const SizedModal: React.FC<SizedModalProps> = ({
     {...props}
   />
 );
-
-export default SizedModal;

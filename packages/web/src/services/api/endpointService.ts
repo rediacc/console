@@ -175,7 +175,7 @@ class EndpointService {
   /**
    * Add a custom endpoint
    */
-  async addCustomEndpoint(name: string, url: string): Promise<Endpoint> {
+  addCustomEndpoint(name: string, url: string): Endpoint {
     // Validate URL
     try {
       new URL(url);
@@ -212,7 +212,7 @@ class EndpointService {
 
     // If the removed endpoint was selected, clear selection
     const selected = this.getSelectedEndpoint();
-    if (selected && selected.id === id) {
+    if (selected?.id === id) {
       this.clearSelectedEndpoint();
     }
   }
@@ -222,7 +222,7 @@ class EndpointService {
    */
   async findEndpointById(id: string): Promise<Endpoint | null> {
     const endpoints = await this.fetchEndpoints();
-    return endpoints.find((e) => e.id === id) || null;
+    return endpoints.find((e) => e.id === id) ?? null;
   }
 
   /**

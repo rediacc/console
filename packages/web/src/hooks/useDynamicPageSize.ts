@@ -95,7 +95,7 @@ export const useDynamicPageSize = (
     calculatePageSize();
 
     // Set up ResizeObserver for the container
-    if (tableContainerRef.current && window.ResizeObserver) {
+    if (tableContainerRef.current) {
       resizeObserverRef.current = new ResizeObserver(() => {
         debouncedCalculatePageSizeRef.current?.();
       });

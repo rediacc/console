@@ -60,7 +60,8 @@ export function useMultiPagination<T extends string>(
   sections: T[],
   defaultPageSize = 20
 ): Record<T, UsePaginationReturn> {
-  const paginationStates = {} as Record<T, UsePaginationReturn>;
+  // Initialize with empty object typed for the final structure
+  const paginationStates = Object.create(null) as Record<T, UsePaginationReturn>;
 
   sections.forEach((section) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks

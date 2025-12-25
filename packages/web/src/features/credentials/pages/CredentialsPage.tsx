@@ -143,10 +143,10 @@ const CredentialsPage: React.FC = () => {
               if (result.taskId) {
                 queueTrace.open(result.taskId, result.machineName);
               } else {
-                refetchRepos();
+                void refetchRepos();
               }
             } else {
-              showMessage('error', result.error || t('repositories.failedToCreateRepository'));
+              showMessage('error', result.error ?? t('repositories.failedToCreateRepository'));
             }
           } else if (currentResource) {
             const currentName = currentResource.repositoryName;
@@ -164,7 +164,7 @@ const CredentialsPage: React.FC = () => {
             if (vaultData && vaultData !== currentResource.vaultContent) {
               await updateRepoVaultMutation.mutateAsync({
                 teamName: currentResource.teamName,
-                repositoryName: newName || currentName,
+                repositoryName: newName ?? currentName,
                 repositoryTag: currentResource.repositoryTag || 'latest',
                 vaultContent: vaultData,
                 vaultVersion: currentResource.vaultVersion + 1,
@@ -172,7 +172,7 @@ const CredentialsPage: React.FC = () => {
             }
 
             closeUnifiedModal();
-            refetchRepos();
+            void refetchRepos();
           }
         },
         { skipSuccessMessage: true }
@@ -204,7 +204,7 @@ const CredentialsPage: React.FC = () => {
             vaultContent: vault,
             vaultVersion: version,
           });
-          refetchRepos();
+          void refetchRepos();
           closeUnifiedModal();
         },
         { skipSuccessMessage: true }
@@ -228,10 +228,10 @@ const CredentialsPage: React.FC = () => {
           return;
         }
 
-        const teamEntry = dropdownData?.machinesByTeam?.find(
+        const teamEntry = dropdownData?.machinesByTeam.find(
           (team) => team.teamName === currentResource.teamName
         );
-        const machineEntry = teamEntry?.machines?.find(
+        const machineEntry = teamEntry?.machines.find(
           (machine) => machine.value === functionData.selectedMachine
         );
 
@@ -256,13 +256,13 @@ const CredentialsPage: React.FC = () => {
           description: functionData.description,
           addedVia: 'repository-table',
           teamVault:
-            teams.find((team) => team.teamName === currentResource.teamName)?.vaultContent || '{}',
+            teams.find((team) => team.teamName === currentResource.teamName)?.vaultContent ?? '{}',
           repositoryGuid: currentResource.repositoryGuid,
-          vaultContent: currentResource.vaultContent || '{}',
+          vaultContent: currentResource.vaultContent ?? '{}',
           repositoryNetworkId: currentResource.repositoryNetworkId,
           repositoryNetworkMode: currentResource.repositoryNetworkMode,
           repositoryTag: currentResource.repositoryTag,
-          machineVault: selectedMachine?.vaultContent || '{}',
+          machineVault: selectedMachine?.vaultContent ?? '{}',
         };
 
         if (functionData.function.name === 'pull') {
@@ -299,7 +299,7 @@ const CredentialsPage: React.FC = () => {
             );
           }
         } else {
-          showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'));
+          showMessage('error', result.error ?? t('resources:errors.failedToCreateQueueItem'));
         }
       } catch {
         showMessage('error', t('resources:errors.failedToCreateQueueItem'));
@@ -342,7 +342,7 @@ const CredentialsPage: React.FC = () => {
         openUnifiedModal('create', modalData, 'credentials-only');
       }, 100);
 
-      navigate(location.pathname, { replace: true });
+      void navigate(location.pathname, { replace: true });
     }
   }, [location, navigate, openUnifiedModal, setSelectedTeams]);
 
@@ -479,7 +479,7 @@ const CredentialsPage: React.FC = () => {
         onCancel={closeUnifiedModal}
         resourceType="repository"
         mode={unifiedModalState.mode}
-        existingData={(unifiedModalState.data || currentResource) as RepoModalData | undefined}
+        existingData={(unifiedModalState.data ?? currentResource) as RepoModalData | undefined}
         teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
         creationContext={unifiedModalState.creationContext}
         onSubmit={handleUnifiedModalSubmit}
@@ -508,7 +508,7 @@ const CredentialsPage: React.FC = () => {
         open={queueTrace.state.open}
         onCancel={() => {
           queueTrace.close();
-          refetchRepos();
+          void refetchRepos();
         }}
       />
 

@@ -47,7 +47,7 @@ const MainLayout: React.FC = () => {
   // Update company data when it changes
   useEffect(() => {
     const updateCompanyData = async () => {
-      const normalizedCompanyName = companyData?.companyInfo?.companyName;
+      const normalizedCompanyName = companyData?.companyInfo.companyName;
       if (normalizedCompanyName && normalizedCompanyName !== company) {
         dispatch(updateCompany(normalizedCompanyName));
         const authData = await getAuthData();
@@ -56,7 +56,7 @@ const MainLayout: React.FC = () => {
         }
       }
     };
-    updateCompanyData();
+    void updateCompanyData();
   }, [companyData, company, dispatch]);
 
   // Keyboard shortcut for power mode
@@ -111,7 +111,7 @@ const MainLayout: React.FC = () => {
     if (!isCurrentPageVisibleInNewMode) {
       const firstVisiblePath = visiblePaths[0];
       if (firstVisiblePath) {
-        navigate(firstVisiblePath);
+        void navigate(firstVisiblePath);
       }
     }
     setIsTransitioning(false);
@@ -121,22 +121,24 @@ const MainLayout: React.FC = () => {
     dispatch(toggleThemeMode());
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     trackUserAction('logout', 'logout_button', {
       current_page: location.pathname,
       session_duration:
-        Date.now() - ((window as Window & { sessionStartTime?: number }).sessionStartTime || 0),
+        Date.now() - ((window as Window & { sessionStartTime?: number }).sessionStartTime ?? 0),
     });
-    try {
-      await apiClient.logout();
-    } catch {
-      // Continue with logout even if API call fails
-    }
-    await clearAuthData();
-    masterPasswordService.clearMasterPassword();
-    queryClient.clear();
-    dispatch(logout());
-    navigate('/login');
+    void (async () => {
+      try {
+        await apiClient.logout();
+      } catch {
+        // Continue with logout even if API call fails
+      }
+      await clearAuthData();
+      masterPasswordService.clearMasterPassword();
+      queryClient.clear();
+      dispatch(logout());
+      void navigate('/login');
+    })();
   };
 
   const handleCollapse = (value: boolean) => {
@@ -168,7 +170,7 @@ const MainLayout: React.FC = () => {
             trigger: 'logo_click',
             from_page: location.pathname,
           });
-          navigate('/dashboard');
+          void navigate('/dashboard');
         }}
         // Menu
         route={routes}
@@ -180,7 +182,7 @@ const MainLayout: React.FC = () => {
             <Link
               to={item.path}
               onClick={() => {
-                trackUserAction('navigation', item.path!, {
+                trackUserAction('navigation', item.path, {
                   menu_item: item.name as string,
                   ui_mode: uiMode,
                   sidebar_collapsed: collapsed,
@@ -193,12 +195,12 @@ const MainLayout: React.FC = () => {
           );
         }}
         subMenuItemRender={(item, dom) => {
-          if (!item.path || item.routes) return dom;
+          if (!item.path) return dom;
           return (
             <Link
               to={item.path}
               onClick={() => {
-                trackUserAction('navigation', item.path!, {
+                trackUserAction('navigation', item.path, {
                   menu_item: item.name as string,
                   ui_mode: uiMode,
                   sidebar_collapsed: collapsed,
@@ -231,7 +233,7 @@ const MainLayout: React.FC = () => {
                   trigger: 'logo_click',
                   from_page: location.pathname,
                 });
-                navigate('/dashboard');
+                void navigate('/dashboard');
               }}
               data-testid="main-logo-home"
             >

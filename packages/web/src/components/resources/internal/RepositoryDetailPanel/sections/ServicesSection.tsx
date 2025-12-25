@@ -47,9 +47,9 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ repository, pa
                   </Tag>
                 </Flex>
               </Col>
-              {(service.memory_human ||
-                service.main_pid ||
-                service.uptime_human ||
+              {(service.memory_human ??
+                service.main_pid ??
+                service.uptime_human ??
                 service.restarts !== undefined) && (
                 <Col span={24}>
                   <Flex wrap>

@@ -60,7 +60,7 @@ export const useRepositoryVaultData = (
                     return;
                   }
 
-                  const serviceName = service.service_name || service.unit_file || '';
+                  const serviceName = service.service_name ?? service.unit_file ?? '';
                   const guidMatch = serviceName.match(/rediacc_([0-9a-f-]{36})_/);
                   if (
                     guidMatch &&
@@ -74,7 +74,7 @@ export const useRepositoryVaultData = (
 
               return {
                 machine,
-                repositoryData: repositoryData,
+                repositoryData,
                 systemData: result.system,
                 services: servicesForRepo,
               };

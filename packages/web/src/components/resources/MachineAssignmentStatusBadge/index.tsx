@@ -51,15 +51,9 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
 
   const getStatusConfig = () => {
     const config = STATUS_CONFIG_MAP[assignmentType];
-    if (config) {
-      return {
-        ...config,
-        text: t(config.textKey),
-      };
-    }
     return {
-      icon: null,
-      text: 'Unknown',
+      ...config,
+      text: t(config.textKey),
     };
   };
 

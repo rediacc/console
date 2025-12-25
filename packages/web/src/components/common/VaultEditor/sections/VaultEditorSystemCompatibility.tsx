@@ -26,8 +26,8 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
     return null;
   }
 
-  const status = kernelCompatibility.compatibility_status || 'unknown';
-  const osInfo = kernelCompatibility.os_info || {};
+  const status = kernelCompatibility.compatibility_status ?? 'unknown';
+  const osInfo = kernelCompatibility.os_info ?? {};
 
   const statusConfig: Record<
     string,
@@ -54,9 +54,9 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
     },
   };
 
-  const config = statusConfig[status] || statusConfig.unknown;
+  const config = statusConfig[status];
 
-  const sudoStatus = kernelCompatibility.sudo_available || 'unknown';
+  const sudoStatus = kernelCompatibility.sudo_available ?? 'unknown';
   const sudoConfig: Record<string, { color: string; text: string }> = {
     available: {
       color: 'success',
@@ -72,10 +72,7 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
     },
   };
 
-  const sudoConfigValue = sudoConfig[sudoStatus] || {
-    color: 'neutral',
-    text: t('vaultEditor.systemCompatibility.unknown'),
-  };
+  const sudoConfigValue = sudoConfig[sudoStatus];
 
   return (
     <Col xs={24} lg={12}>
@@ -88,10 +85,10 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
         <Flex vertical gap={8} className="w-full">
           <Descriptions bordered size="small" column={1}>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.operatingSystem')}>
-              {osInfo.pretty_name || t('vaultEditor.systemCompatibility.unknown')}
+              {osInfo.pretty_name ?? t('vaultEditor.systemCompatibility.unknown')}
             </Descriptions.Item>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.kernelVersion')}>
-              {kernelCompatibility.kernel_version || t('vaultEditor.systemCompatibility.unknown')}
+              {kernelCompatibility.kernel_version ?? t('vaultEditor.systemCompatibility.unknown')}
             </Descriptions.Item>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.btrfsAvailable')}>
               {kernelCompatibility.btrfs_available ? (

@@ -73,7 +73,7 @@ export function extractProgressMessage(output: string): string | null {
     if (!line) continue;
 
     const match = line.match(msgProgressLinePattern);
-    if (match && match[1]) {
+    if (match?.[1]) {
       // Clean up the message - remove any ANSI color codes and trim
       const message = match[1]
         // eslint-disable-next-line no-control-regex
@@ -118,115 +118,4 @@ export function extractProgressMessage(output: string): string | null {
   }
 
   return lastMessage;
-}
-
-/**
- * Parse progress information from console output
- * Returns both percentage and message
- *
- * @param output - Console output string
- * @returns Object with progress percentage and message
- */
-export function parseProgress(output: string): {
-  percentage: number | null;
-  message: string | null;
-} {
-  return {
-    percentage: extractMostRecentProgress(output),
-    message: extractProgressMessage(output),
-  };
-}
-
-/**
- * Check if output indicates task completion
- * @param output - Console output string
- * @returns True if output contains completion indicators
- */
-export function isTaskComplete(output: string): boolean {
-  if (!output) return false;
-
-  const completionPatterns = [
-    /completed\s+successfully/i,
-    /task\s+completed/i,
-    /done\s*$/im,
-    /finished\s+successfully/i,
-    /100%.*completed/i,
-  ];
-
-  return completionPatterns.some((pattern) => pattern.test(output));
-}
-
-/**
- * Check if output indicates task failure
- * @param output - Console output string
- * @returns True if output contains failure indicators
- */
-export function isTaskFailed(output: string): boolean {
-  if (!output) return false;
-
-  const failurePatterns = [/error:/i, /failed:/i, /fatal:/i, /exception:/i, /task\s+failed/i];
-
-  return failurePatterns.some((pattern) => pattern.test(output));
-}
-
-/**
- * Extract error message from console output
- * @param output - Console output string
- * @returns Error message or null if not found
- */
-export function extractErrorMessage(output: string): string | null {
-  if (!output) return null;
-
-  const lines = output.split('\n');
-
-  // Search from end for error lines
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    // Check for error patterns
-    const errorMatch = line.match(/(?:error|failed|fatal):\s*(.+)/i);
-    if (errorMatch && errorMatch[1]) {
-      return errorMatch[1].trim();
-    }
-  }
-
-  return null;
-}
-
-/**
- * Calculate estimated time remaining based on progress
- * @param percentage - Current progress percentage
- * @param elapsedSeconds - Time elapsed in seconds
- * @returns Estimated remaining seconds or null if cannot calculate
- */
-export function calculateETA(percentage: number, elapsedSeconds: number): number | null {
-  if (percentage <= 0 || percentage >= 100 || elapsedSeconds <= 0) {
-    return null;
-  }
-
-  const remainingPercentage = 100 - percentage;
-  const secondsPerPercent = elapsedSeconds / percentage;
-  const estimatedRemaining = remainingPercentage * secondsPerPercent;
-
-  return Math.round(estimatedRemaining);
-}
-
-/**
- * Format ETA in human-readable format
- * @param seconds - Remaining seconds
- * @returns Formatted string like "5m 30s" or "1h 15m"
- */
-export function formatETA(seconds: number): string {
-  if (seconds < 60) {
-    return `${seconds}s`;
-  } else if (seconds < 3600) {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return secs > 0 ? `${minutes}m ${secs}s` : `${minutes}m`;
-  } else {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-  }
 }

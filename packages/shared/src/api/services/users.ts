@@ -82,8 +82,8 @@ export function createUsersService(client: ApiClient) {
         extractor: responseExtractors.byIndex(1),
       });
       return {
-        vault: first?.vaultContent || '{}',
-        vaultVersion: first?.vaultVersion || 1,
+        vault: first?.vaultContent ?? '{}',
+        vaultVersion: first?.vaultVersion ?? 1,
         userCredential: first?.userCredential ?? null,
       };
     },

@@ -44,7 +44,7 @@ export function useTeamSelection(options: UseTeamSelectionOptions = {}): UseTeam
   const { autoSelect = true, getInitialTeam } = options;
 
   const { data: teamsData, isLoading } = useTeams();
-  const teams = useMemo<Team[]>(() => teamsData || [], [teamsData]);
+  const teams = useMemo<Team[]>(() => teamsData ?? [], [teamsData]);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
 
   const [state, dispatch] = useReducer(selectionReducer, {
@@ -62,7 +62,7 @@ export function useTeamSelection(options: UseTeamSelectionOptions = {}): UseTeam
       initialTeam = getInitialTeam(teams, uiMode);
     } else if (uiMode === 'simple') {
       const privateTeam = teams.find((team) => team.teamName === 'Private Team');
-      initialTeam = privateTeam?.teamName || teams[0].teamName;
+      initialTeam = privateTeam?.teamName ?? teams[0].teamName;
     } else {
       initialTeam = teams[0].teamName;
     }

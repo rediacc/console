@@ -30,15 +30,15 @@ export const useCreateMachine = () => {
         teamName,
         bridgeName,
         machineName,
-        vaultContent: vaultContent || '{}',
+        vaultContent: vaultContent ?? '{}',
       }),
     successMessage: (_, vars) => `Machine "${vars.machineName}" created successfully`,
     errorMessage: 'Failed to create machine',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.bridges] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.dropdown] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.bridges] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.dropdown] });
     },
   });
 };
@@ -51,8 +51,8 @@ export const useUpdateMachineName = () => {
     successMessage: (_, vars) => `Machine renamed to "${vars.newMachineName}"`,
     errorMessage: 'Failed to update machine name',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.dropdown] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.dropdown] });
     },
   });
 };
@@ -66,8 +66,8 @@ export const useUpdateMachineBridge = () => {
       `Machine "${vars.machineName}" reassigned to bridge "${vars.newBridgeName}"`,
     errorMessage: 'Failed to update machine bridge',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.bridges] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.bridges] });
     },
   });
 };
@@ -88,7 +88,7 @@ export const useUpdateMachineVault = () => {
     successMessage: (_, vars) => `Machine "${vars.machineName}" vault updated successfully`,
     errorMessage: 'Failed to update machine vault',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
     },
   });
 };
@@ -101,9 +101,9 @@ export const useDeleteMachine = () => {
     successMessage: (_, vars) => `Machine "${vars.machineName}" deleted successfully`,
     errorMessage: 'Failed to delete machine',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.bridges] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.machines] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.teams] });
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEY_STRINGS.bridges] });
     },
   });
 };

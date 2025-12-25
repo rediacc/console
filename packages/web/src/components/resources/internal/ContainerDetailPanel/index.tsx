@@ -33,12 +33,12 @@ interface ContainerData {
   status: string;
   state: string;
   ports: string;
-  port_mappings?: Array<{
+  port_mappings?: {
     host?: string;
     host_port?: string;
     container_port: string;
     protocol: string;
-  }>;
+  }[];
   labels: string;
   mounts: string;
   networks: string;
@@ -70,15 +70,15 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
   const resourceUsage = useMemo(() => {
     if (!container) return null;
 
-    const cpuValue = parseFloat(container.cpu_percent?.replace('%', '') || '0');
-    const memoryParts = container.memory_usage?.split(' / ') || [];
+    const cpuValue = parseFloat(container.cpu_percent.replace('%', '') || '0');
+    const memoryParts = container.memory_usage.split(' / ');
     const memoryUsed = memoryParts[0] || '0';
     const memoryTotal = memoryParts[1] || '0';
-    const memoryPercent = parseFloat(container.memory_percent?.replace('%', '') || '0');
-    const netParts = container.net_io?.split(' / ') || [];
+    const memoryPercent = parseFloat(container.memory_percent.replace('%', '') || '0');
+    const netParts = container.net_io.split(' / ');
     const netIn = netParts[0] || '0';
     const netOut = netParts[1] || '0';
-    const blockParts = container.block_io?.split(' / ') || [];
+    const blockParts = container.block_io.split(' / ');
     const blockRead = blockParts[0] || '0';
     const blockWrite = blockParts[1] || '0';
 
@@ -99,9 +99,9 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
     return null;
   }
 
-  const isPlugin = container.name?.startsWith('plugin-');
-  const cpuWarning = (resourceUsage?.cpu || 0) > 80;
-  const memoryWarning = (resourceUsage?.memoryPercent || 0) > 90;
+  const isPlugin = container.name.startsWith('plugin-');
+  const cpuWarning = (resourceUsage?.cpu ?? 0) > 80;
+  const memoryWarning = (resourceUsage?.memoryPercent ?? 0) > 90;
 
   const renderPortMappings = () => {
     if (container.port_mappings && container.port_mappings.length > 0) {
@@ -189,9 +189,9 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         >
           <Card size="small" data-testid="container-detail-cpu-card">
             <Typography.Text type="secondary">{t('resources:containers.cpuUsage')}</Typography.Text>
-            <Typography.Text strong>{resourceUsage?.cpu?.toFixed(2) ?? '0'}%</Typography.Text>
+            <Typography.Text strong>{resourceUsage?.cpu.toFixed(2) ?? '0'}%</Typography.Text>
             <Progress
-              percent={resourceUsage?.cpu || 0}
+              percent={resourceUsage?.cpu ?? 0}
               showInfo={false}
               status={cpuWarning ? 'exception' : 'normal'}
             />
@@ -204,7 +204,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
               {resourceUsage ? `${resourceUsage.memoryUsed} / ${resourceUsage.memoryTotal}` : '-'}
             </Typography.Text>
             <Progress
-              percent={resourceUsage?.memoryPercent || 0}
+              percent={resourceUsage?.memoryPercent ?? 0}
               status={memoryWarning ? 'exception' : 'normal'}
             />
           </Card>
@@ -248,7 +248,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
               <DetailPanelFieldLabel>{t('resources:containers.processes')}:</DetailPanelFieldLabel>
               <DetailPanelFieldValue>
                 <Tag data-testid="container-detail-pids">
-                  {resourceUsage?.pids || 0} {t('resources:containers.pids')}
+                  {resourceUsage?.pids ?? 0} {t('resources:containers.pids')}
                 </Tag>
               </DetailPanelFieldValue>
             </DetailPanelFieldRow>

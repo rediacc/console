@@ -71,7 +71,7 @@ export const cookieDetector: CustomDetector = {
 
   lookup(): string | undefined {
     const value = getCookie(COOKIE_NAME);
-    return value || undefined;
+    return value ?? undefined;
   },
 
   cacheUserLanguage(lng: string): void {

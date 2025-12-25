@@ -3,12 +3,13 @@ import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared
 import type { GroupedRepository, Repository } from './types';
 
 export const getRepositoryDisplayName = (repository: Repository): string => {
-  return `${repository.name}:${repository.repositoryTag || 'latest'}`;
+  return `${repository.name}:${repository.repositoryTag ?? 'latest'}`;
 };
 
 export const getAxiosErrorMessage = (error: unknown, fallback: string) => {
   if (isAxiosError(error)) {
     const responseMessage = (error.response?.data as { message?: string } | undefined)?.message;
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty strings should fall through
     return responseMessage || error.message || fallback;
   }
   return fallback;
@@ -20,10 +21,9 @@ export const groupRepositoriesByName = (
 ): GroupedRepository[] => {
   const grouped = repositories.reduce(
     (acc, repository) => {
-      if (!acc[repository.name]) {
-        acc[repository.name] = [];
-      }
-      acc[repository.name].push(repository);
+      const existing = acc[repository.name] ?? [];
+      existing.push(repository);
+      acc[repository.name] = existing;
       return acc;
     },
     {} as Record<string, Repository[]>
@@ -37,11 +37,11 @@ export const groupRepositoriesByName = (
             (tr) => tr.repositoryName === r.name && tr.repositoryTag === r.repositoryTag
           );
           return tagData && (!tagData.parentGuid || tagData.parentGuid === tagData.repositoryGuid);
-        }) || null;
+        }) ?? null;
 
       const forkTags = tags
         .filter((r) => r !== grandTag)
-        .sort((a, b) => (a.repositoryTag || '').localeCompare(b.repositoryTag || ''));
+        .sort((a, b) => (a.repositoryTag ?? '').localeCompare(b.repositoryTag ?? ''));
 
       return {
         name,

@@ -1,6 +1,7 @@
 import { TFunction } from 'i18next';
 import type { FormFieldConfig } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault';
 import { featureFlags } from '@/config/featureFlags';
+import { conditionalRequired, validationRules } from '@/platform/utils/formValidation';
 import type { ResourceType } from '../index';
 
 type ClusterOption = { clusterName: string };
@@ -15,12 +16,12 @@ type PoolImageOption = { imageName: string };
 type SnapshotOption = { snapshotName: string };
 
 interface DropdownData {
-  teams?: Array<{ value: string; label: string }>;
-  regions?: Array<{ value: string; label: string }>;
-  machinesByTeam?: Array<{
+  teams?: { value: string; label: string }[];
+  regions?: { value: string; label: string }[];
+  machinesByTeam?: {
     teamName: string;
-    machines: Array<{ value: string; label: string }>;
-  }>;
+    machines: { value: string; label: string }[];
+  }[];
 }
 
 interface FormFieldGeneratorProps {
@@ -34,7 +35,7 @@ interface FormFieldGeneratorProps {
   teamFilter?: string | string[];
   creationContext?: 'credentials-only' | 'normal';
   getFormValue: (field: string) => string | undefined;
-  getFilteredBridges: (regionName: string | null) => Array<{ value: string; label: string }>;
+  getFilteredBridges: (regionName: string | null) => { value: string; label: string }[];
   t: TFunction;
 }
 
@@ -53,22 +54,40 @@ const getResourceTranslationKey = (resourceType: ResourceType) => {
     clone: { key: 'clones' },
   } as const;
 
-  return RESOURCE_CONFIG[resourceType as keyof typeof RESOURCE_CONFIG]?.key || `${resourceType}s`;
+  return RESOURCE_CONFIG[resourceType].key;
 };
 
-const mapToOptions = (items?: Array<{ value: string; label: string }>) =>
-  items?.map((item) => ({ value: item.value, label: item.label })) || [];
+const mapToOptions = (items?: { value: string; label: string }[]) =>
+  items?.map((item) => ({ value: item.value, label: item.label })) ?? [];
 
-export const createNameField = (resourceType: ResourceType, t: TFunction): FormFieldConfig => ({
+const getResourceNameLabel = (resourceType: ResourceType): string => {
+  const labels: Record<ResourceType, string> = {
+    machine: 'Machine',
+    repository: 'Repository',
+    storage: 'Storage',
+    team: 'Team',
+    region: 'Region',
+    bridge: 'Bridge',
+    cluster: 'Cluster',
+    pool: 'Pool',
+    image: 'Image',
+    snapshot: 'Snapshot',
+    clone: 'Clone',
+  };
+  return labels[resourceType];
+};
+
+const createNameField = (resourceType: ResourceType, t: TFunction): FormFieldConfig => ({
   name: `${resourceType}Name`,
   label: t(`${getResourceTranslationKey(resourceType)}.${resourceType}Name`),
   placeholder: t(
     `${getResourceTranslationKey(resourceType)}.placeholders.enter${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}Name`
   ),
   required: true,
+  rules: validationRules.resourceName(getResourceNameLabel(resourceType)),
 });
 
-export const createTeamField = (
+const createTeamField = (
   dropdownData: DropdownData | undefined,
   t: TFunction
 ): FormFieldConfig => ({
@@ -78,9 +97,10 @@ export const createTeamField = (
   required: true,
   type: 'select' as const,
   options: mapToOptions(dropdownData?.teams),
+  rules: [validationRules.required('Team')],
 });
 
-export const createRegionField = (
+const createRegionField = (
   dropdownData: DropdownData | undefined,
   t: TFunction
 ): FormFieldConfig => ({
@@ -89,12 +109,13 @@ export const createRegionField = (
   placeholder: t('regions.placeholders.selectRegion'),
   required: true,
   type: 'select' as const,
-  options: mapToOptions(dropdownData?.regions) as Array<{ value: string; label: string }>,
+  options: mapToOptions(dropdownData?.regions) as { value: string; label: string }[],
+  rules: [validationRules.required('Region')],
 });
 
-export const createBridgeField = (
+const createBridgeField = (
   getFormValue: (field: string) => string | undefined,
-  getFilteredBridges: (regionName: string | null) => Array<{ value: string; label: string }>,
+  getFilteredBridges: (regionName: string | null) => { value: string; label: string }[],
   t: TFunction
 ): FormFieldConfig => {
   const currentRegion = getFormValue('regionName') ?? null;
@@ -109,6 +130,7 @@ export const createBridgeField = (
     type: 'select' as const,
     options: bridgeOptions,
     disabled: !currentRegion,
+    rules: [validationRules.required('Bridge')],
   };
 };
 
@@ -157,17 +179,18 @@ export const getFormFields = ({
       const isPrefilledMachine = existingData?.prefilledMachine;
 
       // Check if this is credential-only mode (either from Add Credential button or Repository Credentials tab)
-      const isCredentialOnlyMode =
-        (existingData?.repositoryGuid &&
+      const hasExistingGuid = Boolean(
+        existingData?.repositoryGuid &&
           typeof existingData.repositoryGuid === 'string' &&
-          existingData.repositoryGuid.trim() !== '') ||
-        creationContext === 'credentials-only';
+          existingData.repositoryGuid.trim() !== ''
+      );
+      const isCredentialOnlyMode = hasExistingGuid || creationContext === 'credentials-only';
 
       // Get machines for the team (use existingData teamName if available)
-      const _teamName = existingData?.teamName || 'Private Team';
+      const _teamName = existingData?.teamName ?? 'Private Team';
       const machinesByTeam = dropdownData?.machinesByTeam ?? [];
       const teamMachines =
-        machinesByTeam.find((team) => team.teamName === _teamName)?.machines || [];
+        machinesByTeam.find((team) => team.teamName === _teamName)?.machines ?? [];
 
       // Only show machine selection if not prefilled and not in credential-only mode
       if (!isPrefilledMachine && !isCredentialOnlyMode) {
@@ -175,13 +198,14 @@ export const getFormFields = ({
           name: 'machineName',
           label: t('machines:machine'),
           placeholder: t('machines:placeholders.selectMachine'),
-          required: false,
+          required: true,
           type: 'select' as const,
           options: teamMachines.map((machine: { value: string; label: string }) => ({
             value: machine.value,
             label: machine.label,
           })),
           helperText: t('repositories.machineHelperText'),
+          rules: [conditionalRequired('Machine is required')],
         });
       }
 
@@ -191,10 +215,11 @@ export const getFormFields = ({
           name: 'size',
           label: t('repositories.size'),
           placeholder: t('repositories.placeholders.enterSize'),
-          required: false,
+          required: true,
           type: 'size' as const,
           sizeUnits: ['G', 'T'],
           helperText: t('repositories.sizeHelperText'),
+          rules: [conditionalRequired('Size is required'), validationRules.sizeFormat()],
         });
       }
 
@@ -213,6 +238,7 @@ export const getFormFields = ({
           helperText: existingData?.repositoryGuid
             ? t('repositories.guidHelperTextExisting')
             : t('repositories.guidHelperTextNew'),
+          rules: [validationRules.required('Repository GUID'), validationRules.uuid()],
         });
       }
     }
@@ -241,11 +267,13 @@ export const getFormFields = ({
     const isPrefilledMachine = existingData?.prefilledMachine;
 
     // Check if this is credential-only mode (either from Add Credential button or Repository Credentials tab)
-    const isCredentialOnlyMode =
-      (existingData?.repositoryGuid &&
+    const hasExistingGuidForStorage = Boolean(
+      existingData?.repositoryGuid &&
         typeof existingData.repositoryGuid === 'string' &&
-        existingData.repositoryGuid.trim() !== '') ||
-      creationContext === 'credentials-only';
+        existingData.repositoryGuid.trim() !== ''
+    );
+    const isCredentialOnlyMode =
+      hasExistingGuidForStorage || creationContext === 'credentials-only';
 
     // Get machines for the selected team
     let preselectedTeamName = '';
@@ -254,10 +282,10 @@ export const getFormFields = ({
     }
 
     const selectedTeamName =
-      getFormValue('teamName') || existingData?.teamName || preselectedTeamName;
+      getFormValue('teamName') ?? existingData?.teamName ?? preselectedTeamName;
     const machinesByTeamFull = dropdownData?.machinesByTeam ?? [];
     const teamMachines =
-      machinesByTeamFull.find((team) => team.teamName === selectedTeamName)?.machines || [];
+      machinesByTeamFull.find((team) => team.teamName === selectedTeamName)?.machines ?? [];
 
     // Only show machine selection if not prefilled and not in credential-only mode
     if (!isPrefilledMachine && !isCredentialOnlyMode) {
@@ -271,8 +299,9 @@ export const getFormFields = ({
           value: machine.value,
           label: machine.label,
         })),
-        disabled: !selectedTeamName || teamMachines.length === 0,
+        disabled: teamMachines.length === 0,
         helperText: t('repositories.machineHelperTextRequired'),
+        rules: [conditionalRequired('Machine is required')],
       });
     }
 
@@ -286,6 +315,7 @@ export const getFormFields = ({
         type: 'size' as const,
         sizeUnits: ['G', 'T'],
         helperText: t('repositories.sizeHelperTextRequired'),
+        rules: [conditionalRequired('Size is required'), validationRules.sizeFormat()],
       });
     }
 
@@ -305,6 +335,7 @@ export const getFormFields = ({
         helperText: existingData?.repositoryGuid
           ? t('repositories.guidHelperTextExisting')
           : t('repositories.guidHelperTextNew'),
+        rules: [validationRules.required('Repository GUID'), validationRules.uuid()],
       });
     } else if (isExpertMode) {
       // In expert mode (when creating new repo), show as optional editable field
@@ -315,13 +346,14 @@ export const getFormFields = ({
         required: false,
         type: 'text' as const,
         helperText: t('repositories.guidHelperText'),
+        rules: [validationRules.uuid()], // Only UUID format validation, not required
       });
     }
   } else if (resourceType === 'cluster') {
     fields.push(nameField);
   } else if (resourceType === 'pool') {
     // Get clusters for the selected team
-    const teamClusters = (existingData?.clusters as ClusterOption[] | undefined) || [];
+    const teamClusters = (existingData?.clusters as ClusterOption[] | undefined) ?? [];
 
     fields.push({
       name: 'clusterName',
@@ -334,13 +366,14 @@ export const getFormFields = ({
         label: cluster.clusterName,
       })),
       disabled: teamClusters.length === 0,
+      rules: [validationRules.required('Cluster')],
     });
     fields.push(nameField);
   } else if (resourceType === 'image') {
     // Image needs pool selection and machine assignment
-    const teamPools = (existingData?.pools as PoolOption[] | undefined) || [];
+    const teamPools = (existingData?.pools as PoolOption[] | undefined) ?? [];
     const availableMachines =
-      (existingData?.availableMachines as AvailableMachineOption[] | undefined) || [];
+      (existingData?.availableMachines as AvailableMachineOption[] | undefined) ?? [];
 
     fields.push({
       name: 'poolName',
@@ -353,6 +386,7 @@ export const getFormFields = ({
         label: `${pool.poolName} (${pool.clusterName})`,
       })),
       disabled: teamPools.length === 0,
+      rules: [validationRules.required('Pool')],
     });
     fields.push(nameField);
 
@@ -371,13 +405,14 @@ export const getFormFields = ({
         })),
         disabled: availableMachines.length === 0,
         helperText: availableMachines.length === 0 ? t('machines:noMachinesFound') : undefined,
+        rules: [validationRules.required('Machine')],
       });
     }
   } else if (resourceType === 'snapshot') {
     // Snapshot needs pool and image selection
-    const teamPools = (existingData?.pools as PoolOption[] | undefined) || [];
-    const selectedPoolName = getFormValue('poolName') || existingData?.poolName;
-    const poolImages = (existingData?.images as PoolImageOption[] | undefined) || [];
+    const teamPools = (existingData?.pools as PoolOption[] | undefined) ?? [];
+    const selectedPoolName = getFormValue('poolName') ?? existingData?.poolName;
+    const poolImages = (existingData?.images as PoolImageOption[] | undefined) ?? [];
 
     if (!existingData?.poolName) {
       fields.push({
@@ -391,6 +426,7 @@ export const getFormFields = ({
           label: `${pool.poolName} (${pool.clusterName})`,
         })),
         disabled: teamPools.length === 0,
+        rules: [validationRules.required('Pool')],
       });
     }
 
@@ -405,15 +441,16 @@ export const getFormFields = ({
         label: image.imageName,
       })),
       disabled: !selectedPoolName || poolImages.length === 0,
+      rules: [validationRules.required('Image')],
     });
     fields.push(nameField);
   } else if (resourceType === 'clone') {
     // Clone needs pool, image, and snapshot selection
-    const teamPools = (existingData?.pools as PoolOption[] | undefined) || [];
-    const selectedPoolName = getFormValue('poolName') || existingData?.poolName;
-    const poolImages = (existingData?.images as PoolImageOption[] | undefined) || [];
-    const selectedImageName = getFormValue('imageName') || existingData?.imageName;
-    const imageSnapshots = (existingData?.snapshots as SnapshotOption[] | undefined) || [];
+    const teamPools = (existingData?.pools as PoolOption[] | undefined) ?? [];
+    const selectedPoolName = getFormValue('poolName') ?? existingData?.poolName;
+    const poolImages = (existingData?.images as PoolImageOption[] | undefined) ?? [];
+    const selectedImageName = getFormValue('imageName') ?? existingData?.imageName;
+    const imageSnapshots = (existingData?.snapshots as SnapshotOption[] | undefined) ?? [];
 
     if (!existingData?.poolName) {
       fields.push({
@@ -427,6 +464,7 @@ export const getFormFields = ({
           label: `${pool.poolName} (${pool.clusterName})`,
         })),
         disabled: teamPools.length === 0,
+        rules: [validationRules.required('Pool')],
       });
     }
 
@@ -442,6 +480,7 @@ export const getFormFields = ({
           label: image.imageName,
         })),
         disabled: !selectedPoolName || poolImages.length === 0,
+        rules: [validationRules.required('Image')],
       });
     }
 
@@ -456,6 +495,7 @@ export const getFormFields = ({
         label: snapshot.snapshotName,
       })),
       disabled: !selectedImageName || imageSnapshots.length === 0,
+      rules: [validationRules.required('Snapshot')],
     });
     fields.push(nameField);
   } else if (!['team', 'region'].includes(resourceType)) {

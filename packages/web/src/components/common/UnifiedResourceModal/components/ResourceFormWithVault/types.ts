@@ -1,13 +1,12 @@
 import type { ReactNode } from 'react';
+import type { FormInstance, Rule } from 'antd/es/form';
 import type { UploadFile } from 'antd/es/upload/interface';
-import type { ControllerProps, FieldValues, UseFormReturn } from 'react-hook-form';
 
 export interface ResourceFormWithVaultRef {
   submit: () => Promise<void>;
 }
 
 export type ResourceFormLayout = 'horizontal' | 'vertical' | 'inline';
-export type ResourceFormCreationContext = 'credentials-only' | 'normal';
 export type ResourceFormUiMode = 'simple' | 'expert';
 
 export interface FormFieldOption {
@@ -15,14 +14,14 @@ export interface FormFieldOption {
   label: string;
 }
 
-export type FormFieldConfig<TFieldValues extends FieldValues = FieldValues> = {
-  name: ControllerProps<TFieldValues>['name'];
+export type FormFieldConfig = {
+  name: string;
   label: string;
   type?: 'text' | 'select' | 'password' | 'email' | 'number' | 'size';
   placeholder?: string;
   required?: boolean;
   options?: FormFieldOption[];
-  rules?: ControllerProps<TFieldValues>['rules'];
+  rules?: Rule[];
   hidden?: boolean;
   disabled?: boolean;
   readOnly?: boolean;
@@ -35,12 +34,12 @@ export interface ImportExportHandlers {
   handleExport: () => void;
 }
 
-export interface ResourceFormWithVaultProps<T extends FieldValues = FieldValues> {
-  form: UseFormReturn<T>;
-  fields: Array<FormFieldConfig<T>>;
-  onSubmit: (data: T) => void | Promise<void>;
+export interface ResourceFormWithVaultProps {
+  form: FormInstance;
+  fields: FormFieldConfig[];
+  onSubmit: (data: Record<string, unknown>) => void | Promise<void>;
   entityType: string;
-  vaultFieldName: ControllerProps<T>['name'];
+  vaultFieldName: string;
   layout?: ResourceFormLayout;
   showDefaultsAlert?: boolean;
   defaultsContent?: ReactNode;
@@ -54,6 +53,5 @@ export interface ResourceFormWithVaultProps<T extends FieldValues = FieldValues>
   afterVaultContent?: ReactNode;
   isModalOpen?: boolean;
   isEditMode?: boolean;
-  creationContext?: ResourceFormCreationContext;
   uiMode?: ResourceFormUiMode;
 }

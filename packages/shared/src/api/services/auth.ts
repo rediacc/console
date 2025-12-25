@@ -109,25 +109,25 @@ export function createAuthService(client: ApiClient) {
       }
       const response = await client.post('/ForkAuthenticationRequest', payload);
 
-      const credentialsSet =
-        response.resultSets?.find((set) => set.resultSetName === 'Credentials') ??
-        response.resultSets?.[1] ??
-        response.resultSets?.[0];
+      const foundSet = response.resultSets.find((set) => set.resultSetName === 'Credentials');
+      const fallbackSet = response.resultSets.length > 1 ? response.resultSets[1] : undefined;
+      const credentialsSet = foundSet ?? fallbackSet;
 
-      const row = credentialsSet?.data?.[0] as
+      const row = (credentialsSet ? credentialsSet.data[0] : undefined) as
         | (Partial<ForkSessionCredentials> & {
             parentRequestId?: number | string;
           })
         | undefined;
 
+      const parentRequestId = row?.parentRequestId;
       return {
         requestToken: typeof row?.requestToken === 'string' ? row.requestToken : null,
         nextRequestToken: typeof row?.nextRequestToken === 'string' ? row.nextRequestToken : null,
         parentRequestId:
-          typeof row?.parentRequestId === 'number'
-            ? row.parentRequestId
-            : row?.parentRequestId
-              ? Number(row.parentRequestId) || null
+          typeof parentRequestId === 'number'
+            ? parentRequestId
+            : typeof parentRequestId === 'string'
+              ? Number(parentRequestId) || null
               : null,
       };
     },

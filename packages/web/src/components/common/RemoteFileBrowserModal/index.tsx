@@ -62,7 +62,7 @@ const parseListResponse = (
   if (typeof commandResult === 'string') {
     try {
       const parsed = JSON.parse(commandResult);
-      dataToProcess = parsed.command_output || '';
+      dataToProcess = parsed.command_output ?? '';
     } catch {
       dataToProcess = commandResult;
     }
@@ -181,7 +181,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       priority: 4,
     });
 
-    const taskId = result.taskId || result.queueId;
+    const taskId = result.taskId ?? result.queueId;
     if (!taskId) {
       throw new Error('Failed to create queue item - no taskId returned');
     }
@@ -286,8 +286,8 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       functionName: 'pull',
       params: {
         from: selectedSource,
-        repository: file.originalGuid || file.name,
-        grand: file.originalGuid || file.name,
+        repository: file.originalGuid ?? file.name,
+        grand: file.originalGuid ?? file.name,
         path: currentPath || '',
         sourceType: isStorageSource ? 'storage' : 'machine',
       },
@@ -304,9 +304,9 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       priority: 3,
     });
 
-    if (response?.taskId && onQueueItemCreated) {
+    if (response.taskId && onQueueItemCreated) {
       onQueueItemCreated(response.taskId, machineName);
-    } else if (response?.isQueued) {
+    } else if (response.isQueued) {
       showMessage('info', t('resources:messages.pullOperationQueued'));
     }
 

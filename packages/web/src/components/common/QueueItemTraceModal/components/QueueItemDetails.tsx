@@ -37,7 +37,7 @@ export const QueueItemDetails: React.FC<QueueItemDetailsProps> = ({
       <Descriptions.Item label="Status">
         <Tag>{status}</Tag>
       </Descriptions.Item>
-      <Descriptions.Item label="Priority">{queueDetails.priorityLabel || '-'}</Descriptions.Item>
+      <Descriptions.Item label="Priority">{queueDetails.priorityLabel ?? '-'}</Descriptions.Item>
       <Descriptions.Item label="Machine">
         <Typography.Text>{queueDetails.machineName}</Typography.Text>
       </Descriptions.Item>

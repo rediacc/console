@@ -28,7 +28,7 @@ export const PriorityWithTooltip: React.FC<PriorityWithTooltipProps> = ({
   );
 
   return (
-    renderPriority(priorityLabel, record.priority, tooltipContent) || (
+    renderPriority(priorityLabel, record.priority, tooltipContent) ?? (
       <Typography.Text>-</Typography.Text>
     )
   );
@@ -83,6 +83,7 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
             <Flex vertical>
               {allErrors.map((error: ParsedError, index: number) => (
                 <Typography.Text key={`${error.message}-${index}`} className="block">
+                  {/* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- severity may be absent */}
                   {error.severity && <strong>[{error.severity}]</strong>} {error.message}
                 </Typography.Text>
               ))}

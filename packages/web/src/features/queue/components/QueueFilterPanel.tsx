@@ -5,10 +5,10 @@ import { SearchOutlined } from '@/utils/optimizedIcons';
 import type { Dayjs } from 'dayjs';
 
 interface DropdownData {
-  teams?: Array<{ label: string; value: string }>;
+  teams?: { label: string; value: string }[];
   machines?: string[];
-  regions?: Array<{ label: string; value: string }>;
-  bridges?: Array<{ label: string; value: string }>;
+  regions?: { label: string; value: string }[];
+  bridges?: { label: string; value: string }[];
 }
 
 export interface QueueFilterValues {
@@ -50,22 +50,22 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
     <Space size={8} wrap>
       <Select
         placeholder={t('filters.teamPlaceholder')}
-        value={filters.teamName ?? undefined}
+        value={filters.teamName || undefined}
         onChange={(value) => {
           const nextValue = typeof value === 'string' ? value : '';
           onFilterChange('teamName', nextValue);
           onFilterChange('machineName', '');
         }}
         allowClear
-        options={dropdownData?.teams || []}
+        options={dropdownData?.teams ?? []}
         data-testid="queue-filter-team"
       />
       <Select
         placeholder={t('filters.machinePlaceholder')}
-        value={filters.machineName ?? undefined}
+        value={filters.machineName || undefined}
         onChange={(value) => onFilterChange('machineName', typeof value === 'string' ? value : '')}
         allowClear
-        options={(dropdownData?.machines || []).map((machine) => ({
+        options={(dropdownData?.machines ?? []).map((machine) => ({
           label: machine,
           value: machine,
         }))}
@@ -73,18 +73,18 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
       />
       <Select
         placeholder={t('filters.regionPlaceholder')}
-        value={filters.regionName ?? undefined}
+        value={filters.regionName || undefined}
         onChange={(value) => onFilterChange('regionName', typeof value === 'string' ? value : '')}
         allowClear
-        options={dropdownData?.regions || []}
+        options={dropdownData?.regions ?? []}
         data-testid="queue-filter-region"
       />
       <Select
         placeholder={t('filters.bridgePlaceholder')}
-        value={filters.bridgeName ?? undefined}
+        value={filters.bridgeName || undefined}
         onChange={(value) => onFilterChange('bridgeName', typeof value === 'string' ? value : '')}
         allowClear
-        options={dropdownData?.bridges || []}
+        options={dropdownData?.bridges ?? []}
         data-testid="queue-filter-bridge"
       />
       <DatePicker.RangePicker
@@ -99,7 +99,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         placeholder={t('filters.statusPlaceholder')}
         value={filters.statusFilter}
         onChange={(values) => {
-          const normalized = (values as Array<string | number> | undefined)?.map((value) =>
+          const normalized = (values as (string | number)[] | undefined)?.map((value) =>
             String(value)
           );
           onStatusFilterChange(normalized ?? []);

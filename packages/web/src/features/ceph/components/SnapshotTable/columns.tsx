@@ -53,7 +53,7 @@ export const buildSnapshotColumns = ({
     width: 300,
     maxLength: 8,
     sorter: createSorter<CephRbdSnapshot>('snapshotGuid'),
-    renderText: (value) => value || '',
+    renderText: (value) => value ?? '',
   }),
   createActionColumn<CephRbdSnapshot>({
     width: 150,

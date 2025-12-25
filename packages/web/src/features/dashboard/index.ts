@@ -1,13 +1,4 @@
 export { default as DashboardPage } from './pages/DashboardPage';
-export { default as CephDashboardWidget } from './components/CephDashboardWidget';
-export { default as SystemVersionFooter } from './components/SystemVersionFooter';
-export { default as AccountHealthWidget } from './widgets/AccountHealthWidget';
-export { default as DashboardAlertsWidget } from './widgets/DashboardAlertsWidget';
-export { default as QueueDetailsWidget } from './widgets/QueueDetailsWidget';
-export { default as QueueOverviewWidget } from './widgets/QueueOverviewWidget';
-export { default as RecentActivityWidget } from './widgets/RecentActivityWidget';
-export { default as ResourceUsageWidget } from './widgets/ResourceUsageWidget';
-export { default as SubscriptionPlanWidget } from './widgets/SubscriptionPlanWidget';
 export * from './utils/formatTimestamp';
 export * from './utils/actionIconMapping';
 export * from './types';

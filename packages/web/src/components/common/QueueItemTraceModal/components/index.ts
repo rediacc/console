@@ -8,7 +8,5 @@ export { QueueItemDetails } from './QueueItemDetails';
 export { QueueItemHeader } from './QueueItemHeader';
 export { RelatedQueueItems } from './RelatedQueueItems';
 export { ResponseVaultContent } from './ResponseVaultContent';
-export { SSHTestResultsDisplay } from './SSHTestResultsDisplay';
 export { StaleTaskWarning } from './StaleTaskWarning';
-export { StatsPanel } from './StatsPanel';
 export { TimelineView } from './TimelineView';

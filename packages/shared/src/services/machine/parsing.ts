@@ -107,8 +107,9 @@ export function parseVaultStatus(vaultStatusJson: string | undefined | null): Pa
     const data = JSON.parse(vaultStatusJson);
 
     if (data.status !== 'completed' || !data.result) {
+      const status: VaultStatusState = data.status ?? 'unknown';
       return {
-        status: (data.status as VaultStatusState) || 'unknown',
+        status,
         repositories: [],
       };
     }

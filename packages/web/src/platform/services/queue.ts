@@ -17,14 +17,12 @@ export type {
   QueueItemStatus,
   QueueListener,
   QueueMonitoringEvent,
-  QueueNotification,
-  QueueNotificationLevel,
 } from '@rediacc/shared/services/queue';
 
 /**
- * Queue service dependencies (for backward compatibility)
+ * Queue service dependencies (internal use only)
  */
-export interface QueueServiceDependencies {
+interface QueueServiceDependencies {
   emitNotification?: (
     notification: import('@rediacc/shared/services/queue').QueueNotification
   ) => void;

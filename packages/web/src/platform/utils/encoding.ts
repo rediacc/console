@@ -32,28 +32,3 @@ export function encodeBase64(value: string): string {
     throw error;
   }
 }
-
-/**
- * Decodes a base64 string to its original value, handling UTF-8 characters
- *
- * @param value - The base64 encoded string
- * @returns Decoded string
- * @throws {DOMException} If atob is not available or decoding fails
- *
- * @example
- * decodeBase64('SGVsbG8gV29ybGQ=') // Returns: 'Hello World'
- */
-export function decodeBase64(value: string): string {
-  try {
-    const decoded = atob(value);
-    // Try to decode as UTF-8
-    const bytes = Uint8Array.from(decoded, (char) => char.charCodeAt(0));
-    return new TextDecoder().decode(bytes);
-  } catch (error) {
-    // Fallback to standard atob for ASCII strings
-    if (error instanceof DOMException || error instanceof RangeError) {
-      return atob(value);
-    }
-    throw error;
-  }
-}

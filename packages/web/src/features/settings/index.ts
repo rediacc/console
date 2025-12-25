@@ -2,7 +2,6 @@ export { default as ProfilePage } from './pages/ProfilePage';
 export { default as CompanyPage } from './pages/CompanyPage';
 export { default as InfrastructurePage } from './pages/InfrastructurePage';
 export * from './components/profile/OTPCodeField';
-export { default as TwoFactorSettings } from './components/profile/TwoFactorSettings';
 export * from './components/company/CompanyVaultSection';
 export * from './components/company/DangerZoneSection';
 export * from './components/company/ImportModal';

@@ -30,7 +30,7 @@ export const handleDeployFunction = async (
       r.repositoryTag === selectedRepository.repositoryTag
   );
 
-  if (!RepoData || !RepoData.vaultContent) {
+  if (!RepoData?.vaultContent) {
     showMessage(
       'error',
       t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
@@ -86,13 +86,13 @@ export const handleDeployFunction = async (
           destName: newRepo.repositoryName,
           repository: RepoData.repositoryGuid,
           repositoryName: RepoData.repositoryName,
-          grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
+          grand: RepoData.grandGuid ?? RepoData.repositoryGuid,
           state: selectedRepository.mounted ? 'online' : 'offline',
         },
         priority: functionData.priority,
         addedVia: 'machine-Repository-list',
-        machineVault: machine.vaultContent || '{}',
-        destinationMachineVault: destinationMachine.vaultContent || '{}',
+        machineVault: machine.vaultContent ?? '{}',
+        destinationMachineVault: destinationMachine.vaultContent ?? '{}',
         repositoryGuid: RepoData.repositoryGuid,
         vaultContent: grandRepoVault,
         repositoryNetworkId: newRepo.repositoryNetworkId,

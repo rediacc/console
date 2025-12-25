@@ -56,7 +56,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             )}
             {companyData?.activeSubscription && (
               <Tag data-testid="user-info-plan">
-                {companyData.activeSubscription.planCode ?? 'UNKNOWN'}
+                {companyData.activeSubscription.planCode || 'UNKNOWN'}
               </Tag>
             )}
           </Flex>

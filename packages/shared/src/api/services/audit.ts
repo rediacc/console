@@ -68,12 +68,12 @@ export function createAuditService(client: ApiClient) {
 }
 
 function getRowsByIndex<T>(response: ApiResponse, index: number): T[] {
-  if (!response.resultSets || !response.resultSets[index]) {
+  if (!response.resultSets[index]) {
     return [];
   }
 
   const table = response.resultSets[index];
-  return (table?.data as T[]) ?? [];
+  return table.data as T[];
 }
 
 function getRowByIndex<T>(response: ApiResponse, index: number): T | null {

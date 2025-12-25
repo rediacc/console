@@ -292,7 +292,7 @@ export function formatErrors(
     colorFn?: (text: string, level: string) => string;
   }
 ): string {
-  const { showAll = false, colorFn } = options || {};
+  const { showAll = false, colorFn } = options ?? {};
 
   if (showAll && result.allErrors.length > 0) {
     return result.allErrors.map((error) => formatError(error, colorFn)).join('\n');

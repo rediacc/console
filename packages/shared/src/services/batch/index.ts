@@ -54,7 +54,7 @@ export interface BatchResult<T> {
   /** Successfully processed items */
   successful: T[];
   /** Failed items with error details */
-  failed: Array<{ item: T; error: string }>;
+  failed: { item: T; error: string }[];
   /** Total duration in milliseconds */
   duration: number;
 }
@@ -117,11 +117,11 @@ export class BatchProcessor<T> {
     processor: (batch: T[]) => Promise<TResult[]>
   ): Promise<BatchResult<T>> {
     const startTime = Date.now();
-    const batchSize = request.batchSize || this.config.batchSize;
+    const batchSize = request.batchSize ?? this.config.batchSize;
     const batches = this.createBatches(request.items, batchSize);
 
     const successful: T[] = [];
-    const failed: Array<{ item: T; error: string }> = [];
+    const failed: { item: T; error: string }[] = [];
 
     let completed = 0;
     const total = request.items.length;
@@ -230,7 +230,7 @@ export class BatchProcessor<T> {
       }
     }
 
-    throw lastError || new Error('Max retries exceeded');
+    throw lastError ?? new Error('Max retries exceeded');
   }
 
   /**

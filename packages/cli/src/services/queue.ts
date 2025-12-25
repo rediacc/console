@@ -24,7 +24,7 @@ interface QueueContext {
   priority: number;
 }
 
-export class CliQueueService {
+class CliQueueService {
   private builder: QueueVaultBuilder;
 
   constructor() {
@@ -58,10 +58,11 @@ export class CliQueueService {
       storageVault: vaults.storageVault,
       bridgeVault: vaults.bridgeVault,
       repositoryGuid: context.params.repository as string | undefined,
-      repositoryNetworkId: (vaults.vaultContent as { repositoryNetworkId?: number })
+      repositoryNetworkId: (vaults.vaultContent as { repositoryNetworkId?: number } | undefined)
         ?.repositoryNetworkId,
-      repositoryNetworkMode: (vaults.vaultContent as { networkMode?: string })?.networkMode,
-      storageName: (context.params.to || context.params.from) as string | undefined,
+      repositoryNetworkMode: (vaults.vaultContent as { networkMode?: string } | undefined)
+        ?.networkMode,
+      storageName: (context.params.to ?? context.params.from) as string | undefined,
     };
 
     return this.builder.buildQueueVault(requestContext);
@@ -152,7 +153,7 @@ export class CliQueueService {
     if (requirements.storage) {
       const storages = context.params.storages;
       const firstStorage = Array.isArray(storages) ? storages[0] : undefined;
-      const storageName = (context.params.to || context.params.from || firstStorage) as
+      const storageName = (context.params.to ?? context.params.from ?? firstStorage) as
         | string
         | undefined;
       if (storageName) {

@@ -84,7 +84,7 @@ class CliApiClient implements SharedApiClient {
 
     // Load API URL from storage or use default
     const storedUrl = await nodeStorageAdapter.getItem(STORAGE_KEYS.API_URL);
-    this.apiUrl = storedUrl || process.env.REDIACC_API_URL || 'https://www.rediacc.com/api';
+    this.apiUrl = storedUrl ?? process.env.REDIACC_API_URL ?? 'https://www.rediacc.com/api';
     this.client.defaults.baseURL = `${this.apiUrl}${API_PREFIX}`;
     this.initialized = true;
   }
@@ -204,7 +204,7 @@ class CliApiClient implements SharedApiClient {
 
     try {
       // Encrypt vault fields in request data if present (only get password if needed)
-      let requestData = data || {};
+      let requestData = data ?? {};
       let masterPassword: string | null = null;
 
       if (vaultEncryptor.hasVaultFields(requestData)) {
@@ -231,9 +231,7 @@ class CliApiClient implements SharedApiClient {
       // This prevents unnecessary master password prompts when company doesn't have encryption
       const hasEncrypted = hasEncryptedVaultContent(responseData);
       if (hasEncrypted) {
-        if (!masterPassword) {
-          masterPassword = await this.getMasterPassword();
-        }
+        masterPassword ??= await this.getMasterPassword();
         if (masterPassword) {
           responseData = await vaultEncryptor.decrypt(responseData, masterPassword);
         }
@@ -252,7 +250,7 @@ class CliApiClient implements SharedApiClient {
           throw new CliApiError('Resource not found', EXIT_CODES.NOT_FOUND);
         }
         if (!error.response) {
-          throw new CliApiError('Network error: ' + error.message, EXIT_CODES.NETWORK_ERROR);
+          throw new CliApiError(`Network error: ${error.message}`, EXIT_CODES.NETWORK_ERROR);
         }
       }
       throw error;
@@ -263,13 +261,13 @@ class CliApiClient implements SharedApiClient {
     // Desktop CLI specifically uses resultSets[0] for token rotation
     // (see /desktop/src/cli/core/api_client.py lines 382-396)
     const resultSets = response.resultSets;
-    if (!resultSets || resultSets.length === 0) return;
+    if (resultSets.length === 0) return;
 
     const firstResultSet = resultSets[0];
-    if (!firstResultSet?.data?.length) return;
+    if (!firstResultSet.data.length) return;
 
     const row = firstResultSet.data[0] as Record<string, unknown>;
-    const newToken = (row?.nextRequestToken || row?.NextRequestToken) as string | undefined;
+    const newToken = (row.nextRequestToken ?? row.NextRequestToken) as string | undefined;
 
     if (newToken) {
       await nodeStorageAdapter.setItem(STORAGE_KEYS.TOKEN, newToken);
@@ -298,7 +296,7 @@ class CliApiClient implements SharedApiClient {
   }
 
   private createApiError(response: ApiResponse): CliApiError {
-    const message = response.errors?.join('; ') || response.message || 'API request failed';
+    const message = response.errors.join('; ') || response.message || 'API request failed';
     return new CliApiError(message, EXIT_CODES.GENERAL_ERROR, response);
   }
 }

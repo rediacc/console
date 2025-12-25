@@ -1,4 +1,4 @@
-export interface GeneratedSSHKeys {
+interface GeneratedSSHKeys {
   privateKey: string; // Base64 encoded
   publicKey: string; // SSH format string
 }
@@ -9,8 +9,8 @@ export interface GenerationOptions {
   comment?: string;
 }
 
-// Generate a cryptographically secure random string
-export function generateSecureString(length: number, charset: string): string {
+// Generate a cryptographically secure random string (internal helper)
+function generateSecureString(length: number, charset: string): string {
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);
 
@@ -53,13 +53,13 @@ async function generateEd25519KeyPair(): Promise<CryptoKeyPair | null> {
   try {
     // Ed25519 is not widely supported in Web Crypto API yet
     // This is a placeholder for future support
-    return (await crypto.subtle.generateKey(
+    return await crypto.subtle.generateKey(
       {
         name: 'Ed25519',
       },
       true,
       ['sign', 'verify']
-    )) as CryptoKeyPair;
+    );
   } catch {
     // Fallback to null if not supported
     return null;

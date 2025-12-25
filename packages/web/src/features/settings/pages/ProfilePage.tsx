@@ -68,7 +68,7 @@ const ProfilePage: React.FC = () => {
         okText: tCommon('actions.logoutNow'),
         onOk: () => {
           dispatch(logout());
-          navigate('/login');
+          void navigate('/login');
         },
       });
 
@@ -84,7 +84,7 @@ const ProfilePage: React.FC = () => {
           clearInterval(timer);
           modal.destroy();
           dispatch(logout());
-          navigate('/login');
+          void navigate('/login');
         }
       }, 1000);
     } catch {
@@ -110,7 +110,7 @@ const ProfilePage: React.FC = () => {
                   <Button
                     icon={<SettingOutlined />}
                     onClick={() => {
-                      refetchUserVault();
+                      void refetchUserVault();
                       userVaultModal.open();
                     }}
                     data-testid="system-user-vault-button"
@@ -145,8 +145,8 @@ const ProfilePage: React.FC = () => {
         onSave={handleUpdateUserVault}
         entityType="USER"
         title={t('personal.modalTitle')}
-        initialVault={userVault?.vault || '{}'}
-        initialVersion={userVault?.vaultVersion || 1}
+        initialVault={userVault?.vault ?? '{}'}
+        initialVersion={userVault?.vaultVersion ?? 1}
         loading={updateUserVaultMutation.isPending}
       />
 

@@ -18,7 +18,7 @@ export const getTimelineTimestamp = (
   action: string,
   fallbackAction?: string
 ): string | null => {
-  if (!traceLogs || traceLogs.length === 0) return null;
+  if (traceLogs.length === 0) return null;
 
   // Try primary action first
   let log = traceLogs.find((log) => normalizeToString(log, 'action', 'Action') === action);

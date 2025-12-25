@@ -108,14 +108,16 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
             url = await protocolUrlService.generateDesktopUrl(baseParams, containerParams);
           }
         } else if (action) {
-          if (action === 'terminal') {
-            url = await protocolUrlService.generateTerminalUrl(baseParams);
-          } else if (action === 'desktop') {
-            url = await protocolUrlService.generateDesktopUrl(baseParams);
-          } else if (action === 'vscode') {
-            url = await protocolUrlService.generateVSCodeUrl(baseParams);
-          } else {
-            url = await protocolUrlService.generateUrl(baseParams);
+          switch (action) {
+            case 'terminal':
+              url = await protocolUrlService.generateTerminalUrl(baseParams);
+              break;
+            case 'desktop':
+              url = await protocolUrlService.generateDesktopUrl(baseParams);
+              break;
+            case 'vscode':
+              url = await protocolUrlService.generateVSCodeUrl(baseParams);
+              break;
           }
         } else {
           url = await protocolUrlService.generateDesktopUrl(baseParams);

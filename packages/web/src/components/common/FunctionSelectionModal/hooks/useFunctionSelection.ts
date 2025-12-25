@@ -21,7 +21,7 @@ export const useFunctionSelection = ({
 }: UseFunctionSelectionProps) => {
   // Filter functions based on allowed categories and search term
   const filteredFunctions = useMemo(() => {
-    let functions = Object.values(localizedFunctions) as QueueFunction[];
+    let functions = Object.values(localizedFunctions);
 
     // Filter by allowed categories if specified
     if (allowedCategories && allowedCategories.length > 0) {
@@ -43,16 +43,12 @@ export const useFunctionSelection = ({
 
   // Group functions by category
   const functionsByCategory = useMemo(() => {
-    return filteredFunctions.reduce(
-      (acc, func) => {
-        if (!acc[func.category]) {
-          acc[func.category] = [];
-        }
-        acc[func.category].push(func);
-        return acc;
-      },
-      {} as Record<string, QueueFunction[]>
-    );
+    return filteredFunctions.reduce<Record<string, QueueFunction[]>>((acc, func) => {
+      const categoryFuncs = acc[func.category] ?? [];
+      categoryFuncs.push(func);
+      acc[func.category] = categoryFuncs;
+      return acc;
+    }, {});
   }, [filteredFunctions]);
 
   // Handler for selecting a function

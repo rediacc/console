@@ -17,7 +17,7 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
   const { t } = useTranslation(['queue', 'common']);
 
   const isHighQueue = machineStats.currentQueueDepth > 50;
-  const isAtCapacity = machineStats.activeProcessingCount >= (machineStats.maxConcurrentTasks || 0);
+  const isAtCapacity = machineStats.activeProcessingCount >= (machineStats.maxConcurrentTasks ?? 0);
   const isIdle = machineStats.currentQueueDepth === 0 && machineStats.activeProcessingCount === 0;
 
   return (
@@ -55,7 +55,7 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
           <Card>
             <Statistic
               title={t('trace.processingCapacity')}
-              value={`${machineStats.activeProcessingCount}/${machineStats.maxConcurrentTasks || 'N/A'}`}
+              value={`${machineStats.activeProcessingCount}/${machineStats.maxConcurrentTasks ?? 'N/A'}`}
               prefix={<DashboardOutlined />}
             />
             <Progress

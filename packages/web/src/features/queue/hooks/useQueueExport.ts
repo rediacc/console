@@ -13,15 +13,15 @@ export const useQueueExport = (items: QueueItem[]) => {
   const columns: ExportColumn<QueueItem>[] = [
     { key: 'taskId', header: 'Task ID' },
     { key: 'healthStatus', header: 'Status' },
-    { key: 'priorityLabel', header: 'Priority', format: (val) => String(val || '') },
+    { key: 'priorityLabel', header: 'Priority', format: (val) => String(val ?? '') },
     { key: 'ageInMinutes', header: 'Age (minutes)' },
     { key: 'teamName', header: 'Team' },
     { key: 'machineName', header: 'Machine' },
     { key: 'regionName', header: 'Region' },
     { key: 'bridgeName', header: 'Bridge' },
     { key: 'hasResponse', header: 'Has Response', format: (val) => (val ? 'Yes' : 'No') },
-    { key: 'retryCount', header: 'Retry Count', format: (val) => String(val || 0) },
-    { key: 'createdBy', header: 'Created By', format: (val) => String(val || '') },
+    { key: 'retryCount', header: 'Retry Count', format: (val) => String(val ?? 0) },
+    { key: 'createdBy', header: 'Created By', format: (val) => String(val ?? '') },
     { key: 'createdTime', header: 'Created' },
   ];
 

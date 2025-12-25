@@ -67,12 +67,12 @@ const InfrastructurePage: React.FC = () => {
   }>();
 
   const { data: regions, isLoading: regionsLoading } = useRegions(true);
-  const regionsList: Region[] = useMemo(() => regions || [], [regions]);
+  const regionsList: Region[] = useMemo(() => regions ?? [], [regions]);
 
-  const effectiveRegion = selectedRegion ?? regionsList[0]?.regionName ?? null;
+  const effectiveRegion = selectedRegion ?? regionsList[0]?.regionName;
 
-  const { data: bridges, isLoading: bridgesLoading } = useBridges(effectiveRegion ?? undefined);
-  const bridgesList: Bridge[] = useMemo(() => bridges || [], [bridges]);
+  const { data: bridges, isLoading: bridgesLoading } = useBridges(effectiveRegion);
+  const bridgesList: Bridge[] = useMemo(() => bridges ?? [], [bridges]);
 
   const createRegionMutation = useCreateRegion();
   const updateRegionNameMutation = useUpdateRegionName();
@@ -130,7 +130,7 @@ const InfrastructurePage: React.FC = () => {
             const vaultData = data.vaultContent;
             if (vaultData && vaultData !== modalData.data.vaultContent) {
               await updateRegionVaultMutation.mutateAsync({
-                regionName: (data.regionName || modalData.data.regionName) as string,
+                regionName: (data.regionName ?? modalData.data.regionName) as string,
                 vaultContent: vaultData,
                 vaultVersion: (modalData.data.vaultVersion ?? 0) + 1,
               });
@@ -156,8 +156,8 @@ const InfrastructurePage: React.FC = () => {
             const vaultData = data.vaultContent;
             if (vaultData && vaultData !== bridgeData.vaultContent) {
               await updateBridgeVaultMutation.mutateAsync({
-                regionName: (data.regionName || bridgeData.regionName) as string,
-                bridgeName: (data.bridgeName || bridgeData.bridgeName) as string,
+                regionName: (data.regionName ?? bridgeData.regionName) as string,
+                bridgeName: (data.bridgeName ?? bridgeData.bridgeName) as string,
                 vaultContent: vaultData,
                 vaultVersion: (bridgeData.vaultVersion ?? 0) + 1,
               });
@@ -411,8 +411,8 @@ const InfrastructurePage: React.FC = () => {
       <UnifiedResourceModal
         open={unifiedModal.isOpen}
         onCancel={closeUnifiedModal}
-        resourceType={unifiedModal.state.data?.resourceType || 'region'}
-        mode={unifiedModal.state.data?.mode || 'create'}
+        resourceType={unifiedModal.state.data?.resourceType ?? 'region'}
+        mode={unifiedModal.state.data?.mode ?? 'create'}
         existingData={
           unifiedModal.state.data?.data
             ? {

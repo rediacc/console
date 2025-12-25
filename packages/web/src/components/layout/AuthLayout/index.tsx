@@ -22,7 +22,7 @@ const AuthLayout: React.FC = () => {
           // eslint-disable-next-line no-restricted-syntax
           style={{ padding: '16px 24px', position: 'absolute', top: 0, right: 0, zIndex: 1 }}
         >
-          <LanguageSelector iconOnly={true} />
+          <LanguageSelector iconOnly />
         </Flex>
 
         {/* Content - split screen on desktop */}

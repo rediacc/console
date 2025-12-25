@@ -20,14 +20,14 @@ export type ExistingResourceData = Partial<Machine> &
   Partial<Repository> &
   Partial<GetCompanyTeams_ResultSet1> & {
     prefilledMachine?: boolean;
-    clusters?: Array<{ clusterName: string }>;
-    pools?: Array<{ poolName: string; clusterName: string }>;
-    availableMachines?: Array<{
+    clusters?: { clusterName: string }[];
+    pools?: { poolName: string; clusterName: string }[];
+    availableMachines?: {
       machineName: string;
       bridgeName: string;
       regionName: string;
       status?: string;
-    }>;
-    images?: Array<{ imageName: string }>;
-    snapshots?: Array<{ snapshotName: string }>;
+    }[];
+    images?: { imageName: string }[];
+    snapshots?: { snapshotName: string }[];
   } & Record<string, unknown>;

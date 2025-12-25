@@ -274,11 +274,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             loading={isLoading}
             pageSize={10}
             rowSelection={rowSelection}
-            onRow={(record) =>
-              ({
+            onRow={(record) => {
+              const props: React.HTMLAttributes<HTMLElement> & Record<string, string> = {
                 'data-testid': `machine-row-${record.machineName}`,
-              }) as React.HTMLAttributes<HTMLElement>
-            }
+              };
+              return props;
+            }}
           />
         ))}
       </Flex>
@@ -319,11 +320,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               showTotal: (total, range) =>
                 t('common:table.showingRecords', { start: range[0], end: range[1], total }),
             }}
-            onRow={(record) =>
-              ({
+            onRow={(record) => {
+              const props: React.HTMLAttributes<HTMLElement> & Record<string, string> = {
                 'data-testid': `machine-row-${record.machineName}`,
-              }) as React.HTMLAttributes<HTMLElement>
-            }
+              };
+              return props;
+            }}
           />
         </Flex>
       ) : (
@@ -357,7 +359,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           onCancel={assignClusterModal.close}
           onSuccess={() => {
             assignClusterModal.close();
-            refetch();
+            void refetch();
           }}
         />
       )}
@@ -369,7 +371,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         onSuccess={() => {
           setBulkAssignClusterModal(false);
           setSelectedRowKeys([]);
-          refetch();
+          void refetch();
         }}
       />
 
@@ -380,7 +382,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         onSuccess={() => {
           setRemoveFromClusterModal(false);
           setSelectedRowKeys([]);
-          refetch();
+          void refetch();
         }}
       />
 

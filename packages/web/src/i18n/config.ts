@@ -179,7 +179,7 @@ const languageDetector = new LanguageDetector();
 languageDetector.addDetector(cookieDetector);
 
 // Initialize i18n with lazy loading
-i18n
+void i18n
   .use(languageDetector)
   .use(initReactI18next)
   .init({
@@ -221,7 +221,7 @@ i18n
 
 // Listen for language changes to load resources dynamically
 i18n.on('languageChanged', (lng) => {
-  loadLanguageResources(lng);
+  void loadLanguageResources(lng);
 });
 
 export default i18n;

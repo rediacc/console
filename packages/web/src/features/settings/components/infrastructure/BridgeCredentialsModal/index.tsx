@@ -25,7 +25,7 @@ export const BridgeCredentialsModal: React.FC<BridgeCredentialsModalProps> = ({
   onClose,
 }) => (
   <Modal
-    title={`${t('bridges.bridgeToken')} - ${bridge?.bridgeName || ''}`}
+    title={`${t('bridges.bridgeToken')} - ${bridge?.bridgeName ?? ''}`}
     open={open}
     onCancel={onClose}
     footer={[

@@ -24,7 +24,7 @@ export const handlePullFunction = async (
       r.repositoryTag === selectedRepository.repositoryTag
   );
 
-  if (!RepoData || !RepoData.vaultContent) {
+  if (!RepoData?.vaultContent) {
     showMessage(
       'error',
       t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
@@ -37,7 +37,7 @@ export const handlePullFunction = async (
   const finalParams = {
     ...functionData.params,
     repository: RepoData.repositoryGuid,
-    grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
+    grand: RepoData.grandGuid ?? RepoData.repositoryGuid,
   };
 
   const result = await executeAction({
@@ -48,7 +48,7 @@ export const handlePullFunction = async (
     params: finalParams,
     priority: functionData.priority,
     addedVia: 'machine-Repository-list',
-    machineVault: machine.vaultContent || '{}',
+    machineVault: machine.vaultContent ?? '{}',
     repositoryGuid: RepoData.repositoryGuid,
     vaultContent: grandRepoVault,
     repositoryNetworkId: RepoData.repositoryNetworkId,
@@ -68,6 +68,6 @@ export const handlePullFunction = async (
       showMessage('info', t('resources:repositories.highestPriorityQueued'));
     }
   } else {
-    throw new Error(result.error || t('resources:repositories.failedToCreateQueueItem'));
+    throw new Error(result.error ?? t('resources:repositories.failedToCreateQueueItem'));
   }
 };

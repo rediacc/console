@@ -1,9 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import functionDefinitions from '@rediacc/shared/queue-vault/data/definitions';
-import type { TFunction } from 'i18next';
 
 // Base function definition without translatable content
-export interface FunctionDefinition {
+interface FunctionDefinition {
   name: string;
   category: string;
   showInMenu?: boolean;
@@ -11,7 +10,7 @@ export interface FunctionDefinition {
   params?: Record<string, FunctionParam>;
 }
 
-export interface FunctionRequirements {
+interface FunctionRequirements {
   machine?: boolean;
   team?: boolean;
   company?: boolean;
@@ -21,7 +20,7 @@ export interface FunctionRequirements {
   bridge?: boolean;
 }
 
-export interface FunctionParam {
+interface FunctionParam {
   type: string;
   required?: boolean;
   default?: string;
@@ -36,7 +35,7 @@ export interface FunctionParam {
 // Import function definitions from JSON
 export const FUNCTION_DEFINITIONS: Record<string, FunctionDefinition> =
   functionDefinitions.functions;
-export const FUNCTION_CATEGORIES: string[] = functionDefinitions.categories;
+const FUNCTION_CATEGORIES: string[] = functionDefinitions.categories;
 
 // Hook to get localized function data
 export function useLocalizedFunctions() {
@@ -56,14 +55,14 @@ export function useLocalizedFunctions() {
 
   // Get localized function data
   const getLocalizedFunction = (functionName: string) => {
-    const funcDef = FUNCTION_DEFINITIONS[functionName];
-    if (!funcDef) return null;
+    const funcDef = FUNCTION_DEFINITIONS[functionName] as FunctionDefinition | undefined;
+    if (funcDef === undefined) return null;
 
     return {
       ...funcDef,
       description: t(`functions.${functionName}.description`),
       showInMenu: funcDef.showInMenu !== false, // Default to true if not specified
-      requirements: funcDef.requirements || {},
+      requirements: funcDef.requirements ?? {},
       params: funcDef.params
         ? Object.fromEntries(
             Object.entries(funcDef.params).map(([paramName, paramDef]) => [
@@ -99,42 +98,4 @@ export function useLocalizedFunctions() {
     getFunction: getLocalizedFunction,
     getFunctionsByCategory,
   };
-}
-
-// Export function to get raw function data with translations
-export function getFunctionsWithTranslations(t: TFunction) {
-  const categories = Object.fromEntries(
-    FUNCTION_CATEGORIES.map((category) => [
-      category,
-      {
-        name: t(`functions:categories.${category}.name`),
-        description: t(`functions:categories.${category}.description`),
-      },
-    ])
-  );
-
-  const functions = Object.fromEntries(
-    Object.entries(FUNCTION_DEFINITIONS).map(([functionName, funcDef]) => [
-      functionName,
-      {
-        name: functionName,
-        category: funcDef.category,
-        requirements: funcDef.requirements || {},
-        description: t(`functions:functions.${functionName}.description`),
-        params: funcDef.params
-          ? Object.fromEntries(
-              Object.entries(funcDef.params).map(([paramName, paramDef]) => [
-                paramName,
-                {
-                  ...paramDef,
-                  help: t(`functions:functions.${functionName}.params.${paramName}.help`),
-                },
-              ])
-            )
-          : {},
-      },
-    ])
-  );
-
-  return { categories, functions };
 }

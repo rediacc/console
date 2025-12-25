@@ -1,6 +1,5 @@
 // Re-export from shared
 export {
-  type QueueActionDependencies,
   type QueueActionParams,
   type QueueActionResult,
   QueueActionService,

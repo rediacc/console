@@ -5,36 +5,39 @@ export type ResponseFilter<T> = (item: T) => boolean;
 export type ResponseMapper<T, R> = (item: T) => R;
 
 const getPrimaryResultSet = <T>(response: ApiResponse<T>): T[] => {
-  if (!response.resultSets || response.resultSets.length === 0) {
+  if (response.resultSets.length === 0) {
     return [];
   }
 
   const primary =
     response.resultSets.find((set) => set.resultSetIndex === 0) ?? response.resultSets[0];
-  return (primary?.data as T[]) ?? [];
+  return primary.data;
 };
 
 export const responseExtractors = {
   primary: getPrimaryResultSet,
   primaryOrSecondary: <T>(response: ApiResponse<T>): T[] => {
-    const secondary = response.resultSets?.[1]?.data;
+    const secondary = response.resultSets[1]?.data;
     if (Array.isArray(secondary) && secondary.length > 0) {
-      return secondary as T[];
+      return secondary;
     }
     return getPrimaryResultSet(response);
   },
   byIndex: <T>(index: number): ResponseExtractor<T> => {
     return (response: ApiResponse<T>) => {
-      if (!response.resultSets || response.resultSets.length === 0) {
+      if (response.resultSets.length === 0) {
         return [];
       }
 
+      const foundSet = response.resultSets.find((set) => set.resultSetIndex === index);
+      if (foundSet) {
+        return foundSet.data;
+      }
+      // Fall back to index position, then first result set
       const table =
-        response.resultSets.find((set) => set.resultSetIndex === index) ??
-        response.resultSets[index] ??
-        response.resultSets[0];
+        index < response.resultSets.length ? response.resultSets[index] : response.resultSets[0];
 
-      return (table?.data as T[]) ?? [];
+      return table.data;
     };
   },
 };
@@ -43,7 +46,7 @@ export const responseFilters = {
   hasField:
     (field: string): ResponseFilter<Record<string, unknown>> =>
     (item) =>
-      Boolean(item?.[field]),
+      Boolean(item[field]),
   truthy: <T>(item: T) => Boolean(item),
 };
 

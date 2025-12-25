@@ -7,7 +7,7 @@ import type { Machine } from '@/types';
 import type { GetCompanyTeams_ResultSet1 } from '@rediacc/shared/types';
 import { type QueueItemCompletionResult, waitForQueueItemCompletion } from './helloService';
 
-export interface PingFunctionParams {
+interface PingFunctionParams {
   teamName: string;
   machineName: string;
   bridgeName: string;
@@ -19,7 +19,7 @@ export interface PingFunctionParams {
   vaultContent?: string;
 }
 
-export interface PingFunctionResult {
+interface PingFunctionResult {
   taskId?: string;
   success: boolean;
   error?: string;
@@ -73,8 +73,8 @@ export function usePingFunction(options?: { useManaged?: boolean }) {
         const response = await createPingQueueItem(params, queueVault, createQueueItemMutation);
 
         return {
-          taskId: response?.taskId,
-          success: !!response?.taskId || !!response?.isQueued,
+          taskId: response.taskId,
+          success: Boolean(response.taskId) || Boolean(response.isQueued),
         };
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Failed to execute ping function';
@@ -103,7 +103,7 @@ export function usePingFunction(options?: { useManaged?: boolean }) {
         priority: options?.priority,
         description: options?.description,
         addedVia: options?.addedVia,
-        machineVault: machine.vaultContent || '{}',
+        machineVault: machine.vaultContent ?? '{}',
       });
     },
     [executePing]
@@ -160,7 +160,7 @@ export function usePingFunction(options?: { useManaged?: boolean }) {
           priority: options?.priority,
           description: options?.description,
           addedVia: options?.addedVia,
-          machineVault: machine.vaultContent || '{}',
+          machineVault: machine.vaultContent ?? '{}',
         },
         options?.timeout
       );
@@ -188,7 +188,7 @@ function getTeamVault(
   }
 
   const teamData = teams?.find((team) => team.teamName === params.teamName);
-  return teamData?.vaultContent || '{}';
+  return teamData?.vaultContent ?? '{}';
 }
 
 async function buildPingQueueVault(
@@ -206,11 +206,11 @@ async function buildPingQueueVault(
     bridgeName: params.bridgeName,
     functionName: 'ping',
     params: {},
-    priority: params.priority || DEFAULT_PRIORITY,
-    addedVia: params.addedVia || DEFAULT_ADDED_VIA,
-    machineVault: params.machineVault || DEFAULT_VAULT,
-    teamVault: teamVault,
-    repositoryVault: params.vaultContent || DEFAULT_VAULT,
+    priority: params.priority ?? DEFAULT_PRIORITY,
+    addedVia: params.addedVia ?? DEFAULT_ADDED_VIA,
+    machineVault: params.machineVault ?? DEFAULT_VAULT,
+    teamVault,
+    repositoryVault: params.vaultContent ?? DEFAULT_VAULT,
   });
 }
 
@@ -226,7 +226,7 @@ async function createPingQueueItem(
     machineName: params.machineName,
     bridgeName: params.bridgeName,
     queueVault,
-    priority: params.priority || DEFAULT_PRIORITY,
+    priority: params.priority ?? DEFAULT_PRIORITY,
   });
 
   return normalizeQueueCreationResponse(response);

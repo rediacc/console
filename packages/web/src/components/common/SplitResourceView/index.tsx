@@ -16,12 +16,12 @@ export interface ContainerData {
   status: string;
   state: string;
   ports: string;
-  port_mappings?: Array<{
+  port_mappings?: {
     host?: string;
     host_port?: string;
     container_port: string;
     protocol: string;
-  }>;
+  }[];
   labels: string;
   mounts: string;
   networks: string;
@@ -87,7 +87,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
       return (
         <MachineVaultStatusPanel
           machine={selectedResource as Machine}
-          visible={true}
+          visible
           onClose={handlePanelClose}
           splitView
         />
@@ -97,7 +97,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
       return (
         <RepositoryDetailPanel
           repository={selectedResource as Repository}
-          visible={true}
+          visible
           onClose={handlePanelClose}
           splitView
         />
@@ -106,7 +106,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
     return (
       <ContainerDetailPanel
         container={selectedResource as ContainerData}
-        visible={true}
+        visible
         onClose={handlePanelClose}
         splitView
       />
@@ -132,7 +132,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
           onClose={handlePanelClose}
           width={panelWidth}
           placement="right"
-          mask={true}
+          mask
           data-testid="split-resource-view-drawer"
         >
           {renderPanelContent()}

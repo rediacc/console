@@ -9,7 +9,7 @@ export const buildExportData = (
 ): VaultFormValues => {
   const encodedData: VaultFormValues = { ...formData };
 
-  Object.entries(entityDef?.fields || {}).forEach(([key, field]) => {
+  Object.entries(entityDef.fields ?? {}).forEach(([key, field]) => {
     if (
       field.format === 'base64' &&
       encodedData[key] !== undefined &&
@@ -34,7 +34,7 @@ export const buildExportData = (
   return exportData;
 };
 
-export const downloadJsonFile = (data: VaultFormValues, entityType: string): void => {
+const downloadJsonFile = (data: VaultFormValues, entityType: string): void => {
   const dataStr = JSON.stringify(data, null, 2);
   const dataBlob = new Blob([dataStr], { type: 'application/json' });
   const url = URL.createObjectURL(dataBlob);
@@ -53,7 +53,7 @@ export const handleExport = (
   extraFields: VaultFormValues,
   entityType: string
 ): void => {
-  const formData = form.getFieldsValue() as VaultFormValues;
+  const formData = form.getFieldsValue();
   const exportData = buildExportData(formData, entityDef, extraFields);
   downloadJsonFile(exportData, entityType);
 };

@@ -116,17 +116,17 @@ export const buildTeamColumns = ({
               </Space>
             </Tooltip>
             <Tooltip
-              title={`${record.repositoryCount || 0} ${tSystem('tables.teams.repositories')}`}
+              title={`${record.repositoryCount ?? 0} ${tSystem('tables.teams.repositories')}`}
             >
               <Space size="small">
                 <DatabaseOutlined />
-                <Typography.Text>{record.repositoryCount || 0}</Typography.Text>
+                <Typography.Text>{record.repositoryCount ?? 0}</Typography.Text>
               </Space>
             </Tooltip>
-            <Tooltip title={`${record.storageCount || 0} ${tSystem('tables.teams.storage')}`}>
+            <Tooltip title={`${record.storageCount ?? 0} ${tSystem('tables.teams.storage')}`}>
               <Space size="small">
                 <CloudServerOutlined />
-                <Typography.Text>{record.storageCount || 0}</Typography.Text>
+                <Typography.Text>{record.storageCount ?? 0}</Typography.Text>
               </Space>
             </Tooltip>
           </Space>

@@ -52,7 +52,7 @@ class OutputService {
     }
 
     // Auto-detect columns if not provided
-    const cols = columns || this.detectColumns(items);
+    const cols = columns ?? this.detectColumns(items);
     if (cols.length === 0) {
       return this.dim('No columns to display');
     }
@@ -63,7 +63,7 @@ class OutputService {
         head: [],
         border: [],
       },
-      colAligns: cols.map((c) => c.align || 'left'),
+      colAligns: cols.map((c) => c.align ?? 'left'),
     });
 
     for (const item of items) {
@@ -84,7 +84,7 @@ class OutputService {
     const items = Array.isArray(data) ? data : [data];
     if (items.length === 0) return '';
 
-    const cols = columns || this.detectColumns(items);
+    const cols = columns ?? this.detectColumns(items);
     const lines: string[] = [];
 
     // Header row

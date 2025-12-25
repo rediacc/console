@@ -97,7 +97,7 @@ const MachineReposPage: React.FC = () => {
     useResourcePageState<Repository | ContainerData | PluginContainer>(refreshData, !!machine);
 
   const handleBackToMachines = () => {
-    navigate('/machines');
+    void navigate('/machines');
   };
 
   const handleCreateRepo = () => {
@@ -131,7 +131,7 @@ const MachineReposPage: React.FC = () => {
 
       // If we have a taskId, open the queue trace modal
       if (result.taskId) {
-        queueTrace.open(result.taskId, result.machineName || undefined);
+        queueTrace.open(result.taskId, result.machineName ?? undefined);
       } else {
         // No queue item (credentials-only mode), just refresh
         await handleRefresh();
@@ -143,7 +143,7 @@ const MachineReposPage: React.FC = () => {
     // Map Repository data to Repository type
     const mappedRepo: Repository = {
       repositoryName: repoRow.name,
-      repositoryGuid: repoRow.originalGuid || repoRow.name,
+      repositoryGuid: repoRow.originalGuid ?? repoRow.name,
       teamName: machine!.teamName,
       vaultVersion: 0,
       vaultContent: null,
@@ -151,7 +151,7 @@ const MachineReposPage: React.FC = () => {
       parentGuid: null,
       repositoryNetworkMode: '',
       repositoryNetworkId: 0,
-      repositoryTag: repoRow.repositoryTag || '',
+      repositoryTag: repoRow.repositoryTag ?? '',
     };
 
     // Find the actual Repository from the API data - must match both name AND tag to distinguish forks
@@ -159,7 +159,7 @@ const MachineReposPage: React.FC = () => {
       (r) => r.repositoryName === repoRow.name && r.repositoryTag === repoRow.repositoryTag
     );
 
-    setSelectedResource(actualRepository || mappedRepo);
+    setSelectedResource(actualRepository ?? mappedRepo);
   };
 
   const handleContainerClick = (
@@ -218,7 +218,7 @@ const MachineReposPage: React.FC = () => {
       onClick: () => navigate('/machines'),
     },
     {
-      title: machine?.machineName || machineName,
+      title: machine?.machineName ?? machineName,
     },
     {
       title: t('resources:repositories.repositories'),
@@ -303,7 +303,7 @@ const MachineReposPage: React.FC = () => {
       onRepositoryClick={handleRepositoryClick}
       onContainerClick={handleContainerClick}
       onQueueItemCreated={(taskId, machineName) => {
-        queueTrace.open(taskId, machineName ?? undefined);
+        queueTrace.open(taskId, machineName);
       }}
     />
   ) : null;
@@ -314,21 +314,21 @@ const MachineReposPage: React.FC = () => {
       onClose={handlePanelClose}
       width={panelWidth}
       placement="right"
-      mask={true}
+      mask
       data-testid="machine-repositories-drawer"
     >
       {selectedResource &&
         ('repositoryName' in selectedResource ? (
           <RepositoryDetailPanel
             repository={selectedResource as Repository}
-            visible={true}
+            visible
             onClose={handlePanelClose}
             splitView
           />
         ) : (
           <ContainerDetailPanel
             container={selectedResource as unknown as ContainerData}
-            visible={true}
+            visible
             onClose={handlePanelClose}
             splitView
           />
@@ -353,7 +353,7 @@ const MachineReposPage: React.FC = () => {
         open={queueTrace.state.open}
         onCancel={() => {
           queueTrace.close();
-          handleRefresh();
+          void handleRefresh();
         }}
       />
 
@@ -375,7 +375,7 @@ const MachineReposPage: React.FC = () => {
         open={unifiedModal.isOpen}
         onCancel={() => unifiedModal.close()}
         resourceType="repository"
-        mode={unifiedModal.state.data?.mode || 'create'}
+        mode={unifiedModal.state.data?.mode ?? 'create'}
         existingData={unifiedModal.state.data?.data}
         teamFilter={machine?.teamName ? [machine.teamName] : undefined}
         creationContext={unifiedModal.state.data?.creationContext}
@@ -385,10 +385,10 @@ const MachineReposPage: React.FC = () => {
       <ConnectivityTestModal
         data-testid="machine-repositories-connectivity-test-modal"
         open={connectivityTest.isOpen}
-        onTestsComplete={handleRefresh}
+        onTestsComplete={() => void handleRefresh()}
         onClose={() => {
           connectivityTest.close();
-          handleRefresh();
+          void handleRefresh();
         }}
         machines={machine ? [machine] : []}
         teamFilter={machine?.teamName ? [machine.teamName] : undefined}

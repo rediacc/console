@@ -15,7 +15,7 @@ import {
   MailOutlined,
 } from '@/utils/optimizedIcons';
 
-const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY ?? '';
 const isCaptchaEnabled = !!turnstileSiteKey;
 
 interface RegistrationModalProps {
@@ -83,7 +83,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   // Combined loading state for backward compatibility
   const loading = isRegistering || isVerifying;
   // Combined error state
-  const error = registrationError || verificationError;
+  const error = registrationError ?? verificationError;
 
   // Check if CI mode is enabled (for testing/e2e)
   React.useEffect(() => {
@@ -96,7 +96,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         setCiMode(false); // Default to false on error
       }
     };
-    checkCiMode();
+    void checkCiMode();
   }, []);
 
   // Auto-fill and auto-submit logic
@@ -164,7 +164,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         return {
           email: values.email,
           companyName: values.companyName,
-          passwordHash: passwordHash,
+          passwordHash,
           password: values.password, // Store for auto-login if needed
         };
       },
@@ -214,7 +214,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         );
 
         if (response.failure !== 0) {
-          throw new Error(response.errors?.join('; ') || 'Activation failed');
+          throw new Error(response.errors.join('; ') || 'Activation failed');
         }
 
         return response;
@@ -230,7 +230,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       setCurrentStep(2);
 
       // Call completion callback if provided (for auto-login)
-      if (onRegistrationComplete && registrationData?.password) {
+      if (onRegistrationComplete && registrationData.password) {
         onRegistrationComplete({
           email: registrationData.email,
           password: registrationData.password,

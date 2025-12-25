@@ -73,7 +73,7 @@ export function findSiblingClones(
 
   // Find the current grand repository
   const currentGrand = allRepositories.find((r) => r.repositoryGuid === grandGuid);
-  const currentGrandName = currentGrand?.repositoryName || 'original';
+  const currentGrandName = currentGrand?.repositoryName ?? 'original';
 
   // Find sibling clones (exclude the repository being promoted and the original)
   const siblingClones = allRepositories

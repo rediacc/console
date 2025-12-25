@@ -225,7 +225,7 @@ export class MachineValidationService {
 
         // Track error types
         result.errors.forEach((error) => {
-          errorTypes.set(error.code, (errorTypes.get(error.code) || 0) + 1);
+          errorTypes.set(error.code, (errorTypes.get(error.code) ?? 0) + 1);
           if (error.code === 'TEAM_MISMATCH') {
             criticalErrors = true;
           }
@@ -300,7 +300,7 @@ export class MachineValidationService {
       warningCount += result.warnings.length;
 
       result.errors.forEach((error) => {
-        errorTypes.set(error.code, (errorTypes.get(error.code) || 0) + 1);
+        errorTypes.set(error.code, (errorTypes.get(error.code) ?? 0) + 1);
         if (error.code === 'TEAM_MISMATCH') {
           criticalErrors = true;
         }

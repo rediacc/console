@@ -59,12 +59,10 @@ export function getSecurityContextInfo(): {
   let suggestion = '';
   if (isSecure) {
     // Secure context, no suggestion needed
+  } else if (protocol === 'http:' && !isLocalhost) {
+    suggestion = `Access via HTTPS (https://${hostname}) or use localhost for development`;
   } else {
-    if (protocol === 'http:' && !isLocalhost) {
-      suggestion = `Access via HTTPS (https://${hostname}) or use localhost for development`;
-    } else {
-      suggestion = 'Use HTTPS or access via localhost';
-    }
+    suggestion = 'Use HTTPS or access via localhost';
   }
 
   return {

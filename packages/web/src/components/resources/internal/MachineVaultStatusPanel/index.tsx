@@ -27,7 +27,7 @@ import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import { BlockDevicesSection } from './sections/BlockDevicesSection';
 import { NetworkSection } from './sections/NetworkSection';
 import { SystemContainersSection } from './sections/SystemContainersSection';
-import type { BlockDevice, SystemInfo, VaultData, VaultNetwork } from './types';
+import type { SystemInfo, VaultData } from './types';
 import type { TFunction } from 'i18next';
 
 interface MachineVaultStatusPanelProps {
@@ -100,12 +100,10 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                 </>
               )}
 
-              {vaultData.network && (
-                <NetworkSection network={vaultData.network as VaultNetwork} t={t} />
-              )}
+              {vaultData.network && <NetworkSection network={vaultData.network} t={t} />}
 
               {vaultData.block_devices && vaultData.block_devices.length > 0 && (
-                <BlockDevicesSection devices={vaultData.block_devices as BlockDevice[]} t={t} />
+                <BlockDevicesSection devices={vaultData.block_devices} t={t} />
               )}
 
               {vaultData.system_containers && vaultData.system_containers.length > 0 && (

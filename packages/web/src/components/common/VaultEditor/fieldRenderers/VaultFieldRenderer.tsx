@@ -93,7 +93,7 @@ export const VaultFieldRenderer: React.FC<VaultFieldRendererProps> = ({
   }
 
   if (field.type === 'array') {
-    return <JsonFieldRenderer {...commonProps} isArray={true} />;
+    return <JsonFieldRenderer {...commonProps} isArray />;
   }
 
   // Default to string field renderer

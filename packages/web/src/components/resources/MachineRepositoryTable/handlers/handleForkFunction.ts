@@ -25,7 +25,7 @@ export const handleForkFunction = async (
       r.repositoryTag === selectedRepository.repositoryTag
   );
 
-  if (!RepoData || !RepoData.vaultContent) {
+  if (!RepoData?.vaultContent) {
     showMessage(
       'error',
       t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
@@ -62,11 +62,11 @@ export const handleForkFunction = async (
         destinationType: 'machine',
         to: machine.machineName,
         state: selectedRepository.mounted ? 'online' : 'offline',
-        grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
+        grand: RepoData.grandGuid ?? RepoData.repositoryGuid,
       },
       priority: functionData.priority,
       addedVia: 'machine-Repository-list-fork',
-      machineVault: machine.vaultContent || '{}',
+      machineVault: machine.vaultContent ?? '{}',
       repositoryGuid: RepoData.repositoryGuid,
       vaultContent: grandRepoVault,
       repositoryNetworkId: newRepo.repositoryNetworkId,
@@ -89,7 +89,7 @@ export const handleForkFunction = async (
         showMessage('info', t('resources:repositories.highestPriorityQueued'));
       }
     } else {
-      throw new Error(result.error || 'Failed to fork Repository');
+      throw new Error(result.error ?? 'Failed to fork Repository');
     }
   } catch {
     showMessage('error', t('resources:repositories.failedToForkRepository'));

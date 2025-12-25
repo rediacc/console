@@ -47,8 +47,8 @@ export const InteractionTracker: React.FC<InteractionTrackerProps> = ({ children
     const container = containerRef.current;
 
     const handleClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target) return;
+      const target = event.target as HTMLElement | null;
+      if (target === null) return;
 
       // Extract contextual information
       const context = extractClickContext(target);
@@ -74,8 +74,8 @@ export const InteractionTracker: React.FC<InteractionTrackerProps> = ({ children
     };
 
     const handleSubmit = (event: SubmitEvent) => {
-      const target = event.target as HTMLFormElement;
-      if (!target) return;
+      const target = event.target as HTMLFormElement | null;
+      if (target === null) return;
 
       const context = extractFormContext(target);
 
@@ -126,7 +126,7 @@ function extractClickContext(element: HTMLElement): ClickContextResult {
     'svg path', // Skip SVG path elements
   ];
 
-  if (skipSelectors.some((selector) => element.matches?.(selector))) {
+  if (skipSelectors.some((selector) => element.matches(selector))) {
     return { shouldTrack: false };
   }
 
@@ -135,8 +135,8 @@ function extractClickContext(element: HTMLElement): ClickContextResult {
   const elementType = getElementType(clickableElement);
   const text = extractElementText(clickableElement);
   const testId =
-    clickableElement.getAttribute('data-testid') ||
-    clickableElement.closest('[data-testid]')?.getAttribute('data-testid') ||
+    clickableElement.getAttribute('data-testid') ??
+    clickableElement.closest('[data-testid]')?.getAttribute('data-testid') ??
     undefined;
 
   const customData: TelemetryAttributes = {};
@@ -149,7 +149,7 @@ function extractClickContext(element: HTMLElement): ClickContextResult {
 
   return {
     shouldTrack: true,
-    target: testId || text || elementType,
+    target: testId ?? (text || elementType),
     elementType,
     text,
     testId,
@@ -218,13 +218,16 @@ function extractElementText(element: HTMLElement): string {
   // For links, get href if no text
   if (element.matches('a')) {
     const href = element.getAttribute('href');
+    // textContent can be null at runtime for certain DOM nodes
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (href && !element.textContent?.trim()) {
       return href.substring(0, 50);
     }
   }
 
-  // Get text content, but limit length
-  const text = element.textContent?.trim() || '';
+  // Get text content, but limit length (textContent can be null at runtime)
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const text = element.textContent?.trim() ?? '';
   return text.substring(0, 50);
 }
 
@@ -233,12 +236,13 @@ function extractElementText(element: HTMLElement): string {
  */
 function extractFormContext(form: HTMLFormElement): FormContext {
   const testId =
-    form.getAttribute('data-testid') ||
-    form.closest('[data-testid]')?.getAttribute('data-testid') ||
+    form.getAttribute('data-testid') ??
+    form.closest('[data-testid]')?.getAttribute('data-testid') ??
     undefined;
 
-  // Try to determine form name from various sources
+  // Try to determine form name from various sources - using || for empty string coalescing
   const formName =
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty strings should fall through
     form.name || form.id || testId || form.getAttribute('aria-label') || 'unknown_form';
 
   return {

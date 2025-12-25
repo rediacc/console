@@ -8,14 +8,14 @@ import type { HookAPI } from 'antd/es/modal/useModal';
 import type { TFunction } from 'i18next';
 
 interface UseConfirmRepositoryDeletionParams {
-  teamRepositories: Array<{
+  teamRepositories: {
     repositoryName: string;
     repositoryTag: string;
     repositoryGuid: string;
     grandGuid?: string;
     vaultContent?: string;
     repositoryNetworkId?: number;
-  }>;
+  }[];
   modal: HookAPI;
   t: TFunction;
   onConfirm: (context: ReturnType<typeof prepareGrandDeletion>) => Promise<void>;
@@ -29,7 +29,7 @@ export const useConfirmRepositoryDeletion = ({
 }: UseConfirmRepositoryDeletionParams) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const confirmDeletion = async (repository: Repository): Promise<void> => {
+  const confirmDeletion = (repository: Repository): void => {
     const context = prepareGrandDeletion(
       repository.name,
       repository.repositoryTag,

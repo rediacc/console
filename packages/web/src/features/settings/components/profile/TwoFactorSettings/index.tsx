@@ -40,7 +40,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
   const [passwordForm] = Form.useForm();
   const [disableForm] = Form.useForm();
   const [verificationForm] = Form.useForm();
-  const userEmail = useSelector((state: RootState) => state.auth.user?.email) || '';
+  const userEmail = useSelector((state: RootState) => state.auth.user?.email) ?? '';
 
   const { data: twoFAStatus, isLoading: statusLoading, refetch: refetchTFAStatus } = useTFAStatus();
   const enableTFAMutation = useEnableTFA();
@@ -65,7 +65,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
 
   useEffect(() => {
     if (open) {
-      refetchTFAStatus();
+      void refetchTFAStatus();
     }
   }, [open, refetchTFAStatus]);
 
@@ -80,7 +80,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       setShowVerification(true);
       passwordForm.resetFields();
     } catch (error: unknown) {
-      if (error instanceof Error && error.message?.includes('already enabled')) {
+      if (error instanceof Error && error.message.includes('already enabled')) {
         enableModal.close();
         passwordForm.resetFields();
       }
@@ -155,7 +155,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
           onDone={() => {
             setShowSuccess(false);
             setTwoFASecret('');
-            refetchTFAStatus();
+            void refetchTFAStatus();
           }}
         />
       );

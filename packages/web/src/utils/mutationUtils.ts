@@ -20,11 +20,14 @@ export const extractErrorMessage = (error: unknown, fallback: string): string =>
 };
 
 /**
- * Create a standard onError callback
+ * Create a standard onError callback (internal helper)
  */
-export const createErrorHandler = (fallbackMessage: string) => {
+const _createErrorHandler = (fallbackMessage: string) => {
   return (error: unknown): void => {
     const message = extractErrorMessage(error, fallbackMessage);
     showMessage('error', message);
   };
 };
+
+// Reserved for future use
+void _createErrorHandler;

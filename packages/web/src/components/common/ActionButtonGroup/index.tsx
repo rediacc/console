@@ -152,7 +152,7 @@ export function ActionButtonGroup<T>({
 }: ActionButtonGroupProps<T>): React.ReactElement {
   // Type-safe access to record ID field
   const recordValue = record[idField];
-  const recordId = String(recordValue !== null && recordValue !== undefined ? recordValue : '');
+  const recordId = String(recordValue ?? '');
   const prefix = testIdPrefix ? `${testIdPrefix}-` : '';
 
   const getTooltipText = (text: string) => (t ? t(text) : text);
@@ -187,10 +187,10 @@ export function ActionButtonGroup<T>({
         const testId =
           typeof config.testId === 'function'
             ? config.testId(record)
-            : config.testId ||
+            : (config.testId ??
               (config.testIdSuffix
                 ? `${prefix}${config.testIdSuffix}-${recordId}`
-                : `${prefix}${config.type}-${recordId}`);
+                : `${prefix}${config.type}-${recordId}`));
 
         const tooltipText = getTooltipText(config.tooltip);
         const ariaLabel = config.ariaLabel ? getTooltipText(config.ariaLabel) : tooltipText;
@@ -253,7 +253,7 @@ export function ActionButtonGroup<T>({
 /**
  * Preset button configurations for common patterns
  */
-export const actionButtonPresets = {
+const actionButtonPresets = {
   /**
    * Edit button
    */
@@ -366,4 +366,5 @@ export const actionButtonPresets = {
   ],
 };
 
-export default ActionButtonGroup;
+// Export for internal use if needed in the future
+void actionButtonPresets;

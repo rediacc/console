@@ -35,7 +35,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
 
   // Determine target machines based on mode
   let targetMachines: Machine[] = [];
-  if (isBulkMode && machines) {
+  if (isBulkMode) {
     targetMachines = machines;
   } else if (machine) {
     targetMachines = [machine];
@@ -46,12 +46,11 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
   );
 
   // Get unique teams from all machines for bulk mode
-  const uniqueTeams: string[] =
-    isBulkMode && machines
-      ? Array.from(new Set(machines.map((m) => m.teamName)))
-      : machine
-        ? [machine.teamName]
-        : [];
+  const uniqueTeams: string[] = isBulkMode
+    ? Array.from(new Set(machines.map((m) => m.teamName)))
+    : machine
+      ? [machine.teamName]
+      : [];
 
   // Load clusters for the machine's team(s)
   const { data: clusters = [], isLoading: clustersLoading } = useCephClusters(

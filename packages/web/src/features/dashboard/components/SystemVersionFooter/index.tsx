@@ -25,7 +25,7 @@ const SystemVersionFooter: React.FC = () => {
         setUiVersion('Unknown');
       }
     };
-    fetchUiVersion();
+    void fetchUiVersion();
   }, []);
 
   // Determine API version display
@@ -38,7 +38,7 @@ const SystemVersionFooter: React.FC = () => {
     apiVersion = 'Unknown';
   }
 
-  const environment = apiHealth?.environment || 'Unknown';
+  const environment = apiHealth?.environment ?? 'Unknown';
   const uptime = apiHealth?.uptime;
 
   return (

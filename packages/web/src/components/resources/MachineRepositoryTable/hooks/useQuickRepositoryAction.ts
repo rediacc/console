@@ -4,7 +4,7 @@ import { showMessage } from '@/utils/messages';
 import type { Repository } from '../types';
 
 interface UseQuickRepositoryActionParams {
-  teamRepositories: Array<{
+  teamRepositories: {
     repositoryName: string;
     repositoryTag: string;
     repositoryGuid: string;
@@ -12,7 +12,7 @@ interface UseQuickRepositoryActionParams {
     grandGuid?: string;
     repositoryNetworkId?: number;
     repositoryNetworkMode?: string;
-  }>;
+  }[];
   machine: {
     teamName: string;
     machineName: string;
@@ -55,13 +55,13 @@ export const useQuickRepositoryAction = ({
     }
 
     const grandRepoVault =
-      getGrandVaultForOperation(repoData.repositoryGuid, repoData.grandGuid, teamRepositories) ||
+      getGrandVaultForOperation(repoData.repositoryGuid, repoData.grandGuid, teamRepositories) ??
       repoData.vaultContent;
 
     const params: Record<string, unknown> = {
       repository: repoData.repositoryGuid,
       repositoryName: repoData.repositoryName,
-      grand: repoData.grandGuid || '',
+      grand: repoData.grandGuid ?? '',
     };
 
     if (option) {
@@ -76,7 +76,7 @@ export const useQuickRepositoryAction = ({
       params,
       priority,
       addedVia: 'machine-Repository-list-quick',
-      machineVault: machine.vaultContent || '{}',
+      machineVault: machine.vaultContent ?? '{}',
       repositoryGuid: repoData.repositoryGuid,
       vaultContent: grandRepoVault,
       repositoryNetworkId: repoData.repositoryNetworkId,
@@ -98,7 +98,7 @@ export const useQuickRepositoryAction = ({
       }
     }
 
-    showMessage('error', result.error || t('resources:repositories.failedToCreateQueueItem'));
+    showMessage('error', result.error ?? t('resources:repositories.failedToCreateQueueItem'));
   };
 
   return { executeQuickAction };

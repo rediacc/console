@@ -110,8 +110,8 @@ export class QueueActionService {
 
     return {
       success: true,
-      taskId: response?.taskId,
-      isQueued: response?.isQueued,
+      taskId: response.taskId,
+      isQueued: response.isQueued,
     };
   }
 }

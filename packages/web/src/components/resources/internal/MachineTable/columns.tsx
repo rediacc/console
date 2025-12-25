@@ -110,13 +110,13 @@ export const buildMachineTableColumns = ({
       },
       sorter: createCustomSorter<Machine>((m) => {
         if (!m.vaultStatusTime) return Infinity;
-        const statusTime = new Date(m.vaultStatusTime + 'Z');
+        const statusTime = new Date(`${m.vaultStatusTime}Z`);
         const diffMinutes = (new Date().getTime() - statusTime.getTime()) / 60000;
         return diffMinutes <= 3 ? 0 : 1;
       }),
       renderValue: (_value: unknown, record: Machine) => {
         if (!record.vaultStatusTime) return 'unknown';
-        const statusTime = new Date(record.vaultStatusTime + 'Z');
+        const statusTime = new Date(`${record.vaultStatusTime}Z`);
         const diffMinutes = (new Date().getTime() - statusTime.getTime()) / 60000;
         return diffMinutes <= 3 ? 'online' : 'offline';
       },
@@ -146,7 +146,7 @@ export const buildMachineTableColumns = ({
           key: 'regionName',
           width: 150,
           sorter: createSorter<Machine>('regionName'),
-          renderText: (regionName?: string | null) => regionName || '-',
+          renderText: (regionName?: string | null) => regionName ?? '-',
           renderWrapper: (content, fullText) =>
             fullText === '-' ? (
               <Typography.Text>-</Typography.Text>
@@ -239,15 +239,13 @@ export const buildMachineTableColumns = ({
                     icon: <FunctionOutlined />,
                     children: [
                       ...machineFunctions
-                        .filter((func) => func?.showInMenu !== false)
+                        .filter((func) => func.showInMenu !== false)
                         .map((func) => ({
-                          key: `function-${func?.name || 'unknown'}`,
+                          key: `function-${func.name}`,
                           label: (
-                            <Typography.Text title={func?.description || ''}>
-                              {func?.name || 'Unknown'}
-                            </Typography.Text>
+                            <Typography.Text title={func.description}>{func.name}</Typography.Text>
                           ),
-                          onClick: () => onFunctionsMachine?.(record, func?.name),
+                          onClick: () => onFunctionsMachine?.(record, func.name),
                         })),
                       { type: 'divider' as const },
                       {
@@ -273,7 +271,7 @@ export const buildMachineTableColumns = ({
                       if (result.success) {
                         showMessage('success', t('machines:connectionSuccessful'));
                       } else {
-                        showMessage('error', result.error || t('machines:connectionFailed'));
+                        showMessage('error', result.error ?? t('machines:connectionFailed'));
                       }
                     },
                   },

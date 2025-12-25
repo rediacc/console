@@ -66,7 +66,7 @@ export const buildRegionColumns = ({
               <Typography.Text>{count}</Typography.Text>
             </Space>
           ),
-        } as ColumnsType<Region>[number],
+        } satisfies ColumnsType<Region>[number],
       ]
     : []),
   ...(featureFlags.isEnabled('vaultVersionColumns')

@@ -82,7 +82,7 @@ export const useEnableTFA = () => {
         } as TwoFactorStatus);
 
         // Then invalidate to ensure fresh data on next fetch
-        queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
+        void queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
       }
     },
     onError: (error: unknown) => {
@@ -91,7 +91,7 @@ export const useEnableTFA = () => {
 
       // If it's a 409 conflict error (TFA already enabled), refresh the status
       if (errorMessage.includes('already enabled')) {
-        queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
+        void queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
       }
     },
   });
@@ -118,7 +118,7 @@ export const useDisableTFA = () => {
       } as TwoFactorStatus);
 
       // Then invalidate to ensure fresh data on next fetch
-      queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
+      void queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
     },
   });
 };
@@ -136,7 +136,7 @@ export const useVerifyTFA = () => {
     errorMessage: i18n.t('settings:twoFactorAuth.errors.verificationFailed'),
     onSuccess: (data) => {
       if (data.isAuthorized) {
-        queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
+        void queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
       }
     },
   });
